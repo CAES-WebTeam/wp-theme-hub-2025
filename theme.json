@@ -1,0 +1,220 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/theme.json",
+    "version": 3,
+    "settings": {
+        "layout": {
+            "contentSize": "40rem",
+            "wideSize": "64rem"
+        },
+        "spacing": {
+            "blockGap": true,
+            "margin": true,
+            "padding": true,
+            "spacingScale": {
+                "operator": "*",
+                "increment": 2,
+                "steps": 7,
+                "mediumStep": 1.5,
+                "unit": "rem"
+            }
+        },
+        "typography": {
+            "fluid": true,
+            "lineHeight": true,
+            "defaultFontSizes": false,
+            "fontFamilies": [
+                {
+                    "name": "Merriweather",
+                    "slug": "merriweather",
+                    "fontFamily": "Merriweather, serif",
+                    "fontFace": [
+                        {
+                            "src": "http://hub-dev.local/wp-content/uploads/fonts/u-440qyriQwlOrhSvowK_l5OfixNV-bnrw.woff2",
+                            "fontWeight": "400",
+                            "fontStyle": "normal",
+                            "fontFamily": "Merriweather"
+                        }
+                    ]
+                },
+                {
+                    "name": "Georgia",
+                    "slug": "georgia",
+                    "fontFamily": "Georgia, serif"
+                },
+                {
+                    "name": "Oswald",
+                    "slug": "oswald",
+                    "fontFamily": "Oswald, sans-serif",
+                    "fontFace": [
+                        {
+                            "src": "http://hub-dev.local/wp-content/uploads/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs18NvgURoZAaRliE.woff2",
+                            "fontWeight": "500",
+                            "fontStyle": "normal",
+                            "fontFamily": "Oswald"
+                        }
+                    ]
+                }
+            ],
+            "fontSizes": [
+                {
+                    "name": "Small",
+                    "size": "0.8rem",
+                    "slug": "small",
+                    "fluid": {
+                        "min": "0.75rem",
+                        "max": "0.8rem"
+                    }
+                },
+                {
+                    "name": "Medium",
+                    "size": "1.25rem",
+                    "slug": "medium",
+                    "fluid": {
+                        "min": "1.2rem",
+                        "max": "1.25rem"
+                    }
+                },
+                {
+                    "name": "Large",
+                    "size": "1.56rem",
+                    "slug": "large",
+                    "fluid": {
+                        "min": "1.44rem",
+                        "max": "1.56rem"
+                    }
+                },
+                {
+                    "name": "Extra Large",
+                    "size": "1.95rem",
+                    "slug": "x-large",
+                    "fluid": {
+                        "min": "1.73rem",
+                        "max": "1.95rem"
+                    }
+                },
+                {
+                    "name": "Huge",
+                    "size": "2.44rem",
+                    "slug": "huge",
+                    "fluid": {
+                        "min": "2.07rem",
+                        "max": "2.44rem"
+                    }
+                },
+                {
+                    "name": "Gigantic",
+                    "size": "3.05rem",
+                    "slug": "gigantic",
+                    "fluid": {
+                        "min": "2.49rem",
+                        "max": "3.05rem"
+                    }
+                }
+            ]
+        },
+        "color": {
+            "defaultPalette": false,
+            "link": true,
+            "palette": [
+                {
+                    "slug": "bulldog-red",
+                    "color": "#BA0C2F",
+                    "name": "Bulldog Red"
+                },
+                {
+                    "slug": "glory-glory",
+                    "color": "#E4002B",
+                    "name": "Glory Glory"
+                },
+                {
+                    "slug": "oddyssey",
+                    "color": "#C8D8EB",
+                    "name": "Odyssey"
+                },
+                {
+                    "slug": "base",
+                    "color": "#FFFFFF",
+                    "name": "Base"
+                },
+                {
+                    "slug": "base-two",
+                    "color": "#F5F5F5",
+                    "name": "Base Two"
+                },
+                {
+                    "slug": "contrast",
+                    "color": "#000000",
+                    "name": "Contrast"
+                },
+                {
+                    "slug": "contrast-two",
+                    "color": "#757575",
+                    "name": "Contrast Two"
+                }
+            ]
+        }
+    },
+    "styles": {
+        "typography": {
+            "fontFamily": "var(--wp--preset--font-family--merriweather)",
+            "lineHeight": "1.8"
+        },
+        "elements": {
+            "heading": {
+                "typography": {
+                    "fontFamily": "var(--wp--preset--font-family--georgia)",
+                    "fontWeight": "400",
+                    "lineHeight": "1.5"
+                }
+            },
+            "h1": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--gigantic)"
+                }
+            },
+            "h2": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--huge)"
+                }
+            },
+            "h3": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--x-large)"
+                }
+            },
+            "h4": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--large)"
+                }
+            },
+            "h5": {
+                "typography": {
+                    "fontSize": "var(--wp--preset--font-size--medium)"
+                }
+            },
+            "link": {
+                "color": {
+                    "text": "var(--wp--preset--color--bulldog-red)"
+                }
+            }
+        },
+        "blocks": {
+            "core/button": {
+                "border": {
+                    "radius": "0px"
+                },
+                "color": {
+                    "background": "#ffffff00",
+                    "text": "var(--wp--preset--color--contrast)"
+                },
+                "elements": {
+                    "link": {
+                        "color": {
+                            "text": "var(--wp--preset--color--contrast)"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "wp-theme-hub-2025",
+  "version": "1.0.0",
+  "description": "This is the official WordPress theme of the UGA CAES Field Report website.",
+  "scripts": {
+    "build": "gulp",
+    "lint:css": "stylelint **/*.css",
+    "lint-fix:css": "stylelint **/*.css --fix",
+    "lint:js": "eslint .",
+    "lint-fix:js": "eslint --fix ."
+  },
+  "devDependencies": {
+    "@babel/core": "^7.18.0",
+    "@wordpress/babel-preset-default": "^6.15.0",
+    "@wordpress/eslint-plugin": "^12.7.0",
+    "@wordpress/stylelint-config": "^20.0.2",
+    "cssnano": "^5.1.12",
+    "eslint": "^8.16.0",
+    "gulp": "^5.0.0",
+    "gulp-clean": "^0.4.0",
+    "gulp-concat-css": "^1.2.0",
+    "gulp-cssnano": "^2.1.3",
+    "gulp-rename": "^2.0.0",
+    "gulp-sass": "^5.1.0",
+    "postcss": "^8.4.14",
+    "postcss-cli": "^10.0.0",
+    "prettier": "^2.7.1",
+    "sass": "^1.56.1",
+    "stylelint": "^14.8.3",
+    "webpack-stream": "^7.0.0"
+  },
+  "author": "CAES Web Team",
+  "license": "ISC"
+}
