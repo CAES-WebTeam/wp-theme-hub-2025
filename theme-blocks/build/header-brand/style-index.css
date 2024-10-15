@@ -1,30 +1,6 @@
 /*!****************************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/header-brand/style.scss ***!
   \****************************************************************************************************************************************************************************************************************************************************/
-/**
- * The following styles get applied both on the front of your site
- * and in the editor.
- *
- * Replace them with your own styles or remove the file completely.
- */
-.wp-block-caes-hub-header-brand a {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--wp--preset--spacing--50);
-  text-decoration: none;
-  color: var(--wp--preset--color--contrast);
-}
-.wp-block-caes-hub-header-brand .caes-hub-header-brand-logo {
-  max-width: 7.5rem;
-  margin: 0 auto;
-}
-.wp-block-caes-hub-header-brand .caes-hub-header-brand-text {
-  font-family: var(--wp--preset--font-family--oswald);
-  font-size: var(--wp--preset--font-size--x-large);
-  font-weight: 400;
-  text-transform: uppercase;
-  line-height: 1;
-}
+.wp-block-caes-hub-header-brand a{align-items:center;color:var(--wp--preset--color--contrast);display:flex;flex-direction:column;gap:var(--wp--preset--spacing--50);justify-content:center;text-decoration:none}.wp-block-caes-hub-header-brand .caes-hub-header-brand-logo{height:7.5rem;margin:0 auto}.wp-block-caes-hub-header-brand .caes-hub-header-brand-text{font-family:var(--wp--preset--font-family--oswald);font-size:var(--wp--preset--font-size--x-large);font-weight:400;line-height:1;text-transform:uppercase}@media (max-width:781px){.wp-block-caes-hub-header-brand a{flex-direction:row;flex-wrap:wrap}.wp-block-caes-hub-header-brand .caes-hub-header-brand-logo{height:4rem;margin:0}}
 
 /*# sourceMappingURL=style-index.css.map*/

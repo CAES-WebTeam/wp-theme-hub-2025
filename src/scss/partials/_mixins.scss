@@ -1,0 +1,83 @@
+@mixin button-icon($url, $width, $height, $base-color, $hover-color, $spacing) {
+    .wp-block-button__link {
+        &::before {
+            content: "";
+            display: inline-block;
+            width: $width;
+            height: $height;
+            background-color: $base-color;
+            mask-image: url($url);
+            mask-size: contain;
+            mask-repeat: no-repeat;
+            margin-right: $spacing;
+        }
+    }
+
+    &:hover a::before {
+        background-color: $hover-color;
+    }
+}
+
+@mixin action-button($url, $width, $height, $base-color, $hover-color, $spacing) {
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-family: var(--wp--preset--font-family--merriweather);
+    padding: var(--wp--preset--spacing--20);
+    border-width: 0;
+    border-radius: 20rem;
+    background: transparent;
+    transition: all 0.3s ease-in-out;
+    width: 46px;
+    justify-content: center;
+
+    &::before {
+        content: "";
+        display: inline-block;
+        width: $width;
+        height: $height;
+        background-color: $base-color;
+        mask-image: url($url);
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .label {
+        display: inline-block;
+        height: var(--wp--preset--font-size--normal);
+        transition: all 0.3s ease-in-out;
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        left: -10000px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+    }
+
+    &:hover,
+    &:focus {
+        background-color: $base-color;
+        width: 100px;
+        padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--20) var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+
+        &::before {
+            background-color: $hover-color;
+        }
+
+        .label {
+            width: 47px;
+            height: var(--wp--preset--font-size--normal);
+            visibility: visible;
+            opacity: 1;
+            color: $hover-color;
+            text-align: left;
+            margin-left: 7px;
+            position: unset;
+        }
+    }
+
+}

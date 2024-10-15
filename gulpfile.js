@@ -1,6 +1,6 @@
 const gulp = require('gulp'),
     clean = require('gulp-clean'),
-    concatCss = require('gulp-concat-css'),
+    // concatCss = require('gulp-concat-css'),
     cssnano = require('gulp-cssnano'),
     sass = require('gulp-sass')(require('sass')),
     rename = require('gulp-rename'),
@@ -11,11 +11,11 @@ gulp.task('watch', function () {
         'change',
         gulp.series(
             'clean-shared',
-            // 'clean-editor-only',
+            'clean-editor',
             // 'clean-blocks',
             // 'clean-login',
             'minify-shared',
-            // 'minify-editor-only',
+            'minify-editor',
             // 'minify-blocks',
             // 'minify-login',
         )
@@ -30,13 +30,13 @@ gulp.task('clean-shared', function () {
         .pipe(clean());
 });
 
-// gulp.task('clean-editor-only', function () {
-//     return gulp.src('assets/css/editor-only.min.css', {
-//         read: false,
-//         allowEmpty: true,
-//     })
-//         .pipe(clean());
-// });
+gulp.task('clean-editor', function () {
+    return gulp.src('assets/css/editor.min.css', {
+        read: false,
+        allowEmpty: true,
+    })
+        .pipe(clean());
+});
 
 // gulp.task('clean-blocks', function () {
 //     return gulp.src('assets/css/blocks/*.min.css', {
@@ -55,24 +55,24 @@ gulp.task('clean-shared', function () {
 // });
 
 gulp.task('minify-shared', function () {
-    return gulp.src('src/scss/*.scss')
+    return gulp.src('src/scss/main.scss')
         .pipe(sass({
             includePaths: ['./node_modules'],
         }).on('error', sass.logError))
-        .pipe(concatCss('main.min.css'))
+        // .pipe(concatCss('main.min.css'))
         .pipe(cssnano())
         .pipe(gulp.dest('assets/css/'));
 });
 
-// gulp.task('minify-editor-only', function () {
-//     return gulp.src('src/scss/editor-only/*.scss')
-//         .pipe(sass({
-//             includePaths: ['./node_modules'],
-//         }).on('error', sass.logError))
-//         .pipe(concatCss('editor-only.min.css'))
-//         .pipe(cssnano())
-//         .pipe(gulp.dest('assets/css/editor-only'));
-// });
+gulp.task('minify-editor', function () {
+    return gulp.src('src/scss/editor.scss')
+        .pipe(sass({
+            includePaths: ['./node_modules'],
+        }).on('error', sass.logError))
+        // .pipe(concatCss('editor.min.css'))
+        .pipe(cssnano())
+        .pipe(gulp.dest('assets/css/'));
+});
 
 // gulp.task('minify-blocks', function () {
 //     return gulp.src('src/scss/blocks/*.scss')
@@ -99,7 +99,7 @@ gulp.task('js-bundling', function () {
             entry: {
                 main: './src/js/main.js',
                 // "remove-block-styles": './src/js/remove-block-styles.js',
-                // "add-block-styles": './src/js/add-block-styles.js'
+                "add-block-styles": './src/js/add-block-styles.js'
             },
             output: {
                 filename: '[name].js',
@@ -112,11 +112,11 @@ gulp.task(
     'default',
     gulp.series(
         'clean-shared',
-        // 'clean-editor-only',
+        'clean-editor',
         // 'clean-blocks',
         // 'clean-login',
         'minify-shared',
-        // 'minify-editor-only',
+        'minify-editor',
         // 'minify-blocks',
         // 'minify-login',
         'js-bundling'

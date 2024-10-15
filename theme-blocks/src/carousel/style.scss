@@ -1,0 +1,209 @@
+$widthForNavControl: 200px;
+
+.wp-block-caes-hub-carousel {
+    position: relative;
+
+    h1 {
+        position: absolute;
+        z-index: 3;
+        margin: 0;
+        top: calc(20% - 37px);
+        left: calc(var(--wp--preset--spacing--60) * 2);
+        font-size: var(--wp--preset--font-size--large);
+        font-family: var(--wp--preset--font-family--oswald);
+        color: var(--wp--preset--color--base);
+        background: var(--wp--preset--color--contrast);
+        padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--60);
+        text-transform: uppercase;
+        box-shadow: var(--wp--preset--shadow--large);
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: -27px;
+            transform: translateY(-50%);
+            border-top: 37.34px solid transparent;
+            border-left: 27px solid var(--wp--preset--color--contrast);
+            border-bottom: 37.34px solid transparent;
+            width: 0;
+            height: 0;
+        }
+
+        span {
+            display: block;
+            font-family: var(--wp--preset--font-family--merriweather);
+            font-size: var(--wp--preset--font-size--normal);
+            text-transform: none;
+        }
+    }
+
+    .caes-hub-content-logo {
+        max-width: 110px;
+    }
+}
+
+.wp-block-caes-hub-carousel__inner-wrapper {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.caes-hub-carousel-slides {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.caes-hub-carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - var(--wp--preset--spacing--70) * 2);
+    height: calc(100% - var(--wp--preset--spacing--70) * 2);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1;
+    transition: opacity 0.5s ease-in-out, visibility 0s 0.5s;
+    background-size: cover;
+    background-position: center;
+    padding: var(--wp--preset--spacing--70);
+}
+
+.caes-hub-carousel-slide__content {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    position: absolute;
+    top: 20%;
+    background: var(--wp--preset--color--base);
+    padding: calc(var(--wp--preset--spacing--60) * 2) var(--wp--preset--spacing--60) var(--wp--preset--spacing--60);
+    box-shadow: var(--wp--preset--shadow--large);
+
+    * {
+        margin: 0;
+        margin-top: var(--wp--preset--spacing--40);
+
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+
+    a {
+        color: var(--wp--preset--color--contrast);
+        text-decoration: none;
+
+        &:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+        }
+    }
+
+    a h2 {
+        margin: 0;
+        font-size: var(--wp--preset--font-size--large);
+    }
+}
+
+.caes-hub-carousel-slide[aria-hidden="false"] {
+    z-index: 2;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.5s ease-in-out, visibility 0s 0s;
+}
+
+.caes-hub-carousel-controls {
+    position: absolute;
+    bottom: 160px;
+    z-index: 2;
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    left: $widthForNavControl;
+    width: $widthForNavControl;
+    justify-content: center;
+
+    button {
+        color: var(--wp--preset--color--bulldog-red);
+        border-radius: 100%;
+        border: 0;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+        margin: 0 var(--wp--preset--spacing--20);
+        padding: 0;
+
+        &::before {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: var(--wp--preset--color--base);
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 100%;
+        }
+
+        &.btn-prev::before {
+            background-image: url('../../../assets/images/prev.svg');
+        }
+
+        &.btn-next::before {
+            background-image: url('../../../assets/images/prev.svg');
+            transform: rotate(180deg);
+        }
+
+        &.btn-pause::before {
+            background-image: url('../../../assets/images/pause.svg');
+        }
+
+        &.btn-pause[aria-pressed="false"]::before {
+            background-image: url('../../../assets/images/play.svg');
+            background-size: 10px;
+        }
+    }
+}
+
+.caes-hub-carousel-nav {
+    position: absolute;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    list-style: none;
+    height: 150px;
+    background-color: rgba(0, 0, 0, 0.6);
+    margin: 0;
+    padding: 0;
+    width: 100%;
+
+    button {
+        font-family: var(--wp--preset--font-family--oswald);
+        font-size: var(--wp--preset--font-size--large);
+        text-align: left;
+        width: $widthForNavControl;
+        height: 100%;
+        display: block;
+        border: 0;
+        background: transparent;
+        color: var(--wp--preset--color--base);
+        padding: 0 var(--wp--preset--spacing--50);
+        text-transform: uppercase;
+        transition: background 0.5s ease-in-out;
+        cursor: pointer;
+        line-height: 1.2;
+
+        &.current {
+            background: linear-gradient(180deg, rgba(186, 12, 47, 1) 12%, rgba(32, 178, 7, 0) 84%);
+            background-blend-mode: normal;
+        }
+    }
+}

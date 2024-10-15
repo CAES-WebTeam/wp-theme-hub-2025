@@ -1,0 +1,39 @@
+/* MODAL */
+
+dialog.caes-hub-modal {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    padding: var(--wp--preset--spacing--70);
+    box-shadow: var(--wp--preset--shadow--large);
+    border: 1px solid #eaeaea;
+    position: relative;
+
+    &[open] {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    &::backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    h1,h2,h3,h4,h5,h6 {
+        font-family: var(--wp--preset--font-family--oswald);
+        font-weight: 400;
+        text-transform: uppercase;
+    }
+
+    .caes-hub-modal__close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background-color: transparent;
+        border: none;
+        background-image: url('../images/close.svg');
+        background-repeat: no-repeat;
+        background-position: center center;
+        width: 21.79px;
+        height: 22.99px;
+    }
+}

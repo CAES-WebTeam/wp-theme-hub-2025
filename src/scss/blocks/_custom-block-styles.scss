@@ -1,0 +1,64 @@
+/* Custom Block Styles (is-style-*) */
+
+// Adds red border and additional styles to button
+.is-style-caes-hub-red-border {
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--wp--preset--color--bulldog-red);
+    border-radius: 20rem;
+    line-height: 1rem;
+    transition: all 0.1s ease-in-out;
+
+    .wp-block-button__link {
+        transition: all 0.1s ease-in-out;
+    }
+
+    &:hover {
+        background-color: var(--wp--preset--color--bulldog-red);
+
+        .wp-block-button__link {
+            color: var(--wp--preset--color--base);
+        }
+    }
+}
+
+// Adds black border and additional styles to button
+.is-style-caes-hub-black-border {
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--wp--preset--color--contrast-two);
+    border-radius: 20rem;
+    line-height: 1rem;
+    transition: all 0.1s ease-in-out;
+
+    .wp-block-button__link {
+        transition: all 0.1s ease-in-out;
+    }
+
+    &:hover {
+        background-color: var(--wp--preset--color--contrast-two);
+
+        .wp-block-button__link {
+            color: var(--wp--preset--color--base);
+        }
+    }
+}
+
+// Remove unordered list's bullets
+ul.is-style-caes-hub-list-none {
+    padding-inline-start: 0;
+    list-style: none;
+}
+
+// Add bell icon before button text
+.is-style-caes-hub-bell {
+    @include button-icon('../images/bell.svg', 9.32px, 10.578px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px);
+}
+
+// Specific styling for headings above sections
+
+.is-style-caes-hub-section-heading {
+   font-family: var(--wp--preset--font-family--oswald);
+   font-weight: 400;
+   text-transform: uppercase;
+}

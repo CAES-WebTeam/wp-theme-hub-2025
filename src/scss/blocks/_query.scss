@@ -1,0 +1,129 @@
+@use '../partials/mixins' as *;
+
+.caes-hub-post-list-grid {
+    &>ul li {
+        display: flex;
+    }
+
+    .caes-hub-post-list-grid-item {
+        position: relative;
+        box-shadow: var(--wp--preset--shadow--large);
+        transition: box-shadow 0.3s ease-in-out;
+
+        .caes-hub-post-list-grid-info {
+            margin: 0;
+            flex: 1;
+        }
+
+        // Img hover
+        .caes-hub-post-list-img-container,
+        figure.wp-block-media-text__media {
+            overflow: hidden;
+            position: relative;
+
+            &::after {
+                transition: opacity 0.3s ease-in-out;
+                content: '';
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 100px;
+                opacity: 0;
+                background: linear-gradient(to left, rgba(0, 0, 0, 0.5), transparent);
+                pointer-events: none;
+            }
+
+            img {
+                transition: transform 0.3s ease-in-out;
+            }
+        }
+
+        .caes-hub-content-actions {
+            position: absolute;
+            right: 0;
+            top: 0;
+            margin-top: 0.5rem;
+            margin-right: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+
+            .caes-hub-action-share__button {
+                @include action-button('../images/share.svg', 25px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
+            }
+
+            .caes-hub-action-print__button {
+                @include action-button('../images/print.svg', 21px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
+            }
+
+            .caes-hub-action-save__button {
+                @include action-button('../images/bookmark.svg', 16px, 21.47px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
+            }
+        }
+
+        &:hover,
+        &:focus-within {
+            box-shadow: var(--wp--preset--shadow--large-dark);
+
+            .caes-hub-post-list-img-container,
+            figure.wp-block-media-text__media {
+                &::after {
+                    opacity: 1;
+                }
+
+                img {
+                    transform: scale(1.1);
+                }
+            }
+
+            .caes-hub-content-actions {
+                opacity: 1;
+            }
+
+        }
+
+    }
+
+    .caes-hub-post-list-grid-title {
+        a {
+            text-decoration: none;
+
+            &:after {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+            }
+        }
+    }
+
+    .caes-hub-content-logo {
+        max-width: 110px;
+    }
+
+}
+
+@media screen and (max-width: 781px) {
+    .caes-hub-post-list-grid {
+        .caes-hub-content-actions {
+            flex-direction: column !important;
+        }
+    }
+}
+
+@media screen and (min-width: 600px) {
+    .caes-hub-post-list-grid {
+        .caes-hub-post-list-grid-item {
+            &.height-100 {
+
+                .caes-hub-post-list-grid-info,
+                .caes-hub-post-list-img-container,
+                figure.wp-block-media-text__media {
+                    height: 100%;
+                }
+            }
+        }
+    }
+}

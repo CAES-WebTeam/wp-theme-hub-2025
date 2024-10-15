@@ -1,0 +1,119 @@
+@import '_mixins.scss';
+
+/* ACTION BUTTONS */
+
+.caes-hub-action-share__button {
+    @include action-button('../images/share.svg', 25px, 19.70px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px);
+}
+
+.caes-hub-action-print__button {
+    @include action-button('../images/print.svg', 21px, 19.70px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px);
+}
+
+.caes-hub-action-save__button {
+    @include action-button('../images/bookmark.svg', 16px, 21.47px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px);
+}
+
+/* ACTION BUTTONS - SHARE BUTTONS FOR SOCIAL */
+.wp-block-caes-hub-action-share {
+    text-align: center;
+}
+.caes-hub-action-share__list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+    margin: var(--wp--style--block-gap) 0;
+}
+
+.caes-hub-action-share-social__button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
+    border-width: 0;
+    border-radius: 20rem;
+    background: transparent;
+    transition: all 0.3s ease-in-out;
+    width: 50px;
+    height: 50px;
+    justify-content: center;
+    margin: 0 var(--wp--preset--spacing--20);
+    &::before {
+        content: "";
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        background-color: #000000;
+        mask-image: url('../images/share-email.svg');
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        transition: all 0.3s ease-in-out;
+    }
+
+    &:hover,
+    &:focus {
+        transform: scale(1.1); // Scale the button without affecting layout
+        &::before {
+            transform: scale(1.1); // Scale the icon without affecting layout
+        }
+    }
+}
+
+.caes-hub-action-share-fb__button {
+    &::before {
+        mask-image: url('../images/share-fb.svg');
+        background-color: #316FF6
+    }
+}
+
+.caes-hub-action-share-x__button {
+    &::before {
+        mask-image: url('../images/share-x.svg');
+        background-color: #000000;
+    }
+}
+
+.caes-hub-action-share-pinterest__button {
+    &::before {
+        mask-image: url('../images/share-pinterest.svg');
+        background-color: #E60023;
+    }
+}
+
+.caes-hub-action-share-linkedin__button {
+    &::before {
+        mask-image: url('../images/share-linkedin.svg');
+        background-color: #0E76A8;
+    }
+}
+
+.caes-hub-action-share-reddit__button {
+    &::before {
+        mask-image: url('../images/share-reddit.svg');
+        background-color: #FF4500;
+    }
+}
+
+.caes-hub-action-share-pocket__button {
+    &::before {
+        mask-image: url('../images/share-pocket.svg');
+        background-color: #EF4056;
+    }
+}
+
+.caes-hub-action-share-email__button {
+    &::before {
+        mask-image: url('../images/share-email.svg');
+        background-color: #474747;
+    }
+}
+
+// Print view
+@media print {
+    .caes-hub-content-actions {
+        display: none !important;
+    }
+}

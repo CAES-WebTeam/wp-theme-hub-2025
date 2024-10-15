@@ -31,11 +31,12 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit() {
+export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
 			<ServerSideRender
 				block="caes-hub/header-brand"
+				attributes={attributes}
 			/>
 		</div>
 	);

@@ -1,0 +1,146 @@
+// Navigation block styles
+
+// General adjustments
+
+.wp-block-navigation .has-child .wp-block-navigation__submenu-container .wp-block-navigation__submenu-icon {
+    margin-right: 0.75rem;
+    margin-left: 0.75rem;
+}
+
+.wp-block-navigation:not(.has-background) .wp-block-navigation__submenu-container {
+    border: 1px solid var(--wp--preset--color--contrast-two);
+}
+
+.wp-block-navigation__submenu-container {
+
+    .wp-block-navigation-item {
+
+        &:hover {
+            background-color: var(--wp--preset--color--contrast-two) !important;
+            color: var(--wp--preset--color--base) !important;
+        }
+    }
+}
+
+// Mobile menu
+
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation-item,
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation__container,
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-page-list {
+    align-items: baseline;
+    width: 100%;
+    font-size: var(--wp--preset--font-size--normal) !important;
+}
+
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation-item {
+    &:hover {
+        background-color: unset !important;
+        color: inherit !important;
+    }
+}
+
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation__container {
+    gap: var(--wp--preset--spacing--40);
+}
+
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation__submenu-container {
+    gap: 0;
+}
+
+.wp-block-navigation__responsive-container.is-menu-open .wp-block-navigation__responsive-container-content .wp-block-navigation__submenu-container {
+    padding-right: 0;
+    padding-left: 0;
+    padding-top: 0;
+}
+
+// Mobile menu collapse styles
+
+@media screen and (max-width: 600px) {
+
+    .wp-block-navigation {
+        .wp-block-navigation__responsive-container-content {
+            ul.wp-block-navigation__container {
+                gap: 0 !important;
+                border-bottom: none;
+                overflow: hidden;
+
+                li.wp-block-navigation-item {
+
+                    a {
+                        text-decoration: underline;
+                        width: 100%;
+                        padding: var(--wp--preset--spacing--30);
+                        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+                        &:has(+ button) {
+                            width: calc(100% - 72.44px);
+                        }
+                    }
+
+                    .wp-block-navigation__submenu-container {
+                        padding: 0;
+                        display: none;
+                        box-shadow: none;
+                        background-color: rgba(0, 0, 0, 0.05) !important;
+                    }
+
+                    .wp-block-navigation__submenu-icon {
+                        display: block !important;
+                        line-height: 1;
+                        position: absolute;
+                        top: -1px;
+                        right: 0;
+                        height: calc(var(--wp--preset--spacing--30) * 2 + 1.75rem + 2px);
+                        width: calc(var(--wp--preset--spacing--30) * 2 + 1.75rem + 1.8px);
+                        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                        margin: 0;
+
+                        svg {
+                            stroke: currentColor;
+                            display: block;
+                            width: 30px;
+                            height: 13px;
+                            margin: 0 auto;
+                        }
+                    }
+
+                    .wp-block-navigation-submenu__toggle[aria-expanded=true] {
+                        background-color: var(--wp--preset--color--contrast-two);
+
+                        svg {
+                            transform: rotate(180deg);
+                            color: var(--wp--preset--color--base);
+                        }
+
+                        &+ul.wp-block-navigation__submenu-container {
+                            display: block;
+                            padding: 0;
+                            overflow: hidden;
+                            width: 100%;
+
+                            li {
+                                width: 100%;
+                            }
+                        }
+                    }
+                    .wp-block-social-links {
+                       margin: 0 auto;
+                       a {
+                           border-bottom: none;
+                       }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// Print
+@media print {
+
+    nav.wp-block-navigation,
+    .wp-block-navigation {
+        display: none !important;
+    }
+}

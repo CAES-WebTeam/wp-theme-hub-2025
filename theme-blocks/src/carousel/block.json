@@ -1,0 +1,31 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/carousel",
+	"version": "0.1.0",
+	"title": "CAES Field Report Carousel",
+	"category": "theme",
+	"icon": "slides",
+	"description": "Displays a carousel of hand selected content, or a filtered list.",
+	"example": {},
+	"supports": {
+		"html": false,
+		"interactivity": true
+	},
+	"attributes": {
+		"handSelectPosts": {
+			"type": "boolean",
+			"default": true
+		},
+		"selectedPosts": {
+			"type": "array",
+			"default": []
+		}
+	},
+	"textdomain": "carousel",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+    "viewScriptModule": "file:./view.js"
+}

@@ -3,7 +3,7 @@
     "version": 3,
     "settings": {
         "layout": {
-            "contentSize": "40rem",
+            "contentSize": "45rem",
             "wideSize": "64rem"
         },
         "spacing": {
@@ -127,7 +127,7 @@
                     "name": "Glory Glory"
                 },
                 {
-                    "slug": "oddyssey",
+                    "slug": "odyssey",
                     "color": "#C8D8EB",
                     "name": "Odyssey"
                 },
@@ -152,6 +152,21 @@
                     "name": "Contrast Two"
                 }
             ]
+        },
+        "shadow": {
+            "defaultPresets": false,
+            "presets": [
+                {
+                    "name": "Large",
+                    "slug": "large",
+                    "shadow": "0px 3px 70px rgba(0, 0, 0, 0.15)"
+                },
+                {
+                    "name": "Large Dark",
+                    "slug": "large-dark",
+                    "shadow": "0px 3px 70px rgba(0, 0, 0, 0.25)"
+                }
+            ]
         }
     },
     "styles": {
@@ -164,7 +179,7 @@
                 "typography": {
                     "fontFamily": "var(--wp--preset--font-family--georgia)",
                     "fontWeight": "400",
-                    "lineHeight": "1.5"
+                    "lineHeight": "1.3"
                 }
             },
             "h1": {
@@ -201,11 +216,22 @@
         "blocks": {
             "core/button": {
                 "border": {
-                    "radius": "0px"
+                    "radius": "20rem"
                 },
                 "color": {
                     "background": "#ffffff00",
                     "text": "var(--wp--preset--color--contrast)"
+                },
+                "typography": {
+                    "lineHeight": "1"
+                },
+                "spacing": {
+                    "padding": {
+                        "top": "var(--wp--preset--spacing--30)",
+                        "bottom": "var(--wp--preset--spacing--30)",
+                        "left": "var(--wp--preset--spacing--40)",
+                        "right": "var(--wp--preset--spacing--40)"
+                    }
                 },
                 "elements": {
                     "link": {
@@ -214,7 +240,38 @@
                         }
                     }
                 }
+            },
+            "core/image": {
+                "elements": {
+                    "caption": {
+                        "typography": {
+                            "fontSize": "var(--wp--preset--font-size--small)"
+                        },
+                        "color": {
+                            "background": "var(--wp--preset--color--bulldog-red)",
+                            "text": "var(--wp--preset--color--base)"
+                        },
+                        "spacing": {
+                            "margin": {
+                                "top": "0px"
+                            },
+                            "padding": {
+                                "top": "var(--wp--preset--spacing--30)",
+                                "right": "var(--wp--preset--spacing--40)",
+                                "bottom": "var(--wp--preset--spacing--30)",
+                                "left": "var(--wp--preset--spacing--40)"
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
+    },
+    "templateParts": [
+        {
+            "name": "sidebar",
+            "title": "CAES Hub Sidebar",
+            "area": "uncategorized"
+        }
+    ]
 }
