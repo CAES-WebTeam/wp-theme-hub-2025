@@ -63,6 +63,8 @@ figcaption a {
         img {
             height: 100%;
             position: relative;
+            filter: blur(1.5rem);
+            transform: scale(1.1);
         }
     }
 }
@@ -72,6 +74,7 @@ figcaption a {
     .caes-hub-main-bg {
         display: none !important;
     }
+
     .caes-hub-main-wrapper {
         padding: 0 !important;
         position: unset !important;
@@ -134,7 +137,8 @@ figcaption a {
 
     .caes-hub-left {
         position: sticky !important;
-        z-index: 3;
+        z-index: 9999;
+        background-color: #bd86e4;
         top: 0;
     }
 
@@ -181,6 +185,7 @@ figcaption a {
 
 // Print view
 @media print {
+
     .caes-hub-sidebar,
     .caes-hub-left {
         display: none !important;
@@ -249,14 +254,14 @@ figcaption a {
     border: 0;
 }
 
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 782px) {
     .add-margin-top-mobile {
         margin-top: var(--wp--style--block-gap);
     }
 
 }
 
-@media screen and (min-width: 600px) {
+@media screen and (min-width: 782px) {
     .hide-tablet-desktop {
         display: none !important;
     }

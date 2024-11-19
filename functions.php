@@ -43,116 +43,19 @@ add_action('after_setup_theme', 'remove_default_block_patterns');
 
 /** Unregister API Patterns */
 
-add_filter( 'should_load_remote_block_patterns', '__return_false' );
-
+add_filter('should_load_remote_block_patterns', '__return_false');
 
 /** START CUSTOM BLOCKS FOR THEME **/
 
-// Register Blocks
-function caes_hub_block_init()
+function caes_hub_register_blocks()
 {
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/header-brand',
-		array(
-			'render_callback' => 'caes_hub_header_brand_render',
-		)
-	);
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/content-brand',
-		array(
-			'render_callback' => 'caes_hub_content_brand_render',
-		)
-	);
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/uga-footer',
-		array(
-			'render_callback' => 'caes_hub_uga_footer_render',
-		)
-	);
-
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/action-print',
-		array(
-			'render_callback' => 'caes_hub_action_print',
-		)
-	);
-
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/action-share',
-		array(
-			'render_callback' => 'caes_hub_action_share',
-		)
-	);
-
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/action-save',
-		array(
-			'render_callback' => 'caes_hub_action_save',
-		)
-	);
-
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/post-filter',
-		array(
-			'render_callback' => 'caes_hub_post_filter',
-		)
-	);
-
-	register_block_type(
-		__DIR__ . '/theme-blocks/build/carousel',
-		array(
-			'render_callback' => 'caes_hub_carousel',
-		)
-	);
-};
-
-add_action('init', 'caes_hub_block_init');
-
-function caes_hub_header_brand_render($attributes, $content, $block)
-{
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/header-brand/render.php';
-	return ob_get_clean();
-};
-function caes_hub_content_brand_render($attributes, $content, $block)
-{
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/content-brand/render.php';
-	return ob_get_clean();
+	register_block_type(__DIR__ . '/blocks/build/blocks/action-print');
+	register_block_type(__DIR__ . '/blocks/build/blocks/action-save');
+	register_block_type(__DIR__ . '/blocks/build/blocks/action-share');
+	register_block_type(__DIR__ . '/blocks/build/blocks/carousel');
+	register_block_type(__DIR__ . '/blocks/build/blocks/content-brand');
+	register_block_type(__DIR__ . '/blocks/build/blocks/header-brand');
+	register_block_type(__DIR__ . '/blocks/build/blocks/toc');
+	register_block_type(__DIR__ . '/blocks/build/blocks/uga-footer');
 }
-function caes_hub_uga_footer_render($attributes, $content, $block)
-{
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/uga-footer/render.php';
-	return ob_get_clean();
-};
-
-function caes_hub_action_print($attributes, $content, $block) {
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/action-print/render.php';
-	return ob_get_clean();
-}
-
-function caes_hub_action_share($attributes, $content, $block) {
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/action-share/render.php';
-	return ob_get_clean();
-}
-
-function caes_hub_action_save($attributes, $content, $block) {
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/action-save/render.php';
-	return ob_get_clean();
-}
-
-function caes_hub_post_filter($attributes, $content, $block) {
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/post-filter/render.php';
-	return ob_get_clean();
-}
-
-function caes_hub_carousel($attributes, $content, $block) {
-	ob_start();
-	require get_template_directory() . '/theme-blocks/build/carousel/render.php';
-	return ob_get_clean();
-}
+add_action('init', 'caes_hub_register_blocks');

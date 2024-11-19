@@ -47,6 +47,12 @@
                     "fontFamily": "Oswald, sans-serif",
                     "fontFace": [
                         {
+                            "src": "file:./assets/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs169vgURoZAaRliE.woff2",
+                            "fontWeight": "300",
+                            "fontStyle": "light",
+                            "fontFamily": "Oswald"
+                        },
+                        {
                             "src": "http://hub-dev.local/wp-content/uploads/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs18NvgURoZAaRliE.woff2",
                             "fontWeight": "500",
                             "fontStyle": "normal",

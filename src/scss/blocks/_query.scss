@@ -1,5 +1,7 @@
 @use '../partials/mixins' as *;
 
+// Grid
+
 .caes-hub-post-list-grid {
     &>ul li {
         display: flex;
@@ -9,6 +11,7 @@
         position: relative;
         box-shadow: var(--wp--preset--shadow--large);
         transition: box-shadow 0.3s ease-in-out;
+        width: 100%;
 
         .caes-hub-post-list-grid-info {
             margin: 0;
@@ -16,10 +19,10 @@
         }
 
         // Img hover
-        .caes-hub-post-list-img-container,
-        figure.wp-block-media-text__media {
+        .caes-hub-post-list-img-container {
             overflow: hidden;
             position: relative;
+            width: 100%;
 
             &::after {
                 transition: opacity 0.3s ease-in-out;
@@ -47,6 +50,7 @@
             margin-right: 0.5rem;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
+            z-index: 2;
 
             .caes-hub-action-share__button {
                 @include action-button('../images/share.svg', 25px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
@@ -65,8 +69,7 @@
         &:focus-within {
             box-shadow: var(--wp--preset--shadow--large-dark);
 
-            .caes-hub-post-list-img-container,
-            figure.wp-block-media-text__media {
+            .caes-hub-post-list-img-container {
                 &::after {
                     opacity: 1;
                 }
@@ -95,6 +98,7 @@
                 top: 0;
                 right: 0;
                 bottom: 0;
+                z-index: 1;
             }
         }
     }
@@ -110,6 +114,12 @@
         .caes-hub-content-actions {
             flex-direction: column !important;
         }
+        .caes-hub-post-list-grid-item.is-layout-grid {
+            grid-template-columns: 1fr !important;
+            .caes-hub-post-list-grid-info {
+                order: 1;
+            }
+        }
     }
 }
 
@@ -119,11 +129,23 @@
             &.height-100 {
 
                 .caes-hub-post-list-grid-info,
-                .caes-hub-post-list-img-container,
-                figure.wp-block-media-text__media {
+                .caes-hub-post-list-img-container {
                     height: 100%;
                 }
             }
+
+            &.height-width-100 {
+                .caes-hub-post-list-img-container {
+                    height: 100%;
+                    width: 100%;
+                }
+            }
         }
+    }
+}
+
+@media print {
+    .caes-hub-post-list-grid {
+        display: none;
     }
 }

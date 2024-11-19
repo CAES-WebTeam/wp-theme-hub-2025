@@ -1,0 +1,78 @@
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+
+.wp-block-caes-hub-toc {
+    background: var(--wp--preset--color--odyssey);
+    padding: var(--wp--preset--spacing--60);
+    font-size: var(--wp--preset--font-size--small);
+    a {
+        color: var(--wp--preset--color--contrast);
+    }
+    h2, h3, h4, h5, h6 {
+        font-size: var(--wp--preset--font-size--medium);
+    }
+    ul {
+        padding-inline-start: var(--wp--preset--spacing--40);
+    }
+    ul.list-none {
+        padding-inline-start: 0;
+        list-style: none;
+
+        ul.list-none {
+            padding-inline-start: revert;
+        }
+    }
+    & > *:first-child {
+        margin-top: 0;
+    }
+    & > *:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.sticky-toc {
+    position: fixed;
+    top: var(--wp--style--block-gap);
+    left: -300px; 
+    width: 200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateX(-200%); /* Fully hidden state */
+    transition: transform 0.3s ease-in-out;
+    background: rgba(0, 0, 0, 0.8);
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    z-index: 1000;
+    padding: var(--wp--preset--spacing--50);
+    color: var(--wp--preset--color--base);
+    line-height: 1.3;
+    font-size: var(--wp--preset--font-size--small);
+    a, ul li a {
+        color: var(--wp--preset--color--base);
+        text-decoration: none;
+    }
+    h2, h3, h4, h5, h6 {
+        font-family: var(--wp--preset--font-family--merriweather);
+        font-size: var(--wp--preset--font-size--normal);
+    }
+    ul {
+        list-style: none;
+        li {
+            margin: var(--wp--preset--spacing--20) 0;
+        }
+        padding: 0;
+        ul {
+            padding-left: var(--wp--preset--spacing--40);
+        }
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .sticky-toc {
+      display: none; /* Hide on mobile */
+    }
+  }
