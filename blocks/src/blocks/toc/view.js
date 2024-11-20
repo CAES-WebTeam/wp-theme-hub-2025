@@ -71,6 +71,7 @@ window.addEventListener('load', function () {
 
 	// Flags to track intersection states
 	let isPostVisible = false;
+	let isFeaturedImageOutOfView = false;
 	let isOriginalTocOutOfView = false;
 
 	// Observer for detecting when .caes-hub-content-post enters or exits the viewport
@@ -88,6 +89,23 @@ window.addEventListener('load', function () {
 		);
 
 		postObserver.observe(postElement);
+	}
+
+	// Observer for detecting when the featured image leaves the viewport
+	const featuredImage = document.querySelector('.caes-hub-content-f-img');
+
+	if (featuredImage) {
+		const featuredImageObserver = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					isFeaturedImageOutOfView = !entry.isIntersecting;
+					updateStickyTocVisibility();
+				});
+			},
+			{ threshold: 0 } // Trigger when any part of the featured image enters/exits the viewport
+		);
+
+		featuredImageObserver.observe(featuredImage);	
 	}
 
 	// Observer for detecting when the original TOC leaves the viewport
@@ -110,7 +128,7 @@ window.addEventListener('load', function () {
 			return;
 		}
 
-		if (isPostVisible && isOriginalTocOutOfView) {
+		if (isPostVisible && isOriginalTocOutOfView && isFeaturedImageOutOfView) {
 			// Show sticky TOC
 			const mainRect = mainElement.getBoundingClientRect();
 			stickyToc.style.display = 'block';

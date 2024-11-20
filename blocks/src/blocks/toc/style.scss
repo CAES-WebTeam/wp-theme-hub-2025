@@ -35,8 +35,9 @@
 }
 
 .sticky-toc {
-    display: none;
+    // display: none;
     position: fixed;
+    transform: translateX(-200%);
     top: var(--wp--style--block-gap);
     left: 0;
     z-index: 1000;
