@@ -1,14 +1,13 @@
 <?php
 
-/** Editor Styles **/
-
+/* Editor Styles */
 function caes_hub_editor_styles()
 {
 	add_editor_style('./assets/css/editor.css');
 }
 add_action('after_setup_theme', 'caes_hub_editor_styles');
 
-/** Enqueue style sheet and JavaScript. */
+/* Enqueue style sheet and JavaScript. */
 function caes_hub_styles()
 {
 	wp_enqueue_style(
@@ -21,8 +20,18 @@ function caes_hub_styles()
 }
 add_action('wp_enqueue_scripts', 'caes_hub_styles');
 
-// Adds custom style choices to core blocks with add-block-styles.js
+/* Login styles */
+function caes_hub_login_styles() {
+    wp_enqueue_style(
+        'caes-hub-login-styles',
+		get_theme_file_uri('assets/css/login.css'),
+        [],
+        wp_get_theme()->get('Version')
+    );
+}
+add_action('login_enqueue_scripts', 'caes_hub_login_styles');
 
+/* Add custom style choices to core blocks with add-block-styles.js */
 function add_block_style()
 {
 	wp_enqueue_script(
@@ -34,19 +43,16 @@ function add_block_style()
 add_action('enqueue_block_editor_assets', 'add_block_style');
 
 /* Remove Default Block Patterns */
-
 function remove_default_block_patterns()
 {
 	remove_theme_support('core-block-patterns');
 }
 add_action('after_setup_theme', 'remove_default_block_patterns');
 
-/** Unregister API Patterns */
-
+/* Unregister API Patterns */
 add_filter('should_load_remote_block_patterns', '__return_false');
 
-/** START CUSTOM BLOCKS FOR THEME **/
-
+/* Register Custom Blocks for Theme */
 function caes_hub_register_blocks()
 {
 	register_block_type(__DIR__ . '/blocks/build/blocks/action-print');

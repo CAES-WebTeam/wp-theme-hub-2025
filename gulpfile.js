@@ -9,16 +9,18 @@ gulp.task('watch', function () {
     gulp.watch(['src/scss/**/*.scss']).on(
         'change',
         gulp.series(
-            'clean-shared',
+            'clean-main',
             'clean-editor',
-            'minify-shared',
-            'minify-editor'
+            'clean-login',
+            'minify-main',
+            'minify-editor',
+            'minify-login'
         )
     );
 });
 
-gulp.task('clean-shared', function () {
-    return gulp.src('assets/css/style-shared.min.css', {
+gulp.task('clean-main', function () {
+    return gulp.src('assets/css/main.min.css', {
         read: false,
         allowEmpty: true,
     })
@@ -33,7 +35,15 @@ gulp.task('clean-editor', function () {
         .pipe(clean());
 });
 
-gulp.task('minify-shared', function () {
+gulp.task('clean-login', function () {
+    return gulp.src('assets/css/login.min.css', {
+        read: false,
+        allowEmpty: true,
+    })
+        .pipe(clean());
+});
+
+gulp.task('minify-main', function () {
     return gulp.src('src/scss/main.scss')
         .pipe(sass({
             includePaths: ['./node_modules'],
@@ -44,6 +54,15 @@ gulp.task('minify-shared', function () {
 
 gulp.task('minify-editor', function () {
     return gulp.src('src/scss/editor.scss')
+        .pipe(sass({
+            includePaths: ['./node_modules'],
+        }).on('error', sass.logError))
+        .pipe(cssnano({ zindex: false }))
+        .pipe(gulp.dest('assets/css/'));
+});
+
+gulp.task('minify-login', function () {
+    return gulp.src('src/scss/login.scss')
         .pipe(sass({
             includePaths: ['./node_modules'],
         }).on('error', sass.logError))
@@ -69,10 +88,12 @@ gulp.task('js-bundling', function () {
 gulp.task(
     'default',
     gulp.series(
-        'clean-shared',
+        'clean-main',
         'clean-editor',
-        'minify-shared',
+        'clean-login',
+        'minify-main',
         'minify-editor',
+        'minify-login',
         'js-bundling'
     )
 );

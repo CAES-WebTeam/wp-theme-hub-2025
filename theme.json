@@ -29,7 +29,7 @@
                     "fontFamily": "Merriweather, serif",
                     "fontFace": [
                         {
-                            "src": "http://hub-dev.local/wp-content/uploads/fonts/u-440qyriQwlOrhSvowK_l5OfixNV-bnrw.woff2",
+                            "src": "file:./assets/fonts/u-440qyriQwlOrhSvowK_l5OfixNV-bnrw.woff2",
                             "fontWeight": "400",
                             "fontStyle": "normal",
                             "fontFamily": "Merriweather"
@@ -53,7 +53,7 @@
                             "fontFamily": "Oswald"
                         },
                         {
-                            "src": "http://hub-dev.local/wp-content/uploads/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs18NvgURoZAaRliE.woff2",
+                            "src": "file:./assets/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs18NvgURoZAaRliE.woff2",
                             "fontWeight": "500",
                             "fontStyle": "normal",
                             "fontFamily": "Oswald"
