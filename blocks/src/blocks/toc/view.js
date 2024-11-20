@@ -1,5 +1,5 @@
 window.addEventListener('load', function () {
-	
+
 	/** ADDING IDs TO HEADINGS */
 	// Function to generate a slug from a string
 	function slugify(text) {
@@ -53,74 +53,97 @@ window.addEventListener('load', function () {
 	const originalToc = document.querySelector('.wp-block-caes-hub-toc');
 	if (!originalToc) return;
 
+	// Clone the original TOC to create a sticky version
 	const stickyToc = originalToc.cloneNode(true);
 	stickyToc.classList.add('sticky-toc');
-
-	// Insert sticky TOC right after the original TOC
-	originalToc.insertAdjacentElement('afterend', stickyToc);
+	// Add aria-hidden attribute to the sticky TOC
+	stickyToc.setAttribute('aria-hidden', 'true');
+	// Set tabindex to -1 to prevent focus
+	stickyToc.setAttribute('tabindex', '-1');
+	// Add sticky TOC to the main element
+	const mainElement = document.querySelector('main');
+	mainElement.appendChild(stickyToc);
 
 	// Only apply on desktop
 	function isDesktop() {
 		return window.innerWidth > 768; // Adjust breakpoint as needed
 	}
 
-	let isStickyVisible = false;
+	// Flags to track intersection states
+	let isPostVisible = false;
+	let isOriginalTocOutOfView = false;
 
-	let isStickyHidden = false; // New flag to track if TOC is hidden at the bottom of the content
+	// Observer for detecting when .caes-hub-content-post enters or exits the viewport
+	const postElement = document.querySelector('.caes-hub-content-post');
 
-	function handleScroll() {
-		const tocRect = originalToc.getBoundingClientRect();
-		const mainElement = document.querySelector('main');
-		const mainRect = mainElement.getBoundingClientRect();
-		const contentElement = document.querySelector('.caes-hub-content');
-		const contentRect = contentElement.getBoundingClientRect();
-		const stickyTocRect = stickyToc.getBoundingClientRect();
+	if (postElement) {
+		const postObserver = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					isPostVisible = entry.isIntersecting;
+					updateStickyTocVisibility();
+				});
+			},
+			{ threshold: 0 } // Trigger when any part of the post enters/exits the viewport
+		);
 
-		// Show sticky TOC when original TOC scrolls out of view and not hidden by content bottom
-		if (isDesktop() && tocRect.bottom < 0 && !isStickyVisible && !isStickyHidden) {
+		postObserver.observe(postElement);
+	}
+
+	// Observer for detecting when the original TOC leaves the viewport
+	const tocObserver = new IntersectionObserver(
+		(entries) => {
+			entries.forEach((entry) => {
+				isOriginalTocOutOfView = !entry.isIntersecting;
+				updateStickyTocVisibility();
+			});
+		},
+		{ threshold: 0 } // Trigger when any part of the TOC enters/exits the viewport
+	);
+
+	tocObserver.observe(originalToc);
+
+	// Function to update sticky TOC visibility
+	function updateStickyTocVisibility() {
+		if (!isDesktop()) {
+			stickyToc.style.display = 'none';
+			return;
+		}
+
+		if (isPostVisible && isOriginalTocOutOfView) {
+			// Show sticky TOC
+			const mainRect = mainElement.getBoundingClientRect();
+			stickyToc.style.display = 'block';
 			stickyToc.style.position = 'fixed';
 			stickyToc.style.left = `${mainRect.left}px`;
-			stickyToc.style.top = 'var(--wp--style--block-gap)'; // Adjust top offset as needed
+			stickyToc.style.top = 'var(--wp--style--block-gap)'; // Adjust top offset
 			stickyToc.style.transform = 'translateX(0)';
 			stickyToc.style.transition = 'transform 0.3s ease-in-out';
-			isStickyVisible = true;
-		}
-		// Hide sticky TOC when the original TOC is visible
-		else if (isStickyVisible && tocRect.bottom >= 0) {
-			stickyToc.style.transform = 'translateX(-200%)'; // Move fully out of view
-			isStickyVisible = false;
-			isStickyHidden = false; // Reset hidden state when original TOC is back
-		}
-		// Hide sticky TOC when it reaches the bottom of the content
-		else if (isStickyVisible && stickyTocRect.bottom >= contentRect.bottom) {
-			stickyToc.style.transform = 'translateX(-200%)'; // Slide out
-			isStickyVisible = false;
-			isStickyHidden = true; // Mark as hidden due to reaching content bottom
-		}
-		// Handle scrolling back up: Show sticky TOC if original TOC is out of view and not hidden
-		else if (isStickyHidden && tocRect.bottom < 0 && stickyTocRect.bottom < contentRect.bottom) {
-			stickyToc.style.transform = 'translateX(0)'; // Bring back into view
-			isStickyVisible = true;
-			isStickyHidden = false; // Reset hidden state
+		} else {
+			// Hide sticky TOC
+			stickyToc.style.transform = 'translateX(-200%)';
 		}
 	}
 
-
+	// Handle resize to toggle sticky TOC visibility and update position dynamically
 	function handleResize() {
+		const mainElement = document.querySelector('main');
+		if (!mainElement) return;
+
 		if (!isDesktop()) {
 			stickyToc.style.display = 'none';
 		} else {
-			stickyToc.style.display = 'block';
+			const mainRect = mainElement.getBoundingClientRect();
+			stickyToc.style.left = `${mainRect.left}px`;
+			updateStickyTocVisibility();
 		}
 	}
-
-	window.addEventListener('scroll', handleScroll);
 	window.addEventListener('resize', handleResize);
 
 	// Initialize visibility on load
 	handleResize();
-	handleScroll();
 	/** END ADDING A STICKY TOC WHEN USER SCROLLS PASSED THE ORIGINAL TOC  */
+
 
 	/** ADDING SMOOTH SCROLL */
 	const tocLinks = document.querySelectorAll('a[data-smooth-scroll="true"]');
