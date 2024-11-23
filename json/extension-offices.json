@@ -1,0 +1,34 @@
+{
+  "locations": [
+	{
+	  "name": "Sydney Opera House"
+	},
+	{
+	  "name": "Eiffel Tower"
+	},
+	{
+	  "name": "Statue of Liberty"
+	},
+	{
+	  "name": "Great Wall of China"
+	},
+	{
+	  "name": "Taj Mahal"
+	},
+	{
+	  "name": "Christ the Redeemer"
+	},
+	{
+	  "name": "Mount Everest"
+	},
+	{
+	  "name": "Colosseum"
+	},
+	{
+	  "name": "Pyramids of Giza"
+	},
+	{
+	  "name": "Machu Picchu"
+	}
+  ]
+}

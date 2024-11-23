@@ -1,32 +1,5 @@
 // Navigation block styles
 
-// Breakpoint adjustments
-
-$breakpoint--global-header: 782px;
-
-@media (max-width: $breakpoint--global-header) {
-	.wp-block-navigation__responsive-container-open:not(.always-shown) {
-		display: flex !important;
-	}
-	.wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
-		display: none !important;
-	}
-}
-
-
-@media (min-width: $breakpoint--global-header) {
-	.wp-block-navigation__responsive-container-open:not(.always-shown) {
-		display: none !important;
-	}
-	.wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
-		display: block !important;
-		width: 100%;
-		position: relative;
-		z-index: auto;
-		background-color: inherit;
-	}
-}
-
 // General adjustments
 
 .wp-block-navigation .has-child .wp-block-navigation__submenu-container .wp-block-navigation__submenu-icon {
@@ -82,7 +55,7 @@ $breakpoint--global-header: 782px;
 
 // Mobile menu collapse styles
 
-@media screen and (max-width: $breakpoint--global-header) {
+@media screen and (max-width: 600px) {
 
     .wp-block-navigation {
         .wp-block-navigation__responsive-container-content {
