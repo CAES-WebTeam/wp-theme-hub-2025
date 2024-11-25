@@ -36,9 +36,38 @@
 			flex-direction: row;
 			flex-wrap: wrap;
 		}
+
 		.caes-hub-header-brand-logo {
 			margin: 0;
 			height: 4rem;
+		}
+	}
+}
+
+.caes-hub-header-search {
+	width: 100%;
+	margin-block-start: var(--wp--preset--spacing--30);
+
+	.caes-hub-form__input-button-container .caes-hub-form__input {
+		width: 100%;
+		padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40) var(--wp--preset--spacing--20) calc(var(--wp--preset--spacing--40) + 12px);
+		border: 1px solid var(--wp--preset--color--contrast-two);
+		border-radius: 20rem;
+		font-size: var(--wp--preset--font-size--small);
+		background-image: url(../../../../assets/images/search.svg);
+		background-repeat: no-repeat;
+		background-position: var(--wp--preset--spacing--20) calc(50% + 0.5px);
+	}
+
+	&.caes-hub-header-search--desktop {
+		@media screen and (max-width: 781px) {
+			display: none;
+		}
+	}
+
+	&.caes-hub-header-search--mobile {
+		@media screen and (min-width: 782px) {
+			display: none;
 		}
 	}
 }

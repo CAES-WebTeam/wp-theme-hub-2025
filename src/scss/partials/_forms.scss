@@ -1,4 +1,8 @@
-.caes-hub-form__input, .caes-hub-form__textarea, .caes-hub-form__button {
+/* Styles for form inputs NOT made by the Gutenberg search block */
+
+.caes-hub-form__input,
+.caes-hub-form__textarea,
+.caes-hub-form__button {
     padding: var(--wp--preset--spacing--40);
     font-family: var(--wp-preset-font-family-merriweather);
     line-height: 1;
@@ -6,18 +10,18 @@
 }
 
 .caes-hub-form__input {
-    border: 1px solid var(--wp--preset--color--contrast-two);
+    border: 2px solid var(--wp--preset--color--contrast-two);
     border-radius: 20rem;
 }
 
 .caes-hub-form__textarea {
-    border: 1px solid var(--wp--preset--color--contrast-two);
+    border: 2px solid var(--wp--preset--color--contrast-two);
     border-radius: var(--wp--preset--spacing--40);
 }
 
 .caes-hub-form__button {
-    background-color: var(--wp--preset--color--contrast);
-    border: 3px solid var(--wp--preset--color--contrast);
+    background-color: var(--wp--preset--color--bulldog-red);
+    border: 4px solid var(--wp--preset--color--bulldog-red);
     color: var(--wp--preset--color--base);
 }
 
@@ -26,14 +30,20 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    .caes-hub-form__input, .caes-hub-form__button {
+
+    .caes-hub-form__input,
+    .caes-hub-form__button {
         margin: 0;
     }
+
     .caes-hub-form__input {
         border-right: 0;
         border-radius: 20rem 0 0 20rem;
     }
+
     .caes-hub-form__button {
+        padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--40) var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
         border-radius: 0 20rem 20rem 0;
     }
+
 }

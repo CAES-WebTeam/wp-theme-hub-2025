@@ -85,6 +85,16 @@
 
         }
 
+        &.caes-hub-post-list-grid-horizontal {
+            .caes-hub-post-list-img-container {
+                width: 25vw;
+                height: 100%;
+            }
+            .caes-hub-post-list-grid-info {
+                height: 100%;
+            }
+        }
+
     }
 
     .caes-hub-post-list-grid-title {
@@ -114,12 +124,27 @@
         .caes-hub-content-actions {
             flex-direction: column !important;
         }
+
         .caes-hub-post-list-grid-item.is-layout-grid {
             grid-template-columns: 1fr !important;
+
             .caes-hub-post-list-grid-info {
                 order: 1;
             }
         }
+
+        .caes-hub-post-list-grid-item.caes-hub-post-list-grid-horizontal {
+            flex-direction: column !important;
+            .caes-hub-post-list-img-container {
+                width: 100%;
+                height: auto;
+            }
+            .caes-hub-post-list-grid-info {
+                width: 100%;
+                height: auto;
+            }
+        }
+
     }
 }
 
