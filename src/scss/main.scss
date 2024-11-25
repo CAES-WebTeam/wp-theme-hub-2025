@@ -1,26 +1,276 @@
 // CAES Field Report 2025 Theme Main Styles
 
+@use 'partials/mixins' as *;
+@use 'blocks/_navigation.scss';
+@use 'blocks/_query.scss';
+@use 'blocks/_search.scss';
+
+/* General Overrides */
+
+figcaption a {
+    color: inherit;
+}
+
+// Print view
+@media print {
+    :root :where(.wp-block-image .wp-element-caption, .wp-block-image .wp-block-audio figcaption, .wp-block-image .wp-block-embed figcaption, .wp-block-image .wp-block-gallery figcaption, .wp-block-image .wp-block-image figcaption, .wp-block-image .wp-block-table figcaption, .wp-block-image .wp-block-video figcaption) {
+        color: var(--wp--preset--color--contrast);
+    }
+}
+
+/* Layout */
+
+.caes-hub-content-post {
+    container-type: inline-size;
+    container-name: caespost;
+}
+
+.caes-hub-content-post .alignfull {
+    margin-left: calc(var(--wp--preset--spacing--50)* -1);
+    margin-right: calc(var(--wp--preset--spacing--50)* -1);
+}
+
+.caes-hub-content-post figure.wp-block-image.alignleft {
+    margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+}
+
+.caes-hub-content-post figure.wp-block-image.alignright {
+    margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+}
+
+@container caespost (max-width: 840px) {
+    .caes-hub-content-post figure.wp-block-image.alignleft {
+        margin-inline-start: 0;
+    }
+
+    .caes-hub-content-post figure.wp-block-image.alignright {
+        margin-inline-end: 0;
+    }
+}
+
+/* CAES Hub Main */
+
+.caes-hub-main-bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+
+    .caes-hub-main-bg-f-img {
+        height: 100%;
+
+        img {
+            height: 100%;
+            position: relative;
+            filter: blur(1.5rem);
+            transform: scale(1.1);
+        }
+    }
+}
+
+// Print view
+@media print {
+    .caes-hub-main-bg {
+        display: none !important;
+    }
+
+    .caes-hub-main-wrapper {
+        padding: 0 !important;
+        position: unset !important;
+    }
+}
+
+/* CAES Hub Content */
+
+.caes-hub-content {
+    box-shadow: var(--wp--preset--shadow--large);
+    position: relative;
+}
+
+// Print view
+@media print {
+    .caes-hub-content {
+        box-shadow: none;
+        padding: 0 !important;
+    }
+
+    .caes-hub-right,
+    .caes-hub-right.has-base-two-background-color {
+        background-color: transparent !important;
+    }
+}
+
 /* CAES Hub Sidebar */
 
 @media screen and (max-width: 781px) {
+
+    .caes-hub-content-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+
     .caes-hub-sidebar {
-        flex-direction: row !important;
+        flex-direction: row;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .caes-hub-nav {
+        margin: 0;
+        flex-direction: row;
+    }
+
+    .caes-hub-sidebar-top {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+
+    .caes-hub-sidebar-bottom {
+        display: none;
     }
 }
 
 @media screen and (min-width: 782px) {
-    .caes-hub-sidebar-wrapper,
-    .caes-hub-sidebar {
-        height: calc(100vh - (var(--wp--preset--spacing--40) * 2));
+
+    .caes-hub-left {
+        position: sticky !important;
+        z-index: 9999;
+        background-color: #bd86e4;
+        top: 0;
     }
+
+    .caes-hub-left,
+    .caes-hub-sidebar-wrapper {
+        height: 100vh;
+    }
+
+    .caes-hub-sidebar {
+        height: 100vh;
+    }
+
+    .caes-hub-content-actions {
+        position: absolute;
+        right: 0;
+        top: 0;
+        margin-right: var(--wp--style--block-gap);
+    }
+
+
 }
 
 // If logged in
 @media screen and (min-width: 782px) {
+
     body.logged-in {
-        .caes-hub-sidebar-wrapper,
-        .caes-hub-sidebar {
-            height: calc(100vh - (var(--wp--preset--spacing--40) * 2) - var(--wp-admin--admin-bar--height));
+
+        .caes-hub-left,
+        .caes-hub-sidebar-wrapper {
+            height: calc(100vh - var(--wp-admin--admin-bar--height));
         }
+
+        .caes-hub-left {
+            top: var(--wp-admin--admin-bar--height);
+        }
+
+        .caes-hub-sidebar {
+            height: calc(100vh - var(--wp-admin--admin-bar--height));
+        }
+
+    }
+
+}
+
+// Print view
+@media print {
+
+    .caes-hub-sidebar,
+    .caes-hub-left {
+        display: none !important;
     }
 }
+
+/* CAES Hub Content Footer */
+
+// Print view
+@media print {
+    .caes-hub-content-footer {
+        display: none !important;
+    }
+}
+
+/* CAES Hub Footer */
+
+.caes-hub-footer-logo {
+    max-width: 200px;
+}
+
+// Print view
+@media print {
+
+    .hub-footer {
+        padding: 0 !important;
+    }
+
+    .caes-hub-footer-logo a img,
+    .caes-hub-footer-links,
+    .caes-hub-footer-social,
+    .caes-hub-footer-meta-links {
+        display: none !important;
+    }
+
+    .caes-hub-footer-info {
+        color: var(--wp--preset--color--contrast) !important;
+    }
+
+    .caes-hub-footer-logo a::after {
+        content: "";
+        display: block;
+        background-image: url('../images/caes-logo.png');
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+        width: 100px;
+        height: 100px;
+        print-color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+        -moz-print-color-adjust: exact !important;
+    }
+
+}
+
+/* Helper Classes */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+@media screen and (max-width: 782px) {
+    .add-margin-top-mobile {
+        margin-top: var(--wp--style--block-gap);
+    }
+
+}
+
+@media screen and (min-width: 782px) {
+    .hide-tablet-desktop {
+        display: none !important;
+    }
+}
+
+/* Additional Styles */
+
+@import 'blocks/_custom-block-styles.scss';
+@import 'partials/_action-buttons.scss';
+@import 'partials/_modal.scss';
+@import 'partials/_forms.scss';
