@@ -55,7 +55,7 @@ ul.is-style-caes-hub-list-none {
 .is-style-caes-hub-bell {
     .wp-block-button__link {
         &::before {
-            mask-image: url('../../images/bell.svg');
+            mask-image: url('../../assets/images/bell.svg');
         }
     }
 }
@@ -70,18 +70,18 @@ ul.is-style-caes-hub-list-none {
 
 .caes-hub-action-save__button {
     &::before {
-        mask-image: url('../../images/bookmark.svg');
+        mask-image: url('../../assets/images/bookmark.svg');
     }
 }
 
 .caes-hub-action-share__button {
     &::before {
-        mask-image: url('../../images/share.svg');
+        mask-image: url('../../assets/images/share.svg');
     }
 }
 .caes-hub-action-print__button {
     &::before {
-        mask-image: url('../../images/print.svg');
+        mask-image: url('../../assets/images/print.svg');
     }
 }
 
