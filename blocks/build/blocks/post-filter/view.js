@@ -1,7 +1,7 @@
 var __webpack_exports__ = {};
-/*!*********************************!*\
-  !*** ./src/post-filter/view.js ***!
-  \*********************************/
+/*!****************************************!*\
+  !*** ./src/blocks/post-filter/view.js ***!
+  \****************************************/
 document.addEventListener('DOMContentLoaded', function () {
   const categorySelect = document.getElementById('category-select');
   const queryLoopContainer = document.querySelector('.wp-block-query');
