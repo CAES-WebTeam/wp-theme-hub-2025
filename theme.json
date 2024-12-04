@@ -138,6 +138,11 @@
                     "name": "Odyssey"
                 },
                 {
+                    "slug": "olympic",
+                    "color": "#004E60",
+                    "name": "Olympic"
+                },
+                {
                     "slug": "base",
                     "color": "#FFFFFF",
                     "name": "Base"
