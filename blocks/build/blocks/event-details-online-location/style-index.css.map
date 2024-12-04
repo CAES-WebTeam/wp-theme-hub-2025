@@ -1,0 +1,1 @@
+{"version":3,"file":"blocks/event-details-online-location/style-index.css","mappings":";;;AAAA,sBAAwB,wBAExB,C","sources":["webpack://theme-blocks/./src/blocks/event-details-online-location/style.scss"],"sourcesContent":[".event-detail-virtual { margin:0 0 5px !important; }"],"names":[],"sourceRoot":""}

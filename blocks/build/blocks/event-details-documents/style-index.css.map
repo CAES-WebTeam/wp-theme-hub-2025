@@ -1,0 +1,1 @@
+{"version":3,"file":"blocks/event-details-documents/style-index.css","mappings":";;;AACA,wDAA8B,wBAK9B,C","sources":["webpack://theme-blocks/./src/blocks/event-details-documents/style.scss"],"sourcesContent":[".event-detail-document-link { margin:0 0 5px !important; }\n.event-detail-document-file { margin:0 0 5px !important; }"],"names":[],"sourceRoot":""}

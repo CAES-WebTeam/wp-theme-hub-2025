@@ -1,0 +1,1 @@
+{"version":3,"file":"blocks/event-details-cost/style-index.css","mappings":";;;AAAA,mBAAqB,wBAErB,C","sources":["webpack://theme-blocks/./src/blocks/event-details-cost/style.scss"],"sourcesContent":[".event-detail-cost { margin:0 0 5px !important; }"],"names":[],"sourceRoot":""}
