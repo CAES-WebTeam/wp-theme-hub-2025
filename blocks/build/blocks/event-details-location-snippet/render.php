@@ -1,6 +1,8 @@
 <?php
 // Get the current post ID
 $post_id = get_the_ID();
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 
 // Check and set location if event type is CAES
@@ -15,4 +17,13 @@ endif;
 ?>
 
 
-<?php echo !empty($location) ? '<div class="event-detail-location">' . $location . '</div>' : ''; ?>
+<?php 
+if (!empty($location)) {
+    echo '<div ' . $attrs . '>';
+    echo '<h3 class="event-details-title">Location</h3>';
+    echo '<div class="event-details-content">';
+    echo $location;
+    echo '</div>'; // Close event-details-content
+    echo '</div>'; // Close wrapper
+}
+?>

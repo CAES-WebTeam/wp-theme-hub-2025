@@ -12,7 +12,14 @@
     "renderTemplate": "./render.php"
   },
   "supports": {
-    "anchor": true
+    "anchor": true,
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true
+    }
   },
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",

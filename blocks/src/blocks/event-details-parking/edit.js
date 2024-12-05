@@ -34,10 +34,12 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-details-parking"
-				attributes={attributes}
-			/>
+			<div {...useBlockProps()}>
+				<h3 class="event-details-title">Parking Info</h3>
+				<div class="event-details-content">
+					Free parking in the lot
+				</div>
+			</div>
 		</div>
 	);
 }

@@ -31,13 +31,11 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
+export default function Edit() {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-details-cost"
-				attributes={attributes}
-			/>
+			 <h3 class="event-details-title">Cost</h3>
+			 <div class="event-details-content">$20.50</div>
 		</div>
 	);
 }

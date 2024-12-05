@@ -21,8 +21,6 @@ import { useBlockProps } from '@wordpress/block-editor';
  */
 import './editor.scss';
 
-import ServerSideRender from '@wordpress/server-side-render';
-
 /**
  * The edit function describes the structure of your block in the context of the
  * editor. This represents what the editor will render when the block is used.
@@ -31,13 +29,14 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
+export default function Edit() {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-details-location"
-				attributes={attributes}
-			/>
+			<h3 class="event-details-title">Location</h3>
+			<div class="event-details-content">
+				Room 101<br />
+				Located on the second floor, near the elevator.
+			</div>
 		</div>
 	);
 }

@@ -2,20 +2,28 @@
 // Get the current post ID
 $post_id = get_the_ID();
 
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+
 ?>
 
-<h3>Additional Documents</h3>
+<?php 
+if (!empty(get_field('documents', $post_id))) {
+    echo '<div ' . $attrs . '>';
+    echo '<h3 class="event-details-title">Additional Documents</h3>';
+    echo '<div class="event-details-content">';
 
-<?php if( !empty(get_field('documents', $post_id)) ): ?>
-	<?php foreach(get_field('documents', $post_id) as $item): ?>
+    foreach (get_field('documents', $post_id) as $item) {
+        if ($item['document_type'] == 'link') {
+            echo '<a href="' . esc_url($item['link']) . '">' . esc_html($item['link']) . '</a><br />';
+        }
 
-		<?php  if($item['document_type']=='link'): ?>
-		<div class="event-detail-document-link"><a href="<?php echo $item['link']; ?>"><?php echo $item['link']; ?></a></div>
-		<?php endif; ?>
+        if ($item['document_type'] == 'file') {
+            echo '<a href="' . esc_url($item['file']['url']) . '">' . esc_html($item['file']['title']) . '</a><br />';
+        }
+    }
 
-		<?php  if($item['document_type']=='file'): ?>
-		<div class="event-detail-document-file"><a href="<?php echo $item['file']['url']; ?>"><?php echo $item['file']['title']; ?></a></div>
-		<?php endif; ?>
-
-	<?php endforeach; ?>
-<?php endif; ?>
+    echo '</div>'; // Close event-details-content
+    echo '</div>'; // Close wrapper
+}
+?>

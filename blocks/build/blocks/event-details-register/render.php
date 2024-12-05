@@ -2,6 +2,8 @@
 
 // Get the current post ID
 $post_id = get_the_ID();
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 // Get the current date in 'd/m/Y' format
 $today = date('d/m/Y');
@@ -17,13 +19,14 @@ $current_date = DateTime::createFromFormat('d/m/Y', $today);
 
 // Check if today's date is between the start and end dates
 if ( $start_date && $end_date && $current_date >= $start_date && $current_date <= $end_date ) {
-
     // Get the registration link from ACF
     $registration_link = get_field('registration_link', $post_id);
 
     // Display the button if the registration link is set
     if ( $registration_link ) {
+        echo '<div ' . $attrs . '>';
         echo '<a href="' . esc_url( $registration_link ) . '" class="event-registration-button" target="outside">Register Now</a>';
+        echo '</div>';
     }
 }
 ?>

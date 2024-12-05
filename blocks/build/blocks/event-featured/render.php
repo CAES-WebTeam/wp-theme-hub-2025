@@ -12,6 +12,9 @@ $selected_series = get_field('series');
 // Get the current post ID if we're on a single event post
 $current_post_id = is_singular('events') ? get_the_ID() : null;
 
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+
 // Initialize the base query arguments
 $args = array(
     'post_type' => 'events',
@@ -134,7 +137,7 @@ if ( $event_range == 'specific' && get_field('events') ):
     $events = array_column($filtered_events, 'event');
 endif;
 
-echo '<div class="events-block">';
+echo '<div ' . $attrs . '>';
 
 // Loop through Events
 foreach( $events as $event ): 

@@ -2,6 +2,8 @@
 // Get the current post ID
 $post_id = get_the_ID();
 
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 // Check and set location if event type is CAES
 if( !empty(get_field('location_caes_room', $post_id)) AND get_field('event_type', $post_id) == 'CAES' ):
@@ -19,7 +21,21 @@ if( !empty(get_field('location_details', $post_id)) ):
 endif;
 ?>
 
-
-<h3>Location</h3>
-<?php echo !empty($location) ? '<div class="event-detail-location">' . $location . '</div>' : ''; ?>
-<?php echo !empty($details) ? '<div class="event-detail-location-details">' . $details . '</div>' : ''; ?>
+<?php 
+if (!empty($location) || !empty($details)) {
+    echo '<div ' . $attrs . '>';
+    echo '<h3 class="event-details-title">Location</h3>';
+    echo '<div class="event-details-content">';
+    if (!empty($location)) {
+        echo $location;
+    }
+    if (!empty($location) && !empty($details)) {
+        echo '<br />';
+    }
+    if (!empty($details)) {
+        echo $details;
+    }
+    echo '</div>'; // Close event-details-content
+    echo '</div>'; // Close wrapper
+}
+?>

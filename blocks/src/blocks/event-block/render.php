@@ -15,6 +15,9 @@ $number_of_posts = get_field('number_of_posts') ?? 4;
 // Get the current post ID if we're on a single event post
 $current_post_id = is_singular('events') ? get_the_ID() : null;
 
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+
 
 // Initialize the base query arguments
 $args = array(
@@ -140,7 +143,9 @@ endif;
 
 if ( $event_range == 'for_you' ): $for_you = true; else: $for_you = false; endif;
 
-echo '<div class="events-block">';
+echo '<div ' . $attrs . '>';
+
+// echo '<div>';
 
 // Loop through Events
 foreach( $events as $event ):

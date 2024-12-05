@@ -1,0 +1,58 @@
+/* EVENT DETAIL BLOCK STYLES */
+
+.event-details-title {
+    font-family: var(--wp--preset--font-family--oswald);
+    font-weight: 400;
+    font-size: var(--wp--preset--font-size--medium);
+    text-transform: uppercase;
+    margin-block-start: 0;
+    margin-block-end: var(--wp--preset--spacing--30);
+    display: flex;
+    align-items: center;
+
+    &::before {
+        content: "";
+        display: block;
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: 50%;
+        height: 1rem;
+        width: 1rem;
+        margin-right: var(--wp--preset--spacing--30);
+    }
+}
+
+.event-details-content {
+    padding-left: calc(var(--wp--preset--spacing--30) + 1rem);
+}
+
+// Add SVG for each section title
+.wp-block-caes-hub-event-details-contact .event-details-title::before {
+    background-image: url('../images/events-contact.svg');
+}
+
+.wp-block-caes-hub-event-details-cost .event-details-title::before {
+    background-image: url('../images/events-cost.svg');
+}
+
+.wp-block-caes-hub-event-details-date .event-details-title::before,
+.wp-block-caes-hub-event-details-date-time .event-details-title::before {
+    background-image: url('../images/events-date.svg');
+}
+
+.wp-block-caes-hub-event-details-documents .event-details-title::before {
+    background-image: url('../images/events-doc.svg');
+}
+
+.wp-block-caes-hub-event-details-location .event-details-title::before,
+.wp-block-caes-hub-event-details-location-snippet .event-details-title::before {
+    background-image: url('../images/events-location.svg');
+}
+
+.wp-block-caes-hub-event-details-online-location .event-details-title::before {
+    background-image: url('../images/events-online.svg');
+}
+
+.wp-block-caes-hub-event-details-parking .event-details-title::before {
+    background-image: url('../images/events-parking.svg');
+}

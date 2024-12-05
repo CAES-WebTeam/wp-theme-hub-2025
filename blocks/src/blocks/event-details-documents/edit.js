@@ -34,10 +34,11 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-details-documents"
-				attributes={attributes}
-			/>
+			<h3 class="event-details-title">Additional Documents</h3>
+			<div class="event-details-content">
+				<a href="#">https://example.com/document1</a> <br />
+				<a href="#">File Document 1</a> 
+			</div>
 		</div>
 	);
 }

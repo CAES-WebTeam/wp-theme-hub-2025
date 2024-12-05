@@ -2,6 +2,9 @@
 // Get the current post ID
 $post_id = get_the_ID();
 
+// Attributes for wrapper
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+
 // Set Start Date
 if( !empty(get_field('start_date', $post_id)) ):
 	$date_object = DateTime::createFromFormat('Ymd', get_field('start_date', $post_id));
@@ -27,6 +30,22 @@ if( !empty(get_field('end_time', $post_id)) ):
 endif;
 ?>
 
-<h3>Date/Time</h3>
-<?php echo !empty($date) ? '<div class="event-detail-date">' . $date . '</div>' : ''; ?>
-<?php echo !empty($time) ? '<div class="event-detail-time">' . $time . '</div>' : ''; ?>
+
+<?php 
+if (!empty($date) || !empty($time)) { 
+    echo '<div ' . $attrs . '>';
+    echo '<h3 class="event-details-title">Date & Time</h3>';
+    echo '<div class="event-details-content">';
+    if (!empty($date)) {
+        echo $date;
+    }
+    if (!empty($date) && !empty($time)) {
+        echo '<br />';
+    }
+    if (!empty($time)) {
+        echo $time;
+    }
+    echo '</div>';
+    echo '</div>';
+} 
+?>

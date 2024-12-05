@@ -31,13 +31,14 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
+export default function Edit() {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-details-date-time"
-				attributes={attributes}
-			/>
+			<h3 class="event-details-title">Date & Time</h3>
+			<div class="event-details-content">
+				January 15, 2024 - January 20, 2024<br />
+				10:00 AM - 2:00 PM
+			</div>
 		</div>
 	);
 }
