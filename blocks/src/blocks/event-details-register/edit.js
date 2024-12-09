@@ -34,10 +34,7 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-details-register"
-				attributes={attributes}
-			/>
+			<a href="#" class="event-registration-button" target="outside">Register Now</a>
 		</div>
 	);
 }

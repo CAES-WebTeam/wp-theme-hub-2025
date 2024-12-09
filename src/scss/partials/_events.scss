@@ -13,12 +13,13 @@
     &::before {
         content: "";
         display: block;
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: 50%;
         height: 1rem;
         width: 1rem;
         margin-right: var(--wp--preset--spacing--30);
+        background-color: currentColor;
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: 50%;
     }
 }
 
@@ -28,31 +29,44 @@
 
 // Add SVG for each section title
 .wp-block-caes-hub-event-details-contact .event-details-title::before {
-    background-image: url('../images/events-contact.svg');
+    mask-image: url('../images/events-contact.svg');
 }
 
 .wp-block-caes-hub-event-details-cost .event-details-title::before {
-    background-image: url('../images/events-cost.svg');
+    mask-image: url('../images/events-cost.svg');
 }
 
 .wp-block-caes-hub-event-details-date .event-details-title::before,
 .wp-block-caes-hub-event-details-date-time .event-details-title::before {
-    background-image: url('../images/events-date.svg');
+    mask-image: url('../images/events-date.svg');
 }
 
 .wp-block-caes-hub-event-details-documents .event-details-title::before {
-    background-image: url('../images/events-doc.svg');
+    mask-image: url('../images/events-doc.svg');
 }
 
 .wp-block-caes-hub-event-details-location .event-details-title::before,
 .wp-block-caes-hub-event-details-location-snippet .event-details-title::before {
-    background-image: url('../images/events-location.svg');
+    mask-image: url('../images/events-location.svg');
 }
 
 .wp-block-caes-hub-event-details-online-location .event-details-title::before {
-    background-image: url('../images/events-online.svg');
+    mask-image: url('../images/events-online.svg');
 }
 
 .wp-block-caes-hub-event-details-parking .event-details-title::before {
-    background-image: url('../images/events-parking.svg');
+    mask-image: url('../images/events-parking.svg');
+}
+
+// Featured image
+.wp-block-caes-hub-event-details-featured-image {
+    height: 100%;
+    width: 100%;
+    aspect-ratio: 3/2;
+    background-color: var(--wp--preset--color--base-three);
+    img {
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+    }
 }
