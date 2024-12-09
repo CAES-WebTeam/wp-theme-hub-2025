@@ -153,6 +153,11 @@
                     "name": "Base Two"
                 },
                 {
+                    "slug": "base-three",
+                    "color": "#DEDEDE",
+                    "name": "Base Three"
+                },
+                {
                     "slug": "contrast",
                     "color": "#000000",
                     "name": "Contrast"

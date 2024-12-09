@@ -62,3 +62,17 @@ ul.is-style-caes-hub-list-none {
    font-weight: 400;
    text-transform: uppercase;
 }
+
+// Another heading style that adds a full width underline
+.is-style-caes-hub-full-underline {
+    position: relative;
+    &::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background-color: var(--wp--preset--color--base-three);
+    }
+}

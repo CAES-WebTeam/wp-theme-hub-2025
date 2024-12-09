@@ -17,3 +17,8 @@ wp.blocks.registerBlockStyle( 'core/heading', {
     name: 'caes-hub-section-heading',
     label: 'Section Heading'
 } );
+
+wp.blocks.registerBlockStyle( 'core/heading', {
+    name: 'caes-hub-full-underline',
+    label: 'Full Width Underline'
+} );
