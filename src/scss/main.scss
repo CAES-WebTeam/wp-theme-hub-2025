@@ -157,6 +157,13 @@ figcaption a {
         right: 0;
         top: 0;
         margin-right: var(--wp--style--block-gap);
+        &.caes-hub-content-actions-in-body {
+            position: unset;
+            float: right;
+            margin-top: 0;
+            margin-right: var(--wp--preset--spacing--50) !important;
+            margin-left: var(--wp--preset--spacing--40) !important;
+        }
     }
 
 

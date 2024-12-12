@@ -1,1 +1,0 @@
-{"version":3,"file":"blocks/event-details-date/style-index.css","mappings":";;;AACA,sCAAqB,wBAKrB,C","sources":["webpack://theme-blocks/./src/blocks/event-details-date/style.scss"],"sourcesContent":[".event-detail-date { margin:0 0 5px !important; }\n.event-detail-time { margin:0 0 5px !important; }"],"names":[],"sourceRoot":""}

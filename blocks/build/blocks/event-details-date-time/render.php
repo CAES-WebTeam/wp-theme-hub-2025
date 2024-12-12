@@ -5,6 +5,9 @@ $post_id = get_the_ID();
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
+$dateAsSnippet = $block['dateAsSnippet'];
+$showTime = $block['showTime'];
+
 // Set Start Date
 if( !empty(get_field('start_date', $post_id)) ):
 	$date_object = DateTime::createFromFormat('Ymd', get_field('start_date', $post_id));
@@ -32,20 +35,26 @@ endif;
 
 
 <?php 
-if (!empty($date) || !empty($time)) { 
+if (!empty($date) || (!empty($time) && $showTime && !$dateAsSnippet)) { 
     echo '<div ' . $attrs . '>';
-    echo '<h3 class="event-details-title">Date & Time</h3>';
-    echo '<div class="event-details-content">';
-    if (!empty($date)) {
-        echo $date;
+    if ($dateAsSnippet) {
+        // If dateAsSnippet is true, display date as heading
+        echo '<h3 class="event-details-title">' . $date . '</h3>';
+    } else {
+        // Otherwise, include "Date" or "Date & Time" in the heading
+        echo '<h3 class="event-details-title">Date' . ($showTime ? ' & Time' : '') . '</h3>';
+        echo '<div class="event-details-content">';
+        if (!empty($date)) {
+            echo $date;
+        }
+        if (!empty($date) && !empty($time) && $showTime && !$dateAsSnippet) {
+            echo '<br />';
+        }
+        if (!empty($time) && $showTime && !$dateAsSnippet) {
+            echo $time;
+        }
+        echo '</div>';
     }
-    if (!empty($date) && !empty($time)) {
-        echo '<br />';
-    }
-    if (!empty($time)) {
-        echo $time;
-    }
-    echo '</div>';
     echo '</div>';
 } 
 ?>

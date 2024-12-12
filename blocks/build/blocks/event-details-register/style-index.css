@@ -1,6 +1,6 @@
 /*!*********************************************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/blocks/event-details-register/style.scss ***!
   \*********************************************************************************************************************************************************************************************************************************************************************/
-.event-registration-button{background:#fff;border-radius:5px;display:inline-block;font-weight:700;margin:10px 0;padding:5px 15px;text-decoration:none;text-transform:uppercase}
+.event-registration-button{background:var(--wp--preset--color--base);border-radius:20rem;color:var(--wp--preset--color--contrast)!important;display:inline-block;font-weight:600;padding:var(--wp--preset--spacing--20) var(--wp--preset--spacing--60);text-decoration:none}
 
 /*# sourceMappingURL=style-index.css.map*/

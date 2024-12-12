@@ -22,7 +22,18 @@
       "margin": true
     }
   },
-  "editorScript": "file:./index.js",
+  "attributes": {
+    "dateAsSnippet": {
+      "type": "boolean",
+      "default": false
+    },
+    "showTime": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "textdomain": "content-brand",
+	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css"
 }

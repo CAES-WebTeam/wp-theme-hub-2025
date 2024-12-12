@@ -1,1 +1,5 @@
-.event-detail-parking { margin:0 0 5px !important; }
+.wp-block-caes-hub-event-details-description {
+    & > *:first-child {
+        margin-top: 0;
+    }
+}

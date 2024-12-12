@@ -5,6 +5,20 @@
  */
 ?>
 
-<div <?php echo get_block_wrapper_attributes(); ?>>
-	<?php echo '<img loading="lazy" class="caes-hub-content-logo" src="' . esc_url(get_template_directory_uri() . '/assets/images/caes-logo-horizontal.png') . '" alt="UGA College of Agricultural &amp; Environmental Sciences" /> ' ?>
+<?php
+$version =  $attributes['version'];
+$customWidth =  $attributes['customWidth'];
+?>
+
+<div <?php echo get_block_wrapper_attributes(); ?> style="width: <?php echo esc_attr($customWidth); ?>;">
+	<?php 
+	$image = '';
+	if ($version === 'dark') {
+		$image = get_template_directory_uri() . '/assets/images/caes-logo-horizontal.png';
+	} elseif ($version === 'light') {
+		$image = get_template_directory_uri() . '/assets/images/caes-logo-horizontal-cw.png';
+	}
+	if ($image): ?>
+		<img loading="lazy" class="caes-hub-content-logo" src="<?php echo esc_url($image); ?>" alt="UGA College of Agricultural &amp; Environmental Sciences" />
+	<?php endif; ?>
 </div>

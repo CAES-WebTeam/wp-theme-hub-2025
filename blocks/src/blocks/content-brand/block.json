@@ -11,6 +11,16 @@
 	"supports": {
 		"html": false
 	},
+	"attributes": {
+		"version": {
+			"type": "string",
+			"default": "dark"
+		},
+		"customWidth": {
+			"type": "string",
+			"default": "150px"
+		}
+	},
 	"textdomain": "content-brand",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",

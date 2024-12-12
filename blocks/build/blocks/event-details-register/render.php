@@ -25,7 +25,7 @@ if ( $start_date && $end_date && $current_date >= $start_date && $current_date <
     // Display the button if the registration link is set
     if ( $registration_link ) {
         echo '<div ' . $attrs . '>';
-        echo '<a href="' . esc_url( $registration_link ) . '" class="event-registration-button" target="outside">Register Now</a>';
+        echo '<a href="' . esc_url( $registration_link ) . '" class="event-registration-button" target="outside">Register</a>';
         echo '</div>';
     }
 }

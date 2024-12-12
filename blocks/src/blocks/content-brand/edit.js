@@ -11,7 +11,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, SelectControl, __experimentalUnitControl as UnitControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -31,13 +32,44 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
+const Edit = ({ attributes, setAttributes }) => {
+
+	const units = [
+        { value: 'px', label: 'px', default: 0 },
+        { value: '%', label: '%', default: 10 },
+        { value: 'em', label: 'em', default: 0 },
+		{ value: 'rem', label: 'rem', default: 0 },
+    ];
+
 	return (
-		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/content-brand"
-				attributes={attributes}
-			/>
-		</div>
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<SelectControl
+						label={__("Version", "caes-hub")}
+						options={[
+							{ label: 'Light', value: 'light' },
+							{ label: 'Dark', value: 'dark' }
+						]}
+						help={__("Logo should be easily visible over the background color.", "caes-hub")}
+						value={attributes.version}
+						onChange={(val) => setAttributes({ version: val })}
+					/>
+					<UnitControl
+						label={__("Custom width", "caes-hub")}
+						value={attributes.customWidth}
+						onChange={(val) => setAttributes({ customWidth: val })}
+						units={units}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div {...useBlockProps()}>
+				<ServerSideRender
+					block="caes-hub/content-brand"
+					attributes={attributes}
+				/>
+			</div>
+		</>
 	);
 }
+export default Edit;

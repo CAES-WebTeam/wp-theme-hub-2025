@@ -1,1 +1,9 @@
-.event-registration-button { background:#fff; display:inline-block; padding:5px 15px; margin:10px 0; border-radius:5px; text-transform:uppercase; text-decoration: none; font-weight:bold; }
+.event-registration-button {
+    background: var(--wp--preset--color--base);
+    color: var(--wp--preset--color--contrast) !important;
+    display: inline-block;
+    padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--60);
+    border-radius: 20rem;
+    text-decoration: none;
+    font-weight: 600;
+}

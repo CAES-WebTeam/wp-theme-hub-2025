@@ -11,7 +11,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -31,14 +32,46 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit() {
+const Edit = ({ attributes, setAttributes }) => {
 	return (
-		<div {...useBlockProps()}>
-			<h3 class="event-details-title">Date & Time</h3>
-			<div class="event-details-content">
-				January 15, 2024 - January 20, 2024<br />
-				10:00 AM - 2:00 PM
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<ToggleControl
+						label={__("Display date as snippet", "caes-hub")}
+						checked={attributes.dateAsSnippet}
+						onChange={(val) => setAttributes({
+							dateAsSnippet: val,
+							showTime: val ? false : attributes.showTime
+						})}
+					/>
+					<ToggleControl
+						label={__("Display time", "caes-hub")}
+						checked={attributes.showTime}
+						onChange={(val) => setAttributes({
+							showTime: val,
+							dateAsSnippet: val ? false : attributes.dateAsSnippet
+						})}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div {...useBlockProps()}>
+				{attributes.dateAsSnippet ? (
+					<h3 className="event-details-title">January 15, 2024</h3>
+				) : (
+					<h3 className="event-details-title">
+						Date{attributes.showTime ? " & Time" : ""}
+					</h3>
+				)}
+				{!attributes.dateAsSnippet && (
+					<div className="event-details-content">
+							January 15, 2024<br />
+							{attributes.showTime && "10:00 AM - 2:00 PM"}
+					</div>
+				)}
 			</div>
-		</div>
+		</>
 	);
 }
+
+export default Edit;

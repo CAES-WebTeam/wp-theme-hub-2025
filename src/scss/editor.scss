@@ -89,6 +89,10 @@ ul.is-style-caes-hub-list-none {
     position: absolute !important;
     top: 0 !important;
     right: 0 !important;
+    &.caes-hub-content-actions-in-body {
+        position: unset !important;
+        position: absolute !important;
+    }
 }
 
 .caes-hub-main-bg {

@@ -11,7 +11,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -29,14 +30,36 @@ import './editor.scss';
  *
  * @return {Element} Element to render.
  */
-export default function Edit() {
+const Edit = ({ attributes, setAttributes }) => {
 	return (
-		<div {...useBlockProps()}>
-			<h3 class="event-details-title">Location</h3>
-			<div class="event-details-content">
-				Room 101<br />
-				Located on the second floor, near the elevator.
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<ToggleControl
+						label={__("Display locaton as snippet", "caes-hub")}
+						checked={attributes.locationAsSnippet}
+						onChange={(val) => setAttributes({
+							locationAsSnippet: val
+						})}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div {...useBlockProps()}>
+				{attributes.locationAsSnippet ? (
+					<h3 className="event-details-title">Room 101</h3>
+				) : (
+					<h3 className="event-details-title">
+						Location
+					</h3>
+				)}
+				{!attributes.locationAsSnippet && (
+					<div class="event-details-content">
+						Room 101 <br />
+						Located on the second floor, near the elevator.
+					</div>
+				)}
 			</div>
-		</div>
+		</>
 	);
 }
+export default Edit;
