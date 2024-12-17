@@ -11,7 +11,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -29,13 +30,35 @@ import './editor.scss';
  *
  * @return {Element} Element to render.
  */
-export default function Edit() {
+const Edit = ({ attributes, setAttributes }) => {
 	return (
-		<div {...useBlockProps()}>
-			<h3 class="event-details-title">Online Location</h3>
-			<div class="event-details-content">
-				Zoom Meeting
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<ToggleControl
+						label={__("Display online locaton as snippet", "caes-hub")}
+						checked={attributes.onlineAsSnippet}
+						onChange={(val) => setAttributes({
+							onlineAsSnippet: val
+						})}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div {...useBlockProps()}>
+				{attributes.onlineAsSnippet ? (
+					<h3 className="event-details-title">Virtual Event</h3>
+				) : (
+					<h3 className="event-details-title">
+						Online Location
+					</h3>
+				)}
+				{!attributes.onlineAsSnippet && (
+					<div class="event-details-content">
+						<p><a href="https://youtube.com">https://youtube.com</a></p>
+					</div>
+				)}
 			</div>
-		</div>
+		</>
 	);
 }
+export default Edit;

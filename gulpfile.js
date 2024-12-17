@@ -76,7 +76,7 @@ gulp.task('js-bundling', function () {
             mode: "production",
             entry: {
                 main: './src/js/main.js',
-                "add-block-styles": './src/js/add-block-styles.js'
+                "editor-mods": './src/js/editor-mods.js'
             },
             output: {
                 filename: '[name].js',

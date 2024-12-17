@@ -19,12 +19,11 @@ function caes_hub_styles() {
 }
 add_action('wp_enqueue_scripts', 'caes_hub_styles');
 
-
 // Adds custom style choices to core blocks with add-block-styles.js
 function add_block_style() {
 	wp_enqueue_script(
-		'add-block-style',
-		get_theme_file_uri() . '/assets/js/add-block-styles.js',
+		'editor-mods',
+		get_theme_file_uri() . '/assets/js/editor-mods.js',
 		array('wp-blocks', 'wp-dom-ready', 'wp-edit-post')
 	);
 }
@@ -180,4 +179,56 @@ if (!function_exists('isWithinRadius')) {
 		$distance = calculateDistance($userLat, $userLon, $targetLat, $targetLon);
 		return $distance <= $radius;
 	}
+}
+
+// add_filter( 'pre_render_block', 'wpfieldwork_upcoming_events_pre_render_block', 10, 2 );
+function wpfieldwork_upcoming_events_pre_render_block( $pre_render, $parsed_block ) {
+
+	// Verify it's the block that should be modified using the namespace
+	if ( !empty($parsed_block['attrs']['namespace']) && 'upcoming-events' === $parsed_block['attrs']['namespace'] ) {
+  
+	  add_filter(
+		'query_loop_block_query_vars',
+		function( $query, $block ) {
+		  // get today's date in Ymd format
+		  $today = date('Ymd');
+  
+		  // the meta key was start_date, compare to today to get event's from today or later
+		  $query['meta_key'] = 'start_date';
+		  $query['meta_value'] = $today;
+		  $query['meta_compare'] = '>=';
+  
+		  // also likely want to set order by this key in ASC so next event listed first
+		  $query['orderby'] = 'meta_value';
+		  $query['order'] = 'ASC';
+		  
+		  return $query;
+		},
+		10,
+		2
+	  );
+	}
+	return $pre_render;
+  }
+
+  add_filter( 'rest_events_query', 'wpfieldwork_rest_upcoming_events', 10, 2 );
+
+function wpfieldwork_rest_upcoming_events( $args, $request ) {
+  
+  // grab value from the request
+  $dateFilter = $request['filterByDate'];
+  
+  // proceed if it exists
+  // add same meta query arguments
+  if ( $dateFilter ) {
+    $today = date('Ymd');
+    $args['meta_key'] = 'start_date';
+    $args['meta_value'] = $today;
+    $args['meta_compare'] = '>=';
+    $args['orderby'] = 'meta_value';
+    $args['order'] = 'ASC';
+  }
+  
+  return $args;
+
 }
