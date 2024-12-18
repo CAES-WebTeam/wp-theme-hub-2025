@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-register",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Register",
+  "title": "Event Register",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Register for the CAES Field Report 2025 theme.",

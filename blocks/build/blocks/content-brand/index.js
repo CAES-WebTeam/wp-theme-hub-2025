@@ -255,7 +255,7 @@ module.exports = window["wp"]["serverSideRender"];
   \*********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/content-brand","version":"0.1.0","title":"CAES Field Report Content Brand","category":"theme","icon":"block-default","description":"Displays appropriate logo for content on articles and publications.","example":{},"supports":{"html":false},"attributes":{"version":{"type":"string","default":"dark"},"customWidth":{"type":"string","default":"150px"}},"textdomain":"content-brand","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/content-brand","version":"0.1.0","title":"Content Brand","category":"theme","icon":"block-default","description":"Displays appropriate logo for content on articles and publications. Made for the CAES Field Report theme.","example":{},"supports":{"html":false},"attributes":{"version":{"type":"string","default":"dark"},"customWidth":{"type":"string","default":"150px"}},"textdomain":"content-brand","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 

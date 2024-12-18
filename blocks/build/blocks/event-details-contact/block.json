@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-contact",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Contact",
+  "title": "Event Contact",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Contact for the CAES Field Report 2025 theme.",

@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/header-brand",
   "version": "0.1.0",
-  "title": "CAES Field Report Header Brand",
+  "title": "Header Brand",
   "category": "theme",
   "icon": "block-default",
   "description": "Header branding for the CAES Field Report 2025 theme.",

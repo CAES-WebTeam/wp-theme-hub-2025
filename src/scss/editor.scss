@@ -79,9 +79,16 @@ ul.is-style-caes-hub-list-none {
         mask-image: url('../../assets/images/share.svg');
     }
 }
+
 .caes-hub-action-print__button {
     &::before {
         mask-image: url('../../assets/images/print.svg');
+    }
+}
+
+.caes-hub-action-ics__button {
+    &::before {
+        mask-image: url('../../assets/images/ics.svg');
     }
 }
 

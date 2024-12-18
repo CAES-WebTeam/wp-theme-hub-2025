@@ -194,7 +194,7 @@ module.exports = window["wp"]["serverSideRender"];
   \********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/action-print","version":"0.1.0","title":"CAES FR Action Icons: Print","category":"theme","icon":"block-default","description":"Button that prompts browser to print the page.","supports":{"html":false},"textdomain":"action-print","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/action-print","version":"0.1.0","title":"Action Icons: Print","category":"theme","icon":"block-default","description":"Button that prompts browser to print the page. Made for the CAES Field Report theme.","supports":{"html":false},"textdomain":"action-print","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
 
 /***/ })
 

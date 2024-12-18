@@ -194,7 +194,7 @@ module.exports = window["wp"]["serverSideRender"];
   \********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/action-share","version":"0.1.0","title":"CAES FR Action Icons: Share","category":"theme","icon":"block-default","description":"Button that reveals modal for different sharing options.","example":{},"supports":{"html":false,"interactivity":true},"textdomain":"action-share","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScriptModule":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/action-share","version":"0.1.0","title":"Action Icons: Share","category":"theme","icon":"block-default","description":"Button that reveals modal for different sharing options. Made for the CAES Field Report theme.","example":{},"supports":{"html":false,"interactivity":true},"textdomain":"action-share","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScriptModule":"file:./view.js"}');
 
 /***/ })
 

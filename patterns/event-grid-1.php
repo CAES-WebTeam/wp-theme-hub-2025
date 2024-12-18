@@ -24,7 +24,7 @@
 
                 <!-- wp:post-title {"isLink":true,"className":"caes-hub-post-list-grid-title","style":{"elements":{"link":{"color":{"text":"var:preset|color|contrast"}}}},"textColor":"contrast","fontSize":"medium"} /-->
 
-                <!-- wp:caes-hub/event-details-date-time {"dateAsSnippet":true} /-->
+                <!-- wp:caes-hub/event-details-date-time {"heading":false} /-->
             </div>
             <!-- /wp:group -->
         </div>

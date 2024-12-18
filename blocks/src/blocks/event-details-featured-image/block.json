@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-featured-image",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Featured Image",
+  "title": "Event Featured Image",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Featured Image for the CAES Field Report 2025 theme.",

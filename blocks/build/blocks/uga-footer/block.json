@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/uga-footer",
   "version": "0.1.0",
-  "title": "CAES Field Report UGA Footer",
+  "title": "UGA Footer",
   "category": "widgets",
   "icon": "block-default",
   "description": "UGA footer option for the UGA CAES Field Report 2025 theme.",

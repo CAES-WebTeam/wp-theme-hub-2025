@@ -3,10 +3,10 @@
 	"apiVersion": 3,
 	"name": "caes-hub/post-filter",
 	"version": "0.1.0",
-	"title": "CAES Field Report Post Filter",
+	"title": "Post Filter",
 	"category": "widgets",
 	"icon": "block-default",
-	"description": "Filters post lists on the frontend.",
+	"description": "Filters post lists on the frontend. Made for the CAES Field Report theme.",
     "parent": ["core/query"],
 	"supports": {
 		"html": false

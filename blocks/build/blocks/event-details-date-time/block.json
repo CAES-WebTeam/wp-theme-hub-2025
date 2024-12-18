@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-date-time",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Date/Time",
+  "title": "Event Date/Time",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Date/Time for the CAES Field Report 2025 theme.",
@@ -27,9 +27,17 @@
       "type": "boolean",
       "default": false
     },
+    "showDate": {
+      "type": "boolean",
+      "default": true
+    },
     "showTime": {
       "type": "boolean",
       "default": false
+    },
+    "heading": {
+      "type": "boolean",
+      "default": true
     }
   },
   "textdomain": "content-brand",

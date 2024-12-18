@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/action-save",
   "version": "0.1.0",
-  "title": "CAES FR Action Icons: Save",
+  "title": "Action Icons: Save",
   "category": "theme",
   "icon": "block-default",
-  "description": "Button that saves content to visitor's favorites.",
+  "description": "Button that saves content to visitor's favorites. Made for the CAES Field Report theme.",
   "example": {},
   "supports": {
     "html": false

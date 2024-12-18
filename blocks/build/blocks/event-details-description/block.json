@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-description",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Description",
+  "title": "Event Description",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Description for the CAES Field Report 2025 theme.",

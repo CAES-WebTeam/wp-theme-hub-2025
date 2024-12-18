@@ -31,6 +31,10 @@
     padding-left: calc(var(--wp--preset--spacing--30) + 1rem);
 }
 
+.wp-block-caes-hub-event-details-date-time > .event-details-content {
+    padding-left: 0;
+}
+
 // Add SVG for each section title
 .wp-block-caes-hub-event-details-contact .event-details-title::before {
     mask-image: url('../images/events-contact.svg');

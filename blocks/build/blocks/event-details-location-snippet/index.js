@@ -216,7 +216,7 @@ module.exports = window["wp"]["i18n"];
   \**************************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/event-details-location-snippet","version":"0.1.0","title":"CAES Field Report Event Location Snippet","category":"theme","icon":"block-default","description":"Event Location Snippet for the CAES Field Report 2025 theme.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true},"attributes":{"locationAsSnippet":{"type":"boolean","default":false}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/event-details-location-snippet","version":"0.1.0","title":"Event Location Snippet","category":"theme","icon":"block-default","description":"Event Location Snippet for the CAES Field Report 2025 theme.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true},"attributes":{"locationAsSnippet":{"type":"boolean","default":false}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

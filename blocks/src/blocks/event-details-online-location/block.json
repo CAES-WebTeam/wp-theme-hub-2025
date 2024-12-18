@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-online-location",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Online Location",
+  "title": "Event Online Location",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Online Location for the CAES Field Report 2025 theme.",

@@ -3,10 +3,10 @@
 	"apiVersion": 3,
 	"name": "caes-hub/action-print",
 	"version": "0.1.0",
-	"title": "CAES FR Action Icons: Print",
+	"title": "Action Icons: Print",
 	"category": "theme",
 	"icon": "block-default",
-	"description": "Button that prompts browser to print the page.",
+	"description": "Button that prompts browser to print the page. Made for the CAES Field Report theme.",
 	"supports": {
 		"html": false
 	},

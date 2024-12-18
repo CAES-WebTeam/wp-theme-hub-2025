@@ -3,10 +3,10 @@
 	"apiVersion": 3,
 	"name": "caes-hub/toc",
 	"version": "0.1.0",
-	"title": "CAES Field Report Table of Contents",
+	"title": "Table of Contents",
 	"category": "widgets",
 	"icon": "list-view",
-	"description": "Displays a table of contents based on page headings.",
+	"description": "Displays a table of contents based on page headings. Made for the CAES Field Report theme.",
 	"example": {},
 	"supports": {
 		"align": true,

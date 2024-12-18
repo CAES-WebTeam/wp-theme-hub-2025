@@ -7,6 +7,12 @@ $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 $dateAsSnippet = $block['dateAsSnippet'];
 $showTime = $block['showTime'];
+$showDate = $block['showDate'];
+$heading = $block['heading'];
+
+// Initialize variables
+$date = '';
+$time = '';
 
 // Set Start Date
 if( !empty(get_field('start_date', $post_id)) ):
@@ -33,28 +39,37 @@ if( !empty(get_field('end_time', $post_id)) ):
 endif;
 ?>
 
+<div <?php echo $attrs; ?>>
+    <?php if ($heading): ?>
+        <?php if (!$showDate && !$showTime): ?>
+            <!-- Message when heading is ON, but neither date nor time is selected -->
+            <p class="event-details-message">
+                <?php echo esc_html__('Please select either "Display date" or "Display time".', 'caes-hub'); ?>
+            </p>
+        <?php elseif ($dateAsSnippet): ?>
+            <!-- Display heading with date as snippet -->
+            <h3 class="event-details-title">
+                <?php echo !empty($date) ? esc_html($date) : esc_html__('No date available', 'caes-hub'); ?>
+            </h3>
+        <?php else: ?>
+            <!-- Heading with "Date" or "Date & Time" -->
+            <h3 class="event-details-title">
+                <?php echo esc_html__('Date', 'caes-hub') . ($showTime ? esc_html__(' & Time', 'caes-hub') : ''); ?>
+            </h3>
+        <?php endif; ?>
+    <?php endif; ?>
 
-<?php 
-if (!empty($date) || (!empty($time) && $showTime && !$dateAsSnippet)) { 
-    echo '<div ' . $attrs . '>';
-    if ($dateAsSnippet) {
-        // If dateAsSnippet is true, display date as heading
-        echo '<h3 class="event-details-title">' . $date . '</h3>';
-    } else {
-        // Otherwise, include "Date" or "Date & Time" in the heading
-        echo '<h3 class="event-details-title">Date' . ($showTime ? ' & Time' : '') . '</h3>';
-        echo '<div class="event-details-content">';
-        if (!empty($date)) {
-            echo $date;
-        }
-        if (!empty($date) && !empty($time) && $showTime && !$dateAsSnippet) {
-            echo '<br />';
-        }
-        if (!empty($time) && $showTime && !$dateAsSnippet) {
-            echo $time;
-        }
-        echo '</div>';
-    }
-    echo '</div>';
-} 
-?>
+    <?php if (!$dateAsSnippet && ($showDate || $showTime)): ?>
+        <!-- Render content -->
+        <div class="event-details-content">
+            <?php if ($showDate && !empty($date)): ?>
+                <?php echo esc_html($date); ?>
+            <?php endif; ?>
+
+            <?php if ($showTime && !empty($time)): ?>
+                <?php if ($showDate): ?><br /><?php endif; ?>
+                <?php echo esc_html($time); ?>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>

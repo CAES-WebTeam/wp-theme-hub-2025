@@ -250,7 +250,7 @@ module.exports = window["wp"]["serverSideRender"];
   \******************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/uga-footer","version":"0.1.0","title":"CAES Field Report UGA Footer","category":"widgets","icon":"block-default","description":"UGA footer option for the UGA CAES Field Report 2025 theme.","supports":{"html":false},"attributes":{"login":{"type":"string","default":"true"},"submitComplaintLink":{"type":"string","default":"false"}},"textdomain":"uga-footer","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/uga-footer","version":"0.1.0","title":"UGA Footer","category":"widgets","icon":"block-default","description":"UGA footer option for the UGA CAES Field Report 2025 theme.","supports":{"html":false},"attributes":{"login":{"type":"string","default":"true"},"submitComplaintLink":{"type":"string","default":"false"}},"textdomain":"uga-footer","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
 
 /***/ })
 

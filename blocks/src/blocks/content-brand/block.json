@@ -3,10 +3,10 @@
 	"apiVersion": 3,
 	"name": "caes-hub/content-brand",
 	"version": "0.1.0",
-	"title": "CAES Field Report Content Brand",
+	"title": "Content Brand",
 	"category": "theme",
 	"icon": "block-default",
-	"description": "Displays appropriate logo for content on articles and publications.",
+	"description": "Displays appropriate logo for content on articles and publications. Made for the CAES Field Report theme.",
 	"example": {},
 	"supports": {
 		"html": false

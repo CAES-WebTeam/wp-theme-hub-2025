@@ -18,7 +18,7 @@
     }
 }
 
-@mixin action-button($url, $width, $height, $base-color, $hover-color, $spacing) {
+@mixin action-button($url, $icon-width, $icon-height, $base-color, $hover-color, $spacing, $button-width, $hover-width, $label-hover-width) {
 
     display: flex;
     flex-direction: row;
@@ -29,14 +29,14 @@
     border-radius: 20rem;
     background: transparent;
     transition: all 0.3s ease-in-out;
-    width: 46px;
+    width: $button-width;
     justify-content: center;
 
     &::before {
         content: "";
         display: inline-block;
-        width: $width;
-        height: $height;
+        width: $icon-width;
+        height: $icon-height;
         background-color: $base-color;
         mask-image: url($url);
         mask-size: contain;
@@ -61,7 +61,7 @@
     &:hover,
     &:focus {
         background-color: $base-color;
-        width: 100px;
+        width: $hover-width;
         padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--20) var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
 
         &::before {
@@ -69,7 +69,7 @@
         }
 
         .label {
-            width: 47px;
+            width: $label-hover-width;
             height: var(--wp--preset--font-size--normal);
             visibility: visible;
             opacity: 1;

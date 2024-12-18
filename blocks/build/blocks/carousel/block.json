@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/carousel",
   "version": "0.1.0",
-  "title": "CAES Field Report Carousel",
+  "title": "Carousel",
   "category": "theme",
   "icon": "slides",
-  "description": "Displays a carousel of hand selected content, or a filtered list.",
+  "description": "Displays a carousel of hand selected content, or a filtered list. Made for the CAES Field Report theme.",
   "example": {},
   "supports": {
     "html": false,

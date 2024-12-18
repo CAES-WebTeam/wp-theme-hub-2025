@@ -53,15 +53,19 @@
             z-index: 2;
 
             .caes-hub-action-share__button {
-                @include action-button('../images/share.svg', 25px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
+                @include action-button('../images/share.svg', 25px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px, 46px, 100px, 46px);
             }
 
             .caes-hub-action-print__button {
-                @include action-button('../images/print.svg', 21px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
+                @include action-button('../images/print.svg', 21px, 19.70px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px, 46px, 100px, 46px);
             }
 
             .caes-hub-action-save__button {
-                @include action-button('../images/bookmark.svg', 16px, 21.47px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px);
+                @include action-button('../images/bookmark.svg', 16px, 21.47px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px, 46px, 100px, 46px);
+            }
+
+            .caes-hub-action-ics__button {
+                @include action-button('../images/ics.svg', 16px, 21.47px, var(--wp--preset--color--base), var(--wp--preset--color--bulldog-red), 5px, 46px, 160px, 106px);
             }
         }
 

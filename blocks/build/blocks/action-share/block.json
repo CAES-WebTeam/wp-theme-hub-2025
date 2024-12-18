@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/action-share",
   "version": "0.1.0",
-  "title": "CAES FR Action Icons: Share",
+  "title": "Action Icons: Share",
   "category": "theme",
   "icon": "block-default",
-  "description": "Button that reveals modal for different sharing options.",
+  "description": "Button that reveals modal for different sharing options. Made for the CAES Field Report theme.",
   "example": {},
   "supports": {
     "html": false,

@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/event-details-location-snippet",
   "version": "0.1.0",
-  "title": "CAES Field Report Event Location Snippet",
+  "title": "Event Location Snippet",
   "category": "theme",
   "icon": "block-default",
   "description": "Event Location Snippet for the CAES Field Report 2025 theme.",
