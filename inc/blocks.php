@@ -22,8 +22,11 @@ function caes_hub_block_init()
 	// Register Post Filter
 	register_block_type(get_template_directory() . '/blocks/build/blocks/post-filter' );
 
-	// Register Build Carousel
+	// Register Carousel
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel' );
+
+	// Register Table of Contents
+	register_block_type(get_template_directory() . '/blocks/build/blocks/toc' );
 
 	// Register Event Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-form');

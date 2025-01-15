@@ -31,7 +31,7 @@
     padding-left: calc(var(--wp--preset--spacing--30) + 1rem);
 }
 
-.wp-block-caes-hub-event-details-date-time > .event-details-content {
+.wp-block-caes-hub-event-details-date-time > .event-details-content:first-child {
     padding-left: 0;
 }
 
