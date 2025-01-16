@@ -28,3 +28,12 @@ add_filter('get_search_form', function($form) {
     </form>';
     return $form;
 });
+
+// Enable the REST API for Shorthand post type, makes it available in block editor query loop
+function shorthand_rest_api($args, $post_type) {
+    if ($post_type === 'shorthand_story') { // Replace with the actual CPT slug
+        $args['show_in_rest'] = true;
+    }
+    return $args;
+}
+add_filter('register_post_type_args', 'shorthand_rest_api', 10, 2);
