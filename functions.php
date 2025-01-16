@@ -31,7 +31,7 @@ add_filter('get_search_form', function($form) {
 
 // Enable the REST API for Shorthand post type, makes it available in block editor query loop
 function shorthand_rest_api($args, $post_type) {
-    if ($post_type === 'shorthand_story') { // Replace with the actual CPT slug
+    if ($post_type === 'shorthand_story') {
         $args['show_in_rest'] = true;
     }
     return $args;
