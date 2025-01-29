@@ -143,8 +143,8 @@ figcaption a {
     .caes-hub-left {
         position: sticky !important;
         z-index: 9999;
-        background-color: #bd86e4;
         top: 0;
+        box-shadow: var(--wp--preset--shadow--small);
     }
 
     .caes-hub-left,
