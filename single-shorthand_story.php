@@ -1,38 +1,72 @@
-<?php 
-// Custom Header Function to Prevent Site Title from Displaying
-function my_custom_header() {
-    get_template_part( 'header', 'shorthand_story' );
-}
-?>
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
 
-<?php my_custom_header(); ?>
-
-<?php
-// Check to see if there is a password set against the post
-if ( post_password_required( $post->ID ) ) {
-	get_shorthand_password_form();
-} else {
-	while ( have_posts() ) :
+<head>
+	<meta charset="<?php bloginfo('charset'); ?>">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title><?php wp_title('|', true, 'right'); ?></title>
+	<?php
+	// Check for the post before generating content
+	if (have_posts()) {
 		the_post();
-		$meta = get_post_meta( $post->ID );
-		?>
-		<?php echo get_shorthandinfo( $meta, 'story_body' ); ?>
-	<div id="extraHTML">
-		<?php echo get_shorthandinfo( $meta, 'extra_html' ); ?>
-		</div>
+		$meta = get_post_meta($post->ID);
+	}
+
+	// Generate block content after the meta is available
+	// $content = '<!-- wp:group -->';
+	// $content .= '<div class="caes-hub-columns">';
+
+	// $content .= '<!-- wp:column -->';
+	// $content .= '<div class="caes-hub-left" style="flex-basis:222px; background-color: var(--wp--preset--color--base);">';
+	// $sidebar = do_blocks('<!-- wp:template-part {"slug":"sidebar","theme":"wp-theme-hub-2025","area":"uncategorized","className":"caes-hub-sidebar-wrapper"} /-->');
+	// $content .= $sidebar; // Use sidebar block here
+	// $content .= '</div>';
+	// $content .= '<!-- /wp:column -->';
+
+	// $content .= '<!-- wp:column -->';
+	// $content .= '<div class="caes-hub-right" style="flex-basis: 0; flex-grow: 1;">';
+	// $content .= get_shorthandinfo($meta, 'story_body');
+	// $content .= '<div id="extraHTML">';
+	// $content .= get_shorthandinfo($meta, 'extra_html');
+	// $content .= '</div>';
+	// $content .= '</div>';
+	// $content .= '<!-- /wp:column -->';
+
+	// $content .= '</div>';
+	// $content .= '<!-- /wp:group -->';
+
+	$content = '<!-- wp:columns {"style":{"spacing":{"blockGap":{"top":"0","left":"0"},"margin":{"top":"0","bottom":"0"}}}} -->
+<div class="wp-block-columns" style="margin-top:0;margin-bottom:0"><!-- wp:column {"width":"222px","className":"caes-hub-left","backgroundColor":"base"} --><div class="wp-block-column caes-hub-left has-base-background-color has-background" style="flex-basis:222px"><!-- wp:template-part {"slug":"sidebar","theme":"wp-theme-hub-2025","area":"uncategorized","className":"caes-hub-sidebar-wrapper"} /--></div>
+<!-- /wp:column --><!-- wp:column {"width":"","className":"caes-hub-right has-background","backgroundColor":"base-two"} --><div class="wp-block-column caes-hub-right has-background has-base-two-background-color"><!-- wp:group {"tagName":"main","metadata":{"name":"caes-hub-main-wrapper"},"className":"caes-hub-main-wrapper caes-hub-shorthand","style":{"spacing":{"blockGap":"0"}}} --><main class="wp-block-group caes-hub-main-wrapper caes-hub-shorthand">';
+	$content .= get_shorthandinfo($meta, 'story_body');
+	$content .= '<div id="extraHTML">';
+	$content .= get_shorthandinfo($meta, 'extra_html');
+	$content .= '</div>';
+	$content .= '</main><!-- /wp:group --><!-- wp:template-part {"slug":"footer","theme":"wp-theme-hub-2025"} /--></div><!-- /wp:column --></div><!-- /wp:columns -->';
+
+	$final_content = do_blocks($content);
+
+	wp_head(); ?>
+</head>
+
+<body <?php body_class(); ?>>
+	<?php
+	// Now we can safely check for password protection and process content
+	if (post_password_required($post->ID)) {
+		get_shorthand_password_form();
+	} else {
+		// Output the final content generated above
+		echo $final_content;
+
+		// Output additional styles
+	?>
 		<style type="text/css">
-		<?php echo get_shorthandoption( 'sh_css' ); ?>
+			<?php echo get_shorthandoption('sh_css'); ?>
 		</style>
-		<?php
-	endwhile;
-}
-?>
+	<?php
+	}
+	?>
+	<?php wp_footer(); ?>
+</body>
 
-<?php 
-// Custom Footer Function to Prevent Footer from Displaying
-function my_custom_footer() {
-    get_template_part( 'footer', 'shorthand_story' );
-}
-?>
-
-<?php my_custom_footer(); ?>
+</html>

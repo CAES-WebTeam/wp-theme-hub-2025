@@ -154,6 +154,9 @@ figcaption a {
 
     .caes-hub-sidebar {
         height: 100vh;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .caes-hub-content-actions {
@@ -286,3 +289,4 @@ figcaption a {
 @import 'partials/_events.scss';
 @import 'partials/_modal.scss';
 @import 'partials/_forms.scss';
+@import 'partials/_shorthand.scss';

@@ -1,0 +1,5 @@
+/* Overrides that are needed for the PHP Shorthand template. */
+
+.caes-hub-shorthand {
+    margin-block-end: calc(-1 * var(--wp--preset--spacing--50));
+}
