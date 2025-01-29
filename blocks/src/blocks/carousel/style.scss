@@ -1,4 +1,7 @@
 $widthForNavControl: 200px;
+$mobileHeightCarouselNav: 100px;
+$mobileHeightCarouselControl: 50px;
+$mobileHeightFieldReport: 112px;
 
 .wp-block-caes-hub-carousel {
     position: relative;
@@ -231,10 +234,10 @@ body.logged-in .wp-block-caes-hub-carousel__inner-wrapper {
 
 @media (max-width: 600px) {
     .wp-block-caes-hub-carousel {
-        height: 70vh;
+        // height: 70vh;
         h1 {
-            top: calc(40% - 15px);
-            left: var(--wp--preset--spacing--20);
+            top: var(--wp--preset--spacing--40);
+            left: var(--wp--preset--spacing--40);
             font-size: var(--wp--preset--font-size--medium);
             padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
 
@@ -253,13 +256,16 @@ body.logged-in .wp-block-caes-hub-carousel__inner-wrapper {
     }
 
     .wp-block-caes-hub-carousel__inner-wrapper {
-        height: 35vh;
-        overflow: visible;
+        height: calc(100vh - $mobileHeightFieldReport);
+    }
+
+    body.logged-in .wp-block-caes-hub-carousel__inner-wrapper {
+        height: calc(100vh - $mobileHeightFieldReport - var(--wp-admin--admin-bar--height));
     }
 
     .caes-hub-carousel-slides {
         height: 100%;
-        overflow: visible;
+        // overflow: visible;
     }
 
     .caes-hub-carousel-slide {
@@ -269,12 +275,13 @@ body.logged-in .wp-block-caes-hub-carousel__inner-wrapper {
     }
 
     .caes-hub-carousel-slide__content {
-        top: 75%;
-        width: calc(100% - (4 * var(--wp--preset--spacing--40)));
+        width: calc(100% - (var(--wp--preset--spacing--40) * 6));
+        height: auto;
+        max-height: calc(100% - $mobileHeightCarouselNav - $mobileHeightFieldReport - $mobileHeightCarouselControl - 27.4px - var(--wp--preset--spacing--40));
+        top: calc(var(--wp--preset--spacing--40) + 27.4px);
+        left: calc(var(--wp--preset--spacing--40) * 2);
         padding: var(--wp--preset--spacing--70) var(--wp--preset--spacing--40) var(--wp--preset--spacing--40);
-        p {
-            display: none;
-        }
+        overflow: hidden;
         a {
             margin-top: var(--wp--preset--spacing--20);
         }
@@ -283,10 +290,22 @@ body.logged-in .wp-block-caes-hub-carousel__inner-wrapper {
         }
     }
 
+    body.logged-in .caes-hub-carousel-slide__content {
+        height: auto;
+        max-height: calc(100% - $mobileHeightCarouselNav - $mobileHeightFieldReport - $mobileHeightCarouselControl - 27.4px - var(--wp--preset--spacing--40));
+        overflow: hidden;
+    }
+
+    .wp-block-caes-hub-content-brand {
+       width: 110px !important
+    }
+
     .caes-hub-carousel-controls {
-        display: none;
-        bottom: 80px;
-        width: calc($widthForNavControl * 0.8);
+        bottom: calc($mobileHeightCarouselNav);
+        gap: var(--wp--preset--spacing--20);
+        height: $mobileHeightCarouselControl;
+        width: 100%;
+        left: 0;
 
         button {
             width: 40px;
@@ -296,11 +315,10 @@ body.logged-in .wp-block-caes-hub-carousel__inner-wrapper {
     }
 
     .caes-hub-carousel-nav ul {
-        display: none;
-        height: 100px;
+        height: $mobileHeightCarouselNav;
 
         button {
-            font-size: var(--wp--preset--font-size--small);
+            font-size: var(--wp--preset--font-size--medium);
             width: calc($widthForNavControl * 0.7);
             padding: 0 var(--wp--preset--spacing--20);
         }
