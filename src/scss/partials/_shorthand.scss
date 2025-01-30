@@ -4,14 +4,16 @@
     margin-block-end: calc(-1 * var(--wp--preset--spacing--50));
 }
 
-@media not print {
+@media not print and (min-width: 600px) {
     .BackgroundScrollmation[data-attach="during"] {
         left: 222px !important;
         width: calc(100% - 222px);
     }
 }
 
-.Scrollpoints__media[data-attach="during"] {
-    left: 222px !important;
-    width: calc(100% - 222px);
+@media (min-width: 600px) {
+    .Scrollpoints__media[data-attach="during"] {
+        left: 222px !important;
+        width: calc(100% - 222px);
+    }
 }
