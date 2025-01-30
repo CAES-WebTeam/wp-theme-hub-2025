@@ -6,12 +6,12 @@
 
 @media not print {
     .BackgroundScrollmation[data-attach="during"] {
-        left: 222px;
+        left: 222px !important;
         width: calc(100% - 222px);
     }
 }
 
 .Scrollpoints__media[data-attach="during"] {
-    left: 222px;
+    left: 222px !important;
     width: calc(100% - 222px);
 }
