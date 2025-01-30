@@ -3,3 +3,15 @@
 .caes-hub-shorthand {
     margin-block-end: calc(-1 * var(--wp--preset--spacing--50));
 }
+
+@media not print {
+    .BackgroundScrollmation[data-attach="during"] {
+        left: 222px;
+        width: calc(100% - 222px);
+    }
+}
+
+.Scrollpoints__media[data-attach="during"] {
+    left: 222px;
+    width: calc(100% - 222px);
+}
