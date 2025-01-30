@@ -2,14 +2,11 @@
 
 .caes-hub-shorthand {
     margin-block-end: calc(-1 * var(--wp--preset--spacing--50));
-    @media not print, (min-width: 781px) {
+    @media (min-width: 781px) {
         .BackgroundScrollmation[data-attach="during"] {
             left: 222px;
             width: calc(100% - 222px);
         }
-    }
-    
-    @media (min-width: 781px) {
         .Scrollpoints__media[data-attach="during"] {
             left: 222px;
             width: calc(100% - 222px);
