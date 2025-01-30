@@ -1,0 +1,66 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/hand-picked-post",
+	"version": "0.1.0",
+	"title": "Hand Picked Post",
+	"category": "widgets",
+	"icon": "block-default",
+	"description": "Displays a hand selected post.",
+	"example": {},
+	"supports": {
+		"align": true,
+		"html": false,
+		"color": {
+			"background": true,
+			"text": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"shadow": true,
+		"layout": {
+			"allowOrientation": true
+		}
+	},
+	"attributes": {
+		"postId": {
+            "type": "number",
+            "default": 0
+        },
+        "postType": {
+            "type": "string",
+            "default": "post"
+        },
+        "queryId": {
+            "type": "number",
+            "default": 100
+        },
+		"tagName": {
+			"type": "string",
+			"default": "div"
+		},
+		"namespace": {
+			"type": "string"
+		},
+		"layout": {
+			"type": "object",
+			"default": {
+				"allowOrientation": true
+			}
+		}
+	},
+	"providesContext": {
+        "postId": "postId",
+        "postType": "postType",
+        "queryId": "queryId"
+    },
+	"textdomain": "hand-picked-post",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

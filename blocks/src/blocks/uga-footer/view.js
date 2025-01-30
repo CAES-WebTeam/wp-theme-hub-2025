@@ -21,5 +21,5 @@
  */
  
 /* eslint-disable no-console */
-console.log("Hello World! (from create-block-uga-footer block)");
+// console.log("Hello World! (from create-block-uga-footer block)");
 /* eslint-enable no-console */

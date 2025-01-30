@@ -61,7 +61,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /* eslint-disable no-console */
-console.log('action-share is here');
+// console.log('action-share is here');
 /* eslint-enable no-console */
 
 const {

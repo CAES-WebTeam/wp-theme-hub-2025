@@ -1,7 +1,7 @@
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
 /* eslint-disable no-console */
-console.log('action-share is here');
+// console.log('action-share is here');
 /* eslint-enable no-console */
 
 const { state } = store("action-share", {

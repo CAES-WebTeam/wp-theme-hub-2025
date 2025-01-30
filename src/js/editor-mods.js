@@ -25,6 +25,21 @@ wp.blocks.registerBlockStyle( 'core/heading', {
     label: 'Full Width Underline'
 } );
 
+wp.blocks.registerBlockStyle( 'core/post-title', {
+  name: 'caes-hub-section-heading',
+  label: 'Section Heading'
+} );
+
+wp.blocks.registerBlockStyle( 'core/post-title', {
+  name: 'caes-hub-full-underline',
+  label: 'Full Width Underline'
+} );
+
+wp.blocks.registerBlockStyle( 'core/separator', {
+  name: 'caes-hub-partial-underline',
+  label: 'Partial Width Underline'
+})
+
 // ADD BLOCK VARIATIONS
 
 const eventsVariation = 'upcoming-events';
