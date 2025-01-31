@@ -48,5 +48,17 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-contact');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-featured-image');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-gallery');
+
+	// Register Publication Blocks
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-block');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-authors');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-history');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-references');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-related-news');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-related-pubs');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-resources');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-type');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-pdf');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-pub-number');
 }
-add_action('init', 'caes_hub_block_init');
+add_action('init', 'caes_hub_block_init'); 
