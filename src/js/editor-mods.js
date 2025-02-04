@@ -1,9 +1,13 @@
 // ADD BLOCK STYLES
 
+// List Editor Styles
+
 wp.blocks.registerBlockStyle( 'core/list', {
     name: 'caes-hub-list-none',
     label: 'List Style: None'
 } );
+
+// Button Editor Styles
 
 wp.blocks.registerBlockStyle( 'core/button', {
     name: 'caes-hub-red-border',
@@ -15,6 +19,8 @@ wp.blocks.registerBlockStyle( 'core/button', {
     label: 'Black Border'
 } );
 
+// Heading Editor Styles
+
 wp.blocks.registerBlockStyle( 'core/heading', {
     name: 'caes-hub-section-heading',
     label: 'Section Heading'
@@ -24,6 +30,8 @@ wp.blocks.registerBlockStyle( 'core/heading', {
     name: 'caes-hub-full-underline',
     label: 'Full Width Underline'
 } );
+
+// Post Title Editor Styles
 
 wp.blocks.registerBlockStyle( 'core/post-title', {
   name: 'caes-hub-section-heading',
@@ -35,9 +43,18 @@ wp.blocks.registerBlockStyle( 'core/post-title', {
   label: 'Full Width Underline'
 } );
 
+// Separator Editor Styles
+
 wp.blocks.registerBlockStyle( 'core/separator', {
   name: 'caes-hub-partial-underline',
   label: 'Partial Width Underline'
+})
+
+// Quote Editor Styles
+
+wp.blocks.registerBlockStyle( 'core/quote', {
+  name: 'caes-hub-red-smart-quote',
+  label: 'Red Smart Quote'
 })
 
 // ADD BLOCK VARIATIONS

@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/time-to-read",
+	"version": "0.1.0",
+	"title": "Time to Read",
+	"category": "theme",
+	"icon": "clock",
+	"description": "Displays the estimated time to read a post.",
+	"example": {},
+	"supports": {
+		"html": false,
+        "spacing": {
+            "padding": true,
+            "margin": true
+        },
+        "color": {
+            "background": true,
+            "text": true
+        }
+	},
+	"textdomain": "time-to-read",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

@@ -1,0 +1,87 @@
+// Styles SPECIFICALLY FOR THIS THEME relating to the Hand Picked Post Block
+
+.featured-hand-picked-post {
+    background-color: var(--wp--preset--color--base);
+    box-shadow: var(--wp--preset--shadow--small);
+    position: relative;
+    transition: box-shadow 0.3s ease-in-out;
+
+    figure {
+        overflow: hidden;
+
+        img {
+            transition: transform 0.3s ease-in-out;
+        }
+    }
+
+    .featured-hand-picked-post-title a {
+        color: inherit;
+
+        &::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+    }
+
+    .featured-hand-picked-post-content {
+        .featured-hand-picked-post-subheader {
+            margin-left: calc(-1* var(--wp--preset--spacing--70));
+            display: inline;
+            padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--70);
+        }
+
+        .featured-hand-picked-post-read-more {
+            font-weight: 600;
+
+            &::after {
+                content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18.506' height='8' viewBox='0 0 18.506 8'%3E%3Cg transform='translate(419.006 -1021)'%3E%3Cline x2='13.68' transform='translate(-419.006 1025)' fill='none' stroke='%23ba0c2f' stroke-miterlimit='10' stroke-width='2'/%3E%3Cg transform='translate(-400.5 1021) rotate(90)' fill='%23ba0c2f'%3E%3Cpath d='M 6.276822566986084 6 L 1.723176956176758 6 L 3.999999761581421 2.015559911727905 L 6.276822566986084 6 Z' stroke='none'/%3E%3Cpath d='M 3.999999761581421 4.031137466430664 L 3.446363925933838 5 L 4.553635597229004 5 L 3.999999761581421 4.031137466430664 M 3.999999761581421 0 L 8 7 L -4.76837158203125e-07 7 L 3.999999761581421 0 Z' stroke='none' fill='%23ba0c2f'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                display: inline-block;
+                width: 18.5px;
+                height: 8px;
+                margin-left: 5px;
+                transition: margin-left 0.3s ease-in-out;
+            }
+        }
+    }
+
+    &:hover,
+    &:focus-within {
+        box-shadow: var(--wp--preset--shadow--small-dark);
+
+        figure {
+            img {
+                transform: scale(1.1);
+            }
+        }
+
+        .featured-hand-picked-post-content {
+            .featured-hand-picked-post-read-more {
+                &::after {
+                    margin-left: 8px;
+                }
+            }
+        }
+
+    }
+}
+
+@media screen and (max-width: 781px) {
+    .featured-hand-picked-post-content {
+        .featured-hand-picked-post-subheader {
+            margin-left: 0 !important;
+            padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40) !important;
+            font-size: var(--wp--preset--font-size--normal) !important;
+        }
+    }
+}
+
+@media print {
+    .featured-hand-picked-post {
+        display: none !important;
+    }
+}

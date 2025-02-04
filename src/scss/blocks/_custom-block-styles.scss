@@ -58,14 +58,15 @@ ul.is-style-caes-hub-list-none {
 // Specific styling for headings above sections
 
 .is-style-caes-hub-section-heading {
-   font-family: var(--wp--preset--font-family--oswald);
-   font-weight: 400;
-   text-transform: uppercase;
+    font-family: var(--wp--preset--font-family--oswald);
+    font-weight: 400;
+    text-transform: uppercase;
 }
 
 // Another heading style that adds a full width underline
 .is-style-caes-hub-full-underline {
     position: relative;
+
     &::after {
         content: "";
         position: absolute;
@@ -79,5 +80,26 @@ ul.is-style-caes-hub-list-none {
 
 .is-style-caes-hub-partial-underline {
     width: 100px;
-    margin-left: 0;
+    margin-left: 0 !important;
+}
+
+// Just for quote blocks
+
+.is-style-caes-hub-red-smart-quote {
+    position: relative;
+    padding-left: 4.5rem;
+
+    &::before {
+        content: '“';
+        font-size: 5.5rem;
+        font-family: var(--wp--preset--font-family--georgia);
+        font-style: italic;
+        line-height: 6rem;
+        color: var(--wp--preset--color--bulldog-red);
+        height: 44px;
+        width: 52px;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
 }

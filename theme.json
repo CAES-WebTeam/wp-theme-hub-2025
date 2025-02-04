@@ -24,18 +24,76 @@
             "defaultFontSizes": false,
             "fontFamilies": [
                 {
-                    "name": "Merriweather",
-                    "slug": "merriweather",
-                    "fontFamily": "Merriweather, serif",
-                    "fontFace": [
-                        {
-                            "src": "file:./assets/fonts/u-440qyriQwlOrhSvowK_l5OfixNV-bnrw.woff2",
-                            "fontWeight": "400",
-                            "fontStyle": "normal",
-                            "fontFamily": "Merriweather"
-                        }
-                    ]
-                },
+					"fontFace": [
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "normal",
+							"fontWeight": "300",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-300-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "normal",
+							"fontWeight": "400",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-400-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "normal",
+							"fontWeight": "700",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-700-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "normal",
+							"fontWeight": "900",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-900-normal.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "italic",
+							"fontWeight": "300",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-300-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "italic",
+							"fontWeight": "400",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-400-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "italic",
+							"fontWeight": "700",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-700-italic.woff2"
+							]
+						},
+						{
+							"fontFamily": "Merriweather",
+							"fontStyle": "italic",
+							"fontWeight": "900",
+							"src": [
+								"file:./assets/fonts/merriweather/merriweather-900-italic.woff2"
+							]
+						}
+					],
+					"fontFamily": "Merriweather, serif",
+					"name": "Merriweather",
+					"slug": "merriweather"
+				},
                 {
                     "name": "Georgia",
                     "slug": "georgia",
@@ -143,6 +201,11 @@
                     "name": "Olympic"
                 },
                 {
+                    "slug": "hedges",
+                    "color": "#B4BD00",
+                    "name": "Hedges"
+                },
+                {
                     "slug": "base",
                     "color": "#FFFFFF",
                     "name": "Base"
@@ -186,6 +249,11 @@
                     "name": "Small",
                     "slug": "small",
                     "shadow": "0px 3px 30px rgba(0, 0, 0, 0.10)"
+                },
+                {
+                    "name": "Small Dark",
+                    "slug": "small-dark",
+                    "shadow": "0px 3px 30px rgba(0, 0, 0, 0.15)"
                 }
             ]
         },
@@ -288,6 +356,13 @@
                                 "left": "var(--wp--preset--spacing--40)"
                             }
                         }
+                    }
+                }
+            },
+            "core/list-item": {
+                "spacing": {
+                    "margin": {
+                        "bottom": "var(--wp--preset--spacing--30)"
                     }
                 }
             }

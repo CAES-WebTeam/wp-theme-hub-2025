@@ -1,0 +1,51 @@
+// Back to top button
+a.caes-hub-to-top {
+    font-weight: 700;
+    background-color: var(--wp--preset--color--base);
+    bottom: -50px;
+    border: 1px solid var(--wp--preset--color--contrast-two);
+    color: var(--wp--preset--color--contrast);
+    justify-content: center;
+    margin-block-end: var(--wp--preset--spacing--40) !important;
+    opacity: 0;
+    padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+    position: fixed;
+    right: var(--wp--preset--spacing--40);
+    text-decoration: none;
+    transition: transform 250ms ease-in-out, opacity 250ms ease-in-out;
+    visibility: hidden;
+    z-index: 999;
+    display: block;
+    border-radius: 20rem;
+    font-size: var(--wp--preset--font-size--small);
+    box-shadow: var(--wp--preset--shadow--small);
+
+    &::after {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 21.506px;
+        background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="8" height="18.506" viewBox="0 0 8 18.506"%3E%3Cg id="Arrow" transform="translate(-1021 -400.5) rotate(-90)"%3E%3Cline id="Line_11" data-name="Line 11" x2="13.68" transform="translate(-419.006 1025)" fill="none" stroke="%23ba0c2f" stroke-miterlimit="10" stroke-width="2"/%3E%3Cg id="Polygon_1" data-name="Polygon 1" transform="translate(-400.5 1021) rotate(90)" fill="%23ba0c2f"%3E%3Cpath d="M 6.276822566986084 6 L 1.723176956176758 6 L 3.999999761581421 2.015559911727905 L 6.276822566986084 6 Z" stroke="none"/%3E%3Cpath d="M 3.999999761581421 4.031137466430664 L 3.446363925933838 5 L 4.553635597229004 5 L 3.999999761581421 4.031137466430664 M 3.999999761581421 0 L 8 7 L -4.76837158203125e-07 7 L 3.999999761581421 0 Z" stroke="none" fill="%23ba0c2f"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+        background-repeat: no-repeat;
+        background-size: contain;
+        margin-left: var(--wp--preset--spacing--30);
+        vertical-align: middle;
+    }
+
+    &.caes-hub-to-top-visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(-50px);
+    }
+    
+    &.caes-hub-to-top-hide {
+        opacity: 0;
+        transform: translateY(0);
+    }
+}
+
+@media print {
+    a.caes-hub-to-top {
+        display: none !important;
+    }
+}
