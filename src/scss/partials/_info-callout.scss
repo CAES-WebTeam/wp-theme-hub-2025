@@ -1,0 +1,13 @@
+.caes-hub-info-callout {
+    .caes-hub-info-callout__header {
+        &::before {
+            content: "";
+            display: block;
+            width: 36px;
+            height: 38px;
+            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="47" height="49" viewBox="0 0 47 49"%3E%3Cg id="Group_20301" data-name="Group 20301" transform="translate(-0.383)"%3E%3Cg id="Ellipse_134" data-name="Ellipse 134" transform="translate(0.383 1)" fill="none" stroke="%23ba0c2f" stroke-width="3"%3E%3Ccircle cx="23.5" cy="23.5" r="23.5" stroke="none"/%3E%3Ccircle cx="23.5" cy="23.5" r="22" fill="none"/%3E%3C/g%3E%3Ctext id="i" transform="translate(20.383)" fill="%23ba0c2f" font-size="32" font-family="Oswald-Regular, Oswald"%3E%3Ctspan x="0" y="38"%3Ei%3C/tspan%3E%3C/text%3E%3C/g%3E%3C/svg%3E');
+            background-repeat: no-repeat;
+            background-size: contain;
+        }
+    }
+}

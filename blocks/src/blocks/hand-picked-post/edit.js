@@ -24,7 +24,7 @@ import './editor.scss';
  * @param {Object} props All props passed to this function.
  * @return {WPElement}   Element to render.
  */
-export default function Edit( props ) {
+export default function Edit(props) {
     const {
         attributes,
     } = props;
@@ -37,53 +37,53 @@ export default function Edit( props ) {
     // Function to get posts based on selected post type
     function getPosts() {
         let options = [];
-        const posts = wp.data.select( 'core' ).getEntityRecords( 'postType', postType, { per_page: -1 } );
-        if ( null === posts ) {
+        const posts = wp.data.select('core').getEntityRecords('postType', postType, { per_page: -1 });
+        if (null === posts) {
             return options;
         }
-        posts.forEach( ( post ) => {
-            options.push( { value: post.id, label: post.title.rendered } );
-        } );
+        posts.forEach((post) => {
+            options.push({ value: post.id, label: post.title.rendered });
+        });
         return options;
     }
 
     // Handle post type change
-    const handlePostTypeChange = ( value ) => {
-        props.setAttributes( { postType: value } );
+    const handlePostTypeChange = (value) => {
+        props.setAttributes({ postType: value });
         // Reset the postId when post type changes
-        props.setAttributes( { postId: 0 } );
+        props.setAttributes({ postId: 0 });
     };
 
-    const [ filteredOptions, setFilteredOptions ] = useState( getPosts() );
+    const [filteredOptions, setFilteredOptions] = useState(getPosts());
 
     const inspectorControls = (
         <>
             <InspectorControls>
-                <PanelBody title={ __( 'Featured Content Settings', 'hand-picked-post' ) }>
+                <PanelBody title={__('Featured Content Settings', 'hand-picked-post')}>
                     {/* Post Type Selection Control */}
                     <SelectControl
-                        label={ __( 'Select Post Type', 'hand-picked-post' ) }
-                        value={ postType }
+                        label={__('Select Post Type', 'hand-picked-post')}
+                        value={postType}
                         options={[
-                            { label: __( 'Posts', 'hand-picked-post' ), value: 'post' },
-                            { label: __( 'Pages', 'hand-picked-post' ), value: 'page' },
-                            { label: __( 'Shorthand Stories', 'hand-picked-post' ), value: 'shorthand_story' },
-                            { label: __( 'Publications', 'hand-picked-post' ), value: 'publication' },
+                            { label: __('Posts', 'hand-picked-post'), value: 'post' },
+                            { label: __('Pages', 'hand-picked-post'), value: 'page' },
+                            { label: __('Shorthand Stories', 'hand-picked-post'), value: 'shorthand_story' },
+                            { label: __('Publications', 'hand-picked-post'), value: 'publication' },
                         ]}
-                        onChange={ handlePostTypeChange }
+                        onChange={handlePostTypeChange}
                     />
                     {/* Post Selection Control */}
                     <ComboboxControl
-                        label={ __( 'Select Post', 'hand-picked-post' ) }
-                        value={ postId }
-                        onChange={ ( id ) => props.setAttributes( { postId: parseInt( id ) } ) }
-                        options={ getPosts() }
-                        onFilterValueChange={ ( inputValue ) =>
+                        label={__('Select Post', 'hand-picked-post')}
+                        value={postId}
+                        onChange={(id) => props.setAttributes({ postId: parseInt(id) })}
+                        options={getPosts()}
+                        onFilterValueChange={(inputValue) =>
                             setFilteredOptions(
-                                getPosts().filter( ( option ) =>
+                                getPosts().filter((option) =>
                                     option.label
                                         .toLowerCase()
-                                        .startsWith( inputValue.toLowerCase() )
+                                        .startsWith(inputValue.toLowerCase())
                                 )
                             )
                         }
@@ -93,25 +93,25 @@ export default function Edit( props ) {
         </>
     );
 
-    if ( 0 === postId ) {
+    if (0 === postId) {
         return (
             <>
-                { inspectorControls }
-                <p { ...useBlockProps() }>
-                    { __(
-                        'Please select a post from the right side',
+                {inspectorControls}
+                <div {...useBlockProps()}>
+                    <p className="hand-picked-post-empty">{__(
+                        'Please click this block and select a post from the right side.',
                         'hand-picked-post'
                     )
-                    }
-                </p>
+                    }</p>
+                </div>
             </>
         );
     }
 
     return (
         <>
-            { inspectorControls }
-            <div { ...useBlockProps() }>
+            {inspectorControls}
+            <div {...useBlockProps()}>
                 <InnerBlocks />
             </div>
         </>

@@ -22,6 +22,9 @@ function caes_hub_block_init()
 	// Register Post Filter
 	register_block_type(get_template_directory() . '/blocks/build/blocks/post-filter' );
 
+	// Register Time To Read
+	register_block_type(get_template_directory() . '/blocks/build/blocks/time-to-read' );
+
 	// Register Hand Picked Post
 	register_block_type(get_template_directory() . '/blocks/build/blocks/hand-picked-post' );
 
