@@ -117,6 +117,42 @@
         }
     }
 
+    // This is for blocks where we had to write out the HTML structure in PHP,
+    // instead of using the block editor. I want to fix it to where we don't do
+    // this in the future, but no time today. - AW 02/05/2025
+    &.faux-caes-hub-post-list-grid {
+        ul {
+            padding: 0;
+            display: grid;
+            gap: var(--wp--preset--spacing--50);
+            grid-template-columns: repeat(2, 1fr);
+            &.caes-hub-post-column-3 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            &.caes-hub-post-column-4 {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            li {
+                background-color: var(--wp--preset--color--base);
+            }
+        }
+        .caes-hub-post-list-grid-info {
+            padding: var(--wp--preset--spacing--50);
+        }
+        .caes-hub-post-list-img-container {
+            aspect-ratio: 3/2;
+            margin: 0;
+            img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+        }
+        .caes-hub-post-list-grid-title {
+            color: inherit;
+        }
+    }
+
 }
 
 @media screen and (max-width: 781px) {
@@ -142,6 +178,18 @@
             .caes-hub-post-list-grid-info {
                 width: 100%;
                 height: auto;
+            }
+        }
+
+        &.faux-caes-hub-post-list-grid {
+            ul {
+                grid-template-columns: 1fr;
+                &.caes-hub-post-column-3 {
+                    grid-template-columns: 1fr;
+                }
+                &.caes-hub-post-column-4 {
+                    grid-template-columns: 1fr;
+                }
             }
         }
 

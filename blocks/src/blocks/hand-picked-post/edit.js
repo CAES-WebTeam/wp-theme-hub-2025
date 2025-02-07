@@ -56,6 +56,11 @@ export default function Edit(props) {
 
     const [filteredOptions, setFilteredOptions] = useState(getPosts());
 
+    const DEFAULT_TEMPLATE = [
+        [ 'core/post-title', {} ],
+        [ 'core/post-excerpt', {} ]
+    ];
+
     const inspectorControls = (
         <>
             <InspectorControls>
@@ -112,7 +117,9 @@ export default function Edit(props) {
         <>
             {inspectorControls}
             <div {...useBlockProps()}>
-                <InnerBlocks />
+                <InnerBlocks 
+                    template={DEFAULT_TEMPLATE}
+                />
             </div>
         </>
     );

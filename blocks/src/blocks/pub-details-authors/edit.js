@@ -11,7 +11,9 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -31,9 +33,42 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
+export default function Edit({ attributes, setAttributes }) {
+
+
 	return (
-		<div {...useBlockProps()}>
-		</div>
+		<>
+			<InspectorControls>
+				<PanelBody>
+					<ToggleControl
+						label={__("Display authors as snippet", "caes-hub")}
+						checked={attributes.authorsAsSnippet}
+						onChange={(val) => {
+							setAttributes({
+								authorsAsSnippet: val
+							});
+						}}
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div {...useBlockProps()}>
+				{attributes.authorsAsSnippet ? (
+					// Comma separated list of authors
+					<p className="pub-authors-snippet">Jane Doe, John Arbuckle</p>
+				) : (
+					// More expanded details
+					<>
+						<div className="pub-author">
+							<a className="pub-author-name" href="#">Jane Doe</a>
+							<p className="pub-author-title">Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology</p>
+						</div>
+						<div className="pub-author">
+							<a className="pub-author-name" href="#">John Arbuckle</a>
+							<p className="pub-author-title">Professor and Extension Vegetable Disease Specialist, Plant Pathology</p>				
+						</div>
+					</>
+				)}
+			</div>
+		</>
 	);
 }

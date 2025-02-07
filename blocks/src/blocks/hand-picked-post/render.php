@@ -27,6 +27,7 @@ if ( $block_query->have_posts() ) {
     $wrapper_attributes = get_block_wrapper_attributes( array( 'class' => implode( ' ', $classnames ) ) );
     ?>
     <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
+
         <?php
         while ( $block_query->have_posts() ) {
             $block_query->the_post();
@@ -46,9 +47,9 @@ if ( $block_query->have_posts() ) {
             )->render( array( 'dynamic' => false ) );
         }
         ?>
+
     </div>
     <?php
 }
-
 wp_reset_postdata();
 ?>

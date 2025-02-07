@@ -21,8 +21,6 @@ import { useBlockProps } from '@wordpress/block-editor';
  */
 import './editor.scss';
 
-import ServerSideRender from '@wordpress/server-side-render';
-
 /**
  * The edit function describes the structure of your block in the context of the
  * editor. This represents what the editor will render when the block is used.
@@ -34,6 +32,9 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
+			<h2 className="wp-block-heading is-style-caes-hub-full-underline">References</h2>
+			<p className="reference"><span className="reference-title">Example title of a reference.</span> <span className="reference-text">Example text of a reference.</span> <a href="https://www.caes.uga.edu" target="outside">https://www.caes.uga.edu</a></p>
+			<p className="reference"><span className="reference-title">Example title of a reference.</span> <span className="reference-text">Example text of a reference.</span> <a href="https://www.caes.uga.edu" target="outside">https://www.caes.uga.edu</a></p>			
 		</div>
 	);
 }
