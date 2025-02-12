@@ -19,6 +19,11 @@ wp.blocks.registerBlockStyle( 'core/button', {
     label: 'Black Border'
 } );
 
+wp.blocks.registerBlockStyle( 'core/button', {
+    name: 'caes-hub-arrow',
+    label: 'Arrow'
+} );
+
 // Heading Editor Styles
 
 wp.blocks.registerBlockStyle( 'core/heading', {

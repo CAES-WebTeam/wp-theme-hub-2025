@@ -8,6 +8,7 @@
     border-radius: 20rem;
     line-height: 1rem;
     transition: all 0.1s ease-in-out;
+    background-color: var(--wp--preset--color--base);
 
     .wp-block-button__link {
         transition: all 0.1s ease-in-out;
@@ -61,6 +62,14 @@ ul.is-style-caes-hub-list-none {
     font-family: var(--wp--preset--font-family--oswald);
     font-weight: 400;
     text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    &::after {
+        content: "";
+        border-top: 1px solid var(--wp--preset--color--contrast-two);
+        margin: 0 0 0 10px;
+        flex: 1 0 20px;
+    }
 }
 
 // Another heading style that adds a full width underline
@@ -101,5 +110,16 @@ ul.is-style-caes-hub-list-none {
         position: absolute;
         top: 0;
         left: 0;
+    }
+}
+
+.is-style-caes-hub-arrow {
+    a {
+        @include arrow-link();
+
+        &:hover,
+        &:focus {
+            @include arrow-link-hover();
+        }
     }
 }

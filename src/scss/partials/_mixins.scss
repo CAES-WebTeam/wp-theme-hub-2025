@@ -81,3 +81,26 @@
     }
 
 }
+
+// Arrow link - has bold font, a red arrow to the right
+@mixin arrow-link() {
+    font-weight: 600;
+    &::after {
+        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18.506' height='8' viewBox='0 0 18.506 8'%3E%3Cg transform='translate(419.006 -1021)'%3E%3Cline x2='13.68' transform='translate(-419.006 1025)' fill='none' stroke='%23ba0c2f' stroke-miterlimit='10' stroke-width='2'/%3E%3Cg transform='translate(-400.5 1021) rotate(90)' fill='%23ba0c2f'%3E%3Cpath d='M 6.276822566986084 6 L 1.723176956176758 6 L 3.999999761581421 2.015559911727905 L 6.276822566986084 6 Z' stroke='none'/%3E%3Cpath d='M 3.999999761581421 4.031137466430664 L 3.446363925933838 5 L 4.553635597229004 5 L 3.999999761581421 4.031137466430664 M 3.999999761581421 0 L 8 7 L -4.76837158203125e-07 7 L 3.999999761581421 0 Z' stroke='none' fill='%23ba0c2f'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        display: inline-block;
+        width: 18.5px;
+        height: 8px;
+        margin-left: 5px;
+        transition: margin-left 0.2s ease-in-out;
+        position: absolute;
+    }
+}
+
+// Arrow link hover/focus... yes, it's applied separately from the above mixin,
+// because sometimes it does not need to always change on hovering the link itself,
+// but a hover over a parent element. - AW 02/07/2025
+@mixin arrow-link-hover() {
+    &::after {
+        margin-left: 8px;
+    }
+}

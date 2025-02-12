@@ -1,17 +1,18 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "caes-hub/pub-details-authors",
+  "name": "caes-hub/pub-details-number",
   "version": "0.1.0",
-  "title": "Publication Authors",
+  "title": "Publication Number",
   "category": "theme",
   "icon": "text-page",
-  "description": "Displays a publication's authors.",
+  "description": "Displays the publication number.",
   "acf": {
     "mode": "preview",
     "renderTemplate": "./render.php"
   },
   "supports": {
+    "align": true,
     "anchor": true,
     "color": {
       "background": true,
@@ -25,12 +26,6 @@
       "fontSize": true,
       "lineHeight": true,
       "textAlign": true
-    }
-  },
-  "attributes": {
-    "authorsAsSnippet": {
-      "type": "boolean",
-      "default": false
     }
   },
   "editorScript": "file:./index.js",

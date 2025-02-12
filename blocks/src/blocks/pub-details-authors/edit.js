@@ -23,8 +23,6 @@ import { PanelBody, ToggleControl } from '@wordpress/components';
  */
 import './editor.scss';
 
-import ServerSideRender from '@wordpress/server-side-render';
-
 /**
  * The edit function describes the structure of your block in the context of the
  * editor. This represents what the editor will render when the block is used.
@@ -51,24 +49,23 @@ export default function Edit({ attributes, setAttributes }) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...useBlockProps()}>
-				{attributes.authorsAsSnippet ? (
-					// Comma separated list of authors
-					<p className="pub-authors-snippet">Jane Doe, John Arbuckle</p>
-				) : (
-					// More expanded details
-					<>
-						<div className="pub-author">
-							<a className="pub-author-name" href="#">Jane Doe</a>
-							<p className="pub-author-title">Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology</p>
-						</div>
-						<div className="pub-author">
-							<a className="pub-author-name" href="#">John Arbuckle</a>
-							<p className="pub-author-title">Professor and Extension Vegetable Disease Specialist, Plant Pathology</p>				
-						</div>
-					</>
-				)}
-			</div>
+
+			{attributes.authorsAsSnippet ? (
+				// Comma separated list of authors
+				<p className="pub-authors-snippet">Jane Doe, John Arbuckle</p>
+			) : (
+				// More expanded details
+				<div {...useBlockProps()}>
+					<div className="pub-author">
+						<a className="pub-author-name" href="#">Jane Doe</a>
+						<p className="pub-author-title">Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology</p>
+					</div>
+					<div className="pub-author">
+						<a className="pub-author-name" href="#">John Arbuckle</a>
+						<p className="pub-author-title">Professor and Extension Vegetable Disease Specialist, Plant Pathology</p>
+					</div>
+				</div>
+			)}
 		</>
 	);
 }
