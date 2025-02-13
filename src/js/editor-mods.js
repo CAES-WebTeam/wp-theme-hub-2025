@@ -64,6 +64,8 @@ wp.blocks.registerBlockStyle( 'core/quote', {
 
 // ADD BLOCK VARIATIONS
 
+// Event Query Block Variation
+
 const eventsVariation = 'upcoming-events';
 
 wp.blocks.registerBlockVariation( 'core/query', {

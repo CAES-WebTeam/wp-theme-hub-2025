@@ -1,14 +1,16 @@
 <?php
 
 // Editor Styles
-function caes_hub_editor_styles() {
+function caes_hub_editor_styles()
+{
 	add_editor_style('./assets/css/editor.css');
 }
 add_action('after_setup_theme', 'caes_hub_editor_styles');
 
 
 // Enqueue style sheet and JavaScript
-function caes_hub_styles() {
+function caes_hub_styles()
+{
 	wp_enqueue_style(
 		'caes-hub-styles',
 		get_theme_file_uri('assets/css/main.css'),
@@ -20,7 +22,8 @@ function caes_hub_styles() {
 add_action('wp_enqueue_scripts', 'caes_hub_styles');
 
 // Adds custom style choices to core blocks with add-block-styles.js
-function add_block_style() {
+function add_block_style()
+{
 	wp_enqueue_script(
 		'editor-mods',
 		get_theme_file_uri() . '/assets/js/editor-mods.js',
@@ -31,18 +34,20 @@ add_action('enqueue_block_editor_assets', 'add_block_style');
 
 
 // Remove Default Block Patterns
-function remove_default_block_patterns() {
+function remove_default_block_patterns()
+{
 	remove_theme_support('core-block-patterns');
 }
 add_action('after_setup_theme', 'remove_default_block_patterns');
 
 
 // Unregister API Patterns
-add_filter( 'should_load_remote_block_patterns', '__return_false' );
+add_filter('should_load_remote_block_patterns', '__return_false');
 
 
 // Create custom user roles
-function add_custom_user_roles() {
+function add_custom_user_roles()
+{
 	// Add the CAES role
 	add_role(
 		'caes-staff', // Role slug
@@ -69,39 +74,42 @@ function add_custom_user_roles() {
 
 
 // Add phone number field to Contact Info section in user profile
-function add_phone_to_contact_info( $user ) {
-    ?>
-    <h3><?php _e( 'Extra Info', 'textdomain' ); ?></h3>
+function add_phone_to_contact_info($user)
+{
+?>
+	<h3><?php _e('Extra Info', 'textdomain'); ?></h3>
 
-    <table class="form-table" role="presentation">
-        <!-- Phone Number Field -->
-        <tr>
-            <th><label for="phone"><?php _e( 'Phone Number', 'textdomain' ); ?></label></th>
-            <td>
-                <input type="text" name="phone" id="phone" value="<?php echo esc_attr( get_user_meta( $user->ID, 'phone', true ) ); ?>" class="regular-text" /><br>
-                <span class="description"><?php _e( 'Please enter the user\'s phone number.', 'textdomain' ); ?></span>
-            </td>
-        </tr>
-    </table>
-    <?php
+	<table class="form-table" role="presentation">
+		<!-- Phone Number Field -->
+		<tr>
+			<th><label for="phone"><?php _e('Phone Number', 'textdomain'); ?></label></th>
+			<td>
+				<input type="text" name="phone" id="phone" value="<?php echo esc_attr(get_user_meta($user->ID, 'phone', true)); ?>" class="regular-text" /><br>
+				<span class="description"><?php _e('Please enter the user\'s phone number.', 'textdomain'); ?></span>
+			</td>
+		</tr>
+	</table>
+<?php
 }
-add_action( 'show_user_profile', 'add_phone_to_contact_info' );
-add_action( 'edit_user_profile', 'add_phone_to_contact_info' );
+add_action('show_user_profile', 'add_phone_to_contact_info');
+add_action('edit_user_profile', 'add_phone_to_contact_info');
 
 // Save phone number field value when profile is updated
-function save_user_phone_field( $user_id ) {
-    // Check permission and save phone number
-    if ( current_user_can( 'edit_user', $user_id ) && isset( $_POST['phone'] ) ) {
-        update_user_meta( $user_id, 'phone', sanitize_text_field( $_POST['phone'] ) );
-    }
+function save_user_phone_field($user_id)
+{
+	// Check permission and save phone number
+	if (current_user_can('edit_user', $user_id) && isset($_POST['phone'])) {
+		update_user_meta($user_id, 'phone', sanitize_text_field($_POST['phone']));
+	}
 }
-add_action( 'personal_options_update', 'save_user_phone_field' );
-add_action( 'edit_user_profile_update', 'save_user_phone_field' );
+add_action('personal_options_update', 'save_user_phone_field');
+add_action('edit_user_profile_update', 'save_user_phone_field');
 
 
 // Function to retrieve the user's IP address
 if (!function_exists('getUserIP')) {
-	function getUserIP() {
+	function getUserIP()
+	{
 		// Check for shared internet/proxy servers
 		if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
 			return $_SERVER['HTTP_CLIENT_IP'];
@@ -128,7 +136,8 @@ if (!defined('IPSTACK_API_KEY')) {
 
 // Function to get user location
 if (!function_exists('getUserLocation')) {
-	function getUserLocation() {
+	function getUserLocation()
+	{
 		$url = "http://api.ipstack.com/" . USER_IP . "?access_key=" . IPSTACK_API_KEY;
 
 		// Make the API request
@@ -152,7 +161,8 @@ if (!function_exists('getUserLocation')) {
 
 // Function to calculate the distance
 if (!function_exists('calculateDistance')) {
-	function calculateDistance($lat1, $lon1, $lat2, $lon2) {
+	function calculateDistance($lat1, $lon1, $lat2, $lon2)
+	{
 		// Convert degrees to radians
 		$lat1 = deg2rad($lat1);
 		$lon1 = deg2rad($lon1);
@@ -165,8 +175,8 @@ if (!function_exists('calculateDistance')) {
 		$deltaLon = $lon2 - $lon1;
 
 		$a = sin($deltaLat / 2) * sin($deltaLat / 2) +
-			 cos($lat1) * cos($lat2) *
-			 sin($deltaLon / 2) * sin($deltaLon / 2);
+			cos($lat1) * cos($lat2) *
+			sin($deltaLon / 2) * sin($deltaLon / 2);
 		$c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
 		return $earthRadius * $c; // Distance in miles
@@ -175,60 +185,127 @@ if (!function_exists('calculateDistance')) {
 
 // Function to check if within radius
 if (!function_exists('isWithinRadius')) {
-	function isWithinRadius($userLat, $userLon, $targetLat, $targetLon, $radius) {
+	function isWithinRadius($userLat, $userLon, $targetLat, $targetLon, $radius)
+	{
 		$distance = calculateDistance($userLat, $userLon, $targetLat, $targetLon);
 		return $distance <= $radius;
 	}
 }
 
 // add_filter( 'pre_render_block', 'wpfieldwork_upcoming_events_pre_render_block', 10, 2 );
-function wpfieldwork_upcoming_events_pre_render_block( $pre_render, $parsed_block ) {
+function wpfieldwork_upcoming_events_pre_render_block($pre_render, $parsed_block)
+{
 
 	// Verify it's the block that should be modified using the namespace
-	if ( !empty($parsed_block['attrs']['namespace']) && 'upcoming-events' === $parsed_block['attrs']['namespace'] ) {
-  
-	  add_filter(
-		'query_loop_block_query_vars',
-		function( $query, $block ) {
-		  // get today's date in Ymd format
-		  $today = date('Ymd');
-  
-		  // the meta key was start_date, compare to today to get event's from today or later
-		  $query['meta_key'] = 'start_date';
-		  $query['meta_value'] = $today;
-		  $query['meta_compare'] = '>=';
-  
-		  // also likely want to set order by this key in ASC so next event listed first
-		  $query['orderby'] = 'meta_value';
-		  $query['order'] = 'ASC';
-		  
-		  return $query;
-		},
-		10,
-		2
-	  );
+	if (!empty($parsed_block['attrs']['namespace']) && 'upcoming-events' === $parsed_block['attrs']['namespace']) {
+
+		add_filter(
+			'query_loop_block_query_vars',
+			function ($query, $block) {
+				// get today's date in Ymd format
+				$today = date('Ymd');
+
+				// the meta key was start_date, compare to today to get event's from today or later
+				$query['meta_key'] = 'start_date';
+				$query['meta_value'] = $today;
+				$query['meta_compare'] = '>=';
+
+				// also likely want to set order by this key in ASC so next event listed first
+				$query['orderby'] = 'meta_value';
+				$query['order'] = 'ASC';
+
+				return $query;
+			},
+			10,
+			2
+		);
 	}
 	return $pre_render;
-  }
-
-  add_filter( 'rest_events_query', 'wpfieldwork_rest_upcoming_events', 10, 2 );
-
-function wpfieldwork_rest_upcoming_events( $args, $request ) {
-  
-  // grab value from the request
-  $dateFilter = $request['filterByDate'];
-  
-  // proceed if it exists
-  // add same meta query arguments
-  if ( $dateFilter ) {
-    $today = date('Ymd');
-    $args['meta_key'] = 'start_date';
-    $args['meta_value'] = $today;
-    $args['meta_compare'] = '>=';
-    $args['orderby'] = 'meta_value';
-    $args['order'] = 'ASC';
-  }
-  
-  return $args;
-
 }
+
+add_filter('rest_events_query', 'wpfieldwork_rest_upcoming_events', 10, 2);
+
+function wpfieldwork_rest_upcoming_events($args, $request)
+{
+
+	// grab value from the request
+	$dateFilter = $request['filterByDate'];
+
+	// proceed if it exists
+	// add same meta query arguments
+	if ($dateFilter) {
+		$today = date('Ymd');
+		$args['meta_key'] = 'start_date';
+		$args['meta_value'] = $today;
+		$args['meta_compare'] = '>=';
+		$args['orderby'] = 'meta_value';
+		$args['order'] = 'ASC';
+	}
+
+	return $args;
+}
+
+// If a query block has a class name of caes-hub-related-news, 
+// the query will be modified to show related news
+
+function query_for_related_news( $query, $block ) {
+    global $post;
+
+    $block = $block->parsed_block;
+
+    if (
+        isset( $block['attrs']['className'] )
+        && false !== strpos( $block['attrs']['className'], 'caes-hub-related-news' )
+    ) {
+        if ( isset( $post->ID ) ) {
+            $related_posts = get_field( 'related_news', $post->ID );
+
+            if ( ! empty( $related_posts ) && is_array( $related_posts ) ) {
+                $query['post__in'] = wp_list_pluck( $related_posts, 'ID' );
+                $query['orderby'] = 'post__in'; // Preserve the selected order
+            } else {
+                // Show latest 3 posts if no related posts are selected
+                $query['posts_per_page'] = 3;
+                $query['orderby'] = 'date';
+                $query['order'] = 'DESC';
+            }
+        }
+    }
+
+    return $query;
+}
+
+add_filter( 'query_loop_block_query_vars', 'query_for_related_news', 10, 2 );
+
+// If a query block has a class name of caes-hub-related-news, 
+// the query will be modified to show related news
+
+function query_for_related_pubs( $query, $block ) {
+    global $post;
+
+    $block = $block->parsed_block;
+
+    if (
+        isset( $block['attrs']['className'] )
+        && false !== strpos( $block['attrs']['className'], 'caes-hub-related-pubs' )
+    ) {
+        if ( isset( $post->ID ) ) {
+            $related_pubs = get_field( 'related_publications', $post->ID );
+
+            if ( ! empty( $related_pubs ) && is_array( $related_pubs ) ) {
+                $query['post__in'] = wp_list_pluck( $related_pubs, 'ID' );
+                $query['orderby'] = 'post__in'; // Preserve the selected order
+            } else {
+                // Show latest 3 posts if no related posts are selected
+                $query['posts_per_page'] = 3;
+                $query['orderby'] = 'date';
+                $query['order'] = 'DESC';
+            }
+        }
+    }
+
+    return $query;
+}
+
+add_filter( 'query_loop_block_query_vars', 'query_for_related_pubs', 10, 2 );
+

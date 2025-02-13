@@ -18,6 +18,10 @@
     @include action-button('../images/ics.svg', 21px, 21px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px, 46px, 160px, 106px);
 }
 
+.caes-hub-action-pdf__button {
+    @include action-button('../images/pdf.svg', 21px, 19.70px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px, 46px, 125px, 74px);
+}
+
 /* ACTION BUTTONS - SHARE BUTTONS FOR SOCIAL */
 .wp-block-caes-hub-action-share {
     text-align: center;

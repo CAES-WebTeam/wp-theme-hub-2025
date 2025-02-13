@@ -34,7 +34,10 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			Publications block. Not sure what this is for?
+			<ServerSideRender
+				block="caes-hub/action-pdf"
+				attributes={attributes}
+			/>
 		</div>
 	);
 }

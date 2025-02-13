@@ -8,11 +8,11 @@
   "icon": "admin-users",
   "description": "Publication for the CAES Field Report 2025 theme.",
   "acf": {
-	"mode": "preview",
-	"renderTemplate": "./render.php"
+    "mode": "preview",
+    "renderTemplate": "./render.php"
   },
   "supports": {
-	"inserter": true
+    "inserter": true
   },
   "style": "file:./style-index.css",
   "editorScript": "file:./index.js"

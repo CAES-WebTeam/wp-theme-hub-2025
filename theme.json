@@ -380,5 +380,31 @@
             "title": "CAES Hub Sidebar",
             "area": "uncategorized"
         }
+    ],
+    "customTemplates": [
+        {
+            "name": "archive-events",
+            "title": "Event Archives"
+        },
+        {
+            "name": "single-events",
+            "title": "Single Event"
+        },
+        {
+            "name": "landing-events",
+            "title": "Events Landing Page"
+        },
+        { 
+            "name": "landing-publications",
+            "title": "Publications Landing Page"
+        },
+        { 
+            "name": "single-publications",
+            "title": "Single Publication"
+        },
+        {
+            "name": "archive-publications",
+            "title": "Publication Archives"
+        }
     ]
 }

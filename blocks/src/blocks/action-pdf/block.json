@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/action-pdf",
+	"version": "0.1.0",
+	"title": "Action Icons: Save PDF",
+	"category": "theme",
+	"icon": "block-default",
+	"description": "Button that generates PDF of current post.",
+	"supports": {
+		"html": false
+	},
+	"textdomain": "action-pdf",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}
