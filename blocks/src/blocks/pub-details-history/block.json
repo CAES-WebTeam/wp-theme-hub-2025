@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/pub-details-history",
   "version": "0.1.0",
-  "title": "CAES Field Report Publication History",
+  "title": "Publication History",
   "category": "theme",
-  "icon": "block-default",
-  "description": "Publication Hisotry for the CAES Field Report 2025 theme.",
+  "icon": "text-page",
+  "description": "Displays a publication's revision history.",
   "acf": {
     "mode": "preview",
     "renderTemplate": "./render.php"

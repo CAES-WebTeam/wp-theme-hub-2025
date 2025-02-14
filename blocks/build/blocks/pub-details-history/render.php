@@ -9,20 +9,39 @@ $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 // Get the type from ACF fields
 $history = get_field('history', $post_id);
 
+// Status Labels
+
+// Define status labels
+$status_labels = [
+    1 => 'Unpublished/Removed',
+    2 => 'Published',
+    4 => 'Published with Minor Revisions',
+    5 => 'Published with Major Revisions',
+    6 => 'Published with Full Review',
+    7 => 'Historic/Archived',
+    8 => 'In Review for Minor Revisions',
+    9 => 'In Review for Major Revisions',
+    10 => 'In Review'
+];
+
 
 // Check if history is set
-if ( $history ) {
+if ($history) {
     echo '<div ' . $attrs . '>';
-    echo '<p><strong>Status and Revision History</strong></p>';
+    echo '<h2 class="wp-block-heading is-style-caes-hub-full-underline">Status and Revision History</h2>';
 
-	// Loop through history
-    foreach ( $history as $item ) {
+    echo '<ul class="is-style-caes-hub-list-none">';
+    // Loop through history
+    foreach ($history as $item) {
         $status = $item['status'];
+        $status_label = $status_labels[$status] ?? '';
         $date = $item['date']; //date field is pre-formatted F j, Y
-        echo '<div>';
-        echo $status.' on '.$date;
-        echo '</div>';
+
+        // Set status label
+        echo '<li>';
+        echo $status_label . ' on ' . $date;
+        echo '</li>';
     }
+    echo '</ul>';
     echo '</div>';
 }
-?>

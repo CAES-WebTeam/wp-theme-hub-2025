@@ -51,6 +51,15 @@ ul.is-style-caes-hub-list-none {
     list-style: none;
 }
 
+// Use checkbox for ul
+ul.is-style-caes-hub-list-checkbox {
+    list-style: none;
+    li::marker {
+        content: "☐ ";
+        font-size: var(--wp--preset--font-size--large);
+    }
+}
+
 // Add bell icon before button text
 .is-style-caes-hub-bell {
     @include button-icon('../images/bell.svg', 9.32px, 10.578px, var(--wp--preset--color--bulldog-red), var(--wp--preset--color--base), 5px);
@@ -64,6 +73,7 @@ ul.is-style-caes-hub-list-none {
     text-transform: uppercase;
     display: flex;
     align-items: center;
+
     &::after {
         content: "";
         border-top: 1px solid var(--wp--preset--color--contrast-two);

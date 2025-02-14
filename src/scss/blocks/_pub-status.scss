@@ -1,0 +1,50 @@
+.wp-block-caes-hub-pub-details-status {
+    padding: var(--wp--preset--spacing--30);
+    font-size: var(--wp--preset--font-size--small);
+    display: inline-flex;
+    align-items: center;
+    border-radius: 3px;
+    box-shadow: var(--wp--preset--shadow--small);
+
+    span {
+        line-height: 1;
+        height: 11px;
+    }
+    
+    &::before {
+        content: "";
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        margin-right: var(--wp--preset--spacing--20);
+    }
+
+    &.new {
+        background-color: var(--wp--preset--color--bulldog-red);
+        color: var(--wp--preset--color--base);
+        
+        &::before {
+            background-image: url('../images/star.svg');
+        }
+    }
+
+    &.revised {
+        background-color: var(--wp--preset--color--olympic);
+        color: var(--wp--preset--color--base);
+
+        &::before {
+            background-image: url('../images/pencil.svg');
+        }
+    }
+
+    &.renewed {
+        background-color: var(--wp--preset--color--hedges);
+        color: var(--wp--preset--color--contrast);
+
+        &::before {
+            background-image: url('../images/recycle.svg');
+        }
+    }
+}

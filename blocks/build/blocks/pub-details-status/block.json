@@ -1,12 +1,12 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "caes-hub/pub-details-history",
+  "name": "caes-hub/pub-details-status",
   "version": "0.1.0",
-  "title": "Publication History",
+  "title": "Publication Status",
   "category": "theme",
   "icon": "text-page",
-  "description": "Displays a publication's revision history.",
+  "description": "Displays a status badge if publication has been recently published, renewed, or revised.",
   "acf": {
     "mode": "preview",
     "renderTemplate": "./render.php"
@@ -20,6 +20,12 @@
     "spacing": {
       "padding": true,
       "margin": true
+    }
+  },
+  "attributes": {
+    "showAsBadge": {
+      "type": "boolean",
+      "default": true
     }
   },
   "editorScript": "file:./index.js",

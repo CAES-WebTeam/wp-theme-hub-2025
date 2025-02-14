@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "title": "CAES Field Report Publication Resources",
   "category": "theme",
-  "icon": "block-default",
+  "icon": "text-page",
   "description": "Publication Resources for the CAES Field Report 2025 theme.",
   "acf": {
     "mode": "preview",

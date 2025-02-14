@@ -11,7 +11,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
+import { PanelBody, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -31,13 +32,22 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
-	return (
-		<div {...useBlockProps()}>
-			<h2 class="wp-block-heading is-style-caes-hub-full-underline">Status and Revision History</h2>
-			<ul class="is-style-caes-hub-list-none">
-				<li>History will be listed here.</li>
-			</ul>
-		</div>
-	);
+export default function Edit({ attributes, setAttributes }) {
+
+    return (
+        <>
+            <InspectorControls>
+                <PanelBody>
+                    <ToggleControl
+                        label={__('Show as badge', 'caes-hub')}
+                        checked={attributes.showAsBadge}
+                        onChange={(val) => setAttributes({ showAsBadge: val })}
+                    />
+                </PanelBody>
+            </InspectorControls>
+            <div {...useBlockProps()}>
+                <span>Example</span>
+            </div>
+        </>
+    );
 }

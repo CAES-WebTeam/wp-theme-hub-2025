@@ -7,6 +7,11 @@ wp.blocks.registerBlockStyle( 'core/list', {
     label: 'List Style: None'
 } );
 
+wp.blocks.registerBlockStyle( 'core/list', {
+  name: 'caes-hub-list-checkbox',
+  label: 'List Style: Checkbox'
+} );
+
 // Button Editor Styles
 
 wp.blocks.registerBlockStyle( 'core/button', {
