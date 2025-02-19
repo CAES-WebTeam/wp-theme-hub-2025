@@ -24,6 +24,7 @@
     &.new {
         background-color: var(--wp--preset--color--bulldog-red);
         color: var(--wp--preset--color--base);
+        min-width: 50px;
         
         &::before {
             background-image: url('../images/star.svg');
@@ -33,6 +34,7 @@
     &.revised {
         background-color: var(--wp--preset--color--olympic);
         color: var(--wp--preset--color--base);
+        min-width: 72px;
 
         &::before {
             background-image: url('../images/pencil.svg');
@@ -42,6 +44,7 @@
     &.renewed {
         background-color: var(--wp--preset--color--hedges);
         color: var(--wp--preset--color--contrast);
+        min-width: 81px;
 
         &::before {
             background-image: url('../images/recycle.svg');

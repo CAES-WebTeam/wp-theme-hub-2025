@@ -5,16 +5,23 @@
  * Replace them with your own styles or remove the file completely.
  */
 
-.wp-block-caes-hub-toc {
+.wp-block-caes-hub-toc-new {
     a {
         color: var(--wp--preset--color--contrast);
     }
-    h2, h3, h4, h5, h6 {
+
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         font-size: var(--wp--preset--font-size--large);
     }
+
     ul {
         padding-inline-start: var(--wp--preset--spacing--40);
     }
+
     ul.list-none {
         padding-inline-start: 0;
         list-style: none;
@@ -23,10 +30,12 @@
             padding-inline-start: revert;
         }
     }
-    & > *:first-child {
+
+    &>*:first-child {
         margin-top: 0;
     }
-    & > *:last-child {
+
+    &>*:last-child {
         margin-bottom: 0;
     }
 }
@@ -37,7 +46,7 @@
     top: var(--wp--style--block-gap);
     left: 0;
     z-index: 1000;
-    transition: transform 0.3s ease-in-out, left 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out;
     width: 222px;
     max-height: 90vh;
     overflow-y: auto;
@@ -50,41 +59,76 @@
     font-size: var(--wp--preset--font-size--small);
     border: 1px solid var(--wp--preset--color--base-three);
     border-left: 0;
-    h2, h3, h4, h5, h6 {
+
+    &.visible {
+        transform: translateX(222px);
+    }
+
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         font-family: var(--wp--preset--font-family--merriweather);
         font-size: var(--wp--preset--font-size--normal);
     }
+
     a {
         text-decoration: none;
+        color: inherit;
     }
-    ul {
-        list-style: none;
+
+    ul,
+    ol {
         padding-inline-start: 18px !important;
+
         li {
             margin: var(--wp--preset--spacing--20) 0;
+            position: relative;
+
             &.active {
                 font-weight: bold;
-                &::marker {
+
+                &::before {
                     content: '\279E\00A0\00A0';
                     color: var(--wp--preset--color--bulldog-red);
+                    position: absolute;
+                    left: -18px;
                 }
             }
         }
+
         padding: 0;
+
         ul {
             padding-left: var(--wp--preset--spacing--40);
         }
     }
-  }
-  
-  @media (max-width: 1440px) {
-    .sticky-toc {
-      display: none; /* Hide on mobile */
-    }
-  }
 
-  @media print {
-    .sticky-toc {
-      display: none !important; /* Hide on print */
+    ul {
+        list-style: none;
     }
-  }
+
+    ol > {
+        li {
+            &.active {
+                &::before {
+                    left: -32px;
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 1440px) {
+    .sticky-toc {
+        display: none;
+    }
+}
+
+@media print {
+    .sticky-toc {
+        display: none !important;
+        /* Hide on print */
+    }
+}

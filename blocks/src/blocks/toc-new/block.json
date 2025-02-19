@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "caes-hub/toc",
+	"name": "caes-hub/toc-new",
 	"version": "0.1.0",
 	"title": "Table of Contents",
 	"category": "widgets",
 	"icon": "list-view",
-	"description": "Displays a table of contents based on page headings. Made for the CAES Field Report theme.",
+	"description": "Displays a table of contents based on page headings.",
 	"example": {},
 	"supports": {
 		"align": true,
@@ -28,7 +28,7 @@
 			"lineHeight": true
 		}
 	},
-	"attributes": {
+    "attributes": {
 		"listStyle": {
 			"type": "string",
 			"default": "ul"
@@ -40,19 +40,12 @@
 		"showSubheadings": {
 			"type": "boolean",
 			"default": true
-		},
-		"tocData": {
-			"type": "string",
-			"default": "[]"
-		},
-		"smoothScroll": {
-			"type": "boolean",
-			"default": true
 		}
 	},
-	"textdomain": "toc",
+	"textdomain": "toc-new",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
-	"viewScript": "file:./view.js"
+	"render": "file:./render.php",
+    "viewScript": "file:./view.js"
 }

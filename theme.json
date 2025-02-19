@@ -405,6 +405,10 @@
         {
             "name": "archive-publications",
             "title": "Publication Archives"
+        },
+        {
+            "name": "search-publications",
+            "title": "Publications Search"
         }
     ]
 }

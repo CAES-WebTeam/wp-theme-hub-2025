@@ -180,6 +180,40 @@ window.addEventListener('load', function () {
     });
   });
   /** END ADDING SMOOTH SCROLL */
+
+  /** HIGHLIGHT ACTIVE TOC ITEM BASED ON SCROLL */
+  const tocLinksMap = new Map(); // Map heading IDs to TOC list items
+
+  // Map TOC links to their corresponding headings
+  document.querySelectorAll('.wp-block-caes-hub-toc a[href^="#"]').forEach(link => {
+    const targetId = link.getAttribute('href').substring(1);
+    const targetHeading = document.getElementById(targetId);
+    if (targetHeading) {
+      tocLinksMap.set(targetId, link.parentElement); // Store the <li> element
+    }
+  });
+
+  // Observer to track heading visibility
+  const headingObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const id = entry.target.id;
+      const tocItem = tocLinksMap.get(id);
+      if (tocItem) {
+        if (entry.isIntersecting) {
+          // Add active class when heading is in view
+          document.querySelectorAll('.wp-block-caes-hub-toc li').forEach(item => item.classList.remove('active'));
+          tocItem.classList.add('active');
+        }
+      }
+    });
+  }, {
+    threshold: 0.5
+  } // Trigger when at least 50% of the heading is in view
+  );
+
+  // Observe all headings
+  headings.forEach(heading => headingObserver.observe(heading));
+  /** END HIGHLIGHT ACTIVE TOC ITEM BASED ON SCROLL */
 });
 /******/ })()
 ;
