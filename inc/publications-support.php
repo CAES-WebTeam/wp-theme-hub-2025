@@ -76,6 +76,7 @@ register_deactivation_hook( __FILE__, function() {
 });
 
 
+/****** Publication Dynamic PDF ******/
 // Generate PDF fucntionality
 function generate_pdf() {
     try {
@@ -144,7 +145,8 @@ add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');
 
 
 
-// POST Import actions
+/****** IMPORT ACTIONS ******/
+// Save Post Actions
 add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
 
     if (get_post_type($post_id) !== 'publications') {
@@ -197,7 +199,7 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
 }, 10, 3);
 
 
-
+// Clean up content
 add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     // Get the post content
     $content = get_post_field('post_content', $post_id);
@@ -211,3 +213,68 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
         'post_content' => $content,
     ]);
 }, 10, 3);
+
+
+// Set Image URL for thumbnail
+function get_full_image_url($relative_path) {
+    $base_url = "https://secure.caes.uga.edu/extension/publications/images/thumbnail-pub-images/";
+    $relative_path = ltrim($relative_path, '/');
+    $full_url = $base_url . '/' . $relative_path;
+
+    // Check if the image exists
+    $headers = @get_headers($full_url);
+    if ($headers && strpos($headers[0], '200')) {
+        return $full_url; // Return valid URL
+    } else {
+        return ''; // Return empty to avoid import errors
+    }
+}
+
+
+/****** Custom Publications Permalink ******/
+function custom_publications_rewrite_rules() {
+    add_rewrite_rule(
+        '^publications/([^/]+)/([^/]+)/?$',
+        'index.php?post_type=publications&name=$matches[2]',
+        'top'
+    );
+}
+add_action('init', 'custom_publications_rewrite_rules');
+
+
+function custom_publications_query_vars($query_vars) {
+    $query_vars[] = 'publication_number';
+    return $query_vars;
+}
+add_filter('query_vars', 'custom_publications_query_vars');
+
+
+function custom_publications_permalink($post_link, $post) {
+    if ($post->post_type === 'publications') {
+        $publication_number = get_field('publication_number', $post->ID);
+
+        if ($publication_number) {
+            $publication_number = sanitize_title($publication_number);
+
+            return home_url("/publications/{$publication_number}/{$post->post_name}/");
+        }
+    }
+    return $post_link;
+}
+add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
+
+
+function custom_publications_parse_request($query) {
+    if (!is_admin() && isset($query->query_vars['publication_number'])) {
+        $publication_number = sanitize_title($query->query_vars['publication_number']);
+
+        $query->set('meta_query', array(
+            array(
+                'key'     => 'publication_number',
+                'value'   => $publication_number,
+                'compare' => '='
+            )
+        ));
+    }
+}
+add_action('pre_get_posts', 'custom_publications_parse_request');
