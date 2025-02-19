@@ -86,8 +86,12 @@
             margin: var(--wp--preset--spacing--20) 0;
             position: relative;
 
-            &.active {
+            &.active > a {
                 font-weight: bold;
+            }
+
+            &.active {
+                
 
                 &::before {
                     content: '\279E\00A0\00A0';

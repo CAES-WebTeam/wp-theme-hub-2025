@@ -57,6 +57,7 @@ function caes_hub_block_init()
 	// Register Publication Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-block');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-authors');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-featured-image');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-history');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-number');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-resources');

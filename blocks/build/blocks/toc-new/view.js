@@ -10,7 +10,9 @@ window.addEventListener('load', function () {
   const showSubheadings = tocWrapper.dataset.showSubheadings === "1";
   const listStyle = tocWrapper.dataset.listStyle || "ul";
   const title = tocWrapper.dataset.title || "Table of Contents";
-  const headings = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2'));
+
+  // Filter out the h2 element with the same text as the title
+  const headings = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2')).filter(heading => heading.textContent !== title);
   function slugify(text) {
     return text.toString().trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, '');
   }

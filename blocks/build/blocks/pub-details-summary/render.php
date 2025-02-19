@@ -7,5 +7,5 @@ $summary = get_field('summary', $post_id);
 ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
-    <p><?php echo $summary; ?></p>
+    <?php echo $summary; ?>
 </div>

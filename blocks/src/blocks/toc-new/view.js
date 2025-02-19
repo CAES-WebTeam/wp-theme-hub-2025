@@ -9,7 +9,8 @@ window.addEventListener('load', function () {
     const listStyle = tocWrapper.dataset.listStyle || "ul";
     const title = tocWrapper.dataset.title || "Table of Contents";
 
-    const headings = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2'));
+    // Filter out the h2 element with the same text as the title
+    const headings = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2')).filter(heading => heading.textContent !== title);
 
     function slugify(text) {
         return text.toString().trim().toLowerCase()
@@ -47,30 +48,30 @@ window.addEventListener('load', function () {
 
     function buildTOCs(headings) {
         if (headings.length === 0) return;
-    
+
         const usedIDs = new Set();
         const tocList = createList();
         const stickyTocList = createList();
         const headingMap = new Map();
-    
+
         let currentList = tocList;
         let stickyCurrentList = stickyTocList;
         let lastLevel = 2;
-    
+
         headings.forEach(heading => {
             const level = parseInt(heading.tagName.substring(1), 10);
             const baseID = slugify(heading.textContent);
             const uniqueID = generateUniqueID(baseID, usedIDs);
             heading.id = uniqueID;
-    
+
             const listItem = document.createElement('li');
             const link = document.createElement('a');
             link.textContent = heading.textContent;
             link.href = `#${uniqueID}`;
             listItem.appendChild(link);
-    
+
             const stickyItem = listItem.cloneNode(true);
-    
+
             // Reset nesting if it's an H2
             if (level === 2) {
                 currentList = tocList;
@@ -80,24 +81,24 @@ window.addEventListener('load', function () {
                 const newList = createList(true);
                 currentList.lastElementChild?.appendChild(newList);
                 currentList = newList;
-    
+
                 const newStickyList = createList(true);
                 stickyCurrentList.lastElementChild?.appendChild(newStickyList);
                 stickyCurrentList = newStickyList;
             }
-    
+
             // Append to the lists
             currentList.appendChild(listItem);
             stickyCurrentList.appendChild(stickyItem);
-    
+
             // Ensure correct mapping between heading ID and sticky item
             headingMap.set(uniqueID, stickyItem);
-    
+
             lastLevel = level;
         });
-    
+
         tocWrapper.appendChild(tocList);
-    
+
         // Add sticky TOC before </main>
         const mainElement = document.querySelector('main');
         if (mainElement) {
@@ -108,13 +109,12 @@ window.addEventListener('load', function () {
             stickyTOC.appendChild(tocTitle);
             stickyTOC.appendChild(stickyTocList);
             mainElement.appendChild(stickyTOC);
-    
+
             return { stickyTOC, headingMap };
         }
-    
+
         return { stickyTOC: null, headingMap };
     }
-    
 
     const { stickyTOC, headingMap } = buildTOCs(headings) || {};
 
@@ -169,6 +169,6 @@ window.addEventListener('load', function () {
 
         headings.forEach(heading => observer.observe(heading));
     }
-    
+
     observeHeadings();
 });
