@@ -20,6 +20,12 @@
       "margin": true,
       "padding": true,
       "blockGap": true
+    },
+    "shadow": true,
+    "typography": {
+      "fontSize": true,
+      "textAlign": true,
+      "lineHeight": true
     }
   },
   "attributes": {

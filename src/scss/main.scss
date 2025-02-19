@@ -11,6 +11,10 @@ figcaption a {
     color: inherit;
 }
 
+.caes-hub-content-post .wp-block-footnotes :target {
+    background-color: var(--wp--preset--color--odyssey);
+}
+
 // Print view
 @media print {
     :root :where(.wp-block-image .wp-element-caption, .wp-block-image .wp-block-audio figcaption, .wp-block-image .wp-block-embed figcaption, .wp-block-image .wp-block-gallery figcaption, .wp-block-image .wp-block-image figcaption, .wp-block-image .wp-block-table figcaption, .wp-block-image .wp-block-video figcaption) {
@@ -91,6 +95,11 @@ figcaption a {
 .caes-hub-content {
     box-shadow: var(--wp--preset--shadow--large);
     position: relative;
+
+    .wp-block-table {
+        margin-left: var(--wp--preset--spacing--20);
+        margin-right: var(--wp--preset--spacing--20);
+    }
 }
 
 // Print view

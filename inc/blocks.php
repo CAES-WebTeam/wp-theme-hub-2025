@@ -33,7 +33,8 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel' );
 
 	// Register Table of Contents
-	register_block_type(get_template_directory() . '/blocks/build/blocks/toc' );
+	// register_block_type(get_template_directory() . '/blocks/build/blocks/toc' );
+	register_block_type(get_template_directory() . '/blocks/build/blocks/toc-new' );
 
 	// Register Event Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-form');
@@ -60,6 +61,7 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-number');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-resources');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-status');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-summary');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-type');
 
 }
