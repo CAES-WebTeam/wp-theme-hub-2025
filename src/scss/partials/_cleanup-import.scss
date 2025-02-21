@@ -1,0 +1,38 @@
+// These styles are used to cleanup the content that was imported from our older systems.
+
+// IMAGES
+
+img:not(:has(parent figure.wp-block-image)):not([width]) {
+    max-width: 100%;
+    height: auto;
+}
+
+img.image-right {
+    float: right;
+    margin-inline-start: 2em;
+    margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+}
+
+img.image-left {
+    float: left;
+    margin-inline-end: 2em;
+    margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+}
+
+// SEPARATOR / <hr>
+
+hr:not(.wp-block-separator) {
+    border: 0;
+    border-top: 1px solid var(--wp--preset--color--base-three);
+}
+
+// TABLES
+
+table.hstripe tr:nth-child(odd),
+table.vstripe td:nth-child(odd) {
+    background-color: var(--wp--preset--color--base-three);
+}
+
+table:not(.wp-block-table) {
+    border: 1px solid var(--wp--preset--color--base-three);
+}
