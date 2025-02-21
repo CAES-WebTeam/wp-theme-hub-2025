@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "This is the official WordPress theme of the UGA CAES Field Report website.",
   "scripts": {
-    "build": "gulp",
+    "build": "gulp && wp-scripts build",
+    "start": "wp-scripts start",
     "lint:css": "stylelint **/*.css",
     "lint-fix:css": "stylelint **/*.css --fix",
     "lint:js": "eslint .",

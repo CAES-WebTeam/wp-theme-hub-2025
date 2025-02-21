@@ -84,6 +84,10 @@ $breakpoint--global-header: 782px;
 
 @media screen and (max-width: $breakpoint--global-header) {
 
+    .wp-block-navigation__responsive-container-close {
+        right: var(--wp--preset--spacing--30);
+    }
+
     .wp-block-navigation {
         .wp-block-navigation__responsive-container-content {
             ul.wp-block-navigation__container {

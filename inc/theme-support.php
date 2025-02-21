@@ -22,15 +22,15 @@ function caes_hub_styles()
 add_action('wp_enqueue_scripts', 'caes_hub_styles');
 
 // Adds custom style choices to core blocks with add-block-styles.js
-function add_block_style()
+function theme_editor_assets()
 {
 	wp_enqueue_script(
-		'editor-mods',
-		get_theme_file_uri() . '/assets/js/editor-mods.js',
+		'block-styles',
+		get_theme_file_uri() . '/assets/js/block-styles.js',
 		array('wp-blocks', 'wp-dom-ready', 'wp-edit-post')
 	);
 }
-add_action('enqueue_block_editor_assets', 'add_block_style');
+add_action('enqueue_block_editor_assets', 'theme_editor_assets');
 
 
 // Remove Default Block Patterns
@@ -277,14 +277,12 @@ function query_for_related_news( $query, $block ) {
 
 add_filter( 'query_loop_block_query_vars', 'query_for_related_news', 10, 2 );
 
-// If a query block has a class name of caes-hub-related-news, 
-// the query will be modified to show related news
+// If a query block has a class name of caes-hub-related-news or caes-hub-related-pubs,
+// the query will be modified to show related news or pubs selected for that post
 
 function query_for_related_pubs( $query, $block ) {
     global $post;
-
     $block = $block->parsed_block;
-
     if (
         isset( $block['attrs']['className'] )
         && false !== strpos( $block['attrs']['className'], 'caes-hub-related-pubs' )
@@ -303,9 +301,6 @@ function query_for_related_pubs( $query, $block ) {
             }
         }
     }
-
     return $query;
 }
-
 add_filter( 'query_loop_block_query_vars', 'query_for_related_pubs', 10, 2 );
-

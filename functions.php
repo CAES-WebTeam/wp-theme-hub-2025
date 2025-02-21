@@ -15,6 +15,7 @@ require get_template_directory() . '/inc/blocks.php';
 require get_template_directory() . '/inc/acf.php';
 require get_template_directory() . '/inc/events-support.php';
 require get_template_directory() . '/inc/publications-support.php';
+require get_template_directory() . '/block-variations/index.php';
 
 /* Filter for search form */
 add_filter('get_search_form', function($form) {

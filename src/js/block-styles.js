@@ -66,36 +66,3 @@ wp.blocks.registerBlockStyle( 'core/quote', {
   name: 'caes-hub-red-smart-quote',
   label: 'Red Smart Quote'
 })
-
-// ADD BLOCK VARIATIONS
-
-// Event Query Block Variation
-
-const eventsVariation = 'upcoming-events';
-
-wp.blocks.registerBlockVariation( 'core/query', {
-  name: eventsVariation,
-  title: 'Upcoming Events',
-  description: 'Displays a list of upcoming events',
-  icon: 'calendar-alt',
-  attributes: {
-    namespace: eventsVariation,
-    query: {
-      postType: 'events',
-      perPage: 4,
-      offset: 0,
-      filterByDate: true
-    },
-  },
-  isActive: [ 'namespace' ],
-  scope: [ 'inserter' ],
-  innerBlocks: [
-    [
-      'core/post-template',
-      {},
-      [
-        [ 'core/post-title' ]
-      ],
-    ]
-  ]
-});

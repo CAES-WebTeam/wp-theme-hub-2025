@@ -1,0 +1,10 @@
+{
+    "name": "block-variations",
+    "version": "1.0.0",
+    "scripts": {
+        "start": "wp-scripts start"
+    },
+    "devDependencies": {
+        "@wordpress/scripts": "^30.11.0"
+    }
+}

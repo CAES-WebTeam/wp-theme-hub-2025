@@ -3,6 +3,7 @@
 	overflow: hidden;
 	position: relative;
 	aspect-ratio: 3/2;
+	min-width: 40%;
 	background-color: var(--wp--preset--color--base-three);
 }
 
@@ -23,4 +24,11 @@
 	box-sizing: border-box;
 	object-fit: cover;
 	object-position: center;
+}
+
+.caes-hub-main-bg-f-img {
+	.wp-block-caes-hub-pub-details-featured-image {
+		aspect-ratio: none;
+		width: 100%;
+	}
 }
