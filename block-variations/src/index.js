@@ -56,7 +56,7 @@ registerBlockVariation( 'core/query', {
   },
   isActive: [ 'namespace' ],
   scope: [ 'inserter' ],
-  allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
+  // allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
   innerBlocks: [
     [
       'core/post-template',
@@ -95,7 +95,7 @@ const PubVariationControls = ( { props: { attributes, setAttributes } } ) => {
       />
 
       {/* Order By Selector */}
-      <SelectControl
+      {/* <SelectControl
         label="Order By"
         value={ query.pubOrderBy }
         options={[
@@ -103,13 +103,13 @@ const PubVariationControls = ( { props: { attributes, setAttributes } } ) => {
           { value: 'date_asc', label: 'Oldest to newest' },
           { value: 'title_asc', label: 'A → Z' },
           { value: 'title_desc', label: 'Z → A' },
-          // { value: 'recently_revised', label: 'Recently Revised' },
-          // { value: 'recently_published', label: 'Recently Published' }
+          { value: 'recently_revised', label: 'Recently Revised' },
+          { value: 'recently_published', label: 'Recently Published' }
         ]}
         onChange={( value ) =>
           setAttributes({ query: { ...query, pubOrderBy: value } })
         }
-      />
+      /> */}
     </PanelBody>
   );
 };

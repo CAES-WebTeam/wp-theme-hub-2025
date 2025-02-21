@@ -189,7 +189,7 @@ const publicationsVariation = 'pubs-feed';
   },
   isActive: ['namespace'],
   scope: ['inserter'],
-  allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
+  // allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
   innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
 });
 
@@ -213,9 +213,9 @@ const PubVariationControls = ({
   const {
     query
   } = attributes;
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
     title: "Publication Feed Settings",
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
       label: "Language",
       value: query.language,
       options: [{
@@ -234,32 +234,7 @@ const PubVariationControls = ({
           language: value
         }
       })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
-      label: "Order By",
-      value: query.pubOrderBy,
-      options: [{
-        value: 'date_desc',
-        label: 'Newest to oldest'
-      }, {
-        value: 'date_asc',
-        label: 'Oldest to newest'
-      }, {
-        value: 'title_asc',
-        label: 'A → Z'
-      }, {
-        value: 'title_desc',
-        label: 'Z → A'
-      }
-      // { value: 'recently_revised', label: 'Recently Revised' },
-      // { value: 'recently_published', label: 'Recently Published' }
-      ],
-      onChange: value => setAttributes({
-        query: {
-          ...query,
-          pubOrderBy: value
-        }
-      })
-    })]
+    })
   });
 };
 const withPubVariationControls = BlockEdit => props => {
