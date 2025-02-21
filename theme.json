@@ -409,6 +409,10 @@
         {
             "name": "search-publications",
             "title": "Publications Search"
+        },
+        {
+            "name": "landing-stories",
+            "title": "Stories Landing Page"
         }
     ]
 }
