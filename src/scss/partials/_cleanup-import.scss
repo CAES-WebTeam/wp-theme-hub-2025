@@ -30,9 +30,17 @@ hr:not(.wp-block-separator) {
 
 table.hstripe tr:nth-child(odd),
 table.vstripe td:nth-child(odd) {
-    background-color: var(--wp--preset--color--base-three);
+    background-color: var(--wp--preset--color--base-two);
 }
 
 table:not(.wp-block-table) {
-    border: 1px solid var(--wp--preset--color--base-three);
+    border: 1px solid var(--wp--preset--color--base-two);
+    border-collapse: collapse;
+    thead {
+        font-weight: bold;
+        td, th {
+            border: 1px solid var(--wp--preset--color--base-three);
+            padding: var(--wp--preset--spacing--20);
+        }
+    }
 }
