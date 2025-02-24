@@ -3,6 +3,7 @@
 // Wait for page to load
 document.addEventListener('DOMContentLoaded', function () {
 
+    /*** START TO TOP BUTTON */
     // Make back to top button
     const toTopButton = document.createElement('a');
     toTopButton.classList.add('caes-hub-to-top');
@@ -36,6 +37,21 @@ document.addEventListener('DOMContentLoaded', function () {
             top: 0,
             behavior: 'smooth'
         });
+    });
+    /*** END TO TOP BUTTON */
+
+    /*** START TABLE FIX */
+    // Find tables without wp-block-table class
+    const tables = document.querySelectorAll('.wp-block-post-content table:not(.wp-block-table table)');
+    tables.forEach(table => {
+        // Check if the table is already inside a <figure.wp-block-table>
+        if (!table.closest('figure.wp-block-table')) {
+            // Add wrapper div
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('responsitable-wrapper');
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
     });
 
 });

@@ -1,46 +1,90 @@
 // These styles are used to cleanup the content that was imported from our older systems.
 
-// IMAGES
 
-img:not(:has(parent figure.wp-block-image)):not([width]) {
-    max-width: 100%;
-    height: auto;
-}
+// All of these changes apply to just this div, where the content is imported
+.wp-block-post-content {
 
-img.image-right {
-    float: right;
-    margin-inline-start: 2em;
-    margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-}
+    // IMAGES
 
-img.image-left {
-    float: left;
-    margin-inline-end: 2em;
-    margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-}
+    img:not(:has(parent figure.wp-block-image)):not([width]) {
+        max-width: 100%;
+        height: auto;
+    }
 
-// SEPARATOR / <hr>
+    img.image-right {
+        float: right;
+        margin-inline-start: 2em;
+        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    }
 
-hr:not(.wp-block-separator) {
-    border: 0;
-    border-top: 1px solid var(--wp--preset--color--base-three);
-}
+    img.image-left {
+        float: left;
+        margin-inline-end: 2em;
+        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    }
 
-// TABLES
+    // If a <div> is wrapped around an image with .image-right or .image-left with left or right class
 
-table.hstripe tr:nth-child(odd),
-table.vstripe td:nth-child(odd) {
-    background-color: var(--wp--preset--color--base-two);
-}
+    div.right {
+        // float: right;
+        margin-inline-start: 2em;
+        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        clear: both;
+        display: table;
 
-table:not(.wp-block-table) {
-    border: 1px solid var(--wp--preset--color--base-two);
-    border-collapse: collapse;
-    thead, tbody {
-        font-weight: bold;
-        td, th {
-            border: 1px solid var(--wp--preset--color--base-three);
-            padding: var(--wp--preset--spacing--20);
+        img.image-right {
+            float: none;
+            margin-inline-end: unset;
         }
     }
+
+    div.left {
+        // float: left;
+        margin-inline-end: 2em;
+        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        clear: both;
+        display: table;
+
+        img.image-left {
+            float: none;
+            margin-inline-start: unset;
+        }
+    }
+
+    // SEPARATOR / <hr>
+
+    hr:not(.wp-block-separator) {
+        border: 0;
+        border-top: 1px solid var(--wp--preset--color--base-three);
+    }
+
+    // TABLES
+
+    table.hstripe tr:nth-child(odd),
+    table.vstripe td:nth-child(odd) {
+        background-color: var(--wp--preset--color--base-two);
+    }
+
+    table:not(.wp-block-table table) {
+        // border: 1px solid var(--wp--preset--color--base-two);
+        border-collapse: collapse;
+
+        thead,
+        tbody {
+
+            td,
+            th {
+                min-width: 110px;
+                border: 1px solid var(--wp--preset--color--base-three);
+                padding: var(--wp--preset--spacing--20);
+                line-height: 1.5;
+                vertical-align: baseline;
+            }
+        }
+
+        thead {
+            font-weight: bold;
+        }
+    }
+
 }

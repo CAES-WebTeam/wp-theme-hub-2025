@@ -66,3 +66,20 @@ wp.blocks.registerBlockStyle( 'core/quote', {
   name: 'caes-hub-red-smart-quote',
   label: 'Red Smart Quote'
 })
+
+// Table Editor Styles
+
+wp.blocks.registerBlockStyle( 'core/table', {
+  name: 'caes-hub-hstripe',
+  label: 'Stripes with Borders'
+})
+
+wp.blocks.registerBlockStyle( 'core/table', {
+  name: 'caes-hub-vstripe',
+  label: 'Vertical Stripes'
+})
+
+wp.blocks.registerBlockStyle( 'core/table', {
+  name: 'caes-hub-vstripe-border',
+  label: 'Vertical Stripes with Borders'
+})

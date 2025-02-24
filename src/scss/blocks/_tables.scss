@@ -1,0 +1,26 @@
+// Table styling fixes
+.wp-block-table,
+.responsitable-wrapper {
+    td {
+        vertical-align: baseline;
+    }
+}
+
+@media screen and (max-width: 781px) {
+
+    .wp-block-table,
+    .responsitable-wrapper {
+        max-width: 100%;
+        overflow-y: auto;
+
+        table {
+            table-layout: auto !important;
+        }
+
+        td,
+        th {
+            overflow-wrap: normal !important;
+            word-break: normal !important;
+        }
+    }
+}

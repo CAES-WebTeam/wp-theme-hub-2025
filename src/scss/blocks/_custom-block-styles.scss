@@ -54,6 +54,7 @@ ul.is-style-caes-hub-list-none {
 // Use checkbox for ul
 ul.is-style-caes-hub-list-checkbox {
     list-style: none;
+
     li::marker {
         content: "☐ ";
         font-size: var(--wp--preset--font-size--large);
@@ -132,4 +133,30 @@ ul.is-style-caes-hub-list-checkbox {
             @include arrow-link-hover();
         }
     }
+}
+
+// TABLES
+
+.is-style-caes-hub-hstripe {
+    tbody tr:nth-child(2n+1) {
+		background-color: #eee;
+		background: rgba(204, 204, 204, .25);
+	}
+}
+
+.is-style-caes-hub-vstripe {
+    td, th {
+        border-color: #0000;
+    }
+    tbody td:nth-child(2n+1) {
+		background-color: var(--wp--preset--color--base-two);
+		background: var(--wp--preset--color--base-three);
+	}
+}
+
+.is-style-caes-hub-vstripe-border {
+    tbody td:nth-child(2n+1) {
+		background-color: var(--wp--preset--color--base-two);
+		background: var(--wp--preset--color--base-three);
+	}
 }
