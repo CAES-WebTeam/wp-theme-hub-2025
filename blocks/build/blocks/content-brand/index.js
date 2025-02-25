@@ -60,9 +60,7 @@ const Edit = ({
   attributes,
   setAttributes
 }) => {
-  const siteUrl = wp.data.select('core').getSite().url;
-  const themePath = "/wp-content/themes/wp-theme-hub-2025";
-  const logoSrc = attributes.version === 'light' ? `${siteUrl}${themePath}/assets/images/caes-logo-horizontal-cw.png` : `${siteUrl}${themePath}/assets/images/caes-logo-horizontal.png`;
+  const isLight = attributes.version === 'light';
   const units = [{
     value: 'px',
     label: 'px',
@@ -109,14 +107,18 @@ const Edit = ({
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
       style: {
-        width: attributes.customWidth || 'auto'
+        width: attributes.customWidth || 'auto',
+        height: '50px',
+        backgroundColor: isLight ? '#eaeaea' : '#474747',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: isLight ? '#000' : '#fff',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        padding: '0.5rem'
       },
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-        loading: "lazy",
-        className: "caes-hub-content-logo",
-        src: logoSrc,
-        alt: "UGA College of Agricultural & Environmental Sciences"
-      })
+      children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Logo Placeholder", "caes-hub")
     })]
   });
 };

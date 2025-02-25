@@ -33,11 +33,7 @@ import './editor.scss';
  * @return {Element} Element to render.
  */
 const Edit = ({ attributes, setAttributes }) => {
-	const siteUrl = wp.data.select('core').getSite().url;
-	const themePath = "/wp-content/themes/wp-theme-hub-2025";
-	const logoSrc = attributes.version === 'light'
-		? `${siteUrl}${themePath}/assets/images/caes-logo-horizontal-cw.png`
-		: `${siteUrl}${themePath}/assets/images/caes-logo-horizontal.png`;
+	const isLight = attributes.version === 'light';
 
 	const units = [
 		{ value: 'px', label: 'px', default: 0 },
@@ -70,14 +66,20 @@ const Edit = ({ attributes, setAttributes }) => {
 			</InspectorControls>
 			<div 
 				{...useBlockProps()} 
-				style={{ width: attributes.customWidth || 'auto' }}
+				style={{ 
+					width: attributes.customWidth || 'auto', 
+					height: '50px', 
+					backgroundColor: isLight ? '#eaeaea' : '#474747', 
+					display: 'flex', 
+					alignItems: 'center', 
+					justifyContent: 'center', 
+					color: isLight ? '#000' : '#fff',
+					fontSize: '14px',
+					fontWeight: 'bold',
+					padding: '0.5rem'
+				}}
 			>
-				<img
-					loading="lazy"
-					className="caes-hub-content-logo"
-					src={logoSrc}
-					alt="UGA College of Agricultural & Environmental Sciences"
-				/>
+				{__("Logo Placeholder", "caes-hub")}
 			</div>
 		</>
 	);
