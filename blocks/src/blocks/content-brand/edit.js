@@ -22,7 +22,7 @@ import { PanelBody, SelectControl, __experimentalUnitControl as UnitControl } fr
  */
 import './editor.scss';
 
-import ServerSideRender from '@wordpress/server-side-render';
+// import ServerSideRender from '@wordpress/server-side-render';
 
 /**
  * The edit function describes the structure of your block in the context of the
@@ -33,13 +33,18 @@ import ServerSideRender from '@wordpress/server-side-render';
  * @return {Element} Element to render.
  */
 const Edit = ({ attributes, setAttributes }) => {
+	const siteUrl = wp.data.select('core').getSite().url;
+	const themePath = "/wp-content/themes/wp-theme-hub-2025";
+	const logoSrc = attributes.version === 'light'
+		? `${siteUrl}${themePath}/assets/images/caes-logo-horizontal-cw.png`
+		: `${siteUrl}${themePath}/assets/images/caes-logo-horizontal.png`;
 
 	const units = [
-        { value: 'px', label: 'px', default: 0 },
-        { value: '%', label: '%', default: 10 },
-        { value: 'em', label: 'em', default: 0 },
+		{ value: 'px', label: 'px', default: 0 },
+		{ value: '%', label: '%', default: 10 },
+		{ value: 'em', label: 'em', default: 0 },
 		{ value: 'rem', label: 'rem', default: 0 },
-    ];
+	];
 
 	return (
 		<>
@@ -63,10 +68,15 @@ const Edit = ({ attributes, setAttributes }) => {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div {...useBlockProps()}>
-				<ServerSideRender
-					block="caes-hub/content-brand"
-					attributes={attributes}
+			<div 
+				{...useBlockProps()} 
+				style={{ width: attributes.customWidth || 'auto' }}
+			>
+				<img
+					loading="lazy"
+					className="caes-hub-content-logo"
+					src={logoSrc}
+					alt="UGA College of Agricultural & Environmental Sciences"
 				/>
 			</div>
 		</>
