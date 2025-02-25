@@ -12,4 +12,14 @@
             width: calc(100% - 222px);
         }
     }
+
+    // Stuff to hide from their templates
+    header.ugaheader,
+    footer.ugafooter,
+    .Header .Theme-Logos,
+    #StandardFooter {
+        display: none;
+    }
+
+
 }

@@ -48,7 +48,7 @@ add_action( 'acf/include_fields', function() {
 			'return_format' => 'value',
 			'allow_null' => 0,
 			'allow_in_bindings' => 1,
-			'layout' => 'horizontal',
+			'layout' => 'horizontal'
 		),
 		array(
 			'key' => 'field_66df0ed793db9',
@@ -1606,7 +1606,7 @@ add_action( 'acf/include_fields', function() {
 	),
 	'active' => true,
 	'description' => '',
-	'show_in_rest' => 0,
+	'show_in_rest' => 1
 ) );
 
 	acf_add_local_field_group( array(

@@ -34,6 +34,13 @@ add_filter('get_search_form', function($form) {
 function shorthand_rest_api($args, $post_type) {
     if ($post_type === 'shorthand_story') {
         $args['show_in_rest'] = true;
+
+        // Ensure 'supports' is an array and add 'excerpt'
+        if (isset($args['supports']) && is_array($args['supports'])) {
+            $args['supports'][] = 'excerpt';
+        } else {
+            $args['supports'] = ['excerpt'];
+        }
     }
     return $args;
 }

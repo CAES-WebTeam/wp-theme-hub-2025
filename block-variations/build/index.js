@@ -128,6 +128,7 @@ var __webpack_exports__ = {};
   \**********************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   withEventsVariationControls: () => (/* binding */ withEventsVariationControls),
 /* harmony export */   withPubVariationControls: () => (/* binding */ withPubVariationControls)
 /* harmony export */ });
 /* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
@@ -168,6 +169,65 @@ const eventsVariation = 'upcoming-events';
   scope: ['inserter'],
   innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
 });
+
+// Check if block is using our Events variation
+const isEventsVariation = props => {
+  const {
+    attributes: {
+      namespace
+    }
+  } = props;
+  return namespace && namespace === eventsVariation;
+};
+
+// Add Inspector Controls for selecting event type
+const EventsVariationControls = ({
+  props: {
+    attributes,
+    setAttributes
+  }
+}) => {
+  const {
+    query
+  } = attributes;
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+    title: "Events Feed Settings",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
+      label: "CAES or Extension",
+      value: query.event_type,
+      options: [{
+        value: 'All',
+        label: 'All'
+      }, {
+        value: 'CAES',
+        label: 'CAES'
+      }, {
+        value: 'Extension',
+        label: 'Extension'
+      }],
+      onChange: value => setAttributes({
+        query: {
+          ...query,
+          event_type: value
+        }
+      })
+    })
+  });
+};
+const withEventsVariationControls = BlockEdit => props => {
+  return isEventsVariation(props) ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(BlockEdit, {
+      ...props
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(EventsVariationControls, {
+        props: props
+      })
+    })]
+  }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(BlockEdit, {
+    ...props
+  });
+};
+(0,_wordpress_hooks__WEBPACK_IMPORTED_MODULE_1__.addFilter)('editor.BlockEdit', 'core/query', withEventsVariationControls);
 
 /** Event Query Block Variation - END */
 

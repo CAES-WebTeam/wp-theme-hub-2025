@@ -22,9 +22,42 @@ function variation_assets()
 }
 add_action('enqueue_block_editor_assets', 'variation_assets');
 
+
+/*** START EVENTS */
+// Backend
+function rest_event_type($args, $request) {
+    $event_type = $request->get_param('event_type');
+
+    // Debug: Log the event_type param to confirm it's coming in
+    error_log('Received event_type: ' . print_r($event_type, true));
+    
+    // Sanitize and confirm the sanitized value
+    $sanitized_event_type = sanitize_text_field($event_type);
+    error_log('Sanitized: ' . print_r($sanitized_event_type, true));
+
+    if (!empty($sanitized_event_type) && $sanitized_event_type !== 'All') {
+        $args['meta_key'] = 'event_type';
+        $args['meta_value'] = $sanitized_event_type;
+        $args['meta_compare'] = '='; // Explicitly set for exact matching
+    } else {
+        // When "All" is selected, remove the filter
+        error_log('Event Type is "All" - Removing Meta Query Filter');
+        unset($args['meta_key'], $args['meta_value'], $args['meta_compare']);
+    }
+
+    // Debug: Log the modified query args before returning
+    error_log('Modified query args: ' . print_r($args, true));
+    
+    return $args;
+}
+add_filter('rest_events_query', 'rest_event_type', 10, 2);
+
+/*** END EVENTS */
+
+/*** START PUBLICATONS */
 // Backend
 function rest_pub_language_orderby($args, $request) {
-    error_log('rest_pub_language_orderby activated');
+    // error_log('rest_pub_language_orderby activated');
 
     // Handle language filter
     $lang = $request->get_param('language');
@@ -34,7 +67,7 @@ function rest_pub_language_orderby($args, $request) {
     }
 
     // Handle order by
-    $order_by = $request->get_param('pubOrderBy');
+    // $order_by = $request->get_param('pubOrderBy');
 
     // if (in_array($order_by, ['recently_published', 'recently_revised'])) {
     //     // Get the latest 100 posts before filtering
@@ -83,27 +116,27 @@ function rest_pub_language_orderby($args, $request) {
 
     //         return $filtered_posts;
     //     });  
-    if ($order_by) {
-        // Default sorting logic (date/title)
-        switch ($order_by) {
-            case 'date_desc':
-                $args['orderby'] = 'date';
-                $args['order'] = 'DESC';
-                break;
-            case 'date_asc':
-                $args['orderby'] = 'date';
-                $args['order'] = 'ASC';
-                break;
-            case 'title_asc':
-                $args['orderby'] = 'title';
-                $args['order'] = 'ASC';
-                break;
-            case 'title_desc':
-                $args['orderby'] = 'title';
-                $args['order'] = 'DESC';
-                break;
-        }
-    }
+    // if ($order_by) {
+    //     // Default sorting logic (date/title)
+    //     switch ($order_by) {
+    //         case 'date_desc':
+    //             $args['orderby'] = 'date';
+    //             $args['order'] = 'DESC';
+    //             break;
+    //         case 'date_asc':
+    //             $args['orderby'] = 'date';
+    //             $args['order'] = 'ASC';
+    //             break;
+    //         case 'title_asc':
+    //             $args['orderby'] = 'title';
+    //             $args['order'] = 'ASC';
+    //             break;
+    //         case 'title_desc':
+    //             $args['orderby'] = 'title';
+    //             $args['order'] = 'DESC';
+    //             break;
+    //     }
+    // }
 
     return $args;
 }
@@ -114,15 +147,28 @@ add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
 function variations_pre_render_block($pre_render, $parsed_block)
 {
     // Check if 'attrs' and 'namespace' keys exist
-    if (isset($parsed_block['attrs']) && isset($parsed_block['attrs']['namespace']) && 'pubs-feed' === $parsed_block['attrs']['namespace']) {
+    if (isset($parsed_block['attrs']) && isset($parsed_block['attrs']['namespace'])) {
+        
+        $namespace = $parsed_block['attrs']['namespace'];
 
         // Define the filter function
-        $filter_function = function ($query, $block) use ($parsed_block) {
-            // Add rating meta key/value pair if queried and not empty.
-            if (isset($parsed_block['attrs']['query']['language']) && $parsed_block['attrs']['query']['language'] !== '') {
-                $query['meta_key'] = 'language';
-                $query['meta_value'] = absint($parsed_block['attrs']['query']['language']);
+        $filter_function = function ($query, $block) use ($parsed_block, $namespace) {
+            // Filter for publications (pubs-feed) by language
+            if ('pubs-feed' === $namespace) {
+                if (isset($parsed_block['attrs']['query']['language']) && $parsed_block['attrs']['query']['language'] !== '') {
+                    $query['meta_key'] = 'language';
+                    $query['meta_value'] = absint($parsed_block['attrs']['query']['language']);
+                }
             }
+            
+            // Filter for events by event_type
+            if ('upcoming-events' === $namespace) {
+                if (isset($parsed_block['attrs']['query']['event_type']) && $parsed_block['attrs']['query']['event_type'] !== '') {
+                    $query['meta_key'] = 'event_type';
+                    $query['meta_value'] = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
+                }
+            }
+
             return $query;
         };
 
@@ -138,3 +184,4 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
+/*** END PUBLICATONS */
