@@ -3,7 +3,7 @@
 /**
  * Title: Feature Post
  * Slug: caes-hub/post-feature
- * Categories: featured
+ * Categories: story_feeds
  * Description: Feature a post
  * Keywords: posts
  * Block Types: core/query

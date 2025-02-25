@@ -93,12 +93,19 @@
             .caes-hub-post-list-img-container {
                 width: 25vw;
                 height: 100%;
+                img {
+                    height: 100%;
+                }
             }
             .caes-hub-post-list-grid-info {
                 height: 100%;
             }
+            &:hover, &:focus {
+                .caes-hub-post-list-img-container:after {
+                    opacity: 0;
+                }
+            }
         }
-
     }
 
     .caes-hub-post-list-grid-title {
@@ -181,6 +188,12 @@
             }
         }
 
+        // Helper class for flex direction column on mobile
+        .caes-hub-post-list-mobile-column {
+            flex-direction: column;
+        }
+        
+        // Faux
         &.faux-caes-hub-post-list-grid {
             ul {
                 grid-template-columns: 1fr;

@@ -2,7 +2,7 @@
 /**
  * Title: Post Grid
  * Slug: caes-hub/post-grid-1
- * Categories: featured
+ * Categories: story_feeds
  * Description: Grid displaying posts
  * Keywords: grid, posts
  * Block Types: core/query

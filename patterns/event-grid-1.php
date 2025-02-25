@@ -2,9 +2,9 @@
 /**
  * Title: Event Grid
  * Slug: caes-hub/event-grid-1
- * Categories: featured
+ * Categories: event_feeds
  * Description: Grid displaying upcoming events
- * Keywords: grid, events
+ * Keywords: events
  * Block Types: core/query
  */
 ?>

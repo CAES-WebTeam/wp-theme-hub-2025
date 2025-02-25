@@ -2,7 +2,7 @@
 /**
  * Title: Related Publications
  * Slug: caes-hub/related-publications
- * Categories: featured
+ * Categories: pub_feeds
  * Description: Display publications related to the current post
  * Keywords: related publications, publications
  * Block Types: core/query

@@ -248,59 +248,94 @@ function wpfieldwork_rest_upcoming_events($args, $request)
 // If a query block has a class name of caes-hub-related-news, 
 // the query will be modified to show related news
 
-function query_for_related_news( $query, $block ) {
-    global $post;
+function query_for_related_news($query, $block)
+{
+	global $post;
 
-    $block = $block->parsed_block;
+	$block = $block->parsed_block;
 
-    if (
-        isset( $block['attrs']['className'] )
-        && false !== strpos( $block['attrs']['className'], 'caes-hub-related-news' )
-    ) {
-        if ( isset( $post->ID ) ) {
-            $related_posts = get_field( 'related_news', $post->ID );
+	if (
+		isset($block['attrs']['className'])
+		&& false !== strpos($block['attrs']['className'], 'caes-hub-related-news')
+	) {
+		if (isset($post->ID)) {
+			$related_posts = get_field('related_news', $post->ID);
 
-            if ( ! empty( $related_posts ) && is_array( $related_posts ) ) {
-                $query['post__in'] = wp_list_pluck( $related_posts, 'ID' );
-                $query['orderby'] = 'post__in'; // Preserve the selected order
-            } else {
-                // Show latest 3 posts if no related posts are selected
-                $query['posts_per_page'] = 3;
-                $query['orderby'] = 'date';
-                $query['order'] = 'DESC';
-            }
-        }
-    }
+			if (! empty($related_posts) && is_array($related_posts)) {
+				$query['post__in'] = wp_list_pluck($related_posts, 'ID');
+				$query['orderby'] = 'post__in'; // Preserve the selected order
+			} else {
+				// Show latest 3 posts if no related posts are selected
+				$query['posts_per_page'] = 3;
+				$query['orderby'] = 'date';
+				$query['order'] = 'DESC';
+			}
+		}
+	}
 
-    return $query;
+	return $query;
 }
 
-add_filter( 'query_loop_block_query_vars', 'query_for_related_news', 10, 2 );
+add_filter('query_loop_block_query_vars', 'query_for_related_news', 10, 2);
 
 // If a query block has a class name of caes-hub-related-news or caes-hub-related-pubs,
 // the query will be modified to show related news or pubs selected for that post
 
-function query_for_related_pubs( $query, $block ) {
-    global $post;
-    $block = $block->parsed_block;
-    if (
-        isset( $block['attrs']['className'] )
-        && false !== strpos( $block['attrs']['className'], 'caes-hub-related-pubs' )
-    ) {
-        if ( isset( $post->ID ) ) {
-            $related_pubs = get_field( 'related_publications', $post->ID );
+function query_for_related_pubs($query, $block)
+{
+	global $post;
+	$block = $block->parsed_block;
+	if (
+		isset($block['attrs']['className'])
+		&& false !== strpos($block['attrs']['className'], 'caes-hub-related-pubs')
+	) {
+		if (isset($post->ID)) {
+			$related_pubs = get_field('related_publications', $post->ID);
 
-            if ( ! empty( $related_pubs ) && is_array( $related_pubs ) ) {
-                $query['post__in'] = wp_list_pluck( $related_pubs, 'ID' );
-                $query['orderby'] = 'post__in'; // Preserve the selected order
-            } else {
-                // Show latest 3 posts if no related posts are selected
-                $query['posts_per_page'] = 3;
-                $query['orderby'] = 'date';
-                $query['order'] = 'DESC';
-            }
-        }
-    }
-    return $query;
+			if (! empty($related_pubs) && is_array($related_pubs)) {
+				$query['post__in'] = wp_list_pluck($related_pubs, 'ID');
+				$query['orderby'] = 'post__in'; // Preserve the selected order
+			} else {
+				// Show latest 3 posts if no related posts are selected
+				$query['posts_per_page'] = 3;
+				$query['orderby'] = 'date';
+				$query['order'] = 'DESC';
+			}
+		}
+	}
+	return $query;
 }
-add_filter( 'query_loop_block_query_vars', 'query_for_related_pubs', 10, 2 );
+add_filter('query_loop_block_query_vars', 'query_for_related_pubs', 10, 2);
+
+// Register pattern categories
+
+if (function_exists('register_block_pattern_category')) {
+	register_block_pattern_category(
+		'pub_feeds',
+		array(
+			'label' => __('Publication Feeds', 'field-report'),
+			'description' => __('Publication feeds', 'field-report'),
+		)
+	);
+	register_block_pattern_category(
+		'story_feeds',
+		array(
+			'label' => __('Story Feeds', 'field-report'),
+			'description' => __('Story feeds', 'field-report'),
+		)
+	);
+	register_block_pattern_category(
+		'event_feeds',
+		array(
+			'label' => __('Event Feeds', 'field-report'),
+			'description' => __('Event feeds', 'field-report'),
+		)
+	);
+	register_block_pattern_category(
+		'content_patterns',
+		array(
+			'label' => __('Content', 'field-report'),
+			'description' => __('Design patterns that can be used in article and publication content', 'field-report'),
+		)
+	);
+}

@@ -4,7 +4,7 @@
 /**
  * Title: Takeaways
  * Slug: caes-hub/takeaways-1
- * Categories: featured
+ * Categories: content_patterns
  * Description: Takeaways
  * Keywords: takeaways
  * Block Types: core/group

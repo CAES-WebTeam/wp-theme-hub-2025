@@ -3,7 +3,7 @@
 /**
  * Title: Featured Hand Picked Post
  * Slug: caes-hub/featured-hand-picked-post-1
- * Categories: featured
+ * Categories: story_feeds
  * Description: Hand select a post.
  * Keywords: post, hand picked, featured
  * Block Types: caes-hub/hand-picked-post

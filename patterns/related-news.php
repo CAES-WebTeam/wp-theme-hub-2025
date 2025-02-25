@@ -3,7 +3,7 @@
 /**
  * Title: Related News
  * Slug: caes-hub/related-news
- * Categories: featured
+ * Categories: story_feeds
  * Description: Display news articles related to the current post
  * Keywords: related news, news
  * Block Types: core/query

@@ -3,7 +3,7 @@
 /**
  * Title: Information Highlight
  * Slug: caes-hub/info-highlight-1
- * Categories: featured
+ * Categories: content_patterns
  * Description: Information highlight
  * Keywords: info, information, did you know, highlight
  * Block Types: core/group

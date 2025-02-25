@@ -2,7 +2,7 @@
 /**
  * Title: Quote
  * Slug: caes-hub/quote
- * Categories: featured
+ * Categories: content_patterns
  * Description: Feature a quote
  * Keywords: quote, blockquote
  * Block Types: core/quote
