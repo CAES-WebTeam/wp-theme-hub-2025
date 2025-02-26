@@ -1,30 +1,45 @@
 // Navigation block styles
 
+// Basic styling
+
+.wp-block-navigation {
+    li.wp-block-navigation-item {
+        align-items: flex-start;
+        &::before {
+            color: var(--wp--preset--color--bulldog-red);
+            content: "\25B8";
+            margin-right: 8px;
+        }
+    }
+}
+
 // Breakpoint adjustments
 
 $breakpoint--global-header: 782px;
 
 @media (max-width: $breakpoint--global-header) {
-	.wp-block-navigation__responsive-container-open:not(.always-shown) {
-		display: flex !important;
-	}
-	.wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
-		display: none !important;
-	}
+    .wp-block-navigation__responsive-container-open:not(.always-shown) {
+        display: flex !important;
+    }
+
+    .wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
+        display: none !important;
+    }
 }
 
 
 @media (min-width: $breakpoint--global-header) {
-	.wp-block-navigation__responsive-container-open:not(.always-shown) {
-		display: none !important;
-	}
-	.wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
-		display: block !important;
-		width: 100%;
-		position: relative;
-		z-index: auto;
-		background-color: inherit;
-	}
+    .wp-block-navigation__responsive-container-open:not(.always-shown) {
+        display: none !important;
+    }
+
+    .wp-block-navigation__responsive-container:not(.hidden-by-default):not(.is-menu-open) {
+        display: block !important;
+        width: 100%;
+        position: relative;
+        z-index: auto;
+        background-color: inherit;
+    }
 }
 
 // General adjustments
@@ -154,11 +169,13 @@ $breakpoint--global-header: 782px;
                             }
                         }
                     }
+
                     .wp-block-social-links {
-                       margin: 0 auto;
-                       a {
-                           border-bottom: none;
-                       }
+                        margin: 0 auto;
+
+                        a {
+                            border-bottom: none;
+                        }
                     }
                 }
             }
@@ -169,6 +186,7 @@ $breakpoint--global-header: 782px;
 
 // Print
 @media print {
+
     nav.wp-block-navigation,
     .wp-block-navigation {
         display: none !important;
