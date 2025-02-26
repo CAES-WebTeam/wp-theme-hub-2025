@@ -2,16 +2,16 @@
 
 // Basic styling
 
-.wp-block-navigation {
-    li.wp-block-navigation-item {
-        align-items: flex-start;
-        &::before {
-            color: var(--wp--preset--color--bulldog-red);
-            content: "\25B8";
-            margin-right: 8px;
-        }
-    }
-}
+// .wp-block-navigation {
+//     li.wp-block-navigation-item {
+//         align-items: flex-start;
+//         &::before {
+//             color: var(--wp--preset--color--bulldog-red);
+//             content: "\25B8";
+//             margin-right: 8px;
+//         }
+//     }
+// }
 
 // Breakpoint adjustments
 
