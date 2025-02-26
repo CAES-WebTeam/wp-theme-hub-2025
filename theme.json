@@ -178,6 +178,8 @@
         },
         "color": {
             "defaultPalette": false,
+            "defaultGradients": false,
+            "customGradient": false,
             "link": true,
             "palette": [
                 {
@@ -229,6 +231,13 @@
                     "slug": "contrast-two",
                     "color": "#757575",
                     "name": "Contrast Two"
+                }
+            ],
+            "gradients": [
+                {
+                    "slug": "olympic-half",
+                    "gradient": "linear-gradient(to bottom, var(--wp--preset--color--olympic) 66%, transparent 33%)",
+                    "name": "Olympic to transparent"
                 }
             ]
         },
