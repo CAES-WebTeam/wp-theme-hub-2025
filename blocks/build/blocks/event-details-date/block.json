@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "title": "Event Date",
   "category": "theme",
-  "icon": "block-default",
+  "icon": "calendar-alt",
   "description": "Event Date for the CAES Field Report 2025 theme.",
   "acf": {
     "mode": "preview",

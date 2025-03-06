@@ -52,7 +52,6 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-documents');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-contact');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-featured-image');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-gallery');
 
 	// Register Publication Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-block');
