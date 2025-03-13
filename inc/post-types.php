@@ -37,7 +37,7 @@ add_action( 'init', function() {
 		'show_in_rest' => true,
 		'menu_icon' => 'dashicons-admin-post',
 		'supports' => array(
-			0 => 'title', 1 => 'author'
+			0 => 'title', 1 => 'author', 2 => 'thumbnail'
 		),
 		'delete_with_user' => false,
 	) );
@@ -81,7 +81,7 @@ add_action( 'init', function() {
 		'show_in_rest' => true,
 		'menu_icon' => 'dashicons-admin-post',
 		'supports' => array(
-			0 => 'title', 1 => 'author', 2 => 'editor', 3 => 'tags'
+			0 => 'title', 1 => 'author', 2 => 'editor', 3 => 'tags', 4 => 'thumbnail'
 		),
 		'delete_with_user' => false,
 	) );
