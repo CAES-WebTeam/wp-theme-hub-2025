@@ -1,7 +1,7 @@
 <?php
 
 // Load ACF Field Groups
-include_once( get_template_directory() . '/inc/acf-fields/publications-field-group.php' );
+//include_once( get_template_directory() . '/inc/acf-fields/publications-field-group.php' );
 
 // Set ACF field 'state_issue' with options from json
 function populate_acf_state_issue_field( $field ) {

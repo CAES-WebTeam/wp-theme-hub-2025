@@ -1,7 +1,7 @@
 <?php
 
 // Load ACF Field Groups
-include_once( get_template_directory() . '/inc/acf-fields/events-field-group.php' );
+//include_once( get_template_directory() . '/inc/acf-fields/events-field-group.php' );
 
 // Hook into the save_post action to update the series taxonomy when the ACF field is updated
 function update_series_taxonomy_from_acf( $post_id ) {
