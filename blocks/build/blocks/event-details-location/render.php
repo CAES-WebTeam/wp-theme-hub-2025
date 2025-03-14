@@ -5,6 +5,11 @@ $post_id = get_the_ID();
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 $locationAsSnippet = $block['locationAsSnippet'];
+$fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
+$fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
+
+// Generate inline style if font size is set
+$style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
 
 // Check and set location if event type is CAES
@@ -29,10 +34,10 @@ if (!empty($location)) {
 
     if ($locationAsSnippet) {
         // If locationAsSnippet is true, display the location name as the h3 and skip the content area
-        echo '<h3 class="event-details-title">' . esc_html($location) . '</h3>';
+        echo '<h3 class="event-details-title"' . $style . '>' . esc_html($location) . '</h3>';
     } else {
         // Default behavior: display the location title and content area
-        echo '<h3 class="event-details-title">Location</h3>';
+        echo '<h3 class="event-details-title"' . $style . '>Location</h3>';
         echo '<div class="event-details-content">';
         echo esc_html($location);
         if (!empty($details)) {

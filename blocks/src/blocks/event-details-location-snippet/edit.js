@@ -54,7 +54,7 @@ const Edit = ({ attributes, setAttributes }) => {
 					</h3>
 				)}
 				{!attributes.locationAsSnippet && (
-					<div class="event-details-content">
+					<div className="event-details-content">
 						Room 101
 					</div>
 				)}

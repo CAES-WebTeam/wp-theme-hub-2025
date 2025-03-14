@@ -34,8 +34,8 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			<h2 class="wp-block-heading is-style-caes-hub-full-underline">Status and Revision History</h2>
-			<ul class="is-style-caes-hub-list-none">
+			<h2 className="wp-block-heading is-style-caes-hub-full-underline">Status and Revision History</h2>
+			<ul className="is-style-caes-hub-list-none">
 				<li>History will be listed here.</li>
 			</ul>
 		</div>

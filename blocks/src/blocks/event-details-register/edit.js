@@ -34,7 +34,7 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit() {
 	return (
 		<div {...useBlockProps()}>
-			<a href="#" class="event-registration-button" target="outside">Register</a>
+			<a href="#" className="event-registration-button" target="outside">Register</a>
 		</div>
 	);
 }

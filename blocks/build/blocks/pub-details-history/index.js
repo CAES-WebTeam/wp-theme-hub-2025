@@ -58,10 +58,10 @@ function Edit(attributes) {
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
     ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h2", {
-      class: "wp-block-heading is-style-caes-hub-full-underline",
+      className: "wp-block-heading is-style-caes-hub-full-underline",
       children: "Status and Revision History"
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("ul", {
-      class: "is-style-caes-hub-list-none",
+      className: "is-style-caes-hub-list-none",
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("li", {
         children: "History will be listed here."
       })

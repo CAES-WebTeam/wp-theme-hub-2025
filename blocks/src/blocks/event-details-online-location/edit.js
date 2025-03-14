@@ -11,8 +11,9 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
+
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl } from '@wordpress/components';
+import { PanelBody, TextControl, SelectControl, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -43,17 +44,44 @@ const Edit = ({ attributes, setAttributes }) => {
 						})}
 					/>
 				</PanelBody>
+				<PanelBody title={__("Heading Font Size", "caes-hub")}>
+					<TextControl
+						label={__("Font Size", "caes-hub")}
+						type="number"
+						value={attributes.headingFontSize || ""}
+						onChange={(val) => setAttributes({ headingFontSize: val })}
+					/>
+					<SelectControl
+						label={__("Unit", "caes-hub")}
+						value={attributes.headingFontUnit}
+						options={[
+							{ label: "px", value: "px" },
+							{ label: "em", value: "em" },
+							{ label: "rem", value: "rem" },
+							{ label: "%", value: "%" },
+						]}
+						onChange={(val) => setAttributes({ headingFontUnit: val })}
+					/>
+				</PanelBody>
 			</InspectorControls>
 			<div {...useBlockProps()}>
 				{attributes.onlineAsSnippet ? (
-					<h3 className="event-details-title">Virtual Event</h3>
+					<h3 className="event-details-title" style={{
+						fontSize: attributes.headingFontSize
+							? `${attributes.headingFontSize}${attributes.headingFontUnit}`
+							: undefined,
+					}}>Virtual Event</h3>
 				) : (
-					<h3 className="event-details-title">
+					<h3 className="event-details-title" style={{
+						fontSize: attributes.headingFontSize
+							? `${attributes.headingFontSize}${attributes.headingFontUnit}`
+							: undefined,
+					}}>
 						Online Location
 					</h3>
 				)}
 				{!attributes.onlineAsSnippet && (
-					<div class="event-details-content">
+					<div className="event-details-content">
 						<p><a href="https://youtube.com">https://youtube.com</a></p>
 					</div>
 				)}

@@ -59,7 +59,7 @@ function Edit() {
     ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
     children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
       href: "#",
-      class: "event-registration-button",
+      className: "event-registration-button",
       target: "outside",
       children: "Register"
     })

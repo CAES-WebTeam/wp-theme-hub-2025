@@ -21,51 +21,23 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/event-details-date-time/editor.scss");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__);
-/**
- * Retrieves the translation of text.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
- */
-
-
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
 
 
 
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * Those files can contain any CSS code that gets applied to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
 
-
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#edit
- *
- * @return {Element} Element to render.
- */
 
 const Edit = ({
   attributes,
   setAttributes
 }) => {
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Settings", "caes-hub"),
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display heading", "caes-hub"),
           checked: attributes.heading,
-          disabled: attributes.dateAsSnippet // Heading toggle is locked if snippet is on
-          ,
+          disabled: attributes.dateAsSnippet,
           onChange: val => {
             setAttributes({
               heading: val,
@@ -75,16 +47,14 @@ const Edit = ({
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display date", "caes-hub"),
           checked: attributes.showDate,
-          disabled: attributes.dateAsSnippet // Date toggle is locked if snippet is on
-          ,
+          disabled: attributes.dateAsSnippet,
           onChange: val => setAttributes({
             showDate: val
           })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display time", "caes-hub"),
           checked: attributes.showTime,
-          disabled: attributes.dateAsSnippet // Disable time when snippet is ON
-          ,
+          disabled: attributes.dateAsSnippet,
           onChange: val => setAttributes({
             showTime: val
           })
@@ -95,14 +65,41 @@ const Edit = ({
             setAttributes({
               dateAsSnippet: val,
               heading: val ? true : attributes.heading,
-              // Enforce heading ON when snippet is ON
               showDate: val ? true : attributes.showDate,
-              // Enforce showDate ON when snippet is ON
-              showTime: val ? false : attributes.showTime // Reset showTime when snippet is ON
+              showTime: val ? false : attributes.showTime
             });
           }
         })]
-      })
+      }), attributes.heading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Heading Font Size", "caes-hub"),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Font Size", "caes-hub"),
+          type: "number",
+          value: attributes.headingFontSize || "",
+          onChange: val => setAttributes({
+            headingFontSize: val
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Unit", "caes-hub"),
+          value: attributes.headingFontUnit,
+          options: [{
+            label: "px",
+            value: "px"
+          }, {
+            label: "em",
+            value: "em"
+          }, {
+            label: "rem",
+            value: "rem"
+          }, {
+            label: "%",
+            value: "%"
+          }],
+          onChange: val => setAttributes({
+            headingFontUnit: val
+          })
+        })]
+      })]
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
       children: [attributes.heading && !attributes.dateAsSnippet && !attributes.showDate && !attributes.showTime || !attributes.heading && !attributes.dateAsSnippet && !attributes.showDate && !attributes.showTime ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
@@ -112,6 +109,9 @@ const Edit = ({
         })
       }) : null, attributes.heading && (attributes.showDate || attributes.showTime) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
         className: "event-details-title",
+        style: {
+          fontSize: attributes.headingFontSize ? `${attributes.headingFontSize}${attributes.headingFontUnit}` : undefined
+        },
         children: attributes.dateAsSnippet ? "January 15, 2024" : `${attributes.showDate ? "Date" : ""}${attributes.showTime ? attributes.showDate ? " & Time" : "Time" : ""}`
       }), !attributes.dateAsSnippet && (attributes.showDate || attributes.showTime) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: "event-details-content",
@@ -252,7 +252,7 @@ module.exports = window["wp"]["i18n"];
   \*******************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/event-details-date-time","version":"0.1.0","title":"Event Date/Time","category":"theme","icon":"calendar-alt","description":"Event Date/Time for the CAES Field Report 2025 theme.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"dateAsSnippet":{"type":"boolean","default":false},"showDate":{"type":"boolean","default":true},"showTime":{"type":"boolean","default":false},"heading":{"type":"boolean","default":true}},"textdomain":"content-brand","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/event-details-date-time","version":"0.1.0","title":"Event Date/Time","category":"theme","icon":"calendar-alt","description":"Event Date/Time for the CAES Field Report 2025 theme.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"dateAsSnippet":{"type":"boolean","default":false},"showDate":{"type":"boolean","default":true},"showTime":{"type":"boolean","default":false},"heading":{"type":"boolean","default":true},"headingFontSize":{"type":"string","default":"1.5"},"headingFontUnit":{"type":"string","default":"rem"}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

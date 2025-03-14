@@ -4,13 +4,18 @@ $post_id = get_the_ID();
 
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
+$fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
+
+// Generate inline style if font size is set
+$style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
 ?>
 
 <?php 
 if (!empty(get_field('documents', $post_id))) {
     echo '<div ' . $attrs . '>';
-    echo '<h3 class="event-details-title">Additional Documents</h3>';
+    echo '<h3 class="event-details-title"' . $style . '>Additional Documents</h3>';
     echo '<div class="event-details-content">';
 
     foreach (get_field('documents', $post_id) as $item) {

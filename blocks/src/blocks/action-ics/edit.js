@@ -21,8 +21,6 @@ import { useBlockProps } from '@wordpress/block-editor';
  */
 import './editor.scss';
 
-import ServerSideRender from '@wordpress/server-side-render';
-
 /**
  * The edit function describes the structure of your block in the context of the
  * editor. This represents what the editor will render when the block is used.
@@ -31,13 +29,10 @@ import ServerSideRender from '@wordpress/server-side-render';
  *
  * @return {Element} Element to render.
  */
-export default function Edit(attributes) {
+export default function Edit() {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/action-ics"
-				attributes={attributes}
-			/>
+			<button class="caes-hub-action-ics__button"><span class="label">Add to Calendar</span></button>
 		</div>
 	);
 }

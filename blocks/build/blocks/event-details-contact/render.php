@@ -1,12 +1,17 @@
 <?php
 // Get the current post ID
 $post_id = get_the_ID();
+$fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
+$fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
+
+// Generate inline style if font size is set
+$style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
 // Attributes for wrapper
 // $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 echo '<div ' . get_block_wrapper_attributes() . '>';
-echo '<h3 class="event-details-title">Contact</h3>';
+echo '<h3 class="event-details-title"' . $style . '>Contact</h3>';
 
 // Check if 'Display Contact Information' is enabled
 if ( get_field( 'display_contact_information', $post_id ) ) {

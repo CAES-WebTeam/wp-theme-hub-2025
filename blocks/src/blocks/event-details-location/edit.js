@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl } from '@wordpress/components';
+import { PanelBody, ToggleControl, TextControl, SelectControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -43,17 +43,44 @@ const Edit = ({ attributes, setAttributes }) => {
 						})}
 					/>
 				</PanelBody>
+				<PanelBody title={__("Heading Font Size", "caes-hub")}>
+					<TextControl
+						label={__("Font Size", "caes-hub")}
+						type="number"
+						value={attributes.headingFontSize || ""}
+						onChange={(val) => setAttributes({ headingFontSize: val })}
+					/>
+					<SelectControl
+						label={__("Unit", "caes-hub")}
+						value={attributes.headingFontUnit}
+						options={[
+							{ label: "px", value: "px" },
+							{ label: "em", value: "em" },
+							{ label: "rem", value: "rem" },
+							{ label: "%", value: "%" },
+						]}
+						onChange={(val) => setAttributes({ headingFontUnit: val })}
+					/>
+				</PanelBody>
 			</InspectorControls>
 			<div {...useBlockProps()}>
 				{attributes.locationAsSnippet ? (
-					<h3 className="event-details-title">Room 101</h3>
+					<h3 className="event-details-title" style={{
+						fontSize: attributes.headingFontSize
+							? `${attributes.headingFontSize}${attributes.headingFontUnit}`
+							: undefined,
+					}}>Room 101</h3>
 				) : (
-					<h3 className="event-details-title">
+					<h3 className="event-details-title" style={{
+						fontSize: attributes.headingFontSize
+							? `${attributes.headingFontSize}${attributes.headingFontUnit}`
+							: undefined,
+					}}>
 						Location
 					</h3>
 				)}
 				{!attributes.locationAsSnippet && (
-					<div class="event-details-content">
+					<div className="event-details-content">
 						Room 101 <br />
 						Located on the second floor, near the elevator.
 					</div>

@@ -38,9 +38,16 @@
     "heading": {
       "type": "boolean",
       "default": true
+    },
+    "headingFontSize": {
+      "type": "string",
+      "default": "1.5"
+    },
+    "headingFontUnit": {
+      "type": "string",
+      "default": "rem"
     }
   },
-  "textdomain": "content-brand",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css"

@@ -32,8 +32,8 @@ import './editor.scss';
 export default function Edit() {
 	return (
 		<div {...useBlockProps()}>
-			<h3 class="event-details-title">Dates</h3>
-			<div class="event-details-content">January 15, 2024 - January 20, 2024</div>
+			<h3 className="event-details-title">Dates</h3>
+			<div className="event-details-content">January 15, 2024 - January 20, 2024</div>
 		</div>
 	);
 }

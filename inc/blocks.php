@@ -39,9 +39,9 @@ function caes_hub_block_init()
 	// Register Event Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-form');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-block');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/event-featured');
+	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-featured'); // Not sure we need this one?
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-description');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date');
+	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date'); // Ditto, this one's functionality is covered by date-time.
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-register');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date-time');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-location');
