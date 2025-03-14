@@ -13,7 +13,7 @@ import { __ } from '@wordpress/i18n';
  */
 
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl } from '@wordpress/components';
+import { PanelBody, ToggleControl, SelectControl, TextControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -39,6 +39,37 @@ export default function Edit({ attributes, setAttributes }) {
 			<InspectorControls>
 				<PanelBody>
 					<ToggleControl
+						label={__("Show heading", "caes-hub")}
+						checked={attributes.showHeading}
+						onChange={(val) => {
+							setAttributes({
+								showHeading: val
+							});
+						}}
+					/>
+					<TextControl
+						label={__("Custom Heading", "caes-hub")}
+						value={attributes.customHeading}
+						onChange={(val) => {
+							setAttributes({
+								customHeading: val
+							});
+						}}
+					/>
+					<SelectControl
+						label={__("Select type", "caes-hub")}
+						value={attributes.type}
+						options={[
+							{ label: "Authors", value: "authors" },
+							{ label: "Translators", value: "translators" }
+						]}
+						onChange={(val) => {
+							setAttributes({
+								type: val
+							});
+						}}
+					/>
+					<ToggleControl
 						label={__("Display authors as snippet", "caes-hub")}
 						checked={attributes.authorsAsSnippet}
 						onChange={(val) => {
@@ -51,21 +82,31 @@ export default function Edit({ attributes, setAttributes }) {
 			</InspectorControls>
 
 			{attributes.authorsAsSnippet ? (
-				// Comma separated list of authors
+				// Comma-separated list of authors
 				<p className="pub-authors-snippet">Jane Doe, John Arbuckle</p>
 			) : (
 				// More expanded details
 				<div {...useBlockProps()}>
+					{attributes.showHeading && (
+						<h2 className="pub-authors-heading is-style-caes-hub-full-underline">
+							{attributes.customHeading || (attributes.type === "translators" ? "Translators" : "Authors")}
+						</h2>
+					)}
 					<div className="pub-author">
 						<a className="pub-author-name" href="#">Jane Doe</a>
-						<p className="pub-author-title">Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology</p>
+						<p className="pub-author-title">
+							Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology
+						</p>
 					</div>
 					<div className="pub-author">
 						<a className="pub-author-name" href="#">John Arbuckle</a>
-						<p className="pub-author-title">Professor and Extension Vegetable Disease Specialist, Plant Pathology</p>
+						<p className="pub-author-title">
+							Professor and Extension Vegetable Disease Specialist, Plant Pathology
+						</p>
 					</div>
 				</div>
 			)}
+
 		</>
 	);
 }

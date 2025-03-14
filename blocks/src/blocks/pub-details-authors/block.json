@@ -28,6 +28,18 @@
     }
   },
   "attributes": {
+    "showHeading": {
+      "type": "boolean",
+      "default": true
+    },
+    "customHeading": {
+      "type": "string",
+      "default": ""
+    },
+    "type": {
+      "type": "string",
+      "default": "authors"
+    },
     "authorsAsSnippet": {
       "type": "boolean",
       "default": false
