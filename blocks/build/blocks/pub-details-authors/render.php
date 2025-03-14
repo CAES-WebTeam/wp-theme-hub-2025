@@ -14,7 +14,7 @@ $type = $block['type'] ?? 'authors';
 
 // Get authors and translators from ACF fields
 $authors = get_field('authors', $post_id);
-$translators = get_field('translators', $post_id);
+$translators = get_field('translator', $post_id);
 
 // Determine which list to use
 $data = ($type === 'translators') ? $translators : $authors;
@@ -80,15 +80,12 @@ if ($data) {
         echo process_people($data, true);
     } else {
         echo '<div ' . $attrs . '>';
-        echo '<div class="pub-authors-grid">';
-        
         // Display heading if enabled
         if ($showHeading) {
             echo '<h2 class="pub-authors-heading is-style-caes-hub-full-underline">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
         }
-
+        echo '<div class="pub-authors-grid">';
         echo process_people($data, false);
-        
         echo '</div></div>';
     }
 }
