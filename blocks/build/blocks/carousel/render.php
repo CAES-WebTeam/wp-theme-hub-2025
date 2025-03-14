@@ -32,10 +32,11 @@ function getOrdinalSuffix($day)
 $formattedDateWithSuffix = str_replace($day, $day . getOrdinalSuffix($day), $dateFormatted);
 
 // Render content-brand block
-$contentBrandBlock = render_block(array(
-    'blockName' => 'caes-hub/content-brand',
-    'attrs' => array()
-));
+// Commenting out on 3/14/2025 per OMC's request to not have logos on news feeds
+// $contentBrandBlock = render_block(array(
+//     'blockName' => 'caes-hub/content-brand',
+//     'attrs' => array()
+// ));
 
 // Initialize selected posts based on hand selection or feed
 if ($handSelectPosts) {
@@ -91,7 +92,6 @@ if ($handSelectPosts) {
 
                         echo '<li class="caes-hub-carousel-slide" style="background-image: url(\'' . esc_url($postThumbnail) . '\');">';
                         echo '<div class="caes-hub-carousel-slide__content">';
-                        echo $contentBrandBlock;
                         echo '<a href="' . esc_url(get_permalink($postId)) . '">';
                         echo '<h2>' . $postTitle . '</h2>';
                         echo '</a>';
