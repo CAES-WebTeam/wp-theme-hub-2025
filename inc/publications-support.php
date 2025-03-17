@@ -263,7 +263,7 @@ function custom_publications_permalink($post_link, $post) {
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
-
+// Custom Publications Parse Request
 function custom_publications_parse_request($query) {
     if (!is_admin() && isset($query->query_vars['publication_number'])) {
         $publication_number = sanitize_title($query->query_vars['publication_number']);
@@ -278,3 +278,21 @@ function custom_publications_parse_request($query) {
     }
 }
 add_action('pre_get_posts', 'custom_publications_parse_request');
+
+// Add subtitle to publications if it is used
+function append_subtitle_to_title($title, $id) {
+    if (is_admin()) {
+        return $title;
+    }
+    if (get_post_type($id) === 'publications') { 
+        $subtitle = get_post_meta($id, 'subtitle', true); // Using get_post_meta instead of get_field because it's a simple text field, and this is more performant
+        if (!empty($subtitle) && is_singular('publications')) {
+            $title .= ': <br/><span style="font-size:0.8em;display:inline-block;margin-top:var(--wp--preset--spacing--30)">' . esc_html($subtitle) . '</span>';
+        } elseif (!empty($subtitle)) {
+            $title .= ': ' . esc_html($subtitle);
+        }
+    }
+
+    return $title;
+}
+add_filter('the_title', 'append_subtitle_to_title', 10, 2);
