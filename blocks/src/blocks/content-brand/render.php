@@ -13,7 +13,10 @@ $customWidth =  $attributes['customWidth'];
 $currentPostType = get_post_type(); 
 
 // Get the custom field value for event_type
-$eventType = get_field('event_type'); // ACF custom field for event type
+$eventType = get_field('event_type');
+
+// Get the custom field value for brand
+$brand = get_field('brand');
 
 ?>
 
@@ -21,8 +24,9 @@ $eventType = get_field('event_type'); // ACF custom field for event type
 	<?php 
 	$image = '';
 
-	// Check if the current post type is 'event' and the event type is 'Extension'
-	if ($currentPostType === 'events' && !empty($eventType) && $eventType === 'Extension') {
+	// Check if the current post type is 'events' and the event type is 'Extension',
+	// OR if the current post type is 'publications', and the pub's brand type is 'Extension'
+	if ($currentPostType === 'events' && !empty($eventType) && $eventType === 'Extension' || $currentPostType === 'publications' && !empty($brand) && $brand === 'Extension') {
 		if ($version === 'dark') {
 			$image = get_template_directory_uri() . '/assets/images/Extension_logo_Formal_FC.png';
 		} elseif ($version === 'light') {
