@@ -279,7 +279,7 @@ function custom_publications_parse_request($query) {
 }
 add_action('pre_get_posts', 'custom_publications_parse_request');
 
-// Add subtitle to publications if it is used
+// Add subtitle to publications title if it is used
 function append_subtitle_to_title($title, $id) {
     if (is_admin()) {
         return $title;

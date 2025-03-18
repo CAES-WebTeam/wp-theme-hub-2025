@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/pub-details-translation-link",
+  "version": "0.1.0",
+  "title": "Publication Translation Link",
+  "category": "theme",
+  "icon": "text-page",
+  "description": "Displays a link to a translated version of the publication if one is specified.",
+  "acf": {
+    "mode": "preview",
+    "renderTemplate": "./render.php"
+  },
+  "supports": {
+    "anchor": true,
+    "typography": {
+      "lineHeight": true,
+      "fontSize": true,
+      "textTransform": true
+    },
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}
