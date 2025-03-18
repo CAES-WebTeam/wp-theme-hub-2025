@@ -60,8 +60,14 @@
 <!-- /wp:spacer -->
 
 <!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","orientation":"horizontal","verticalAlignment":"top"}} -->
-<div class="wp-block-group"><!-- wp:group {"layout":{"type":"constrained"}} -->
-<div class="wp-block-group"><!-- wp:caes-hub/pub-details-summary {"style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} /-->
+<div class="wp-block-group"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|20"}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group"><!-- wp:caes-hub/pub-details-translation-link /-->
+
+<!-- wp:spacer {"height":"1px"} -->
+<div style="height:1px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:caes-hub/pub-details-summary {"style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} /-->
 
 <!-- wp:caes-hub/toc-new {"listStyle":"none","showSubheadings":false} /--></div>
 <!-- /wp:group -->
@@ -95,7 +101,7 @@
 <h2 class="wp-block-heading is-style-caes-hub-section-heading">Related Publications</h2>
 <!-- /wp:heading -->
 
-<!-- wp:query {"queryId":1,"query":{"perPage":3,"pages":0,"offset":0,"postType":"publications","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false,"parents":[],"format":[]},"namespace":"custom-related-posts","metadata":{"name":"caes-hub-post-list-grid","categories":["featured"],"patternName":"caes-hub/post-grid-1"},"align":"wide","className":"caes-hub-post-list-grid"} -->
+<!-- wp:query {"query":{"perPage":3,"pages":0,"offset":0,"postType":"publications","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false,"parents":[],"format":[]},"namespace":"custom-related-posts","metadata":{"name":"caes-hub-post-list-grid","categories":["featured"],"patternName":"caes-hub/post-grid-1"},"align":"wide","className":"caes-hub-post-list-grid"} -->
 <div class="wp-block-query alignwide caes-hub-post-list-grid"><!-- wp:post-template {"className":"caes-hub-related-pubs","style":{"spacing":{"blockGap":"var:preset|spacing|60"}},"layout":{"type":"grid","columnCount":3}} -->
 <!-- wp:group {"metadata":{"name":"caes-hub-post-list-grid-item"},"className":"caes-hub-post-list-grid-item","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"flex","orientation":"vertical","justifyContent":"stretch"}} -->
 <div class="wp-block-group caes-hub-post-list-grid-item"><!-- wp:post-featured-image {"aspectRatio":"3/2","metadata":{"name":"caes-hub-post-list-img-container"},"className":"caes-hub-post-list-img-container"} /-->
@@ -125,7 +131,7 @@
 <h2 class="wp-block-heading is-style-caes-hub-section-heading">Related News</h2>
 <!-- /wp:heading -->
 
-<!-- wp:query {"queryId":3,"query":{"perPage":3,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false},"namespace":"custom-related-posts","metadata":{"name":"caes-hub-post-list-grid","categories":["featured"],"patternName":"caes-hub/post-grid-1"},"align":"wide","className":"caes-hub-post-list-grid"} -->
+<!-- wp:query {"query":{"perPage":3,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","author":"","search":"","exclude":[],"sticky":"","inherit":false},"namespace":"custom-related-posts","metadata":{"name":"caes-hub-post-list-grid","categories":["featured"],"patternName":"caes-hub/post-grid-1"},"align":"wide","className":"caes-hub-post-list-grid"} -->
 <div class="wp-block-query alignwide caes-hub-post-list-grid"><!-- wp:post-template {"className":"caes-hub-related-news","style":{"spacing":{"blockGap":"var:preset|spacing|60"}},"layout":{"type":"grid","columnCount":3}} -->
 <!-- wp:group {"metadata":{"name":"caes-hub-post-list-grid-item"},"className":"caes-hub-post-list-grid-item","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"flex","orientation":"vertical","justifyContent":"stretch"}} -->
 <div class="wp-block-group caes-hub-post-list-grid-item"><!-- wp:post-featured-image {"aspectRatio":"3/2","metadata":{"name":"caes-hub-post-list-img-container"},"className":"caes-hub-post-list-img-container"} /-->
