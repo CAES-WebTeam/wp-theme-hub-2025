@@ -1,7 +1,7 @@
 <?php
 
 // Load ACF Field Groups
-include_once( get_template_directory() . '/inc/acf-fields/user-field-group.php' );
+//include_once( get_template_directory() . '/inc/acf-fields/user-field-group.php' );
 
 // Create Custom User Role
 function add_personnel_user_role() {
@@ -63,7 +63,7 @@ function split_full_name($full_name) {
 
 // Add or Update Users Data from Personnel REST data
 function sync_personnel_users() {
-	$api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel';
+	$api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel/?returnContactInfoColumns=true';
 
 	// Fetch API Data
 	$response = wp_remote_get($api_url);
@@ -100,13 +100,14 @@ function sync_personnel_users() {
 		}
 
 		$personnel_id = intval($user['PERSONNEL_ID']);
+		$college_id = intval($user['COLLEGEID']);
 		$email = sanitize_email($user['EMAIL']);
 		$username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
-		$name_parts = split_full_name($user['NAME']);
-		$first_name = sanitize_text_field($name_parts['first_name']);
-		$last_name = sanitize_text_field($name_parts['last_name']);
+		$first_name = sanitize_text_field($user['FNAME']);
+		$last_name = sanitize_text_field($user['LNAME']);
 		$title = sanitize_text_field($user['TITLE']);
 		$department = sanitize_text_field($user['DEPARTMENT']);
+		$program_area = sanitize_text_field($user['PROGRAMAREALIST']);
 		$phone = sanitize_text_field($user['PHONE_NUMBER']);
 		$cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER']);
 		$fax = sanitize_text_field($user['FAX_NUMBER']);
@@ -128,11 +129,13 @@ function sync_personnel_users() {
 
 			if (!is_wp_error($user_id)) {
 				update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+				update_field('college_id', $college_id, 'user_' . $user_id);
 				update_field('title', $title, 'user_' . $user_id);
 				update_field('phone_number', $phone, 'user_' . $user_id);
 				update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
 				update_field('fax_number', $fax, 'user_' . $user_id);
 				update_field('department', $department, 'user_' . $user_id);
+				update_field('program_area', $program_area, 'user_' . $user_id);
 				update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
 				update_field('image_name', $image_name, 'user_' . $user_id);
 			}
@@ -146,11 +149,13 @@ function sync_personnel_users() {
 				'last_name' => $last_name,
 			]);
 
+			update_field('college_id', $college_id, 'user_' . $user_id);
 			update_field('title', $title, 'user_' . $user_id);
 			update_field('phone_number', $phone, 'user_' . $user_id);
 			update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
 			update_field('fax_number', $fax, 'user_' . $user_id);
 			update_field('department', $department, 'user_' . $user_id);
+			update_field('program_area', $program_area, 'user_' . $user_id);
 			update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
 			update_field('image_name', $image_name, 'user_' . $user_id);
 		}
