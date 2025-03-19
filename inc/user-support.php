@@ -1,4 +1,8 @@
 <?php
+
+// Load ACF Field Groups
+include_once( get_template_directory() . '/inc/acf-fields/user-field-group.php' );
+
 // Create Custom User Role
 function add_personnel_user_role() {
 	if (!get_role('personnel_user')) {
