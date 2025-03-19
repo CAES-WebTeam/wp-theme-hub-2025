@@ -27,6 +27,12 @@
       "margin": true
     }
   },
+  "attributes": {
+    "showAsButton": {
+      "type": "boolean",
+      "default": false
+    }
+  },
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css"

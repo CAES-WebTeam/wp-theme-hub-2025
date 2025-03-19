@@ -11,8 +11,8 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
-// import { PanelBody, ToggleControl } from '@wordpress/components';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { Panel, PanelBody, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -33,9 +33,29 @@ import './editor.scss';
 export default function Edit({ attributes, setAttributes }) {
     return (
         <>
-            <p {...useBlockProps()}>
-                <a href="#">{__('Translation link', 'caes-hub')}</a>
-            </p>
+            <InspectorControls>
+                <Panel>
+                    <PanelBody title={__('Translation link', 'caes-hub')}>
+                        <ToggleControl
+                            label={__('Show as button', 'caes-hub')}
+                            checked={attributes.showAsButton}
+                            onChange={(showAsButton) =>
+                                setAttributes({ showAsButton })
+                            }
+                        />
+                    </PanelBody>
+                </Panel>
+            </InspectorControls>
+
+            {attributes.showAsButton ? (
+                <div {...useBlockProps()}>
+                    <a href="#" className="button">{__('Translation link', 'caes-hub')}</a>
+                </div>
+            ) : (
+                <p {...useBlockProps()}>
+                    <a href="#">{__('Translation link', 'caes-hub')}</a>
+                </p>
+            )}
         </>
     );
 }
