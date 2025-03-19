@@ -50,67 +50,6 @@ add_filter('jpeg_quality', function($arg){ return 90; });
 add_filter('wp_editor_set_quality', function($arg){ return 90; });
 
 
-// Create custom user roles
-function add_custom_user_roles()
-{
-	// Add the CAES role
-	add_role(
-		'caes-staff', // Role slug
-		'CAES Staff', // Display name
-		array(
-			'read'         => true,  // Allows reading posts
-			'edit_posts'   => false, // Disallows editing posts
-			'delete_posts' => false, // Disallows deleting posts
-		)
-	);
-
-	// Add the Extension role
-	add_role(
-		'extension-staff', // Role slug
-		'Extension Staff', // Display name
-		array(
-			'read'         => true,  // Allows reading posts
-			'edit_posts'   => false, // Disallows editing posts
-			'delete_posts' => false, // Disallows deleting posts
-		)
-	);
-}
-//add_action('init', 'add_custom_user_roles');
-
-
-// Add phone number field to Contact Info section in user profile
-function add_phone_to_contact_info($user)
-{
-?>
-	<h3><?php _e('Extra Info', 'textdomain'); ?></h3>
-
-	<table class="form-table" role="presentation">
-		<!-- Phone Number Field -->
-		<tr>
-			<th><label for="phone"><?php _e('Phone Number', 'textdomain'); ?></label></th>
-			<td>
-				<input type="text" name="phone" id="phone" value="<?php echo esc_attr(get_user_meta($user->ID, 'phone', true)); ?>" class="regular-text" /><br>
-				<span class="description"><?php _e('Please enter the user\'s phone number.', 'textdomain'); ?></span>
-			</td>
-		</tr>
-	</table>
-<?php
-}
-add_action('show_user_profile', 'add_phone_to_contact_info');
-add_action('edit_user_profile', 'add_phone_to_contact_info');
-
-// Save phone number field value when profile is updated
-function save_user_phone_field($user_id)
-{
-	// Check permission and save phone number
-	if (current_user_can('edit_user', $user_id) && isset($_POST['phone'])) {
-		update_user_meta($user_id, 'phone', sanitize_text_field($_POST['phone']));
-	}
-}
-add_action('personal_options_update', 'save_user_phone_field');
-add_action('edit_user_profile_update', 'save_user_phone_field');
-
-
 // Function to retrieve the user's IP address
 if (!function_exists('getUserIP')) {
 	function getUserIP()
@@ -344,6 +283,36 @@ if (function_exists('register_block_pattern_category')) {
 		)
 	);
 }
+
+/* Filter for search form */
+add_filter('get_search_form', function($form) {
+    // Customize the default search form markup
+    $form = '
+    <form role="search" method="get" class="caes-hub-form__input-button-container" action="' . esc_url(home_url('/')) . '">
+        <label>
+            <span class="screen-reader-text">' . _x('Search for:', 'label') . '</span>
+            <input type="search" class="caes-hub-form__input" placeholder="' . esc_attr_x('Search …', 'placeholder') . '" value="' . get_search_query() . '" name="s">
+        </label>
+    </form>';
+    return $form;
+});
+
+
+// Enable the REST API for Shorthand post type, makes it available in block editor query loop
+function shorthand_rest_api($args, $post_type) {
+    if ($post_type === 'shorthand_story') {
+        $args['show_in_rest'] = true;
+
+        // Ensure 'supports' is an array and add 'excerpt'
+        if (isset($args['supports']) && is_array($args['supports'])) {
+            $args['supports'][] = 'excerpt';
+        } else {
+            $args['supports'] = ['excerpt'];
+        }
+    }
+    return $args;
+}
+add_filter('register_post_type_args', 'shorthand_rest_api', 10, 2);
 
 // Add excerpt field for pages
 function add_excerpts_to_pages() {
