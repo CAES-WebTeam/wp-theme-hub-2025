@@ -112,6 +112,16 @@ function sync_personnel_users() {
 		$cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER']);
 		$fax = sanitize_text_field($user['FAX_NUMBER']);
 		$caes_location_id = intval($user['CAES_LOCATION_ID']);
+		$mailing_address = sanitize_text_field($user['MAILING_ADDRESS1']);
+		$mailing_address2 = sanitize_text_field($user['MAILING_ADDRESS2']);
+		$mailing_city = sanitize_text_field($user['MAILING_CITY']);
+		$mailing_state = sanitize_text_field($user['MAILING_STATE']);
+		$mailing_zip = sanitize_text_field($user['MAILING_ZIP']);
+		$shipping_address = sanitize_text_field($user['SHIPPING_ADDRESS1']);
+		$shipping_address2 = sanitize_text_field($user['SHIPPING_ADDRESS2']);
+		$shipping_city = sanitize_text_field($user['SHIPPING_CITY']);
+		$shipping_state = sanitize_text_field($user['SHIPPING_STATE']);
+		$shipping_zip = sanitize_text_field($user['SHIPPING_ZIP']);
 		$image_name = sanitize_text_field($user['IMAGE']);
 
 		$api_user_ids[] = $personnel_id;
@@ -137,6 +147,16 @@ function sync_personnel_users() {
 				update_field('department', $department, 'user_' . $user_id);
 				update_field('program_area', $program_area, 'user_' . $user_id);
 				update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
+				update_field('mailing_address', $mailing_address, 'user_' . $user_id);
+				update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
+				update_field('mailing_city', $mailing_city, 'user_' . $user_id);
+				update_field('mailing_state', $mailing_state, 'user_' . $user_id);
+				update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
+				update_field('shipping_address', $shipping_address, 'user_' . $user_id);
+				update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
+				update_field('shipping_city', $shipping_city, 'user_' . $user_id);
+				update_field('shipping_state', $shipping_state, 'user_' . $user_id);
+				update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 				update_field('image_name', $image_name, 'user_' . $user_id);
 			}
 		} else {
@@ -157,6 +177,16 @@ function sync_personnel_users() {
 			update_field('department', $department, 'user_' . $user_id);
 			update_field('program_area', $program_area, 'user_' . $user_id);
 			update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
+			update_field('mailing_address', $mailing_address, 'user_' . $user_id);
+			update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
+			update_field('mailing_city', $mailing_city, 'user_' . $user_id);
+			update_field('mailing_state', $mailing_state, 'user_' . $user_id);
+			update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
+			update_field('shipping_address', $shipping_address, 'user_' . $user_id);
+			update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
+			update_field('shipping_city', $shipping_city, 'user_' . $user_id);
+			update_field('shipping_state', $shipping_state, 'user_' . $user_id);
+			update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 			update_field('image_name', $image_name, 'user_' . $user_id);
 		}
 	}
