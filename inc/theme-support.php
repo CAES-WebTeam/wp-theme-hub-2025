@@ -44,6 +44,11 @@ add_action('after_setup_theme', 'remove_default_block_patterns');
 // Unregister API Patterns
 add_filter('should_load_remote_block_patterns', '__return_false');
 
+// Improve thumbnail quality
+
+add_filter('jpeg_quality', function($arg){ return 90; });
+add_filter('wp_editor_set_quality', function($arg){ return 90; });
+
 
 // Create custom user roles
 function add_custom_user_roles()
@@ -349,14 +354,13 @@ add_action('init', 'add_excerpts_to_pages');
 // Use featured image in RSS feed
 function add_featured_image_to_rss() {
     global $post;
-    
+
     if (!has_post_thumbnail($post->ID)) {
         return;
     }
 
-    $imgsize = 'medium';
+    $imgsize = 'full'; // Get the best quality image available
 
-    // Sanitize the imgsize parameter
     if (isset($_GET['imgsize'])) {
         $imgsize_param = sanitize_text_field($_GET['imgsize']);
         if ($imgsize_param === 'lg') {
