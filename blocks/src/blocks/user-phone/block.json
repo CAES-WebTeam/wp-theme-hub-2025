@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "caes-hub/user-phone",
+    "version": "0.1.0",
+    "title": "User Phone",
+    "category": "theme",
+    "icon": "admin-users",
+    "description": "Displays the user's phone number.",
+    "acf": {
+      "mode": "preview",
+      "renderTemplate": "./render.php"
+    },
+    "supports": {
+      "anchor": true,
+      "typography": {
+        "lineHeight": true,
+        "fontSize": true,
+        "textTransform": true
+      },
+      "color": {
+        "background": true,
+        "text": true
+      },
+      "spacing": {
+        "padding": true,
+        "margin": true
+      }
+    },
+    "editorScript": "file:./index.js",
+      "editorStyle": "file:./index.css",
+      "style": "file:./style-index.css"
+  }

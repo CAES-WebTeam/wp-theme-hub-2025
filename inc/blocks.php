@@ -65,5 +65,12 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-translation-link');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-type');
 
+	// Register User Blocks
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-name');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-position');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-email');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-phone');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-image');
+
 }
 add_action('init', 'caes_hub_block_init');

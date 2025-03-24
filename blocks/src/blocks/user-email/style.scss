@@ -1,0 +1,17 @@
+ .wp-block-caes-hub-user-email {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    transition: all 0.2s ease-in-out;
+     &::before {
+        content: "";
+        display: block;
+        width: 24px;
+        height: 16.5px;
+        background-image: url('../../../../assets/images/email.svg');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        margin-right: var(--wp--preset--spacing--40);
+      }
+ }

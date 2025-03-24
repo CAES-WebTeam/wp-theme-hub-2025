@@ -1,0 +1,28 @@
+ .wp-block-caes-hub-user-image {
+    aspect-ratio: 3/4;
+    height: 100%;
+    width: 100%;
+    img {
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+    }
+    &.desktop-version {
+        display: block;
+    }
+    &.mobile-version {
+        display: none;
+    }
+ }
+
+ @media screen and (max-width: 768px) {
+    .wp-block-caes-hub-user-image {
+        &.desktop-version {
+            display: none;
+        }
+        &.mobile-version {
+            display: block;
+            max-width: 200px;
+        }
+    }
+ }

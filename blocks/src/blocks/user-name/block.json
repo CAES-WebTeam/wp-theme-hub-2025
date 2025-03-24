@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "caes-hub/user-name",
+    "version": "0.1.0",
+    "title": "User Name",
+    "category": "theme",
+    "icon": "admin-users",
+    "description": "Displays the user's name.",
+    "acf": {
+      "mode": "preview",
+      "renderTemplate": "./render.php"
+    },
+    "supports": {
+      "anchor": true,
+      "typography": {
+        "lineHeight": true,
+        "fontSize": true,
+        "textTransform": true
+      },
+      "color": {
+        "background": true,
+        "text": true
+      },
+      "spacing": {
+        "padding": true,
+        "margin": true
+      }
+    },
+    "attributes": {
+      "element": {
+        "type": "string",
+        "default": "h1"
+      }
+    },
+    "editorScript": "file:./index.js",
+      "editorStyle": "file:./index.css",
+      "style": "file:./style-index.css"
+  }
