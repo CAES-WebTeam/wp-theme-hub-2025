@@ -4,6 +4,7 @@ body.login h1 a {
     width: 100% !important;
     height: 100px !important;
 }
+
 body.login .button-cas {
     background-color: #BA0C2F;
     border-color: #BA0C2F;
@@ -11,16 +12,22 @@ body.login .button-cas {
     padding-top: 0;
     padding: 0.3rem;
     height: auto;
+
     &:hover {
         background-color: #8a0923 !important;
         border-color: #8a0923 !important;
     }
+
     // .dashicons {
     //     display: none;
     // }
     // .label {
     //     padding-left: 0;
     // }
+}
+
+#loginform .button-external {
+    padding-top: 0;
 }
 
 #modebar {
