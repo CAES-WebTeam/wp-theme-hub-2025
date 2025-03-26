@@ -5,15 +5,18 @@ body.login h1 a {
     height: 100px !important;
 }
 body.login .button-cas {
-    width: 100% !important;
-    padding: 1rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1.1rem !important;
-    margin: 0 0 1rem 0 !important;
-    transition: all .1s ease-in !important;
-    line-height: 1 !important;
+    // width: 100% !important;
+    // padding: 1rem !important;
+    // display: flex !important;
+    // align-items: center !important;
+    // justify-content: center !important;
+    // font-size: 1.1rem !important;
+    // margin: 0 0 1rem 0 !important;
+    // transition: all .1s ease-in !important;
+    // line-height: 1 !important;
+    background-color: #BA0C2F;
+    border-color: #BA0C2F;
+    color: white;
     &:hover {
         background-color: #8a0923 !important;
         border-color: #8a0923 !important;
