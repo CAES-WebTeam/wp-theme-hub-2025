@@ -5,6 +5,26 @@ body.login h1 a {
     height: 100px !important;
 }
 body.login .button-cas {
-    background: #BA0C2F !important;
-    border: none !important;
+    width: 100% !important;
+    padding: 1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.1rem !important;
+    margin: 0 0 1rem 0 !important;
+    transition: all .1s ease-in !important;
+    line-height: 1 !important;
+    &:hover {
+        background-color: #8a0923 !important;
+        border-color: #8a0923 !important;
+    }
+}
+
+#modebar {
+    padding: 0.8rem;
+    text-align: center;
+    background-color: #135e96;
+    margin: 1rem 0;
+    color: white;
+    border-radius: 0.2rem;
 }

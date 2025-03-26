@@ -350,3 +350,10 @@ function add_featured_image_to_rss() {
 }
 
 add_action('rss2_item', 'add_featured_image_to_rss');
+
+// Add custom login stylesheet
+function hub_login_stylesheet()
+{
+	wp_enqueue_style('custom-login', get_stylesheet_directory_uri() . '/assets/css/login.css');
+}
+add_action('login_enqueue_scripts', 'hub_login_stylesheet');
