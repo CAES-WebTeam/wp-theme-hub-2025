@@ -147,56 +147,62 @@ add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');
 
 /****** IMPORT ACTIONS ******/
 // Save Post Actions
-add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
+add_action('pmxi_saved_post', 'attach_authors_to_repeater', 10, 1);
+function attach_authors_to_repeater($post_id) {
+    //if (get_post_type($post_id) !== 'publication') return;
 
-    if (get_post_type($post_id) !== 'publications') {
-        return;
-    }
+    $raw_data = get_field('raw_author_ids', $post_id);
+    if (empty($raw_data)) return;
 
-    $author_text = get_field('AUTHOR_TEXT', $post_id); 
-    if (empty($author_text)) {
-        return;
-    }
+    $rows = explode('|', rtrim($raw_data, '|'));
+    $repeater = [];
 
-    // Split the AUTHOR_TEXT into individual names
-    $authors = explode(',', $author_text);
+    foreach ($rows as $row) {
+        $row = trim($row);
+        if (empty($row)) continue;
 
-    // Initialize the ACF repeater data
-    $repeater_data = [];
+        // Convert pseudo-JSON into proper JSON
+        $json_str = '{' . $row . '}';
+        $data = json_decode($json_str, true);
+        if (!isset($data['college_id'])) continue;
 
-    foreach ($authors as $author) {
-        // Trim whitespace and split into first and last name
-        $author = trim($author);
-        [$last_name, $first_name] = array_map('trim', explode(' ', $author, 2));
+        $cid = trim($data['college_id']);
+        $is_lead = !empty($data['lead']) && $data['lead'] == '1';
+        $is_co = !empty($data['co']) && $data['co'] == '1';
 
-        // Try to find a matching user
-        $user = get_users([
-            'search'         => "*{$first_name} {$last_name}*",
-            'search_columns' => ['display_name', 'first_name', 'last_name'],
-            'number'         => 1,
+        $users = get_users([
+            'meta_key' => 'college_id',
+            'meta_value' => $cid,
+            'number' => 1
         ]);
 
-        if (!empty($user)) {
-            // user matched so set it with ID
-            $repeater_data[] = [
-                'user'        => $user[0]->ID,
-                'custom_user' => '', 
-            ];
-        } else {
-            // No user found so create a custom user
-            $repeater_data[] = [
-                'user'        => '', 
-                'custom_user' => [
-                    'first_name' => $first_name,
-                    'last_name'  => $last_name,
-                ],
+        if (!empty($users)) {
+            $user_id = $users[0]->ID;
+
+            if ($is_lead && !$lead_author_user_id) {
+                $lead_author_user_id = $user_id;
+            }
+
+            $repeater[] = [
+                'user' => $user_id,
+                'lead_author' => $is_lead,
+                'co_author' => $is_co
             ];
         }
     }
 
-    // Save the repeater field to the post
-    update_field('authors', $repeater_data, $post_id);
-}, 10, 3);
+    if (!empty($repeater)) {
+        update_field('authors', $repeater, $post_id);
+    }
+
+    // Set post author if we found a lead author
+    if ($lead_author_user_id) {
+        wp_update_post([
+            'ID' => $post_id,
+            'post_author' => $lead_author_user_id
+        ]);
+    }
+}
 
 
 // Clean up content
@@ -215,6 +221,12 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
 }, 10, 3);
 
 
+function clean_html($html) {
+    $html = preg_replace('/\r\n|\n|\r/', '', $html); // Remove newlines
+    return trim($html);
+}
+
+
 // Set Image URL for thumbnail
 function get_full_image_url($relative_path) {
     $base_url = "https://secure.caes.uga.edu/extension/publications/images/thumbnail-pub-images/";
@@ -229,6 +241,75 @@ function get_full_image_url($relative_path) {
         return ''; // Return empty to avoid import errors
     }
 }
+
+/*// Assign Keywords
+function assign_keywords_to_publications_from_json($json_file_path) {
+    if (!file_exists($json_file_path)) {
+        print_r("JSON file not found: $json_file_path");
+        return;
+    }
+
+    $json_data = file_get_contents($json_file_path);
+    $json_data = trim($json_data);
+    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
+    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
+
+    $pairs = json_decode($json_data, true);
+
+    if (!$pairs || !is_array($pairs)) {
+        print_r("Invalid or empty JSON structure: " . json_last_error_msg());
+        return;
+    }
+
+    foreach ($pairs as $pair) {
+        $pub_id = $pair['PUBLICATION_ID'] ?? null;
+        $kw_id  = $pair['KEYWORD_ID'] ?? null;
+
+        if (!$pub_id || !$kw_id) continue;
+
+        // Find the post with matching publication_id (ACF field)
+        $posts = get_posts([
+            'post_type' => 'publications',
+            'meta_key' => 'publication_id',
+            'meta_value' => $pub_id,
+            'posts_per_page' => 1,
+            'fields' => 'ids'
+        ]);
+
+        if (empty($posts)) {
+            print_r("No publication found for publication_id: $pub_id");
+            continue;
+        }
+
+        $post_id = $posts[0];
+
+        // Find the keyword term with matching keyword_id (ACF field)
+        $terms = get_terms([
+            'taxonomy' => 'keywords',
+            'hide_empty' => false,
+            'meta_query' => [
+                [
+                    'key' => 'keyword_id',
+                    'value' => $kw_id,
+                    'compare' => '='
+                ]
+            ]
+        ]);
+
+        if (empty($terms) || is_wp_error($terms)) {
+            print_r("No keyword term found for keyword_id: $kw_id");
+            continue;
+        }
+
+        $term_id = $terms[0]->term_id;
+
+        // Assign the term to the publication
+        wp_set_object_terms($post_id, intval($term_id), 'keywords', true);
+    }
+
+    print_r("Keyword assignment complete.");
+}*/
+
 
 
 /****** Custom Publications Permalink ******/
@@ -263,7 +344,7 @@ function custom_publications_permalink($post_link, $post) {
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
-// Custom Publications Parse Request
+
 function custom_publications_parse_request($query) {
     if (!is_admin() && isset($query->query_vars['publication_number'])) {
         $publication_number = sanitize_title($query->query_vars['publication_number']);
@@ -278,21 +359,3 @@ function custom_publications_parse_request($query) {
     }
 }
 add_action('pre_get_posts', 'custom_publications_parse_request');
-
-// Add subtitle to publications title if it is used
-function append_subtitle_to_title($title, $id) {
-    if (is_admin()) {
-        return $title;
-    }
-    if (get_post_type($id) === 'publications') { 
-        $subtitle = get_post_meta($id, 'subtitle', true); // Using get_post_meta instead of get_field because it's a simple text field, and this is more performant
-        if (!empty($subtitle) && is_singular('publications')) {
-            $title .= ': <br/><span style="font-size:0.8em;display:inline-block;margin-top:var(--wp--preset--spacing--30)">' . esc_html($subtitle) . '</span>';
-        } elseif (!empty($subtitle)) {
-            $title .= ': ' . esc_html($subtitle);
-        }
-    }
-
-    return $title;
-}
-add_filter('the_title', 'append_subtitle_to_title', 10, 2);
