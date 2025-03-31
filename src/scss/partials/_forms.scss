@@ -1,5 +1,15 @@
 /* Styles for form inputs NOT made by the Gutenberg search block */
 
+fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+label, fieldset {
+    font-weight: 600;
+}
+
 .caes-hub-form__input,
 .caes-hub-form__textarea,
 .caes-hub-form__button {
@@ -46,4 +56,12 @@
         border-radius: 0 20rem 20rem 0;
     }
 
+}
+
+// Mailchimp overrides
+
+.mc4wp-form-fields {
+    label {
+        padding: 0.3rem 0.5rem;
+    }
 }
