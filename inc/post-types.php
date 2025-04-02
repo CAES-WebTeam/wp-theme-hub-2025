@@ -88,32 +88,33 @@ add_action( 'init', function() {
 } );
 
 
-// Register 'Series' Taxonomy
+// Register 'Series' Taxonomies for Events and Publications
+// This code registers two custom taxonomies: 'event_series' and 'publication_series'.
 add_action( 'init', function() {
-	register_taxonomy( 'series', array( 'events', 'publications' ),
-		array(
+	// Register Series taxonomy for Events
+	register_taxonomy( 'event_series', array( 'events' ), array(
 		'labels' => array(
-			'name' => 'Series',
-			'singular_name' => 'Series',
-			'menu_name' => 'Series',
-			'all_items' => 'All Series',
-			'edit_item' => 'Edit Series',
-			'view_item' => 'View Series',
-			'update_item' => 'Update Series',
-			'add_new_item' => 'Add New Series',
-			'new_item_name' => 'New Series Name',
-			'search_items' => 'Search Series',
-			'popular_items' => 'Popular Series',
-			'separate_items_with_commas' => 'Separate series with commas',
-			'add_or_remove_items' => 'Add or remove series',
-			'choose_from_most_used' => 'Choose from the most used series',
-			'not_found' => 'No series found',
-			'no_terms' => 'No series',
-			'items_list_navigation' => 'Series list navigation',
-			'items_list' => 'Series list',
-			'back_to_items' => '← Go to series',
-			'item_link' => 'Series Link',
-			'item_link_description' => 'A link to a series',
+			'name' => 'Event Series',
+			'singular_name' => 'Event Series',
+			'menu_name' => 'Event Series',
+			'all_items' => 'All Event Series',
+			'edit_item' => 'Edit Event Series',
+			'view_item' => 'View Event Series',
+			'update_item' => 'Update Event Series',
+			'add_new_item' => 'Add New Event Series',
+			'new_item_name' => 'New Event Series Name',
+			'search_items' => 'Search Event Series',
+			'popular_items' => 'Popular Event Series',
+			'separate_items_with_commas' => 'Separate event series with commas',
+			'add_or_remove_items' => 'Add or remove event series',
+			'choose_from_most_used' => 'Choose from the most used event series',
+			'not_found' => 'No event series found',
+			'no_terms' => 'No event series',
+			'items_list_navigation' => 'Event series list navigation',
+			'items_list' => 'Event series list',
+			'back_to_items' => '← Go to event series',
+			'item_link' => 'Event Series Link',
+			'item_link_description' => 'A link to an event series',
 		),
 		'public' 		=> true,
 		'show_in_menu'	=> true,
@@ -121,7 +122,40 @@ add_action( 'init', function() {
 		'query_var'		=> true,
 		'rewrite' 		=> array( 'slug' => 'event-series' ),
 	) );
+
+	// Register Series taxonomy for Publications
+	register_taxonomy( 'publication_series', array( 'publications' ), array(
+		'labels' => array(
+			'name' => 'Publication Series',
+			'singular_name' => 'Publication Series',
+			'menu_name' => 'Publication Series',
+			'all_items' => 'All Publication Series',
+			'edit_item' => 'Edit Publication Series',
+			'view_item' => 'View Publication Series',
+			'update_item' => 'Update Publication Series',
+			'add_new_item' => 'Add New Publication Series',
+			'new_item_name' => 'New Publication Series Name',
+			'search_items' => 'Search Publication Series',
+			'popular_items' => 'Popular Publication Series',
+			'separate_items_with_commas' => 'Separate publication series with commas',
+			'add_or_remove_items' => 'Add or remove publication series',
+			'choose_from_most_used' => 'Choose from the most used publication series',
+			'not_found' => 'No publication series found',
+			'no_terms' => 'No publication series',
+			'items_list_navigation' => 'Publication series list navigation',
+			'items_list' => 'Publication series list',
+			'back_to_items' => '← Go to publication series',
+			'item_link' => 'Publication Series Link',
+			'item_link_description' => 'A link to a publication series',
+		),
+		'public' 		=> true,
+		'show_in_menu'	=> true,
+		'show_in_rest' 	=> true,
+		'query_var'		=> true,
+		'rewrite' 		=> array( 'slug' => 'publication-series' ),
+	) );
 } );
+
 
 
 // Register the 'Keywords' taxonomy for the Publications
@@ -151,6 +185,6 @@ function register_keywords_taxonomy() {
 	);
 
 	// Register the taxonomy and associate it with the 'publications' post type
-	register_taxonomy('keywords', array('publications'), $args);
+	register_taxonomy('keywords', array('post', 'publications'), $args);
 }
 add_action('init', 'register_keywords_taxonomy');

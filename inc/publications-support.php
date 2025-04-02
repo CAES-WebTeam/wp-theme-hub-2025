@@ -329,14 +329,14 @@ function custom_publications_query_vars($query_vars) {
 }
 add_filter('query_vars', 'custom_publications_query_vars');
 
-
+// Add pub number to pubs permalink
 function custom_publications_permalink($post_link, $post) {
     if ($post->post_type === 'publications') {
         $publication_number = get_field('publication_number', $post->ID);
 
         if ($publication_number) {
-            $publication_number = sanitize_title($publication_number);
-
+            $publication_number = sanitize_text_field($publication_number);
+            $publication_number = str_replace(' ', '', $publication_number);
             return home_url("/publications/{$publication_number}/{$post->post_name}/");
         }
     }
@@ -344,6 +344,57 @@ function custom_publications_permalink($post_link, $post) {
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
+// 
+function redirect_publications_to_canonical_url() {
+    // Get the requested path (without domain)
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+
+    // Check if the path starts with "/publications/"
+    if (strpos($requested_path, '/publications/') === 0) {
+
+        // Check if the next part after /publications/ is a valid publication number
+        if (preg_match('#^/publications/([A-Za-z0-9-]+)#', $requested_path, $matches)) {
+            $publication_number = $matches[1];
+
+            // Add a space before the first integer value for querying the database
+            $publication_number_with_space = preg_replace('/([A-Za-z]+)(\d)/', '$1 $2', $publication_number);
+
+            // Query the database to check if the publication number exists
+            $args = [
+                'post_type'      => 'publications',
+                'posts_per_page' => 1,
+                'meta_query'     => [
+                    [
+                        'key'   => 'publication_number',
+                        'value' => $publication_number_with_space,
+                    ],
+                ],
+            ];
+            $query = new WP_Query($args);
+
+            if ($query->have_posts()) {
+        
+                // Get the slug of the first post
+                $post_slug = $query->posts[0]->post_name;
+
+                // Create the canonical URL with the publication number without space
+                $canonical_url = "/publications/{$publication_number}/{$post_slug}/";
+
+                // Normalize both requested path and canonical URL to handle any trailing slashes
+                $normalized_requested_path = rtrim($requested_path, '/');
+                $normalized_canonical_url = rtrim($canonical_url, '/');
+
+                // Check if the requested URL ends with the publication number only (no slug)
+                if ($normalized_requested_path === "/publications/{$publication_number}") {
+                    // Perform the redirect to the canonical URL
+                    wp_redirect(home_url($normalized_canonical_url), 301); // 301 for permanent redirect
+                    exit; // Always call exit after wp_redirect
+                }
+            } 
+        }
+    }
+}
+add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
 function custom_publications_parse_request($query) {
     if (!is_admin() && isset($query->query_vars['publication_number'])) {
