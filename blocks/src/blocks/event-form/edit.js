@@ -21,7 +21,7 @@ import { useBlockProps } from '@wordpress/block-editor';
  */
 import './editor.scss';
 
-import ServerSideRender from '@wordpress/server-side-render';
+// import ServerSideRender from '@wordpress/server-side-render';
 
 /**
  * The edit function describes the structure of your block in the context of the
@@ -34,10 +34,7 @@ import ServerSideRender from '@wordpress/server-side-render';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			<ServerSideRender
-				block="caes-hub/event-form"
-				attributes={attributes}
-			/>
+			<p>The events submission form will be displayed here.</p>
 		</div>
 	);
 }

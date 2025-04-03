@@ -344,7 +344,7 @@ function custom_publications_permalink($post_link, $post) {
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
-// 
+// If a user visits a url like /publications/C1234, redirect to /publications/C1234/title-slug/
 function redirect_publications_to_canonical_url() {
     // Get the requested path (without domain)
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));

@@ -16,7 +16,7 @@ function update_series_taxonomy_from_acf( $post_id ) {
 	}
 
 	// Get the ACF series field
-	$acf_series_terms = get_field( 'series', $post_id );
+	$acf_series_terms = get_field( 'event_series', $post_id );
 
 	// If the ACF series field is empty, empty out the array
 	if ( ! is_array( $acf_series_terms ) ) {
@@ -24,7 +24,7 @@ function update_series_taxonomy_from_acf( $post_id ) {
 	}
 
 	// Update the post's series taxonomy with the selected term IDs
-	wp_set_post_terms( $post_id, $acf_series_terms, 'series' );
+	wp_set_post_terms( $post_id, $acf_series_terms, 'event_series' );
 }
 add_action( 'save_post', 'update_series_taxonomy_from_acf', 20 );
 

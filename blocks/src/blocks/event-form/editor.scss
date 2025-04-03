@@ -4,6 +4,7 @@
  * Replace them with your own styles or remove the file completely.
  */
 
-//  .wp-block-caes-hub-event-block {
-	
-//  }
+ .wp-block-caes-hub-event-block {
+    border: 5px dotted #ccc;
+    padding: var(--wp--preset--spacing--30);
+ }
