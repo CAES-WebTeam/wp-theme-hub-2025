@@ -34,8 +34,12 @@ if ( get_field( 'display_contact_information', $post_id ) ) {
             // Display the default contact information
             echo '<div class="event-details-content">';
             echo esc_html( $user_name ) . '<br>';
-            echo esc_html( $user_phone ) . '<br>';
-            echo '<a href="mailto:' . esc_attr( $user_email ) . '">' . esc_html( $user_email ) . '</a>';
+            if ($user_phone) {
+                echo esc_html( $user_phone ) . '<br>';
+            }
+            if ($user_email) {
+                echo '<a href="mailto:' . esc_attr( $user_email ) . '">' . esc_html( $user_email ) . '</a>';
+            }
             echo '</div>';
         }
 

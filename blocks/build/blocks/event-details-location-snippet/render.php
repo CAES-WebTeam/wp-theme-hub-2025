@@ -3,18 +3,29 @@
 $post_id = get_the_ID();
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
-
 $locationAsSnippet = $block['locationAsSnippet'];
+$location_custom = get_field('location_custom', $post_id);
+error_log('hey hey hey');
+if ($location_custom) {
+    error_log('Location custom field is set to true.');
+    // Use the Google Maps selected location
+    $google_map = get_field('location_google_map', $post_id);
+    
+    if (!empty($google_map) && is_array($google_map)) {
+        $location = $google_map['address'];
+    }
 
-// Check and set location if event type is CAES
-if (!empty(get_field('location_caes_room', $post_id)) and get_field('event_type', $post_id) == 'CAES'):
-    $location = get_field('location_caes_room', $post_id);
-endif;
+} else {
+    // If CAES
+    if (!empty(get_field('location_caes_room', $post_id)) && get_field('event_type', $post_id) == 'CAES') {
+        $location = get_field('location_caes_room', $post_id);
+    }
 
-// Check and set location if event type is Extension
-if (!empty(get_field('location_county_office', $post_id)) and get_field('event_type', $post_id) == 'Extension'):
-    $location = get_field('location_county_office', $post_id);
-endif;
+    // Or Extension
+    if (!empty(get_field('location_county_office', $post_id)) && get_field('event_type', $post_id) == 'Extension') {
+        $location = get_field('location_county_office', $post_id);
+    }
+}
 ?>
 
 

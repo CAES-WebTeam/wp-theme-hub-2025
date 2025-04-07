@@ -248,3 +248,10 @@ function restrict_events_to_author($query) {
 	}
 }
 add_action('pre_get_posts', 'restrict_events_to_author');
+
+// Set Google Maps API key
+function my_acf_google_map_api( $api ){
+    $api['key'] = 'AIzaSyBsBpQlrkrD9seg3_4FSMhhZsUU2rGjnm8';
+    return $api;
+}
+add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');

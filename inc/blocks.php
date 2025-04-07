@@ -45,7 +45,7 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-register');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date-time');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-location');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-location-snippet');
+	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-location-snippet'); // Not needed, duplicates event-details-location
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-online-location');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-cost');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-parking');
