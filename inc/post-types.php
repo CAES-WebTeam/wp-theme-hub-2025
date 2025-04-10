@@ -1,7 +1,7 @@
 <?php
 // Register 'Events' Custom Post Type
-add_action( 'init', function() {
-	register_post_type( 'events', array(
+add_action('init', function () {
+	register_post_type('events', array(
 		'labels' => array(
 			'name' => 'Events',
 			'singular_name' => 'Events',
@@ -37,15 +37,17 @@ add_action( 'init', function() {
 		'show_in_rest' => true,
 		'menu_icon' => 'dashicons-admin-post',
 		'supports' => array(
-			0 => 'title', 1 => 'author', 2 => 'thumbnail'
+			0 => 'title',
+			1 => 'author',
+			2 => 'thumbnail'
 		),
 		'delete_with_user' => false,
-	) );
-} );
+	));
+});
 
 // Register 'Publications' Custom Post Type
-add_action( 'init', function() {
-	register_post_type( 'publications', array(
+add_action('init', function () {
+	register_post_type('publications', array(
 		'labels' => array(
 			'name' => 'Publications',
 			'singular_name' => 'Publication',
@@ -81,18 +83,22 @@ add_action( 'init', function() {
 		'show_in_rest' => true,
 		'menu_icon' => 'dashicons-admin-post',
 		'supports' => array(
-			0 => 'title', 1 => 'author', 2 => 'editor', 3 => 'tags', 4 => 'thumbnail'
+			0 => 'title',
+			1 => 'author',
+			2 => 'editor',
+			3 => 'tags',
+			4 => 'thumbnail'
 		),
-		'delete_with_user' => false,
-	) );
-} );
+		'delete_with_user' => false
+	));
+});
 
 
 // Register 'Series' Taxonomies for Events and Publications
 // This code registers two custom taxonomies: 'event_series' and 'publication_series'.
-add_action( 'init', function() {
+add_action('init', function () {
 	// Register Series taxonomy for Events
-	register_taxonomy( 'event_series', array( 'events' ), array(
+	register_taxonomy('event_series', array('events'), array(
 		'labels' => array(
 			'name' => 'Event Series',
 			'singular_name' => 'Event Series',
@@ -120,11 +126,15 @@ add_action( 'init', function() {
 		'show_in_menu'	=> true,
 		'show_in_rest' 	=> true,
 		'query_var'		=> true,
-		'rewrite' 		=> array( 'slug' => 'event-series' ),
-	) );
+		'rewrite' => array(
+            'slug' => 'events/series',
+            'with_front' => false,
+            'hierarchical' => true
+        )
+	));
 
 	// Register Series taxonomy for Publications
-	register_taxonomy( 'publication_series', array( 'publications' ), array(
+	register_taxonomy('publication_series', array('publications'), array(
 		'labels' => array(
 			'name' => 'Publication Series',
 			'singular_name' => 'Publication Series',
@@ -152,14 +162,19 @@ add_action( 'init', function() {
 		'show_in_menu'	=> true,
 		'show_in_rest' 	=> true,
 		'query_var'		=> true,
-		'rewrite' 		=> array( 'slug' => 'publication-series' ),
-	) );
-} );
+		'rewrite' => array(
+            'slug' => 'publications/series',
+            'with_front' => false,
+            'hierarchical' => true
+        )
+	));
+});
 
 
 
 // Register the 'Keywords' taxonomy for the Publications
-function register_keywords_taxonomy() {
+function register_keywords_taxonomy()
+{
 	$labels = array(
 		'name'              => _x('Keywords', 'taxonomy general name'),
 		'singular_name'     => _x('Keyword', 'taxonomy singular name'),

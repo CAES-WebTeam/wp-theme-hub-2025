@@ -255,3 +255,21 @@ function my_acf_google_map_api( $api ){
     return $api;
 }
 add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
+
+// Custom rewrite rules for the event series taxonomy
+function custom_events_rewrite_rules() {
+    // Add rules to handle the event series taxonomy URLs
+    add_rewrite_rule(
+        '^events/series/([^/]+)/?$',
+        'index.php?event_series=$matches[1]',
+        'top'
+    );
+    
+    // Add a rule for pagination in taxonomy archives
+    add_rewrite_rule(
+        '^events/series/([^/]+)/page/([0-9]+)/?$',
+        'index.php?event_series=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+}
+add_action('init', 'custom_events_rewrite_rules');

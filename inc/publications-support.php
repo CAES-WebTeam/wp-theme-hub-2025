@@ -311,29 +311,66 @@ function assign_keywords_to_publications_from_json($json_file_path) {
 }*/
 
 
-
-/****** Custom Publications Permalink ******/
+// Custom rewrite rules for publications
 function custom_publications_rewrite_rules() {
+    // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
     add_rewrite_rule(
-        '^publications/([^/]+)/([^/]+)/?$',
+        '^publications/([A-Za-z]+\d+(?:-[A-Za-z0-9]+)*)/([^/]+)/?$',
         'index.php?post_type=publications&name=$matches[2]',
+        'top'
+    );
+    
+    // Add a rule to specifically handle the publication series taxonomy URLs
+    add_rewrite_rule(
+        '^publications/series/([^/]+)/?$',
+        'index.php?publication_series=$matches[1]',
+        'top'
+    );
+    
+    // Add a rule for pagination in taxonomy archives
+    add_rewrite_rule(
+        '^publications/series/([^/]+)/page/([0-9]+)/?$',
+        'index.php?publication_series=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+
+    // Child pages rule - this handles regular child pages under "publications"
+    // This should be last so it doesn't catch /publications/series/
+    add_rewrite_rule(
+        '^publications/([^/]+)/?$',
+        'index.php?pagename=publications/$matches[1]',
         'top'
     );
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
+// Add this function to see all active rewrite rules (use for debugging only)
+function print_rewrite_rules() {
+    global $wp_rewrite;
+    echo '<pre>';
+    print_r($wp_rewrite->rules);
+    echo '</pre>';
+    die();
+}
+// Uncomment this line temporarily to see all rules
+// add_action('init', 'print_rewrite_rules', 999);
 
+/**
+ * Allow a custom query var for publications.
+ */
 function custom_publications_query_vars($query_vars) {
     $query_vars[] = 'publication_number';
     return $query_vars;
 }
 add_filter('query_vars', 'custom_publications_query_vars');
 
-// Add pub number to pubs permalink
+/**
+ * Modify the permalink structure for publication posts so that the URL includes the publication number.
+ * For example, it changes /publications/post-slug/ to /publications/C1248/post-slug/.
+ */
 function custom_publications_permalink($post_link, $post) {
     if ($post->post_type === 'publications') {
         $publication_number = get_field('publication_number', $post->ID);
-
         if ($publication_number) {
             $publication_number = sanitize_text_field($publication_number);
             $publication_number = str_replace(' ', '', $publication_number);
@@ -344,22 +381,21 @@ function custom_publications_permalink($post_link, $post) {
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
-// If a user visits a url like /publications/C1234, redirect to /publications/C1234/title-slug/
+/**
+ * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
+ * by looking up the publication number and obtaining the canonical slug.
+ */
 function redirect_publications_to_canonical_url() {
-    // Get the requested path (without domain)
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
-    // Check if the path starts with "/publications/"
+    // Only proceed if the URL starts with '/publications/'
     if (strpos($requested_path, '/publications/') === 0) {
-
-        // Check if the next part after /publications/ is a valid publication number
         if (preg_match('#^/publications/([A-Za-z0-9-]+)#', $requested_path, $matches)) {
             $publication_number = $matches[1];
-
-            // Add a space before the first integer value for querying the database
+            // Add a space before the first digit so the stored value (e.g. "C 1037-23-SP") can match.
             $publication_number_with_space = preg_replace('/([A-Za-z]+)(\d)/', '$1 $2', $publication_number);
 
-            // Query the database to check if the publication number exists
+            // Query to confirm the publication exists.
             $args = [
                 'post_type'      => 'publications',
                 'posts_per_page' => 1,
@@ -371,35 +407,29 @@ function redirect_publications_to_canonical_url() {
                 ],
             ];
             $query = new WP_Query($args);
-
             if ($query->have_posts()) {
-        
-                // Get the slug of the first post
                 $post_slug = $query->posts[0]->post_name;
-
-                // Create the canonical URL with the publication number without space
                 $canonical_url = "/publications/{$publication_number}/{$post_slug}/";
-
-                // Normalize both requested path and canonical URL to handle any trailing slashes
                 $normalized_requested_path = rtrim($requested_path, '/');
                 $normalized_canonical_url = rtrim($canonical_url, '/');
 
-                // Check if the requested URL ends with the publication number only (no slug)
+                // If the URL consists only of the publication number (with no slug), then redirect.
                 if ($normalized_requested_path === "/publications/{$publication_number}") {
-                    // Perform the redirect to the canonical URL
-                    wp_redirect(home_url($normalized_canonical_url), 301); // 301 for permanent redirect
-                    exit; // Always call exit after wp_redirect
+                    wp_redirect(home_url($normalized_canonical_url), 301);
+                    exit;
                 }
-            } 
+            }
         }
     }
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
+/**
+ * Modify the query for publications if a custom publication_number query variable is present.
+ */
 function custom_publications_parse_request($query) {
     if (!is_admin() && isset($query->query_vars['publication_number'])) {
         $publication_number = sanitize_title($query->query_vars['publication_number']);
-
         $query->set('meta_query', array(
             array(
                 'key'     => 'publication_number',
