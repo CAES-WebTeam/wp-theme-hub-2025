@@ -352,17 +352,6 @@ function custom_publications_rewrite_rules() {
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
-// Add this function to see all active rewrite rules (use for debugging only)
-function print_rewrite_rules() {
-    global $wp_rewrite;
-    echo '<pre>';
-    print_r($wp_rewrite->rules);
-    echo '</pre>';
-    die();
-}
-// Uncomment this line temporarily to see all rules
-// add_action('init', 'print_rewrite_rules', 999);
-
 /**
  * Allow a custom query var for publications.
  */
@@ -380,7 +369,9 @@ function custom_publications_permalink($post_link, $post) {
     if ($post->post_type === 'publications') {
         $publication_number = get_field('publication_number', $post->ID);
         if ($publication_number) {
-            $publication_number = sanitize_title($publication_number);
+            // Remove first dash but preserve case and other dashes
+            $publication_number = preg_replace('/-/', '', $publication_number, 1);
+            $publication_number = str_replace(' ', '', $publication_number);
 
             return home_url("/publications/{$publication_number}/{$post->post_name}/");
         }
