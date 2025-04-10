@@ -362,9 +362,9 @@ function sync_personnel_users2() {
 
 // Add Manual Sync Button to Tools
 function add_personnel_sync_menu2() {
-	add_submenu_page('tools.php', 'Sync Personnel Archived Users', 'Sync Archive Personnel', 'manage_options', 'sync-personnel', function() {
-		sync_personnel_users();
-		echo '<div class="updated"><p>Personnel users synced successfully!</p></div>';
+	add_submenu_page('tools.php', 'Sync Personnel Archived Users', 'Sync Archived Personnel', 'manage_options', 'sync-personnel2', function() {
+		sync_personnel_users2();
+		echo '<div class="updated"><p>Personnel archived users synced successfully!</p></div>';
 	});
 }
 add_action('admin_menu', 'add_personnel_sync_menu2');
