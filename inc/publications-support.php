@@ -242,7 +242,7 @@ function get_full_image_url($relative_path) {
     }
 }
 
-/*// Assign Keywords
+// Assign Keywords
 function assign_keywords_to_publications_from_json($json_file_path) {
     if (!file_exists($json_file_path)) {
         print_r("JSON file not found: $json_file_path");
@@ -277,7 +277,7 @@ function assign_keywords_to_publications_from_json($json_file_path) {
         ]);
 
         if (empty($posts)) {
-            print_r("No publication found for publication_id: $pub_id");
+            //print_r("No publication found for publication_id: $pub_id");
             continue;
         }
 
@@ -305,11 +305,19 @@ function assign_keywords_to_publications_from_json($json_file_path) {
 
         // Assign the term to the publication
         wp_set_object_terms($post_id, intval($term_id), 'keywords', true);
+        print_r("Assigned keyword for publication_id: $pub_id");
     }
 
     print_r("Keyword assignment complete.");
-}*/
+}
 
+add_action('init', function () {
+    if (!is_admin() && isset($_GET['run_keywords'])) {
+        $json_path = get_stylesheet_directory() . '/json/pub-keywords.json';
+        assign_keywords_to_publications_from_json($json_path);
+        exit; 
+    }
+});
 
 // Custom rewrite rules for publications
 function custom_publications_rewrite_rules() {
@@ -372,8 +380,8 @@ function custom_publications_permalink($post_link, $post) {
     if ($post->post_type === 'publications') {
         $publication_number = get_field('publication_number', $post->ID);
         if ($publication_number) {
-            $publication_number = sanitize_text_field($publication_number);
-            $publication_number = str_replace(' ', '', $publication_number);
+            $publication_number = sanitize_title($publication_number);
+
             return home_url("/publications/{$publication_number}/{$post->post_name}/");
         }
     }
