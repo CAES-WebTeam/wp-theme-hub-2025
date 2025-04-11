@@ -30,25 +30,42 @@ figcaption a {
     container-name: caespost;
 }
 
+.caes-hub-content-f-img {
+    container-type: inline-size;
+    container-name: caesfimg;
+}
+
 .caes-hub-content-post .alignfull {
     margin-left: calc(var(--wp--preset--spacing--50)* -1);
     margin-right: calc(var(--wp--preset--spacing--50)* -1);
 }
 
-.caes-hub-content-post figure.wp-block-image.alignleft {
+.caes-hub-content-post figure.alignleft,
+.caes-hub-content-f-img figure.alignleft {
     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
 
-.caes-hub-content-post figure.wp-block-image.alignright {
+.caes-hub-content-post figure.alignright,
+.caes-hub-content-f-img figure.alignright {
     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
 
 @container caespost (max-width: 840px) {
-    .caes-hub-content-post figure.wp-block-image.alignleft {
+    .caes-hub-content-post figure.alignleft {
         margin-inline-start: 0;
     }
 
-    .caes-hub-content-post figure.wp-block-image.alignright {
+    .caes-hub-content-post figure.alignright {
+        margin-inline-end: 0;
+    }
+}
+
+@container caesfimg (max-width: 840px) {
+    .caes-hub-content-f-img figure.alignleft {
+        margin-inline-start: 0;
+    }
+
+    .caes-hub-content-f-img figure.alignright {
         margin-inline-end: 0;
     }
 }

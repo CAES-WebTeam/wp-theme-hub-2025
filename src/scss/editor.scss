@@ -2,10 +2,10 @@
 
 /* Blocks */
 
-figure.wp-block-image.alignleft {
+figure.alignleft {
     margin-inline-start: calc( ( 100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
-figure.wp-block-image.alignright {
+figure.alignright {
     margin-inline-end: calc( ( 100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
 
