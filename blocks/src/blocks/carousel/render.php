@@ -8,28 +8,10 @@ $numberOfPosts = $attributes['numberOfPosts'] ?? 5;
 
 // Get today's date
 $today = new DateTime();
-$dateFormatted = $today->format('F j, Y');
-$day = $today->format('j');
+$timestamp = $today->getTimestamp();
 
-// Function to add ordinal suffix
-function getOrdinalSuffix($day)
-{
-    if (in_array(($day % 100), [11, 12, 13])) {
-        return 'th';
-    }
-    switch ($day % 10) {
-        case 1:
-            return 'st';
-        case 2:
-            return 'nd';
-        case 3:
-            return 'rd';
-        default:
-            return 'th';
-    }
-}
+$formattedDateWithAPA = format_date_apa_style( $timestamp );
 
-$formattedDateWithSuffix = str_replace($day, $day . getOrdinalSuffix($day), $dateFormatted);
 
 // Render content-brand block
 // Commenting out on 3/14/2025 per OMC's request to not have logos on news feeds
@@ -69,7 +51,7 @@ if ($handSelectPosts) {
 
 <div class="wp-block-caes-hub-carousel" <?php echo \get_block_wrapper_attributes(); ?>>
     <?php if (!empty($selectedPosts) && is_array($selectedPosts)) { ?>
-        <h1>CAES Field Report <span><?php echo $formattedDateWithSuffix; ?></span></h1>
+        <h1>CAES Field Report <span><?php echo $formattedDateWithAPA; ?></span></h1>
         <section class="wp-block-caes-hub-carousel__inner-wrapper" aria-labelledby="carouselTitle">
             <div class="sr-only" id="carouselTitle">
                 <h2>Featured</h2>

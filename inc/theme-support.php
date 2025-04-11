@@ -357,3 +357,56 @@ function hub_login_stylesheet()
 	wp_enqueue_style('custom-login', get_stylesheet_directory_uri() . '/assets/css/login.css');
 }
 add_action('login_enqueue_scripts', 'hub_login_stylesheet');
+
+// Format dates in APA style
+function format_date_apa_style( $timestamp ) {
+	$month = date( 'n', $timestamp );
+	$day   = date( 'j', $timestamp );
+	$year  = date( 'Y', $timestamp );
+
+	$month_names = [
+		1  => 'Jan.',
+		2  => 'Feb.',
+		3  => 'March',
+		4  => 'April',
+		5  => 'May',
+		6  => 'June',
+		7  => 'July',
+		8  => 'Aug.',
+		9  => 'Sept.',
+		10 => 'Oct.',
+		11 => 'Nov.',
+		12 => 'Dec.',
+	];
+
+	$month_str = $month_names[ $month ];
+
+	return "$month_str $day, $year";
+}
+
+add_filter( 'render_block', function( $block_content, $block ) {
+	if ( $block['blockName'] !== 'core/post-date' ) {
+		return $block_content;
+	}
+
+	$post_id  = get_the_ID();
+	$datetime = get_post_datetime( $post_id );
+
+	if ( ! $datetime ) {
+		return $block_content;
+	}
+
+	$timestamp = $datetime->getTimestamp();
+	$apa_date  = format_date_apa_style( $timestamp );
+
+	// Replace only the contents of the <time> tag
+	$block_content = preg_replace_callback(
+		'|<time([^>]*)>(.*?)</time>|i',
+		function ( $matches ) use ( $apa_date ) {
+			return '<time' . $matches[1] . '>' . esc_html( $apa_date ) . '</time>';
+		},
+		$block_content
+	);
+
+	return $block_content;
+}, 10, 2 );
