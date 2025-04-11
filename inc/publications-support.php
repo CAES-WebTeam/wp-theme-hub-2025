@@ -369,8 +369,8 @@ function custom_publications_permalink($post_link, $post) {
     if ($post->post_type === 'publications') {
         $publication_number = get_field('publication_number', $post->ID);
         if ($publication_number) {
-            // Remove first dash but preserve case and other dashes
-            $publication_number = preg_replace('/-/', '', $publication_number, 1);
+            // Remove first dash after the letter but other dashes, then remove space
+            // $publication_number = preg_replace('/(?<=[a-zA-Z])-/', '', $publication_number, 1);
             $publication_number = str_replace(' ', '', $publication_number);
 
             return home_url("/publications/{$publication_number}/{$post->post_name}/");
