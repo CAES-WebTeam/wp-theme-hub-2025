@@ -127,7 +127,11 @@ window.addEventListener('load', function () {
   function handleScroll() {
     if (!stickyTOC) return;
     const tocRect = tocWrapper.getBoundingClientRect();
-    if (tocRect.top < 0) {
+    const stickyTocRect = stickyTOC.getBoundingClientRect();
+    const postContentRect = postContent.getBoundingClientRect();
+    const tocShouldBeVisible = tocRect.top < 0;
+    const tocBottomHitsPostBottom = stickyTocRect.bottom >= postContentRect.bottom;
+    if (tocShouldBeVisible && !tocBottomHitsPostBottom) {
       stickyTOC.classList.add('visible');
     } else {
       stickyTOC.classList.remove('visible');
