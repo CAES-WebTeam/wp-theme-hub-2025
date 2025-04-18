@@ -443,8 +443,11 @@ add_action('pre_get_posts', 'custom_publications_parse_request');
 // Remove empty <p> tags from the content
 add_filter('the_content', function ($content) {
     if (is_singular('publications')) {
-        // Remove empty <p> tags (including spaces, &nbsp;, and <br>)
-        $content = preg_replace('/<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $content);
+        // Normalize self-closing variations and whitespace
+        $content = preg_replace('/<br\s*\/?>/i', '<br>', $content);
+
+        // Remove paragraphs that ONLY contain <br>, &nbsp;, or spaces (any quantity)
+        $content = preg_replace('/<p>(?:\s|&nbsp;|<br>)*<\/p>/i', '', $content);
     }
     return $content;
 });
