@@ -441,13 +441,13 @@ function custom_publications_parse_request($query) {
 add_action('pre_get_posts', 'custom_publications_parse_request');
 
 // Remove empty <p> tags from the content
-add_filter('the_content', function ($content) {
-    if (is_singular('publications')) {
-        // Normalize self-closing variations and whitespace
-        $content = preg_replace('/<br\s*\/?>/i', '<br>', $content);
+function clean_empty_paragraphs($content) {
+    // Remove <p> tags that are completely empty or contain only whitespace or &nbsp;
+    $content = preg_replace('/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $content);
 
-        // Remove paragraphs that ONLY contain <br>, &nbsp;, or spaces (any quantity)
-        $content = preg_replace('/<p>(?:\s|&nbsp;|<br>)*<\/p>/i', '', $content);
-    }
+    // Optionally, remove multiple line breaks too
+    $content = preg_replace("/(\r?\n){2,}/", "\n", $content);
+
     return $content;
-});
+}
+add_filter('the_content', 'clean_empty_paragraphs');
