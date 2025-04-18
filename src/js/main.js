@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Add class to figure based on child image's class
-document.querySelectorAll('.wp-block-post-content figure:not([class])').forEach(figure => {
+document.querySelectorAll('.wp-block-post-content figure:not([class^="wp-"])').forEach(figure => {
     const image = figure.querySelector('img.image-left, img.image-right');
     if (image) {
       if (image.classList.contains('image-left')) {
@@ -66,7 +66,7 @@ document.querySelectorAll('.wp-block-post-content figure:not([class])').forEach(
         figure.classList.add('caes-hub-figure-right');
       }
     }
-  });
+  });  
   
 
 // Remove empty paragraphs
