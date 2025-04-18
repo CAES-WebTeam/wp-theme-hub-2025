@@ -351,8 +351,8 @@
                             "fontSize": "var(--wp--preset--font-size--small)"
                         },
                         "color": {
-                            "background": "var(--wp--preset--color--bulldog-red)",
-                            "text": "var(--wp--preset--color--base)"
+                            "background": "var(--wp--preset--color--base-two)",
+                            "text": "var(--wp--preset--color--contrast)"
                         },
                         "spacing": {
                             "margin": {

@@ -56,6 +56,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+// Add class to figure based on child image's class
+document.querySelectorAll('.wp-block-post-content figure:not([class])').forEach(figure => {
+    const image = figure.querySelector('img.image-left, img.image-right');
+    if (image) {
+      if (image.classList.contains('image-left')) {
+        figure.classList.add('caes-hub-figure-left');
+      } else if (image.classList.contains('image-right')) {
+        figure.classList.add('caes-hub-figure-right');
+      }
+    }
+  });
+  
 
 // Remove empty paragraphs
 document.addEventListener('DOMContentLoaded', function () {
@@ -73,4 +85,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
     });
-  });  
+  });
