@@ -56,18 +56,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-// Add class to figure based on child image's class
-document.querySelectorAll('.wp-block-post-content figure:not([class^="wp-"])').forEach(figure => {
-    const image = figure.querySelector('img.image-left, img.image-right');
-    if (image) {
-      if (image.classList.contains('image-left')) {
-        figure.classList.add('caes-hub-figure-left');
-      } else if (image.classList.contains('image-right')) {
-        figure.classList.add('caes-hub-figure-right');
-      }
-    }
-  });  
+document.addEventListener('DOMContentLoaded', () => {
+    const isSinglePost = document.body.classList.contains('single-post');
+    const content = document.querySelector('.wp-block-post-content');
   
+    // Find first child that is a <figure>
+    const firstChildFigure = content?.firstElementChild?.tagName === 'FIGURE'
+      ? content.firstElementChild
+      : null;
+  
+    document.querySelectorAll('.wp-block-post-content figure:not([class^="wp-"])').forEach(figure => {
+      const image = figure.querySelector('img.image-left, img.image-right');
+  
+      // Skip if it's the first child figure with an aligned image on single post
+      const isException =
+        isSinglePost &&
+        figure === firstChildFigure &&
+        image &&
+        (image.classList.contains('image-left') || image.classList.contains('image-right'));
+  
+      if (image && !isException) {
+        if (image.classList.contains('image-left')) {
+          figure.classList.add('caes-hub-figure-left');
+        } else if (image.classList.contains('image-right')) {
+          figure.classList.add('caes-hub-figure-right');
+        }
+      }
+    });
+  });  
 
 // Remove empty paragraphs
 document.addEventListener('DOMContentLoaded', function () {
