@@ -442,8 +442,8 @@ add_action('pre_get_posts', 'custom_publications_parse_request');
 
 // Remove empty <p> tags from the content
 function clean_empty_paragraphs($content) {
-    // Remove <p> tags that are completely empty or contain only whitespace or &nbsp;
-    $content = preg_replace('/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $content);
+    // Remove <p> tags that are completely empty or contain only whitespace, &nbsp;, <br>, or &#13;
+    $content = preg_replace('/<p>(\s|&nbsp;|<br\s*\/?>|&#13;)*<\/p>/i', '', $content);
 
     // Optionally, remove multiple line breaks too
     $content = preg_replace("/(\r?\n){2,}/", "\n", $content);
