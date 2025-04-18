@@ -6,39 +6,6 @@
 
     // IMAGES
 
-    figure:not([class*="wp-"]) img:not([width]),
-    img:not([width]):not(:where(figure img)) {
-        max-width: 100%;
-        height: auto;
-    }
-
-    figure.caes-hub-figure-right {
-    // img.image-right:not(:where(figure.wp-block-image img, figure.wp-caption img)) {
-        float: right;
-        margin-left: var(--wp--style--block-gap) !important;
-        margin-bottom: var(--wp--style--block-gap) !important;
-        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    }
-
-    figure.caes-hub-figure-left {
-    // img.image-left:not(:where(figure.wp-block-image img, figure.wp-caption img)) {
-        float: left;
-        margin-right: var(--wp--style--block-gap) !important;
-        margin-bottom: var(--wp--style--block-gap) !important;
-        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    }
-
-    @container caespost (max-width: 840px) {
-        figure.caes-hub-figure-left {
-            margin-inline-end: 0;
-        }
-
-        figure.caes-hub-figure-left {
-            margin-inline-start: 0;
-        }
-    }
-
-
     figure:not([class^="wp-"]) {
 
         img {
@@ -57,6 +24,36 @@
             padding-right: var(--wp--preset--spacing--40);
             padding-bottom: var(--wp--preset--spacing--30);
             padding-left: var(--wp--preset--spacing--40);
+        }
+    }
+
+    figure:not([class*="wp-"]) img:not([width]),
+    img:not([width]):not(:where(figure img)) {
+        max-width: 100%;
+        height: auto;
+    }
+
+    figure.caes-hub-figure-right {
+        float: right;
+        margin-left: var(--wp--style--block-gap) !important;
+        margin-bottom: var(--wp--style--block-gap) !important;
+        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    }
+
+    figure.caes-hub-figure-left {
+        float: left;
+        margin-right: var(--wp--style--block-gap) !important;
+        margin-bottom: var(--wp--style--block-gap) !important;
+        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    }
+
+    @container caespost (max-width: 840px) {
+        figure.caes-hub-figure-left {
+            margin-inline-end: 0;
+        }
+
+        figure.caes-hub-figure-left {
+            margin-inline-start: 0;
         }
     }
 
@@ -124,4 +121,24 @@
         }
     }
 
+}
+
+// For image on single post pages, ie stories
+.single-post {
+    .wp-block-post-content {
+        figure.caes-hub-figure-right,
+        figure.caes-hub-figure-left {
+            max-width: 50%;
+        }
+    }
+} 
+
+@media screen and (max-width: 781px) {
+    .wp-block-post-content {
+        figure.caes-hub-figure-right,
+        figure.caes-hub-figure-left {
+            width: 100%;
+            max-width: 100%;
+        }
+    }
 }
