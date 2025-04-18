@@ -56,3 +56,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+
+// Remove empty paragraphs
+document.addEventListener('DOMContentLoaded', function () {
+    const contentContainers = document.querySelectorAll('.post, .entry-content');
+  
+    contentContainers.forEach(container => {
+      const paragraphs = container.querySelectorAll('p');
+  
+      paragraphs.forEach(p => {
+        const html = p.innerHTML.replace(/<br\s*\/?>/gi, '').replace(/&#13;/g, '').replace(/&nbsp;/gi, '').trim();
+  
+        // If it's empty or only whitespace after cleaning
+        if (html === '') {
+          p.remove();
+        }
+      });
+    });
+  });  
