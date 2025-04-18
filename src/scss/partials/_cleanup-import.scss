@@ -134,11 +134,13 @@
 } 
 
 @media screen and (max-width: 781px) {
-    .wp-block-post-content {
-        figure.caes-hub-figure-right,
-        figure.caes-hub-figure-left {
-            width: 100%;
-            max-width: 100%;
+    .single-post {
+        .wp-block-post-content {
+            figure.caes-hub-figure-right,
+            figure.caes-hub-figure-left {
+                width: 100%;
+                max-width: 100%;
+            }
         }
     }
 }
