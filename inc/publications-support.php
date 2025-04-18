@@ -444,7 +444,7 @@ add_action('pre_get_posts', 'custom_publications_parse_request');
 add_filter('the_content', function ($content) {
     if (is_singular('publications')) {
         // Remove empty <p> tags (including spaces, &nbsp;, and <br>)
-        $content = preg_replace('/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $content);
+        $content = preg_replace('/<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $content);
     }
     return $content;
 });
