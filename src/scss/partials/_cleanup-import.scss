@@ -18,24 +18,36 @@
         height: auto;
     }
 
-    // Float left
-    figure.image.align-left,
-    img.image-left,
-    div.left img.image-left {
+    // Float left: <figure> and standalone <img>
+    figure.image.align-left {
         float: left;
         margin-right: 1em;
         margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         display: block;
     }
 
-    // Float right
-    figure.image.align-right,
-    img.image-right,
-    div.right img.image-right {
+    img.image-left,
+    div.left img.image-left {
+        float: left;
+        display: block;
+        margin-right: 1em;
+        margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    }
+
+
+    figure.image.align-right {
         float: right;
         margin-left: 1em;
         margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         display: block;
+    }
+
+    img.image-right,
+    div.right img.image-right {
+        float: right;
+        display: block;
+        margin-left: 1em;
+        margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
 
     // Centered images
