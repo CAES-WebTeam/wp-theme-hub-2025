@@ -4,79 +4,23 @@
 // All of these changes apply to just this div, where the content is imported
 .wp-block-post-content {
 
-    // IMAGES
+    // all the img classes to keep track of
+    // figure.image,
+    // figure.center,
+    // figure.align-right,
+    // figure.align-left,
+    // img.image-left,
+    // img.image-right,
+    // img.image-center,
+    // div.left img.image-left,
+    // div.right img.image-right,
+    // figure:not([class])
 
-    figure.image,
-    figure.center,
-    img.image-left,
-    img.image-right,
-    img.image-center,
-    div.left img.image-left,
-    div.right img.image-right,
-    figure:not([class]) {
-        max-width: 100%;
-        height: auto;
-    }
-
-    // Float left: <figure> and standalone <img>
-    figure.image.align-left {
-        float: left;
-        margin-right: 1em;
-        margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-        display: block;
-    }
-
-    img.image-left,
-    div.left img.image-left {
-        float: left;
-        display: block;
-        margin-right: 1em;
-        margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    }
-
-
-    figure.image.align-right {
-        float: right;
-        margin-left: 1em;
-        margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-        display: block;
-    }
-
-    img.image-right,
-    div.right img.image-right {
-        float: right;
-        display: block;
-        margin-left: 1em;
-        margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    }
-
-    // Centered images
-    figure.center,
-    img.image-center {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        float: none;
-    }
-
-    // Unclassed <figure>
-    figure:not([class]) {
-        display: block;
-        margin: 1em auto;
-        text-align: center;
-
-        img {
-            display: inline-block;
-        }
-    }
-
-    // Figcaption
-    figure.image,
-    figure.center,
-    figure.image.align-left,
-    figure.image.align-right,
-    figure:not([class]) {
+    // Figures
+    figure:not([class^="wp-"]):has(img) {
+        display: table;
         figcaption {
+            display: table-caption;
             caption-side: bottom;
             background-color: var(--wp--preset--color--base-two);
             color: var(--wp--preset--color--contrast);
@@ -87,28 +31,6 @@
             padding-bottom: var(--wp--preset--spacing--30);
             padding-left: var(--wp--preset--spacing--40);
         }
-    }
-
-    // Mobile fallback: remove floats
-    @media (max-width: 600px) {
-
-        figure.image.align-left,
-        figure.image.align-right,
-        img.image-left,
-        img.image-right,
-        div.left img.image-left,
-        div.right img.image-right {
-            float: none !important;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-    }
-
-    // For the first image in a story
-    .single-post .entry-content>image.align-right:first-child {
-        float: none !important;
-        margin: 0 auto;
     }
 
     // IMAGES
