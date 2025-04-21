@@ -23,7 +23,7 @@
         display: table;
         border-spacing: 0;
         max-width: var(--wp--style--global--content-size);
-        img {
+        img, .image-left, .image-right {
             max-width: 100%;
             height: auto;
             box-sizing: border-box;
