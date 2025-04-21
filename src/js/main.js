@@ -74,6 +74,34 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+  const figures = document.querySelectorAll('figure');
+
+  figures.forEach((figure) => {
+    // Skip figures with any class that starts with "wp-block"
+    if ([...figure.classList].some(cls => cls.startsWith('wp-block'))) return;
+
+    const img = figure.querySelector('img');
+
+    if (img) {
+      // Wait for image to load
+      if (img.complete) {
+        setFigureWidth(figure, img);
+      } else {
+        img.addEventListener('load', () => setFigureWidth(figure, img));
+      }
+    }
+  });
+
+  function setFigureWidth(figure, img) {
+    const imgWidth = img.offsetWidth;
+    if (imgWidth > 0) {
+      figure.style.width = imgWidth + 'px';
+    }
+  }
+});
+
+
 
 // Add class to figure with image-left or image-right in news posts
 // document.addEventListener('DOMContentLoaded', () => {

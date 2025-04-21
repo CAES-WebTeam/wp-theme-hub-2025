@@ -17,6 +17,7 @@
     // figure:not([class])
 
     // IMAGES
+    
     figure:not([class^="wp-"]):has(img) {
         display: flex;
         flex-direction: column;
