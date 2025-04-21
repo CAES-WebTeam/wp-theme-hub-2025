@@ -126,6 +126,26 @@
                 margin-inline-start: unset !important;
             }
         }
+
+        @container caespost (max-width: 840px) {
+            &.right {
+                margin-inline-end: 0 !important;
+            }
+            &.left {
+                margin-inline-start: 0 !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            &.right,
+            &.left {
+                float: none;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+        }
+        
     }
 
     /* Responsive tweaks */
