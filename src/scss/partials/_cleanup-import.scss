@@ -21,7 +21,7 @@
     figure:not([class^="wp-"]):has(img) {
         display: flex;
         flex-direction: column;
-        max-width: var(--wp--style--global--content-size);
+        max-width: 100%;
 
         img {
             display: block;
@@ -181,7 +181,6 @@
 // First image in a story override
 
 .single-post .entry-content>figure:not([class^="wp-"]):has(img):first-child {
-    max-width: var(--wp--style--global--content-size);
     height: auto;
     float: none !important;
     margin: 0 auto !important;
