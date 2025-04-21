@@ -121,3 +121,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// Legacy support for imported in figures and images.
+// Only runs on Stories (single posts) and Publications.
+document.addEventListener("DOMContentLoaded", function () {
+  const body = document.body;
+
+  // Only apply on single post and single publications pages
+  if (body.classList.contains("single-post") || body.classList.contains("single-publications")) {
+
+    // Add .legacy-figure to figures without wp- classes
+    document.querySelectorAll("figure").forEach((figure) => {
+      const classList = Array.from(figure.classList);
+      const isBlock = classList.some(cls => cls.startsWith("wp-"));
+      if (!isBlock) {
+        figure.classList.add("legacy-figure");
+      }
+    });
+
+    // Add .legacy-image to images without wp- classes
+    document.querySelectorAll("img").forEach((img) => {
+      const classList = Array.from(img.classList);
+      const isBlock = classList.some(cls => cls.startsWith("wp-"));
+      if (!isBlock) {
+        img.classList.add("legacy-image");
+      }
+    });
+
+  }
+});
