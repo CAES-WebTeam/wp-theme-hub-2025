@@ -62,10 +62,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = img.closest('.entry-content');
     if (!container) return;
 
-    const containerWidth = container.offsetWidth;
+    // Get the computed content width from the CSS variable
+    const computedStyles = getComputedStyle(container);
+    const contentWidthVar = computedStyles.getPropertyValue('--wp--style--global--content-size');
+
+    // Parse as number (in pixels)
+    const contentWidth = parseFloat(contentWidthVar);
+
+    // Fallback to container width if the variable isn't usable
+    const widthToUse = contentWidth || container.offsetWidth;
     const imageWidth = img.offsetWidth;
 
-    if (imageWidth / containerWidth >= 0.75) {
+    if (imageWidth / widthToUse >= 0.75) {
       img.style.float = 'none';
       img.style.marginLeft = 'auto';
       img.style.marginRight = 'auto';
