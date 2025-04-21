@@ -79,10 +79,25 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', () => {
   requestAnimationFrame(() => {
     document.querySelectorAll('.entry-content table').forEach(table => {
-      const alreadyWrapped = table.closest('.responsitable-wrapper');
-      if (alreadyWrapped) return;
+      const wrapper = table.closest('.responsitable-wrapper');
 
-      // Create a temporary clone to test overflow without styling conflicts
+      // Function to add the scroll note if missing
+      const ensureScrollNote = (wrapperElement, referenceTable) => {
+        const existingNote = wrapperElement.querySelector('.responsitable-scroll-note');
+        if (!existingNote) {
+          const note = document.createElement('p');
+          note.innerHTML = '<em class="responsitable-scroll-note">(Scroll right for more)</em>';
+          wrapperElement.insertBefore(note, referenceTable);
+        }
+      };
+
+      // Already wrapped — just ensure the note is there
+      if (wrapper) {
+        ensureScrollNote(wrapper, table);
+        return;
+      }
+
+      // Create a temporary clone to test overflow
       const clone = table.cloneNode(true);
       clone.style.position = 'absolute';
       clone.style.visibility = 'hidden';
@@ -95,15 +110,13 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.removeChild(clone);
 
       if (isOverflowing) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'responsitable-wrapper';
+        const newWrapper = document.createElement('div');
+        newWrapper.className = 'responsitable-wrapper';
 
-        table.parentNode.insertBefore(wrapper, table);
-        wrapper.appendChild(table);
+        table.parentNode.insertBefore(newWrapper, table);
+        newWrapper.appendChild(table);
 
-        const note = document.createElement('p');
-        note.innerHTML = '<em class="responsitable-scroll-note">(Scroll right for more)</em>';
-        wrapper.insertBefore(note, table);
+        ensureScrollNote(newWrapper, table);
       }
     });
   });
