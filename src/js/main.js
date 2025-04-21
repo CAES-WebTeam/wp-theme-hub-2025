@@ -56,6 +56,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+// Center images that are too wide to be floated
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.entry-content img.image-left, .entry-content img.image-right').forEach(img => {
+    const container = img.closest('.entry-content');
+    if (!container) return;
+
+    const containerWidth = container.offsetWidth;
+    const imageWidth = img.offsetWidth;
+
+    if (imageWidth / containerWidth >= 0.75) {
+      img.style.float = 'none';
+      img.style.marginLeft = 'auto';
+      img.style.marginRight = 'auto';
+      img.style.display = 'block';
+    }
+  });
+});
+
+
 // Add class to figure with image-left or image-right in news posts
 // document.addEventListener('DOMContentLoaded', () => {
 //   const isSinglePost = document.body.classList.contains('single-post');
