@@ -74,6 +74,17 @@
         }
     }
 
+    @media (max-width: 768px) {
+        figure.align-left,
+        figure:has(img.image-left),
+        img.image-left:not(:where(figure > img)),
+        figure.align-right,
+        figure:has(img.image-right),
+        img.image-right:not(:where(figure > img)) {
+            width: 100%;
+        }
+    }
+
     // IMAGES
 
     // figure:not([class^="wp-"]) {
