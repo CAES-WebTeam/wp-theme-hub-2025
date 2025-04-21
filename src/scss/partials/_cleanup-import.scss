@@ -23,23 +23,22 @@
         display: table;
         border-spacing: 0;
         max-width: var(--wp--style--global--content-size);
-    }
-
-    figure.legacy-figure img {
-        max-width: 100%;
-        height: auto;
-        box-sizing: border-box;
-        vertical-align: bottom;
-    }
-
-    figure.legacy-figure figcaption {
-        caption-side: bottom;
-        display: table-caption;
-        background-color: var(--wp--preset--color--base-two);
-        color: var(--wp--preset--color--contrast);
-        font-size: var(--wp--preset--font-size--small);
-        margin-top: -29px;
-        padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+        img {
+            max-width: 100%;
+            height: auto;
+            box-sizing: border-box;
+            vertical-align: bottom;
+            margin-left: 0;
+        }
+        figcaption {
+            caption-side: bottom;
+            display: table-caption;
+            background-color: var(--wp--preset--color--base-two);
+            color: var(--wp--preset--color--contrast);
+            font-size: var(--wp--preset--font-size--small);
+            margin-top: -29px;
+            padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+        }
     }
 
     /* Floats for legacy images */
