@@ -16,7 +16,7 @@
     // div.right img.image-right,
     // figure:not([class])
 
-    // Figures
+    // IMAGES
     figure:not([class^="wp-"]):has(img) {
         display: flex;
         flex-direction: column;
@@ -50,6 +50,14 @@
         float: right;
         margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         margin-inline-end: 2em;
+    }
+
+    // First image in stories
+
+    .single-post .entry-content > image.align-right:first-child {
+        max-width: 100%;
+        height: auto;
+        float: none !important;
     }
 
     // IMAGES
