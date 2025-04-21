@@ -67,6 +67,10 @@
         height: auto;
     }
 
+    figure.center {
+        margin: 0 auto;
+    }
+
     @container caespost (max-width: 840px) {
 
         figure.align-left,
