@@ -56,61 +56,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-// Center images that are too wide to be floated
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.entry-content img.image-left, .entry-content img.image-right').forEach(img => {
-    const container = img.closest('.entry-content');
-    if (!container) return;
-
-    // Get the computed content width from the CSS variable
-    const computedStyles = getComputedStyle(container);
-    const contentWidthVar = computedStyles.getPropertyValue('--wp--style--global--content-size');
-
-    // Parse as number (in pixels)
-    const contentWidth = parseFloat(contentWidthVar);
-
-    // Fallback to container width if the variable isn't usable
-    const widthToUse = contentWidth || container.offsetWidth;
-    const imageWidth = img.offsetWidth;
-
-    if (imageWidth / widthToUse >= 0.75) {
-      img.style.float = 'none';
-      img.style.marginLeft = 'auto';
-      img.style.marginRight = 'auto';
-      img.style.display = 'block';
-    }
-  });
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-  const figures = document.querySelectorAll('figure');
-
-  figures.forEach((figure) => {
-    // Skip figures with any class that starts with "wp-block"
-    if ([...figure.classList].some(cls => cls.startsWith('wp-block'))) return;
-
-    const img = figure.querySelector('img');
-
-    if (img) {
-      // Wait for image to load
-      if (img.complete) {
-        setFigureWidth(figure, img);
-      } else {
-        img.addEventListener('load', () => setFigureWidth(figure, img));
-      }
-    }
-  });
-
-  function setFigureWidth(figure, img) {
-    const imgWidth = img.offsetWidth;
-    if (imgWidth > 0) {
-      figure.style.width = imgWidth + 'px';
-    }
-  }
-});
-
-
-
 // Add class to figure with image-left or image-right in news posts
 // document.addEventListener('DOMContentLoaded', () => {
 //   const isSinglePost = document.body.classList.contains('single-post');
