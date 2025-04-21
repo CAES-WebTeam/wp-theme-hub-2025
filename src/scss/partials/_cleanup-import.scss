@@ -68,6 +68,7 @@
         }
 
         @media (max-width: 768px) {
+
             &.align-right,
             &.align-left {
                 float: none;
@@ -113,6 +114,15 @@
             float: left;
             margin-right: var(--wp--style--block-gap) !important;
             margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+        }
+
+        &.right,
+        &.left {
+            img.legacy-image {
+                float: unset !important;
+                margin-right: 0 !important;
+                margin-inline-start: unset !important;
+            }
         }
     }
 
