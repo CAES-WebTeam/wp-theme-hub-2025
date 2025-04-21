@@ -23,6 +23,7 @@
         display: table;
         border-spacing: 0;
         max-width: var(--wp--style--global--content-size);
+        width: auto !important;
 
         img.legacy-image,
         img.legacy-image.image-left,
@@ -43,6 +44,7 @@
             color: var(--wp--preset--color--contrast);
             font-size: var(--wp--preset--font-size--small);
             padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+            width: auto !important;
         }
 
         &.align-right {
