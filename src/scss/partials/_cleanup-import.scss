@@ -17,7 +17,7 @@
     // figure:not([class])
 
     // IMAGES
-    
+
     figure:not([class^="wp-"]):has(img) {
         display: flex;
         flex-direction: column;
@@ -45,18 +45,24 @@
 
     figure.align-left,
     figure:has(img.image-left),
-    img.image-left:not(:where(figure > img)) {
+    img.image-left:not(:where(figure > img)),
+    .is-layout-constrained>figure.image.align-left,
+    .is-layout-constrained>figure:has(img.image-left),
+    .is-layout-constrained>img.image-left:not(:where(figure > img)) {
         float: left;
         margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-        margin-inline-start: 2em;
+        margin-inline-start: var(--wp--style--block-gap);   
     }
 
     figure.align-right,
     figure:has(img.image-right),
-    img.image-right:not(:where(figure > img)) {
+    img.image-right:not(:where(figure > img)),
+    .is-layout-constrained>figure.image.align-right,
+    .is-layout-constrained>figure:has(img.image-right),
+    .is-layout-constrained>img.image-right:not(:where(figure > img)) {
         float: right;
         margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-        margin-inline-end: 2em;
+        margin-left: var(--wp--style--block-gap);
     }
 
     // IMAGES
@@ -180,7 +186,7 @@
 
 // First image in a story override
 
-.single-post .entry-content > figure:not([class^="wp-"]):has(img):first-child{
+.single-post .entry-content>figure:not([class^="wp-"]):has(img):first-child {
     max-width: var(--wp--style--global--content-size);
     height: auto;
     float: none !important;
