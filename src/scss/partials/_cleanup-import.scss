@@ -43,6 +43,10 @@
     }
 
     /* Floats for legacy images */
+    img.legacy-image {
+        max-width: 100%;
+    }
+
     img.legacy-image.image-left {
         float: left;
         margin-right: var(--wp--style--block-gap);
