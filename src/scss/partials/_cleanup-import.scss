@@ -180,8 +180,6 @@
 
 // First image in a story override
 
-// First image in stories
-
 .single-post .entry-content > figure:not([class^="wp-"]):has(img):first-child{
     max-width: var(--wp--style--global--content-size);
     height: auto;
