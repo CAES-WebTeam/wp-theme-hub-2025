@@ -60,7 +60,15 @@
         margin-left: var(--wp--style--block-gap) !important;
     }
 
+    img.image-center:not(:where(figure > img)) {
+        margin: 0 auto;
+        display: block;
+        max-width: 100%;
+        height: auto;
+    }
+
     @container caespost (max-width: 840px) {
+
         figure.align-left,
         figure:has(img.image-left),
         img.image-left:not(:where(figure > img)) {
@@ -75,6 +83,7 @@
     }
 
     @media (max-width: 768px) {
+
         figure.align-left,
         figure:has(img.image-left),
         img.image-left:not(:where(figure > img)),
@@ -83,92 +92,12 @@
         img.image-right:not(:where(figure > img)) {
             width: 100%;
             margin-bottom: var(--wp--style--block-gap);
+
             img {
                 width: 100%;
             }
         }
     }
-
-    // IMAGES
-
-    // figure:not([class^="wp-"]) {
-
-    //     img {
-    //         display: block;
-    //         max-width: 100%;
-    //         height: auto;
-    //     }
-
-    //     figcaption {
-    //         caption-side: bottom;
-    //         background-color: var(--wp--preset--color--base-two);
-    //         color: var(--wp--preset--color--contrast);
-    //         font-size: var(--wp--preset--font-size--small);
-    //         margin-top: 0px;
-    //         padding-top: var(--wp--preset--spacing--30);
-    //         padding-right: var(--wp--preset--spacing--40);
-    //         padding-bottom: var(--wp--preset--spacing--30);
-    //         padding-left: var(--wp--preset--spacing--40);
-    //     }
-    // }
-
-    // figure:not([class*="wp-"]) img:not([width]),
-    // img:not([width]):not(:where(figure img)) {
-    //     max-width: 100%;
-    //     height: auto;
-    // }
-
-    // figure.caes-hub-figure-right {
-    //     float: right;
-    //     margin-left: var(--wp--style--block-gap) !important;
-    //     margin-bottom: var(--wp--style--block-gap) !important;
-    //     // margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    // }
-
-    // figure.caes-hub-figure-left {
-    //     float: left;
-    //     margin-right: var(--wp--style--block-gap) !important;
-    //     margin-bottom: var(--wp--style--block-gap) !important;
-    //     // margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    // }
-
-    // @container caespost (max-width: 840px) {
-    //     figure.caes-hub-figure-left {
-    //         margin-inline-end: 0;
-    //     }
-
-    //     figure.caes-hub-figure-left {
-    //         margin-inline-start: 0;
-    //     }
-    // }
-
-    // // If a <div> is wrapped around an image with .image-right or .image-left with left or right class
-
-    // div.right {
-    //     // float: right;
-    //     margin-inline-start: 2em;
-    //     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    //     clear: both;
-    //     display: table;
-
-    //     img.image-right {
-    //         float: none;
-    //         margin-inline-end: unset;
-    //     }
-    // }
-
-    // div.left {
-    //     // float: left;
-    //     margin-inline-end: 2em;
-    //     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
-    //     clear: both;
-    //     display: table;
-
-    //     img.image-left {
-    //         float: none;
-    //         margin-inline-start: unset;
-    //     }
-    // }
 
     // SEPARATOR / <hr>
 
