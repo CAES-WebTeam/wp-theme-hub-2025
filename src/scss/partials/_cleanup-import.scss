@@ -83,6 +83,9 @@
         img.image-right:not(:where(figure > img)) {
             width: 100%;
             margin-bottom: var(--wp--style--block-gap);
+            img {
+                width: 100%;
+            }
         }
     }
 

@@ -49,6 +49,7 @@ figcaption a {
 .caes-hub-content-f-img figure.alignright {
     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     max-width: 100%;
+    margin-bottom: var(--wp--style--block-gap);
 }
 
 @container caespost (max-width: 840px) {
