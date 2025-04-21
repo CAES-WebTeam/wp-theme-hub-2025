@@ -63,6 +63,17 @@
         margin: 0 auto;
     }
 
+    // Legacy divs
+    div.legacy-div.left {
+        float: left;
+        margin-right: var(--wp--style--block-gap);
+    }
+
+    div.legacy-div.right {
+        float: right;
+        margin-left: var(--wp--style--block-gap);
+    }
+
     /* Responsive tweaks */
     @media (max-width: 768px) {
 

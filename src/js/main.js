@@ -148,5 +148,14 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
+    // Add .legacy-div to divs without wp- classes, AND with right and left classes
+    document.querySelectorAll("div.right, div.left").forEach((div) => {
+      const classList = Array.from(div.classList);
+      const isBlock = classList.some(cls => cls.startsWith("wp-"));
+      if (!isBlock) {
+        div.classList.add("legacy-div");
+      }
+    })
+
   }
 });
