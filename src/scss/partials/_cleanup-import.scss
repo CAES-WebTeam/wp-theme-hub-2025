@@ -60,6 +60,20 @@
         margin-left: var(--wp--style--block-gap) !important;
     }
 
+    @container caespost (max-width: 840px) {
+        figure.align-left,
+        figure:has(img.image-left),
+        img.image-left:not(:where(figure > img)) {
+            margin-inline-start: 0 !important;
+        }
+
+        figure.align-right,
+        figure:has(img.image-right),
+        img.image-right:not(:where(figure > img)) {
+            margin-inline-end: 0 !important;
+        }
+    }
+
     // IMAGES
 
     // figure:not([class^="wp-"]) {
