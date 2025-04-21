@@ -59,11 +59,11 @@
 
         @container caespost (max-width: 840px) {
             &.align-right {
-                margin-inline-end: 0;
+                margin-inline-end: 0 !important;
             }
 
             &.align-left {
-                margin-inline-start: 0;
+                margin-inline-start: 0 !important;
             }
         }
 
