@@ -19,7 +19,6 @@
     // IMAGES
 
     figure:not([class^="wp-"]):has(img) {
-        display: flex;
         flex-direction: column;
         max-width: var(--wp--style--global--content-size);
 
@@ -30,7 +29,6 @@
         }
 
         figcaption {
-            display: table-caption;
             caption-side: bottom;
             background-color: var(--wp--preset--color--base-two);
             color: var(--wp--preset--color--contrast);
