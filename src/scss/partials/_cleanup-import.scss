@@ -18,128 +18,128 @@
 
     // IMAGES
 
-    figure:not([class^="wp-"]):has(img) {
-        display: table;
-        border-spacing: 0;
-        max-width: var(--wp--style--global--content-size);
+//     figure:not([class^="wp-"]):has(img) {
+//         display: table;
+//         border-spacing: 0;
+//         max-width: var(--wp--style--global--content-size);
 
-        img {
-            max-width: 100%;
-            height: auto;
-            box-sizing: border-box;
-            vertical-align: bottom;
-        }
+//         img {
+//             max-width: 100%;
+//             height: auto;
+//             box-sizing: border-box;
+//             vertical-align: bottom;
+//         }
 
-        figcaption {
-            caption-side: bottom;
-            display: table-caption;
-            background-color: var(--wp--preset--color--base-two);
-            color: var(--wp--preset--color--contrast);
-            font-size: var(--wp--preset--font-size--small);
-            margin-top: -29px;
-            padding-top: var(--wp--preset--spacing--30);
-            padding-right: var(--wp--preset--spacing--40);
-            padding-bottom: var(--wp--preset--spacing--30);
-            padding-left: var(--wp--preset--spacing--40);
-        }
-    }
+//         figcaption {
+//             caption-side: bottom;
+//             display: table-caption;
+//             background-color: var(--wp--preset--color--base-two);
+//             color: var(--wp--preset--color--contrast);
+//             font-size: var(--wp--preset--font-size--small);
+//             margin-top: -29px;
+//             padding-top: var(--wp--preset--spacing--30);
+//             padding-right: var(--wp--preset--spacing--40);
+//             padding-bottom: var(--wp--preset--spacing--30);
+//             padding-left: var(--wp--preset--spacing--40);
+//         }
+//     }
 
-    figure.align-left,
-    figure:has(img.image-left),
-    img.image-left:not(:where(figure > img)) {
-        float: left;
-        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
-        margin-right: var(--wp--style--block-gap) !important;
-    }
+//     figure.align-left,
+//     figure:has(img.image-left),
+//     img.image-left:not(:where(figure > img)) {
+//         float: left;
+//         margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+//         margin-right: var(--wp--style--block-gap) !important;
+//     }
 
-    figure.align-right,
-    figure:has(img.image-right),
-    img.image-right:not(:where(figure > img)) {
-        float: right;
-        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
-        margin-left: var(--wp--style--block-gap) !important;
-    }
+//     figure.align-right,
+//     figure:has(img.image-right),
+//     img.image-right:not(:where(figure > img)) {
+//         float: right;
+//         margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+//         margin-left: var(--wp--style--block-gap) !important;
+//     }
 
-    img.image-center:not(:where(figure > img)) {
-        margin: 0 auto;
-        display: block;
-        max-width: 100%;
-        height: auto;
-    }
+//     img.image-center:not(:where(figure > img)) {
+//         margin: 0 auto;
+//         display: block;
+//         max-width: 100%;
+//         height: auto;
+//     }
 
-    figure.center {
-        margin: 0 auto;
-    }
+//     figure.center {
+//         margin: 0 auto;
+//     }
 
-    @container caespost (max-width: 840px) {
+//     @container caespost (max-width: 840px) {
 
-        figure.align-left,
-        figure:has(img.image-left),
-        img.image-left:not(:where(figure > img)) {
-            margin-inline-start: 0 !important;
-        }
+//         figure.align-left,
+//         figure:has(img.image-left),
+//         img.image-left:not(:where(figure > img)) {
+//             margin-inline-start: 0 !important;
+//         }
 
-        figure.align-right,
-        figure:has(img.image-right),
-        img.image-right:not(:where(figure > img)) {
-            margin-inline-end: 0 !important;
-        }
-    }
+//         figure.align-right,
+//         figure:has(img.image-right),
+//         img.image-right:not(:where(figure > img)) {
+//             margin-inline-end: 0 !important;
+//         }
+//     }
 
-    @media (max-width: 768px) {
+//     @media (max-width: 768px) {
 
-        figure.align-left,
-        figure:has(img.image-left),
-        img.image-left:not(:where(figure > img)),
-        figure.align-right,
-        figure:has(img.image-right),
-        img.image-right:not(:where(figure > img)) {
-            width: 100%;
-            margin-bottom: var(--wp--style--block-gap);
+//         figure.align-left,
+//         figure:has(img.image-left),
+//         img.image-left:not(:where(figure > img)),
+//         figure.align-right,
+//         figure:has(img.image-right),
+//         img.image-right:not(:where(figure > img)) {
+//             width: 100%;
+//             margin-bottom: var(--wp--style--block-gap);
 
-            img {
-                width: 100%;
-            }
-        }
-    }
+//             img {
+//                 width: 100%;
+//             }
+//         }
+//     }
 
-    // SEPARATOR / <hr>
+//     // SEPARATOR / <hr>
 
-    hr:not(.wp-block-separator) {
-        border: 0;
-        border-top: 1px solid var(--wp--preset--color--base-three);
-    }
+//     hr:not(.wp-block-separator) {
+//         border: 0;
+//         border-top: 1px solid var(--wp--preset--color--base-three);
+//     }
 
-    // TABLES
+//     // TABLES
 
-    table.hstripe tr:nth-child(odd),
-    table.vstripe td:nth-child(odd) {
-        background-color: var(--wp--preset--color--base-two);
-    }
+//     table.hstripe tr:nth-child(odd),
+//     table.vstripe td:nth-child(odd) {
+//         background-color: var(--wp--preset--color--base-two);
+//     }
 
-    table:not(.wp-block-table table) {
-        // border: 1px solid var(--wp--preset--color--base-two);
-        border-collapse: collapse;
+//     table:not(.wp-block-table table) {
+//         // border: 1px solid var(--wp--preset--color--base-two);
+//         border-collapse: collapse;
 
-        thead,
-        tbody {
+//         thead,
+//         tbody {
 
-            td,
-            th {
-                min-width: 110px;
-                border: 1px solid var(--wp--preset--color--base-three);
-                padding: var(--wp--preset--spacing--20);
-                line-height: 1.5;
-                vertical-align: baseline;
-            }
-        }
+//             td,
+//             th {
+//                 min-width: 110px;
+//                 border: 1px solid var(--wp--preset--color--base-three);
+//                 padding: var(--wp--preset--spacing--20);
+//                 line-height: 1.5;
+//                 vertical-align: baseline;
+//             }
+//         }
 
-        thead {
-            font-weight: bold;
-        }
-    }
+//         thead {
+//             font-weight: bold;
+//         }
+//     }
 
-}
+// }
 
 // First image in a story override
 
