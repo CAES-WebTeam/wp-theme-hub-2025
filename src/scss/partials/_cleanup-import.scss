@@ -23,6 +23,12 @@
         flex-direction: column;
         max-width: var(--wp--style--global--content-size);
 
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
         figcaption {
             display: table-caption;
             caption-side: bottom;
