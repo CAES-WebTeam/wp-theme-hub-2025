@@ -18,7 +18,10 @@
 
     // Figures
     figure:not([class^="wp-"]):has(img) {
-        display: table;
+        display: flex;
+        flex-direction: column;
+        max-width: 100%;
+
         figcaption {
             display: table-caption;
             caption-side: bottom;
@@ -31,6 +34,20 @@
             padding-bottom: var(--wp--preset--spacing--30);
             padding-left: var(--wp--preset--spacing--40);
         }
+    }
+
+    figure.align-left,
+    img.image-left {
+        float: left;
+        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        margin-inline-start: 2em;
+    }
+
+    figure.align-right,
+    img.image-right {
+        float: right;
+        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        margin-inline-end: 2em;
     }
 
     // IMAGES
