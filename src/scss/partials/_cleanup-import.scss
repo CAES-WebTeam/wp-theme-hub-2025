@@ -19,17 +19,20 @@
     // IMAGES
 
     figure:not([class^="wp-"]):has(img) {
-        flex-direction: column;
+        display: table;
+        border-spacing: 0;
         max-width: var(--wp--style--global--content-size);
 
         img {
-            display: block;
             max-width: 100%;
             height: auto;
+            box-sizing: border-box;
+            vertical-align: bottom;
         }
 
         figcaption {
             caption-side: bottom;
+            display: table-caption;
             background-color: var(--wp--preset--color--base-two);
             color: var(--wp--preset--color--contrast);
             font-size: var(--wp--preset--font-size--small);
@@ -46,7 +49,7 @@
     img.image-left:not(:where(figure > img)) {
         float: left;
         margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
-        margin-right: var(--wp--style--block-gap) !important;   
+        margin-right: var(--wp--style--block-gap) !important;
     }
 
     figure.align-right,
