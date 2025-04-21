@@ -61,7 +61,7 @@
 
     // First image in stories
 
-    .single-post .entry-content > image.align-right:first-child {
+    .single-post .entry-content > figure:not([class^="wp-"]):has(img):first-child{
         max-width: var(--wp--style--global--content-size);
         height: auto;
         float: none !important;
