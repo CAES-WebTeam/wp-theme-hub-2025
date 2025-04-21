@@ -106,12 +106,14 @@
     div.legacy-div {
         &.right {
             float: right;
+            clear: both;
             margin-left: var(--wp--style--block-gap) !important;
             margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
         }
 
         &.left {
             float: left;
+            clear: both;
             margin-right: var(--wp--style--block-gap) !important;
             margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
         }
