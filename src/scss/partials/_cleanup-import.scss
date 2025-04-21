@@ -21,7 +21,7 @@
     figure:not([class^="wp-"]):has(img) {
         display: flex;
         flex-direction: column;
-        max-width: 100%;
+        max-width: var(--wp--style--global--content-size);
 
         img {
             display: block;
@@ -47,7 +47,7 @@
     figure:has(img.image-left),
     img.image-left:not(:where(figure > img)) {
         float: left;
-        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
         margin-right: var(--wp--style--block-gap) !important;   
     }
 
@@ -55,7 +55,7 @@
     figure:has(img.image-right),
     img.image-right:not(:where(figure > img)) {
         float: right;
-        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
         margin-left: var(--wp--style--block-gap) !important;
     }
 
