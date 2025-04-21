@@ -37,14 +37,16 @@
     }
 
     figure.align-left,
-    img.image-left {
+    figure:has(img.image-left),
+    img.image-left:not(:where(figure > img)) {
         float: left;
         margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         margin-inline-start: 2em;
     }
 
     figure.align-right,
-    img.image-right {
+    figure:has(img.image-right),
+    img.image-right:not(:where(figure > img)) {
         float: right;
         margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         margin-inline-end: 2em;
