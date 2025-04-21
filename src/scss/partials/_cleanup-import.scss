@@ -21,7 +21,7 @@
     figure:not([class^="wp-"]):has(img) {
         display: flex;
         flex-direction: column;
-        max-width: 100%;
+        max-width: var(--wp--style--global--content-size);
 
         figcaption {
             display: table-caption;
@@ -56,7 +56,7 @@
     // First image in stories
 
     .single-post .entry-content > image.align-right:first-child {
-        max-width: 100%;
+        max-width: var(--wp--style--global--content-size);
         height: auto;
         float: none !important;
     }
