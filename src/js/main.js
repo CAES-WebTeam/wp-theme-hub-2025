@@ -56,36 +56,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-// Add class to figure with image-left or image-right in news posts
-// document.addEventListener('DOMContentLoaded', () => {
-//   const isSinglePost = document.body.classList.contains('single-post');
-//   const content = document.querySelector('.wp-block-post-content');
-
-//   // Find first child that is a <figure>
-//   const firstChildFigure = content?.firstElementChild?.tagName === 'FIGURE'
-//     ? content.firstElementChild
-//     : null;
-
-//   document.querySelectorAll('.wp-block-post-content figure:not([class^="wp-"])').forEach(figure => {
-//     const image = figure.querySelector('img.image-left, img.image-right');
-
-//     // Skip if it's the first child figure with an aligned image on single post
-//     const isException =
-//       isSinglePost &&
-//       figure === firstChildFigure &&
-//       image &&
-//       (image.classList.contains('image-left') || image.classList.contains('image-right'));
-
-//     if (image && !isException) {
-//       if (image.classList.contains('image-left')) {
-//         figure.classList.add('caes-hub-figure-left');
-//       } else if (image.classList.contains('image-right')) {
-//         figure.classList.add('caes-hub-figure-right');
-//       }
-//     }
-//   });
-// });
-
 // Remove empty paragraphs
 document.addEventListener('DOMContentLoaded', function () {
   const contentContainers = document.querySelectorAll('.post, .entry-content');
@@ -99,6 +69,41 @@ document.addEventListener('DOMContentLoaded', function () {
       // If it's empty or only whitespace after cleaning
       if (html === '') {
         p.remove();
+      }
+    });
+  });
+});
+
+// Responsitables
+
+document.addEventListener('DOMContentLoaded', () => {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.entry-content table').forEach(table => {
+      const alreadyWrapped = table.closest('.responsitable-wrapper');
+      if (alreadyWrapped) return;
+
+      // Create a temporary clone to test overflow without styling conflicts
+      const clone = table.cloneNode(true);
+      clone.style.position = 'absolute';
+      clone.style.visibility = 'hidden';
+      clone.style.height = 'auto';
+      clone.style.width = 'auto';
+      clone.style.maxWidth = 'none';
+      document.body.appendChild(clone);
+
+      const isOverflowing = clone.scrollWidth > clone.clientWidth;
+      document.body.removeChild(clone);
+
+      if (isOverflowing) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'responsitable-wrapper';
+
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+
+        const note = document.createElement('p');
+        note.innerHTML = '<em class="responsitable-scroll-note">(Scroll right for more)</em>';
+        wrapper.insertBefore(note, table);
       }
     });
   });
