@@ -46,6 +46,8 @@
             font-size: var(--wp--preset--font-size--small);
             padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
             width: auto !important;
+            caption-side: bottom;
+            display: table-caption;
         }
 
         &.align-right {
