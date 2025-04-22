@@ -24,6 +24,7 @@
         border-spacing: 0;
         max-width: var(--wp--style--global--content-size);
         width: auto !important;
+        font-size: 0;
 
         img.legacy-image,
         img.legacy-image.image-left,
@@ -35,6 +36,8 @@
             margin-left: 0 !important;
             margin-inline-end: unset !important;
             margin-bottom: 0;
+            // Important for showing alt text if image isn't loading
+            font-size: initial;
         }
 
         figcaption {
