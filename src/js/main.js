@@ -123,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Legacy support for imported in figures and images.
-
 document.addEventListener("DOMContentLoaded", function () {
 
   // Check if the classic content wrapper exists

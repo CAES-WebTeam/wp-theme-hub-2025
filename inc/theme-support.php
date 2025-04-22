@@ -418,8 +418,14 @@ function wrap_classic_content( $content ) {
     
     // Check if we're on a singular view AND post type is either post or publications
     if ( is_singular() && ($post_type === 'post' || $post_type === 'publications') ) {
-        // Check if content doesn't use blocks
-        if ( ! has_blocks($content) ) {
+        // More thorough check if content uses blocks
+        // If content contains any block markers or has_blocks returns true, consider it block content
+        $has_block_content = has_blocks($content) || 
+                             strpos($content, '<!-- wp:') !== false || 
+                             strpos($content, 'wp-block-') !== false;
+        
+        // Only wrap if it's NOT block content
+        if ( !$has_block_content ) {
             // Add the wrapping div
             $wrapper_start = '<div class="classic-content-wrapper">';
             $wrapper_end = '</div>';
