@@ -123,13 +123,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Legacy support for imported in figures and images.
-// Only runs on Stories (single posts) and Publications.
+
 document.addEventListener("DOMContentLoaded", function () {
-  const body = document.body;
 
-  // Only apply on single post and single publications pages
-  if (body.classList.contains("classic-content-wrapper")) {
-
+  // Check if the classic content wrapper exists
+  const classicWrapper = document.querySelector(".classic-content-wrapper");
+  
+  // Proceed if the wrapper exists
+  if (classicWrapper) {
     // Add .legacy-figure to figures without wp- classes
     document.querySelectorAll(".classic-content-wrapper figure").forEach((figure) => {
       const classList = Array.from(figure.classList);
@@ -155,7 +156,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!isBlock) {
         div.classList.add("legacy-div");
       }
-    })
-
+    });
   }
 });
