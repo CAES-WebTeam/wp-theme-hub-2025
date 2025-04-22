@@ -410,3 +410,18 @@ add_filter( 'render_block', function( $block_content, $block ) {
 
 	return $block_content;
 }, 10, 2 );
+
+// Wrap Classic Editor blocks in a div with a specific class
+add_filter( 'render_block', function( $block_content, $block ) {
+	// Only proceed if this is a Classic Editor block
+	if ( isset( $block['blockName'] ) && $block['blockName'] === 'core/freeform' ) {
+		// Get the current post type
+		$post_type = get_post_type();
+		
+		// Only apply the wrapper for posts or publications post types
+		if ( $post_type === 'post' || $post_type === 'publications' ) {
+			return '<div class="classic-block-wrapper">' . $block_content . '</div>';
+		}
+	}
+	return $block_content;
+}, 10, 2 );
