@@ -129,77 +129,107 @@ document.addEventListener("DOMContentLoaded", function () {
   const classicWrapper = document.querySelector(".classic-content-wrapper");
   
   // Proceed if the wrapper exists
-  if (classicWrapper) {
-    // Add .legacy-figure to figures without wp- classes
-    document.querySelectorAll(".classic-content-wrapper figure").forEach((figure) => {
-      const classList = Array.from(figure.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
-        figure.classList.add("legacy-figure");
-      }
-    });
-
-    // Add .legacy-image to images without wp- classes
-    document.querySelectorAll(".classic-content-wrapper img").forEach((img) => {
-      const classList = Array.from(img.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
-        img.classList.add("legacy-image");
-      }
-    });
-
-    // Add .legacy-div to divs without wp- classes, AND with right and left classes
-    document.querySelectorAll(".classic-content-wrapper div.right, .classic-content-wrapper div.left").forEach((div) => {
-      const classList = Array.from(div.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
-        div.classList.add("legacy-div");
-      }
-    });
+  document.addEventListener("DOMContentLoaded", function () {
+    // Check if the classic content wrapper exists
+    const classicWrapper = document.querySelector(".classic-content-wrapper");
     
-    // Apply alignment classes to figures based on their existing classes
-    document.querySelectorAll(".classic-content-wrapper figure.legacy-figure").forEach((figure) => {
-      // Check for figure's own alignment classes
-      if (figure.classList.contains('align-right')) {
-        figure.classList.add('legacy-figure-right');
-      } else if (figure.classList.contains('align-left')) {
-        figure.classList.add('legacy-figure-left');
-      } else if (figure.classList.contains('center')) {
-        figure.classList.add('legacy-figure-center');
-      }
+    // Proceed if the wrapper exists
+    if (classicWrapper) {
+      // Add .legacy-figure to figures without wp- classes
+      document.querySelectorAll(".classic-content-wrapper figure").forEach((figure) => {
+        const classList = Array.from(figure.classList);
+        const isBlock = classList.some(cls => cls.startsWith("wp-"));
+        if (!isBlock) {
+          figure.classList.add("legacy-figure");
+        }
+      });
+  
+      // Add .legacy-image to images without wp- classes
+      document.querySelectorAll(".classic-content-wrapper img").forEach((img) => {
+        const classList = Array.from(img.classList);
+        const isBlock = classList.some(cls => cls.startsWith("wp-"));
+        if (!isBlock) {
+          img.classList.add("legacy-image");
+        }
+      });
+  
+      // Add .legacy-div to divs without wp- classes, AND with right and left classes
+      document.querySelectorAll(".classic-content-wrapper div.right, .classic-content-wrapper div.left").forEach((div) => {
+        const classList = Array.from(div.classList);
+        const isBlock = classList.some(cls => cls.startsWith("wp-"));
+        if (!isBlock) {
+          div.classList.add("legacy-div");
+        }
+      });
       
-      // If figure doesn't have alignment classes, check its images
-      if (!figure.classList.contains('legacy-figure-right') && 
-          !figure.classList.contains('legacy-figure-left') && 
-          !figure.classList.contains('legacy-figure-center')) {
+      // Check if we're on a single post
+      const isSinglePost = document.body.classList.contains('single-post');
+      
+      // Apply alignment classes to figures based on their existing classes
+      document.querySelectorAll(".classic-content-wrapper figure.legacy-figure").forEach((figure) => {
+        // EXCEPTION: Handle first child figure in single posts
+        const isFirstChild = figure.parentNode === classicWrapper && 
+                            Array.from(classicWrapper.children).indexOf(figure) === 0;
         
-        // Find legacy images inside this figure
-        const legacyImages = figure.querySelectorAll('img.legacy-image');
-        
-        // Check each image for alignment classes
-        legacyImages.forEach((img) => {
-          if (img.classList.contains('image-right')) {
+        if (isSinglePost && isFirstChild) {
+          // For the first figure in a single post, remove right alignment and make it center
+          figure.classList.remove('align-right');
+          const rightAlignedImage = figure.querySelector('img.image-right');
+          if (rightAlignedImage) {
+            rightAlignedImage.classList.remove('image-right');
+            rightAlignedImage.classList.add('image-center');
+          }
+          figure.classList.add('legacy-figure-center');
+        } else {
+          // Normal processing for other figures
+          // Check for figure's own alignment classes
+          if (figure.classList.contains('align-right')) {
             figure.classList.add('legacy-figure-right');
-          } else if (img.classList.contains('image-left')) {
-            figure.classList.add('legacy-figure-left'); 
-          } else if (img.classList.contains('image-center')) {
+          } else if (figure.classList.contains('align-left')) {
+            figure.classList.add('legacy-figure-left');
+          } else if (figure.classList.contains('center')) {
             figure.classList.add('legacy-figure-center');
           }
-        });
-      }
-    });
-    
-    // Handle special case of images within aligned divs
-    document.querySelectorAll(".classic-content-wrapper div.right img.image-right, .classic-content-wrapper div.left img.image-left").forEach((img) => {
-      // Find parent figure if it exists
-      const parentFigure = img.closest('figure.legacy-figure');
-      if (parentFigure) {
-        if (img.classList.contains('image-right')) {
-          parentFigure.classList.add('legacy-figure-right');
-        } else if (img.classList.contains('image-left')) {
-          parentFigure.classList.add('legacy-figure-left');
+          
+          // If figure doesn't have alignment classes, check its images
+          if (!figure.classList.contains('legacy-figure-right') && 
+              !figure.classList.contains('legacy-figure-left') && 
+              !figure.classList.contains('legacy-figure-center')) {
+            
+            // Find legacy images inside this figure
+            const legacyImages = figure.querySelectorAll('img.legacy-image');
+            
+            // Check each image for alignment classes
+            legacyImages.forEach((img) => {
+              if (img.classList.contains('image-right')) {
+                figure.classList.add('legacy-figure-right');
+              } else if (img.classList.contains('image-left')) {
+                figure.classList.add('legacy-figure-left'); 
+              } else if (img.classList.contains('image-center')) {
+                figure.classList.add('legacy-figure-center');
+              }
+            });
+          }
         }
-      }
-    });
-  }
-});
+      });
+      
+      // Handle special case of images within aligned divs
+      document.querySelectorAll(".classic-content-wrapper div.right img.image-right, .classic-content-wrapper div.left img.image-left").forEach((img) => {
+        // Find parent figure if it exists
+        const parentFigure = img.closest('figure.legacy-figure');
+        if (parentFigure) {
+          // Skip this processing for the first figure exception case
+          const isFirstChild = parentFigure.parentNode === classicWrapper && 
+                              Array.from(classicWrapper.children).indexOf(parentFigure) === 0;
+          
+          if (!(isSinglePost && isFirstChild)) {
+            if (img.classList.contains('image-right')) {
+              parentFigure.classList.add('legacy-figure-right');
+            } else if (img.classList.contains('image-left')) {
+              parentFigure.classList.add('legacy-figure-left');
+            }
+          }
+        }
+      });
+    }
+  });
