@@ -156,5 +156,50 @@ document.addEventListener("DOMContentLoaded", function () {
         div.classList.add("legacy-div");
       }
     });
+    
+    // Apply alignment classes to figures based on their existing classes
+    document.querySelectorAll(".classic-content-wrapper figure.legacy-figure").forEach((figure) => {
+      // Check for figure's own alignment classes
+      if (figure.classList.contains('align-right')) {
+        figure.classList.add('legacy-figure-right');
+      } else if (figure.classList.contains('align-left')) {
+        figure.classList.add('legacy-figure-left');
+      } else if (figure.classList.contains('center')) {
+        figure.classList.add('legacy-figure-center');
+      }
+      
+      // If figure doesn't have alignment classes, check its images
+      if (!figure.classList.contains('legacy-figure-right') && 
+          !figure.classList.contains('legacy-figure-left') && 
+          !figure.classList.contains('legacy-figure-center')) {
+        
+        // Find legacy images inside this figure
+        const legacyImages = figure.querySelectorAll('img.legacy-image');
+        
+        // Check each image for alignment classes
+        legacyImages.forEach((img) => {
+          if (img.classList.contains('image-right')) {
+            figure.classList.add('legacy-figure-right');
+          } else if (img.classList.contains('image-left')) {
+            figure.classList.add('legacy-figure-left'); 
+          } else if (img.classList.contains('image-center')) {
+            figure.classList.add('legacy-figure-center');
+          }
+        });
+      }
+    });
+    
+    // Handle special case of images within aligned divs
+    document.querySelectorAll(".classic-content-wrapper div.right img.image-right, .classic-content-wrapper div.left img.image-left").forEach((img) => {
+      // Find parent figure if it exists
+      const parentFigure = img.closest('figure.legacy-figure');
+      if (parentFigure) {
+        if (img.classList.contains('image-right')) {
+          parentFigure.classList.add('legacy-figure-right');
+        } else if (img.classList.contains('image-left')) {
+          parentFigure.classList.add('legacy-figure-left');
+        }
+      }
+    });
   }
 });
