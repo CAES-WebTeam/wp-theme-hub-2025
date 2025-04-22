@@ -412,16 +412,19 @@ add_filter( 'render_block', function( $block_content, $block ) {
 }, 10, 2 );
 
 // Wrap Classic Editor blocks in a div with a specific class
-add_filter( 'render_block', function( $block_content, $block ) {
-	// Only proceed if this is a Classic Editor block
-	if ( isset( $block['blockName'] ) && $block['blockName'] === 'core/freeform' ) {
-		// Get the current post type
-		$post_type = get_post_type();
-		
-		// Only apply the wrapper for posts or publications post types
-		if ( $post_type === 'post' || $post_type === 'publications' ) {
-			return '<div class="classic-block-wrapper">' . $block_content . '</div>';
-		}
-	}
-	return $block_content;
-}, 10, 2 );
+add_filter( 'render_block_data', function( $parsed_block ) {
+    // Check if this is a Classic block (core/freeform)
+    if ( $parsed_block['blockName'] === 'core/freeform' ) {
+        // Get current post type
+        $post_type = get_post_type();
+        
+        // Only modify for posts or publications
+        if ( $post_type === 'post' || $post_type === 'publications' ) {
+            // Add wrapper div to the block's innerHTML
+            $content = $parsed_block['innerHTML'];
+            $new_content = '<div class="classic-content-wrapper">' . $content . '</div>';
+            $parsed_block['innerHTML'] = $new_content;
+        }
+    }
+    return $parsed_block;
+}, 10, 1 );
