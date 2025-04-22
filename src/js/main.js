@@ -128,10 +128,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const body = document.body;
 
   // Only apply on single post and single publications pages
-  if (body.classList.contains("single-post") || body.classList.contains("single-publications")) {
+  if (body.classList.contains("classic-content-wrapper")) {
 
     // Add .legacy-figure to figures without wp- classes
-    document.querySelectorAll("figure").forEach((figure) => {
+    document.querySelectorAll(".classic-content-wrapper figure").forEach((figure) => {
       const classList = Array.from(figure.classList);
       const isBlock = classList.some(cls => cls.startsWith("wp-"));
       if (!isBlock) {
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Add .legacy-image to images without wp- classes
-    document.querySelectorAll("img").forEach((img) => {
+    document.querySelectorAll(".classic-content-wrapper img").forEach((img) => {
       const classList = Array.from(img.classList);
       const isBlock = classList.some(cls => cls.startsWith("wp-"));
       if (!isBlock) {
@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Add .legacy-div to divs without wp- classes, AND with right and left classes
-    document.querySelectorAll("div.right, div.left").forEach((div) => {
+    document.querySelectorAll(".classic-content-wrapper div.right, .classic-content-wrapper div.left").forEach((div) => {
       const classList = Array.from(div.classList);
       const isBlock = classList.some(cls => cls.startsWith("wp-"));
       if (!isBlock) {
