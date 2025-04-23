@@ -90,108 +90,94 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /*** LEGACY CONTENT CSS CLASSES */
-  const classicWrapper = document.querySelector(".classic-content-wrapper");
-  if (classicWrapper) {
-    document.querySelectorAll(".classic-content-wrapper figure").forEach((figure) => {
-      const classList = Array.from(figure.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
-        figure.classList.add("legacy-figure");
-
-        if (figure.classList.contains("align-left")) {
-          figure.classList.add("legacy-figure-left");
-          figure.classList.remove("align-left");
-        } else if (figure.classList.contains("align-right")) {
-          figure.classList.add("legacy-figure-right");
-          figure.classList.remove("align-right");
-        } else if (figure.classList.contains("center")) {
-          figure.classList.add("legacy-figure-center");
-          figure.classList.remove("center");
-        } else {
-          const imgs = figure.querySelectorAll("img.legacy-image");
-          imgs.forEach((img) => {
-            if (img.classList.contains("image-left")) {
-              figure.classList.add("legacy-figure-left");
-              img.classList.remove("image-left");
-            } else if (img.classList.contains("image-right")) {
-              figure.classList.add("legacy-figure-right");
-              img.classList.remove("image-right");
-            } else if (img.classList.contains("image-center")) {
-              figure.classList.add("legacy-figure-center");
-              img.classList.remove("image-center");
-            }
-          });
+  /*** HANDLE LEGACY CONTENT CSS */
+  
+  document.addEventListener("DOMContentLoaded", () => {
+    const classicWrapper = document.querySelector(".classic-content-wrapper");
+  
+    if (!classicWrapper) return;
+  
+    // Helpers
+    const isBlockClass = (el) =>
+      Array.from(el.classList).some((cls) => cls.startsWith("wp-"));
+  
+    const applyLegacyAlignment = (el, target) => {
+      const alignments = [
+        { cls: "align-left", legacy: "legacy-figure-left" },
+        { cls: "align-right", legacy: "legacy-figure-right" },
+        { cls: "center", legacy: "legacy-figure-center" },
+        { cls: "image-left", legacy: "legacy-figure-left" },
+        { cls: "image-right", legacy: "legacy-figure-right" },
+        { cls: "image-center", legacy: "legacy-figure-center" },
+      ];
+  
+      alignments.forEach(({ cls, legacy }) => {
+        if (el.classList.contains(cls)) {
+          target.classList.add(legacy);
+          el.classList.remove(cls);
         }
+      });
+    };
+  
+    // Step 1: Handle existing <figure> elements
+    classicWrapper.querySelectorAll("figure").forEach((figure) => {
+      if (!isBlockClass(figure)) {
+        figure.classList.add("legacy-figure");
+        applyLegacyAlignment(figure, figure);
+  
+        // Fallback: apply alignment based on inner images
+        figure.querySelectorAll("img.legacy-image").forEach((img) => {
+          applyLegacyAlignment(img, figure);
+        });
       }
     });
-
-    document.querySelectorAll(".classic-content-wrapper img").forEach((img) => {
-      const classList = Array.from(img.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
+  
+    // Step 2: Wrap orphaned <img> tags in a <figure> and apply alignment
+    classicWrapper.querySelectorAll("img").forEach((img) => {
+      if (!isBlockClass(img)) {
         img.classList.add("legacy-image");
-
-        const parentFigure = img.closest("figure");
-        if (!parentFigure) {
+  
+        if (!img.closest("figure")) {
           const wrapper = document.createElement("figure");
           wrapper.classList.add("legacy-figure");
           img.parentNode.insertBefore(wrapper, img);
           wrapper.appendChild(img);
-
-          if (img.classList.contains("image-left")) {
-            wrapper.classList.add("legacy-figure-left");
-            img.classList.remove("image-left");
-          } else if (img.classList.contains("image-right")) {
-            wrapper.classList.add("legacy-figure-right");
-            img.classList.remove("image-right");
-          } else if (img.classList.contains("image-center")) {
-            wrapper.classList.add("legacy-figure-center");
-            img.classList.remove("image-center");
-          }
+          applyLegacyAlignment(img, wrapper);
         }
       }
     });
-
-    document.querySelectorAll(".classic-content-wrapper div.left, .classic-content-wrapper div.right").forEach((div) => {
-      const classList = Array.from(div.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
+  
+    // Step 3: Add legacy class to floated divs and align their inner images
+    classicWrapper.querySelectorAll("div.left, div.right").forEach((div) => {
+      if (!isBlockClass(div)) {
         div.classList.add("legacy-div");
       }
-
+  
       const img = div.querySelector("img.image-left, img.image-right");
-      if (img) {
-        const figure = img.closest("figure.legacy-figure");
-        if (figure) {
-          if (img.classList.contains("image-left")) {
-            figure.classList.add("legacy-figure-left");
-          } else if (img.classList.contains("image-right")) {
-            figure.classList.add("legacy-figure-right");
-          }
-        }
+      const figure = img?.closest("figure.legacy-figure");
+      if (img && figure) {
+        applyLegacyAlignment(img, figure);
       }
     });
-
-    document.querySelectorAll(".classic-content-wrapper table").forEach((table) => {
-      const classList = Array.from(table.classList);
-      const isBlock = classList.some(cls => cls.startsWith("wp-"));
-      if (!isBlock) {
+  
+    // Step 4: Mark legacy tables
+    classicWrapper.querySelectorAll("table").forEach((table) => {
+      if (!isBlockClass(table)) {
         table.classList.add("legacy-table");
       }
     });
-
-    // If a figcaption is a sibling of a responsitable-wrapper or table, add legacy-table-caption class
-    document.querySelectorAll(".classic-content-wrapper figcaption").forEach((figcaption) => {
+  
+    // Step 5: Add legacy-table-caption if figcaption is next to a table or responsive wrapper
+    classicWrapper.querySelectorAll("figcaption").forEach((figcaption) => {
       const sibling = figcaption.nextElementSibling;
-      if (sibling &&
-        (sibling.classList.contains("responsitable-wrapper") || sibling.tagName === "TABLE")) {
+      if (
+        sibling &&
+        (sibling.classList.contains("responsitable-wrapper") ||
+          sibling.tagName === "TABLE")
+      ) {
         figcaption.classList.add("legacy-table-caption");
       }
     });
+  });  
 
-  }
-
-});
-
-/*** END LEGACY CONTENT CSS CLASSES */
+  /*** END HANDLE LEGACY CONTENT CSS */
