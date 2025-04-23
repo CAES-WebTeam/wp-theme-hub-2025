@@ -33,50 +33,58 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   /*** END TO TOP BUTTON */
 
-  /*** ADD RESPONSITABLE WRAPPER */
-  document.querySelectorAll('.single-post .wp-block-post-content table:not(.wp-block-table table),.single-publications .wp-block-post-content table:not(.wp-block-table table)').forEach(table => {
-    if (!table.closest('figure.wp-block-table')) {
-      const wrapper = document.createElement('div');
-      wrapper.classList.add('responsitable-wrapper');
-      table.parentNode.insertBefore(wrapper, table);
-      wrapper.appendChild(table);
-    }
-  });
-  /*** END ADD RESPONSITABLE WRAPPER */
+  /*** RESPONSITABLE */
 
-  /*** RESPONSITABLE BEHAVIOR */
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.wp-block-post-content table').forEach(table => {
-      let wrapper = table.closest('.responsitable-wrapper');
+  const contentAreas = document.querySelectorAll('.single-post .wp-block-post-content, .single-publications .wp-block-post-content');
 
-      if (!wrapper) {
-        const clone = table.cloneNode(true);
-        clone.style.position = 'absolute';
-        clone.style.visibility = 'hidden';
-        clone.style.height = 'auto';
-        clone.style.width = 'auto';
-        clone.style.maxWidth = 'none';
-        document.body.appendChild(clone);
+  contentAreas.forEach(content => {
+    const tables = content.querySelectorAll('table:not(.wp-block-table table)');
 
-        const isOverflowing = clone.scrollWidth > clone.clientWidth;
-        document.body.removeChild(clone);
+    tables.forEach(table => {
+      const alreadyWrapped = table.closest('.responsitable-wrapper') || table.closest('figure.wp-block-table');
 
-        if (isOverflowing) {
-          wrapper = document.createElement('div');
-          wrapper.classList.add('responsitable-wrapper');
-          table.parentNode.insertBefore(wrapper, table);
-          wrapper.appendChild(table);
-        }
+      if (!alreadyWrapped) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'responsitable-wrapper';
+
+        // Wrap table
+        table.parentNode.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
       }
+    });
 
-      if (wrapper && !wrapper.querySelector('.responsitable-scroll-note')) {
+    // Add scroll note and overflow logic
+    const wrappers = content.querySelectorAll('.responsitable-wrapper');
+
+    wrappers.forEach(wrapper => {
+      const table = wrapper.querySelector('table');
+      if (!table) return;
+
+      // Temporarily move table into a test container to check scroll width
+      const testTable = table.cloneNode(true);
+      Object.assign(testTable.style, {
+        position: 'absolute',
+        visibility: 'hidden',
+        height: 'auto',
+        width: 'auto',
+        maxWidth: 'none'
+      });
+      document.body.appendChild(testTable);
+
+      const needsScroll = testTable.scrollWidth > table.clientWidth;
+      document.body.removeChild(testTable);
+
+      // Add scroll note if needed and not already present
+      if (needsScroll && !wrapper.querySelector('.responsitable-scroll-note')) {
         const note = document.createElement('p');
-        note.innerHTML = '<em class="responsitable-scroll-note">(Scroll right for more)</em>';
-        wrapper.insertBefore(note, table);
+        note.className = 'responsitable-scroll-note';
+        note.innerHTML = '<em>(Scroll right for more)</em>';
+        wrapper.insertBefore(note, wrapper.firstChild);
       }
     });
   });
-  /*** END RESPONSITABLE BEHAVIOR */
+
+  /*** END RESPONSITABLE */
 
   /*** REMOVE EMPTY PARAGRAPHS */
   const contentContainers = document.querySelectorAll('.post, .entry-content');
