@@ -176,6 +176,28 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+    // Step 4.5: Wrap legacy tables in <figure> and move <caption> to <figcaption>
+    classicWrapper.querySelectorAll("table.legacy-table").forEach((table) => {
+      const hasFigure = table.closest("figure");
+      if (hasFigure) return;
+  
+      const figure = document.createElement("figure");
+      figure.classList.add("legacy-figure");
+  
+      table.parentNode.insertBefore(figure, table);
+      figure.appendChild(table);
+  
+      // Handle caption -> figcaption
+      const next = table.nextElementSibling;
+      if (next && next.tagName === "CAPTION") {
+        const figcaption = document.createElement("figcaption");
+        figcaption.classList.add("legacy-table-caption");
+        figcaption.textContent = next.textContent;
+        figure.appendChild(figcaption);
+        next.remove();
+      }
+    });  
+
   // Step 5: Add legacy-table-caption if figcaption is next to a table or responsive wrapper
   classicWrapper.querySelectorAll("figcaption").forEach((figcaption) => {
     const sibling = figcaption.nextElementSibling;
