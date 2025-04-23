@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Step 3: Add legacy class to floated divs and align their inner images
-  classicWrapper.querySelectorAll("div.left, div.right").forEach((div) => {
+  classicWrapper.querySelectorAll("div.left, div.right, div[style]").forEach((div) => {
     if (!isBlockClass(div)) {
       div.classList.add("legacy-div");
     }
@@ -164,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   });
-
 
   // Step 4.5: Wrap legacy tables in <figure> and move <caption> to <figcaption>
   classicWrapper.querySelectorAll("table.legacy-table").forEach((table) => {
