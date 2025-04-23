@@ -157,8 +157,14 @@ document.addEventListener('DOMContentLoaded', function () {
   classicWrapper.querySelectorAll("table").forEach((table) => {
     if (!isBlockClass(table)) {
       table.classList.add("legacy-table");
+
+      // Remove any leftover 'responsitable' class
+      if (table.classList.contains("responsitable")) {
+        table.classList.remove("responsitable");
+      }
     }
   });
+
 
   // Step 4.5: Wrap legacy tables in <figure> and move <caption> to <figcaption>
   classicWrapper.querySelectorAll("table.legacy-table").forEach((table) => {
