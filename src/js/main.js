@@ -91,16 +91,16 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   /*** HANDLE LEGACY CONTENT CSS */
-  
+
   document.addEventListener("DOMContentLoaded", () => {
     const classicWrapper = document.querySelector(".classic-content-wrapper");
-  
+
     if (!classicWrapper) return;
-  
+
     // Helpers
     const isBlockClass = (el) =>
       Array.from(el.classList).some((cls) => cls.startsWith("wp-"));
-  
+
     const applyLegacyAlignment = (el, target) => {
       const alignments = [
         { cls: "align-left", legacy: "legacy-figure-left" },
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { cls: "image-right", legacy: "legacy-figure-right" },
         { cls: "image-center", legacy: "legacy-figure-center" },
       ];
-  
+
       alignments.forEach(({ cls, legacy }) => {
         if (el.classList.contains(cls)) {
           target.classList.add(legacy);
@@ -118,25 +118,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
     };
-  
+
     // Step 1: Handle existing <figure> elements
     classicWrapper.querySelectorAll("figure").forEach((figure) => {
       if (!isBlockClass(figure)) {
         figure.classList.add("legacy-figure");
         applyLegacyAlignment(figure, figure);
-  
+
         // Fallback: apply alignment based on inner images
         figure.querySelectorAll("img.legacy-image").forEach((img) => {
           applyLegacyAlignment(img, figure);
         });
       }
     });
-  
+
     // Step 2: Wrap orphaned <img> tags in a <figure> and apply alignment
     classicWrapper.querySelectorAll("img").forEach((img) => {
       if (!isBlockClass(img)) {
         img.classList.add("legacy-image");
-  
+
         if (!img.closest("figure")) {
           const wrapper = document.createElement("figure");
           wrapper.classList.add("legacy-figure");
@@ -146,27 +146,27 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
     });
-  
+
     // Step 3: Add legacy class to floated divs and align their inner images
     classicWrapper.querySelectorAll("div.left, div.right").forEach((div) => {
       if (!isBlockClass(div)) {
         div.classList.add("legacy-div");
       }
-  
+
       const img = div.querySelector("img.image-left, img.image-right");
       const figure = img?.closest("figure.legacy-figure");
       if (img && figure) {
         applyLegacyAlignment(img, figure);
       }
     });
-  
+
     // Step 4: Mark legacy tables
     classicWrapper.querySelectorAll("table").forEach((table) => {
       if (!isBlockClass(table)) {
         table.classList.add("legacy-table");
       }
     });
-  
+
     // Step 5: Add legacy-table-caption if figcaption is next to a table or responsive wrapper
     classicWrapper.querySelectorAll("figcaption").forEach((figcaption) => {
       const sibling = figcaption.nextElementSibling;
@@ -178,6 +178,8 @@ document.addEventListener('DOMContentLoaded', function () {
         figcaption.classList.add("legacy-table-caption");
       }
     });
-  });  
 
-  /*** END HANDLE LEGACY CONTENT CSS */
+  })
+});
+
+/*** END HANDLE LEGACY CONTENT CSS */
