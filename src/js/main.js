@@ -33,8 +33,8 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   /*** END TO TOP BUTTON */
 
-  /*** START TABLE FIX */
-  document.querySelectorAll('.wp-block-post-content table:not(.wp-block-table table)').forEach(table => {
+  /*** ADD RESPONSITABLE WRAPPER */
+  document.querySelectorAll('.single-post .wp-block-post-content table:not(.wp-block-table table),.single-publications .wp-block-post-content table:not(.wp-block-table table)').forEach(table => {
     if (!table.closest('figure.wp-block-table')) {
       const wrapper = document.createElement('div');
       wrapper.classList.add('responsitable-wrapper');
@@ -42,9 +42,9 @@ document.addEventListener('DOMContentLoaded', function () {
       wrapper.appendChild(table);
     }
   });
-  /*** END TABLE FIX */
+  /*** END ADD RESPONSITABLE WRAPPER */
 
-  /*** RESPONSITABLE */
+  /*** RESPONSITABLE BEHAVIOR */
   requestAnimationFrame(() => {
     document.querySelectorAll('.wp-block-post-content table').forEach(table => {
       let wrapper = table.closest('.responsitable-wrapper');
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   });
-  /*** END RESPONSITABLE */
+  /*** END RESPONSITABLE BEHAVIOR */
 
   /*** REMOVE EMPTY PARAGRAPHS */
   const contentContainers = document.querySelectorAll('.post, .entry-content');
