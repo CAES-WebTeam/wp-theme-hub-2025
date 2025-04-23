@@ -85,17 +85,9 @@ ul.is-style-caes-hub-list-checkbox {
 
 // Another heading style that adds a full width underline
 .is-style-caes-hub-full-underline {
-    position: relative;
-
-    &::after {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 1px;
-        background-color: var(--wp--preset--color--base-three);
-    }
+    border-bottom: 1px solid var(--wp--preset--color--base-three);
+    padding-bottom: 0.2rem;
+    display: flex;
 }
 
 .is-style-caes-hub-partial-underline {
