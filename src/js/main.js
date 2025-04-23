@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /*** LEGACY CONTENT FIX */
+  /*** LEGACY CONTENT CSS CLASSES */
   const classicWrapper = document.querySelector(".classic-content-wrapper");
   if (classicWrapper) {
     document.querySelectorAll(".classic-content-wrapper figure").forEach((figure) => {
@@ -180,6 +180,17 @@ document.addEventListener('DOMContentLoaded', function () {
         table.classList.add("legacy-table");
       }
     });
+
+    // If a figcaption is a sibling of a responsitable-wrapper or table, add legacy-table-caption class
+    document.querySelectorAll(".classsic-content-wrapper figcaption").forEach((figcaption) => {
+      const sibling = figcaption.nextElementSibling;
+      if (sibling && sibling.classList.contains("responsitable-wrapper") || sibling.tagName === "TABLE") {
+        figcaption.classList.add("legacy-table-caption");
+      }
+    });
+
   }
 
 });
+
+/*** END LEGACY CONTENT CSS CLASSES */

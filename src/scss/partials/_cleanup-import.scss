@@ -50,9 +50,9 @@
             width: auto !important;
             caption-side: bottom;
             display: table-caption;
-            figcaption:has(+ .legacy-table),
-            figcaption:has(+ .responsitable-wrapper) {
+            &.legacy-table-caption {
                 caption-side: top;
+                text-align: center;
             }
         }
 
