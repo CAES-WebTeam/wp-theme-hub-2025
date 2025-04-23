@@ -1,14 +1,15 @@
 // Table styling fixes
 .wp-block-table {
-// .responsitable-wrapper {
+
+    // .responsitable-wrapper {
     td {
         vertical-align: baseline;
     }
 }
 
 
-.wp-block-table{
-// .responsitable-wrapper {
+.wp-block-table {
+    // .responsitable-wrapper {
     max-width: 100%;
     overflow-y: auto;
 
@@ -23,18 +24,21 @@
     }
 }
 
-// .responsitable-wrapper {
-//     overflow-x: auto;
-//     -webkit-overflow-scrolling: touch;
-//     margin-bottom: 1em;
-//   }
-  
-//   .responsitable-wrapper table {
-//     width: max-content;
-//     min-width: 100%;
-//   }
-  
-//   .responsitable-scroll-note {
-//     font-size: var(--wp--preset--font-size--small);
-//     margin: 0.25em 0;
-//   }
+.responsitable-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5rem;
+}
+
+.responsitable-wrapper table {
+    width: 100%;
+}
+
+.responsitable-scroll::before {
+    content: "(Scroll right for more)";
+    display: block;
+    font-style: italic;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: #666;
+}
