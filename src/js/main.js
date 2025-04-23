@@ -35,32 +35,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /*** RESPONSITABLE */
 
+
   const contentAreas = document.querySelectorAll('.single-post .wp-block-post-content, .single-publications .wp-block-post-content');
 
   contentAreas.forEach(content => {
     const tables = content.querySelectorAll('table:not(.wp-block-table table)');
 
     tables.forEach(table => {
-      const alreadyWrapped = table.closest('.responsitable-wrapper') || table.closest('figure.wp-block-table');
+      const figure = table.closest('figure');
+      let wrapper = table.closest('.responsitable-wrapper');
 
-      if (!alreadyWrapped) {
-        const wrapper = document.createElement('div');
+      // Wrap in responsitable-wrapper if not already
+      if (!wrapper) {
+        wrapper = document.createElement('div');
         wrapper.className = 'responsitable-wrapper';
 
-        // Wrap table
         table.parentNode.insertBefore(wrapper, table);
         wrapper.appendChild(table);
       }
-    });
 
-    // Add scroll note and overflow logic
-    const wrappers = content.querySelectorAll('.responsitable-wrapper');
-
-    wrappers.forEach(wrapper => {
-      const table = wrapper.querySelector('table');
-      if (!table) return;
-
-      // Temporarily move table into a test container to check scroll width
+      // Check if table overflows
       const testTable = table.cloneNode(true);
       Object.assign(testTable.style, {
         position: 'absolute',
@@ -71,15 +65,24 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       document.body.appendChild(testTable);
 
-      const needsScroll = testTable.scrollWidth > table.clientWidth;
+      const needsScroll = testTable.scrollWidth > wrapper.clientWidth;
       document.body.removeChild(testTable);
 
       // Add scroll note if needed and not already present
-      if (needsScroll && !wrapper.querySelector('.responsitable-scroll-note')) {
+      const noteExists = figure
+        ? !!figure.querySelector('.responsitable-scroll-note')
+        : !!wrapper.previousElementSibling?.classList?.contains('responsitable-scroll-note');
+
+      if (needsScroll && !noteExists) {
         const note = document.createElement('p');
         note.className = 'responsitable-scroll-note';
         note.innerHTML = '<em>(Scroll right for more)</em>';
-        wrapper.insertBefore(note, wrapper.firstChild);
+
+        if (figure) {
+          figure.insertBefore(note, wrapper);
+        } else {
+          wrapper.parentNode.insertBefore(note, wrapper);
+        }
       }
     });
   });
