@@ -224,7 +224,6 @@ classicWrapper.querySelectorAll("h2").forEach((h2) => {
   }
 });
 
-
   /*** END HANDLE LEGACY CONTENT CSS */
 
   /** Responsive tables on page load */
