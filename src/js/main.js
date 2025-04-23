@@ -208,6 +208,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Step 7: Add legacy-h2 class to <h2> elements and remove any strong tags inside them
+  classicWrapper.querySelectorAll("h2").forEach((h2) => {
+    if (!isBlockClass(h2)) {
+      h2.classList.add("legacy-h2");
+      h2.classList.add("is-style-caes-hub-full-underline");
+      h2.querySelectorAll("strong").forEach((strong) => {
+        strong.replaceWith(strong.innerHTML);
+      });
+    }
+  });
+
   /*** END HANDLE LEGACY CONTENT CSS */
 
   /** Responsive tables on page load */
