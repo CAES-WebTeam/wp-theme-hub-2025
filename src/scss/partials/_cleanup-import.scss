@@ -207,6 +207,21 @@
         }
     }
 
+    // Definition lists
+
+    .legacy-dl {
+        border: 1px solid var(--wp--preset--color--base-three);
+        border-top: 0;
+        dt, dt p {
+            background: var(--wp--preset--color--base-two);
+            font-weight: 600;
+            padding: var(--wp--preset--spacing--20);
+        }
+        dd {
+            margin: var(--wp--preset--spacing--20);
+        }
+    }
+
 }
 
 // First image in a story override
@@ -216,3 +231,4 @@
     float: none !important;
     margin: 0 auto !important;
 }
+

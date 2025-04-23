@@ -201,6 +201,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Step 6: Add legacy-dl class to <dl> elements
+  classicWrapper.querySelectorAll("dl").forEach((dl) => {
+    if (!isBlockClass(dl)) {
+      dl.classList.add("legacy-dl");
+    }
+  });
+
   /*** END HANDLE LEGACY CONTENT CSS */
 
   /** Responsive tables on page load */
