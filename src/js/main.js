@@ -1,3 +1,23 @@
+
+// Handle responsive tables function
+function handleOverflowScroll() {
+  const wrappers = document.querySelectorAll('.responsitable-wrapper');
+
+  wrappers.forEach((wrapper) => {
+    const table = wrapper.querySelector('table');
+    if (!table) return;
+
+    // Reset scroll class
+    wrapper.classList.remove('responsitable-scroll');
+
+    // Check for overflow
+    if (table.scrollWidth > wrapper.clientWidth) {
+      wrapper.classList.add('responsitable-scroll');
+    }
+  });
+}
+// End responsive tables function
+
 document.addEventListener('DOMContentLoaded', function () {
 
   /*** START TO TOP BUTTON */
@@ -32,61 +52,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
   /*** END TO TOP BUTTON */
-
-  /*** RESPONSITABLE */
-
-  // const contentAreas = document.querySelectorAll('.single-post .wp-block-post-content, .single-publications .wp-block-post-content');
-
-  // contentAreas.forEach(content => {
-  //   const tables = content.querySelectorAll('table:not(.wp-block-table table)');
-
-  //   tables.forEach(table => {
-  //     const figure = table.closest('figure');
-  //     let wrapper = table.closest('.responsitable-wrapper');
-
-  //     // Wrap in responsitable-wrapper if not already
-  //     if (!wrapper) {
-  //       wrapper = document.createElement('div');
-  //       wrapper.className = 'responsitable-wrapper';
-
-  //       table.parentNode.insertBefore(wrapper, table);
-  //       wrapper.appendChild(table);
-  //     }
-
-  //     // Check if table overflows
-  //     const testTable = table.cloneNode(true);
-  //     Object.assign(testTable.style, {
-  //       position: 'absolute',
-  //       visibility: 'hidden',
-  //       height: 'auto',
-  //       width: 'auto',
-  //       maxWidth: 'none'
-  //     });
-  //     document.body.appendChild(testTable);
-
-  //     const needsScroll = testTable.scrollWidth > wrapper.clientWidth;
-  //     document.body.removeChild(testTable);
-
-  //     // Add scroll note if needed and not already present
-  //     const noteExists = figure
-  //       ? !!figure.querySelector('.responsitable-scroll-note')
-  //       : !!wrapper.previousElementSibling?.classList?.contains('responsitable-scroll-note');
-
-  //     if (needsScroll && !noteExists) {
-  //       const note = document.createElement('p');
-  //       note.className = 'responsitable-scroll-note';
-  //       note.innerHTML = '<em>(Scroll right for more)</em>';
-
-  //       if (figure) {
-  //         figure.insertBefore(note, wrapper);
-  //       } else {
-  //         wrapper.parentNode.insertBefore(note, wrapper);
-  //       }
-  //     }
-  //   });
-  // });
-
-  /*** END RESPONSITABLE */
 
   /*** REMOVE EMPTY PARAGRAPHS */
   const contentContainers = document.querySelectorAll('.post, .entry-content');
@@ -213,4 +178,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /*** END HANDLE LEGACY CONTENT CSS */
 
+  /** Responsive tables on page load */
+  wrapResponsiveTables();
+  handleOverflowScroll();
+  /** End responsive tables on page load */
+
 });
+
+// Recheck for responsive tables on window resize
+window.addEventListener('resize', handleOverflowScroll);
