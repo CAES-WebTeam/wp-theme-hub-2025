@@ -116,6 +116,8 @@
 
     // Legacy divs
     div.legacy-div {
+        display: block !important;
+        
         &.right {
             float: right;
             clear: both;
