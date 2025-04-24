@@ -5,30 +5,30 @@
 
 // Set ACF field 'state_issue' with options from json
 function populate_acf_state_issue_field( $field ) {
-	// Set path to json file
-	$json_file = get_template_directory() . '/json/publication-state-issue.json';
+    // Set path to json file
+    $json_file = get_template_directory() . '/json/publication-state-issue.json';
 
-	if ( file_exists( $json_file ) ) {
-		// Get the contents of the json file
-		$json_data = file_get_contents( $json_file );
-		$issues = json_decode( $json_data, true );
+    if ( file_exists( $json_file ) ) {
+        // Get the contents of the json file
+        $json_data = file_get_contents( $json_file );
+        $issues = json_decode( $json_data, true );
 
-		// Clear existing choices
-		$field['choices'] = array();
+        // Clear existing choices
+        $field['choices'] = array();
 
-		// Check if there are issues in the json
-		if ( isset( $issues['issues'] ) && is_array( $issues['issues'] ) ) {
-			// Loop through the issues and add each name as a select option
-			foreach ( $issues['issues'] as $issue ) {
-				if ( isset( $issue['name'] ) ) {
-					$field['choices'][ sanitize_text_field( $issue['name'] ) ] = sanitize_text_field( $issue['name'] );
-				}
-			}
-		}
-	}
+        // Check if there are issues in the json
+        if ( isset( $issues['issues'] ) && is_array( $issues['issues'] ) ) {
+            // Loop through the issues and add each name as a select option
+            foreach ( $issues['issues'] as $issue ) {
+                if ( isset( $issue['name'] ) ) {
+                    $field['choices'][ sanitize_text_field( $issue['name'] ) ] = sanitize_text_field( $issue['name'] );
+                }
+            }
+        }
+    }
 
-	// Return the field to ACF
-	return $field;
+    // Return the field to ACF
+    return $field;
 }
 add_filter( 'acf/load_field/name=state_issue', 'populate_acf_state_issue_field' );
 
@@ -118,13 +118,13 @@ function generate_pdf() {
         $pdf->Ln(10); // Line break
         $pdf->SetFont('helvetica', '', 12); // Regular font for content
         if (is_array($post->post_content)) {
-		    $post_content = implode('', $post->post_content);
-		} elseif (is_object($post->post_content)) {
-		    $post_content = json_encode($post->post_content); // Safely handle unexpected object
-		} else {
-		    $post_content = $post->post_content; // Use as is if it's a string
-		}
-		$pdf->writeHTML($post_content, true, false, true, false, '');
+            $post_content = implode('', $post->post_content);
+        } elseif (is_object($post->post_content)) {
+            $post_content = json_encode($post->post_content); // Safely handle unexpected object
+        } else {
+            $post_content = $post->post_content; // Use as is if it's a string
+        }
+        $pdf->writeHTML($post_content, true, false, true, false, '');
 
 
         // Output PDF for download
@@ -439,3 +439,120 @@ function custom_publications_parse_request($query) {
     }
 }
 add_action('pre_get_posts', 'custom_publications_parse_request');
+
+
+// Add "Clone for Review" link to Publications row actions
+add_filter('post_row_actions', function ($actions, $post) {
+    if ($post->post_type === 'publications') {
+        $url = wp_nonce_url(admin_url('admin-post.php?action=clone_publication_for_review&post_id=' . $post->ID), 'clone_publication_' . $post->ID);
+        $actions['clone_review'] = '<a href="' . esc_url($url) . '">Clone for Review</a>';
+    }
+    return $actions;
+}, 10, 2);
+
+// Handle cloning the post and ACF fields
+add_action('admin_post_clone_publication_for_review', function () {
+    if (!current_user_can('edit_posts')) wp_die('Unauthorized');
+    
+    $post_id = intval($_GET['post_id']);
+    check_admin_referer('clone_publication_' . $post_id);
+
+    $post = get_post($post_id);
+    if (!$post || $post->post_type !== 'publications') wp_die('Invalid post');
+
+    // Clone post without "(In Review)" in the title
+    $new_post_id = wp_insert_post([
+        'post_title'   => $post->post_title,
+        'post_content' => $post->post_content,
+        'post_type'    => 'publications',
+        'post_status'  => 'draft',
+        'post_author'  => get_current_user_id(),
+        'meta_input'   => [
+            'original_publication_id' => $post_id,
+        ],
+    ]);
+
+    // Copy all ACF fields
+    $fields = get_fields($post_id);
+    if ($fields && is_array($fields)) {
+        foreach ($fields as $key => $value) {
+            update_field($key, $value, $new_post_id);
+        }
+    }
+
+    wp_redirect(admin_url('post.php?post=' . $new_post_id . '&action=edit'));
+    exit;
+});
+
+// Add "Replace Original" button in Classic Editor (fallback)
+add_action('post_submitbox_misc_actions', function () {
+    global $post;
+    if ($post->post_type === 'publications' && $post->post_status === 'draft') {
+        $original_id = get_post_meta($post->ID, 'original_publication_id', true);
+        if ($original_id) {
+            $url = wp_nonce_url(admin_url('admin-post.php?action=publish_review_copy&draft_id=' . $post->ID), 'publish_review_' . $post->ID);
+            echo '<div class="misc-pub-section"><a href="' . esc_url($url) . '" class="button">Replace Original with Review</a></div>';
+        }
+    }
+});
+
+// Handle publishing the review version
+add_action('admin_post_publish_review_copy', function () {
+    if (!current_user_can('edit_posts')) wp_die('Unauthorized');
+
+    $draft_id = intval($_GET['draft_id']);
+    check_admin_referer('publish_review_' . $draft_id);
+
+    $draft = get_post($draft_id);
+    $original_id = get_post_meta($draft_id, 'original_publication_id', true);
+    if (!$draft || !$original_id) wp_die('Missing data');
+
+    // Update original post title/content
+    wp_update_post([
+        'ID'           => $original_id,
+        'post_title'   => $draft->post_title,
+        'post_content' => $draft->post_content,
+    ]);
+
+    // Copy all ACF fields back to original
+    $fields = get_fields($draft_id);
+    if ($fields && is_array($fields)) {
+        foreach ($fields as $key => $value) {
+            update_field($key, $value, $original_id);
+        }
+    }
+
+    // Delete the draft
+    wp_delete_post($draft_id, true);
+
+    wp_redirect(admin_url('post.php?post=' . $original_id . '&action=edit&replaced=1'));
+    exit;
+});
+
+// Enqueue editor script and hide default publish button for review drafts
+add_action('enqueue_block_editor_assets', function () {
+    global $post;
+
+    // Only load for publications in the Block Editor
+    if (!isset($post->post_type) || $post->post_type !== 'publications') return;
+
+    $original_id = get_post_meta($post->ID, 'original_publication_id', true);
+    if ($post->post_status !== 'draft' || !$original_id) return;
+
+    // Load the JS for the custom sidebar button
+    wp_enqueue_script(
+        'pub-review-button',
+        get_stylesheet_directory_uri() . '/src/js/publication-review.js',
+        ['wp-edit-post', 'wp-plugins', 'wp-element', 'wp-components'],
+        null,
+        true
+    );
+
+    wp_localize_script('pub-review-button', 'pubReviewData', [
+        'draftId' => $post->ID,
+        'originalId' => $original_id,
+        'nonce' => wp_create_nonce('publish_review_' . $post->ID),
+        'url' => admin_url('admin-post.php?action=publish_review_copy&draft_id=' . $post->ID),
+    ]);
+
+});
