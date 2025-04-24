@@ -48,24 +48,33 @@ add_action('admin_init', function () {
         if (empty($users)) continue;
         $user_id = $users[0];
 
-        // Load existing rows
-        $experts = get_field('experts', $post_id);
-        if (!is_array($experts)) $experts = [];
+        // Load existing experts (always an array)
+	   $experts = get_field('experts', $post_id);
+		if (!is_array($experts)) $experts = [];
 
-        // Avoid duplicate entries
-        $already_added = false;
-        foreach ($experts as $row) {
-            if (isset($row['user']) && $row['user'] == $user_id) {
-                $already_added = true;
-                break;
-            }
-        }
+		$already_added = false;
+		foreach ($experts as $row) {
+		    $existing_user = $row['user'];
 
-        if (!$already_added) {
-            $experts[] = ['user' => $user_id];
-            update_field('experts', $experts, $post_id);
-            $linked++;
-        }
+		    // Normalize to user ID
+		    if (is_object($existing_user) && isset($existing_user->ID)) {
+		        $existing_user = $existing_user->ID;
+		    } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
+		        $existing_user = $existing_user['ID'];
+		    }
+
+		    if (intval($existing_user) === intval($user_id)) {
+		        $already_added = true;
+		        break;
+		    }
+		}
+
+	    // Add user if not already in the repeater
+	    if (!$already_added) {
+		    $experts[] = ['user' => $user_id];
+		    update_field('experts', $experts, $post_id);
+		    $linked++;
+		}
     }
 
     wp_die("Expert linking complete. Experts linked to posts: {$linked}");
