@@ -510,3 +510,113 @@ add_action('admin_init', function () {
     wp_die("Import complete.<br>New Users Created: {$created}<br>Existing Users Updated: {$updated}<br>Linked by Personnel ID: {$linked}");
 });
 
+
+// Add News Writers
+add_action('admin_init', function () {
+    if (!current_user_can('manage_options') || !isset($_GET['import_writer_users'])) return;
+
+    $json_file_path = get_template_directory() . '/json/news-writers.json';
+
+    if (!file_exists($json_file_path)) {
+        wp_die('JSON file not found');
+    }
+
+    // Load and sanitize JSON
+    $json_data = file_get_contents($json_file_path);
+    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
+    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
+    $json_data = trim($json_data);
+
+    $records = json_decode($json_data, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        wp_die('JSON decode error: ' . json_last_error_msg());
+    }
+
+    $created = 0;
+    $updated = 0;
+    $linked = 0;
+
+    foreach ($records as $person) {
+        $email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
+        $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
+        $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
+        $personnel_id = $person['PERSONNEL_ID'] ?? null;
+
+        $user_id = null;
+
+        // CASE 1: Email exists and user doesn't -> CREATE USER
+        if ($email && is_email($email)) {
+            $user = get_user_by('email', $email);
+            if (!$user) {
+                $user_id = wp_insert_user([
+                    'user_login' => sanitize_user($email),
+                    'user_pass' => wp_generate_password(),
+                    'user_email' => $email,
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'role' => 'author',
+                ]);
+
+                if (is_wp_error($user_id)) {
+                    error_log("User creation failed for {$email}: " . $user_id->get_error_message());
+                    continue;
+                }
+
+                $created++;
+            } else {
+                $user_id = $user->ID;
+
+                $updated++;
+            }
+        }
+
+        // CASE 2: No email, but PERSONNEL_ID exists -> MATCH EXISTING USER
+        if (!$user_id && $personnel_id) {
+            $users = get_users([
+                'meta_key' => 'personnel_id',
+                'meta_value' => $personnel_id,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+
+            if (!empty($users)) {
+                $user_id = $users[0];
+                $linked++;
+            }
+        }
+
+        // CASE 3: Email exists and user doesn't -> CREATE USER
+        if (!$email && !$personnel_id) {
+        	$placeholder_email = generate_placeholder_email($first_name, $last_name);
+            $user_id = wp_insert_user([
+                'user_login' => sanitize_user($placeholder_email),
+                'user_pass' => wp_generate_password(),
+                'user_email' => $placeholder_email,
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'role' => 'author',
+            ]);
+
+            if (is_wp_error($user_id)) {
+                error_log("User creation failed for {$email}: " . $user_id->get_error_message());
+                continue;
+            }
+
+            $created++;
+        }
+
+        // --- Update ACF fields if user found or created ---
+        if ($user_id) {
+            update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
+            update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
+            update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+            update_field('writer_id', $person['ID'], 'user_' . $user_id);
+            update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
+            update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
+            update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
+            update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
+        }
+    }
+
+    wp_die("Import complete.<br>New Users Created: {$created}<br>Existing Users Updated: {$updated}<br>Linked by Personnel ID: {$linked}");
+});
