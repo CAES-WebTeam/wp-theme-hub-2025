@@ -436,3 +436,23 @@ function wrap_classic_content( $content ) {
     return $content;
 }
 add_filter( 'the_content', 'wrap_classic_content' );
+
+// Custom URLs for posts (stories)
+function custom_external_story_url( $url, $post ) {
+	// Only apply to the 'post' post type
+	if ( get_post_type( $post ) !== 'post' ) {
+		return $url;
+	}
+
+	// Check for the ACF field
+	$external_url = get_field( 'external_story_url', $post->ID );
+
+	// If it's a valid URL, return it
+	if ( ! empty( $external_url ) && filter_var( $external_url, FILTER_VALIDATE_URL ) ) {
+		return esc_url( $external_url );
+	}
+
+	// Otherwise, use the default permalink
+	return $url;
+}
+add_filter( 'post_link', 'custom_external_story_url', 10, 2 );
