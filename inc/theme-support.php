@@ -436,3 +436,26 @@ function wrap_classic_content( $content ) {
     return $content;
 }
 add_filter( 'the_content', 'wrap_classic_content' );
+
+// TEMP CODE TO RESAVE FIELDS FOR ONE POST AS A TEST
+
+add_action('init', function () {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $post_id = 5537; // 🔁 Replace with your publication post ID
+
+    $fields_to_fix = ['authors', 'translator', 'experts'];
+
+    foreach ($fields_to_fix as $field_key) {
+        // Get the raw meta value (the value that was imported)
+        $raw_value = get_post_meta($post_id, $field_key, true);
+
+        if (!empty($raw_value)) {
+            // Re-save the field using ACF so it formats it correctly
+            update_field($field_key, $raw_value, $post_id);
+            error_log("🔧 Re-saved ACF field '$field_key' on post $post_id");
+        }
+    }
+});
