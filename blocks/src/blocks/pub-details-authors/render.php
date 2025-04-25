@@ -12,13 +12,26 @@ $showHeading = $block['showHeading'] ?? false;
 $customHeading = $block['customHeading'] ?? '';
 $type = $block['type'] ?? 'authors';
 
-// Get authors and translators from ACF fields
+// Get ACF fields
 $authors = get_field('authors', $post_id);
 $translators = get_field('translator', $post_id);
+$sources = get_field('experts', $post_id);
 
-// Determine which list to use
-$data = ($type === 'translators') ? $translators : $authors;
-$defaultHeading = ($type === 'translators') ? "Translators" : "Authors";
+switch ($type) {
+    case 'translators':
+        $data = $translators;
+        $defaultHeading = "Translators";
+        break;
+    case 'sources':
+        $data = $sources;
+        $defaultHeading = "Sources";
+        break;
+    case 'authors':
+    default:
+        $data = $authors;
+        $defaultHeading = "Authors";
+        break;
+}
 
 // Ensure function is only defined once
 if (!function_exists('process_people')) {

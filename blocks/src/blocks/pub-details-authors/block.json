@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/pub-details-authors",
   "version": "0.1.0",
-  "title": "Publication Authors",
+  "title": "CAES Authors",
   "category": "theme",
-  "icon": "text-page",
-  "description": "Displays a publication's authors.",
+  "icon": "businesswoman",
+  "description": "Displays a story or publication's authors.",
   "acf": {
     "mode": "preview",
     "renderTemplate": "./render.php"

@@ -61,7 +61,8 @@ export default function Edit({ attributes, setAttributes }) {
 						value={attributes.type}
 						options={[
 							{ label: "Authors", value: "authors" },
-							{ label: "Translators", value: "translators" }
+							{ label: "Translators", value: "translators" },
+							{ label: "Sources", value: "sources" },
 						]}
 						onChange={(val) => {
 							setAttributes({
@@ -89,7 +90,8 @@ export default function Edit({ attributes, setAttributes }) {
 				<div {...useBlockProps()}>
 					{attributes.showHeading && (
 						<h2 className="pub-authors-heading is-style-caes-hub-full-underline">
-							{attributes.customHeading || (attributes.type === "translators" ? "Translators" : "Authors")}
+							{/* If custom heading is set, use that, otherwise use default */}
+							{attributes.customHeading || (attributes.type === "translators" ? "Translators" : (attributes.type === "sources" ? "Sources" : "Authors"))}
 						</h2>
 					)}
 					<div className="pub-author">

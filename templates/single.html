@@ -19,8 +19,8 @@
 
 <!-- wp:post-title {"textAlign":"center"} /-->
 
-<!-- wp:group {"style":{"elements":{"link":{"color":{"text":"var:preset|color|contrast-two"}}},"spacing":{"blockGap":"var:preset|spacing|30"}},"textColor":"contrast-two","fontSize":"small","layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"center"}} -->
-<div class="wp-block-group has-contrast-two-color has-text-color has-link-color has-small-font-size"><!-- wp:post-author-name /-->
+<!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|30","margin":{"top":"var:preset|spacing|40"}}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"center"}} -->
+<div class="wp-block-group" style="margin-top:var(--wp--preset--spacing--40)"><!-- wp:caes-hub/pub-details-authors {"showHeading":false,"authorsAsSnippet":true} /-->
 
 <!-- wp:paragraph -->
 <p>|</p>
@@ -46,12 +46,14 @@
 <!-- wp:caes-hub/action-print /--></div>
 <!-- /wp:group -->
 
-<!-- wp:group {"metadata":{"name":"caes-hub-content-f-img"},"className":"caes-hub-content-f-img","style":{"spacing":{"margin":{"top":"var:preset|spacing|60"}}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group caes-hub-content-f-img" style="margin-top:var(--wp--preset--spacing--60)"><!-- wp:post-featured-image /--></div>
-<!-- /wp:group -->
-
 <!-- wp:group {"metadata":{"name":"caes-hub-content-post"},"className":"caes-hub-content-post","style":{"spacing":{"padding":{"right":"var:preset|spacing|50","left":"var:preset|spacing|50"},"margin":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60"}}},"layout":{"type":"default"}} -->
-<div class="wp-block-group caes-hub-content-post" style="margin-top:var(--wp--preset--spacing--60);margin-bottom:var(--wp--preset--spacing--60);padding-right:var(--wp--preset--spacing--50);padding-left:var(--wp--preset--spacing--50)"><!-- wp:post-content {"layout":{"type":"constrained"}} /--></div>
+<div class="wp-block-group caes-hub-content-post" style="margin-top:var(--wp--preset--spacing--60);margin-bottom:var(--wp--preset--spacing--60);padding-right:var(--wp--preset--spacing--50);padding-left:var(--wp--preset--spacing--50)"><!-- wp:post-content {"layout":{"type":"constrained"}} /-->
+
+<!-- wp:group {"layout":{"type":"constrained"}} -->
+<div class="wp-block-group"><!-- wp:caes-hub/pub-details-authors {"customHeading":"Expert Sources","type":"sources"} /-->
+
+<!-- wp:caes-hub/pub-details-authors {"customHeading":"Authors"} /--></div>
+<!-- /wp:group --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group -->
 
