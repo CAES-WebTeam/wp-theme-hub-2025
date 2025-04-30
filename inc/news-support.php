@@ -229,19 +229,108 @@ add_action('admin_init', function () {
     wp_die("Keyword linking complete. Keywords linked to posts: {$linked}");
 });
 
-// Custom external URLs for news stories
-function custom_external_story_url( $url, $post ) {
-	// Only apply to the 'post' post type
-	if ( get_post_type( $post ) !== 'post' ) {
-		return $url;
-	}
-	// Check for the ACF field
-	$external_url = get_field( 'external_story_url', $post->ID );
-	// If it's a valid URL, return it
-	if ( ! empty( $external_url ) && filter_var( $external_url, FILTER_VALIDATE_URL ) ) {
-		return esc_url( $external_url );
-	}
-	// Otherwise, use the default permalink
-	return $url;
-}
-add_filter( 'post_link', 'custom_external_story_url', 10, 2 );
+
+// News Image association
+add_action('admin_init', function () {
+    if (!current_user_can('manage_options') || !isset($_GET['link_story_images'])) return;
+
+    $json_file = get_template_directory() . '/json/news-image-association.json';
+
+    if (!file_exists($json_file)) {
+        wp_die('JSON file not found.');
+    }
+
+    $json_data = file_get_contents($json_file);
+    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+    $records = json_decode($json_data, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        wp_die('JSON decode error: ' . json_last_error_msg());
+    }
+
+    // Handle batch parameters
+    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
+    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 500;
+
+    $records = array_slice($records, $start, $limit);
+
+    $updated = 0;
+
+    foreach ($records as $record) {
+        $story_id = intval($record['STORY_ID']);
+        $image_id = intval($record['IMAGE_ID']);
+
+        if (!$story_id || !$image_id) continue;
+
+        // Find post by ACF 'id' field
+        $posts = get_posts([
+            'post_type'  => 'post',
+            'meta_key'   => 'id',
+            'meta_value' => $story_id,
+            'numberposts'=> 1,
+            'fields'     => 'ids',
+        ]);
+
+        if (empty($posts)) continue;
+        $post_id = $posts[0];
+
+        update_field('image_id', $image_id, $post_id);
+        $updated++;
+    }
+
+    wp_die("Batch processed from index {$start} to " . ($start + $limit - 1) . ". Total updated: {$updated}");
+});
+
+
+
+// Add News Web Image File Name
+add_action('admin_init', function () {
+    if (!current_user_can('manage_options') || !isset($_GET['assign_web_image_filenames'])) return;
+
+    $json_file = get_template_directory() . '/json/news-image.json';
+
+    if (!file_exists($json_file)) {
+        wp_die('JSON file not found.');
+    }
+
+    $json_data = file_get_contents($json_file);
+    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
+    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Ensure proper encoding
+    $records = json_decode($json_data, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        wp_die('JSON decode error: ' . json_last_error_msg());
+    }
+
+    // Batch control
+    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
+    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 500;
+
+    $batch = array_slice($records, $start, $limit);
+
+    $updated = 0;
+
+    foreach ($batch as $record) {
+        $image_id = intval($record['ID']);
+        $filename = trim($record['WEB_VERSION_FILE_NAME'] ?? '');
+
+        if (!$image_id || !$filename) continue;
+
+        // Find posts with matching ACF field 'image_id'
+        $posts = get_posts([
+            'post_type'  => 'post',
+            'meta_key'   => 'image_id',
+            'meta_value' => $image_id,
+            'numberposts'=> -1,
+            'fields'     => 'ids',
+        ]);
+
+        foreach ($posts as $post_id) {
+            update_field('web_version_file_name', $filename, $post_id);
+            $updated++;
+        }
+    }
+
+    wp_die("Processed records {$start} to " . ($start + $limit - 1) . ". Total posts updated: {$updated}");
+});
