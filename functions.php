@@ -48,10 +48,11 @@ add_action('init', function () {
         $posts = get_posts($args);
 
         foreach ($posts as $post_id) {
-            wp_update_post(['ID' => $post_id]);
+            do_action('acf/save_post', $post_id);
+            clean_post_cache($post_id);
         }
 
-        echo count($posts) . " '{$post_type}' posts updated between " .
+        echo count($posts) . " '{$post_type}' posts passed through acf/save_post between " .
              ($start ? $start->format('Y-m-d') : 'any') . " and " .
              ($end ? $end->format('Y-m-d') : 'any') . ".";
         exit;
