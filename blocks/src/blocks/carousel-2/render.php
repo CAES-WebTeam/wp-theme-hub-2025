@@ -24,7 +24,7 @@ if ($handSelectPosts) {
     $orderDirection = isset($orderParts[1]) ? strtoupper($orderParts[1]) : 'DESC'; // Default to 'DESC' if missing
 
     $queryArgs = array(
-        'post_type' => $postType,
+        'post_type' => !empty($categories) ? array('post', 'publications', 'shorthand_story') : $postType,
         'posts_per_page' => $numberOfPosts,
         'orderby' => $orderKey, // 'date' or 'title'
         'order' => $orderDirection, // 'ASC' or 'DESC'
@@ -33,7 +33,9 @@ if ($handSelectPosts) {
     // Handle category filtering
     if (!empty($categories)) {
         $queryArgs['category__in'] = $categories;
+        $queryArgs['post_type'] = array('post', 'publications', 'shorthand_story');
     }
+
 
     // Execute the query
     $query = new WP_Query($queryArgs);
@@ -55,24 +57,31 @@ if ($handSelectPosts) {
                 foreach ($selectedPosts as $postId) {
                     $post = get_post($postId);
                     if ($post) {
-                        // Post title
+                        // ACF fields (fastest via get_post_meta)
+                        $bgColorClass = get_post_meta($postId, 'carousel_caption_bg_color_override', true);
+                        $hideExcerpt = get_post_meta($postId, 'carousel_hide_excerpt', true);
+                
+                        // Post data
                         $postTitle = esc_html($post->post_title);
-                        // Post excerpt, truncated to 200 characters
                         $postExcerpt = esc_html(get_the_excerpt($postId));
-                        // $postExcerpt = mb_substr($postExcerpt, 0, 200);
-                        // if (mb_strlen($postExcerpt) === 200) {
-                        //     $postExcerpt .= '...';
-                        // }
-                        // Featured image
                         $postThumbnail = get_the_post_thumbnail_url($postId, 'full') ?: '';
-
+                
+                        // Build class for content wrapper
+                        $contentWrapperClasses = ['caes-hub-carousel-slide__content-wrapper'];
+                        if (!empty($bgColorClass) && strtolower($bgColorClass) !== 'none') {
+                            $classSlug = strtolower(str_replace(' ', '-', $bgColorClass));
+                            $contentWrapperClasses[] = 'bg-' . esc_attr($classSlug);
+                        }
+                
                         echo '<li class="caes-hub-carousel-slide">';
-                        echo '<div class="caes-hub-carousel-slide__content-wrapper">';
+                        echo '<div class="' . implode(' ', $contentWrapperClasses) . '">';
                         echo '<div class="caes-hub-carousel-slide__content">';
                         echo '<h2>';
                         echo '<a href="' . esc_url(get_permalink($postId)) . '">' . $postTitle . '</a>';
                         echo '</h2>';
-                        echo '<p>' . $postExcerpt . '</p>';
+                        if (!$hideExcerpt) {
+                            echo '<p>' . $postExcerpt . '</p>';
+                        }
                         echo '<div class="caes-hub-carousel-read-more is-style-caes-hub-arrow">Read more</div>';
                         echo '</div>';
                         echo '</div>';
@@ -80,6 +89,7 @@ if ($handSelectPosts) {
                         echo '</li>';
                     }
                 }
+                               
                 ?>
             </ul>
             <div class="caes-hub-carousel-controls-wrapper">
