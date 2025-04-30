@@ -1,0 +1,10 @@
+.wp-block-caes-hub-carousel-2 {
+    visibility: unset;
+    background-color: transparent;
+    min-height: 400px;
+    .caes-hub-carousel-preview {
+        max-width: 90%;
+        margin: 0 auto;
+        padding: var(--wp--preset--spacing--40);
+    }
+}
