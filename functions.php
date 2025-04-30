@@ -22,43 +22,38 @@ require get_template_directory() . '/block-variations/index.php';
 
 add_action('init', function () {
     if (!is_admin() && isset($_GET['trigger_save_posts']) && $_GET['trigger_save_posts'] == 1) {
-        $post_type = 'post';
 
-        $posts = get_posts([
+        $post_type = isset($_GET['post_type']) ? sanitize_key($_GET['post_type']) : 'post';
+
+        $start = isset($_GET['start_date']) ? DateTime::createFromFormat('mdY', $_GET['start_date']) : false;
+        $end   = isset($_GET['end_date']) ? DateTime::createFromFormat('mdY', $_GET['end_date']) : false;
+
+        $args = [
             'post_type'      => $post_type,
             'posts_per_page' => -1,
             'post_status'    => 'any',
             'fields'         => 'ids',
-        ]);
+        ];
+
+        if ($start && $end) {
+            $args['date_query'] = [
+                [
+                    'after'     => $start->format('Y-m-d'),
+                    'before'    => $end->format('Y-m-d'),
+                    'inclusive' => true,
+                ],
+            ];
+        }
+
+        $posts = get_posts($args);
 
         foreach ($posts as $post_id) {
             wp_update_post(['ID' => $post_id]);
         }
 
-        // Optional: show a simple message in the browser
-        echo count($posts) . " posts for '{$post_type}' were updated.";
-        exit;
-    }
-});
-
-
-add_action('init', function () {
-    if (!is_admin() && isset($_GET['trigger_save_pubs']) && $_GET['trigger_save_pubs'] == 1) {
-        $post_type = 'publications';
-
-        $posts = get_posts([
-            'post_type'      => $post_type,
-            'posts_per_page' => -1,
-            'post_status'    => 'any',
-            'fields'         => 'ids',
-        ]);
-
-        foreach ($posts as $post_id) {
-            wp_update_post(['ID' => $post_id]);
-        }
-
-        // Optional: show a simple message in the browser
-        echo count($posts) . " publications for '{$post_type}' were updated.";
+        echo count($posts) . " '{$post_type}' posts updated between " .
+             ($start ? $start->format('Y-m-d') : 'any') . " and " .
+             ($end ? $end->format('Y-m-d') : 'any') . ".";
         exit;
     }
 });
