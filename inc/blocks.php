@@ -31,6 +31,7 @@ function caes_hub_block_init()
 
 	// Register Carousel
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel' );
+	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel-2' );
 
 	// Register Table of Contents
 	register_block_type(get_template_directory() . '/blocks/build/blocks/toc-new' );
