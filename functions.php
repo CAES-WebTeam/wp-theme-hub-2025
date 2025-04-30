@@ -46,15 +46,38 @@ add_action('init', function () {
         }
 
         $posts = get_posts($args);
+        $updated = 0;
 
         foreach ($posts as $post_id) {
-            do_action('acf/save_post', $post_id);
-            clean_post_cache($post_id);
+            $updated_fields = [];
+
+            // Handle "authors" repeater
+            $authors = get_field('authors', $post_id);
+            if ($authors && is_array($authors)) {
+                foreach ($authors as $i => &$row) {
+                    $row['type'] = 'User';
+                }
+                update_field('authors', $authors, $post_id);
+                $updated_fields[] = 'authors';
+            }
+
+            // Handle "experts" repeater
+            $experts = get_field('experts', $post_id);
+            if ($experts && is_array($experts)) {
+                foreach ($experts as $i => &$row) {
+                    $row['type'] = 'User';
+                }
+                update_field('experts', $experts, $post_id);
+                $updated_fields[] = 'experts';
+            }
+
+            if (!empty($updated_fields)) {
+                clean_post_cache($post_id);
+                ++$updated;
+            }
         }
 
-        echo count($posts) . " '{$post_type}' posts passed through acf/save_post between " .
-             ($start ? $start->format('Y-m-d') : 'any') . " and " .
-             ($end ? $end->format('Y-m-d') : 'any') . ".";
+        echo "{$updated} '{$post_type}' posts had 'authors' and/or 'experts' type fields updated to 'User'.";
         exit;
     }
 });
