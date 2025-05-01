@@ -79,12 +79,24 @@ export default function Edit({ attributes, setAttributes }) {
 							});
 						}}
 					/>
+
+					{attributes.authorsAsSnippet && (
+						<TextControl
+							label={__("Prefix text before snippet", "caes-hub")}
+							value={attributes.snippetPrefix}
+							onChange={(val) => {
+								setAttributes({
+									snippetPrefix: val
+								});
+							}}
+						/>
+					)}
 				</PanelBody>
 			</InspectorControls>
 
 			{attributes.authorsAsSnippet ? (
 				// Comma-separated list of authors
-				<p className="pub-authors-snippet">Jane Doe, John Arbuckle</p>
+				<p className="pub-authors-snippet">Jane Doe and John Arbuckle</p>
 			) : (
 				// More expanded details
 				<div {...useBlockProps()}>
