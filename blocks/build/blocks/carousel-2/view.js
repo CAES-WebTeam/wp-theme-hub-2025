@@ -61,21 +61,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const controls = document.querySelector('.caes-hub-carousel-controls-wrapper');
     if (wrapper && content && controls) {
       const screenWidth = window.innerWidth;
-
-      // Always calculate distance from bottom of content to bottom of wrapper
       const wrapperBottom = wrapper.getBoundingClientRect().bottom;
       const contentBottom = content.getBoundingClientRect().bottom;
       const bottomDistance = wrapperBottom - contentBottom;
       const controlsHeight = controls.getBoundingClientRect().height;
       const controlsBottom = bottomDistance - controlsHeight - 10;
       if (screenWidth >= 1100 && screenWidth <= 1555) {
-        // Get wrapper width
         const wrapperWidth = wrapper.getBoundingClientRect().width;
         controls.style.right = 'unset';
         controls.style.bottom = '10px';
         controls.style.left = wrapperWidth + 10 + 'px';
       } else {
-        // Default: bottom-left inside the content box
         const wrapperLeft = wrapper.getBoundingClientRect().left;
         const contentLeft = content.getBoundingClientRect().left;
         const leftDistance = (wrapperLeft - contentLeft) * -1;
@@ -83,34 +79,23 @@ document.addEventListener('DOMContentLoaded', function () {
         controls.style.left = `${leftDistance}px`;
         controls.style.right = 'auto';
       }
-
-      // controls.style.bottom = `${controlsBottom}px`;
       controls.style.opacity = '1';
       controls.style.visibility = 'visible';
     }
   }
-
-  // Adjust height and controls positions after window loads
   window.addEventListener('load', () => {
     adjustCarouselHeight();
-    // adjustContentHeight();
     controlsDistance();
     carousel.classList.add('loaded');
-
-    // Fix for delayed layout shifts on mobile:
     setTimeout(() => {
       adjustCarouselHeight();
-      // adjustContentHeight();
       controlsDistance();
-    }, 100); // wait 100ms after load to remeasure
-
-    // Listen for any image inside the carousel loading
+    }, 100);
     const images = carousel.querySelectorAll('img');
     images.forEach(img => {
       if (!img.complete) {
         img.addEventListener('load', () => {
           adjustCarouselHeight();
-          // adjustContentHeight();
           controlsDistance();
         });
       }
@@ -118,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   window.addEventListener('resize', () => {
     adjustCarouselHeight();
-    // adjustContentHeight();
     controlsDistance();
   });
   pauseBtn.addEventListener('click', () => {
@@ -146,6 +130,21 @@ document.addEventListener('DOMContentLoaded', function () {
   carousel.querySelector('.caes-hub-carousel-slides').style.position = 'relative';
   showSlide(currentIndex);
   playAutoplay();
+
+  // Stop autoplay on mobile if carousel is mostly off screen
+  if (window.innerWidth < 784) {
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting && isPlaying) {
+          pauseAutoplay();
+        }
+      });
+    }, {
+      root: null,
+      threshold: 0.5 // At least 50% must be visible to keep playing
+    });
+    observer.observe(carousel);
+  }
 });
 
 //# sourceMappingURL=view.js.map
