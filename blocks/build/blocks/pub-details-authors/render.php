@@ -35,7 +35,8 @@ switch ($type) {
 
 // Ensure function is only defined once
 if (!function_exists('process_people')) {
-    function process_people($people, $asSnippet = false) {
+    function process_people($people, $asSnippet = false)
+    {
         $names = [];
         $output = '';
 
@@ -83,7 +84,23 @@ if (!function_exists('process_people')) {
             }
         }
 
-        return $asSnippet ? (!empty($names) ? '<p class="pub-authors-snippet">' . esc_html(implode(', ', $names)) . '</p>' : '') : $output;
+        if (!empty($names)) {
+            $formatted_names = '';
+            $count = count($names);
+
+            if ($count === 1) {
+                $formatted_names = $names[0];
+            } elseif ($count === 2) {
+                $formatted_names = $names[0] . ' and ' . $names[1];
+            } else {
+                $last = array_pop($names);
+                $formatted_names = implode(', ', $names) . ', and ' . $last;
+            }
+
+            return $asSnippet ? '<p class="pub-authors-snippet">' . esc_html($formatted_names) . '</p>' : $output;
+        } else {
+            return $asSnippet ? '' : $output;
+        }
     }
 }
 
@@ -102,4 +119,3 @@ if ($data) {
         echo '</div></div>';
     }
 }
-?>

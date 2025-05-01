@@ -63,12 +63,12 @@
             margin-bottom: var(--wp--style--block-gap) !important;
             margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
             clear: both;
-            &:first-child {
-                margin-left: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                float: none !important;
-            }
+            // &:first-child {
+            //     margin-left: 0 !important;
+            //     max-width: 100% !important;
+            //     width: 100% !important;
+            //     float: none !important;
+            // }
         }
 
         &.legacy-figure-left {
@@ -239,5 +239,11 @@
     height: auto;
     float: none !important;
     margin: 0 auto !important;
+
+        margin-left: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        float: none !important;
+
 }
 

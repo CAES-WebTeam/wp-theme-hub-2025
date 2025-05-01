@@ -104,6 +104,14 @@ function Edit({
               authorsAsSnippet: val
             });
           }
+        }), attributes.authorsAsSnippet && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Prefix text before snippet", "caes-hub"),
+          value: attributes.snippetPrefix,
+          onChange: val => {
+            setAttributes({
+              snippetPrefix: val
+            });
+          }
         })]
       })
     }), attributes.authorsAsSnippet ?
@@ -111,7 +119,7 @@ function Edit({
     // Comma-separated list of authors
     (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
       className: "pub-authors-snippet",
-      children: "Jane Doe, John Arbuckle"
+      children: "Jane Doe and John Arbuckle"
     }) :
     /*#__PURE__*/
     // More expanded details
