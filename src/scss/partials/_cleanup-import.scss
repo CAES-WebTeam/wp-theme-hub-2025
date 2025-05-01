@@ -50,6 +50,7 @@
             width: auto !important;
             caption-side: bottom;
             display: table-caption;
+
             &.legacy-table-caption {
                 caption-side: top;
                 text-align: center;
@@ -117,7 +118,7 @@
     // Legacy divs
     div.legacy-div {
         display: block !important;
-        
+
         &.right {
             float: right;
             clear: both;
@@ -138,6 +139,7 @@
 
         &.right,
         &.left {
+
             figure.legacy-figure,
             img.legacy-image {
                 float: unset !important;
@@ -151,6 +153,7 @@
             &.right {
                 margin-inline-end: 0 !important;
             }
+
             &.left {
                 margin-inline-start: 0 !important;
             }
@@ -166,7 +169,7 @@
                 max-width: 100% !important;
             }
         }
-        
+
     }
 
     /* Responsive tweaks */
@@ -221,11 +224,14 @@
     .legacy-dl {
         border: 1px solid var(--wp--preset--color--base-three);
         border-top: 0;
-        dt, dt p {
+
+        dt,
+        dt p {
             background: var(--wp--preset--color--base-two);
             font-weight: 600;
             padding: var(--wp--preset--spacing--20);
         }
+
         dd {
             margin: var(--wp--preset--spacing--20);
         }
@@ -235,15 +241,14 @@
 
 // First image in a story override
 
-.single-post .entry-content>figure:not([class^="wp-"]):has(img):first-child {
-    height: auto;
-    float: none !important;
-    margin: 0 auto !important;
+.single-post .classic-content-wrapper>figure.legacy-figure-right:not([class^="wp-"]):has(img):first-child {
+    margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    max-width: calc(100% + var(--wp--preset--spacing--70) * 2) !important;
+    width: calc(100% + var(--wp--preset--spacing--70) * 2) !important;
 
-        margin-left: 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        float: none !important;
-
+    @container caespost (max-width: 840px) {
+        margin-inline-end: 0 !important;
+        margin-inline-start: 0 !important;
+    }
 }
-
