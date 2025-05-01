@@ -334,3 +334,58 @@ add_action('admin_init', function () {
 
     wp_die("Processed records {$start} to " . ($start + $limit - 1) . ". Total posts updated: {$updated}");
 });
+
+
+// Assign Featured Iamge
+add_action('admin_init', function () {
+    if (!current_user_can('manage_options') || !isset($_GET['import_featured_images'])) return;
+
+    // Get batch controls
+    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
+    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
+
+    $all_posts = get_posts([
+        'post_type'      => 'post',
+        'post_status'    => 'any',
+        'fields'         => 'ids',
+        'orderby'        => 'ID',
+        'order'          => 'ASC',
+        'posts_per_page' => -1,
+    ]);
+
+    $batch_posts = array_slice($all_posts, $start, $limit);
+
+    $updated = 0;
+
+    foreach ($batch_posts as $post_id) {
+        $image_id  = get_field('image_id', $post_id);
+        $filename  = get_field('web_version_file_name', $post_id);
+
+        if (!$image_id || !$filename) continue;
+        if (has_post_thumbnail($post_id)) continue;
+
+        $image_url = "https://secure.caes.uga.edu/news/multimedia/images/{$image_id}/{$filename}";
+
+        $tmp = download_url($image_url);
+        if (is_wp_error($tmp)) {
+            continue;
+        }
+
+        $file_array = [
+            'name'     => basename($filename),
+            'tmp_name' => $tmp,
+        ];
+
+        $attachment_id = media_handle_sideload($file_array, $post_id);
+
+        if (is_wp_error($attachment_id)) {
+            @unlink($tmp);
+            continue;
+        }
+
+        set_post_thumbnail($post_id, $attachment_id);
+        $updated++;
+    }
+
+    wp_die("Processed posts {$start} to " . ($start + $limit - 1) . ". Featured images assigned: {$updated}");
+});
