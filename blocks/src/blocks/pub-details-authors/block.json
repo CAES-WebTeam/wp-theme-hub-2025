@@ -43,6 +43,10 @@
     "authorsAsSnippet": {
       "type": "boolean",
       "default": false
+    },
+    "snippetPrefix": {
+      "type": "string",
+      "default": ""
     }
   },
   "editorScript": "file:./index.js",

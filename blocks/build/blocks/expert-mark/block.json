@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/expert-mark",
+  "version": "0.1.0",
+  "title": "Expert Mark",
+  "category": "theme",
+  "icon": "block-default",
+  "description": "Displays our mark for verifying the expertise of the author.",
+  "example": {},
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "customWidth": {
+      "type": "string",
+      "default": "75px"
+    }
+  },
+  "textdomain": "expert-mark",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

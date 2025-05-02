@@ -556,3 +556,22 @@ add_action('enqueue_block_editor_assets', function () {
     ]);
 
 });
+
+// Add subtitle to publications title if it is used
+function append_subtitle_to_title($title, $id) {
+    if (is_admin()) {
+        return $title;
+    }
+    if (get_post_type($id) === 'publications') { 
+        $subtitle = get_post_meta($id, 'subtitle', true);
+        if (!empty($subtitle) && is_singular('publications')) {
+            $title .= ': <br/><span style="font-size:0.8em;display:inline-block;margin-top:var(--wp--preset--spacing--30)"
+>' . esc_html($subtitle) . '</span>';
+        } elseif (!empty($subtitle)) {
+            $title .= ': ' . esc_html($subtitle);
+        }
+    }
+
+    return $title;
+}
+add_filter('the_title', 'append_subtitle_to_title', 10, 2);

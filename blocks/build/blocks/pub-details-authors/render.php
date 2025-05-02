@@ -11,6 +11,7 @@ $authorsAsSnippet = $block['authorsAsSnippet'] ?? false;
 $showHeading = $block['showHeading'] ?? false;
 $customHeading = $block['customHeading'] ?? '';
 $type = $block['type'] ?? 'authors';
+$snippetPrefix = $block['snippetPrefix'] ?? '';
 
 // Get ACF fields
 $authors = get_field('authors', $post_id);
@@ -97,7 +98,7 @@ if (!function_exists('process_people')) {
                 $formatted_names = implode(', ', $names) . ', and ' . $last;
             }
 
-            return $asSnippet ? '<p class="pub-authors-snippet">' . esc_html($formatted_names) . '</p>' : $output;
+            return $asSnippet ? esc_html($formatted_names) : $output;
         } else {
             return $asSnippet ? '' : $output;
         }
@@ -107,7 +108,15 @@ if (!function_exists('process_people')) {
 // Generate output
 if ($data) {
     if ($authorsAsSnippet) {
-        echo process_people($data, true);
+        echo '<div ' . $attrs . '><p>';
+        $snippet_output = process_people($data, true);
+        if (!empty($snippet_output)) {
+            if (!empty($snippetPrefix)) {
+                $snippet_output = '<span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span>' . $snippet_output;
+            }
+            echo $snippet_output;
+        }
+        echo '</p></div>';
     } else {
         echo '<div ' . $attrs . '>';
         // Display heading if enabled

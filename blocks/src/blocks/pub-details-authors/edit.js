@@ -95,9 +95,16 @@ export default function Edit({ attributes, setAttributes }) {
 			</InspectorControls>
 
 			{attributes.authorsAsSnippet ? (
-				// Comma-separated list of authors
-				<p className="pub-authors-snippet">Jane Doe and John Arbuckle</p>
+				<div {...useBlockProps()}>
+					<p>
+						{attributes.snippetPrefix && (
+							<span className="pub-authors-snippet-prefix">{attributes.snippetPrefix} </span>
+						)}
+						Jane Doe and John Arbuckle
+					</p>
+				</div>
 			) : (
+
 				// More expanded details
 				<div {...useBlockProps()}>
 					{attributes.showHeading && (

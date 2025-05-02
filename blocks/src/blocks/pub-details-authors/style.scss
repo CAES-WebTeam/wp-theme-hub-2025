@@ -1,15 +1,23 @@
 .wp-block-caes-hub-pub-details-authors {
+    box-sizing: border-box;
+    p {
+        margin: 0;
+        font-weight: bold;
+    }
+
     .pub-authors-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: var(--wp--preset--spacing--50);
+
         .pub-author-name {
             font-size: var(--wp--preset--font-size--medium);
         }
+
         .pub-author-title {
             margin: 0;
         }
-    }    
+    }
 }
 
 @media screen and (max-width: 781px) {
