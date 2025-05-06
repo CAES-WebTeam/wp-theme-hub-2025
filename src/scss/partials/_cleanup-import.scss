@@ -25,6 +25,7 @@
         max-width: var(--wp--style--global--content-size);
         width: auto !important;
         font-size: 0;
+        margin: 0 auto;
 
         img.legacy-image {
             max-width: 100%;
@@ -118,6 +119,7 @@
     // Legacy divs
     div.legacy-div {
         display: block !important;
+        max-width: 100%;
 
         &.right {
             float: right;
@@ -161,6 +163,7 @@
         }
 
         @media (max-width: 768px) {
+
 
             &.right,
             &.left {
