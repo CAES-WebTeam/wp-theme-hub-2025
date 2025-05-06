@@ -97,7 +97,33 @@
                 {
                     "name": "Georgia",
                     "slug": "georgia",
-                    "fontFamily": "Georgia, serif"
+                    "fontFamily": "Georgia, serif",
+                    "fontFace": [
+                        {
+                            "fontFamily": "Georgia",
+                            "fontWeight": "400",
+                            "fontStyle": "normal",
+                            "src": "file:./assets/fonts/georgia-400-normal.woff2"
+                        },
+                        {
+                            "fontFamily": "Georgia",
+                            "fontWeight": "400",
+                            "fontStyle": "italic",
+                            "src": "file:./assets/fonts/Georgia-Italic.woff2"
+                        },
+                        {
+                            "fontFamily": "Georgia",
+                            "fontWeight": "700",
+                            "fontStyle": "normal",
+                            "src": "file:./assets/fonts/Georgia-Bold.woff2"
+                        },
+                        {
+                            "fontFamily": "Georgia",
+                            "fontWeight": "700",
+                            "fontStyle": "italic",
+                            "src": "file:./assets/fonts/Georgia-Bold-Italic.woff2"
+                        }
+                    ]
                 },
                 {
                     "name": "Oswald",
@@ -423,11 +449,11 @@
             "name": "landing-events",
             "title": "Events Landing Page"
         },
-        { 
+        {
             "name": "landing-publications",
             "title": "Publications Landing Page"
         },
-        { 
+        {
             "name": "single-publications",
             "title": "Single Publication"
         },
