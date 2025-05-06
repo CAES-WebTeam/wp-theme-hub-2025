@@ -320,13 +320,22 @@ figcaption a {
 // probably removing
 
 @media (max-width: 768px) {
+
     .alignright,
     .alignleft {
         float: none;
         width: 100%;
+
         img {
             width: 100% !important;
         }
+    }
+}
+
+/* Publications helper classes */
+@media (max-width: 768px) {
+    .caes-hub-content-toc-f-img {
+        flex-direction: column;
     }
 }
 
