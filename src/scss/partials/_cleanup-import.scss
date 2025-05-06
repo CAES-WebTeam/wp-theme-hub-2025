@@ -121,8 +121,8 @@
     // Legacy divs
     div.legacy-div {
         display: block !important;
-        max-width: 100% !important;
-        width: 100% !important;
+        // max-width: 100% !important;
+        // width: 100% !important;
         clear: both;
         margin: 0 auto;
         text-align: center;
@@ -245,6 +245,10 @@
         dd {
             margin: var(--wp--preset--spacing--20);
         }
+    }
+
+    .clear {
+        clear: both;
     }
 
 }
