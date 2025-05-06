@@ -112,7 +112,7 @@ if ($data) {
         $snippet_output = process_people($data, true);
         if (!empty($snippet_output)) {
             if (!empty($snippetPrefix)) {
-                $snippet_output = '<span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span>' . $snippet_output;
+                $snippet_output = '<span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span><br/>' . $snippet_output;
             }
             echo $snippet_output;
         }
@@ -121,7 +121,7 @@ if ($data) {
         echo '<div ' . $attrs . '>';
         // Display heading if enabled
         if ($showHeading) {
-            echo '<h2 class="pub-authors-heading is-style-caes-hub-full-underline">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
+            echo '<h2 class="pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
         }
         echo '<div class="pub-authors-grid">';
         echo process_people($data, false);

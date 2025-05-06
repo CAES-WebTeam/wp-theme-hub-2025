@@ -83,6 +83,15 @@ ul.is-style-caes-hub-list-checkbox {
     }
 }
 
+.has-olympic-background-color,
+.has-bulldog-red-background-color .has-contrast-background-color {
+    .is-style-caes-hub-section-heading {
+        &::after {
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+        }
+    }
+}
+
 // Another heading style that adds a full width underline
 .is-style-caes-hub-full-underline {
     border-bottom: 1px solid var(--wp--preset--color--base-three);
@@ -131,24 +140,27 @@ ul.is-style-caes-hub-list-checkbox {
 
 .is-style-caes-hub-hstripe {
     tbody tr:nth-child(2n+1) {
-		background-color: #eee;
-		background: rgba(204, 204, 204, .25);
-	}
+        background-color: #eee;
+        background: rgba(204, 204, 204, .25);
+    }
 }
 
 .is-style-caes-hub-vstripe {
-    td, th {
+
+    td,
+    th {
         border-color: #0000;
     }
+
     tbody td:nth-child(2n+1) {
-		background-color: var(--wp--preset--color--base-two);
-		background: var(--wp--preset--color--base-three);
-	}
+        background-color: var(--wp--preset--color--base-two);
+        background: var(--wp--preset--color--base-three);
+    }
 }
 
 .is-style-caes-hub-vstripe-border {
     tbody td:nth-child(2n+1) {
-		background-color: var(--wp--preset--color--base-two);
-		background: var(--wp--preset--color--base-three);
-	}
+        background-color: var(--wp--preset--color--base-two);
+        background: var(--wp--preset--color--base-three);
+    }
 }

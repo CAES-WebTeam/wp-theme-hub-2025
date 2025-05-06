@@ -8,6 +8,10 @@
 
 /* General Overrides */
 
+html {
+    scroll-behavior: smooth;
+}
+
 figcaption a {
     color: inherit;
 }

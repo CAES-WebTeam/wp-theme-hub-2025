@@ -98,7 +98,7 @@ export default function Edit({ attributes, setAttributes }) {
 				<div {...useBlockProps()}>
 					<p>
 						{attributes.snippetPrefix && (
-							<span className="pub-authors-snippet-prefix">{attributes.snippetPrefix} </span>
+							<><span className="pub-authors-snippet-prefix">{attributes.snippetPrefix} </span><br/></>
 						)}
 						Jane Doe and John Arbuckle
 					</p>
@@ -108,7 +108,7 @@ export default function Edit({ attributes, setAttributes }) {
 				// More expanded details
 				<div {...useBlockProps()}>
 					{attributes.showHeading && (
-						<h2 className="pub-authors-heading is-style-caes-hub-full-underline">
+						<h2 className="pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size">
 							{/* If custom heading is set, use that, otherwise use default */}
 							{attributes.customHeading || (attributes.type === "translators" ? "Translators" : (attributes.type === "sources" ? "Sources" : "Authors"))}
 						</h2>

@@ -12,7 +12,6 @@
     "renderTemplate": "./render.php"
   },
   "supports": {
-    "anchor": true,
     "color": {
       "background": true,
       "text": true

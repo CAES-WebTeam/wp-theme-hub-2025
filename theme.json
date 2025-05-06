@@ -3,7 +3,7 @@
     "version": 3,
     "settings": {
         "layout": {
-            "contentSize": "40.625rem",
+            "contentSize": "42.5rem",
             "wideSize": "60rem"
         },
         "spacing": {

@@ -234,3 +234,5 @@ classicWrapper.querySelectorAll("h2").forEach((h2) => {
 
 // Recheck for responsive tables on window resize
 window.addEventListener('resize', handleOverflowScroll);
+
+/** End legacy content cleanup */

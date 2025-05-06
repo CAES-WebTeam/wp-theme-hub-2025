@@ -12,7 +12,8 @@ import { __ } from '@wordpress/i18n';
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
 
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -30,9 +31,39 @@ import './editor.scss';
  *
  * @return {Element} Element to render.
  */
-export default function Edit() {
+export default function Edit({ attributes, setAttributes }) {
 	return (
 		<>
+			<InspectorControls>
+				<PanelBody>
+					<ToggleControl
+						label={__("Display as information block", "caes-hub")}
+						checked={attributes.displayAsInfo}
+						onChange={(val) => {
+							setAttributes({
+								displayAsInfo: val,
+								showTooltip: val ? false : attributes.showTooltip,
+								link: val ? "" : attributes.link,
+							});
+						}}
+						help={__("Displays info about what the pub number means", "caes-hub")}
+					/>
+					<ToggleControl
+						label={__("Show tooltip", "caes-hub")}
+						checked={attributes.showTooltip}
+						onChange={(val) => setAttributes({ showTooltip: val })}
+						disabled={attributes.displayAsInfo}
+						help={__("Show the tooltip on hover", "caes-hub")}
+					/>
+					<TextControl
+						label={__("Link", "caes-hub")}
+						value={attributes.link}
+						onChange={(val) => setAttributes({ link: val })}
+						disabled={attributes.displayAsInfo}
+						help={__("URL to the explanation of the publication number", "caes-hub")}
+					/>
+				</PanelBody>
+			</InspectorControls>
 			<p {...useBlockProps()}>AB 1234</p>
 		</>
 	);

@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, __experimentalUnitControl as UnitControl } from '@wordpress/components';
+import { PanelBody, __experimentalUnitControl as UnitControl, TextControl } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -45,6 +45,18 @@ const Edit = ({ attributes, setAttributes }) => {
 		<>
 			<InspectorControls>
 				<PanelBody>
+					<TextControl
+						label={__("Tooltip", "caes-hub")}
+						value={attributes.tooltip}
+						onChange={(val) => setAttributes({ tooltip: val })}
+						help={__("Tooltip text", "caes-hub")}
+					/>
+					<TextControl
+						label={__("Link", "caes-hub")}
+						value={attributes.link}
+						onChange={(val) => setAttributes({ link: val })}
+						help={__("URL to the explanation of the mark", "caes-hub")}
+					/>
 					<UnitControl
 						label={__("Custom width", "caes-hub")}
 						value={attributes.customWidth}

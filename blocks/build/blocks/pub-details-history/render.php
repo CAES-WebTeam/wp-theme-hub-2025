@@ -28,7 +28,7 @@ $status_labels = [
 // Check if history is set
 if ($history) {
     echo '<div ' . $attrs . '>';
-    echo '<h2 class="wp-block-heading is-style-caes-hub-full-underline">Status and Revision History</h2>';
+    echo '<h2 class="wp-block-heading is-style-caes-hub-section-heading has-x-large-font-size">Status and Revision History</h2>';
 
     echo '<ul class="is-style-caes-hub-list-none">';
     // Loop through history

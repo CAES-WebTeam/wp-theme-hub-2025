@@ -15,11 +15,20 @@
 		"customWidth": {
 			"type": "string",
 			"default": "75px"
+		},
+		"link": {
+			"type": "string",
+			"default": "#"
+		},
+		"tooltip": {
+			"type": "string",
+			"default": "This content is written and reviewed by certified experts."
 		}
 	},
 	"textdomain": "expert-mark",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
-	"render": "file:./render.php"
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
 }

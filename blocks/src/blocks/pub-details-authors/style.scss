@@ -1,8 +1,18 @@
 .wp-block-caes-hub-pub-details-authors {
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--wp--preset--spacing--30);
+
+    h2 {
+        margin: 0;
+    }
+
     p {
         margin: 0;
-        font-weight: bold;
+        .pub-authors-snippet-prefix {
+            font-size: 0.9em;
+        }
     }
 
     .pub-authors-grid {

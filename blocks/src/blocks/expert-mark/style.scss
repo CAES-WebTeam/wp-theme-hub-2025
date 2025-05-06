@@ -1,14 +1,62 @@
-/**
- * The following styles get applied both on the front of your site
- * and in the editor.
- *
- * Replace them with your own styles or remove the file completely.
- */
+.wp-block-caes-hub-expert-mark {
+    display: flex;
+    align-content: center;
+    flex-wrap: wrap;
 
- .wp-block-caes-hub-expert-mark {
-	display: inline-block;
-    line-height: 1;
     img {
         max-width: 100%;
     }
+
+    .tooltip-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .tooltip {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--wp--preset--color--olympic);
+        color: var(--wp--preset--color--base);
+        font-size: var(--wp--preset--font-size--small);
+        padding: var(--wp--preset--spacing--30);
+        line-height: 1.2;
+        text-align: center;
+        border-radius: 3px;
+        width: 250px;
+        z-index: 1000;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.2s ease;
+        box-shadow: var(--wp--preset--shadow--small);
+    }
+
+    .tooltip:not(.visible) {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .tooltip::after {
+        content: '';
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 6px;
+        border-style: solid;
+        border-color: transparent transparent var(--wp--preset--color--olympic) transparent;
+    }
+
+    .tooltip-trigger {
+        display: flex;
+    }
+
+}
+
+@media (max-width: 782px) {
+	.wp-block-caes-hub-expert-mark .tooltip {
+		display: none !important;
+	}
 }
