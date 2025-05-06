@@ -158,6 +158,7 @@ figcaption a {
     .caes-hub-nav {
         margin: 0;
         flex-direction: row;
+        align-items: center;
     }
 
     .caes-hub-sidebar-top {
@@ -246,7 +247,7 @@ figcaption a {
 
 // Print view
 @media print {
-    .caes-hub-content-footer {
+    .caes-hub-footers, .caes-hub-content-footer {
         display: none !important;
     }
 }
