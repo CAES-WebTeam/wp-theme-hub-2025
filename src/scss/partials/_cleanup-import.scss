@@ -26,6 +26,7 @@
         width: auto !important;
         font-size: 0;
         margin: 0 auto;
+        clear: both;
 
         img.legacy-image {
             max-width: 100%;
@@ -114,12 +115,14 @@
     img.legacy-image {
         max-width: 100%;
         height: auto;
+        clear: both;
     }
 
     // Legacy divs
     div.legacy-div {
         display: block !important;
         max-width: 100%;
+        clear: both;
 
         &.right {
             float: right;
