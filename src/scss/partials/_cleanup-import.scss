@@ -516,7 +516,7 @@
 
     .align-right,
     .align-left {
-        max-width: 50%;
+        max-width: calc(50% - (var(--wp--preset--spacing--70) * 2) - var(--wp--style--block-gap));
     }
 
     .align-left {
@@ -532,6 +532,17 @@
         margin-bottom: var(--wp--style--block-gap) !important;
         margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
+
+    @container caespost (max-width: 840px) {
+        .align-right {
+            margin-inline-end: 0 !important;
+        }
+
+        .align-left {
+            margin-inline-start: 0 !important;
+        }
+    }
+
 
 }
 
