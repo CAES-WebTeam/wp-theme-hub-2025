@@ -418,7 +418,7 @@
 
     }
 
-    figure.image {
+    figure.image, figure {
 
         display: inline-block;
         clear: both;
@@ -483,7 +483,7 @@
         clear: both;
     }
 
-    figure.image {
+    figure.image, figure {
 
         &.image-center,
         &.align-center {
