@@ -427,11 +427,13 @@
         &.align-left {
             float: left;
             margin: 0 var(--wp--style--block-gap) 0 0;
+            margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         }
 
         &.align-right {
             float: right;
             margin: 0 0 0 var(--wp--style--block-gap);
+            margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
         }
 
         &.image-center,
@@ -492,6 +494,15 @@
     }
 
 }
+
+.single-post {
+    .align-right,
+    .align-left {
+        max-width: 50%;
+    }
+}
+
+/** End fixing legacy content */
 
 // OLD STUFF I MAY ADD BACK IF THE ABOVE DOESN'T WORK -AW
 
