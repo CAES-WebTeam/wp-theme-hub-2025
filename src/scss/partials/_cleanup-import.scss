@@ -517,13 +517,15 @@
 
     .align-left {
         float: left;
-        margin: 0 var(--wp--style--block-gap) 0 0;
+        margin-right: var(--wp--style--block-gap) !important;
+        margin-bottom: var(--wp--style--block-gap) !important;
         margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
 
     .align-right {
         float: right;
-        margin: 0 0 0 var(--wp--style--block-gap);
+        margin-left: var(--wp--style--block-gap) !important;
+        margin-bottom: var(--wp--style--block-gap) !important;
         margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
 
