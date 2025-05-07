@@ -499,7 +499,10 @@
 
     .entry-content {
         & > .align-right:first-child {
-            max-width: 100%;
+            max-width: var(--wp--style--global--content-size);
+            img {
+                width: 100%;
+            }
         }
     }
 
