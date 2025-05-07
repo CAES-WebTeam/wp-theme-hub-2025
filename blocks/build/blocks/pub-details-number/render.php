@@ -8,23 +8,42 @@ $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 $tooltip = '';
 $pubType = '';
+$description = '';
+
 if ($pubNumber) {
+    $prefix = strtoupper(substr($pubNumber, 0, 2));
     $firstChar = strtoupper(substr($pubNumber, 0, 1));
-    switch ($firstChar) {
-        case 'B':
-            $tooltip = 'This is a bulletin.';
-            $pubType = 'Bulletin';
-            $description = 'Bulletins represent a major writing effort and cover a broad subject area. They address individual topics in a particular discipline for a specific commodity.';
+
+    switch ($prefix) {
+        case 'AP':
+            $tooltip = 'This is an annual publication. Learn more by clicking the publication number.';
+            $pubType = 'Annual Publication';
+            $description = 'Annual publications address a comprehensive issue and are updated each year. These are typically large handbooks or commodity reports.';
             break;
-        case 'C':
-            $tooltip = 'This is a circular.';
-            $pubType = 'Circular';
-            $description = 'Circulars are more focused than Bulletins and will discuss one subject in a limited form.';
+        case 'TP':
+            $tooltip = 'This is a temporary publication. Learn more by clicking the publication number.';
+            $pubType = 'Temporary Publication';
+            $description = 'Temporary publications are issue- or event-related and require immediate dissemination to the public. These are only available on the UGA Extension website for three months.';
             break;
+        // Add more 2-character prefixes here if needed
         default:
-            $tooltip = 'This is a general publication.';
-            $pubType = 'general publication';
-            $description = 'This is where the text for this type will go.';
+            switch ($firstChar) {
+                case 'B':
+                    $tooltip = 'This is a bulletin. Learn more by clicking the publication number.';
+                    $pubType = 'Bulletin';
+                    $description = 'Bulletins represent a major writing effort and cover a broad subject area. They address individual topics in a particular discipline for a specific commodity.';
+                    break;
+                case 'C':
+                    $tooltip = 'This is a circular. Learn more by clicking the publication number.';
+                    $pubType = 'Circular';
+                    $description = 'Circulars are more focused than Bulletins and will discuss one subject in a limited form.';
+                    break;
+                default:
+                    $tooltip = 'This is a general publication.';
+                    $pubType = 'general publication';
+                    $description = 'This is where the text for this type will go.';
+                    break;
+            }
             break;
     }
 }
