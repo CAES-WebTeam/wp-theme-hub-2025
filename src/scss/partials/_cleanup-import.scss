@@ -496,6 +496,13 @@
 }
 
 .single-post {
+
+    .entry-content {
+        & > .align-right:first-child {
+            max-width: 100%;
+        }
+    }
+
     .align-right,
     .align-left {
         max-width: 50%;
@@ -511,6 +518,7 @@
         margin: 0 0 0 var(--wp--style--block-gap);
         margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
+
 }
 
 /** End fixing legacy content */
