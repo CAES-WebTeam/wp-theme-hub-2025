@@ -418,7 +418,8 @@
 
     }
 
-    figure.image, figure {
+    figure.image,
+    figure {
 
         display: inline-block;
         clear: both;
@@ -485,7 +486,8 @@
         clear: both;
     }
 
-    figure.image, figure {
+    figure.image,
+    figure {
 
         &.image-center,
         &.align-center {
@@ -498,12 +500,14 @@
 .single-post {
 
     .entry-content {
-        & > .align-right:first-child {
+        &>.align-right:first-child {
             float: unset;
             max-width: var(--wp--style--global--content-size);
-            margin: 0 auto;
+            margin: 0 auto !important;
             margin-inline-end: unset;
             margin-inline-start: unset;
+            margin-left: auto !important;
+
             img {
                 width: 100%;
             }
