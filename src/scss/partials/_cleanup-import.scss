@@ -538,6 +538,12 @@
         .align-right {
             max-width: 100%;
         }
+        .align-left {
+            margin-inline-start: 0;
+        }
+        .align-right {
+            margin-inline-end: 0;
+        }
     }
 
 }
