@@ -5,9 +5,16 @@
  * Replace them with your own styles or remove the file completely.
  */
 
- .wp-block-caes-hub-content-brand {
-	display: inline-block;
+.wp-block-caes-hub-content-brand {
+    display: inline-block;
+
     img {
         max-width: 100%;
+    }
+}
+
+@media print {
+    .wp-block-caes-hub-content-brand {
+        max-width: 280px !important;
     }
 }

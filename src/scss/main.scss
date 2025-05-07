@@ -340,6 +340,15 @@ figcaption a {
     }
 }
 
+/* White font color should be black on print */
+
+@media print {
+    a,
+    .has-base-color {
+        color: var(--wp--preset--color--contrast) !important;
+    }
+}
+
 /* Additional Styles */
 
 @import 'blocks/_custom-block-styles.scss';

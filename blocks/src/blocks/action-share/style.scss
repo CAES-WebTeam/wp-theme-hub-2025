@@ -1,3 +1,9 @@
+@media (min-width: 782px) {
+    .wp-block-caes-hub-action-share {
+        margin-left: auto !important;
+    }
+}
+
 .caes-hub-copy-url__container {
     position: relative;
     display: flex;
@@ -19,7 +25,8 @@
 .caes-hub-copy-url__tooltip {
     position: absolute;
     left: 0;
-    top: -25px; /* Adjust as needed */
+    top: -25px;
+    /* Adjust as needed */
     background-color: #333;
     color: #fff;
     padding: 5px;
@@ -29,5 +36,6 @@
     display: none;
     white-space: nowrap;
     text-align: center;
-    pointer-events: none; /* Prevent interaction with the tooltip */
+    pointer-events: none;
+    /* Prevent interaction with the tooltip */
 }

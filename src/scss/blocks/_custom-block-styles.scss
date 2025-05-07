@@ -84,10 +84,26 @@ ul.is-style-caes-hub-list-checkbox {
 }
 
 .has-olympic-background-color,
-.has-bulldog-red-background-color .has-contrast-background-color {
+.has-bulldog-red-background-color,
+.has-contrast-background-color {
     .is-style-caes-hub-section-heading {
         &::after {
             border-top: 1px solid rgba(255, 255, 255, 0.8);
+        }
+    }
+}
+
+@media print {
+
+    .has-olympic-background-color,
+    .has-bulldog-red-background-color,
+    .has-contrast-background-color {
+        background-color: transparent !important;
+    }
+
+    .is-style-caes-hub-section-heading {
+        &::after {
+            border-top: 1px solid var(--wp--preset--color--contrast-two) !important;
         }
     }
 }
@@ -162,5 +178,21 @@ ul.is-style-caes-hub-list-checkbox {
     tbody td:nth-child(2n+1) {
         background-color: var(--wp--preset--color--base-two);
         background: var(--wp--preset--color--base-three);
+    }
+}
+
+// GROUPS
+
+@media print {
+    .wp-block-group.has-background {
+        padding: 0 !important;
+    }
+}
+
+// POST TERMS
+
+@media print {
+    .wp-block-post-terms.has-background {
+        padding: 0 !important;
     }
 }

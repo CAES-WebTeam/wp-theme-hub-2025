@@ -1,0 +1,1 @@
+{"version":3,"file":"blocks/action-pdf/style-index.css","mappings":";;;AAAA,yBACI,8BACI,0BACN,CACF,C","sources":["webpack://theme-blocks/./src/blocks/action-pdf/style.scss"],"sourcesContent":["@media (min-width: 782px) {\n    .wp-block-caes-hub-action-pdf {\n        margin-left: auto !important;\n    }\n}"],"names":[],"sourceRoot":""}
