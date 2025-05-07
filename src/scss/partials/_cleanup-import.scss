@@ -499,7 +499,11 @@
 
     .entry-content {
         & > .align-right:first-child {
+            float: unset;
             max-width: var(--wp--style--global--content-size);
+            margin: 0 auto;
+            margin-inline-end: unset;
+            margin-inline-start: unset;
             img {
                 width: 100%;
             }
