@@ -82,9 +82,13 @@ figcaption a {
     .caes-hub-content-post .align-left,
     .caes-hub-content-post .align-right {
         max-width: 100%;
+        width: 100%;
         margin: 0 auto !important;
         margin-top: var(--wp--style--block-gap) !important;
         margin-bottom: var(--wp--style--block-gap) !important;
+        img {
+            width: 100%;
+        }
     }
 
     .caes-hub-content-post figure.alignleft,
