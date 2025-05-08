@@ -553,10 +553,12 @@
 
     .align-left {
         margin-inline-start: 0;
+        margin-left: 0 !important;
     }
 
     .align-right {
         margin-inline-end: 0;
+        margin-right: 0 !important;
     }
 }
 
