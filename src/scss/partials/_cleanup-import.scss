@@ -543,7 +543,9 @@
 
 @container caespost (max-width: 840px) {
 
+    .single-post .align-left,
     .align-left,
+    .single-post .align-right,
     .align-right {
         max-width: 100%;
         margin: 0 auto !important;
@@ -551,12 +553,14 @@
         margin-bottom: var(--wp--style--block-gap) !important;
     }
 
-    .align-left {
+    .align-left,
+    .single-post .align-left {
         margin-inline-start: 0;
         margin-left: 0 !important;
     }
 
-    .align-right {
+    .align-right,
+    .single-post .align-right {
         margin-inline-end: 0;
         margin-right: 0 !important;
     }
