@@ -436,3 +436,48 @@ function wrap_classic_content( $content ) {
     return $content;
 }
 add_filter( 'the_content', 'wrap_classic_content' );
+
+// Saved Post AJAX
+add_action('wp_enqueue_scripts', function() {
+  wp_register_script('saved-posts-helper', false);
+  wp_enqueue_script('saved-posts-helper');
+
+  wp_localize_script('saved-posts-helper', 'SavedPostsVars', [
+    'ajaxUrl' => admin_url('admin-ajax.php'),
+  ]);
+});
+
+add_action('wp_ajax_nopriv_get_saved_posts', 'get_saved_posts_callback');
+add_action('wp_ajax_get_saved_posts', 'get_saved_posts_callback');
+
+function get_saved_posts_callback() {
+    if (empty($_GET['ids'])) {
+        echo '<p>No saved posts.</p>';
+        wp_die();
+    }
+
+    $output = '';
+
+    foreach ($_GET['ids'] as $post_type => $ids) {
+        $ids = array_map('intval', (array)$ids);
+        if (empty($ids)) continue;
+
+        $posts = get_posts([
+            'post_type' => $post_type,
+            'post__in' => $ids,
+            'orderby' => 'post__in',
+            'posts_per_page' => -1,
+        ]);
+
+        if ($posts) {
+            $output .= '<h2>' . ucfirst($post_type) . '</h2><ul>';
+            foreach ($posts as $post) {
+                $output .= '<li><a href="' . get_permalink($post) . '">' . esc_html(get_the_title($post)) . '</a></li>';
+            }
+            $output .= '</ul>';
+        }
+    }
+
+    echo $output ?: '<p>No matching saved posts found.</p>';
+    wp_die();
+}
