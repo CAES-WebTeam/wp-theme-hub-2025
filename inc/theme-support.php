@@ -438,6 +438,15 @@ function wrap_classic_content( $content ) {
 add_filter( 'the_content', 'wrap_classic_content' );
 
 // Saved Post AJAX
+add_action('wp_enqueue_scripts', function() {
+  wp_register_script('saved-posts-helper', false);
+  wp_enqueue_script('saved-posts-helper');
+
+  wp_localize_script('saved-posts-helper', 'SavedPostsVars', [
+    'ajaxUrl' => admin_url('admin-ajax.php'),
+  ]);
+});
+
 add_action('wp_ajax_nopriv_get_saved_posts', 'get_saved_posts_callback');
 add_action('wp_ajax_get_saved_posts', 'get_saved_posts_callback');
 
