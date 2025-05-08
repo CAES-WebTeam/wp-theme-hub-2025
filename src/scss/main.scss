@@ -66,11 +66,13 @@ figcaption a {
 .caes-hub-content-post .align-right {
     float: right;
     margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    margin-left: var(--wp--style--block-gap) !important;
 }
 
 .caes-hub-content-post .align-left {
     float: left;
     margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    margin-right: var(--wp--style--block-gap) !important;
 }
 
 @container caespost (max-width: 631px) {
