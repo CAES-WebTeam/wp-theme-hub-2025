@@ -516,21 +516,21 @@
 
     .align-right,
     .align-left {
-        max-width: calc(50% - (var(--wp--preset--spacing--70) * 2) - var(--wp--style--block-gap));
+        // max-width: calc(50% - (var(--wp--preset--spacing--70) * 2) - var(--wp--style--block-gap));
     }
 
     .align-left {
-        float: left;
-        margin-right: var(--wp--style--block-gap) !important;
-        margin-bottom: var(--wp--style--block-gap) !important;
-        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        // float: left;
+        // margin-right: var(--wp--style--block-gap) !important;
+        // margin-bottom: var(--wp--style--block-gap) !important;
+        // margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
 
     .align-right {
-        float: right;
-        margin-left: var(--wp--style--block-gap) !important;
-        margin-bottom: var(--wp--style--block-gap) !important;
-        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+        // float: right;
+        // margin-left: var(--wp--style--block-gap) !important;
+        // margin-bottom: var(--wp--style--block-gap) !important;
+        // margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     }
 
     @container caespost (max-width: 840px) {
@@ -538,6 +538,8 @@
         .align-right {
             max-width: 100%;
             margin: 0 auto !important;
+            margin-top: var(--wp--style--block-gap) !important;
+            margin-bottom: var(--wp--style--block-gap) !important;
         }
         .align-left {
             margin-inline-start: 0;
