@@ -255,3 +255,31 @@ document.addEventListener('DOMContentLoaded', function () {
 window.addEventListener('resize', handleOverflowScroll);
 
 /** End legacy content cleanup */
+
+// Saved Posts
+document.addEventListener('DOMContentLoaded', function () {
+  const saveButtons = document.querySelectorAll('.btn-save');
+
+  saveButtons.forEach(button => {
+    button.addEventListener('click', function () {
+      const postId = this.getAttribute('data-id');
+      const postType = this.getAttribute('data-type');
+			
+      let saved = JSON.parse(localStorage.getItem('savedPosts')) || {};
+			
+      if (!saved[postType]) saved[postType] = [];
+
+      // Toggle save/remove
+      if (saved[postType].includes(postId)) {
+        saved[postType] = saved[postType].filter(id => id !== postId);
+        this.classList.remove('saved');
+      } else {
+        saved[postType].push(postId);
+        this.classList.add('saved');
+      }
+
+      // Save back to localStorage
+      localStorage.setItem('savedPosts', JSON.stringify(saved));
+    });
+  });
+});
