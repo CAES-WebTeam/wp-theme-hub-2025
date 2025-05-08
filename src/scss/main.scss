@@ -75,7 +75,7 @@ figcaption a {
     margin-right: var(--wp--style--block-gap) !important;
 }
 
-@container caespost (max-width: 631px) {
+@container caespost (max-width: 1150px) {
 
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post figure.alignright,
@@ -101,7 +101,7 @@ figcaption a {
 
 }
 
-@container caesfimg (max-width: 631px) {
+@container caesfimg (max-width: 1150px) {
     .caes-hub-content-f-img figure.alignleft {
         margin-inline-start: 0;
     }
