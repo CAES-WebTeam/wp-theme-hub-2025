@@ -502,7 +502,7 @@
     .entry-content {
         &>.align-right:first-child {
             float: unset;
-            max-width: var(--wp--style--global--content-size);
+            max-width: var(--wp--style--global--wide-size);
             margin: 0 auto !important;
             margin-inline-end: unset;
             margin-inline-start: unset;
