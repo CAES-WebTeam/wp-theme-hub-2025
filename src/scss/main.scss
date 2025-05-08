@@ -75,7 +75,7 @@ figcaption a {
     margin-right: var(--wp--style--block-gap) !important;
 }
 
-@container caespost (max-width: 1150px) {
+@media screen and (max-width: 1150px) {
 
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post figure.alignright,
