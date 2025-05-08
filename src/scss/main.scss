@@ -79,6 +79,12 @@ figcaption a {
         margin-inline-end: 0;
         margin-right: 0 !important;
     }
+
+    .caes-hub-content-post .align-right,
+    .caes-hub-content-post .align-left {
+        max-width: calc(var(--wp--style--global--content-size) / 2);
+    }
+
 }
 
 @container caesfimg (max-width: 631px) {
