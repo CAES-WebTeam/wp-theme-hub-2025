@@ -575,3 +575,267 @@ function append_subtitle_to_title($title, $id) {
     return $title;
 }
 add_filter('the_title', 'append_subtitle_to_title', 10, 2);
+
+// Get all the unqiue authors from publications
+function get_unique_author_users_from_publications() {
+    $user_ids = [];
+
+    $posts = get_posts([
+        'post_type'      => 'publications',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'fields'         => 'ids',
+    ]);
+
+    foreach ($posts as $post_id) {
+        if (have_rows('authors', $post_id)) {
+            while (have_rows('authors', $post_id)) {
+                the_row();
+                $user = get_sub_field('user');
+
+                if (is_array($user) && isset($user['ID'])) {
+                    $user_ids[] = $user['ID'];
+                } elseif (is_numeric($user)) {
+                    $user_ids[] = (int) $user;
+                }
+            }
+        }
+    }
+
+    $unique_ids = array_unique($user_ids);
+
+    $users = array_map('get_userdata', $unique_ids);
+
+    // Sort by last name
+    usort($users, function ($a, $b) {
+        return strcasecmp($a->last_name, $b->last_name);
+    });
+
+    return $users;
+}
+
+
+// Create Publications Search form
+function publications_search_form() {
+    $keywords = get_terms(array(
+        'taxonomy' => 'keywords',
+        'hide_empty' => false,
+    ));
+    $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
+
+    ob_start(); ?>
+    <form method="get" action="<?php echo esc_url(home_url('/publications-results/')); ?>" class="publications-search-form">
+        <div class="wp-block-search__inside-wrapper ">
+            <input class="wp-block-search__input" id="wp-block-search__input-2" placeholder="Search Here" value="<?php echo $search; ?>" type="search" name="q"><button aria-label="Search" class="wp-block-search__button wp-element-button" type="submit">Search</button>
+        </div>
+        <div style="display:flex; gap:20px; margin-top:25px;">
+            <div>
+                <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#keywordsModal"><strong>Keywords</strong></a></div>
+                <div id="keywordsModal" class="modal">
+                  <div class="modal-content">
+                    <a href="#" class="close">&times;</a>
+                    <h3 style="margin:0 0 5px;">Keywords</h3>
+                    <div class="scroller">
+                    <?php foreach ($keywords as $term): ?>
+                    <label><input type="checkbox" name="keywords[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['keywords']) && in_array($term->slug, $_GET['keywords'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></label><br>
+                    <?php endforeach; ?>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <div>
+                <?php $authors = get_unique_author_users_from_publications(); ?>
+                <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#authorsModal"><strong>Authors</strong></a></div>
+                <div id="authorsModal" class="modal">
+                  <div class="modal-content">
+                    <a href="#" class="close">&times;</a>
+                    <h3 style="margin:0 0 5px;">Authors</h3>
+                    <div class="scroller">
+                    <?php foreach ($authors as $user): ?>
+                      <label><input type="checkbox" name="authors[]" value="<?php echo esc_attr($user->ID); ?>" <?php if (!empty($_GET['authors']) && in_array($user->ID, $_GET['authors'])) echo 'checked'; ?>> <?php echo esc_html($user->last_name); ?>, <?php echo esc_html($user->first_name); ?></label>
+                    <?php endforeach; ?>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <div>
+                <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#languageModal"><strong>Language</strong></a></div>
+                <div id="languageModal" class="modal">
+                  <div class="modal-content">
+                    <a href="#" class="close">&times;</a>
+                    <h3 style="margin:0 0 5px;">Language</h3>
+                    <label><input type="checkbox" name="language[]" value="1" <?php if (!empty($_GET['language']) && in_array(1, $_GET['language'])) echo 'checked'; ?>> English</label>
+                    <label><input type="checkbox" name="language[]" value="2" <?php if (!empty($_GET['language']) && in_array(2, $_GET['language'])) echo 'checked'; ?>>Spanish</label>
+                    <label><input type="checkbox" name="language[]" value="3" <?php if (!empty($_GET['language']) && in_array(3, $_GET['language'])) echo 'checked'; ?>> Chinese</label>
+                    <label><input type="checkbox" name="language[]" value="4" <?php if (!empty($_GET['language']) && in_array(4, $_GET['language'])) echo 'checked'; ?>> Other</label>
+                  </div>
+                </div>
+            </div>
+        </div>
+        <style>
+        .wp-block-search__inside-wrapper { display: flex; flex: auto; flex-wrap: nowrap; max-width: 100%; }
+        .wp-block-search__input { appearance: none; border: 1px solid #949494; flex-grow: 1; margin-left: 0; margin-right: 0; min-width: 3rem; padding: 8px; text-decoration: unset!important; }   
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 999; }
+        .modal:target { opacity: 1; pointer-events: auto; }
+        .modal-content { position: relative; margin: 10% auto; padding: 20px; background: #fff; width: 90%; max-width: 400px; height:400px; border-radius: 8px; }
+        .scroller { overflow:auto; height:325px; }
+        .close { position: absolute; top: 10px; right: 15px; text-decoration: none; font-size: 24px; color: #333; }
+        </style>
+    </form>
+    <?php return ob_get_clean();
+}
+add_shortcode('publications_search', 'publications_search_form');
+
+
+// Show Publication Search Results
+function shortcode_publication_results() {
+    $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
+    $paged = get_query_var('paged') ?: (get_query_var('page') ?: 1);
+
+    $args = [
+        'post_type' => 'publications',
+        'posts_per_page' => 10,
+        'paged' => $paged,
+        's' => $search,
+        'tax_query' => [],
+        'meta_query' => [],
+    ];
+
+    // Keywords
+    if (!empty($_GET['keywords']) && is_array($_GET['keywords'])) {
+        $args['tax_query'][] = [
+            'taxonomy' => 'keywords',
+            'field'    => 'slug',
+            'terms'    => array_map('sanitize_text_field', $_GET['keywords']),
+        ];
+    }
+
+    // Language
+    if (!empty($_GET['language']) && is_array($_GET['language'])) {
+        $args['meta_query'][] = [
+            'key'     => 'language',
+            'value'   => array_map('sanitize_text_field', $_GET['language']),
+            'compare' => 'IN',
+        ];
+    }
+
+    // Authors
+    if (!empty($_GET['authors']) && is_array($_GET['authors'])) {
+        $author_ids = array_map('intval', $_GET['authors']);
+
+        $author_meta_query = ['relation' => 'OR'];
+
+        for ($i = 0; $i <= 10; $i++) {
+            foreach ($author_ids as $author_id) {
+                $author_meta_query[] = [
+                    'key'     => 'authors_' . $i . '_user',
+                    'value'   => $author_id,
+                    'compare' => '=',
+                ];
+            }
+        }
+
+        $args['meta_query'][] = $author_meta_query;
+    }
+
+    $query = new WP_Query($args);
+    ob_start();
+
+    if ($query->have_posts()) {
+        echo '<div class="wp-block-query alignwide caes-hub-post-list-grid">';
+        echo '<div class="wp-block-post-template">';
+
+        echo '<h1 style="text-transform:uppercase;" class="wp-block-query-title has-x-large-font-size has-oswald-font-family">Search results for: “'.$search.'”</h1>';
+
+        while ($query->have_posts()) {
+            $query->the_post();
+
+            $block_markup = <<<HTML
+            <!-- wp:columns {"className":"caes-hub-post-list-grid-item height-100","style":{"spacing":{"padding":{"top":"0","bottom":"0","left":"0","right":"0"},"blockGap":{"top":"0","left":"0"},"margin":{"top":"0","bottom":"25"}}}} -->
+            <div class="wp-block-columns caes-hub-post-list-grid-item height-100" style="margin-top:0;margin-bottom:25px;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0">
+                <!-- wp:column {"width":"33.33%"} -->
+                <div class="wp-block-column" style="flex-basis:33.33%">
+                    <!-- wp:post-featured-image {"aspectRatio":"3/2","metadata":{"name":"caes-hub-post-list-img-container"},"className":"caes-hub-post-list-img-container"} /-->
+                </div>
+                <!-- /wp:column -->
+
+                <!-- wp:column {"width":"66.66%"} -->
+                <div class="wp-block-column" style="flex-basis:66.66%">
+                    <!-- wp:group {"metadata":{"name":"caes-hub-post-list-grid-info"},"className":"caes-hub-post-list-grid-info","style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60","left":"var:preset|spacing|60","right":"var:preset|spacing|60"}}},"backgroundColor":"base","layout":{"type":"flex","orientation":"vertical","justifyContent":"left","verticalAlignment":"space-between"}} -->
+                    <div class="wp-block-group caes-hub-post-list-grid-info has-base-background-color has-background" style="padding-top:var(--wp--preset--spacing--60);padding-right:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60);padding-left:var(--wp--preset--spacing--60)">
+                        <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|40"}},"layout":{"type":"default"}} -->
+                        <div class="wp-block-group">
+                            <!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+                            <div class="wp-block-group">
+                                <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|30"}},"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"space-between","verticalAlignment":"top"}} -->
+                                <div class="wp-block-group">
+                                    <!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"constrained"}} -->
+                                    <div class="wp-block-group">
+                                        <!-- wp:caes-hub/pub-details-number {"fontSize":"small"} /-->
+                                        <!-- wp:post-title {"isLink":true,"className":"caes-hub-post-list-grid-title","style":{"elements":{"link":{"color":{"text":"var:preset|color|contrast"}}}},"textColor":"contrast","fontSize":"large"} /-->
+                                    </div>
+                                    <!-- /wp:group -->
+                                    <!-- wp:caes-hub/pub-details-status /-->
+                                </div>
+                                <!-- /wp:group -->
+                            </div>
+                            <!-- /wp:group -->
+                            <!-- wp:caes-hub/pub-details-summary /-->
+                        </div>
+                        <!-- /wp:group -->
+
+                        <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|20"}},"layout":{"type":"flex","flexWrap":"wrap"}} -->
+                        <div class="wp-block-group">
+                            <!-- wp:caes-hub/pub-details-authors {"authorsAsSnippet":true} /-->
+                            <!-- wp:paragraph -->
+                            <p>|</p>
+                            <!-- /wp:paragraph -->
+                            <!-- wp:post-date {"format":"M j, Y"} /-->
+                        </div>
+                        <!-- /wp:group -->
+                    </div>
+                    <!-- /wp:group -->
+                </div>
+                <!-- /wp:column -->
+            </div>
+            <!-- /wp:columns -->
+            HTML;
+
+            echo do_blocks($block_markup);
+        }
+
+        echo '</div>'; // Close .wp-block-post-template
+
+        // Pagination
+        $pagination_links = paginate_links([
+            'base'      => esc_url_raw(add_query_arg('paged', '%#%')),
+            'format'    => '',
+            'current'   => max(1, $paged),
+            'total'     => $query->max_num_pages,
+            'type'      => 'array',
+            'prev_next' => false,
+        ]);
+
+        $next_link = get_next_posts_page_link($query->max_num_pages);
+
+        if (!empty($pagination_links)) {
+            echo '<nav class="wp-block-query-pagination is-content-justification-center is-layout-flex wp-block-query-pagination-is-layout-flex" aria-label="Pagination" style="justify-content:center;">';
+            echo '<div class="wp-block-query-pagination-numbers" style="display:flex; gap:3px;">';
+            foreach ($pagination_links as $link) {
+                echo $link;
+            }
+            echo '</div>';
+            if ($next_link) {
+                echo '<a href="' . esc_url($next_link) . '" class="wp-block-query-pagination-next">Next Page</a>';
+            }
+            echo '</nav>';
+        }
+        echo '</div>'; // Close .wp-block-query
+    } else {
+        echo '<p>No results found.</p>';
+    }
+
+    wp_reset_postdata();
+    return ob_get_clean();
+}
+add_shortcode('publication_results', 'shortcode_publication_results');
