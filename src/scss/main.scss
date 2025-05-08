@@ -63,6 +63,14 @@ figcaption a {
     max-width: calc(var(--wp--style--global--content-size) / 2);
 }
 
+.caes-hub-content-post .align-right {
+    float: right;
+}
+
+.caes-hub-content-post .align-left {
+    float: left;
+}
+
 @container caespost (max-width: 631px) {
 
     .caes-hub-content-post figure.alignleft,
