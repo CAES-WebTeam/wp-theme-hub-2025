@@ -58,7 +58,13 @@ figcaption a {
     margin-bottom: var(--wp--style--block-gap);
 }
 
+.caes-hub-content-post .align-right,
+.caes-hub-content-post .align-left {
+    max-width: calc(var(--wp--style--global--content-size) / 2);
+}
+
 @container caespost (max-width: 631px) {
+
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post figure.alignright,
     .caes-hub-content-post .align-left,
@@ -68,6 +74,7 @@ figcaption a {
         margin-top: var(--wp--style--block-gap) !important;
         margin-bottom: var(--wp--style--block-gap) !important;
     }
+
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post .align-left {
         margin-inline-start: 0;
@@ -78,11 +85,6 @@ figcaption a {
     .caes-hub-content-post .align-right {
         margin-inline-end: 0;
         margin-right: 0 !important;
-    }
-
-    .caes-hub-content-post .align-right,
-    .caes-hub-content-post .align-left {
-        max-width: calc(var(--wp--style--global--content-size) / 2);
     }
 
 }
@@ -268,7 +270,9 @@ figcaption a {
 
 // Print view
 @media print {
-    .caes-hub-footers, .caes-hub-content-footer {
+
+    .caes-hub-footers,
+    .caes-hub-content-footer {
         display: none !important;
     }
 }
@@ -364,6 +368,7 @@ figcaption a {
 /* White font color should be black on print */
 
 @media print {
+
     a,
     .has-base-color {
         color: var(--wp--preset--color--contrast) !important;
