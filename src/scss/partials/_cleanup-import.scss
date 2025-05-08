@@ -517,7 +517,7 @@
     .align-right,
     .align-left {
         display: table;
-        max-width: 40%;
+        max-width: calc(var(--wp--style--global--content-size) / 2);
         // max-width: calc(50% - (var(--wp--preset--spacing--70) * 2) - var(--wp--style--block-gap));
     }
 
