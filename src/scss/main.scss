@@ -57,6 +57,13 @@ figcaption a {
 }
 
 @container caespost (max-width: 840px) {
+    .caes-hub-content-post figure.alignleft,
+    .caes-hub-content-post figure.alignright {
+        max-width: 100%;
+        margin: 0 auto !important;
+        margin-top: var(--wp--style--block-gap) !important;
+        margin-bottom: var(--wp--style--block-gap) !important;
+    }
     .caes-hub-content-post figure.alignleft {
         margin-inline-start: 0;
         margin-left: 0 !important;
