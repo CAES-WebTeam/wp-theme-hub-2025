@@ -3,7 +3,7 @@
 
 // Wrap all tables in a responsitable-wrapper
 function wrapResponsiveTables() {
-  const tables = document.querySelectorAll('figure > table, .wp-block-table');
+  const tables = document.querySelectorAll('table, figure > table, .wp-block-table');
 
   tables.forEach((table) => {
     const figure = table.closest('figure') || table;
