@@ -3,19 +3,20 @@
 
 // Wrap all tables in a responsitable-wrapper
 function wrapResponsiveTables() {
-  const tables = document.querySelectorAll('table, figure > table, .wp-block-table');
+  const tables = document.querySelectorAll('table');
 
   tables.forEach((table) => {
-    const figure = table.closest('figure') || table;
+    const figure = table.closest('figure');
+    const target = figure || table;
 
     // Skip if already wrapped
-    if (figure.parentElement.classList.contains('responsitable-wrapper')) return;
+    if (target.parentElement.classList.contains('responsitable-wrapper')) return;
 
     const wrapper = document.createElement('div');
     wrapper.classList.add('responsitable-wrapper');
 
-    figure.parentNode.insertBefore(wrapper, figure);
-    wrapper.appendChild(figure);
+    target.parentNode.insertBefore(wrapper, target);
+    wrapper.appendChild(target);
   });
 }
 
