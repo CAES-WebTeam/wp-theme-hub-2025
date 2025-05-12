@@ -89,21 +89,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const classicWrapper = document.querySelector(".classic-content-wrapper");
 
-  // Remove strong tags from h2 elements
-  const classicH2s = classicWrapper.querySelectorAll("h2");
+  if (classicWrapper) {
+    const classicH2s = classicWrapper.querySelectorAll("h2");
 
-  classicH2s.forEach((h2) => {
-    h2.classList.add("is-style-caes-hub-full-underline");
-  
-    h2.querySelectorAll("strong").forEach((strong) => {
-      // Replace <strong> with its children (preserves nested elements)
-      while (strong.firstChild) {
-        strong.parentNode.insertBefore(strong.firstChild, strong);
-      }
-      strong.remove();
+    classicH2s.forEach((h2) => {
+      h2.classList.add("is-style-caes-hub-full-underline");
+
+      h2.querySelectorAll("strong").forEach((strong) => {
+        while (strong.firstChild) {
+          strong.parentNode.insertBefore(strong.firstChild, strong);
+        }
+        strong.remove();
+      });
     });
-  });
-  
+  }
 
   /** Responsive tables on page load */
   wrapResponsiveTables();
@@ -124,9 +123,9 @@ document.addEventListener('DOMContentLoaded', function () {
     button.addEventListener('click', function () {
       const postId = this.getAttribute('data-id');
       const postType = this.getAttribute('data-type');
-			
+
       let saved = JSON.parse(localStorage.getItem('savedPosts')) || {};
-			
+
       if (!saved[postType]) saved[postType] = [];
 
       // Toggle save/remove
