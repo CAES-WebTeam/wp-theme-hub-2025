@@ -28,6 +28,12 @@
             "textAlign": true
         }
     },
+    "attributes": {
+        "wordLimit": {
+            "type": "number",
+            "default": 0
+        }
+    },
     "editorScript": "file:./index.js",
     "editorStyle": "file:./index.css",
     "style": "file:./style-index.css"

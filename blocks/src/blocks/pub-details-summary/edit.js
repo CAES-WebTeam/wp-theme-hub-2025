@@ -1,40 +1,64 @@
-/**
- * Retrieves the translation of text.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
- */
 import { __ } from '@wordpress/i18n';
-
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
-import { useBlockProps } from '@wordpress/block-editor';
-
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * Those files can contain any CSS code that gets applied to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { PanelBody, RangeControl } from '@wordpress/components';
 import './editor.scss';
 
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#edit
- *
- * @return {Element} Element to render.
- */
 export default function Edit({ attributes, setAttributes }) {
+    const { wordLimit } = attributes;
+
+    const loremIpsum =
+        `
+        Summary preview. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. 
+        Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. 
+        Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. 
+        Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. 
+        Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. 
+        Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. 
+        Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. 
+        Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae.
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. 
+        Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. 
+        Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. 
+        Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. 
+        Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. 
+        Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. 
+        Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. 
+        Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae.
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. 
+        Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. 
+        Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. 
+        Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. 
+        Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. 
+        Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. 
+        Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales. 
+        Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae.
+        `;
+
+    // Generate preview text based on wordLimit
+    const words = loremIpsum.split(' ');
+    const isTruncated = wordLimit > 0 && wordLimit < words.length;
+    const previewText =
+        wordLimit > 0 ? words.slice(0, wordLimit).join(' ') + (isTruncated ? '…' : '') : loremIpsum;
 
     return (
         <>
+            <InspectorControls>
+                <PanelBody title={__('Display Settings', 'text-domain')} initialOpen={true}>
+                    <RangeControl
+                        label={__('Word Limit', 'text-domain')}
+                        value={wordLimit}
+                        onChange={(value) => setAttributes({ wordLimit: value })}
+                        min={0}
+                        max={100}
+                        allowReset
+                        initialPosition={0}
+                        help={__('Set to 0 for no limit', 'text-domain')}
+                    />
+                </PanelBody>
+            </InspectorControls>
+
             <div {...useBlockProps()}>
-                <p>This is where the summary text will display.</p>
+                <p>{previewText}</p>
             </div>
         </>
     );
