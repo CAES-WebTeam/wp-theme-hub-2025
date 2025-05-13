@@ -83,3 +83,9 @@ wp.blocks.registerBlockStyle( 'core/table', {
   name: 'caes-hub-vstripe-border',
   label: 'Vertical Stripes with Borders'
 })
+
+// CUSTOM BLOCKS
+wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
+  name: 'caes-hub-compact',
+  label: 'Compact'
+});

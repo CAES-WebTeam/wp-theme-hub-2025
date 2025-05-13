@@ -1,133 +1,153 @@
-/**
- * Retrieves the translation of text.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
- */
 import { __ } from '@wordpress/i18n';
-
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
-
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl, SelectControl, TextControl } from '@wordpress/components';
-
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * Those files can contain any CSS code that gets applied to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
 import './editor.scss';
 
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#edit
- *
- * @return {Element} Element to render.
- */
 export default function Edit({ attributes, setAttributes }) {
+	const {
+		showHeading,
+		customHeading,
+		snippetPrefix,
+		snippetPrefixShown,
+		type,
+		grid,
+		displayVersion
+	} = attributes;
 
+	// Checking if the block is compact style
+	const blockProps = useBlockProps();
+	const className = blockProps.className || '';
+	const isCompact = className.includes('is-style-caes-hub-compact');
+
+	// Default heading
+	const defaultHeading = (() => {
+		if (isCompact) {
+			return {
+				authors: "Meet the Authors",
+				translators: "Meet the Translators",
+				sources: "Meet the Experts"
+			}[type] || "Meet the Authors";
+		} else {
+			return {
+				authors: "Authors",
+				translators: "Translators",
+				sources: "Expert Sources"
+			}[type] || "Authors";
+		}
+	})();
+
+	const headingText = customHeading || defaultHeading;
+	const gridClass = grid ? 'pub-authors-grid' : '';
 
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody>
-					<ToggleControl
-						label={__("Show heading", "caes-hub")}
-						checked={attributes.showHeading}
+					<SelectControl
+						label={__("Display version", "caes-hub")}
+						value={displayVersion}
+						options={[
+							{ label: "Names only (all authors on one line)", value: "names-only" },
+							{ label: "Name and title on one line", value: "names-and-titles" },
+							{ label: "Name on one line, title below", value: "name-and-title-below" }
+						]}
 						onChange={(val) => {
 							setAttributes({
-								showHeading: val
-							});
-						}}
-					/>
-					<TextControl
-						label={__("Custom Heading", "caes-hub")}
-						value={attributes.customHeading}
-						onChange={(val) => {
-							setAttributes({
-								customHeading: val
+								displayVersion: val,
+								grid: (val === "name-and-title-below") ? grid : false // turn off grid unless version supports it
 							});
 						}}
 					/>
 					<SelectControl
 						label={__("Select type", "caes-hub")}
-						value={attributes.type}
+						value={type}
 						options={[
 							{ label: "Authors", value: "authors" },
 							{ label: "Translators", value: "translators" },
 							{ label: "Sources", value: "sources" },
 						]}
-						onChange={(val) => {
-							setAttributes({
-								type: val
-							});
-						}}
+						onChange={(val) => setAttributes({ type: val })}
 					/>
 					<ToggleControl
-						label={__("Display authors as snippet", "caes-hub")}
-						checked={attributes.authorsAsSnippet}
-						onChange={(val) => {
-							setAttributes({
-								authorsAsSnippet: val
-							});
-						}}
+						label={__("Display authors in grid", "caes-hub")}
+						checked={grid}
+						onChange={(val) => setAttributes({ grid: val })}
+						disabled={displayVersion !== "name-and-title-below"}
 					/>
-
-					{attributes.authorsAsSnippet && (
+					<ToggleControl
+						label={__("Display prefix text", "caes-hub")}
+						checked={snippetPrefixShown}
+						onChange={(val) => setAttributes({ snippetPrefixShown: val })}
+					/>
+					{snippetPrefixShown && (
 						<TextControl
-							label={__("Prefix text before snippet", "caes-hub")}
-							value={attributes.snippetPrefix}
-							onChange={(val) => {
-								setAttributes({
-									snippetPrefix: val
-								});
-							}}
+							label={__("Prefix text", "caes-hub")}
+							value={snippetPrefix}
+							onChange={(val) => setAttributes({ snippetPrefix: val })}
+						/>
+					)}
+					<ToggleControl
+						label={__("Show heading", "caes-hub")}
+						checked={showHeading}
+						onChange={(val) => setAttributes({ showHeading: val })}
+					/>
+					{showHeading && (
+						<TextControl
+							label={__("Custom Heading", "caes-hub")}
+							value={customHeading}
+							onChange={(val) => setAttributes({ customHeading: val })}
 						/>
 					)}
 				</PanelBody>
 			</InspectorControls>
 
-			{attributes.authorsAsSnippet ? (
-				<div {...useBlockProps()}>
-					<p>
-						{attributes.snippetPrefix && (
-							<><span className="pub-authors-snippet-prefix">{attributes.snippetPrefix} </span><br/></>
-						)}
-						Jane Doe and John Arbuckle
-					</p>
-				</div>
-			) : (
+			<div {...useBlockProps()}>
+				{showHeading && (
+					<h2 className={isCompact ? 'pub-authors-heading' : 'pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size'}>
+						{headingText}
+					</h2>
+				)}
 
-				// More expanded details
-				<div {...useBlockProps()}>
-					{attributes.showHeading && (
-						<h2 className="pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size">
-							{/* If custom heading is set, use that, otherwise use default */}
-							{attributes.customHeading || (attributes.type === "translators" ? "Translators" : (attributes.type === "sources" ? "Sources" : "Authors"))}
-						</h2>
+				{snippetPrefixShown && (
+					<p className="pub-authors-snippet-prefix">{snippetPrefix}</p>
+				)}
+
+				<div className={`pub-authors-wrap ${gridClass}`}>
+					{displayVersion === "names-only" && (
+						<p className="pub-authors-snippet">
+							Jane Doe, John Arbuckle, and Garfield
+						</p>
 					)}
-					<div className="pub-author">
-						<a className="pub-author-name" href="#">Jane Doe</a>
-						<p className="pub-author-title">
-							Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology
-						</p>
-					</div>
-					<div className="pub-author">
-						<a className="pub-author-name" href="#">John Arbuckle</a>
-						<p className="pub-author-title">
-							Professor and Extension Vegetable Disease Specialist, Plant Pathology
-						</p>
-					</div>
-				</div>
-			)}
 
+					{displayVersion === "names-and-titles" && (
+						<>
+							<p className="pub-author">
+								<a className="pub-author-name" href="#">Jane Doe</a>, <span className="pub-author-title">Associate Professor and Extension Plant Pathologist – landscape, garden, and organic fruit and vegetables, Plant Pathology</span>
+							</p>
+							<p className="pub-author">
+								<a className="pub-author-name" href="#">John Arbuckle</a>, <span className="pub-author-title">Professor and Extension Vegetable Disease Specialist, Plant Pathology</span>
+							</p>
+						</>
+					)}
+
+					{displayVersion === "name-and-title-below" && (
+						<>
+							<div className="pub-author">
+								<a className="pub-author-name" href="#">Jane Doe</a>
+								<p className="pub-author-title">
+									Associate Professor and Extension Plant Pathologist – landscape, garden, and organic fruit and vegetables, Plant Pathology
+								</p>
+							</div>
+							<div className="pub-author">
+								<a className="pub-author-name" href="#">John Arbuckle</a>
+								<p className="pub-author-title">
+									Professor and Extension Vegetable Disease Specialist, Plant Pathology
+								</p>
+							</div>
+						</>
+					)}
+				</div>
+			</div>
 		</>
 	);
 }

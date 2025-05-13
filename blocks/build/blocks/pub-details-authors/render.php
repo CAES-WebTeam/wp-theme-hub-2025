@@ -6,12 +6,30 @@ $post_id = get_the_ID();
 // Attributes for wrapper
 $attrs = $is_preview ? '' : get_block_wrapper_attributes();
 
-// Get the block attributes (assuming they're passed in as $block)
-$authorsAsSnippet = $block['authorsAsSnippet'] ?? false;
+// Look up classes from attributes
+$classnames = $block['className'] ?? '';
+// Check if 'is-style-caes-hub-compact' is applied
+$is_compact = strpos($classnames, 'is-style-caes-hub-compact') !== false;
+// If we do use compact style, adjust heading 2 styles
+if (! $is_compact) {
+    $headingStyles = 'pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size';
+} else {
+    $headingStyles = 'pub-authors-heading';
+}
+
+
+// Get the block attributes
+$displayVersion = $block['displayVersion'] ?? 'names-only';
 $showHeading = $block['showHeading'] ?? false;
 $customHeading = $block['customHeading'] ?? '';
 $type = $block['type'] ?? 'authors';
 $snippetPrefix = $block['snippetPrefix'] ?? '';
+$grid = $block['grid'] ?? false;
+
+// Adjust logic flags
+$authorNamesOnly = $displayVersion === 'names-only';
+$oneLine = $displayVersion === 'names-and-titles';
+$useGrid = $displayVersion === 'name-and-title-below' && $grid;
 
 // Get ACF fields
 $authors = get_field('authors', $post_id);
@@ -21,22 +39,37 @@ $sources = get_field('experts', $post_id);
 switch ($type) {
     case 'translators':
         $data = $translators;
-        $defaultHeading = "Translators";
+        $translator_count = is_array($translators) ? count($translators) : 0;
+        if ($is_compact) {
+            $defaultHeading = $translator_count === 1 ? "Meet the Translator" : "Meet the Translators";
+        } else {
+            $defaultHeading = "Translators";
+        }
         break;
     case 'sources':
         $data = $sources;
-        $defaultHeading = "Sources";
+        $expert_count = is_array($sources) ? count($sources) : 0;
+        if ($is_compact) {
+            $defaultHeading = $expert_count === 1 ? "Meet the Expert" : "Meet the Experts";
+        } else {
+            $defaultHeading = "Expert Sources";
+        }
         break;
     case 'authors':
     default:
         $data = $authors;
-        $defaultHeading = "Authors";
+        $author_count = is_array($authors) ? count($authors) : 0;
+        if ($is_compact) {
+            $defaultHeading = $author_count === 1 ? "Meet the Author" : "Meet the Authors";
+        } else {
+            $defaultHeading = "Authors";
+        }
         break;
 }
 
 // Ensure function is only defined once
 if (!function_exists('process_people')) {
-    function process_people($people, $asSnippet = false)
+    function process_people($people, $asSnippet = false, $oneLine = false)
     {
         $names = [];
         $output = '';
@@ -58,12 +91,21 @@ if (!function_exists('process_people')) {
                         if ($asSnippet) {
                             $names[] = trim("$first_name $last_name");
                         } else {
-                            $output .= '<div class="pub-author">';
-                            $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
-                            if ($title) {
-                                $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
+                            if ($oneLine) {
+                                $output .= '<p class="pub-author-oneline">';
+                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                                if ($title) {
+                                    $output .= ', ' . esc_html($title);
+                                }
+                                $output .= '</p>';
+                            } else {
+                                $output .= '<div class="pub-author">';
+                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                                if ($title) {
+                                    $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
+                                }
+                                $output .= '</div>';
                             }
-                            $output .= '</div>';
                         }
                     }
                 } elseif ($type === 'custom' && !empty($custom['first_name']) && !empty($custom['last_name'])) {
@@ -74,12 +116,21 @@ if (!function_exists('process_people')) {
                     if ($asSnippet) {
                         $names[] = trim("$first_name $last_name");
                     } else {
-                        $output .= '<div class="pub-author">';
-                        $output .= '<a class="pub-author-name" href="#">' . esc_html(trim("$first_name $last_name")) . '</a>';
-                        if ($title) {
-                            $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
+                        if ($oneLine) {
+                            $output .= '<p class="pub-author-oneline">';
+                            $output .= '<a class="pub-author-name" href="#">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                            if ($title) {
+                                $output .= ', ' . esc_html($title);
+                            }
+                            $output .= '</p>';
+                        } else {
+                            $output .= '<div class="pub-author">';
+                            $output .= '<a class="pub-author-name" href="#">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                            if ($title) {
+                                $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
+                            }
+                            $output .= '</div>';
                         }
-                        $output .= '</div>';
                     }
                 }
             }
@@ -107,24 +158,27 @@ if (!function_exists('process_people')) {
 
 // Generate output
 if ($data) {
-    if ($authorsAsSnippet) {
-        echo '<div ' . $attrs . '><p>';
+    echo '<div ' . $attrs . '>';
+
+    if ($showHeading) {
+        echo '<h2 class="' . $headingStyles . '">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
+    }
+
+    if ($authorNamesOnly) {
         $snippet_output = process_people($data, true);
         if (!empty($snippet_output)) {
             if (!empty($snippetPrefix)) {
-                $snippet_output = '<span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span><br/>' . $snippet_output;
+                $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span><br/>' . $snippet_output . '</p>';
+            } else {
+                $snippet_output = '<p>' . $snippet_output . '</p>';
             }
             echo $snippet_output;
         }
-        echo '</p></div>';
     } else {
-        echo '<div ' . $attrs . '>';
-        // Display heading if enabled
-        if ($showHeading) {
-            echo '<h2 class="pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
-        }
-        echo '<div class="pub-authors-grid">';
-        echo process_people($data, false);
-        echo '</div></div>';
+        echo '<div class="pub-authors-wrap' . ($useGrid ? ' pub-authors-grid' : '') . '">';
+        echo process_people($data, false, $oneLine);
+        echo '</div>';
     }
+
+    echo '</div>';
 }

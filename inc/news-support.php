@@ -1,4 +1,5 @@
 <?php
+
 /***  Sync News Stories with Story Writers Users  ***/
 add_action('admin_init', function () {
     if (!current_user_can('manage_options') || !isset($_GET['link_writers_to_stories'])) return;
@@ -49,32 +50,32 @@ add_action('admin_init', function () {
         $user_id = $users[0];
 
         // Load existing experts (always an array)
-	    $authors = get_field('authors', $post_id);
-		if (!is_array($authors)) $authors = [];
+        $authors = get_field('authors', $post_id);
+        if (!is_array($authors)) $authors = [];
 
-		$already_added = false;
-		foreach ($authors as $row) {
-		    $existing_user = $row['user'];
+        $already_added = false;
+        foreach ($authors as $row) {
+            $existing_user = $row['user'];
 
-		    // Normalize to user ID
-		    if (is_object($existing_user) && isset($existing_user->ID)) {
-		        $existing_user = $existing_user->ID;
-		    } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
-		        $existing_user = $existing_user['ID'];
-		    }
+            // Normalize to user ID
+            if (is_object($existing_user) && isset($existing_user->ID)) {
+                $existing_user = $existing_user->ID;
+            } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
+                $existing_user = $existing_user['ID'];
+            }
 
-		    if (intval($existing_user) === intval($user_id)) {
-		        $already_added = true;
-		        break;
-		    }
-		}
+            if (intval($existing_user) === intval($user_id)) {
+                $already_added = true;
+                break;
+            }
+        }
 
-	    // Add user if not already in the repeater
-	    if (!$already_added) {
-		    $authors[] = ['user' => $user_id];
-		    update_field('authors', $authors, $post_id);
-		    $linked++;
-		}
+        // Add user if not already in the repeater
+        if (!$already_added) {
+            $authors[] = ['user' => $user_id];
+            update_field('authors', $authors, $post_id);
+            $linked++;
+        }
     }
 
     wp_die("Writer linking complete. Writers linked to posts: {$linked}");
@@ -131,32 +132,32 @@ add_action('admin_init', function () {
         $user_id = $users[0];
 
         // Load existing experts (always an array)
-	   $experts = get_field('experts', $post_id);
-		if (!is_array($experts)) $experts = [];
+        $experts = get_field('experts', $post_id);
+        if (!is_array($experts)) $experts = [];
 
-		$already_added = false;
-		foreach ($experts as $row) {
-		    $existing_user = $row['user'];
+        $already_added = false;
+        foreach ($experts as $row) {
+            $existing_user = $row['user'];
 
-		    // Normalize to user ID
-		    if (is_object($existing_user) && isset($existing_user->ID)) {
-		        $existing_user = $existing_user->ID;
-		    } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
-		        $existing_user = $existing_user['ID'];
-		    }
+            // Normalize to user ID
+            if (is_object($existing_user) && isset($existing_user->ID)) {
+                $existing_user = $existing_user->ID;
+            } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
+                $existing_user = $existing_user['ID'];
+            }
 
-		    if (intval($existing_user) === intval($user_id)) {
-		        $already_added = true;
-		        break;
-		    }
-		}
+            if (intval($existing_user) === intval($user_id)) {
+                $already_added = true;
+                break;
+            }
+        }
 
-	    // Add user if not already in the repeater
-	    if (!$already_added) {
-		    $experts[] = ['user' => $user_id];
-		    update_field('experts', $experts, $post_id);
-		    $linked++;
-		}
+        // Add user if not already in the repeater
+        if (!$already_added) {
+            $experts[] = ['user' => $user_id];
+            update_field('experts', $experts, $post_id);
+            $linked++;
+        }
     }
 
     wp_die("Expert linking complete. Experts linked to posts: {$linked}");
@@ -268,7 +269,7 @@ add_action('admin_init', function () {
             'post_type'  => 'post',
             'meta_key'   => 'id',
             'meta_value' => $story_id,
-            'numberposts'=> 1,
+            'numberposts' => 1,
             'fields'     => 'ids',
         ]);
 
@@ -322,7 +323,7 @@ add_action('admin_init', function () {
             'post_type'  => 'post',
             'meta_key'   => 'image_id',
             'meta_value' => $image_id,
-            'numberposts'=> -1,
+            'numberposts' => -1,
             'fields'     => 'ids',
         ]);
 
@@ -392,39 +393,63 @@ add_action('admin_init', function () {
 
 
 // Replace permalink with ACF external URL if set and valid
-function custom_external_story_url( $url, $post = null ) {
-    if ( ! $post instanceof WP_Post ) {
-        $post = get_post( $post );
+function custom_external_story_url($url, $post = null)
+{
+    if (! $post instanceof WP_Post) {
+        $post = get_post($post);
     }
 
     // Only apply to 'post' post type
-    if ( ! $post || $post->post_type !== 'post' ) {
+    if (! $post || $post->post_type !== 'post') {
         return $url;
     }
 
     // Use get_post_meta for performance
-    $external_url = get_post_meta( $post->ID, 'external_story_url', true );
+    $external_url = get_post_meta($post->ID, 'external_story_url', true);
 
-    if ( $external_url && filter_var( $external_url, FILTER_VALIDATE_URL ) ) {
-        return esc_url( $external_url );
+    if ($external_url && filter_var($external_url, FILTER_VALIDATE_URL)) {
+        return esc_url($external_url);
     }
 
     return $url;
 }
 
 // Apply to standard permalink filters
-add_filter( 'post_link', 'custom_external_story_url', 10, 2 );
-add_filter( 'post_type_link', 'custom_external_story_url', 10, 2 );
-add_filter( 'page_link', 'custom_external_story_url', 10, 2 );
-add_filter( 'post_type_archive_link', 'custom_external_story_url', 10, 2 );
+add_filter('post_link', 'custom_external_story_url', 10, 2);
+add_filter('post_type_link', 'custom_external_story_url', 10, 2);
+add_filter('page_link', 'custom_external_story_url', 10, 2);
+add_filter('post_type_archive_link', 'custom_external_story_url', 10, 2);
 
 // Apply to REST API responses (used in block editor, feeds, etc.)
-add_filter( 'rest_prepare_post', function( $response, $post, $request ) {
-    $external_url = get_post_meta( $post->ID, 'external_story_url', true );
+add_filter('rest_prepare_post', function ($response, $post, $request) {
+    $external_url = get_post_meta($post->ID, 'external_story_url', true);
 
-    if ( $external_url && filter_var( $external_url, FILTER_VALIDATE_URL ) ) {
-        $response->data['link'] = esc_url( $external_url );
+    if ($external_url && filter_var($external_url, FILTER_VALIDATE_URL)) {
+        $response->data['link'] = esc_url($external_url);
     }
 
     return $response;
-}, 10, 3 );
+}, 10, 3);
+
+add_filter('default_content', 'story_default_content', 10, 2);
+
+// Insert default content into new posts
+function story_default_content($content, $post)
+{
+    // Only work on posts (stories)
+    if ($post->post_type !== 'post') {
+        return $content;
+    }
+
+    // Featured image block
+    $image_url = get_template_directory_uri() . '/assets/images/texture.jpg';
+
+    $image_block = '<!-- wp:image {"sizeSlug":"full","linkDestination":"none"} --><figure class="wp-block-image size-full"><img src="' . esc_url($image_url) . '" alt="" /><figcaption class="wp-element-caption">Replace this image and caption. Don\'t forget to write alt text in the image block settings!</figcaption></figure><!-- /wp:image -->';
+    // Sources (authors) block
+    $sources_block = '<!-- wp:caes-hub/pub-details-authors {"displayVersion":"names-and-titles","type":"sources","grid":false,"className":"is-style-caes-hub-compact","style":{"typography":{"lineHeight":"1.3"}}} /-->';
+    // Text block
+    $paragraph = '<!-- wp:paragraph --><p>Add your article text here.</p><!-- /wp:paragraph -->';
+
+
+    return $image_block . "\n\n" . $sources_block . "\n\n" . $paragraph . "\n\n" . $content;
+}

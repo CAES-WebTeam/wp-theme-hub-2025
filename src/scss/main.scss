@@ -59,7 +59,9 @@ figcaption a {
 }
 
 .caes-hub-content-post .align-right,
-.caes-hub-content-post .align-left {
+.caes-hub-content-post .align-left,
+.caes-hub-content-post figure.alignright,
+.caes-hub-content-post figure.alignleft {
     max-width: calc(var(--wp--style--global--content-size) / 2);
 }
 

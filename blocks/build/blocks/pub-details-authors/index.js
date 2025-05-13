@@ -21,66 +21,73 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/pub-details-authors/editor.scss");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__);
-/**
- * Retrieves the translation of text.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
- */
-
-
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
 
 
 
 
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * Those files can contain any CSS code that gets applied to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
-
-
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#edit
- *
- * @return {Element} Element to render.
- */
 
 function Edit({
   attributes,
   setAttributes
 }) {
+  const {
+    showHeading,
+    customHeading,
+    snippetPrefix,
+    snippetPrefixShown,
+    type,
+    grid,
+    displayVersion
+  } = attributes;
+
+  // Checking if the block is compact style
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
+  const className = blockProps.className || '';
+  const isCompact = className.includes('is-style-caes-hub-compact');
+
+  // Default heading
+  const defaultHeading = (() => {
+    if (isCompact) {
+      return {
+        authors: "Meet the Authors",
+        translators: "Meet the Translators",
+        sources: "Meet the Experts"
+      }[type] || "Meet the Authors";
+    } else {
+      return {
+        authors: "Authors",
+        translators: "Translators",
+        sources: "Expert Sources"
+      }[type] || "Authors";
+    }
+  })();
+  const headingText = customHeading || defaultHeading;
+  const gridClass = grid ? 'pub-authors-grid' : '';
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Show heading", "caes-hub"),
-          checked: attributes.showHeading,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display version", "caes-hub"),
+          value: displayVersion,
+          options: [{
+            label: "Names only (all authors on one line)",
+            value: "names-only"
+          }, {
+            label: "Name and title on one line",
+            value: "names-and-titles"
+          }, {
+            label: "Name on one line, title below",
+            value: "name-and-title-below"
+          }],
           onChange: val => {
             setAttributes({
-              showHeading: val
-            });
-          }
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Custom Heading", "caes-hub"),
-          value: attributes.customHeading,
-          onChange: val => {
-            setAttributes({
-              customHeading: val
+              displayVersion: val,
+              grid: val === "name-and-title-below" ? grid : false // turn off grid unless version supports it
             });
           }
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Select type", "caes-hub"),
-          value: attributes.type,
+          value: type,
           options: [{
             label: "Authors",
             value: "authors"
@@ -91,66 +98,99 @@ function Edit({
             label: "Sources",
             value: "sources"
           }],
-          onChange: val => {
-            setAttributes({
-              type: val
-            });
-          }
+          onChange: val => setAttributes({
+            type: val
+          })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display authors as snippet", "caes-hub"),
-          checked: attributes.authorsAsSnippet,
-          onChange: val => {
-            setAttributes({
-              authorsAsSnippet: val
-            });
-          }
-        }), attributes.authorsAsSnippet && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Prefix text before snippet", "caes-hub"),
-          value: attributes.snippetPrefix,
-          onChange: val => {
-            setAttributes({
-              snippetPrefix: val
-            });
-          }
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display authors in grid", "caes-hub"),
+          checked: grid,
+          onChange: val => setAttributes({
+            grid: val
+          }),
+          disabled: displayVersion !== "name-and-title-below"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display prefix text", "caes-hub"),
+          checked: snippetPrefixShown,
+          onChange: val => setAttributes({
+            snippetPrefixShown: val
+          })
+        }), snippetPrefixShown && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Prefix text", "caes-hub"),
+          value: snippetPrefix,
+          onChange: val => setAttributes({
+            snippetPrefix: val
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Show heading", "caes-hub"),
+          checked: showHeading,
+          onChange: val => setAttributes({
+            showHeading: val
+          })
+        }), showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Custom Heading", "caes-hub"),
+          value: customHeading,
+          onChange: val => setAttributes({
+            customHeading: val
+          })
         })]
       })
-    }), attributes.authorsAsSnippet ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
-        children: [attributes.snippetPrefix && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("span", {
-            className: "pub-authors-snippet-prefix",
-            children: [attributes.snippetPrefix, " "]
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {})]
-        }), "Jane Doe and John Arbuckle"]
-      })
-    }) :
-    /*#__PURE__*/
-    // More expanded details
-    (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-      ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: [attributes.showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h2", {
-        className: "pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size",
-        children: attributes.customHeading || (attributes.type === "translators" ? "Translators" : attributes.type === "sources" ? "Sources" : "Authors")
+      children: [showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h2", {
+        className: isCompact ? 'pub-authors-heading' : 'pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size',
+        children: headingText
+      }), snippetPrefixShown && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+        className: "pub-authors-snippet-prefix",
+        children: snippetPrefix
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        className: "pub-author",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
-          className: "pub-author-name",
-          href: "#",
-          children: "Jane Doe"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
-          className: "pub-author-title",
-          children: "Associate Professor and Extension Plant Pathologist - landscape, garden, and organic fruit and vegetables, Plant Pathology"
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        className: "pub-author",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
-          className: "pub-author-name",
-          href: "#",
-          children: "John Arbuckle"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
-          className: "pub-author-title",
-          children: "Professor and Extension Vegetable Disease Specialist, Plant Pathology"
+        className: `pub-authors-wrap ${gridClass}`,
+        children: [displayVersion === "names-only" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+          className: "pub-authors-snippet",
+          children: "Jane Doe, John Arbuckle, and Garfield"
+        }), displayVersion === "names-and-titles" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
+            className: "pub-author",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+              className: "pub-author-name",
+              href: "#",
+              children: "Jane Doe"
+            }), ", ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+              className: "pub-author-title",
+              children: "Associate Professor and Extension Plant Pathologist \u2013 landscape, garden, and organic fruit and vegetables, Plant Pathology"
+            })]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
+            className: "pub-author",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+              className: "pub-author-name",
+              href: "#",
+              children: "John Arbuckle"
+            }), ", ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+              className: "pub-author-title",
+              children: "Professor and Extension Vegetable Disease Specialist, Plant Pathology"
+            })]
+          })]
+        }), displayVersion === "name-and-title-below" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            className: "pub-author",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+              className: "pub-author-name",
+              href: "#",
+              children: "Jane Doe"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+              className: "pub-author-title",
+              children: "Associate Professor and Extension Plant Pathologist \u2013 landscape, garden, and organic fruit and vegetables, Plant Pathology"
+            })]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            className: "pub-author",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+              className: "pub-author-name",
+              href: "#",
+              children: "John Arbuckle"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+              className: "pub-author-title",
+              children: "Professor and Extension Vegetable Disease Specialist, Plant Pathology"
+            })]
+          })]
         })]
       })]
     })]
@@ -287,7 +327,7 @@ module.exports = window["wp"]["i18n"];
   \***************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/pub-details-authors","version":"0.1.0","title":"CAES Authors","category":"theme","icon":"businesswoman","description":"Displays a story or publication\'s authors.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"typography":{"fontSize":true,"lineHeight":true,"textAlign":true}},"attributes":{"showHeading":{"type":"boolean","default":true},"customHeading":{"type":"string","default":""},"type":{"type":"string","default":"authors"},"authorsAsSnippet":{"type":"boolean","default":false},"snippetPrefix":{"type":"string","default":""}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/pub-details-authors","version":"0.1.0","title":"CAES Authors","category":"theme","icon":"businesswoman","description":"Displays a story or publication\'s authors.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"typography":{"fontSize":true,"lineHeight":true,"textAlign":true}},"attributes":{"displayVersion":{"type":"string","default":"name-and-title-below"},"showHeading":{"type":"boolean","default":true},"customHeading":{"type":"string","default":""},"type":{"type":"string","default":"authors"},"snippetPrefix":{"type":"string","default":""},"snippetPrefixShown":{"type":"boolean","default":false},"oneLine":{"type":"boolean","default":false},"grid":{"type":"boolean","default":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

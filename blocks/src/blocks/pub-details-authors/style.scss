@@ -10,9 +10,16 @@
 
     p {
         margin: 0;
-        .pub-authors-snippet-prefix {
-            font-size: 0.9em;
-        }
+    }
+
+    .pub-authors-snippet-prefix {
+        font-size: 0.9em;
+    }
+
+    .pub-authors-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wp--preset--spacing--40);
     }
 
     .pub-authors-grid {
@@ -28,6 +35,27 @@
             margin: 0;
         }
     }
+
+    &.is-style-caes-hub-compact {
+        position: relative;
+        border: 1px solid var(--wp--preset--color--contrast-two);
+        padding: var(--wp--preset--spacing--50);
+        margin-top: calc(var(--wp--style--block-gap) + var(--wp--preset--spacing--20));
+        .pub-authors-heading {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 0;
+            left: 50%;
+            white-space: nowrap;
+            background: var(--wp--preset--color--base);
+            font-family: var(--wp--preset--font-family--oswald);
+            font-size: 19px !important;
+            font-weight: 400;
+            padding: 0 var(--wp--preset--spacing--20);
+            text-transform: uppercase;
+        }
+    }
+
 }
 
 @media screen and (max-width: 781px) {
