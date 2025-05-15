@@ -21,7 +21,12 @@ require get_template_directory() . '/block-variations/index.php';
 
 
 add_action('admin_init', function () {
-    if (!isset($_GET['import_inline_images'])) return;
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+
+    if (!current_user_can('manage_options') || !isset($_GET['import_inline_images'])) return;
+
 
     $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
