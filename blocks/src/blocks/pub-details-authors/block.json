@@ -51,6 +51,10 @@
       "type": "boolean",
       "default": false
     },
+    "snippetPrefixPosition": {
+      "type": "string",
+      "default": "above"
+    },
     "oneLine": {
       "type": "boolean",
       "default": false

@@ -4,24 +4,25 @@
 //include_once( get_template_directory() . '/inc/acf-fields/publications-field-group.php' );
 
 // Set ACF field 'state_issue' with options from json
-function populate_acf_state_issue_field( $field ) {
+function populate_acf_state_issue_field($field)
+{
     // Set path to json file
     $json_file = get_template_directory() . '/json/publication-state-issue.json';
 
-    if ( file_exists( $json_file ) ) {
+    if (file_exists($json_file)) {
         // Get the contents of the json file
-        $json_data = file_get_contents( $json_file );
-        $issues = json_decode( $json_data, true );
+        $json_data = file_get_contents($json_file);
+        $issues = json_decode($json_data, true);
 
         // Clear existing choices
         $field['choices'] = array();
 
         // Check if there are issues in the json
-        if ( isset( $issues['issues'] ) && is_array( $issues['issues'] ) ) {
+        if (isset($issues['issues']) && is_array($issues['issues'])) {
             // Loop through the issues and add each name as a select option
-            foreach ( $issues['issues'] as $issue ) {
-                if ( isset( $issue['name'] ) ) {
-                    $field['choices'][ sanitize_text_field( $issue['name'] ) ] = sanitize_text_field( $issue['name'] );
+            foreach ($issues['issues'] as $issue) {
+                if (isset($issue['name'])) {
+                    $field['choices'][sanitize_text_field($issue['name'])] = sanitize_text_field($issue['name']);
                 }
             }
         }
@@ -30,37 +31,38 @@ function populate_acf_state_issue_field( $field ) {
     // Return the field to ACF
     return $field;
 }
-add_filter( 'acf/load_field/name=state_issue', 'populate_acf_state_issue_field' );
+add_filter('acf/load_field/name=state_issue', 'populate_acf_state_issue_field');
 
 // Schedule the cron job for sunsetting publications
-add_action( 'wp', function() {
-    if ( ! wp_next_scheduled( 'unpublish_expired_publications' ) ) {
-        wp_schedule_event( time(), 'daily', 'unpublish_expired_publications' );
+add_action('wp', function () {
+    if (! wp_next_scheduled('unpublish_expired_publications')) {
+        wp_schedule_event(time(), 'daily', 'unpublish_expired_publications');
     }
 });
 
-add_action( 'unpublish_expired_publications', 'unpublish_expired_publications_callback' );
-function unpublish_expired_publications_callback() {
+add_action('unpublish_expired_publications', 'unpublish_expired_publications_callback');
+function unpublish_expired_publications_callback()
+{
     // Get today's date in Ymd format
-    $today = date( 'Ymd' );
+    $today = date('Ymd');
 
     // Query publications with sunset_date on or before today
-    $query = new WP_Query( [
+    $query = new WP_Query([
         'post_type'   => 'publications',
         'meta_key'    => 'sunset_date',
         'meta_value'  => $today,
         'meta_compare' => '<=',
         'post_status' => 'publish',
         'posts_per_page' => -1, // Retrieve all matching posts
-    ] );
+    ]);
 
-    if ( $query->have_posts() ) {
-        foreach ( $query->posts as $post ) {
+    if ($query->have_posts()) {
+        foreach ($query->posts as $post) {
             // Unpublish each post by setting its status to 'draft'
-            wp_update_post( [
+            wp_update_post([
                 'ID'          => $post->ID,
                 'post_status' => 'draft',
-            ] );
+            ]);
         }
     }
 
@@ -68,17 +70,18 @@ function unpublish_expired_publications_callback() {
 }
 
 // Clear scheduled event on theme deactivation
-register_deactivation_hook( __FILE__, function() {
-    $timestamp = wp_next_scheduled( 'unpublish_expired_publications' );
-    if ( $timestamp ) {
-        wp_unschedule_event( $timestamp, 'unpublish_expired_publications' );
+register_deactivation_hook(__FILE__, function () {
+    $timestamp = wp_next_scheduled('unpublish_expired_publications');
+    if ($timestamp) {
+        wp_unschedule_event($timestamp, 'unpublish_expired_publications');
     }
 });
 
 
 /****** Publication Dynamic PDF ******/
 // Generate PDF fucntionality
-function generate_pdf() {
+function generate_pdf()
+{
     try {
         // Load TCPDF library
         require_once get_template_directory() . '/inc/tcpdf/tcpdf.php';
@@ -148,7 +151,8 @@ add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');
 /****** IMPORT ACTIONS ******/
 // Save Post Actions
 add_action('pmxi_saved_post', 'attach_authors_to_repeater', 10, 1);
-function attach_authors_to_repeater($post_id) {
+function attach_authors_to_repeater($post_id)
+{
     //if (get_post_type($post_id) !== 'publication') return;
 
     $raw_data = get_field('raw_author_ids', $post_id);
@@ -221,14 +225,16 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
 }, 10, 3);
 
 
-function clean_html($html) {
+function clean_html($html)
+{
     $html = preg_replace('/\r\n|\n|\r/', '', $html); // Remove newlines
     return trim($html);
 }
 
 
 // Set Image URL for thumbnail
-function get_full_image_url($relative_path) {
+function get_full_image_url($relative_path)
+{
     $base_url = "https://secure.caes.uga.edu/extension/publications/images/thumbnail-pub-images/";
     $relative_path = ltrim($relative_path, '/');
     $full_url = $base_url . '/' . $relative_path;
@@ -243,7 +249,8 @@ function get_full_image_url($relative_path) {
 }
 
 // Assign Keywords
-function assign_keywords_to_publications_from_json($json_file_path) {
+function assign_keywords_to_publications_from_json($json_file_path)
+{
     if (!file_exists($json_file_path)) {
         print_r("JSON file not found: $json_file_path");
         return;
@@ -315,26 +322,27 @@ add_action('init', function () {
     if (!is_admin() && isset($_GET['run_keywords'])) {
         $json_path = get_stylesheet_directory() . '/json/pub-keywords.json';
         assign_keywords_to_publications_from_json($json_path);
-        exit; 
+        exit;
     }
 });
 
 // Custom rewrite rules for publications
-function custom_publications_rewrite_rules() {
+function custom_publications_rewrite_rules()
+{
     // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
     add_rewrite_rule(
         '^publications/([A-Za-z]+\d+(?:-[A-Za-z0-9]+)*)/([^/]+)/?$',
         'index.php?post_type=publications&name=$matches[2]',
         'top'
     );
-    
+
     // Add a rule to specifically handle the publication series taxonomy URLs
     add_rewrite_rule(
         '^publications/series/([^/]+)/?$',
         'index.php?publication_series=$matches[1]',
         'top'
     );
-    
+
     // Add a rule for pagination in taxonomy archives
     add_rewrite_rule(
         '^publications/series/([^/]+)/page/([0-9]+)/?$',
@@ -355,7 +363,8 @@ add_action('init', 'custom_publications_rewrite_rules');
 /**
  * Allow a custom query var for publications.
  */
-function custom_publications_query_vars($query_vars) {
+function custom_publications_query_vars($query_vars)
+{
     $query_vars[] = 'publication_number';
     return $query_vars;
 }
@@ -365,7 +374,8 @@ add_filter('query_vars', 'custom_publications_query_vars');
  * Modify the permalink structure for publication posts so that the URL includes the publication number.
  * For example, it changes /publications/post-slug/ to /publications/C1248/post-slug/.
  */
-function custom_publications_permalink($post_link, $post) {
+function custom_publications_permalink($post_link, $post)
+{
     if ($post->post_type === 'publications') {
         $publication_number = get_field('publication_number', $post->ID);
         if ($publication_number) {
@@ -384,7 +394,8 @@ add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
  * by looking up the publication number and obtaining the canonical slug.
  */
-function redirect_publications_to_canonical_url() {
+function redirect_publications_to_canonical_url()
+{
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
     // Only proceed if the URL starts with '/publications/'
@@ -426,7 +437,8 @@ add_action('template_redirect', 'redirect_publications_to_canonical_url');
 /**
  * Modify the query for publications if a custom publication_number query variable is present.
  */
-function custom_publications_parse_request($query) {
+function custom_publications_parse_request($query)
+{
     if (!is_admin() && isset($query->query_vars['publication_number'])) {
         $publication_number = sanitize_title($query->query_vars['publication_number']);
         $query->set('meta_query', array(
@@ -453,7 +465,7 @@ add_filter('post_row_actions', function ($actions, $post) {
 // Handle cloning the post and ACF fields
 add_action('admin_post_clone_publication_for_review', function () {
     if (!current_user_can('edit_posts')) wp_die('Unauthorized');
-    
+
     $post_id = intval($_GET['post_id']);
     check_admin_referer('clone_publication_' . $post_id);
 
@@ -554,15 +566,15 @@ add_action('enqueue_block_editor_assets', function () {
         'nonce' => wp_create_nonce('publish_review_' . $post->ID),
         'url' => admin_url('admin-post.php?action=publish_review_copy&draft_id=' . $post->ID),
     ]);
-
 });
 
 // Add subtitle to publications title if it is used
-function append_subtitle_to_title($title, $id) {
+function append_subtitle_to_title($title, $id)
+{
     if (is_admin()) {
         return $title;
     }
-    if (get_post_type($id) === 'publications') { 
+    if (get_post_type($id) === 'publications') {
         $subtitle = get_post_meta($id, 'subtitle', true);
         if (!empty($subtitle) && is_singular('publications')) {
             $title .= ': <br/><span style="font-size:0.8em;display:inline-block;margin-top:var(--wp--preset--spacing--30)"
@@ -577,7 +589,8 @@ function append_subtitle_to_title($title, $id) {
 add_filter('the_title', 'append_subtitle_to_title', 10, 2);
 
 // Get all the unqiue authors from publications
-function get_unique_author_users_from_publications() {
+function get_unique_author_users_from_publications()
+{
     $user_ids = [];
 
     $posts = get_posts([
@@ -616,7 +629,8 @@ function get_unique_author_users_from_publications() {
 
 
 // Create Publications Search form
-function publications_search_form() {
+function publications_search_form()
+{
     $keywords = get_terms(array(
         'taxonomy' => 'keywords',
         'hide_empty' => false,
@@ -632,63 +646,117 @@ function publications_search_form() {
             <div>
                 <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#keywordsModal"><strong>Keywords</strong></a></div>
                 <div id="keywordsModal" class="modal">
-                  <div class="modal-content">
-                    <a href="#" class="close">&times;</a>
-                    <h3 style="margin:0 0 5px;">Keywords</h3>
-                    <div class="scroller">
-                    <?php foreach ($keywords as $term): ?>
-                    <label><input type="checkbox" name="keywords[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['keywords']) && in_array($term->slug, $_GET['keywords'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></label><br>
-                    <?php endforeach; ?>
+                    <div class="modal-content">
+                        <a href="#" class="close">&times;</a>
+                        <h3 style="margin:0 0 5px;">Keywords</h3>
+                        <div class="scroller">
+                            <?php foreach ($keywords as $term): ?>
+                                <label><input type="checkbox" name="keywords[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['keywords']) && in_array($term->slug, $_GET['keywords'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></label><br>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
-                  </div>
                 </div>
             </div>
             <div>
                 <?php $authors = get_unique_author_users_from_publications(); ?>
                 <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#authorsModal"><strong>Authors</strong></a></div>
                 <div id="authorsModal" class="modal">
-                  <div class="modal-content">
-                    <a href="#" class="close">&times;</a>
-                    <h3 style="margin:0 0 5px;">Authors</h3>
-                    <div class="scroller">
-                    <?php foreach ($authors as $user): ?>
-                      <label><input type="checkbox" name="authors[]" value="<?php echo esc_attr($user->ID); ?>" <?php if (!empty($_GET['authors']) && in_array($user->ID, $_GET['authors'])) echo 'checked'; ?>> <?php echo esc_html($user->last_name); ?>, <?php echo esc_html($user->first_name); ?></label>
-                    <?php endforeach; ?>
+                    <div class="modal-content">
+                        <a href="#" class="close">&times;</a>
+                        <h3 style="margin:0 0 5px;">Authors</h3>
+                        <div class="scroller">
+                            <?php foreach ($authors as $user): ?>
+                                <label><input type="checkbox" name="authors[]" value="<?php echo esc_attr($user->ID); ?>" <?php if (!empty($_GET['authors']) && in_array($user->ID, $_GET['authors'])) echo 'checked'; ?>> <?php echo esc_html($user->last_name); ?>, <?php echo esc_html($user->first_name); ?></label>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
-                  </div>
                 </div>
             </div>
             <div>
                 <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#languageModal"><strong>Language</strong></a></div>
                 <div id="languageModal" class="modal">
-                  <div class="modal-content">
-                    <a href="#" class="close">&times;</a>
-                    <h3 style="margin:0 0 5px;">Language</h3>
-                    <label><input type="checkbox" name="language[]" value="1" <?php if (!empty($_GET['language']) && in_array(1, $_GET['language'])) echo 'checked'; ?>> English</label>
-                    <label><input type="checkbox" name="language[]" value="2" <?php if (!empty($_GET['language']) && in_array(2, $_GET['language'])) echo 'checked'; ?>>Spanish</label>
-                    <label><input type="checkbox" name="language[]" value="3" <?php if (!empty($_GET['language']) && in_array(3, $_GET['language'])) echo 'checked'; ?>> Chinese</label>
-                    <label><input type="checkbox" name="language[]" value="4" <?php if (!empty($_GET['language']) && in_array(4, $_GET['language'])) echo 'checked'; ?>> Other</label>
-                  </div>
+                    <div class="modal-content">
+                        <a href="#" class="close">&times;</a>
+                        <h3 style="margin:0 0 5px;">Language</h3>
+                        <label><input type="checkbox" name="language[]" value="1" <?php if (!empty($_GET['language']) && in_array(1, $_GET['language'])) echo 'checked'; ?>> English</label>
+                        <label><input type="checkbox" name="language[]" value="2" <?php if (!empty($_GET['language']) && in_array(2, $_GET['language'])) echo 'checked'; ?>>Spanish</label>
+                        <label><input type="checkbox" name="language[]" value="3" <?php if (!empty($_GET['language']) && in_array(3, $_GET['language'])) echo 'checked'; ?>> Chinese</label>
+                        <label><input type="checkbox" name="language[]" value="4" <?php if (!empty($_GET['language']) && in_array(4, $_GET['language'])) echo 'checked'; ?>> Other</label>
+                    </div>
                 </div>
             </div>
         </div>
         <style>
-        .wp-block-search__inside-wrapper { display: flex; flex: auto; flex-wrap: nowrap; max-width: 100%; }
-        .wp-block-search__input { appearance: none; border: 1px solid #949494; flex-grow: 1; margin-left: 0; margin-right: 0; min-width: 3rem; padding: 8px; text-decoration: unset!important; }   
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 999; }
-        .modal:target { opacity: 1; pointer-events: auto; }
-        .modal-content { position: relative; margin: 10% auto; padding: 20px; background: #fff; width: 90%; max-width: 400px; height:400px; border-radius: 8px; }
-        .scroller { overflow:auto; height:325px; }
-        .close { position: absolute; top: 10px; right: 15px; text-decoration: none; font-size: 24px; color: #333; }
+            .wp-block-search__inside-wrapper {
+                display: flex;
+                flex: auto;
+                flex-wrap: nowrap;
+                max-width: 100%;
+            }
+
+            .wp-block-search__input {
+                appearance: none;
+                border: 1px solid #949494;
+                flex-grow: 1;
+                margin-left: 0;
+                margin-right: 0;
+                min-width: 3rem;
+                padding: 8px;
+                text-decoration: unset !important;
+            }
+
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+                z-index: 999;
+            }
+
+            .modal:target {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .modal-content {
+                position: relative;
+                margin: 10% auto;
+                padding: 20px;
+                background: #fff;
+                width: 90%;
+                max-width: 400px;
+                height: 400px;
+                border-radius: 8px;
+            }
+
+            .scroller {
+                overflow: auto;
+                height: 325px;
+            }
+
+            .close {
+                position: absolute;
+                top: 10px;
+                right: 15px;
+                text-decoration: none;
+                font-size: 24px;
+                color: #333;
+            }
         </style>
     </form>
-    <?php return ob_get_clean();
+<?php return ob_get_clean();
 }
 add_shortcode('publications_search', 'publications_search_form');
 
 
 // Show Publication Search Results
-function shortcode_publication_results() {
+function shortcode_publication_results()
+{
     $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
     $paged = get_query_var('paged') ?: (get_query_var('page') ?: 1);
 
@@ -745,7 +813,7 @@ function shortcode_publication_results() {
         echo '<div class="wp-block-query alignwide caes-hub-post-list-grid">';
         echo '<div class="wp-block-post-template">';
 
-        echo '<h1 style="text-transform:uppercase;" class="wp-block-query-title has-x-large-font-size has-oswald-font-family">Search results for: “'.$search.'”</h1>';
+        echo '<h1 style="text-transform:uppercase;" class="wp-block-query-title has-x-large-font-size has-oswald-font-family">Search results for: “' . $search . '”</h1>';
 
         while ($query->have_posts()) {
             $query->the_post();
@@ -839,3 +907,56 @@ function shortcode_publication_results() {
     return ob_get_clean();
 }
 add_shortcode('publication_results', 'shortcode_publication_results');
+
+
+//** Update all_author_ids meta field when saving a post  */
+add_action('acf/save_post', 'update_flat_author_ids_meta', 20);
+function update_flat_author_ids_meta($post_id)
+{
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (get_post_type($post_id) !== 'publications') return;
+
+    // Get ACF repeater field called 'authors'
+    $authors = get_field('authors', $post_id);
+
+    if (!$authors || !is_array($authors)) {
+        delete_post_meta($post_id, 'all_author_ids');
+        return;
+    }
+    $author_ids = [];
+
+    foreach ($authors as $author) {
+        error_log("🔍 Author array: " . print_r($author, true));
+
+        if (!empty($author['user']) && is_numeric($author['user'])) {
+            $author_ids[] = (int) $author['user'];
+        } else {
+            error_log("⚠️ Invalid or missing 'user' field in author entry");
+        }
+    }
+
+    update_post_meta($post_id, 'all_author_ids', $author_ids);
+}
+
+
+// add_action('init', 'backfill_all_author_ids_for_publications');
+
+// function backfill_all_author_ids_for_publications()
+// {
+//     if (!is_admin() || !current_user_can('manage_options')) return;
+
+//     $args = array(
+//         'post_type' => 'publication',
+//         'posts_per_page' => -1,
+//         'post_status' => 'any',
+//     );
+
+//     $posts = get_posts($args);
+
+//     foreach ($posts as $post) {
+//         update_flat_author_ids_meta($post->ID);
+//     }
+
+//     // Optional: only run once
+//     // remove_action('init', 'backfill_all_author_ids_for_publications');
+// }

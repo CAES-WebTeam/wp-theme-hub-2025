@@ -24,6 +24,7 @@ $showHeading = $block['showHeading'] ?? false;
 $customHeading = $block['customHeading'] ?? '';
 $type = $block['type'] ?? 'authors';
 $snippetPrefix = $block['snippetPrefix'] ?? '';
+$snippetPrefixPosition = $block['snippetPrefixPosition'] ?? 'above';
 $grid = $block['grid'] ?? false;
 
 // Adjust logic flags
@@ -167,8 +168,10 @@ if ($data) {
     if ($authorNamesOnly) {
         $snippet_output = process_people($data, true);
         if (!empty($snippet_output)) {
-            if (!empty($snippetPrefix)) {
+            if (!empty($snippetPrefix) && $snippetPrefixPosition === 'above') {
                 $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span><br/>' . $snippet_output . '</p>';
+            } elseif (!empty($snippetPrefix) && $snippetPrefixPosition === 'same-line') {
+                $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span>' . $snippet_output . '</p>';
             } else {
                 $snippet_output = '<p>' . $snippet_output . '</p>';
             }

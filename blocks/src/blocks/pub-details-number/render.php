@@ -4,7 +4,7 @@ $pubNumber = get_field('publication_number', $post_id);
 $link = !empty($attributes['link']) ? $attributes['link'] : null;
 $showTooltip = $attributes['showTooltip'] ?? true;
 $displayAsInfo = $attributes['displayAsInfo'] ?? false;
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 $tooltip = '';
 $pubType = '';

@@ -25,12 +25,13 @@ add_action('enqueue_block_editor_assets', 'variation_assets');
 
 /*** START EVENTS */
 // Backend
-function rest_event_type($args, $request) {
+function rest_event_type($args, $request)
+{
     $event_type = $request->get_param('event_type');
 
     // Debug: Log the event_type param to confirm it's coming in
     error_log('Received event_type: ' . print_r($event_type, true));
-    
+
     // Sanitize and confirm the sanitized value
     $sanitized_event_type = sanitize_text_field($event_type);
     error_log('Sanitized: ' . print_r($sanitized_event_type, true));
@@ -47,7 +48,7 @@ function rest_event_type($args, $request) {
 
     // Debug: Log the modified query args before returning
     error_log('Modified query args: ' . print_r($args, true));
-    
+
     return $args;
 }
 add_filter('rest_events_query', 'rest_event_type', 10, 2);
@@ -56,7 +57,8 @@ add_filter('rest_events_query', 'rest_event_type', 10, 2);
 
 /*** START PUBLICATONS */
 // Backend
-function rest_pub_language_orderby($args, $request) {
+function rest_pub_language_orderby($args, $request)
+{
     // error_log('rest_pub_language_orderby activated');
 
     // Handle language filter
@@ -141,42 +143,64 @@ function rest_pub_language_orderby($args, $request) {
     return $args;
 }
 add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
+/*** END PUBLICATONS */
 
-
-// Front end
+/*** FRONT END */
 function variations_pre_render_block($pre_render, $parsed_block)
 {
-    // Check if 'attrs' and 'namespace' keys exist
-    if (isset($parsed_block['attrs']) && isset($parsed_block['attrs']['namespace'])) {
-        
+    if (isset($parsed_block['attrs']['namespace'])) {
         $namespace = $parsed_block['attrs']['namespace'];
 
-        // Define the filter function
         $filter_function = function ($query, $block) use ($parsed_block, $namespace) {
-            // Filter for publications (pubs-feed) by language
+            $meta_query = [];
+
+            // For pubs-feed blocks
             if ('pubs-feed' === $namespace) {
-                if (isset($parsed_block['attrs']['query']['language']) && $parsed_block['attrs']['query']['language'] !== '') {
-                    $query['meta_key'] = 'language';
-                    $query['meta_value'] = absint($parsed_block['attrs']['query']['language']);
+                // Filter by language
+                if (!empty($parsed_block['attrs']['query']['language'])) {
+                    $language_id = absint($parsed_block['attrs']['query']['language']);
+                    $meta_query[] = array(
+                        'key' => 'language',
+                        'value' => $language_id,
+                        'compare' => '='
+                    );
+                }
+
+                // Filter by author if on author archive
+                if (is_author()) {
+                    $author_id = get_queried_object_id();
+                    $meta_query[] = array(
+                        'key' => 'all_author_ids',
+                        'value' => $author_id,
+                        'compare' => 'LIKE'
+                    );
+                }
+
+                if (!empty($meta_query)) {
+                    $query['meta_query'] = $meta_query;
                 }
             }
-            
-            // Filter for events by event_type
+
+            // For upcoming-events blocks
             if ('upcoming-events' === $namespace) {
-                if (isset($parsed_block['attrs']['query']['event_type']) && $parsed_block['attrs']['query']['event_type'] !== '') {
-                    $query['meta_key'] = 'event_type';
-                    $query['meta_value'] = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
+                if (!empty($parsed_block['attrs']['query']['event_type'])) {
+                    $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
+                    $query['meta_query'] = array(
+                        array(
+                            'key' => 'event_type',
+                            'value' => $event_type,
+                            'compare' => '='
+                        )
+                    );
                 }
             }
 
             return $query;
         };
 
-        // Add the filter
         add_filter('query_loop_block_query_vars', $filter_function, 10, 2);
 
-        // Remove the filter after it has been applied
-        add_action('loop_end', function() use ($filter_function) {
+        add_action('loop_end', function () use ($filter_function) {
             remove_filter('query_loop_block_query_vars', $filter_function, 10, 2);
         });
     }
@@ -184,4 +208,4 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
-/*** END PUBLICATONS */
+/** END FRONT END */

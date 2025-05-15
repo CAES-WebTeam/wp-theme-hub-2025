@@ -8,6 +8,7 @@ export default function Edit({ attributes, setAttributes }) {
 		showHeading,
 		customHeading,
 		snippetPrefix,
+		snippetPrefixPosition,
 		snippetPrefixShown,
 		type,
 		grid,
@@ -80,11 +81,22 @@ export default function Edit({ attributes, setAttributes }) {
 						onChange={(val) => setAttributes({ snippetPrefixShown: val })}
 					/>
 					{snippetPrefixShown && (
-						<TextControl
-							label={__("Prefix text", "caes-hub")}
-							value={snippetPrefix}
-							onChange={(val) => setAttributes({ snippetPrefix: val })}
-						/>
+						<>
+							<SelectControl
+								label={__("Prefix text position", "caes-hub")}
+								value={snippetPrefixPosition}
+								options={[
+									{ label: "Above author names", value: "above" },
+									{ label: "Same line as author names", value: "same-line" }
+								]}
+								onChange={(val) => setAttributes({ snippetPrefixPosition: val })}
+							/>
+							<TextControl
+								label={__("Prefix text", "caes-hub")}
+								value={snippetPrefix}
+								onChange={(val) => setAttributes({ snippetPrefix: val })}
+							/>
+						</>
 					)}
 					<ToggleControl
 						label={__("Show heading", "caes-hub")}
@@ -108,14 +120,14 @@ export default function Edit({ attributes, setAttributes }) {
 					</h2>
 				)}
 
-				{snippetPrefixShown && (
+				{snippetPrefixShown && snippetPrefixPosition === "above" && (
 					<p className="pub-authors-snippet-prefix">{snippetPrefix}</p>
 				)}
 
 				<div className={`pub-authors-wrap ${gridClass}`}>
 					{displayVersion === "names-only" && (
 						<p className="pub-authors-snippet">
-							Jane Doe, John Arbuckle, and Garfield
+							{snippetPrefixShown && snippetPrefixPosition === "same-line" && `${snippetPrefix} `}Jane Doe, John Arbuckle, and Garfield
 						</p>
 					)}
 

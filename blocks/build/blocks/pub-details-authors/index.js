@@ -34,6 +34,7 @@ function Edit({
     showHeading,
     customHeading,
     snippetPrefix,
+    snippetPrefixPosition,
     snippetPrefixShown,
     type,
     grid,
@@ -114,12 +115,27 @@ function Edit({
           onChange: val => setAttributes({
             snippetPrefixShown: val
           })
-        }), snippetPrefixShown && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Prefix text", "caes-hub"),
-          value: snippetPrefix,
-          onChange: val => setAttributes({
-            snippetPrefix: val
-          })
+        }), snippetPrefixShown && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Prefix text position", "caes-hub"),
+            value: snippetPrefixPosition,
+            options: [{
+              label: "Above author names",
+              value: "above"
+            }, {
+              label: "Same line as author names",
+              value: "same-line"
+            }],
+            onChange: val => setAttributes({
+              snippetPrefixPosition: val
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Prefix text", "caes-hub"),
+            value: snippetPrefix,
+            onChange: val => setAttributes({
+              snippetPrefix: val
+            })
+          })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Show heading", "caes-hub"),
           checked: showHeading,
@@ -139,14 +155,14 @@ function Edit({
       children: [showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h2", {
         className: isCompact ? 'pub-authors-heading' : 'pub-authors-heading is-style-caes-hub-section-heading has-x-large-font-size',
         children: headingText
-      }), snippetPrefixShown && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+      }), snippetPrefixShown && snippetPrefixPosition === "above" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
         className: "pub-authors-snippet-prefix",
         children: snippetPrefix
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: `pub-authors-wrap ${gridClass}`,
-        children: [displayVersion === "names-only" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+        children: [displayVersion === "names-only" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
           className: "pub-authors-snippet",
-          children: "Jane Doe, John Arbuckle, and Garfield"
+          children: [snippetPrefixShown && snippetPrefixPosition === "same-line" && `${snippetPrefix} `, "Jane Doe, John Arbuckle, and Garfield"]
         }), displayVersion === "names-and-titles" && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
             className: "pub-author",
@@ -327,7 +343,7 @@ module.exports = window["wp"]["i18n"];
   \***************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/pub-details-authors","version":"0.1.0","title":"CAES Authors","category":"theme","icon":"businesswoman","description":"Displays a story or publication\'s authors.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"typography":{"fontSize":true,"lineHeight":true,"textAlign":true}},"attributes":{"displayVersion":{"type":"string","default":"name-and-title-below"},"showHeading":{"type":"boolean","default":true},"customHeading":{"type":"string","default":""},"type":{"type":"string","default":"authors"},"snippetPrefix":{"type":"string","default":""},"snippetPrefixShown":{"type":"boolean","default":false},"oneLine":{"type":"boolean","default":false},"grid":{"type":"boolean","default":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/pub-details-authors","version":"0.1.0","title":"CAES Authors","category":"theme","icon":"businesswoman","description":"Displays a story or publication\'s authors.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"typography":{"fontSize":true,"lineHeight":true,"textAlign":true}},"attributes":{"displayVersion":{"type":"string","default":"name-and-title-below"},"showHeading":{"type":"boolean","default":true},"customHeading":{"type":"string","default":""},"type":{"type":"string","default":"authors"},"snippetPrefix":{"type":"string","default":""},"snippetPrefixShown":{"type":"boolean","default":false},"snippetPrefixPosition":{"type":"string","default":"above"},"oneLine":{"type":"boolean","default":false},"grid":{"type":"boolean","default":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 
