@@ -21,10 +21,6 @@ require get_template_directory() . '/block-variations/index.php';
 
 
 add_action('admin_init', function () {
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-
     if (!current_user_can('manage_options') || !isset($_GET['import_inline_images'])) return;
 
 
