@@ -91,6 +91,7 @@ if ( is_user_logged_in() ) {
 
 
 // Load TinyMCE styles and scripts
+/*
 function enqueue_tinymce_for_acf() {
 	if ( function_exists('acf_form_head') ) {
 		wp_enqueue_editor();
@@ -115,3 +116,4 @@ echo"
 	});
 })(jQuery);
 </script>";
+*/
