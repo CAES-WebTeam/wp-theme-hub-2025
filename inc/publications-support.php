@@ -916,7 +916,7 @@ function update_flat_author_ids_meta($post_id)
     $author_ids = [];
 
     foreach ($authors as $author) {
-        error_log("🔍 Author array: " . print_r($author, true));
+        // error_log("🔍 Author array: " . print_r($author, true));
 
         if (!empty($author['user']) && is_numeric($author['user'])) {
             $author_ids[] = (int) $author['user'];
@@ -927,26 +927,3 @@ function update_flat_author_ids_meta($post_id)
 
     update_post_meta($post_id, 'all_author_ids', $author_ids);
 }
-
-
-// add_action('init', 'backfill_all_author_ids_for_publications');
-
-// function backfill_all_author_ids_for_publications()
-// {
-//     if (!is_admin() || !current_user_can('manage_options')) return;
-
-//     $args = array(
-//         'post_type' => 'publication',
-//         'posts_per_page' => -1,
-//         'post_status' => 'any',
-//     );
-
-//     $posts = get_posts($args);
-
-//     foreach ($posts as $post) {
-//         update_flat_author_ids_meta($post->ID);
-//     }
-
-//     // Optional: only run once
-//     // remove_action('init', 'backfill_all_author_ids_for_publications');
-// }
