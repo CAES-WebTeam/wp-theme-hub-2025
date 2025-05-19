@@ -78,7 +78,7 @@ if ( is_user_logged_in() ) {
 	echo '<div style="text-align:center;"><p>You need to be logged in to submit or view your events. Please log in below:</p>';
 
 	// Get the current page URL to redirect back to after login
-	$redirect_url = esc_url( home_url( add_query_arg( null, null ) ) );
+	$redirect_url = esc_url( '/events/submit-an-event/' );
 
 	// Display login form and set redirect after login
 	wp_login_form(array(
