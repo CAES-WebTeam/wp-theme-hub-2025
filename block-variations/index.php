@@ -171,10 +171,10 @@ function variations_pre_render_block($pre_render, $parsed_block)
                     $author_id = get_queried_object_id();
                     $meta_query[] = array(
                         'key' => 'all_author_ids',
-                        'value' => $author_id,
+                        'value' => 'i:' . $author_id . ';',
                         'compare' => 'LIKE'
                     );
-                }
+                }                
 
                 if (!empty($meta_query)) {
                     $query['meta_query'] = $meta_query;
