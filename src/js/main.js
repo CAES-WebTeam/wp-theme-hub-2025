@@ -141,4 +141,20 @@ document.addEventListener('DOMContentLoaded', function () {
       localStorage.setItem('savedPosts', JSON.stringify(saved));
     });
   });
+
+  // Add no-smooth-scroll class to html if the hash is #expert-advice
+  if (window.location.hash === '#expert-advice') {
+    document.documentElement.classList.add('no-smooth-scroll');
+
+    const el = document.getElementById('expert-advice');
+    if (el) {
+      el.scrollIntoView(); // Instant scroll
+    }
+
+    // Remove the class immediately
+    setTimeout(() => {
+      document.documentElement.classList.remove('no-smooth-scroll');
+    }, 0);
+  }
+
 });

@@ -208,4 +208,49 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
+add_filter('render_block', function ($block_content, $block) {
+    // Only apply to pubs-feed query loop on author archive pages
+    if (
+        is_author() &&
+        $block['blockName'] === 'core/query' &&
+        isset($block['attrs']['namespace']) &&
+        $block['attrs']['namespace'] === 'pubs-feed'
+    ) {
+        // Step 1: Add anchor to pagination links like ?query-1-page=2
+        $block_content = preg_replace_callback(
+            '/<a\s([^>]*href="[^"]*\?[^"]*query-[0-9]+-page=\d+[^"]*")([^>]*)>/i',
+            function ($matches) {
+                $href = $matches[1];
+                // Append #expert-advice just before the final quote
+                $updated_href = preg_replace('/(")$/', '#expert-advice$1', $href);
+                return '<a ' . $updated_href . $matches[2] . '>';
+            },
+            $block_content
+        );
+
+        // Step 2: Wrap the entire rendered query block in an anchor target
+        $block_content = '<div id="expert-advice">' . $block_content . '</div>';
+
+        // Step 3: Conditionally prepend heading if there are results
+        $query_args = isset($block['attrs']['query']) ? $block['attrs']['query'] : [];
+        $query_args = apply_filters('query_loop_block_query_vars', $query_args, $block);
+        $paged = get_query_var('paged') ?: (get_query_var('page') ?: 1);
+        $query_args['paged'] = $paged;
+
+        $query = new WP_Query($query_args);
+
+        if ($query->have_posts()) {
+            $heading = '<h2 class="expert-advice-heading is-style-caes-hub-section-heading">Expert Advice</h2>';
+            $block_content = $heading . $block_content;
+        }
+        wp_reset_postdata();
+
+        return $block_content;
+    }
+
+    return $block_content;
+}, 10, 2);
+
+
+
 /** END FRONT END */
