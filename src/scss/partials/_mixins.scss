@@ -18,6 +18,8 @@
     }
 }
 
+// Action button - has a background color, a white icon, and a label that appears on hover.
+
 @mixin action-button($url, $icon-width, $icon-height, $base-color, $hover-color, $spacing, $button-width, $hover-width, $label-hover-width) {
 
     display: flex;

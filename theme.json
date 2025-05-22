@@ -310,6 +310,9 @@
             "width": true,
             "color": true,
             "radius": true
+        },
+        "position": {
+            "sticky": true
         }
     },
     "styles": {

@@ -183,6 +183,11 @@ ul.is-style-caes-hub-list-checkbox {
 
 // GROUPS
 
+.is-style-caes-hub-olympic-accent-border {
+    border-left: 5px solid var(--wp--preset--color--olympic);
+    padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+}
+
 @media print {
     .wp-block-group.has-background {
         padding: 0 !important;

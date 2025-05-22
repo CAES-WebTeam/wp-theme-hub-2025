@@ -68,14 +68,14 @@ $tooltip_id = 'pub-tooltip-' . $post_id;
                         class="pub-number-link tooltip-trigger"
                         aria-describedby="<?php echo esc_attr($tooltip_id); ?>"
                         tabindex="0">
-                        <?php echo esc_html($pubNumber); ?>
+                        <span><?php echo esc_html($pubNumber); ?></span>
                     </a>
                 <?php else: ?>
                     <span
                         class="pub-number-link tooltip-trigger"
                         aria-describedby="<?php echo esc_attr($tooltip_id); ?>"
                         tabindex="0">
-                        <?php echo esc_html($pubNumber); ?>
+                        <span><?php echo esc_html($pubNumber); ?></span>
                     </span>
                 <?php endif; ?>
 
@@ -92,7 +92,7 @@ $tooltip_id = 'pub-tooltip-' . $post_id;
                     <?php echo esc_html($pubNumber); ?>
                 </a>
             <?php else: ?>
-                <span class="pub-number-link">
+                <span>
                     <?php echo esc_html($pubNumber); ?>
                 </span>
             <?php endif; ?>

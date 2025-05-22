@@ -1,5 +1,37 @@
-@media (min-width: 782px) {
-    .wp-block-caes-hub-action-pdf {
-        margin-left: auto !important;
+.wp-block-caes-hub-action-pdf {
+    a.button-link {
+        background-color: var(--wp--preset--color--olympic);
+        color: var(--wp--preset--color--base);
+        border-radius: 20rem;
+        padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+        text-decoration: none;
+        display: inline-flex; 
+        align-content: center;
+        flex-wrap: wrap;
+        line-height: 1;
+        gap: var(--wp--preset--spacing--20);
+        border: 1px solid var(--wp--preset--color--olympic);
+        font-size: var(--wp--preset--font-size--normal);
+        transition: all 0.3s ease-in-out;
+        &::before {
+            content: "";
+            display: inline-block;
+            width: 16px;
+            height: 17px;
+            background-color: var(--wp--preset--color--base);
+            mask-image: url('../../../../assets/images/pdf.svg');
+            mask-size: contain;
+            mask-repeat: no-repeat;
+            transition: all 0.3s ease-in-out;
+        }
+
+        &:hover, &:focus {
+            background-color: var(--wp--preset--color--base);
+            color: var(--wp--preset--color--olympic);
+            border: 1px solid var(--wp--preset--color--olympic);
+            &::before {
+                background-color: var(--wp--preset--color--olympic);
+            }
+        }
     }
 }

@@ -3,60 +3,90 @@
     align-content: center;
     flex-wrap: wrap;
 
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
     img {
         max-width: 100%;
     }
 
-    .tooltip-container {
-        position: relative;
-        display: inline-block;
-    }
-
-    .tooltip {
-        position: absolute;
-        top: calc(100% + 0.5rem);
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--wp--preset--color--olympic);
-        color: var(--wp--preset--color--base);
+    .info {
         font-size: var(--wp--preset--font-size--small);
-        padding: var(--wp--preset--spacing--30);
-        line-height: 1.2;
-        text-align: center;
-        border-radius: 3px;
-        width: 250px;
-        z-index: 1000;
-        opacity: 1;
-        visibility: visible;
-        transition: opacity 0.2s ease;
-        box-shadow: var(--wp--preset--shadow--small);
-    }
-
-    .tooltip:not(.visible) {
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-    }
-
-    .tooltip::after {
-        content: '';
-        position: absolute;
-        top: -12px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-width: 6px;
-        border-style: solid;
-        border-color: transparent transparent var(--wp--preset--color--olympic) transparent;
-    }
-
-    .tooltip-trigger {
+        line-height: 1.3;
+        margin-top: 0;
         display: flex;
+        flex-direction: row;
+    
+        &:before {
+            content: "";
+            display: inline-block;
+            width: 14px;
+            height: 16px;
+            margin: 2px 5px 0 0;
+            flex: none;
+            background-color: #004E60;
+            -webkit-mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='47' height='49' viewBox='0 0 47 49'%3E%3Cg data-name='Group 20301'%3E%3Cg data-name='Ellipse 134' transform='translate(0 1)' fill='none' stroke='black' stroke-width='3'%3E%3Ccircle cx='23.5' cy='23.5' r='23.5' stroke='none'/%3E%3Ccircle cx='23.5' cy='23.5' r='22'/%3E%3C/g%3E%3Ctext transform='translate(20)' fill='black' font-size='32' font-family='Oswald-Regular, Oswald'%3E%3Ctspan x='0' y='38'%3Ei%3C/tspan%3E%3C/text%3E%3C/g%3E%3C/svg%3E");
+            -webkit-mask-repeat: no-repeat;
+            -webkit-mask-size: contain;
+            mask-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='47' height='49' viewBox='0 0 47 49'%3E%3Cg data-name='Group 20301'%3E%3Cg data-name='Ellipse 134' transform='translate(0 1)' fill='none' stroke='black' stroke-width='3'%3E%3Ccircle cx='23.5' cy='23.5' r='23.5' stroke='none'/%3E%3Ccircle cx='23.5' cy='23.5' r='22'/%3E%3C/g%3E%3Ctext transform='translate(20)' fill='black' font-size='32' font-family='Oswald-Regular, Oswald'%3E%3Ctspan x='0' y='38'%3Ei%3C/tspan%3E%3C/text%3E%3C/g%3E%3C/svg%3E");
+            mask-repeat: no-repeat;
+            mask-size: contain;
+        }
     }
+    
+
+    // .tooltip-container {
+    //     position: relative;
+    //     display: inline-block;
+    // }
+
+    // .tooltip {
+    //     position: absolute;
+    //     top: calc(100% + 0.5rem);
+    //     left: 50%;
+    //     transform: translateX(-50%);
+    //     background-color: var(--wp--preset--color--olympic);
+    //     color: var(--wp--preset--color--base);
+    //     font-size: var(--wp--preset--font-size--small);
+    //     padding: var(--wp--preset--spacing--30);
+    //     line-height: 1.2;
+    //     text-align: center;
+    //     border-radius: 3px;
+    //     width: 250px;
+    //     z-index: 1000;
+    //     opacity: 1;
+    //     visibility: visible;
+    //     transition: opacity 0.2s ease;
+    //     box-shadow: var(--wp--preset--shadow--small);
+    // }
+
+    // .tooltip:not(.visible) {
+    //     opacity: 0;
+    //     visibility: hidden;
+    //     pointer-events: none;
+    // }
+
+    // .tooltip::after {
+    //     content: '';
+    //     position: absolute;
+    //     top: -12px;
+    //     left: 50%;
+    //     transform: translateX(-50%);
+    //     border-width: 6px;
+    //     border-style: solid;
+    //     border-color: transparent transparent var(--wp--preset--color--olympic) transparent;
+    // }
+
+    // .tooltip-trigger {
+    //     display: flex;
+    // }
 
 }
 
 @media (max-width: 782px) {
-	.wp-block-caes-hub-expert-mark .tooltip {
-		display: none !important;
-	}
+    .wp-block-caes-hub-expert-mark .tooltip {
+        display: none !important;
+    }
 }

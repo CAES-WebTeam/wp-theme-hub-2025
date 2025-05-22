@@ -32,7 +32,9 @@ import './editor.scss';
 export default function Edit(attributes) {
 	return (
 		<div {...useBlockProps()}>
-			<button class="caes-hub-action-pdf__button"><span class="label">Save PDF</span></button>
+			<a class="button-link" href="#">
+				<span class="label">Save PDF</span>
+			</a>
 		</div>
 	);
 }

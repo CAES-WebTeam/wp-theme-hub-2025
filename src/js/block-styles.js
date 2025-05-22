@@ -89,3 +89,7 @@ wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
   name: 'caes-hub-compact',
   label: 'Compact'
 });
+wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
+  name: 'caes-hub-olympic-accent-border',
+  label: 'Olympic Accent Border'
+});

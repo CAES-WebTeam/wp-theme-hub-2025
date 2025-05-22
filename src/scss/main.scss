@@ -75,6 +75,20 @@ figcaption a {
     margin-left: var(--wp--style--block-gap) !important;
 }
 
+.single-publications .caes-hub-content-post .align-right,
+.single-publications .caes-hub-content-post figure.alignright,
+.single-publications .caes-hub-content-f-img figure.alignright,
+.single-publications .caes-hub-content-post .align-right {
+    margin-right: 0 !important;
+}
+
+.single-publications .caes-hub-content-post .align-left,
+.single-publications .caes-hub-content-post figure.alignleft,
+.single-publications .caes-hub-content-f-img figure.alignleft,
+.single-publications .caes-hub-content-post .align-left {
+    margin-left: 0 !important;
+}
+
 .caes-hub-content-post .align-left {
     float: left;
     margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
@@ -83,6 +97,10 @@ figcaption a {
 
 @media screen and (max-width: 1150px) {
 
+    .single-publications .caes-hub-content-post figure.alignleft,
+    .single-publications .caes-hub-content-post figure.alignright,
+    .single-publications .caes-hub-content-post .align-left,
+    .single-publications .caes-hub-content-post .align-right,
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post figure.alignright,
     .caes-hub-content-post .align-left,
@@ -97,12 +115,16 @@ figcaption a {
         }
     }
 
+    .single-publications .caes-hub-content-post figure.alignleft,
+    .single-publications .caes-hub-content-post .align-left,
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post .align-left {
         margin-inline-start: 0;
         margin-left: 0 !important;
     }
 
+    .single-publications .caes-hub-content-post figure.alignright,
+    .single-publications .caes-hub-content-post .align-right,
     .caes-hub-content-post figure.alignright,
     .caes-hub-content-post .align-right {
         margin-inline-end: 0;
@@ -247,10 +269,15 @@ figcaption a {
 
         &.caes-hub-content-actions-in-body {
             position: unset;
-            float: right;
             margin-top: 0;
-            margin-right: var(--wp--preset--spacing--50) !important;
-            margin-left: var(--wp--preset--spacing--40) !important;
+            // margin-right: var(--wp--preset--spacing--50) !important;
+            // margin-left: var(--wp--preset--spacing--40) !important;
+            .wp-block-caes-hub-action-save,
+            .wp-block-caes-hub-action-share,
+            .wp-block-caes-hub-action-print,
+            .wp-block-caes-hub-action-ics {
+                margin-left: 0 !important;
+            }
         }
     }
 
