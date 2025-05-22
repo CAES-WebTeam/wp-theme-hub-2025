@@ -27,16 +27,16 @@ add_action('admin_init', function () {
     $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
 
-    $all_posts = get_posts([
+    $query = new WP_Query([
         'post_type'      => 'publications',
         'post_status'    => 'any',
-        'fields'         => 'all',
         'orderby'        => 'ID',
         'order'          => 'ASC',
-        'posts_per_page' => -1,
+        'posts_per_page' => $limit,
+        'offset'         => $start,
     ]);
 
-    $batch = array_slice($all_posts, $start, $limit);
+    $batch = $query->posts;
     $updated = 0;
 
     foreach ($batch as $post) {
