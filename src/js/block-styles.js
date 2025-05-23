@@ -93,3 +93,7 @@ wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
   name: 'caes-hub-olympic-accent-border',
   label: 'Olympic Accent Border'
 });
+wp.blocks.registerBlockStyle('caes-hub/toc-new', {
+  name: 'caes-hub-style-2',
+  label: 'Style 2'
+});

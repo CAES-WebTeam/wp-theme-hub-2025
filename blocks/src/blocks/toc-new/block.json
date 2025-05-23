@@ -40,6 +40,18 @@
 		"showSubheadings": {
 			"type": "boolean",
 			"default": true
+		},
+		"popout": {
+			"type": "boolean",
+			"default": true
+		},
+		"topOfContentAnchor": {
+			"type": "boolean",
+			"default": false
+		},
+		"anchorLinkText": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"textdomain": "toc-new",

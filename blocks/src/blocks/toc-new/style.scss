@@ -38,6 +38,51 @@
     &>*:last-child {
         margin-bottom: 0;
     }
+
+    &.is-style-caes-hub-style-2 {
+
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-size: var(--wp--preset--font-size--regular);
+            color: var(--wp--preset--color--contrast);
+            font-weight: 600;
+        }
+
+        li {
+            border-left: 1px solid rgba(0, 0, 0, 0.3);
+            padding: 0.4rem 0;
+            position: relative;
+            &.active>a {
+                font-weight: bold;
+            }
+            &.active {
+                border-left: 1px solid transparent;
+                &::before {
+                    content: "➤";
+                    color: var(--wp--preset--color--bulldog-red);
+                    position: absolute;
+                    left: -2px;
+                    font-size: 16px;
+                    position: absolute;
+                    top: 3px;
+                    left: -5px;
+                    width: 16px;
+                    height: 16px;
+                    padding: var(--space-4) var(--space-0);
+                }
+            }
+        }
+
+        a {
+            text-decoration: none;
+            padding-left: var(--wp--preset--spacing--40);
+            display: block;
+            line-height: 1.2;
+        }
+    }
 }
 
 .sticky-toc {
@@ -86,12 +131,12 @@
             margin: var(--wp--preset--spacing--20) 0;
             position: relative;
 
-            &.active > a {
+            &.active>a {
                 font-weight: bold;
             }
 
             &.active {
-                
+
 
                 &::before {
                     content: '\279E\00A0\00A0';
@@ -113,7 +158,7 @@
         list-style: none;
     }
 
-    ol > {
+    ol> {
         li {
             &.active {
                 &::before {

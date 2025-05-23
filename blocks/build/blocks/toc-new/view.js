@@ -10,6 +10,9 @@ window.addEventListener('load', function () {
   const showSubheadings = tocWrapper.dataset.showSubheadings === "1";
   const listStyle = tocWrapper.dataset.listStyle || "ul";
   const title = tocWrapper.dataset.title || "Table of Contents";
+  const enablePopout = tocWrapper.dataset.popout === "true" || tocWrapper.dataset.popout === "1";
+  const enableTopAnchor = tocWrapper.dataset.topOfContentAnchor === "true" || tocWrapper.dataset.topOfContentAnchor === "1";
+  const anchorLinkText = tocWrapper.dataset.anchorLinkText || "Top of Content";
 
   // Filter out the h2 element with the same text as the title
   const headings = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2')).filter(heading => heading.textContent !== title);
@@ -44,7 +47,29 @@ window.addEventListener('load', function () {
     const usedIDs = new Set();
     const tocList = createList();
     const stickyTocList = createList();
-    const headingMap = new Map();
+    const originalHeadingMap = new Map();
+    const stickyHeadingMap = new Map();
+
+    // Add top of content anchor if enabled
+    if (enableTopAnchor && headings.length > 0) {
+      const topAnchorId = 'top-of-page';
+
+      // Create top anchor list items
+      const topListItem = document.createElement('li');
+      const topLink = document.createElement('a');
+      topLink.textContent = anchorLinkText;
+      topLink.href = `#${topAnchorId}`;
+      topListItem.appendChild(topLink);
+      const stickyTopItem = topListItem.cloneNode(true);
+
+      // Add to both TOCs
+      tocList.appendChild(topListItem);
+      stickyTocList.appendChild(stickyTopItem);
+
+      // Map the top items for active state tracking
+      originalHeadingMap.set(topAnchorId, topListItem);
+      stickyHeadingMap.set(topAnchorId, stickyTopItem);
+    }
     let currentList = tocList;
     let stickyCurrentList = stickyTocList;
     let lastLevel = 2;
@@ -78,15 +103,16 @@ window.addEventListener('load', function () {
       currentList.appendChild(listItem);
       stickyCurrentList.appendChild(stickyItem);
 
-      // Ensure correct mapping between heading ID and sticky item
-      headingMap.set(uniqueID, stickyItem);
+      // Map both original and sticky items to their heading IDs
+      originalHeadingMap.set(uniqueID, listItem);
+      stickyHeadingMap.set(uniqueID, stickyItem);
       lastLevel = level;
     });
     tocWrapper.appendChild(tocList);
 
-    // Add sticky TOC before </main>
+    // Add sticky TOC before </main> only if popout is enabled
     const mainElement = document.querySelector('main');
-    if (mainElement) {
+    if (mainElement && enablePopout) {
       const stickyTOC = document.createElement('div');
       stickyTOC.classList.add('sticky-toc');
       const tocTitle = document.createElement('h2');
@@ -96,23 +122,35 @@ window.addEventListener('load', function () {
       mainElement.appendChild(stickyTOC);
       return {
         stickyTOC,
-        headingMap
+        originalHeadingMap,
+        stickyHeadingMap
       };
     }
     return {
       stickyTOC: null,
-      headingMap
+      originalHeadingMap,
+      stickyHeadingMap
     };
   }
   const {
     stickyTOC,
-    headingMap
+    originalHeadingMap,
+    stickyHeadingMap
   } = buildTOCs(headings) || {};
   function enableSmoothScroll() {
     document.addEventListener('click', function (event) {
       if (event.target.tagName === 'A' && event.target.hash) {
         event.preventDefault();
         const targetID = event.target.hash.substring(1);
+
+        // Handle top of page link
+        if (targetID === 'top-of-page') {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+          return;
+        }
         const targetElement = document.getElementById(targetID);
         if (targetElement) {
           targetElement.scrollIntoView({
@@ -139,18 +177,54 @@ window.addEventListener('load', function () {
   }
   window.addEventListener('scroll', handleScroll);
   function observeHeadings() {
-    if (!headingMap) return;
+    if (!originalHeadingMap || !stickyHeadingMap) return;
     const observer = new IntersectionObserver(entries => {
       let activeSet = false;
+
+      // Check if we're at the top of the page
+      const isAtTop = window.scrollY < 100; // Within 100px of top
+
+      if (isAtTop && enableTopAnchor) {
+        // Clear all active states
+        document.querySelectorAll('.wp-block-caes-hub-toc-new li').forEach(item => {
+          item.classList.remove('active');
+        });
+        if (enablePopout) {
+          document.querySelectorAll('.sticky-toc li').forEach(item => {
+            item.classList.remove('active');
+          });
+        }
+
+        // Set top link as active
+        if (originalHeadingMap.has('top-of-page')) {
+          originalHeadingMap.get('top-of-page').classList.add('active');
+        }
+        if (enablePopout && stickyHeadingMap.has('top-of-page')) {
+          stickyHeadingMap.get('top-of-page').classList.add('active');
+        }
+        return;
+      }
       entries.forEach(entry => {
         const id = entry.target.id;
-        if (headingMap.has(id)) {
-          const tocItem = headingMap.get(id);
+        if (originalHeadingMap.has(id) && stickyHeadingMap.has(id)) {
+          const originalTocItem = originalHeadingMap.get(id);
+          const stickyTocItem = stickyHeadingMap.get(id);
           if (entry.isIntersecting && !activeSet) {
-            document.querySelectorAll('.sticky-toc li').forEach(item => {
+            // Clear active states from both TOCs
+            document.querySelectorAll('.wp-block-caes-hub-toc-new li').forEach(item => {
               item.classList.remove('active');
             });
-            tocItem.classList.add('active');
+            if (enablePopout) {
+              document.querySelectorAll('.sticky-toc li').forEach(item => {
+                item.classList.remove('active');
+              });
+            }
+
+            // Set active states for both TOCs
+            originalTocItem.classList.add('active');
+            if (enablePopout) {
+              stickyTocItem.classList.add('active');
+            }
             activeSet = true;
           }
         }
@@ -160,6 +234,32 @@ window.addEventListener('load', function () {
       threshold: 0.1
     });
     headings.forEach(heading => observer.observe(heading));
+
+    // Also listen for scroll events to handle top-of-page detection
+    if (enableTopAnchor) {
+      window.addEventListener('scroll', () => {
+        const isAtTop = window.scrollY < 100;
+        if (isAtTop) {
+          // Clear all active states
+          document.querySelectorAll('.wp-block-caes-hub-toc-new li').forEach(item => {
+            item.classList.remove('active');
+          });
+          if (enablePopout) {
+            document.querySelectorAll('.sticky-toc li').forEach(item => {
+              item.classList.remove('active');
+            });
+          }
+
+          // Set top link as active
+          if (originalHeadingMap.has('top-of-page')) {
+            originalHeadingMap.get('top-of-page').classList.add('active');
+          }
+          if (enablePopout && stickyHeadingMap.has('top-of-page')) {
+            stickyHeadingMap.get('top-of-page').classList.add('active');
+          }
+        }
+      });
+    }
   }
   observeHeadings();
 });

@@ -31,7 +31,10 @@ function Edit({
   const {
     listStyle,
     tocHeading,
-    showSubheadings
+    showSubheadings,
+    popout,
+    topOfContentAnchor,
+    anchorLinkText
   } = attributes;
   const ListTag = listStyle === 'ol' ? 'ol' : 'ul';
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
@@ -61,6 +64,28 @@ function Edit({
             showSubheadings: newShowSubheadings
           }),
           help: showSubheadings ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Subheadings (H3 and below) are currently visible in the table of contents.') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Only H2 headings are currently visible in the table of contents.')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Popout Table of Contents'),
+          checked: popout,
+          onChange: newPopout => setAttributes({
+            popout: newPopout
+          }),
+          help: popout ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('TOC will be shown in a popout sidebar when the TOC is off screen.') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('TOC popout is disabled.')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Top of Content Anchor'),
+          checked: topOfContentAnchor,
+          onChange: newTopOfContentAnchor => setAttributes({
+            topOfContentAnchor: newTopOfContentAnchor
+          }),
+          help: topOfContentAnchor ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Anchor link to the top of the content is enabled.') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Anchor link to the top of the content is disabled.')
+        }), topOfContentAnchor && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Anchor Link Text'),
+          value: anchorLinkText,
+          onChange: newAnchorLinkText => setAttributes({
+            anchorLinkText: newAnchorLinkText
+          }),
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Top of Content'),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This text will be used for the anchor link to the top of the content.')
         })]
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
@@ -75,7 +100,12 @@ function Edit({
         placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Table of Contents')
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(ListTag, {
         className: listStyle === 'none' ? 'is-style-caes-hub-list-none' : '',
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
+        children: [topOfContentAnchor && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("a", {
+            href: "#top-of-content",
+            children: anchorLinkText
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("li", {
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("a", {
             href: "#",
             children: "List item 1"
@@ -214,7 +244,7 @@ module.exports = window["wp"]["i18n"];
   \***************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/toc-new","version":"0.1.0","title":"Table of Contents","category":"widgets","icon":"list-view","description":"Displays a table of contents based on page headings.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true,"blockGap":true},"shadow":true,"typography":{"fontSize":true,"textAlign":true,"lineHeight":true}},"attributes":{"listStyle":{"type":"string","default":"ul"},"tocHeading":{"type":"string","default":"Table of Contents"},"showSubheadings":{"type":"boolean","default":true}},"textdomain":"toc-new","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/toc-new","version":"0.1.0","title":"Table of Contents","category":"widgets","icon":"list-view","description":"Displays a table of contents based on page headings.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true,"blockGap":true},"shadow":true,"typography":{"fontSize":true,"textAlign":true,"lineHeight":true}},"attributes":{"listStyle":{"type":"string","default":"ul"},"tocHeading":{"type":"string","default":"Table of Contents"},"showSubheadings":{"type":"boolean","default":true},"popout":{"type":"boolean","default":true},"topOfContentAnchor":{"type":"boolean","default":false},"anchorLinkText":{"type":"string","default":""}},"textdomain":"toc-new","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
 
 /***/ })
 
