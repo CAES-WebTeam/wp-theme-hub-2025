@@ -28,7 +28,7 @@ add_action('admin_init', function () {
     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
 
     $query = new WP_Query([
-        'post_type'      => 'publications',
+        'post_type'      => 'post',
         'post_status'    => 'any',
         'orderby'        => 'ID',
         'order'          => 'ASC',
