@@ -935,7 +935,7 @@ add_action('init', function () {
         // Clear history for all publications
         $all_posts = get_posts([
             'post_type'      => 'publications',
-            'post_status'    => 'any',
+            'post_status'    => ['publish', 'draft', 'pending', 'future', 'private', 'inherit'],
             'fields'         => 'ids',
             'posts_per_page' => -1,
         ]);
@@ -964,6 +964,7 @@ add_action('init', function () {
         foreach ($grouped as $publication_id => $history_rows) {
             $posts = get_posts([
                 'post_type'  => 'publications',
+				'post_status'    => ['publish', 'draft', 'pending', 'future', 'private', 'inherit'],
                 'meta_key'   => 'publication_id',
                 'meta_value' => $publication_id,
                 'posts_per_page' => 1,
