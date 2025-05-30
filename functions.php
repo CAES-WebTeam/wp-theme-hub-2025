@@ -52,7 +52,7 @@ add_action('init', function () {
 		$posts = get_posts([
 			'post_type'      => 'publications',
 			'post_status'    => ['publish', 'draft', 'pending', 'future', 'private'],
-			'meta_key'       => 'story_id',
+			'meta_key'       => 'id',
 			'meta_value'     => $story_id,
 			'posts_per_page' => 1,
 			'fields'         => 'ids',
