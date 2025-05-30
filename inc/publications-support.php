@@ -147,81 +147,146 @@ add_action('admin_post_generate_pdf', 'generate_pdf');
 add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');
 
 
-
 /****** IMPORT ACTIONS ******/
-// Save Post Actions
-add_action('pmxi_saved_post', 'attach_authors_to_repeater', 10, 1);
-function attach_authors_to_repeater($post_id)
-{
-    //if (get_post_type($post_id) !== 'publication') return;
+add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
+    if (get_post_type($post_id) !== 'publications') return;
 
+    // Authors Repeater
     $raw_data = get_field('raw_author_ids', $post_id);
-    if (empty($raw_data)) return;
-
-    $rows = explode('|', rtrim($raw_data, '|'));
     $repeater = [];
+    $lead_author_user_id = null;
 
-    foreach ($rows as $row) {
-        $row = trim($row);
-        if (empty($row)) continue;
+    if (!empty($raw_data)) {
+        $rows = explode('|', rtrim($raw_data, '|'));
 
-        // Convert pseudo-JSON into proper JSON
-        $json_str = '{' . $row . '}';
-        $data = json_decode($json_str, true);
-        if (!isset($data['college_id'])) continue;
+        foreach ($rows as $row) {
+            $row = trim($row);
+            if (empty($row)) continue;
 
-        $cid = trim($data['college_id']);
-        $is_lead = !empty($data['lead']) && $data['lead'] == '1';
-        $is_co = !empty($data['co']) && $data['co'] == '1';
+            $json_str = '{' . $row . '}';
+            $data = json_decode($json_str, true);
+            if (!isset($data['college_id'])) continue;
 
-        $users = get_users([
-            'meta_key' => 'college_id',
-            'meta_value' => $cid,
-            'number' => 1
-        ]);
+            $cid = trim($data['college_id']);
+            $is_lead = !empty($data['lead']) && $data['lead'] == '1';
+            $is_co = !empty($data['co']) && $data['co'] == '1';
 
-        if (!empty($users)) {
-            $user_id = $users[0]->ID;
+            $users = get_users([
+                'meta_key' => 'college_id',
+                'meta_value' => $cid,
+                'number' => 1
+            ]);
 
-            if ($is_lead && !$lead_author_user_id) {
-                $lead_author_user_id = $user_id;
+            if (!empty($users)) {
+                $user_id = $users[0]->ID;
+
+                if ($is_lead && !$lead_author_user_id) {
+                    $lead_author_user_id = $user_id;
+                }
+
+                $repeater[] = [
+                    'user' => $user_id,
+                    'lead_author' => $is_lead,
+                    'co_author' => $is_co,
+                ];
+            }
+        }
+
+        if (!empty($repeater)) update_field('authors', $repeater, $post_id);
+        if ($lead_author_user_id) wp_update_post(['ID' => $post_id, 'post_author' => $lead_author_user_id]);
+    }
+
+    // Clean Content and Replace Inline Images
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+
+    $original_content = get_post_field('post_content', $post_id);
+    $content = $original_content;
+
+    // Clean unwanted characters
+    $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
+    $content = preg_replace('/<p>\s*<\/p>/', '', $content);
+
+    // Replace inline images
+    preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $content, $matches);
+    if (!empty($matches[1])) {
+        foreach ($matches[1] as $img_url) {
+            if (strpos($img_url, home_url()) !== false || strpos($img_url, '/wp-content/uploads/') !== false) continue;
+
+            $tmp = download_url($img_url);
+            if (is_wp_error($tmp)) continue;
+
+            $file_array = [
+                'name'     => basename(parse_url($img_url, PHP_URL_PATH)),
+                'tmp_name' => $tmp,
+            ];
+
+            $attachment_id = media_handle_sideload($file_array, $post_id);
+            if (is_wp_error($attachment_id)) {
+                @unlink($tmp);
+                continue;
             }
 
-            $repeater[] = [
-                'user' => $user_id,
-                'lead_author' => $is_lead,
-                'co_author' => $is_co
-            ];
+            $new_url = wp_get_attachment_url($attachment_id);
+            if ($new_url) $content = str_replace($img_url, $new_url, $content);
         }
     }
 
-    if (!empty($repeater)) {
-        update_field('authors', $repeater, $post_id);
+    if ($content !== $original_content) {
+        wp_update_post(['ID' => $post_id, 'post_content' => $content]);
     }
 
-    // Set post author if we found a lead author
-    if ($lead_author_user_id) {
-        wp_update_post([
-            'ID' => $post_id,
-            'post_author' => $lead_author_user_id
-        ]);
+    // --- Type Field Injection into Repeater Fields ---
+    $authors = get_field('authors', $post_id);
+    if (is_array($authors)) {
+        foreach ($authors as &$row) $row['type'] = 'User';
+        update_field('authors', $authors, $post_id);
     }
-}
 
+    $experts = get_field('experts', $post_id);
+    if (is_array($experts)) {
+        foreach ($experts as &$row) $row['type'] = 'User';
+        update_field('experts', $experts, $post_id);
+    }
 
-// Clean up content
-add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
-    // Get the post content
-    $content = get_post_field('post_content', $post_id);
+    //  Assign Keywords from JSON 
+    static $keyword_map = null;
+    if ($keyword_map === null) {
+        $json_path = get_stylesheet_directory() . '/json/pub-keywords.json';
+        $keyword_map = [];
+        if (file_exists($json_path)) {
+            $json_data = file_get_contents($json_path);
+            $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+            $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+            $pairs = json_decode($json_data, true);
+            if (is_array($pairs)) {
+                foreach ($pairs as $pair) {
+                    $pub_id = $pair['PUBLICATION_ID'] ?? null;
+                    $kw_id  = $pair['KEYWORD_ID'] ?? null;
+                    if ($pub_id && $kw_id) {
+                        $keyword_map[$pub_id][] = $kw_id;
+                    }
+                }
+            }
+        }
+    }
 
-    // Remove empty <p> tags
-    $content = preg_replace('/<p>\s*<\/p>/', '', $content);
-
-    // Update the post content
-    wp_update_post([
-        'ID'           => $post_id,
-        'post_content' => $content,
-    ]);
+    $pub_id = get_field('publication_id', $post_id);
+    if ($pub_id && !empty($keyword_map[$pub_id])) {
+        foreach ($keyword_map[$pub_id] as $kw_id) {
+            $terms = get_terms([
+                'taxonomy' => 'keywords',
+                'hide_empty' => false,
+                'meta_query' => [
+                    [ 'key' => 'keyword_id', 'value' => $kw_id ]
+                ]
+            ]);
+            if (!empty($terms) && !is_wp_error($terms)) {
+                wp_set_object_terms($post_id, intval($terms[0]->term_id), 'keywords', true);
+            }
+        }
+    }
 }, 10, 3);
 
 
@@ -247,84 +312,6 @@ function get_full_image_url($relative_path)
         return ''; // Return empty to avoid import errors
     }
 }
-
-// Assign Keywords
-function assign_keywords_to_publications_from_json($json_file_path)
-{
-    if (!file_exists($json_file_path)) {
-        print_r("JSON file not found: $json_file_path");
-        return;
-    }
-
-    $json_data = file_get_contents($json_file_path);
-    $json_data = trim($json_data);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
-
-    $pairs = json_decode($json_data, true);
-
-    if (!$pairs || !is_array($pairs)) {
-        print_r("Invalid or empty JSON structure: " . json_last_error_msg());
-        return;
-    }
-
-    foreach ($pairs as $pair) {
-        $pub_id = $pair['PUBLICATION_ID'] ?? null;
-        $kw_id  = $pair['KEYWORD_ID'] ?? null;
-
-        if (!$pub_id || !$kw_id) continue;
-
-        // Find the post with matching publication_id (ACF field)
-        $posts = get_posts([
-            'post_type' => 'publications',
-            'meta_key' => 'publication_id',
-            'meta_value' => $pub_id,
-            'posts_per_page' => 1,
-            'fields' => 'ids'
-        ]);
-
-        if (empty($posts)) {
-            //print_r("No publication found for publication_id: $pub_id");
-            continue;
-        }
-
-        $post_id = $posts[0];
-
-        // Find the keyword term with matching keyword_id (ACF field)
-        $terms = get_terms([
-            'taxonomy' => 'keywords',
-            'hide_empty' => false,
-            'meta_query' => [
-                [
-                    'key' => 'keyword_id',
-                    'value' => $kw_id,
-                    'compare' => '='
-                ]
-            ]
-        ]);
-
-        if (empty($terms) || is_wp_error($terms)) {
-            print_r("No keyword term found for keyword_id: $kw_id");
-            continue;
-        }
-
-        $term_id = $terms[0]->term_id;
-
-        // Assign the term to the publication
-        wp_set_object_terms($post_id, intval($term_id), 'keywords', true);
-        print_r("Assigned keyword for publication_id: $pub_id");
-    }
-
-    print_r("Keyword assignment complete.");
-}
-
-add_action('init', function () {
-    if (!is_admin() && isset($_GET['run_keywords'])) {
-        $json_path = get_stylesheet_directory() . '/json/pub-keywords.json';
-        assign_keywords_to_publications_from_json($json_path);
-        exit;
-    }
-});
 
 // Custom rewrite rules for publications
 function custom_publications_rewrite_rules()
@@ -927,3 +914,70 @@ function update_flat_author_ids_meta($post_id)
 
     update_post_meta($post_id, 'all_author_ids', $author_ids);
 }
+
+// UPDATE ALL HISTORY
+add_action('init', function () {
+    if (!is_admin() && isset($_GET['update_history']) && current_user_can('manage_options')) {
+        $json_path = get_template_directory() . '/json/pubs-history.json';
+        if (!file_exists($json_path)) {
+            wp_die('History JSON file not found.');
+        }
+
+        $json_data = file_get_contents($json_path);
+        $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Strip BOM
+        $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+        $entries = json_decode($json_data, true);
+
+        if (!is_array($entries)) {
+            wp_die('Invalid JSON structure.');
+        }
+
+        // Clear history for all publications
+        $all_posts = get_posts([
+            'post_type'      => 'publications',
+            'post_status'    => ['publish', 'draft', 'pending', 'future', 'private', 'inherit'],
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+        ]);
+
+        foreach ($all_posts as $post_id) {
+            delete_field('history', $post_id);
+        }
+
+        // Group new entries by publication
+        $grouped = [];
+        foreach ($entries as $entry) {
+            $pub_id = $entry['PUBLICATION_ID'] ?? null;
+            $state  = $entry['STATE_ID'] ?? null;
+            $date   = $entry['DATE_OF_CHANGE'] ?? null;
+
+            if ($pub_id && $state && $date) {
+                $grouped[$pub_id][] = [
+                    'status' => $state,
+                    'date'   => $date
+                ];
+            }
+        }
+
+        $updated = 0;
+
+        foreach ($grouped as $publication_id => $history_rows) {
+            $posts = get_posts([
+                'post_type'  => 'publications',
+				'post_status'    => ['publish', 'draft', 'pending', 'future', 'private', 'inherit'],
+                'meta_key'   => 'publication_id',
+                'meta_value' => $publication_id,
+                'posts_per_page' => 1,
+                'fields'     => 'ids'
+            ]);
+
+            if (empty($posts)) continue;
+
+            $post_id = $posts[0];
+            update_field('history', $history_rows, $post_id);
+            $updated++;
+        }
+
+        wp_die("Reset and rebuilt history for {$updated} publications.");
+    }
+});
