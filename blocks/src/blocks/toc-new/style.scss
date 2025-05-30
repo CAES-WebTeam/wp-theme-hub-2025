@@ -49,6 +49,7 @@
             font-size: var(--wp--preset--font-size--regular);
             color: var(--wp--preset--color--contrast);
             font-weight: 600;
+            margin-bottom: 0;
         }
 
         li {
@@ -179,5 +180,18 @@
     .sticky-toc {
         display: none !important;
         /* Hide on print */
+    }
+}
+
+.toc-scroll-wrapper {
+    max-height: 55vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: var(--wp--preset--spacing--40);
+}
+
+@media (max-width: 768px) {
+    .toc-scroll-wrapper {
+        max-height: none;
     }
 }

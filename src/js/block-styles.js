@@ -84,6 +84,17 @@ wp.blocks.registerBlockStyle( 'core/table', {
   label: 'Vertical Stripes with Borders'
 })
 
+// Group Editor Styles
+wp.blocks.registerBlockStyle( 'core/group', {
+  name: 'caes-hub-align-left-50',
+  label: 'Align Left 50%'
+})
+
+wp.blocks.registerBlockStyle( 'core/group', {
+  name: 'caes-hub-align-right-50',
+  label: 'Align Right 50%'
+})
+
 // CUSTOM BLOCKS
 wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
   name: 'caes-hub-compact',

@@ -7,8 +7,9 @@ import {
 } from '@wordpress/block-editor';
 import {
     PanelBody,
-    ComboboxControl,
+    FormTokenField,
     SelectControl,
+    __experimentalNumberControl as NumberControl
 } from '@wordpress/components';
 import {
     useState,
@@ -24,14 +25,12 @@ import './editor.scss';
  * @param {Object} props All props passed to this function.
  * @return {WPElement}   Element to render.
  */
-export default function Edit(props) {
-    const {
-        attributes,
-    } = props;
+export default function Edit({ attributes, setAttributes }) {
 
     const {
-        postId,
+        postIds = [],
         postType,
+        feedType,
     } = attributes;
 
     // Function to get posts based on selected post type
@@ -49,22 +48,37 @@ export default function Edit(props) {
 
     // Handle post type change
     const handlePostTypeChange = (value) => {
-        props.setAttributes({ postType: value });
+        setAttributes({ postType: value });
         // Reset the postId when post type changes
-        props.setAttributes({ postId: 0 });
+        setAttributes({ postId: 0 });
     };
 
     const [filteredOptions, setFilteredOptions] = useState(getPosts());
 
     const DEFAULT_TEMPLATE = [
-        [ 'core/post-title', {} ],
-        [ 'core/post-excerpt', {} ]
+        ['core/post-title', {}],
+        ['core/post-excerpt', {}]
     ];
 
     const inspectorControls = (
         <>
             <InspectorControls>
                 <PanelBody title={__('Featured Content Settings', 'hand-picked-post')}>
+                    <SelectControl
+                        label={__('Select Feed Type', 'hand-picked-post')}
+                        value={feedType}
+                        options={[
+                            { label: __('Related Keywords', 'hand-picked-post'), value: 'related-keywords' },
+                            { label: __('Hand Pick Posts', 'hand-picked-post'), value: 'hand-picked' }
+                        ]}
+                        onChange={(value) => {
+                            const updates = { feedType: value };
+                            if (value === 'related-keywords') {
+                                updates.postId = 0; // Clear selected post
+                            }
+                            setAttributes(updates);
+                        }}
+                    />
                     {/* Post Type Selection Control */}
                     <SelectControl
                         label={__('Select Post Type', 'hand-picked-post')}
@@ -78,49 +92,63 @@ export default function Edit(props) {
                         onChange={handlePostTypeChange}
                     />
                     {/* Post Selection Control */}
-                    <ComboboxControl
-                        label={__('Select Post', 'hand-picked-post')}
-                        value={postId}
-                        onChange={(id) => props.setAttributes({ postId: parseInt(id) })}
-                        options={getPosts()}
-                        onFilterValueChange={(inputValue) =>
-                            setFilteredOptions(
-                                getPosts().filter((option) =>
-                                    option.label
-                                        .toLowerCase()
-                                        .startsWith(inputValue.toLowerCase())
-                                )
-                            )
-                        }
-                    />
+                    {attributes.feedType === 'hand-picked' && (
+                        <FormTokenField
+                            label={__('Select Posts', 'hand-picked-post')}
+                            value={postIds.map((id) => {
+                                const post = getPosts().find((p) => p.value === id);
+                                return post ? post.label : id;
+                            })}
+                            suggestions={getPosts().map((p) => p.label)}
+                            onChange={(selectedLabels) => {
+                                const allPosts = getPosts();
+                                const selectedIds = selectedLabels
+                                    .map((label) => {
+                                        const match = allPosts.find((p) => p.label === label);
+                                        return match ? match.value : null;
+                                    })
+                                    .filter((id) => id !== null);
+                                setAttributes({ postIds: selectedIds });
+                            }}
+                        />
+                    )}
+                    {attributes.feedType === 'related-keywords' && (
+                        <NumberControl
+                            label={__('Number of Items', 'hand-picked-post')}
+                            value={attributes.numberOfItems}
+                            min={1}
+                            onChange={(value) => setAttributes({ numberOfItems: parseInt(value) })}
+                        />
+                    )}
                 </PanelBody>
             </InspectorControls>
         </>
     );
 
-    if (0 === postId) {
-        return (
-            <>
-                {inspectorControls}
-                <div {...useBlockProps()}>
-                    <p className="hand-picked-post-empty">{__(
-                        'Please click this block and select a post from the right side.',
-                        'hand-picked-post'
-                    )
-                    }</p>
-                </div>
-            </>
-        );
-    }
-
     return (
         <>
             {inspectorControls}
             <div {...useBlockProps()}>
-                <InnerBlocks 
-                    template={DEFAULT_TEMPLATE}
-                />
+                
+                {feedType === 'hand-picked' && (!postIds || postIds.length === 0) && (
+                    <p className="hand-picked-post-empty">
+                        {__('Please select one or more posts from the sidebar.', 'hand-picked-post')}
+                    </p>
+                )}
+
+                {feedType === 'hand-picked' && postIds && postIds.length > 0 && (
+                    <InnerBlocks template={DEFAULT_TEMPLATE} />
+                )}
+
+
+                {feedType === 'related-keywords' && (
+                    <>
+                        <InnerBlocks template={DEFAULT_TEMPLATE} />
+                    </>
+                )}
+
             </div>
         </>
     );
+
 }

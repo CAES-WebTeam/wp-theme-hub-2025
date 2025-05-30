@@ -40,13 +40,14 @@ __webpack_require__.r(__webpack_exports__);
  * @return {WPElement}   Element to render.
  */
 
-function Edit(props) {
+function Edit({
+  attributes,
+  setAttributes
+}) {
   const {
-    attributes
-  } = props;
-  const {
-    postId,
-    postType
+    postIds = [],
+    postType,
+    feedType
   } = attributes;
 
   // Function to get posts based on selected post type
@@ -69,11 +70,11 @@ function Edit(props) {
 
   // Handle post type change
   const handlePostTypeChange = value => {
-    props.setAttributes({
+    setAttributes({
       postType: value
     });
     // Reset the postId when post type changes
-    props.setAttributes({
+    setAttributes({
       postId: 0
     });
   };
@@ -84,6 +85,25 @@ function Edit(props) {
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Featured Content Settings', 'hand-picked-post'),
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Feed Type', 'hand-picked-post'),
+          value: feedType,
+          options: [{
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Related Keywords', 'hand-picked-post'),
+            value: 'related-keywords'
+          }, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hand Pick Posts', 'hand-picked-post'),
+            value: 'hand-picked'
+          }],
+          onChange: value => {
+            const updates = {
+              feedType: value
+            };
+            if (value === 'related-keywords') {
+              updates.postId = 0; // Clear selected post
+            }
+            setAttributes(updates);
+          }
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Post Type', 'hand-picked-post'),
           value: postType,
           options: [{
@@ -100,35 +120,47 @@ function Edit(props) {
             value: 'publication'
           }],
           onChange: handlePostTypeChange
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ComboboxControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Post', 'hand-picked-post'),
-          value: postId,
-          onChange: id => props.setAttributes({
-            postId: parseInt(id)
+        }), attributes.feedType === 'hand-picked' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FormTokenField, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Posts', 'hand-picked-post'),
+          value: postIds.map(id => {
+            const post = getPosts().find(p => p.value === id);
+            return post ? post.label : id;
           }),
-          options: getPosts(),
-          onFilterValueChange: inputValue => setFilteredOptions(getPosts().filter(option => option.label.toLowerCase().startsWith(inputValue.toLowerCase())))
+          suggestions: getPosts().map(p => p.label),
+          onChange: selectedLabels => {
+            const allPosts = getPosts();
+            const selectedIds = selectedLabels.map(label => {
+              const match = allPosts.find(p => p.label === label);
+              return match ? match.value : null;
+            }).filter(id => id !== null);
+            setAttributes({
+              postIds: selectedIds
+            });
+          }
+        }), attributes.feedType === 'related-keywords' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number of Items', 'hand-picked-post'),
+          value: attributes.numberOfItems,
+          min: 1,
+          onChange: value => setAttributes({
+            numberOfItems: parseInt(value)
+          })
         })]
       })
     })
   });
-  if (0 === postId) {
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-      children: [inspectorControls, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
-        ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
-          className: "hand-picked-post-empty",
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Please click this block and select a post from the right side.', 'hand-picked-post')
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+    children: [inspectorControls, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("div", {
+      ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
+      children: [feedType === 'hand-picked' && (!postIds || postIds.length === 0) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+        className: "hand-picked-post-empty",
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Please select one or more posts from the sidebar.', 'hand-picked-post')
+      }), feedType === 'hand-picked' && postIds && postIds.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+        template: DEFAULT_TEMPLATE
+      }), feedType === 'related-keywords' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+          template: DEFAULT_TEMPLATE
         })
       })]
-    });
-  }
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-    children: [inspectorControls, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("div", {
-      ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
-        template: DEFAULT_TEMPLATE
-      })
     })]
   });
 }
@@ -301,7 +333,7 @@ module.exports = window["wp"]["i18n"];
   \************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Hand Picked Post","category":"widgets","icon":"block-default","description":"Displays a hand selected post.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true,"blockGap":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postId":{"type":"number","default":0},"postType":{"type":"string","default":"post"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}}},"providesContext":{"postId":"postId","postType":"postType","queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Related and Hand Picked Posts","category":"widgets","icon":"block-default","description":"Displays either related (based on keyword or other taxonomy) or hand selected posts.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true,"blockGap":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postIds":{"type":"array","default":[]},"postType":{"type":"string","default":"post"},"feedType":{"type":"string","default":"related-keywords"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}},"numberOfItems":{"type":"number","default":3}},"providesContext":{"postId":"postId","postType":"postType","queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 

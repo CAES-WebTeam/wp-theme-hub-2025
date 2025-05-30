@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/hand-picked-post",
   "version": "0.1.0",
-  "title": "Hand Picked Post",
+  "title": "Related and Hand Picked Posts",
   "category": "widgets",
   "icon": "block-default",
-  "description": "Displays a hand selected post.",
+  "description": "Displays either related (based on keyword or other taxonomy) or hand selected posts.",
   "example": {},
   "supports": {
     "align": true,
@@ -27,13 +27,17 @@
     }
   },
   "attributes": {
-    "postId": {
-      "type": "number",
-      "default": 0
+    "postIds": {
+      "type": "array",
+      "default": []
     },
     "postType": {
       "type": "string",
       "default": "post"
+    },
+    "feedType": {
+      "type": "string",
+      "default": "related-keywords"
     },
     "queryId": {
       "type": "number",
@@ -51,6 +55,10 @@
       "default": {
         "allowOrientation": true
       }
+    },
+    "numberOfItems": {
+      "type": "number",
+      "default": 3
     }
   },
   "providesContext": {

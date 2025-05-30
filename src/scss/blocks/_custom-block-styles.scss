@@ -49,6 +49,11 @@
 ul.is-style-caes-hub-list-none {
     padding-inline-start: 0;
     list-style: none;
+    ul {
+        list-style: none;
+        list-style: none;
+        margin: var(--wp--preset--spacing--20) 0;
+    }
 }
 
 // Use checkbox for ul
@@ -192,6 +197,22 @@ ul.is-style-caes-hub-list-checkbox {
     .wp-block-group.has-background {
         padding: 0 !important;
     }
+}
+
+// Custom alignments for group blocks, since Gutenberg doesn't support this natively
+.is-style-caes-hub-align-left-50 {
+    float: left;
+    max-width: calc(var(--wp--style--global--content-size) / 2) !important;
+    margin-right: var(--wp--preset--spacing--60) !important;
+    margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+}
+.is-style-caes-hub-align-right-50 {
+    float: right;
+    max-width: calc(var(--wp--style--global--content-size) / 2) !important;
+    margin-left: var(--wp--preset--spacing--60) !important;
+    margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
 
 // POST TERMS
