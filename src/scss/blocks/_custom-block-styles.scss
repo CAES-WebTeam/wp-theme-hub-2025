@@ -206,6 +206,7 @@ ul.is-style-caes-hub-list-checkbox {
     margin-right: var(--wp--style--block-gap) !important;
     margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    width: 100%;
 }
 .is-style-caes-hub-align-right-40 {
     float: right;
@@ -213,6 +214,7 @@ ul.is-style-caes-hub-list-checkbox {
     margin-left: var(--wp--style--block-gap) !important;
     margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
+    width: 100%;
 }
 
 // POST TERMS

@@ -28,7 +28,17 @@ $SPACING_CLASSES = array(
 	6 => 'gap-wp-preset-spacing-70',
 	7 => 'gap-wp-preset-spacing-80',
 );
-$spacing_class = isset( $SPACING_CLASSES[ $customGapStep ] ) ? $SPACING_CLASSES[ $customGapStep ] : '';
+
+// only set spacing class if columns are set to grid
+if ( $displayLayout == 'grid' && isset( $SPACING_CLASSES[ $customGapStep ] ) ) {
+    error_log( 'grid is set or spacing class exists: ' . $customGapStep );
+    error_log( 'aaaaah' . $displayLayout);
+    $spacing_class = $SPACING_CLASSES[ $customGapStep ];
+} else {
+    error_log( 'grid is NOOOOOT set or spacing class does not exist: ' . $customGapStep );
+    error_log( 'aaaaah2' . $displayLayout);
+    $spacing_class = '';
+}
 
 $classes = trim( "$base_class $columns_class $spacing_class" );
 

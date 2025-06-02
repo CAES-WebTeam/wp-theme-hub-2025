@@ -203,5 +203,3 @@ function register_keywords_taxonomy()
 	register_taxonomy('keywords', array('post', 'publications','shorthand_story'), $args);
 }
 add_action('init', 'register_keywords_taxonomy');
-
-//...

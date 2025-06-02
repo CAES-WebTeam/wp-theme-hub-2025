@@ -13,12 +13,14 @@ figure.alignright {
     margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-right: var(--wp--style--block-gap) !important;
+    width: 100%;
 }
 
 .block-editor-block-list__layout.is-root-container > .wp-block-group.is-style-caes-hub-align-right-40 {
     margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-left: var(--wp--style--block-gap) !important;
+    width: 100%;
   } 
 
 /* Custom Styles for Blocks */
