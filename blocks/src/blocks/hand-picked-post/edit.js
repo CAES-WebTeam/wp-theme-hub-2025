@@ -4,151 +4,250 @@ import {
     useBlockProps,
     InspectorControls,
     InnerBlocks,
+    BlockControls
 } from '@wordpress/block-editor';
 import {
     PanelBody,
     FormTokenField,
-    SelectControl,
-    __experimentalNumberControl as NumberControl
+    CheckboxControl,
+    __experimentalNumberControl as NumberControl,
+    Spinner,
+    RadioControl,
+    ToolbarGroup,
+    ToolbarButton,
+    RangeControl,
 } from '@wordpress/components';
-import {
-    useState,
-} from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 
 // Import editor CSS
 import './editor.scss';
 
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @param {Object} props All props passed to this function.
- * @return {WPElement}   Element to render.
- */
-export default function Edit({ attributes, setAttributes }) {
+// Preset spacing classes and labels
+const SPACING_CLASSES = [
+    '', // None (no gap)
+    '--wp--preset--spacing--20',
+    '--wp--preset--spacing--30',
+    '--wp--preset--spacing--40',
+    '--wp--preset--spacing--50',
+    '--wp--preset--spacing--60',
+    '--wp--preset--spacing--70',
+    '--wp--preset--spacing--80',
+];
 
+const SPACING_LABELS = [
+    'None (no gap)',
+    '2X-Small',
+    'X-Small',
+    'Small',
+    'Medium',
+    'Large',
+    'X-Large',
+    '2X-Large',
+];
+
+export default function Edit({ attributes, setAttributes }) {
     const {
         postIds = [],
-        postType,
-        feedType,
+        postType = ['post'],
+        feedType = 'related-keywords',
+        numberOfItems = 5,
+        customGapStep = 0,
+        displayLayout = 'list',
+        columns = 3,
     } = attributes;
 
-    // Function to get posts based on selected post type
-    function getPosts() {
-        let options = [];
-        const posts = wp.data.select('core').getEntityRecords('postType', postType, { per_page: -1 });
-        if (null === posts) {
-            return options;
-        }
-        posts.forEach((post) => {
-            options.push({ value: post.id, label: post.title.rendered });
-        });
-        return options;
-    }
+    // Normalize postType to array
+    const selectedPostTypes = Array.isArray(postType) ? postType : [postType];
 
-    // Handle post type change
-    const handlePostTypeChange = (value) => {
-        setAttributes({ postType: value });
-        // Reset the postId when post type changes
-        setAttributes({ postId: 0 });
+    const handlePostTypeToggle = (type) => {
+        const updated = selectedPostTypes.includes(type)
+            ? selectedPostTypes.filter((t) => t !== type)
+            : [...selectedPostTypes, type];
+        setAttributes({ postType: updated, postIds: [] });
     };
 
-    const [filteredOptions, setFilteredOptions] = useState(getPosts());
+    const postTypeOptions = [
+        { value: 'post', label: 'Posts', restBase: 'posts' },
+        { value: 'page', label: 'Pages', restBase: 'pages' },
+        { value: 'shorthand_story', label: 'Shorthand Stories', restBase: 'shorthand_story' },
+        { value: 'publications', label: 'Publications', restBase: 'publications' },
+    ];
+
+    const [availablePosts, setAvailablePosts] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!selectedPostTypes.length) return;
+
+        setIsLoading(true);
+
+        Promise.all(
+            selectedPostTypes.map((type) => {
+                const restBase = postTypeOptions.find((opt) => opt.value === type)?.restBase || type;
+                return apiFetch({ path: `/wp/v2/${restBase}?per_page=20&_fields=id,title,slug` })
+                    .then((posts) =>
+                        posts.map((post) => ({
+                            id: post.id,
+                            label: post.title.rendered || `(${type} #${post.id})`,
+                            postType: type,
+                        }))
+                    )
+                    .catch(() => []); // Return empty array on error
+            })
+        )
+            .then((results) => {
+                setAvailablePosts(results.flat());
+                setIsLoading(false);
+            })
+            .catch(() => {
+                setAvailablePosts([]);
+                setIsLoading(false);
+            });
+    }, [selectedPostTypes.sort().join(',')]); // Watch for exact changes
+
+    const selectedPostLabels = postIds.reduce((labels, id) => {
+        const match = availablePosts.find((p) => p.id === id);
+        if (match) {
+            labels.push(match.label);
+        }
+        return labels;
+    }, []);
+
+    const postSuggestions = availablePosts.map((p) => p.label);
 
     const DEFAULT_TEMPLATE = [
         ['core/post-title', {}],
-        ['core/post-excerpt', {}]
+        ['core/post-excerpt', {}],
     ];
 
-    const inspectorControls = (
-        <>
-            <InspectorControls>
-                <PanelBody title={__('Featured Content Settings', 'hand-picked-post')}>
-                    <SelectControl
-                        label={__('Select Feed Type', 'hand-picked-post')}
-                        value={feedType}
-                        options={[
-                            { label: __('Related Keywords', 'hand-picked-post'), value: 'related-keywords' },
-                            { label: __('Hand Pick Posts', 'hand-picked-post'), value: 'hand-picked' }
-                        ]}
-                        onChange={(value) => {
-                            const updates = { feedType: value };
-                            if (value === 'related-keywords') {
-                                updates.postId = 0; // Clear selected post
-                            }
-                            setAttributes(updates);
-                        }}
-                    />
-                    {/* Post Type Selection Control */}
-                    <SelectControl
-                        label={__('Select Post Type', 'hand-picked-post')}
-                        value={postType}
-                        options={[
-                            { label: __('Posts', 'hand-picked-post'), value: 'post' },
-                            { label: __('Pages', 'hand-picked-post'), value: 'page' },
-                            { label: __('Shorthand Stories', 'hand-picked-post'), value: 'shorthand_story' },
-                            { label: __('Publications', 'hand-picked-post'), value: 'publication' },
-                        ]}
-                        onChange={handlePostTypeChange}
-                    />
-                    {/* Post Selection Control */}
-                    {attributes.feedType === 'hand-picked' && (
-                        <FormTokenField
-                            label={__('Select Posts', 'hand-picked-post')}
-                            value={postIds.map((id) => {
-                                const post = getPosts().find((p) => p.value === id);
-                                return post ? post.label : id;
-                            })}
-                            suggestions={getPosts().map((p) => p.label)}
-                            onChange={(selectedLabels) => {
-                                const allPosts = getPosts();
-                                const selectedIds = selectedLabels
-                                    .map((label) => {
-                                        const match = allPosts.find((p) => p.label === label);
-                                        return match ? match.value : null;
-                                    })
-                                    .filter((id) => id !== null);
-                                setAttributes({ postIds: selectedIds });
-                            }}
-                        />
-                    )}
-                    {attributes.feedType === 'related-keywords' && (
-                        <NumberControl
-                            label={__('Number of Items', 'hand-picked-post')}
-                            value={attributes.numberOfItems}
-                            min={1}
-                            onChange={(value) => setAttributes({ numberOfItems: parseInt(value) })}
-                        />
-                    )}
-                </PanelBody>
-            </InspectorControls>
-        </>
-    );
+    // Generate class names based on attributes
+    const baseClass = displayLayout === 'grid'
+        ? `hand-picked-post-grid columns-${columns}`
+        : 'hand-picked-post-list';
+
+    const spacingClass = customGapStep > 0
+        ? `gap-${SPACING_CLASSES[customGapStep].replace(/^--/, '').replace(/--/g, '-')}`
+        : '';
+
+    const combinedClassName = `${baseClass} ${spacingClass}`.trim();
+
+    const blockProps = useBlockProps();
+
 
     return (
         <>
-            {inspectorControls}
-            <div {...useBlockProps()}>
-                
-                {feedType === 'hand-picked' && (!postIds || postIds.length === 0) && (
-                    <p className="hand-picked-post-empty">
-                        {__('Please select one or more posts from the sidebar.', 'hand-picked-post')}
-                    </p>
-                )}
+            <InspectorControls>
+                <PanelBody title={__('Featured Content Settings', 'hand-picked-post')}>
+                    <RadioControl
+                        label={__('Feed Type', 'hand-picked-post')}
+                        selected={feedType}
+                        options={[
+                            { label: __('Related Keywords', 'hand-picked-post'), value: 'related-keywords' },
+                            { label: __('Hand Pick Posts', 'hand-picked-post'), value: 'hand-picked' },
+                        ]}
+                        onChange={(value) => setAttributes({ feedType: value, postIds: [] })}
+                    />
 
-                {feedType === 'hand-picked' && postIds && postIds.length > 0 && (
-                    <InnerBlocks template={DEFAULT_TEMPLATE} />
-                )}
+                    <PanelBody title={__('Select Post Types', 'hand-picked-post')} initialOpen={true}>
+                        {postTypeOptions.map(({ value, label }) => (
+                            <CheckboxControl
+                                key={value}
+                                label={label}
+                                checked={selectedPostTypes.includes(value)}
+                                onChange={() => handlePostTypeToggle(value)}
+                            />
+                        ))}
+                    </PanelBody>
 
+                    {feedType === 'hand-picked' && selectedPostTypes.length > 0 && (
+                        <>
+                            {isLoading && <Spinner />}
+                            {!isLoading && (
+                                <FormTokenField
+                                    label={__('Select Posts', 'hand-picked-post')}
+                                    value={selectedPostLabels}
+                                    suggestions={postSuggestions}
+                                    onChange={(selectedLabels) => {
+                                        const selectedIds = selectedLabels
+                                            .map((label) => {
+                                                const match = availablePosts.find((p) => p.label === label);
+                                                return match ? match.id : null;
+                                            })
+                                            .filter((id) => id !== null);
+                                        setAttributes({ postIds: selectedIds });
+                                    }}
+                                />
+                            )}
+                        </>
+                    )}
 
-                {feedType === 'related-keywords' && (
-                    <>
-                        <InnerBlocks template={DEFAULT_TEMPLATE} />
-                    </>
-                )}
+                    {feedType === 'related-keywords' && (
+                        <NumberControl
+                            label={__('Number of Items', 'hand-picked-post')}
+                            value={numberOfItems}
+                            min={1}
+                            onChange={(value) => setAttributes({ numberOfItems: parseInt(value, 10) })}
+                        />
+                    )}
 
+                    {displayLayout === 'grid' && (
+                        <>
+                            <RangeControl
+                                label={__('Number of Columns', 'hand-picked-post')}
+                                value={columns}
+                                onChange={(value) => setAttributes({ columns: value })}
+                                min={1}
+                                max={16}
+                            />
+                            <RangeControl
+                                label={__('Gap between items', 'hand-picked-post')}
+                                value={customGapStep}
+                                onChange={(value) => setAttributes({ customGapStep: value })}
+                                min={0}
+                                max={SPACING_CLASSES.length - 1}
+                                step={1}
+                                help={SPACING_LABELS[customGapStep] ? SPACING_LABELS[customGapStep] : 'No gap'}
+                            />
+                        </>
+                    )}
+                </PanelBody>
+            </InspectorControls>
+
+            <BlockControls>
+                <ToolbarGroup>
+                    <ToolbarButton
+                        icon="list-view"
+                        label={__('List View', 'hand-picked-post')}
+                        isPressed={displayLayout === 'list'}
+                        onClick={() => setAttributes({ displayLayout: 'list' })}
+                    />
+                    <ToolbarButton
+                        icon="grid-view"
+                        label={__('Grid View', 'hand-picked-post')}
+                        isPressed={displayLayout === 'grid'}
+                        onClick={() => setAttributes({ displayLayout: 'grid' })}
+                    />
+                </ToolbarGroup>
+            </BlockControls>
+
+            <div {...blockProps}>
+                <div className={combinedClassName}>
+                    {feedType === 'hand-picked' && (!postIds || postIds.length === 0) && (
+                        <p className="hand-picked-post-empty">
+                            {__('Please select one or more posts from the sidebar.', 'hand-picked-post')}
+                        </p>
+                    )}
+
+                    {((feedType === 'hand-picked' && postIds && postIds.length > 0) || feedType === 'related-keywords') && (
+                        <InnerBlocks
+                            template={DEFAULT_TEMPLATE}
+                            templateLock={false}
+                            renderAppender={InnerBlocks.ButtonBlockAppender}
+                        />
+                    )}
+                </div>
             </div>
         </>
     );
-
 }

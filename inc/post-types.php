@@ -200,6 +200,8 @@ function register_keywords_taxonomy()
 	);
 
 	// Register the taxonomy and associate it with the 'publications' post type
-	register_taxonomy('keywords', array('post', 'publications'), $args);
+	register_taxonomy('keywords', array('post', 'publications','shorthand_story'), $args);
 }
 add_action('init', 'register_keywords_taxonomy');
+
+//...

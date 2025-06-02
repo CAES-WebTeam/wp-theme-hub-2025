@@ -51,14 +51,14 @@ figcaption a {
 .caes-hub-content-post figure.alignleft,
 .caes-hub-content-f-img figure.alignleft,
 .caes-hub-content-post .align-left,
-.caes-hub-content-post .is-style-caes-hub-align-left-50 {
+.caes-hub-content-post .is-style-caes-hub-align-left-40 {
     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
 
 .caes-hub-content-post figure.alignright,
 .caes-hub-content-f-img figure.alignright,
 .caes-hub-content-post .align-right,
-.caes-hub-content-post .is-style-caes-hub-align-right-50,
+.caes-hub-content-post .is-style-caes-hub-align-right-40,
 .caes-hub-content-post figure.alignright {
     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     max-width: 100%;
@@ -108,13 +108,13 @@ figcaption a {
     .caes-hub-content-post figure.alignright,
     .caes-hub-content-post .align-left,
     .caes-hub-content-post .align-right,
-    .caes-hub-content-post .is-style-caes-hub-align-left-50,
+    .caes-hub-content-post .is-style-caes-hub-align-left-40,
     .caes-hub-content-post .is-style-caes-hub-align-right-50 {
         max-width: 100%;
         width: 100%;
         margin: 0 auto !important;
         margin-top: var(--wp--style--block-gap) !important;
-        margin-bottom: var(--wp--style--block-gap) !important;
+        // margin-bottom: var(--wp--style--block-gap) !important;
 
         img {
             width: 100%;
@@ -125,7 +125,7 @@ figcaption a {
     .single-publications .caes-hub-content-post .align-left,
     .caes-hub-content-post figure.alignleft,
     .caes-hub-content-post .align-left,
-    .caes-hub-content-post .is-style-caes-hub-align-left-50 {
+    .caes-hub-content-post .is-style-caes-hub-align-left-40 {
         margin-inline-start: 0;
         margin-left: 0 !important;
     }
@@ -134,9 +134,18 @@ figcaption a {
     .single-publications .caes-hub-content-post .align-right,
     .caes-hub-content-post figure.alignright,
     .caes-hub-content-post .align-right,
-    .caes-hub-content-post .is-style-caes-hub-align-right-50 {
+    .caes-hub-content-post .is-style-caes-hub-align-right-40 {
         margin-inline-end: 0;
         margin-right: 0 !important;
+    }
+
+    .caes-hub-content-post .is-style-caes-hub-align-right-40,
+    .caes-hub-content-post .is-style-caes-hub-align-left-40 {
+        max-width: 100% !important;
+        width: var(--wp--style--global--content-size) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        float: none !important;
     }
 
 }

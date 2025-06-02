@@ -18,8 +18,7 @@
     },
     "spacing": {
       "margin": true,
-      "padding": true,
-      "blockGap": true
+      "padding": true
     },
     "shadow": true,
     "layout": {
@@ -32,8 +31,10 @@
       "default": []
     },
     "postType": {
-      "type": "string",
-      "default": "post"
+      "type": "array",
+      "default": [
+        "post"
+      ]
     },
     "feedType": {
       "type": "string",
@@ -59,12 +60,24 @@
     "numberOfItems": {
       "type": "number",
       "default": 3
+    },
+    "displayLayout": {
+      "type": "string",
+      "default": "list"
+    },
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "customGapStep": {
+      "type": "number",
+      "default": 3
     }
   },
   "providesContext": {
-    "postId": "postId",
-    "postType": "postType",
-    "queryId": "queryId"
+    "caes-hub/hand-picked-post/postIds": "postIds",
+    "caes-hub/hand-picked-post/postType": "postType",
+    "caes-hub/hand-picked-post/queryId": "queryId"
   },
   "textdomain": "hand-picked-post",
   "editorScript": "file:./index.js",

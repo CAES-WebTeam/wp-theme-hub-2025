@@ -86,13 +86,13 @@ wp.blocks.registerBlockStyle( 'core/table', {
 
 // Group Editor Styles
 wp.blocks.registerBlockStyle( 'core/group', {
-  name: 'caes-hub-align-left-50',
-  label: 'Align Left 50%'
+  name: 'caes-hub-align-left-40',
+  label: 'Align Left 40%'
 })
 
 wp.blocks.registerBlockStyle( 'core/group', {
-  name: 'caes-hub-align-right-50',
-  label: 'Align Right 50%'
+  name: 'caes-hub-align-right-40',
+  label: 'Align Right 40%'
 })
 
 // CUSTOM BLOCKS

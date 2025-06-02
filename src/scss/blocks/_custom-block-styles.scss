@@ -200,17 +200,17 @@ ul.is-style-caes-hub-list-checkbox {
 }
 
 // Custom alignments for group blocks, since Gutenberg doesn't support this natively
-.is-style-caes-hub-align-left-50 {
+.is-style-caes-hub-align-left-40 {
     float: left;
-    max-width: calc(var(--wp--style--global--content-size) / 2) !important;
-    margin-right: var(--wp--preset--spacing--60) !important;
+    max-width: calc(var(--wp--style--global--content-size) * 0.4) !important;
+    margin-right: var(--wp--style--block-gap) !important;
     margin-left: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }
-.is-style-caes-hub-align-right-50 {
+.is-style-caes-hub-align-right-40 {
     float: right;
-    max-width: calc(var(--wp--style--global--content-size) / 2) !important;
-    margin-left: var(--wp--preset--spacing--60) !important;
+    max-width: calc(var(--wp--style--global--content-size) * 0.4) !important;
+    margin-left: var(--wp--style--block-gap) !important;
     margin-right: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
     margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
 }

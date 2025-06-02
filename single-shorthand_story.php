@@ -12,29 +12,6 @@
 		$meta = get_post_meta($post->ID);
 	}
 
-	// Generate block content after the meta is available
-	// $content = '<!-- wp:group -->';
-	// $content .= '<div class="caes-hub-columns">';
-
-	// $content .= '<!-- wp:column -->';
-	// $content .= '<div class="caes-hub-left" style="flex-basis:222px; background-color: var(--wp--preset--color--base);">';
-	// $sidebar = do_blocks('<!-- wp:template-part {"slug":"sidebar","theme":"wp-theme-hub-2025","area":"uncategorized","className":"caes-hub-sidebar-wrapper"} /-->');
-	// $content .= $sidebar; // Use sidebar block here
-	// $content .= '</div>';
-	// $content .= '<!-- /wp:column -->';
-
-	// $content .= '<!-- wp:column -->';
-	// $content .= '<div class="caes-hub-right" style="flex-basis: 0; flex-grow: 1;">';
-	// $content .= get_shorthandinfo($meta, 'story_body');
-	// $content .= '<div id="extraHTML">';
-	// $content .= get_shorthandinfo($meta, 'extra_html');
-	// $content .= '</div>';
-	// $content .= '</div>';
-	// $content .= '<!-- /wp:column -->';
-
-	// $content .= '</div>';
-	// $content .= '<!-- /wp:group -->';
-
 	$content = '<!-- wp:columns {"style":{"spacing":{"blockGap":{"top":"0","left":"0"},"margin":{"top":"0","bottom":"0"}}}} -->
 <div class="wp-block-columns" style="margin-top:0;margin-bottom:0"><!-- wp:column {"width":"222px","className":"caes-hub-left","backgroundColor":"base"} --><div class="wp-block-column caes-hub-left has-base-background-color has-background" style="flex-basis:222px"><!-- wp:template-part {"slug":"sidebar","theme":"wp-theme-hub-2025","area":"uncategorized","className":"caes-hub-sidebar-wrapper"} /--></div>
 <!-- /wp:column --><!-- wp:column {"width":"","className":"caes-hub-right has-background","backgroundColor":"base-two"} --><div class="wp-block-column caes-hub-right has-background has-base-two-background-color"><!-- wp:group {"tagName":"main","metadata":{"name":"caes-hub-main-wrapper"},"className":"caes-hub-main-wrapper caes-hub-shorthand","style":{"spacing":{"blockGap":"0"}}} --><main class="wp-block-group caes-hub-main-wrapper caes-hub-shorthand">';
