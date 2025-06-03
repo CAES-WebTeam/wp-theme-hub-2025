@@ -71,16 +71,16 @@ const { state } = store("action-share", {
                 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1'
             );
         },
-        shareOnPocket: () => {
-            const context = getContext();
-            const postUrl = context.postUrl;
-            const pocketShareUrl = `https://getpocket.com/save?url=${encodeURIComponent(postUrl)}`;
-            window.open(
-                pocketShareUrl,
-                'pocketShareWindow',
-                'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1'
-            );
-        },
+        // shareOnPocket: () => {
+        //     const context = getContext();
+        //     const postUrl = context.postUrl;
+        //     const pocketShareUrl = `https://getpocket.com/save?url=${encodeURIComponent(postUrl)}`;
+        //     window.open(
+        //         pocketShareUrl,
+        //         'pocketShareWindow',
+        //         'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1'
+        //     );
+        // },
         shareByEmail: () => {
             const context = getContext();
             const postUrl = context.postUrl;

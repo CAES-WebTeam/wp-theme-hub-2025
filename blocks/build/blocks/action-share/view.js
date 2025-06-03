@@ -113,12 +113,16 @@ const {
       const redditShareUrl = `https://www.reddit.com/submit?url=${encodeURIComponent(postUrl)}&title=${postTitle}`;
       window.open(redditShareUrl, 'redditShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
     },
-    shareOnPocket: () => {
-      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
-      const postUrl = context.postUrl;
-      const pocketShareUrl = `https://getpocket.com/save?url=${encodeURIComponent(postUrl)}`;
-      window.open(pocketShareUrl, 'pocketShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
-    },
+    // shareOnPocket: () => {
+    //     const context = getContext();
+    //     const postUrl = context.postUrl;
+    //     const pocketShareUrl = `https://getpocket.com/save?url=${encodeURIComponent(postUrl)}`;
+    //     window.open(
+    //         pocketShareUrl,
+    //         'pocketShareWindow',
+    //         'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1'
+    //     );
+    // },
     shareByEmail: () => {
       const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
       const postUrl = context.postUrl;
