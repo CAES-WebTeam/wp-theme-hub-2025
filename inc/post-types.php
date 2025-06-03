@@ -249,3 +249,43 @@ function caes_ordered_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbn
         esc_attr( $alt )
     );
 }
+
+// Replace placeholder for main background featured image
+add_filter( 'render_block', 'replace_placeholder_for_main_bg_featured_image', 10, 2 );
+function replace_placeholder_for_main_bg_featured_image( $block_content, $block ) {
+    // Only target core/post-featured-image block
+    if ( ! isset( $block['blockName'] ) || $block['blockName'] !== 'core/post-featured-image' ) {
+        return $block_content;
+    }
+
+    // Check if block has the special class
+    $class_attr = isset( $block['attrs']['className'] ) ? $block['attrs']['className'] : '';
+    if ( strpos( $class_attr, 'caes-hub-main-bg-f-img' ) === false ) {
+        // Class not present — leave as is
+        return $block_content;
+    }
+
+    // Get the post ID from block context if present, fallback to queried object
+    $post_id = isset( $block['context']['postId'] ) && intval( $block['context']['postId'] )
+        ? intval( $block['context']['postId'] )
+        : get_queried_object_id();
+
+    // If post has featured image, leave as is
+    if ( has_post_thumbnail( $post_id ) ) {
+        return $block_content;
+    }
+
+    // Post does NOT have featured image and block has the class — insert placeholder
+    // Define placeholder image URL (adjust path as needed)
+    $placeholder_url = get_template_directory_uri() . '/assets/images/placeholder-bg-2-lake-herrick.jpg';
+
+    // Use the post title as alt text
+    $alt = get_the_title( $post_id );
+
+    // Return a simple figure with placeholder image
+    return sprintf(
+        '<figure class="wp-block-post-featured-image caes-hub-main-bg-f-img"><img src="%s" alt="%s" class="wp-post-image" /></figure>',
+        esc_url( $placeholder_url ),
+        esc_attr( $alt )
+    );
+}
