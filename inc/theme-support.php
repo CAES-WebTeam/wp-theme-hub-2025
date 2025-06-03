@@ -481,3 +481,40 @@ function get_saved_posts_callback() {
     echo $output ?: '<p>No matching saved posts found.</p>';
     wp_die();
 }
+
+//
+
+add_filter( 'post_thumbnail_html', 'caes_random_placeholder_if_no_thumbnail', 10, 5 );
+function caes_random_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbnail_id, $size, $attr ) {
+    // Skip only if we're rendering the main post on a single view
+    if ( get_the_ID() === $post_id && is_singular() ) {
+        return $html;
+    }
+
+    // If the post has a featured image, use it
+    if ( has_post_thumbnail( $post_id ) ) {
+        return $html;
+    }
+
+    // Array of placeholder filenames
+    $placeholders = [
+		'placeholder-bg-1-athens.jpg',
+		'placeholder-bg-2-hedges.jpg',
+		'placeholder-bg-1-lake-herrick.jpg',
+		'placeholder-bg-2-olympic.jpg',
+		'placeholder-bg-1-hedges.jpg',
+		'placeholder-bg-2-lake-herrick.jpg',
+		'placeholder-bg-1-olympic.jpg',
+		'placeholder-bg-2-athens.jpg',
+	];
+	
+    $file = $placeholders[ array_rand( $placeholders ) ];
+    $url  = get_template_directory_uri() . '/assets/images/' . $file;
+    $alt  = get_the_title( $post_id );
+
+    return sprintf(
+        '<img src="%s" alt="%s" class="wp-post-image" />',
+        esc_url( $url ),
+        esc_attr( $alt )
+    );
+}

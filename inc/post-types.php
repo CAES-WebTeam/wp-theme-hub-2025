@@ -203,3 +203,49 @@ function register_keywords_taxonomy()
 	register_taxonomy('keywords', array('post', 'publications','shorthand_story'), $args);
 }
 add_action('init', 'register_keywords_taxonomy');
+
+
+// Add a random placeholder image if no featured image is set
+add_filter( 'post_thumbnail_html', 'caes_ordered_placeholder_if_no_thumbnail', 10, 5 );
+function caes_ordered_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbnail_id, $size, $attr ) {
+    static $counter = 0;
+
+    // 1) Skip main post on single pages:
+    if (
+        is_singular()
+        && is_main_query()
+        && in_the_loop()
+        && $post_id === get_queried_object_id()
+    ) {
+        return $html;
+    }
+
+    // 2) If there’s already a featured image, don’t touch it:
+    if ( has_post_thumbnail( $post_id ) ) {
+        return $html;
+    }
+
+    // 3) Pick the next placeholder in order:
+    $placeholders = [
+        'placeholder-bg-1-athens.jpg',
+        'placeholder-bg-1-hedges.jpg',
+        'placeholder-bg-1-lake-herrick.jpg',
+        'placeholder-bg-1-olympic.jpg',
+        'placeholder-bg-2-athens.jpg',
+        'placeholder-bg-2-hedges.jpg',
+        'placeholder-bg-2-lake-herrick.jpg',
+        'placeholder-bg-2-olympic.jpg',
+    ];
+    $index = $counter % count( $placeholders );
+    $file  = $placeholders[ $index ];
+    $counter++;
+
+    $url = get_template_directory_uri() . '/assets/images/' . $file;
+    $alt = get_the_title( $post_id );
+
+    return sprintf(
+        '<img src="%s" alt="%s" class="wp-post-image" />',
+        esc_url( $url ),
+        esc_attr( $alt )
+    );
+}

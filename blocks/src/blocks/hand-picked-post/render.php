@@ -91,12 +91,12 @@ if ( $feed_type === 'hand-picked' ) {
         'post_type'           => $post_type,
         'post__not_in'        => array( $post->ID ),
         'post_status'         => 'publish',
-        'meta_query'          => array(
-            array(
-                'key'     => '_thumbnail_id',
-                'compare' => 'EXISTS'
-            )
-        )
+        // 'meta_query'          => array(
+        //     array(
+        //         'key'     => '_thumbnail_id',
+        //         'compare' => 'EXISTS'
+        //     )
+        // )
     );
 
     // Add taxonomy query only if keywords exist
