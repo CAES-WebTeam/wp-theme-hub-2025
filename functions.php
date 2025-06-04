@@ -19,6 +19,11 @@ require get_template_directory() . '/inc/user-support.php';
 require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
 
+// Temp include
+require get_template_directory() . '/inc/release-date-migration.php';
+require get_template_directory() . '/inc/release-date-clear.php';
+
+// ...
 add_action('init', function () {
 	if (!is_admin() || !isset($_GET['reassign_carousel'])) return;
 
