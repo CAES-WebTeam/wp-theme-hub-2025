@@ -520,10 +520,10 @@ function caes_random_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbna
 }
 
 // converting the post date to a timestamp
-function fix_datetime_custom($iso) {
-    $timestamp = strtotime($iso);
-    if ($timestamp === false) {
-        return '';
-    }
-    return date('Y-m-d H:i:s', $timestamp);
-}
+// function fix_datetime_custom($iso) {
+//     $timestamp = strtotime($iso);
+//     if ($timestamp === false) {
+//         return '';
+//     }
+//     return date('Y-m-d H:i:s', $timestamp);
+// }

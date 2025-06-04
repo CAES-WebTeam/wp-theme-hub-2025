@@ -462,3 +462,36 @@ function story_default_content($content, $post)
 
     return $image_block . "\n\n" . $sources_block . "\n\n" . $paragraph . "\n\n" . $related_content . "\n\n" . $content;
 }
+
+add_filter( 'render_block', function( $block_content, $block ) {
+	if ( $block['blockName'] !== 'core/post-date' ) {
+		return $block_content;
+	}
+
+	$post_id = get_the_ID();
+	if ( ! $post_id || get_post_type( $post_id ) !== 'post' ) {
+		return $block_content;
+	}
+
+	// Use ACF release_date_new if it exists
+	$acf_date = get_field( 'release_date_new', $post_id );
+	$timestamp = $acf_date ? strtotime( $acf_date ) : get_post_time( 'U', false, $post_id );
+
+	if ( ! $timestamp ) {
+		return $block_content;
+	}
+
+	// Format the date in APA style
+	$apa_date = format_date_apa_style( $timestamp );
+
+	// Replace only the content inside the <time> tag
+	$block_content = preg_replace_callback(
+		'|<time([^>]*)>(.*?)</time>|i',
+		function ( $matches ) use ( $apa_date ) {
+			return '<time' . $matches[1] . '>' . esc_html( $apa_date ) . '</time>';
+		},
+		$block_content
+	);
+
+	return $block_content;
+}, 10, 2 );
