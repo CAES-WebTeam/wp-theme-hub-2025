@@ -103,7 +103,7 @@ function render_duplicate_post_checker() {
 		echo '<tbody>';
 
 		foreach ($posts as $post) {
-			$custom_id    = get_post_meta($post->ID, 'ID', true);
+			$custom_id    = get_post_meta($post->ID, 'id', true);
 			$release_date = get_post_meta($post->ID, 'release_date', true);
 			$post_link    = get_edit_post_link($post->ID);
 
