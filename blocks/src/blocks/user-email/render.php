@@ -11,7 +11,8 @@ $email = get_the_author_meta('user_email', $author_id);
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
 // If email isn't blank, output the clickable email
-if ($email) {
+// Also check to make sure email doesn't contain "placeholder"
+if ($email && !strpos($email, 'placeholder')) {
     echo '<a ' . $attrs . ' href="mailto:' . esc_html($email) . '"><span>' . esc_html($email) . '</span></a>';    
 }
 
