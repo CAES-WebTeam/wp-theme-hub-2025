@@ -96,21 +96,24 @@ function render_duplicate_post_checker() {
 		echo '<th style="width:1%;"></th>';
 		echo '<th>Post ID</th>';
 		echo '<th>Imported ID</th>';
-		echo '<th>Post Date</th>';
+		echo '<th>Created At (UTC)</th>';
+		echo '<th>Published Date</th>';
 		echo '<th>Release Date</th>';
 		echo '<th>Actions</th>';
 		echo '</tr></thead>';
 		echo '<tbody>';
 
 		foreach ($posts as $post) {
-			$custom_id    = get_post_meta($post->ID, 'id', true);
-			$release_date = get_post_meta($post->ID, 'release_date', true);
-			$post_link    = get_edit_post_link($post->ID);
+			$custom_id     = get_post_meta($post->ID, 'id', true);
+			$release_date  = get_post_meta($post->ID, 'release_date', true);
+			$created_at    = $post->post_date_gmt;
+			$post_link     = get_edit_post_link($post->ID);
 
 			echo '<tr>';
 			echo '<td><input type="checkbox" name="delete_post_ids[]" value="' . esc_attr($post->ID) . '"></td>';
 			echo '<td><a href="' . esc_url($post_link) . '">' . $post->ID . '</a></td>';
 			echo '<td><code>' . esc_html($custom_id) . '</code></td>';
+			echo '<td>' . esc_html($created_at) . '</td>';
 			echo '<td>' . esc_html($post->post_date) . '</td>';
 			echo '<td><code>' . esc_html($release_date) . '</code></td>';
 			echo '<td><a class="button button-small" href="' . esc_url($post_link) . '">Edit</a></td>';
