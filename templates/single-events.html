@@ -40,15 +40,21 @@
 
 <!-- wp:group {"metadata":{"name":"caes-hub-content-post"},"className":"caes-hub-content-post","style":{"spacing":{"padding":{"right":"var:preset|spacing|50","left":"var:preset|spacing|50"},"margin":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60"}}},"layout":{"type":"default"}} -->
 <div class="wp-block-group caes-hub-content-post" style="margin-top:var(--wp--preset--spacing--60);margin-bottom:var(--wp--preset--spacing--60);padding-right:var(--wp--preset--spacing--50);padding-left:var(--wp--preset--spacing--50)"><!-- wp:group {"layout":{"type":"constrained"}} -->
-<div class="wp-block-group"><!-- wp:group {"metadata":{"name":"caes-hub-content-actions"},"className":"caes-hub-content-actions caes-hub-content-actions-in-body","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"flex","orientation":"vertical"}} -->
+<div class="wp-block-group"><!-- wp:columns -->
+<div class="wp-block-columns"><!-- wp:column {"width":"85%"} -->
+<div class="wp-block-column" style="flex-basis:85%"><!-- wp:caes-hub/event-details-description /--></div>
+<!-- /wp:column -->
+
+<!-- wp:column {"width":"15%"} -->
+<div class="wp-block-column" style="flex-basis:15%"><!-- wp:group {"metadata":{"name":"caes-hub-content-actions"},"className":"caes-hub-content-actions caes-hub-content-actions-in-body","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"flex","orientation":"vertical"}} -->
 <div class="wp-block-group caes-hub-content-actions caes-hub-content-actions-in-body"><!-- wp:caes-hub/action-save /-->
 
 <!-- wp:caes-hub/action-share /-->
 
 <!-- wp:caes-hub/action-ics /--></div>
-<!-- /wp:group -->
-
-<!-- wp:caes-hub/event-details-description /-->
+<!-- /wp:group --></div>
+<!-- /wp:column --></div>
+<!-- /wp:columns -->
 
 <!-- wp:spacer {"height":"10px"} -->
 <div style="height:10px" aria-hidden="true" class="wp-block-spacer"></div>
@@ -83,7 +89,7 @@
 <!-- /wp:heading -->
 
 <!-- wp:paragraph -->
-<p>University of Georgia is an Equal Opportunity, Affirmative Action, Veteran, Disability Institution. If you need a reasonable accommodation or language access services, reach out using the contact information provided on this page, at least three weeks prior to the program date.</p>
+<p>University of Georgia is an Equal Opportunity, Affirmative Action, Veteran, Disability Institution. If you need reasonable accommodation or language access services, reach out to the listed contact at least three weeks prior to the program date.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group --></div>
