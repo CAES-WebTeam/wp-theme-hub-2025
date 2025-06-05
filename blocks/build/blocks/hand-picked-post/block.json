@@ -72,6 +72,18 @@
     "customGapStep": {
       "type": "number",
       "default": 3
+    },
+    "gridItemPosition": {
+      "type": "string",
+      "default": "manual"
+    },
+    "gridAutoColumnWidth": {
+      "type": "number",
+      "default": 12
+    },
+    "gridAutoColumnUnit": {
+      "type": "string",
+      "default": "rem"
     }
   },
   "providesContext": {

@@ -8,6 +8,9 @@ $query_id = isset( $block->attributes['queryId'] ) ? $block->attributes['queryId
 $displayLayout = isset( $block->attributes['displayLayout'] ) ? $block->attributes['displayLayout'] : 'list';
 $columns = isset( $block->attributes['columns'] ) ? $block->attributes['columns'] : 3;
 $customGapStep = isset( $block->attributes['customGapStep'] ) ? $block->attributes['customGapStep'] : 3;
+$gridItemPosition = isset( $block->attributes['gridItemPosition'] ) ? $block->attributes['gridItemPosition'] : 'manual';
+$gridAutoColumnWidth = isset( $block->attributes['gridAutoColumnWidth'] ) ? $block->attributes['gridAutoColumnWidth'] : 12;
+$gridAutoColumnUnit = isset( $block->attributes['gridAutoColumnUnit'] ) ? $block->attributes['gridAutoColumnUnit'] : 'rem';
 
 // Ensure post_type is an array (matching frontend logic)
 if ( ! is_array( $post_type ) ) {
@@ -41,6 +44,17 @@ if ( $displayLayout == 'grid' && isset( $SPACING_CLASSES[ $customGapStep ] ) ) {
 }
 
 $classes = trim( "$base_class $columns_class $spacing_class" );
+
+// Generate inline grid styles for auto layout
+$inline_style = '';
+
+if ( $displayLayout === 'grid' && $gridItemPosition === 'auto' ) {
+	$width = floatval( $gridAutoColumnWidth );
+	$unit = esc_attr( $gridAutoColumnUnit );
+	$min_width = "{$width}{$unit}";
+	$inline_style = "grid-template-columns: repeat(auto-fill, minmax(min({$min_width}, 100%), 1fr));";
+}
+
 
 $wrapper_attributes = get_block_wrapper_attributes(); // No layout classes here
 
@@ -146,7 +160,8 @@ if ( $block_query->have_posts() ) {
     $render_start_time = microtime( true );
     ?>
     <div <?php echo wp_kses_post( $wrapper_attributes ); ?>>
-        <div class="<?php echo esc_attr( $classes ); ?>">
+        <div class="<?php echo esc_attr( $classes ); ?>" style="<?php echo esc_attr( $inline_style ); ?>">
+
             <?php
             while ( $block_query->have_posts() ) {
                 $block_query->the_post();

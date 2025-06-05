@@ -52,7 +52,10 @@ function Edit({
     numberOfItems = 5,
     customGapStep = 0,
     displayLayout = 'list',
-    columns = 3
+    columns = 3,
+    gridItemPosition = 'manual',
+    gridAutoColumnWidth = 12,
+    gridAutoColumnUnit = 'rem'
   } = attributes;
 
   // Normalize postType to array
@@ -170,7 +173,49 @@ function Edit({
           onChange: value => setAttributes({
             numberOfItems: parseInt(value, 10)
           })
-        }), displayLayout === 'grid' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+        }), displayLayout === 'grid' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalToggleGroupControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Grid Item Position', 'hand-picked-post'),
+            value: gridItemPosition,
+            onChange: value => setAttributes({
+              gridItemPosition: value
+            }),
+            isBlock: true,
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalToggleGroupControlOption, {
+              value: "auto",
+              label: "Automatic"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalToggleGroupControlOption, {
+              value: "manual",
+              label: "Manual"
+            })]
+          })
+        }), displayLayout === 'grid' && gridItemPosition === 'auto' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Auto Column Width', 'hand-picked-post'),
+            value: gridAutoColumnWidth,
+            onChange: value => setAttributes({
+              gridAutoColumnWidth: parseFloat(value)
+            }),
+            min: 1,
+            step: 1
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Auto Column Unit', 'hand-picked-post'),
+            value: gridAutoColumnUnit,
+            onChange: value => setAttributes({
+              gridAutoColumnUnit: value
+            }),
+            options: [{
+              value: 'rem',
+              label: 'rem'
+            }, {
+              value: 'px',
+              label: 'px'
+            }, {
+              value: '%',
+              label: '%'
+            }]
+          })]
+        }), displayLayout === 'grid' && gridItemPosition === 'manual' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
             label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number of Columns', 'hand-picked-post'),
             value: columns,
@@ -405,7 +450,7 @@ module.exports = window["wp"]["i18n"];
   \************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Related and Hand Picked Posts","category":"widgets","icon":"block-default","description":"Displays either related (based on keyword or other taxonomy) or hand selected posts.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postIds":{"type":"array","default":[]},"postType":{"type":"array","default":["post"]},"feedType":{"type":"string","default":"related-keywords"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}},"numberOfItems":{"type":"number","default":3},"displayLayout":{"type":"string","default":"list"},"columns":{"type":"number","default":3},"customGapStep":{"type":"number","default":3}},"providesContext":{"caes-hub/hand-picked-post/postIds":"postIds","caes-hub/hand-picked-post/postType":"postType","caes-hub/hand-picked-post/queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Related and Hand Picked Posts","category":"widgets","icon":"block-default","description":"Displays either related (based on keyword or other taxonomy) or hand selected posts.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postIds":{"type":"array","default":[]},"postType":{"type":"array","default":["post"]},"feedType":{"type":"string","default":"related-keywords"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}},"numberOfItems":{"type":"number","default":3},"displayLayout":{"type":"string","default":"list"},"columns":{"type":"number","default":3},"customGapStep":{"type":"number","default":3},"gridItemPosition":{"type":"string","default":"manual"},"gridAutoColumnWidth":{"type":"number","default":12},"gridAutoColumnUnit":{"type":"string","default":"rem"}},"providesContext":{"caes-hub/hand-picked-post/postIds":"postIds","caes-hub/hand-picked-post/postType":"postType","caes-hub/hand-picked-post/queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 

@@ -16,6 +16,9 @@ import {
     ToolbarGroup,
     ToolbarButton,
     RangeControl,
+    __experimentalToggleGroupControl as ToggleGroupControl,
+    __experimentalToggleGroupControlOption as ToggleGroupControlOption,
+    SelectControl
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
@@ -55,6 +58,9 @@ export default function Edit({ attributes, setAttributes }) {
         customGapStep = 0,
         displayLayout = 'list',
         columns = 3,
+        gridItemPosition = 'manual',
+        gridAutoColumnWidth = 12,
+        gridAutoColumnUnit = 'rem'
     } = attributes;
 
     // Normalize postType to array
@@ -192,6 +198,42 @@ export default function Edit({ attributes, setAttributes }) {
                     )}
 
                     {displayLayout === 'grid' && (
+                        <>
+                            <ToggleGroupControl
+                                label={__('Grid Item Position', 'hand-picked-post')}
+                                value={gridItemPosition}
+                                onChange={(value) => setAttributes({ gridItemPosition: value })}
+                                isBlock
+                            >
+                                <ToggleGroupControlOption value="auto" label="Automatic" />
+                                <ToggleGroupControlOption value="manual" label="Manual" />
+                            </ToggleGroupControl>
+                        </>
+                    )}
+
+                    {displayLayout === 'grid' && gridItemPosition === 'auto' && (
+                        <>
+                            <NumberControl
+                                label={__('Auto Column Width', 'hand-picked-post')}
+                                value={gridAutoColumnWidth}
+                                onChange={(value) => setAttributes({ gridAutoColumnWidth: parseFloat(value) })}
+                                min={1}
+                                step={1}
+                            />
+                            <SelectControl
+                                label={__('Auto Column Unit', 'hand-picked-post')}
+                                value={gridAutoColumnUnit}
+                                onChange={(value) => setAttributes({ gridAutoColumnUnit: value })}
+                                options={[
+                                    { value: 'rem', label: 'rem' },
+                                    { value: 'px', label: 'px' },
+                                    { value: '%', label: '%' },
+                                ]} 
+                            />
+                        </>
+                    )}
+
+                    {displayLayout === 'grid' && gridItemPosition === 'manual' && (
                         <>
                             <RangeControl
                                 label={__('Number of Columns', 'hand-picked-post')}
