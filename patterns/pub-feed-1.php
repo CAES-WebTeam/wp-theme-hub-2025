@@ -8,7 +8,7 @@
  * Block Types: core/query
  */
 ?>
-<!-- wp:query {"queryId":3,"query":{"postType":"publications","perPage":4,"offset":0},"namespace":"pubs-feed","metadata":{"categories":["featured"],"patternName":"caes-hub/pub-feed-1","name":"Publications Feed"},"className":"caes-hub-post-list-grid"} -->
+<!-- wp:query {"queryId":3,"query":{"postType":"publications","perPage":4,"offset":0},"namespace":"pubs-feed","metadata":{"categories":["pub_feeds"],"patternName":"caes-hub/pub-feed-1","name":"Publications Feed"},"className":"caes-hub-post-list-grid"} -->
 <div class="wp-block-query caes-hub-post-list-grid"><!-- wp:post-template {"style":{"spacing":{"blockGap":"var:preset|spacing|50"}},"layout":{"type":"grid","columnCount":1}} -->
 <!-- wp:group {"className":"caes-hub-post-list-grid-item caes-hub-post-list-grid-horizontal","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"flex","flexWrap":"nowrap"}} -->
 <div class="wp-block-group caes-hub-post-list-grid-item caes-hub-post-list-grid-horizontal"><!-- wp:post-featured-image {"aspectRatio":"3/2","metadata":{"name":"caes-hub-post-list-img-container"},"className":"caes-hub-post-list-img-container"} /-->
@@ -27,11 +27,11 @@
 <!-- /wp:group --></div>
 <!-- /wp:group -->
 
-<!-- wp:caes-hub/pub-details-summary /--></div>
+<!-- wp:caes-hub/pub-details-summary {"wordLimit":50} /--></div>
 <!-- /wp:group -->
 
 <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|20"}},"layout":{"type":"flex","flexWrap":"wrap"}} -->
-<div class="wp-block-group"><!-- wp:caes-hub/pub-details-authors {"authorsAsSnippet":true} /-->
+<div class="wp-block-group"><!-- wp:caes-hub/pub-details-authors {"displayVersion":"names-only","showHeading":false,"grid":false} /-->
 
 <!-- wp:paragraph -->
 <p>|</p>
