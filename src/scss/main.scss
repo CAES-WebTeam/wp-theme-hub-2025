@@ -98,6 +98,20 @@ figcaption a {
     margin-right: var(--wp--style--block-gap) !important;
 }
 
+@media screen and (max-width: 1330px) {
+    .caes-hub-pub-columns {
+        flex-direction: column;
+
+        & > .wp-block-column {
+            flex-basis: auto !important;
+        }
+
+        .caes-hub-pub-columns-nav-stack {
+            padding: 0 !important;
+        }
+    }
+}
+
 @media screen and (max-width: 1150px) {
 
     .single-publications .caes-hub-content-post figure.alignleft,
@@ -167,8 +181,11 @@ figcaption a {
     top: 0;
     right: 0;
     height: 100vh;
-    width: 100%;
+    // width: 100%;
     overflow: hidden;
+
+    left: calc(var(--wp--preset--spacing--50) * -1);
+    width: calc(100% + (var(--wp--preset--spacing--50) * 2));
 
     .caes-hub-main-bg-f-img {
         height: 100%;
@@ -255,6 +272,7 @@ figcaption a {
     .caes-hub-sidebar-bottom {
         display: none;
     }
+
 }
 
 @media screen and (min-width: 782px) {

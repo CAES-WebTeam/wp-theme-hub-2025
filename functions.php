@@ -100,3 +100,22 @@ add_action('init', function () {
 
 	wp_die("Reassigned {$updated} carousel images. Batch {$start} to " . ($start + $limit - 1) . ".");
 });
+
+// add_action('admin_menu', function () {
+// 	add_management_page(
+// 		'Import JSON to ACF',       // Page title
+// 		'Import JSON to ACF',       // Menu title
+// 		'manage_options',           // Capability
+// 		'import-json-to-acf',       // Menu slug
+// 		'render_import_json_acf'    // Callback function
+// 	);
+// });
+
+// function render_import_json_acf() {
+// 	?>
+// 	<div class="wrap">
+// 		<h1>Import JSON to ACF</h1>
+// 		<p>This tool will allow you to import data from a JSON file into ACF fields for your posts.</p>
+// 	</div>
+// 	<?php
+// }
