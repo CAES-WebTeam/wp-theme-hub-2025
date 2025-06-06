@@ -98,19 +98,21 @@ figcaption a {
     margin-right: var(--wp--style--block-gap) !important;
 }
 
-@media screen and (max-width: 1330px) {
-    .caes-hub-pub-columns {
-        flex-direction: column;
+@media screen and (max-width: 1300px) {
+    .wp-block-columns.caes-hub-pub-columns {
+        flex-wrap: wrap !important;
 
-        & > .wp-block-column {
-            flex-basis: auto !important;
+        &>.wp-block-column {
+            flex-basis: 100% !important;
         }
 
         .caes-hub-pub-columns-nav-stack {
-            padding: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
         }
     }
 }
+
 
 @media screen and (max-width: 1150px) {
 
@@ -128,10 +130,10 @@ figcaption a {
         width: 100%;
         margin: 0 auto !important;
         margin-top: var(--wp--style--block-gap) !important;
-        // margin-bottom: var(--wp--style--block-gap) !important;
+        margin-bottom: var(--wp--style--block-gap) !important;
 
         img {
-            width: 100%;
+            width: 100% !important;
         }
     }
 
