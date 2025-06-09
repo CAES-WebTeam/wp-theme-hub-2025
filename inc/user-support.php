@@ -311,7 +311,7 @@ function sync_personnel_users2()
 
 			try {
 
-				if ($personnel_id == "1394") {
+				if ($personnel_id == 1394) {
 					error_log("Ashley-1 " . $personnel_id);
 					error_log("Ashley-2 " . $username);
 					error_log("Ashley-3 " . $email);
