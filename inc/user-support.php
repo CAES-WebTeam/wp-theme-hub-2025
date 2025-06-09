@@ -116,7 +116,7 @@ function sync_personnel_users()
 			continue; // Skip inactive users
 		}*/
 
-		try {
+		// try {
 
 			$personnel_id = intval($user['PERSONNEL_ID']);
 			$college_id = intval($user['COLLEGEID']);
@@ -144,14 +144,14 @@ function sync_personnel_users()
 			$image_name = sanitize_text_field($user['IMAGE']);
 
 			$api_user_ids[] = $personnel_id;
-		} catch (Exception $e) {
-			error_log("Error processing user data: " . $e->getMessage());
-			continue; // Skip this user if there's an error
-		}
+		// } catch (Exception $e) {
+		// 	error_log("Error processing user data: " . $e->getMessage());
+		// 	continue; // Skip this user if there's an error
+		// }
 
 
-		error_log('TESTING: About to check user ' . $personnel_id);
-		error_log(!isset($existing_user_ids[$personnel_id]));
+		// error_log('TESTING: About to check user ' . $personnel_id);
+		// error_log(!isset($existing_user_ids[$personnel_id]));
 
 		if (!isset($existing_user_ids[$personnel_id])) {
 
@@ -279,6 +279,7 @@ function sync_personnel_users2()
 	foreach ($existing_users as $user) {
 		$existing_user_ids[get_user_meta($user->ID, 'personnel_id', true)] = $user->ID;
 	}
+	error_log("TESTING 1. Existing user IDs: " . print_r($existing_user_ids, true));
 
 	$api_user_ids = [];
 
@@ -318,7 +319,7 @@ function sync_personnel_users2()
 
 		if (!isset($existing_user_ids[$personnel_id])) {
 			// Log personnel ID
-			error_log("TESTING 1. Processing Personnel ID: " . $personnel_id);
+			// error_log("TESTING 1. Processing Personnel ID: " . $personnel_id);
 
 			try {
 
