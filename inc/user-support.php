@@ -301,7 +301,7 @@ function sync_personnel_users2() {
 
 		if (!isset($existing_user_ids[$personnel_id])) {
 			// Log personnel ID
-			error_log("1. Processing Personnel ID: " . $personnel_id);
+			error_log("TESTING 1. Processing Personnel ID: " . $personnel_id);
 			// Create New User
 			$user_id = wp_insert_user([
 				'user_login' => $username,
@@ -313,6 +313,9 @@ function sync_personnel_users2() {
 			]);
 
 			if (!is_wp_error($user_id)) {
+				// log success
+				error_log("TESTING 2. Update new user: " . $personnel_id);
+
 				update_field('personnel_id', $personnel_id, 'user_' . $user_id);
 				update_field('college_id', $college_id, 'user_' . $user_id);
 				update_field('title', $title, 'user_' . $user_id);
@@ -334,11 +337,12 @@ function sync_personnel_users2() {
 				update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 				update_field('image_name', $image_name, 'user_' . $user_id);
 
-				// log success
-				error_log("2. Update new user: " . $personnel_id);
-
 			}
 		} else {
+
+			// log success
+			error_log("TESTING 3. Updated existing user: " . $personnel_id);
+
 			// Update Existing User
 			$user_id = $existing_user_ids[$personnel_id];
 			wp_update_user([
@@ -368,8 +372,6 @@ function sync_personnel_users2() {
 			update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 			update_field('image_name', $image_name, 'user_' . $user_id);
 
-			// log success
-			error_log("3. Updated existing user: " . $personnel_id);
 		}
 	}
 
