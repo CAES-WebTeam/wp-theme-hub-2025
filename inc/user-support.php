@@ -297,6 +297,8 @@ function sync_personnel_users2() {
 
 		$api_user_ids[] = $personnel_id;
 
+		error_log($personnel_id);
+
 		if (!isset($existing_user_ids[$personnel_id])) {
 			// Create New User
 			$user_id = wp_insert_user([
@@ -373,9 +375,9 @@ function sync_personnel_users2() {
 
 
 function add_personnel_sync_menu2() {
-	add_submenu_page('tools.php', 'Sync Personnel Archived Users', 'Sync Archived Personnel', 'manage_options', 'sync-personnel2', function() {
+	add_submenu_page('tools.php', 'Sync Personnel Inactive Users', 'Sync Inactive Personnel', 'manage_options', 'sync-personnel2', function() {
 		sync_personnel_users2();
-		echo '<div class="updated"><p>Personnel archived users synced successfully!</p></div>';
+		echo '<div class="updated"><p>Personnel inactive users synced successfully!</p></div>';
 	});
 }
 add_action('admin_menu', 'add_personnel_sync_menu2');
