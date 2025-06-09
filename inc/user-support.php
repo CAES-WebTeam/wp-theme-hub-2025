@@ -311,9 +311,6 @@ function sync_personnel_users2() {
 				'user_pass' => wp_generate_password(),
 				'role' => 'personnel_user'
 			]);
-			// Log
-			// error_log("2. User created with ID:" . $user_id . "for Personnel ID: " . $personnel_id);
-
 
 			if (!is_wp_error($user_id)) {
 				update_field('personnel_id', $personnel_id, 'user_' . $user_id);
@@ -336,6 +333,10 @@ function sync_personnel_users2() {
 				update_field('shipping_state', $shipping_state, 'user_' . $user_id);
 				update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 				update_field('image_name', $image_name, 'user_' . $user_id);
+
+				// log success
+				error_log("2. Update new user: " . $personnel_id);
+
 			}
 		} else {
 			// Update Existing User
@@ -366,6 +367,9 @@ function sync_personnel_users2() {
 			update_field('shipping_state', $shipping_state, 'user_' . $user_id);
 			update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 			update_field('image_name', $image_name, 'user_' . $user_id);
+
+			// log success
+			error_log("3. Updated existing user: " . $personnel_id);
 		}
 	}
 
