@@ -312,6 +312,8 @@ function sync_personnel_users2() {
 				'role' => 'personnel_user'
 			]);
 
+			error_log("TESTING 1.1 Successfully created user: " . $username);
+
 			if (!is_wp_error($user_id)) {
 				// log success
 				error_log("TESTING 2. Update new user: " . $personnel_id);
