@@ -50,81 +50,87 @@ function render_import_json_acf()
     submit_button('Filter', 'secondary', '', false);
     echo '</form>';
 
-
     $grouped_data = [];
     foreach ($json_data as $item) {
         $grouped_data[$item['STORY_ID']][] = $item;
     }
 
-    $hide_missing = !isset($_GET['hide_missing']) || $_GET['hide_missing'] == '1';
+    // Get all story IDs and find matching posts in one query
+    $story_ids = array_keys($grouped_data);
+    $all_matching_posts = [];
+    
+    if (!empty($story_ids)) {
+        // Use IN query instead of individual queries
+        global $wpdb;
+        $story_ids_placeholders = implode(',', array_fill(0, count($story_ids), '%s'));
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT p.ID, pm.meta_value as story_id
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+            WHERE p.post_type = 'post'
+            AND pm.meta_key = 'id'
+            AND pm.meta_value IN ($story_ids_placeholders)
+        ", ...$story_ids));
+        
+        foreach ($results as $result) {
+            $all_matching_posts[$result->story_id] = $result->ID;
+        }
+    }
 
-    // Filter out missing posts if hide_missing is on
+    // Filter and paginate BEFORE doing expensive operations
+    $hide_missing = !isset($_GET['hide_missing']) || $_GET['hide_missing'] == '1';
+    
     $filtered_grouped_data = [];
     foreach ($grouped_data as $story_id => $images) {
-        $matching_post = get_posts([
-            'post_type'   => 'post',
-            'meta_key'    => 'id',
-            'meta_value'  => $story_id,
-            'numberposts' => 1,
-        ]);
-
-        if ($hide_missing && empty($matching_post)) {
+        $post_id = $all_matching_posts[$story_id] ?? 0;
+        
+        if ($hide_missing && !$post_id) {
             continue;
         }
-
+        
         $filtered_grouped_data[$story_id] = $images;
     }
 
-    // Paginate
+    // Paginate first
     $total_items = count($filtered_grouped_data);
     $total_pages = ceil($total_items / $per_page);
-    // First, apply unimported filter BEFORE pagination
-    $final_filtered_data = [];
+    
+    $paged_data = $total_pages > 1
+        ? array_slice($filtered_grouped_data, ($current_page - 1) * $per_page, $per_page, true)
+        : $filtered_grouped_data;
 
-    foreach ($filtered_grouped_data as $story_id => $images) {
-        $matching_post = get_posts([
-            'post_type'   => 'post',
-            'meta_key'    => 'id',
-            'meta_value'  => $story_id,
-            'numberposts' => 1,
-        ]);
-
-        $post_id = $matching_post[0]->ID ?? 0;
-        $imported_count = 0;
-
-        foreach ($images as $item) {
-            $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
+    // NOW apply the unimported filter only to the current page's data
+    if ($show_unimported_only) {
+        $final_paged_data = [];
+        foreach ($paged_data as $story_id => $images) {
+            $post_id = $all_matching_posts[$story_id] ?? 0;
+            if (!$post_id) continue;
+            
+            $imported_count = 0;
             $carousel_field_key = 'field_683a19a810dd8';
-
-            if ($post_id && have_rows($carousel_field_key, $post_id)) {
+            
+            if (have_rows($carousel_field_key, $post_id)) {
                 while (have_rows($carousel_field_key, $post_id)) {
                     the_row();
-                    if (trim(get_sub_field('caption')) === trim($caption)) {
-                        $imported_count++;
-                        break;
+                    $existing_caption = trim(get_sub_field('caption'));
+                    
+                    foreach ($images as $item) {
+                        $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
+                        if ($existing_caption === trim($caption)) {
+                            $imported_count++;
+                            break;
+                        }
                     }
                 }
             }
+            
+            $all_imported = $imported_count === count($images);
+            if (!$all_imported) {
+                $final_paged_data[$story_id] = $images;
+            }
         }
-
-        $all_imported = $imported_count === count($images);
-
-        if ($show_unimported_only && $all_imported) {
-            continue; // Skip fully imported ones if filtering
-        }
-
-        $final_filtered_data[$story_id] = $images;
+        $paged_data = $final_paged_data;
     }
-
-    // Now paginate the filtered list
-    $total_items = count($final_filtered_data);
-    $total_pages = ceil($total_items / $per_page);
-
-    // Optional: Show all if only 1 page of results
-    $paged_data = $total_pages > 1
-        ? array_slice($final_filtered_data, ($current_page - 1) * $per_page, $per_page, true)
-        : $final_filtered_data;
-
 
     if ($total_pages > 1) {
         echo '<div class="tablenav"><div class="tablenav-pages"><span class="pagination-links">';
@@ -153,40 +159,39 @@ function render_import_json_acf()
 	</tr></thead><tbody>';
 
     foreach ($paged_data as $story_id => $images) {
-        $matching_post = get_posts([
-            'post_type'   => 'post',
-            'meta_key'    => 'id',
-            'meta_value'  => $story_id,
-            'numberposts' => 1,
-        ]);
+        $post_id = $all_matching_posts[$story_id] ?? 0;
+        
+        if ($hide_missing && !$post_id) continue;
 
-        if ($hide_missing && empty($matching_post)) continue;
-
-        $post_id = $matching_post[0]->ID ?? 0;
         $captions = $labels = $sequences = [];
         $imported_count = 0;
+        $carousel_field_key = 'field_683a19a810dd8';
+        
         foreach ($images as $item) {
             $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
             $image_info = $item['IMAGE'][0] ?? [];
             $captions[] = $caption;
             $labels[] = $image_info['IMAGE_LABEL'] ?? '';
             $sequences[] = $item['SEQUENCE_NUMBER'] ?? '';
-
-            $carousel_field_key = 'field_683a19a810dd8';
-            if ($post_id && have_rows($carousel_field_key, $post_id)) {
-                while (have_rows($carousel_field_key, $post_id)) {
-                    the_row();
-                    if (trim(get_sub_field('caption')) === trim($caption)) {
+        }
+        
+        // Check imported status only for the posts we're displaying
+        if ($post_id && have_rows($carousel_field_key, $post_id)) {
+            while (have_rows($carousel_field_key, $post_id)) {
+                the_row();
+                $existing_caption = trim(get_sub_field('caption'));
+                
+                foreach ($captions as $caption) {
+                    if ($existing_caption === trim($caption)) {
                         $imported_count++;
                         break;
                     }
                 }
             }
         }
+        
         $all_imported = $imported_count === count($images);
-        if ($show_unimported_only && $all_imported) {
-            continue;
-        }
+        
         echo '<tr>';
         echo '<td>';
         if ($post_id && !$all_imported) {
@@ -205,18 +210,14 @@ function render_import_json_acf()
     }
 
     echo '</tbody></table>';
-
     echo '</form>';
-    // Add this just before echo '</div>'; at the end of your function:
 
     echo '<hr style="margin-top:2em; margin-bottom:2em;">';
-
     echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" onsubmit="return confirm(\'Are you sure you want to clear all carousel fields? This cannot be undone.\');">';
     wp_nonce_field('clear_all_carousels_action', 'clear_all_carousels_nonce');
     echo '<input type="hidden" name="action" value="clear_all_carousels">';
     submit_button('Clear All Carousel Fields', 'delete');
     echo '</form>';
-
 
     echo '</div>'; // .wrap
 }
