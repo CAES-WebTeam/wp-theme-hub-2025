@@ -116,34 +116,41 @@ function sync_personnel_users()
 			continue; // Skip inactive users
 		}*/
 
-		$personnel_id = intval($user['PERSONNEL_ID']);
-		$college_id = intval($user['COLLEGEID']);
-		$email = sanitize_email($user['EMAIL']);
-		$username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
-		$first_name = sanitize_text_field($user['FNAME']);
-		$last_name = sanitize_text_field($user['LNAME']);
-		$title = sanitize_text_field($user['TITLE']);
-		$department = sanitize_text_field($user['DEPARTMENT']);
-		$program_area = sanitize_text_field($user['PROGRAMAREALIST']);
-		$phone = sanitize_text_field($user['PHONE_NUMBER']);
-		$cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER']);
-		$fax = sanitize_text_field($user['FAX_NUMBER']);
-		$caes_location_id = intval($user['CAES_LOCATION_ID']);
-		$mailing_address = sanitize_text_field($user['MAILING_ADDRESS1']);
-		$mailing_address2 = sanitize_text_field($user['MAILING_ADDRESS2']);
-		$mailing_city = sanitize_text_field($user['MAILING_CITY']);
-		$mailing_state = sanitize_text_field($user['MAILING_STATE']);
-		$mailing_zip = sanitize_text_field($user['MAILING_ZIP']);
-		$shipping_address = sanitize_text_field($user['SHIPPING_ADDRESS1']);
-		$shipping_address2 = sanitize_text_field($user['SHIPPING_ADDRESS2']);
-		$shipping_city = sanitize_text_field($user['SHIPPING_CITY']);
-		$shipping_state = sanitize_text_field($user['SHIPPING_STATE']);
-		$shipping_zip = sanitize_text_field($user['SHIPPING_ZIP']);
-		$image_name = sanitize_text_field($user['IMAGE']);
+		try {
 
-		$api_user_ids[] = $personnel_id;
+			$personnel_id = intval($user['PERSONNEL_ID']);
+			$college_id = intval($user['COLLEGEID']);
+			$email = sanitize_email($user['EMAIL']);
+			$username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
+			$first_name = sanitize_text_field($user['FNAME']);
+			$last_name = sanitize_text_field($user['LNAME']);
+			$title = sanitize_text_field($user['TITLE']);
+			$department = sanitize_text_field($user['DEPARTMENT']);
+			$program_area = sanitize_text_field($user['PROGRAMAREALIST']);
+			$phone = sanitize_text_field($user['PHONE_NUMBER']);
+			$cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER']);
+			$fax = sanitize_text_field($user['FAX_NUMBER']);
+			$caes_location_id = intval($user['CAES_LOCATION_ID']);
+			$mailing_address = sanitize_text_field($user['MAILING_ADDRESS1']);
+			$mailing_address2 = sanitize_text_field($user['MAILING_ADDRESS2']);
+			$mailing_city = sanitize_text_field($user['MAILING_CITY']);
+			$mailing_state = sanitize_text_field($user['MAILING_STATE']);
+			$mailing_zip = sanitize_text_field($user['MAILING_ZIP']);
+			$shipping_address = sanitize_text_field($user['SHIPPING_ADDRESS1']);
+			$shipping_address2 = sanitize_text_field($user['SHIPPING_ADDRESS2']);
+			$shipping_city = sanitize_text_field($user['SHIPPING_CITY']);
+			$shipping_state = sanitize_text_field($user['SHIPPING_STATE']);
+			$shipping_zip = sanitize_text_field($user['SHIPPING_ZIP']);
+			$image_name = sanitize_text_field($user['IMAGE']);
 
-		error_log('ASHLEY 0. About to check user' . $personnel_id);
+			$api_user_ids[] = $personnel_id;
+		} catch (Exception $e) {
+			error_log("Error processing user data: " . $e->getMessage());
+			continue; // Skip this user if there's an error
+		}
+
+
+		error_log('TESTING: About to check user ' . $personnel_id);
 		error_log(!isset($existing_user_ids[$personnel_id]));
 
 		if (!isset($existing_user_ids[$personnel_id])) {
