@@ -143,7 +143,11 @@ function sync_personnel_users()
 
 		$api_user_ids[] = $personnel_id;
 
+		error_log('ASHLEY 0. About to check user' . $personnel_id);
+		error_log(!isset($existing_user_ids[$personnel_id]));
+
 		if (!isset($existing_user_ids[$personnel_id])) {
+
 			// Create New User
 			$user_id = wp_insert_user([
 				'user_login' => $username,
