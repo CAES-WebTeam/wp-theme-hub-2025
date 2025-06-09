@@ -1,10 +1,11 @@
 <?php
 
 // Load ACF Field Groups
-include_once( get_template_directory() . '/inc/acf-fields/user-field-group.php' );
+include_once(get_template_directory() . '/inc/acf-fields/user-field-group.php');
 
 // Create Custom User Role
-function add_personnel_user_role() {
+function add_personnel_user_role()
+{
 	if (!get_role('personnel_user')) {
 		add_role('personnel_user', 'Personnel User', [
 			'read' => true,
@@ -16,7 +17,8 @@ function add_personnel_user_role() {
 add_action('init', 'add_personnel_user_role');
 
 // Create Custom User Role
-function add_expert_user_role() {
+function add_expert_user_role()
+{
 	if (!get_role('expert_user')) {
 		add_role('expert_user', 'Expert User', [
 			'read' => true,
@@ -55,7 +57,8 @@ add_action('admin_menu', 'add_delete_personnel_users_menu');*/
 
 
 // Slit name into mulitple variables
-function split_full_name($full_name) {
+function split_full_name($full_name)
+{
 	$name_parts = explode(' ', trim($full_name));
 
 	if (count($name_parts) > 1) {
@@ -74,7 +77,8 @@ function split_full_name($full_name) {
 
 
 // Add or Update Users Data from Personnel REST data
-function sync_personnel_users() {
+function sync_personnel_users()
+{
 	$api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel/?returnContactInfoColumns=true';
 	//$api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?returnOnlyNewsAuthorsAndExperts=true&isActive=false&returnContactInfoColumns=true';
 
@@ -221,8 +225,9 @@ add_action('daily_personnel_sync', 'sync_personnel_users');
 
 
 // Add Manual Sync Button to Tools
-function add_personnel_sync_menu() {
-	add_submenu_page('tools.php', 'Sync Personnel Users', 'Sync Personnel', 'manage_options', 'sync-personnel', function() {
+function add_personnel_sync_menu()
+{
+	add_submenu_page('tools.php', 'Sync Personnel Users', 'Sync Personnel', 'manage_options', 'sync-personnel', function () {
 		sync_personnel_users();
 		echo '<div class="updated"><p>Personnel users synced successfully!</p></div>';
 	});
@@ -233,7 +238,8 @@ add_action('admin_menu', 'add_personnel_sync_menu');
 
 
 // Add or Update Archived Users Data from Personnel REST data2
-function sync_personnel_users2() {
+function sync_personnel_users2()
+{
 	$api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?returnOnlyNewsAuthorsAndExperts=true&isActive=false&returnContactInfoColumns=true';
 
 	// Fetch API Data
@@ -302,16 +308,29 @@ function sync_personnel_users2() {
 		if (!isset($existing_user_ids[$personnel_id])) {
 			// Log personnel ID
 			error_log("TESTING 1. Processing Personnel ID: " . $personnel_id);
-			// Create New User
-			$user_id = wp_insert_user([
-				'user_login' => $username,
-				'user_email' => $email,
-				'first_name' => $first_name,
-				'last_name' => $last_name,
-				'user_pass' => wp_generate_password(),
-				'role' => 'personnel_user'
-			]);
 
+			try {
+
+				if ($personnel_id == "1394") {
+					error_log("Ashley-1 " . $personnel_id);
+					error_log("Ashley-2 " . $username);
+					error_log("Ashley-3 " . $email);
+					error_log("Ashley-4 " . $first_name);
+					error_log("Ashley-5 " . $last_name);
+				}
+
+				// Create New User
+				$user_id = wp_insert_user([
+					'user_login' => $username,
+					'user_email' => $email,
+					'first_name' => $first_name,
+					'last_name' => $last_name,
+					'user_pass' => wp_generate_password(),
+					'role' => 'personnel_user'
+				]);
+			} catch (Exception $e) {
+				error_log("TESTING 1.05 Error creating user: " . $e->getMessage());
+			}
 			error_log("TESTING 1.1 Successfully created user: " . $username);
 
 			if (!is_wp_error($user_id)) {
@@ -338,7 +357,6 @@ function sync_personnel_users2() {
 				update_field('shipping_state', $shipping_state, 'user_' . $user_id);
 				update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 				update_field('image_name', $image_name, 'user_' . $user_id);
-
 			}
 		} else {
 
@@ -373,7 +391,6 @@ function sync_personnel_users2() {
 			update_field('shipping_state', $shipping_state, 'user_' . $user_id);
 			update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
 			update_field('image_name', $image_name, 'user_' . $user_id);
-
 		}
 	}
 
@@ -387,8 +404,9 @@ function sync_personnel_users2() {
 
 
 
-function add_personnel_sync_menu2() {
-	add_submenu_page('tools.php', 'Sync Personnel Inactive Users', 'Sync Inactive Personnel', 'manage_options', 'sync-personnel2', function() {
+function add_personnel_sync_menu2()
+{
+	add_submenu_page('tools.php', 'Sync Personnel Inactive Users', 'Sync Inactive Personnel', 'manage_options', 'sync-personnel2', function () {
 		sync_personnel_users2();
 		echo '<div class="updated"><p>Personnel inactive users synced successfully!</p></div>';
 	});
@@ -397,241 +415,243 @@ add_action('admin_menu', 'add_personnel_sync_menu2');
 
 
 
-function generate_placeholder_email($first, $last) {
-    // Normalize and clean names
-    $first_clean = sanitize_email_part($first);
-    $last_clean = sanitize_email_part($last);
+function generate_placeholder_email($first, $last)
+{
+	// Normalize and clean names
+	$first_clean = sanitize_email_part($first);
+	$last_clean = sanitize_email_part($last);
 
-    // Fallback if empty
-    if (empty($first_clean)) $first_clean = 'user';
-    if (empty($last_clean)) $last_clean = uniqid();
+	// Fallback if empty
+	if (empty($first_clean)) $first_clean = 'user';
+	if (empty($last_clean)) $last_clean = uniqid();
 
-    return "{$first_clean}.{$last_clean}@placeholder.uga.edu";
+	return "{$first_clean}.{$last_clean}@placeholder.uga.edu";
 }
 
-function sanitize_email_part($name) {
-    $name = strtolower(trim($name));
-    $name = preg_replace('/[^a-z0-9]/', '', $name); // Keep only a-z and 0–9
-    return $name;
+function sanitize_email_part($name)
+{
+	$name = strtolower(trim($name));
+	$name = preg_replace('/[^a-z0-9]/', '', $name); // Keep only a-z and 0–9
+	return $name;
 }
 
 // Add News Experts/Sources
 add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['import_expert_users'])) return;
+	if (!current_user_can('manage_options') || !isset($_GET['import_expert_users'])) return;
 
-    $json_file_path = get_template_directory() . '/json/news-experts.json';
+	$json_file_path = get_template_directory() . '/json/news-experts.json';
 
-    if (!file_exists($json_file_path)) {
-        wp_die('JSON file not found');
-    }
+	if (!file_exists($json_file_path)) {
+		wp_die('JSON file not found');
+	}
 
-    // Load and sanitize JSON
-    $json_data = file_get_contents($json_file_path);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
-    $json_data = trim($json_data);
+	// Load and sanitize JSON
+	$json_data = file_get_contents($json_file_path);
+	$json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
+	$json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
+	$json_data = trim($json_data);
 
-    $records = json_decode($json_data, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_die('JSON decode error: ' . json_last_error_msg());
-    }
+	$records = json_decode($json_data, true);
+	if (json_last_error() !== JSON_ERROR_NONE) {
+		wp_die('JSON decode error: ' . json_last_error_msg());
+	}
 
-    $created = 0;
-    $updated = 0;
-    $linked = 0;
+	$created = 0;
+	$updated = 0;
+	$linked = 0;
 
-    foreach ($records as $person) {
-        $email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
-        $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
-        $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
-        $personnel_id = $person['PERSONNEL_ID'] ?? null;
+	foreach ($records as $person) {
+		$email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
+		$first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
+		$last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
+		$personnel_id = $person['PERSONNEL_ID'] ?? null;
 
-        $user_id = null;
+		$user_id = null;
 
-        // CASE 1: Email exists and user doesn't -> CREATE USER
-        if ($email && is_email($email)) {
-            $user = get_user_by('email', $email);
-            if (!$user) {
-                $user_id = wp_insert_user([
-                    'user_login' => sanitize_user($email),
-                    'user_pass' => wp_generate_password(),
-                    'user_email' => $email,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'role' => 'expert_user',
-                ]);
+		// CASE 1: Email exists and user doesn't -> CREATE USER
+		if ($email && is_email($email)) {
+			$user = get_user_by('email', $email);
+			if (!$user) {
+				$user_id = wp_insert_user([
+					'user_login' => sanitize_user($email),
+					'user_pass' => wp_generate_password(),
+					'user_email' => $email,
+					'first_name' => $first_name,
+					'last_name' => $last_name,
+					'role' => 'expert_user',
+				]);
 
-                if (is_wp_error($user_id)) {
-                    error_log("User creation failed for {$email}: " . $user_id->get_error_message());
-                    continue;
-                }
+				if (is_wp_error($user_id)) {
+					error_log("User creation failed for {$email}: " . $user_id->get_error_message());
+					continue;
+				}
 
-                $created++;
-            } else {
-                $user_id = $user->ID;
+				$created++;
+			} else {
+				$user_id = $user->ID;
 
-                $updated++;
-            }
-        }
+				$updated++;
+			}
+		}
 
-        // CASE 2: No email, but PERSONNEL_ID exists -> MATCH EXISTING USER
-        if (!$user_id && $personnel_id) {
-            $users = get_users([
-                'meta_key' => 'personnel_id',
-                'meta_value' => $personnel_id,
-                'number' => 1,
-                'fields' => 'ID',
-            ]);
+		// CASE 2: No email, but PERSONNEL_ID exists -> MATCH EXISTING USER
+		if (!$user_id && $personnel_id) {
+			$users = get_users([
+				'meta_key' => 'personnel_id',
+				'meta_value' => $personnel_id,
+				'number' => 1,
+				'fields' => 'ID',
+			]);
 
-            if (!empty($users)) {
-                $user_id = $users[0];
-                $linked++;
-            }
-        }
+			if (!empty($users)) {
+				$user_id = $users[0];
+				$linked++;
+			}
+		}
 
-        // CASE 3: Email exists and user doesn't -> CREATE USER
-        if (!$email && !$personnel_id) {
-        	$placeholder_email = generate_placeholder_email($first_name, $last_name);
-            $user_id = wp_insert_user([
-                'user_login' => sanitize_user($placeholder_email),
-                'user_pass' => wp_generate_password(),
-                'user_email' => $placeholder_email,
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'role' => 'expert_user',
-            ]);
+		// CASE 3: Email exists and user doesn't -> CREATE USER
+		if (!$email && !$personnel_id) {
+			$placeholder_email = generate_placeholder_email($first_name, $last_name);
+			$user_id = wp_insert_user([
+				'user_login' => sanitize_user($placeholder_email),
+				'user_pass' => wp_generate_password(),
+				'user_email' => $placeholder_email,
+				'first_name' => $first_name,
+				'last_name' => $last_name,
+				'role' => 'expert_user',
+			]);
 
-            if (is_wp_error($user_id)) {
-                error_log("User creation failed for {$email}: " . $user_id->get_error_message());
-                continue;
-            }
+			if (is_wp_error($user_id)) {
+				error_log("User creation failed for {$email}: " . $user_id->get_error_message());
+				continue;
+			}
 
-            $created++;
-        }
+			$created++;
+		}
 
-        // --- Update ACF fields if user found or created ---
-        if ($user_id) {
-            update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
-            update_field('description', $person['DESCRIPTION'] ?? '', 'user_' . $user_id);
-            update_field('personnel_id', $personnel_id, 'user_' . $user_id);
-            update_field('source_expert_id', $person['ID'], 'user_' . $user_id);
-            update_field('area_of_expertise', $person['AREA_OF_EXPERTISE'] ?? '', 'user_' . $user_id);
-            update_field('is_source', (bool)($person['IS_SOURCE'] ?? false), 'user_' . $user_id);
-            update_field('is_expert', (bool)($person['IS_EXPERT'] ?? false), 'user_' . $user_id);
-            update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
-        }
-    }
+		// --- Update ACF fields if user found or created ---
+		if ($user_id) {
+			update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
+			update_field('description', $person['DESCRIPTION'] ?? '', 'user_' . $user_id);
+			update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+			update_field('source_expert_id', $person['ID'], 'user_' . $user_id);
+			update_field('area_of_expertise', $person['AREA_OF_EXPERTISE'] ?? '', 'user_' . $user_id);
+			update_field('is_source', (bool)($person['IS_SOURCE'] ?? false), 'user_' . $user_id);
+			update_field('is_expert', (bool)($person['IS_EXPERT'] ?? false), 'user_' . $user_id);
+			update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
+		}
+	}
 
-    wp_die("Import complete.<br>New Users Created: {$created}<br>Existing Users Updated: {$updated}<br>Linked by Personnel ID: {$linked}");
+	wp_die("Import complete.<br>New Users Created: {$created}<br>Existing Users Updated: {$updated}<br>Linked by Personnel ID: {$linked}");
 });
 
 
 // Add News Writers
 add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['import_writer_users'])) return;
+	if (!current_user_can('manage_options') || !isset($_GET['import_writer_users'])) return;
 
-    $json_file_path = get_template_directory() . '/json/news-writers.json';
+	$json_file_path = get_template_directory() . '/json/news-writers.json';
 
-    if (!file_exists($json_file_path)) {
-        wp_die('JSON file not found');
-    }
+	if (!file_exists($json_file_path)) {
+		wp_die('JSON file not found');
+	}
 
-    // Load and sanitize JSON
-    $json_data = file_get_contents($json_file_path);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
-    $json_data = trim($json_data);
+	// Load and sanitize JSON
+	$json_data = file_get_contents($json_file_path);
+	$json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
+	$json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding
+	$json_data = trim($json_data);
 
-    $records = json_decode($json_data, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_die('JSON decode error: ' . json_last_error_msg());
-    }
+	$records = json_decode($json_data, true);
+	if (json_last_error() !== JSON_ERROR_NONE) {
+		wp_die('JSON decode error: ' . json_last_error_msg());
+	}
 
-    $created = 0;
-    $updated = 0;
-    $linked = 0;
+	$created = 0;
+	$updated = 0;
+	$linked = 0;
 
-    foreach ($records as $person) {
-        $email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
-        $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
-        $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
-        $personnel_id = $person['PERSONNEL_ID'] ?? null;
+	foreach ($records as $person) {
+		$email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
+		$first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
+		$last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
+		$personnel_id = $person['PERSONNEL_ID'] ?? null;
 
-        $user_id = null;
+		$user_id = null;
 
-        // CASE 1: Email exists and user doesn't -> CREATE USER
-        if ($email && is_email($email)) {
-            $user = get_user_by('email', $email);
-            if (!$user) {
-                $user_id = wp_insert_user([
-                    'user_login' => sanitize_user($email),
-                    'user_pass' => wp_generate_password(),
-                    'user_email' => $email,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'role' => 'author',
-                ]);
+		// CASE 1: Email exists and user doesn't -> CREATE USER
+		if ($email && is_email($email)) {
+			$user = get_user_by('email', $email);
+			if (!$user) {
+				$user_id = wp_insert_user([
+					'user_login' => sanitize_user($email),
+					'user_pass' => wp_generate_password(),
+					'user_email' => $email,
+					'first_name' => $first_name,
+					'last_name' => $last_name,
+					'role' => 'author',
+				]);
 
-                if (is_wp_error($user_id)) {
-                    error_log("User creation failed for {$email}: " . $user_id->get_error_message());
-                    continue;
-                }
+				if (is_wp_error($user_id)) {
+					error_log("User creation failed for {$email}: " . $user_id->get_error_message());
+					continue;
+				}
 
-                $created++;
-            } else {
-                $user_id = $user->ID;
+				$created++;
+			} else {
+				$user_id = $user->ID;
 
-                $updated++;
-            }
-        }
+				$updated++;
+			}
+		}
 
-        // CASE 2: No email, but PERSONNEL_ID exists -> MATCH EXISTING USER
-        if (!$user_id && $personnel_id) {
-            $users = get_users([
-                'meta_key' => 'personnel_id',
-                'meta_value' => $personnel_id,
-                'number' => 1,
-                'fields' => 'ID',
-            ]);
+		// CASE 2: No email, but PERSONNEL_ID exists -> MATCH EXISTING USER
+		if (!$user_id && $personnel_id) {
+			$users = get_users([
+				'meta_key' => 'personnel_id',
+				'meta_value' => $personnel_id,
+				'number' => 1,
+				'fields' => 'ID',
+			]);
 
-            if (!empty($users)) {
-                $user_id = $users[0];
-                $linked++;
-            }
-        }
+			if (!empty($users)) {
+				$user_id = $users[0];
+				$linked++;
+			}
+		}
 
-        // CASE 3: Email exists and user doesn't -> CREATE USER
-        if (!$email && !$personnel_id) {
-        	$placeholder_email = generate_placeholder_email($first_name, $last_name);
-            $user_id = wp_insert_user([
-                'user_login' => sanitize_user($placeholder_email),
-                'user_pass' => wp_generate_password(),
-                'user_email' => $placeholder_email,
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'role' => 'author',
-            ]);
+		// CASE 3: Email exists and user doesn't -> CREATE USER
+		if (!$email && !$personnel_id) {
+			$placeholder_email = generate_placeholder_email($first_name, $last_name);
+			$user_id = wp_insert_user([
+				'user_login' => sanitize_user($placeholder_email),
+				'user_pass' => wp_generate_password(),
+				'user_email' => $placeholder_email,
+				'first_name' => $first_name,
+				'last_name' => $last_name,
+				'role' => 'author',
+			]);
 
-            if (is_wp_error($user_id)) {
-                error_log("User creation failed for {$email}: " . $user_id->get_error_message());
-                continue;
-            }
+			if (is_wp_error($user_id)) {
+				error_log("User creation failed for {$email}: " . $user_id->get_error_message());
+				continue;
+			}
 
-            $created++;
-        }
+			$created++;
+		}
 
-        // --- Update ACF fields if user found or created ---
-        if ($user_id) {
-            update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
-            update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
-            update_field('personnel_id', $personnel_id, 'user_' . $user_id);
-            update_field('writer_id', $person['ID'], 'user_' . $user_id);
-            update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
-            update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
-            update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
-            update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
-        }
-    }
+		// --- Update ACF fields if user found or created ---
+		if ($user_id) {
+			update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
+			update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
+			update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+			update_field('writer_id', $person['ID'], 'user_' . $user_id);
+			update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
+			update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
+			update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
+			update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
+		}
+	}
 
-    wp_die("Import complete.<br>New Users Created: {$created}<br>Existing Users Updated: {$updated}<br>Linked by Personnel ID: {$linked}");
+	wp_die("Import complete.<br>New Users Created: {$created}<br>Existing Users Updated: {$updated}<br>Linked by Personnel ID: {$linked}");
 });
