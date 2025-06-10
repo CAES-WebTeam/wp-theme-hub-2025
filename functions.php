@@ -25,3 +25,4 @@ require get_template_directory() . '/inc/release-date-migration.php';
 require get_template_directory() . '/inc/release-date-clear.php';
 require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/import-legacy-slideshows-to-news.php';
+require get_template_directory() . '/inc/link-users.php';
