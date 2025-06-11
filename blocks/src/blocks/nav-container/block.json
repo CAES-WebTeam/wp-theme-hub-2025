@@ -1,0 +1,51 @@
+{
+  "apiVersion": 3,
+  "name": "caes-hub/field-report-navigation",
+  "title": "Field Report Navigation",
+  "category": "design",
+  "description": "A sidebar navigation with flyout submenus",
+  "keywords": [
+    "navigation",
+    "menu",
+    "sidebar"
+  ],
+  "textdomain": "caes-hub",
+  "supports": {
+    "html": false,
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
+    }
+  },
+  "attributes": {
+    "hoverDelay": {
+      "type": "number",
+      "default": 300
+    },
+    "mobileBreakpoint": {
+      "type": "string",
+      "default": "768px"
+    },
+    "blockId": {
+      "type": "string"
+    }
+  },
+  "providesContext": {
+    "fieldReport/navigationId": "blockId",
+    "fieldReport/hoverDelay": "hoverDelay"
+  },
+  "usesContext": [],
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
+  "render": "file:./render.php"
+}

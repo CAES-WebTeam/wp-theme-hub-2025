@@ -1,0 +1,182 @@
+/**
+ * Field Report Navigation Styles
+ */
+
+ .wp-block-caes-hub-field-report-navigation  {
+    
+    .nav-menu {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .nav-item {
+        position: relative;
+        
+        .nav-link {
+            display: block;
+            padding: 0.75rem 1rem;
+            text-decoration: none;
+            color: inherit;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+            
+            &:hover,
+            &:focus {
+                background-color: rgba(0, 0, 0, 0.05);
+                outline: none;
+            }
+            
+            &:focus-visible {
+                outline: 2px solid currentColor;
+                outline-offset: 2px;
+            }
+        }
+    }
+    
+    // Nav items with submenus
+    .nav-item-with-submenu {
+        
+        .nav-link-wrapper {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        .nav-primary-link {
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+        
+        .submenu-toggle {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            min-width: 2rem;
+            height: 2rem;
+            
+            &:hover,
+            &:focus {
+                background-color: rgba(0, 0, 0, 0.1);
+                outline: none;
+            }
+            
+            &:focus-visible {
+                outline: 2px solid currentColor;
+                outline-offset: 2px;
+            }
+            
+            .submenu-arrow {
+                transition: transform 0.2s ease;
+                font-size: 0.75rem;
+            }
+            
+            &[aria-expanded="true"] .submenu-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    }
+    
+    // Flyout/submenu styles
+    .nav-flyout {
+        // display: none;
+        position: fixed;
+        left: 222px;
+        top: 0;
+        min-width: 200px;
+        z-index: 9998;
+        background-color: var(--wp--preset--color--base);
+        height: 100vh;
+        overflow-y: auto;
+        
+        .flyout-content {
+            padding: 1rem;
+            
+            // Style common content elements
+            h1, h2, h3, h4, h5, h6 {
+                margin-top: 0;
+                margin-bottom: 0.5rem;
+            }
+            
+            p {
+                margin-bottom: 0.75rem;
+                
+                &:last-child {
+                    margin-bottom: 0;
+                }
+            }
+            
+            // Style links inside flyouts
+            a {
+                color: inherit;
+                text-decoration: underline;
+                
+                &:hover,
+                &:focus {
+                    text-decoration: none;
+                }
+                
+                &:focus-visible {
+                    outline: 2px solid currentColor;
+                    outline-offset: 2px;
+                }
+            }
+        }
+    }
+    
+    // Animation when submenu is open
+    .submenu-open {
+        .nav-flyout {
+            animation: fadeIn 0.2s ease;
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .field-report-navigation {
+        .nav-flyout {
+            position: static;
+            margin-left: 0;
+            margin-top: 0.5rem;
+            box-shadow: none;
+            border: none;
+            background: rgba(0, 0, 0, 0.02);
+        }
+    }
+}
+
+// Just for editor
+.editor-styles-wrapper {
+    .wp-block-caes-hub-field-report-navigation {
+        .wp-block-caes-hub-field-report-nav-flyout {
+            border: dashed 1px #e54040;
+        }
+    }
+}
+
+@media screen and (min-width: 782px) {
+    body.logged-in .wp-block-caes-hub-field-report-navigation .nav-flyout {
+        top: var(--wp-admin--admin-bar--height);
+    }
+}

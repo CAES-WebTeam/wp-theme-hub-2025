@@ -1,0 +1,44 @@
+{
+  "apiVersion": 3,
+  "name": "caes-hub/field-report-nav-item",
+  "title": "Field Report Nav Item",
+  "category": "design",
+  "description": "A navigation item with optional flyout submenu",
+  "parent": ["caes-hub/field-report-navigation"],
+  "keywords": ["navigation", "link"],
+  "textdomain": "caes-hub",
+  "supports": {
+    "html": false,
+    "reusable": false
+  },
+  "attributes": {
+    "linkText": {
+      "type": "string",
+      "default": "Navigation Item"
+    },
+    "linkUrl": {
+      "type": "string",
+      "default": "#"
+    },
+    "opensInNewTab": {
+      "type": "boolean",
+      "default": false
+    },
+    "hasFlyout": {
+      "type": "boolean",
+      "default": false
+    },
+    "flyoutId": {
+      "type": "string"
+    }
+  },
+  "usesContext": ["fieldReport/navigationId", "fieldReport/hoverDelay"],
+  "providesContext": {
+    "fieldReport/flyoutId": "flyoutId",
+    "fieldReport/parentNavItem": "linkText"
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}
