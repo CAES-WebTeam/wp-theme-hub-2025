@@ -3,29 +3,18 @@
   "name": "caes-hub/field-report-navigation",
   "title": "Field Report Navigation",
   "category": "design",
-  "description": "A sidebar navigation with flyout submenus",
+  "description": "Navigation menu with flyout support and mobile hamburger menu",
   "keywords": [
     "navigation",
     "menu",
-    "sidebar"
+    "nav"
   ],
   "textdomain": "caes-hub",
-  "supports": {
-    "html": false,
-    "spacing": {
-      "padding": true,
-      "margin": true
-    },
-    "color": {
-      "background": true,
-      "text": true
-    },
-    "typography": {
-      "fontSize": true,
-      "lineHeight": true
-    }
-  },
   "attributes": {
+    "blockId": {
+      "type": "string",
+      "default": ""
+    },
     "hoverDelay": {
       "type": "number",
       "default": 300
@@ -34,17 +23,29 @@
       "type": "string",
       "default": "768px"
     },
-    "blockId": {
-      "type": "string"
+    "mobileMenuLabel": {
+      "type": "string",
+      "default": "Menu"
     }
   },
   "providesContext": {
     "fieldReport/navigationId": "blockId",
     "fieldReport/hoverDelay": "hoverDelay"
   },
-  "usesContext": [],
+  "supports": {
+    "html": false,
+    "reusable": true,
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "color": {
+      "background": true,
+      "text": true
+    }
+  },
   "editorScript": "file:./index.js",
-  "editorStyle": "file:./style-index.css",
+  "editorStyle": "file:./index.css",
   "style": "file:./style-index.css",
   "viewScript": "file:./view.js",
   "render": "file:./render.php"

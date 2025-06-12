@@ -17,7 +17,7 @@ $block_context = array(
 );
 ?>
 
-<nav <?php echo $wrapper_attributes; ?> aria-label="Main navigation">
+<nav <?php echo $wrapper_attributes; ?> aria-label="Main">
     <ul class="nav-menu">
         <?php
         if ( ! empty( $block->inner_blocks ) ) {

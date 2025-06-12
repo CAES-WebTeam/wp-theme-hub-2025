@@ -38,6 +38,7 @@ function Edit({
   const {
     hoverDelay,
     mobileBreakpoint,
+    mobileMenuLabel,
     blockId
   } = attributes;
 
@@ -81,7 +82,8 @@ function Edit({
           }),
           min: 0,
           max: 1000,
-          step: 50
+          step: 50,
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Delay before showing submenus on hover (desktop only)', 'caes-hub')
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Mobile Breakpoint', 'caes-hub'),
           value: mobileBreakpoint,
@@ -89,18 +91,47 @@ function Edit({
             mobileBreakpoint: value
           }),
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('CSS breakpoint for mobile layout (e.g., 768px)', 'caes-hub')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Mobile Menu Label', 'caes-hub'),
+          value: mobileMenuLabel,
+          onChange: value => setAttributes({
+            mobileMenuLabel: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Text shown next to hamburger icon on mobile', 'caes-hub'),
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Menu', 'caes-hub')
         })]
       })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("nav", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("nav", {
       ...blockProps,
       "aria-label": "Main navigation",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("ul", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("button", {
+        className: "mobile-menu-toggle editor-preview",
+        disabled: true,
+        "aria-label": mobileMenuLabel || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Menu', 'caes-hub'),
+        style: {
+          opacity: 0.6,
+          pointerEvents: 'none'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)("span", {
+          className: "hamburger-icon",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("span", {
+            className: "hamburger-line"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("span", {
+            className: "hamburger-line"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("span", {
+            className: "hamburger-line"
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("span", {
+          className: "mobile-menu-text",
+          children: mobileMenuLabel || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Menu', 'caes-hub')
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("ul", {
         className: "nav-menu",
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
           allowedBlocks: ['core/paragraph', 'core/heading', 'caes-hub/field-report-nav-item'],
           renderAppender: _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks.ButtonBlockAppender
         })
-      })
+      })]
     })]
   });
 }
@@ -252,7 +283,7 @@ module.exports = window["wp"]["i18n"];
   \*********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"apiVersion":3,"name":"caes-hub/field-report-navigation","title":"Field Report Navigation","category":"design","description":"A sidebar navigation with flyout submenus","keywords":["navigation","menu","sidebar"],"textdomain":"caes-hub","supports":{"html":false,"spacing":{"padding":true,"margin":true},"color":{"background":true,"text":true},"typography":{"fontSize":true,"lineHeight":true}},"attributes":{"hoverDelay":{"type":"number","default":300},"mobileBreakpoint":{"type":"string","default":"768px"},"blockId":{"type":"string"}},"providesContext":{"fieldReport/navigationId":"blockId","fieldReport/hoverDelay":"hoverDelay"},"usesContext":[],"editorScript":"file:./index.js","editorStyle":"file:./style-index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"apiVersion":3,"name":"caes-hub/field-report-navigation","title":"Field Report Navigation","category":"design","description":"Navigation menu with flyout support and mobile hamburger menu","keywords":["navigation","menu","nav"],"textdomain":"caes-hub","attributes":{"blockId":{"type":"string","default":""},"hoverDelay":{"type":"number","default":300},"mobileBreakpoint":{"type":"string","default":"768px"},"mobileMenuLabel":{"type":"string","default":"Menu"}},"providesContext":{"fieldReport/navigationId":"blockId","fieldReport/hoverDelay":"hoverDelay"},"supports":{"html":false,"reusable":true,"spacing":{"padding":true,"margin":true},"color":{"background":true,"text":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
 
 /***/ })
 

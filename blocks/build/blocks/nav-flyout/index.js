@@ -35,7 +35,7 @@ function Edit({
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
     ...blockProps,
     children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
-      allowedBlocks: ['core/heading', 'core/paragraph', 'core/list', 'core/group', 'core/columns'],
+      allowedBlocks: ['core/heading', 'core/paragraph', 'core/list', 'core/group', 'core/columns', 'core/column', 'core/image', 'core/separator', 'core/button', 'core/buttons', 'core/spacer'],
       template: [['core/heading', {
         level: 3,
         content: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Submenu Section', 'caes-hub')

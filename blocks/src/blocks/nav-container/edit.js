@@ -5,7 +5,7 @@ import { useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
 
 export default function Edit({ attributes, setAttributes, clientId }) {
-    const { hoverDelay, mobileBreakpoint, blockId } = attributes;
+    const { hoverDelay, mobileBreakpoint, mobileMenuLabel, blockId } = attributes;
 
     // Debug: Check inner blocks
     const innerBlocks = useSelect(
@@ -47,6 +47,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         min={0}
                         max={1000}
                         step={50}
+                        help={__('Delay before showing submenus on hover (desktop only)', 'caes-hub')}
                     />
                     <TextControl
                         label={__('Mobile Breakpoint', 'caes-hub')}
@@ -54,10 +55,34 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         onChange={(value) => setAttributes({ mobileBreakpoint: value })}
                         help={__('CSS breakpoint for mobile layout (e.g., 768px)', 'caes-hub')}
                     />
+                    <TextControl
+                        label={__('Mobile Menu Label', 'caes-hub')}
+                        value={mobileMenuLabel}
+                        onChange={(value) => setAttributes({ mobileMenuLabel: value })}
+                        help={__('Text shown next to hamburger icon on mobile', 'caes-hub')}
+                        placeholder={__('Menu', 'caes-hub')}
+                    />
                 </PanelBody>
             </InspectorControls>
 
             <nav {...blockProps} aria-label="Main navigation">
+                {/* Mobile hamburger button preview in editor */}
+                <button 
+                    className="mobile-menu-toggle editor-preview" 
+                    disabled
+                    aria-label={mobileMenuLabel || __('Menu', 'caes-hub')}
+                    style={{ opacity: 0.6, pointerEvents: 'none' }}
+                >
+                    <span className="hamburger-icon">
+                        <span className="hamburger-line"></span>
+                        <span className="hamburger-line"></span>
+                        <span className="hamburger-line"></span>
+                    </span>
+                    <span className="mobile-menu-text">
+                        {mobileMenuLabel || __('Menu', 'caes-hub')}
+                    </span>
+                </button>
+
                 <ul className="nav-menu">
                     <InnerBlocks
                         allowedBlocks={[

@@ -20,6 +20,12 @@ export default function Edit({ context }) {
                     'core/list',
                     'core/group',
                     'core/columns',
+                    'core/column',
+                    'core/image',
+                    'core/separator',
+                    'core/button',
+                    'core/buttons',
+                    'core/spacer',
                 ]}
                 template={[
                     ['core/heading', { level: 3, content: __('Submenu Section', 'caes-hub') }],

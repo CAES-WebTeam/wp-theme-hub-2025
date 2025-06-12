@@ -1,19 +1,56 @@
 <?php
 
-error_log('Nav item render.php is being called');
-error_log('Attributes: ' . print_r($attributes, true));
-
 $link_text = $attributes['linkText'] ?? 'Navigation Item';
 $link_url = $attributes['linkUrl'] ?? '#';
 $opens_in_new_tab = $attributes['opensInNewTab'] ?? false;
 $has_flyout = $attributes['hasFlyout'] ?? false;
 $flyout_id = $attributes['flyoutId'] ?? '';
 
+// Get current page URL for comparison
+$current_url = home_url($_SERVER['REQUEST_URI']);
+$current_path = parse_url($current_url, PHP_URL_PATH);
+$nav_path = parse_url($link_url, PHP_URL_PATH);
+
+// Check if this nav item is current
+$is_current = false;
+$is_current_parent = false;
+
+if ($nav_path) {
+    // Exact match
+    if ($current_path === $nav_path) {
+        $is_current = true;
+    }
+    // Parent page match (current page is a subpage of this nav item)
+    elseif ($current_path && strpos($current_path, rtrim($nav_path, '/') . '/') === 0) {
+        $is_current_parent = true;
+    }
+}
+
+// Build CSS classes
+$nav_classes = ['nav-item'];
+if ($has_flyout) {
+    $nav_classes[] = 'nav-item-with-submenu';
+}
+if ($is_current) {
+    $nav_classes[] = 'nav-item-current';
+}
+if ($is_current_parent) {
+    $nav_classes[] = 'nav-item-current-parent';
+}
+
 $wrapper_attributes = get_block_wrapper_attributes([
-    'class' => 'nav-item' . ($has_flyout ? ' nav-item-with-submenu' : '')
+    'class' => implode(' ', $nav_classes)
 ]);
 
 $target = $opens_in_new_tab ? ' target="_blank" rel="noopener"' : '';
+
+// Add aria-current for accessibility
+$aria_current = '';
+if ($is_current) {
+    $aria_current = ' aria-current="page"';
+} elseif ($is_current_parent) {
+    $aria_current = ' aria-current="true"';
+}
 
 // Create block context for inner blocks (flyout)
 $block_context = array(
@@ -25,7 +62,7 @@ $block_context = array(
 <li <?php echo $wrapper_attributes; ?>>
     <?php if ($has_flyout): ?>
         <div class="nav-link-wrapper">
-            <a href="<?php echo esc_url($link_url); ?>" class="nav-link nav-primary-link"<?php echo $target; ?>>
+            <a href="<?php echo esc_url($link_url); ?>" class="nav-link nav-primary-link"<?php echo $target . $aria_current; ?>>
                 <?php echo esc_html($link_text); ?>
             </a>
             <button 
@@ -35,7 +72,7 @@ $block_context = array(
                 aria-label="<?php echo esc_attr(sprintf(__('Show %s submenu', 'caes-hub'), $link_text)); ?>"
                 data-submenu-trigger
             >
-                <span class="submenu-arrow">▶</span>
+                <span class="submenu-arrow">➤</span>
             </button>
         </div>
         <?php
@@ -48,7 +85,7 @@ $block_context = array(
         }
         ?>
     <?php else: ?>
-        <a href="<?php echo esc_url($link_url); ?>" class="nav-link"<?php echo $target; ?>>
+        <a href="<?php echo esc_url($link_url); ?>" class="nav-link"<?php echo $target . $aria_current; ?>>
             <?php echo esc_html($link_text); ?>
         </a>
     <?php endif; ?>

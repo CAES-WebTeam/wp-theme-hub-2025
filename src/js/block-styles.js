@@ -60,6 +60,11 @@ wp.blocks.registerBlockStyle( 'core/separator', {
   label: 'Partial Width Underline'
 })
 
+wp.blocks.registerBlockStyle( 'core/separator', {
+  name: 'caes-hub-contrast-underline-thick',
+  label: 'Thick Contrast Underline'
+})
+
 // Quote Editor Styles
 
 wp.blocks.registerBlockStyle( 'core/quote', {
