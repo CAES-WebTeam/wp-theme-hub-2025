@@ -27,57 +27,42 @@ require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/import-legacy-slideshows-to-news.php';
 require get_template_directory() . '/inc/link-users.php';
 
-function find_real_field_names() {
-    if (isset($_GET['find_fields']) && current_user_can('manage_options')) {
-        $post_id = 5310;
+function test_save_single_post() {
+    if (isset($_GET['test_save_post']) && current_user_can('manage_options')) {
+        $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 5310;
         
-        echo '<h3>All ACF Fields for Post ' . $post_id . ':</h3>';
+        echo '<h3>Testing Single Post Save</h3>';
+        echo 'Post ID: ' . $post_id . '<br>';
+        echo 'Post Title: ' . get_the_title($post_id) . '<br><br>';
         
-        // Get all fields for this post
-        $fields = get_fields($post_id);
-        echo '<h4>get_fields() result:</h4>';
-        if ($fields) {
-            foreach ($fields as $field_name => $field_value) {
-                echo 'Field: ' . $field_name . ' = '; var_dump($field_value); echo '<br>';
-            }
+        // Check BEFORE save
+        echo '<h4>BEFORE Save:</h4>';
+        echo 'get_field result: '; var_dump(get_field('external_publisher', $post_id)); echo '<br>';
+        echo 'get_post_meta result: '; var_dump(get_post_meta($post_id, 'external_publisher', true)); echo '<br><br>';
+        
+        // Re-save the post (this triggers ACF save hooks)
+        $result = wp_update_post([
+            'ID' => $post_id,
+            'post_modified' => current_time('mysql'),
+            'post_modified_gmt' => current_time('mysql', 1)
+        ]);
+        
+        echo '<h4>Save Result:</h4>';
+        if (is_wp_error($result)) {
+            echo 'Error: ' . $result->get_error_message() . '<br>';
         } else {
-            echo 'No fields found with get_fields()<br>';
+            echo 'Success! Post updated.<br>';
         }
+        echo '<br>';
         
-        // Try to get field objects for common variations
-        echo '<h4>Testing Field Name Variations:</h4>';
-        $variations = [
-            'external_publisher',
-            'external-publisher', 
-            'external_publishers',
-            'publisher',
-            'publishers'
-        ];
+        // Check AFTER save
+        echo '<h4>AFTER Save:</h4>';
+        echo 'get_field result: '; var_dump(get_field('external_publisher', $post_id)); echo '<br>';
+        echo 'get_post_meta result: '; var_dump(get_post_meta($post_id, 'external_publisher', true)); echo '<br>';
         
-        foreach ($variations as $variation) {
-            $field_obj = get_field_object($variation, $post_id);
-            if ($field_obj) {
-                echo 'FOUND: ' . $variation . ' - Type: ' . $field_obj['type'] . '<br>';
-                echo 'Value: '; var_dump($field_obj['value']); echo '<br>';
-            } else {
-                echo 'Not found: ' . $variation . '<br>';
-            }
-        }
+        echo '<br><strong>Now go check your query block to see if this post shows the external publisher!</strong>';
         
-        // Check what's actually selected in admin by trying all meta
-        echo '<h4>All Post Meta (including field references):</h4>';
-        $all_meta = get_post_meta($post_id);
-        foreach ($all_meta as $key => $value) {
-            echo $key . ': '; 
-            if (is_array($value) && count($value) == 1) {
-                echo $value[0];
-            } else {
-                var_dump($value);
-            }
-            echo '<br>';
-        }
-        
-        wp_die('Field discovery complete');
+        wp_die();
     }
 }
-add_action('init', 'find_real_field_names');
+add_action('init', 'test_save_single_post');
