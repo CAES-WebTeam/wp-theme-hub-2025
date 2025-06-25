@@ -6,6 +6,17 @@
 // Get the current post ID
 $post_id = get_the_ID();
 
+// Debug: Check what's actually stored
+echo '<pre style="background: #f0f0f0; padding: 10px; margin: 10px 0;">';
+echo 'Post ID: ' . $post_id . "\n";
+echo 'Raw meta: ';
+var_dump(get_post_meta($post_id, 'external_publisher', true));
+echo "\nACF get_field: ";
+var_dump(get_field('external_publisher', $post_id));
+echo "\nACF get_field (bypass cache): ";
+var_dump(get_field('external_publisher', $post_id, false));
+echo '</pre>';
+
 // Get the External Publishers from ACF for this specific post
 $external_publisher = get_field('external_publisher', $post_id);
 
