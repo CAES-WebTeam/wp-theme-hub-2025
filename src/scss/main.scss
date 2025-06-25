@@ -431,11 +431,11 @@ figcaption a {
 
 @media screen and (max-width: 782px) {
     .add-margin-top-mobile {
-        margin-top: var(--wp--style--block-gap);
+        margin-top: var(--wp--style--block-gap) !important;
     }
 
     .add-margin-bottom-mobile {
-        margin-bottom: var(--wp--style--block-gap);
+        margin-bottom: var(--wp--style--block-gap) !important;
     }
 
     .remove-margin-top-mobile {
