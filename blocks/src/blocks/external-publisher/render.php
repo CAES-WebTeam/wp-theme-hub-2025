@@ -6,19 +6,30 @@
 // Get the current post ID
 $post_id = get_the_ID();
 
-// Debug: Check what's actually stored
-echo '<pre style="background: #f0f0f0; padding: 10px; margin: 10px 0;">';
-echo 'Post ID: ' . $post_id . "\n";
-echo 'Raw meta: ';
-var_dump(get_post_meta($post_id, 'external_publisher', true));
-echo "\nACF get_field: ";
-var_dump(get_field('external_publisher', $post_id));
-echo "\nACF get_field (bypass cache): ";
-var_dump(get_field('external_publisher', $post_id, false));
-echo '</pre>';
-
 // Get the External Publishers from ACF for this specific post
 $external_publisher = get_field('external_publisher', $post_id);
+
+// Debug the term lookup
+echo '<pre style="background: #f0f0f0; padding: 10px; margin: 10px 0;">';
+echo 'Post ID: ' . $post_id . "\n";
+echo 'Publisher value: '; var_dump($external_publisher);
+
+if ($external_publisher) {
+    echo "\nTrying to get term for ID: " . $external_publisher . "\n";
+    
+    $term = get_term($external_publisher);
+    echo 'get_term result: '; var_dump($term);
+    
+    if (is_wp_error($term)) {
+        echo 'Term error: ' . $term->get_error_message() . "\n";
+    }
+    
+    // Try getting term with taxonomy specified
+    echo "\nTrying with taxonomy specified:\n";
+    $term_with_tax = get_term($external_publisher, 'external_publisher'); // Replace with your actual taxonomy name
+    echo 'get_term with taxonomy: '; var_dump($term_with_tax);
+}
+echo '</pre>';
 
 // If no External Publishers, don't render anything
 if (!$external_publisher || empty($external_publisher)) {
