@@ -13,11 +13,6 @@ $post_id = get_the_ID();
 // Get the primary keywords from ACF for this specific post
 $primary_keywords = get_field('primary_keywords', $post_id);
 
-// If no primary keywords, don't render anything
-if (!$primary_keywords || empty($primary_keywords)) {
-    return;
-}
-
 // Determine icon based on category
 $icon_svg = '';
 if ($show_category_icon) {
@@ -41,6 +36,11 @@ if ($show_category_icon) {
     }
 }
 
+// Only render if we have keywords OR if we should show an icon
+if ((!$primary_keywords || empty($primary_keywords)) && empty($icon_svg)) {
+    return;
+}
+
 // Get block wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
     'class' => 'wp-block-caes-hub-primary-keyword'
@@ -55,24 +55,26 @@ $wrapper_attributes = get_block_wrapper_attributes([
             </span>
         <?php endif; ?>
 
-        <?php foreach ($primary_keywords as $index => $keyword): ?>
-            <span class="primary-keyword-item">
-                <?php if ($enable_links): ?>
-                    <a href="<?php echo esc_url(get_term_link($keyword)); ?>" 
-                       class="primary-keyword-link"
-                       rel="tag">
-                        <?php echo esc_html($keyword->name); ?>
-                    </a>
-                <?php else: ?>
-                    <span class="primary-keyword-text">
-                        <?php echo esc_html($keyword->name); ?>
-                    </span>
-                <?php endif; ?>
+        <?php if ($primary_keywords && !empty($primary_keywords)): ?>
+            <?php foreach ($primary_keywords as $index => $keyword): ?>
+                <span class="primary-keyword-item">
+                    <?php if ($enable_links): ?>
+                        <a href="<?php echo esc_url(get_term_link($keyword)); ?>" 
+                           class="primary-keyword-link"
+                           rel="tag">
+                            <?php echo esc_html($keyword->name); ?>
+                        </a>
+                    <?php else: ?>
+                        <span class="primary-keyword-text">
+                            <?php echo esc_html($keyword->name); ?>
+                        </span>
+                    <?php endif; ?>
 
-                <?php if ($index < count($primary_keywords) - 1): ?>
-                    <span class="primary-keyword-separator">, </span>
-                <?php endif; ?>
-            </span>
-        <?php endforeach; ?>
+                    <?php if ($index < count($primary_keywords) - 1): ?>
+                        <span class="primary-keyword-separator">, </span>
+                    <?php endif; ?>
+                </span>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 </div>
