@@ -27,32 +27,54 @@ require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/import-legacy-slideshows-to-news.php';
 require get_template_directory() . '/inc/link-users.php';
 
-function debug_specific_post() {
-    if (isset($_GET['debug_post']) && current_user_can('manage_options')) {
-        $post_id = 5310; // The post that should have UGA Today
+function debug_acf_field_config() {
+    if (isset($_GET['debug_acf_field']) && current_user_can('manage_options')) {
+        $post_id = 5310;
         
-        echo '<h3>Post 5310 Debug:</h3>';
-        echo '<strong>Post Title:</strong> ' . get_the_title($post_id) . '<br>';
+        echo '<h3>ACF Field Configuration Debug:</h3>';
         
-        // Check all meta for this post
-        echo '<h4>All Post Meta:</h4>';
+        // Get ACF field object
+        $field_object = get_field_object('external_publisher', $post_id);
+        echo '<h4>Field Object:</h4>';
+        if ($field_object) {
+            echo 'Field Key: ' . $field_object['key'] . '<br>';
+            echo 'Field Name: ' . $field_object['name'] . '<br>';
+            echo 'Field Type: ' . $field_object['type'] . '<br>';
+            echo 'Return Format: ' . $field_object['return_format'] . '<br>';
+            echo 'Save Terms: ' . ($field_object['save_terms'] ? 'Yes' : 'No') . '<br>';
+            echo 'Load Terms: ' . ($field_object['load_terms'] ? 'Yes' : 'No') . '<br>';
+            echo 'Value: '; var_dump($field_object['value']); echo '<br>';
+        } else {
+            echo 'Field object not found!<br>';
+        }
+        
+        // Check all meta keys that might be related
+        echo '<h4>All Meta Keys (filtered):</h4>';
         $all_meta = get_post_meta($post_id);
         foreach ($all_meta as $key => $value) {
-            if (strpos($key, 'external') !== false || strpos($key, 'publisher') !== false) {
-                echo $key . ': '; var_dump($value); echo '<br>';
+            if (strpos($key, 'external') !== false || strpos($key, 'publisher') !== false || strpos($key, 'field_') !== false) {
+                echo $key . ': '; 
+                if (is_array($value) && count($value) == 1) {
+                    var_dump($value[0]);
+                } else {
+                    var_dump($value);
+                }
+                echo '<br>';
             }
         }
         
-        // Check if any external_publisher meta exists at all
-        echo '<h4>External Publisher Checks:</h4>';
-        echo 'external_publisher: '; var_dump(get_post_meta($post_id, 'external_publisher', true)); echo '<br>';
-        echo 'external_publisher (all): '; var_dump(get_post_meta($post_id, 'external_publisher')); echo '<br>';
-        echo '_external_publisher: '; var_dump(get_post_meta($post_id, '_external_publisher', true)); echo '<br>';
+        // Try to find the field by different methods
+        echo '<h4>Alternative Field Retrieval:</h4>';
         
-        // ACF field check
-        echo 'ACF get_field: '; var_dump(get_field('external_publisher', $post_id)); echo '<br>';
+        // Try with field key if we found one
+        if ($field_object && isset($field_object['key'])) {
+            $field_key = $field_object['key'];
+            echo 'Using field key ' . $field_key . ': '; 
+            var_dump(get_field($field_key, $post_id)); 
+            echo '<br>';
+        }
         
-        wp_die('Debug complete');
+        wp_die('ACF Debug complete');
     }
 }
-add_action('init', 'debug_specific_post');
+add_action('init', 'debug_acf_field_config');
