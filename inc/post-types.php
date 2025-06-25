@@ -309,13 +309,13 @@ add_filter('rest_post_query', 'fix_external_publisher_rest_query', 10, 2);
 
 // Debug: Log REST API requests for posts
 function debug_rest_post_requests($args, $request) {
-    error_log('=== REST POST REQUEST DEBUG ===');
-    error_log('Request params: ' . print_r($request->get_params(), true));
-    error_log('WP_Query args BEFORE our filter: ' . print_r($args, true));
+    // error_log('=== REST POST REQUEST DEBUG ===');
+    // error_log('Request params: ' . print_r($request->get_params(), true));
+    // error_log('WP_Query args BEFORE our filter: ' . print_r($args, true));
     
     // Your existing filter logic
     if (isset($request['external_publisher'])) {
-        error_log('External Publisher filter detected: ' . print_r($request['external_publisher'], true));
+        // error_log('External Publisher filter detected: ' . print_r($request['external_publisher'], true));
         $args['tax_query'] = array(
             array(
                 'taxonomy' => 'external_publisher',
@@ -323,9 +323,9 @@ function debug_rest_post_requests($args, $request) {
                 'terms'    => $request['external_publisher'],
             ),
         );
-        error_log('WP_Query args AFTER our filter: ' . print_r($args, true));
+        // error_log('WP_Query args AFTER our filter: ' . print_r($args, true));
     } else {
-        error_log('No external_publisher parameter found in request');
+        // error_log('No external_publisher parameter found in request');
     }
     
     return $args;

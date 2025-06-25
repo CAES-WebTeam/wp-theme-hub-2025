@@ -60,6 +60,6 @@ function myplugin_filter_posts() {
     wp_die(); // Required for AJAX handlers
 }
 
-error_log(print_r($_GET, true));
+// error_log(print_r($_GET, true));
 
 ?>

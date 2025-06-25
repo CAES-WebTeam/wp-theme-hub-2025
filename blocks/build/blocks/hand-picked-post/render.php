@@ -32,17 +32,6 @@ $SPACING_CLASSES = array(
 	7 => 'gap-wp-preset-spacing-80',
 );
 
-// only set spacing class if columns are set to grid
-// if ( $displayLayout == 'grid' && isset( $SPACING_CLASSES[ $customGapStep ] ) ) {
-//     error_log( 'grid is set or spacing class exists: ' . $customGapStep );
-//     error_log( 'aaaaah' . $displayLayout);
-//     $spacing_class = $SPACING_CLASSES[ $customGapStep ];
-// } else {
-//     error_log( 'grid is NOOOOOT set or spacing class does not exist: ' . $customGapStep );
-//     error_log( 'aaaaah2' . $displayLayout);
-//     $spacing_class = '';
-// }
-
 $classes = trim( "$base_class $columns_class $spacing_class" );
 
 // Generate inline grid styles for auto layout
@@ -83,7 +72,7 @@ if ( $feed_type === 'hand-picked' ) {
     global $post;
 
     if ( ! $post ) {
-        error_log( 'Hand Picked Post Block: Post object is not set.' );
+        // error_log( 'Hand Picked Post Block: Post object is not set.' );
         return;
     }
 
@@ -91,12 +80,12 @@ if ( $feed_type === 'hand-picked' ) {
     $keywords = wp_get_post_terms( $post->ID, 'keywords', array( 'fields' => 'ids' ) );
     
     if ( is_wp_error( $keywords ) ) {
-        error_log( 'Hand Picked Post Block: Error getting keywords: ' . $keywords->get_error_message() );
+        // error_log( 'Hand Picked Post Block: Error getting keywords: ' . $keywords->get_error_message() );
         $keywords = array();
     }
 
     if ( empty( $keywords ) ) {
-        error_log( 'Hand Picked Post Block: No keywords found for post ID ' . $post->ID );
+        // error_log( 'Hand Picked Post Block: No keywords found for post ID ' . $post->ID );
     }
 
     $block_query_args = array(

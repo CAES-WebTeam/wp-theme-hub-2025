@@ -9,8 +9,6 @@
 	Load files
 \*------------------------------------*/
 
-error_log('=== FUNCTIONS.PHP LOADED ===');
-
 require get_template_directory() . '/inc/theme-support.php';
 require get_template_directory() . '/inc/post-types.php';
 require get_template_directory() . '/inc/blocks.php';

@@ -5,9 +5,7 @@ $post_id = get_the_ID();
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 $locationAsSnippet = $block['locationAsSnippet'];
 $location_custom = get_field('location_custom', $post_id);
-error_log('hey hey hey');
 if ($location_custom) {
-    error_log('Location custom field is set to true.');
     // Use the Google Maps selected location
     $google_map = get_field('location_google_map', $post_id);
     
