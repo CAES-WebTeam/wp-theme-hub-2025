@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/primary-keyword",
+  "version": "0.1.0",
+  "title": "Primary Keyword",
+  "textdomain": "caes-hub",
+  "category": "theme",
+  "icon": "star-filled",
+  "description": "Displays a story or publication's authors.",
+  "acf": {
+    "mode": "preview",
+    "renderTemplate": "./render.php"
+  },
+  "supports": {
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}

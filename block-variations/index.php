@@ -1,5 +1,4 @@
 <?php
-
 // Load the block variations
 function variation_assets()
 {
@@ -29,12 +28,8 @@ function rest_event_type($args, $request)
 {
     $event_type = $request->get_param('event_type');
 
-    // Debug: Log the event_type param to confirm it's coming in
-    error_log('Received event_type: ' . print_r($event_type, true));
-
     // Sanitize and confirm the sanitized value
     $sanitized_event_type = sanitize_text_field($event_type);
-    error_log('Sanitized: ' . print_r($sanitized_event_type, true));
 
     if (!empty($sanitized_event_type) && $sanitized_event_type !== 'All') {
         $args['meta_key'] = 'event_type';
@@ -42,12 +37,8 @@ function rest_event_type($args, $request)
         $args['meta_compare'] = '='; // Explicitly set for exact matching
     } else {
         // When "All" is selected, remove the filter
-        error_log('Event Type is "All" - Removing Meta Query Filter');
         unset($args['meta_key'], $args['meta_value'], $args['meta_compare']);
     }
-
-    // Debug: Log the modified query args before returning
-    error_log('Modified query args: ' . print_r($args, true));
 
     return $args;
 }
@@ -59,7 +50,6 @@ add_filter('rest_events_query', 'rest_event_type', 10, 2);
 // Backend
 function rest_pub_language_orderby($args, $request)
 {
-    // error_log('rest_pub_language_orderby activated');
 
     // Handle language filter
     $lang = $request->get_param('language');
@@ -68,90 +58,53 @@ function rest_pub_language_orderby($args, $request)
         $args['meta_value'] = absint($lang);
     }
 
-    // Handle order by
-    // $order_by = $request->get_param('pubOrderBy');
-
-    // if (in_array($order_by, ['recently_published', 'recently_revised'])) {
-    //     // Get the latest 100 posts before filtering
-    //     $args['posts_per_page'] = 100;
-    //     $args['orderby'] = 'date';
-    //     $args['order'] = 'DESC';
-
-    //     add_filter('rest_publications_query_results', function ($posts) use ($order_by) {
-    //         $filtered_posts = [];
-
-    //         foreach ($posts as $post) {
-    //             $history = get_field('history', $post['id']);
-
-    //             if (empty($history) || !is_array($history)) {
-    //                 continue;
-    //             }
-
-    //             // Sort history entries by date (latest first)
-    //             usort($history, function ($a, $b) {
-    //                 return (int)$b['date'] - (int)$a['date'];
-    //             });
-
-    //             // Get latest history entry
-    //             $latest_entry = reset($history);
-    //             $latest_status = isset($latest_entry['status']) ? (int)$latest_entry['status'] : null;
-    //             $latest_date = isset($latest_entry['date']) ? (int)$latest_entry['date'] : 0;
-
-    //             // Log debug info
-    //             error_log("Post ID: {$post['id']} | Latest Status: $latest_status | Latest Date: $latest_date");
-
-    //             // Filter posts based on history status
-    //             if (
-    //                 ($order_by === 'recently_published' && $latest_status === 2) ||
-    //                 ($order_by === 'recently_revised' && in_array($latest_status, [4, 5, 6]))
-    //             ) {
-    //                 // Store latest date for sorting
-    //                 $post['latest_history_date'] = $latest_date;
-    //                 $filtered_posts[] = $post;
-    //             }
-    //         }
-
-    //         // Sort filtered posts by latest history date (newest first)
-    //         usort($filtered_posts, function ($a, $b) {
-    //             return $b['latest_history_date'] - $a['latest_history_date'];
-    //         });
-
-    //         return $filtered_posts;
-    //     });  
-    // if ($order_by) {
-    //     // Default sorting logic (date/title)
-    //     switch ($order_by) {
-    //         case 'date_desc':
-    //             $args['orderby'] = 'date';
-    //             $args['order'] = 'DESC';
-    //             break;
-    //         case 'date_asc':
-    //             $args['orderby'] = 'date';
-    //             $args['order'] = 'ASC';
-    //             break;
-    //         case 'title_asc':
-    //             $args['orderby'] = 'title';
-    //             $args['order'] = 'ASC';
-    //             break;
-    //         case 'title_desc':
-    //             $args['orderby'] = 'title';
-    //             $args['order'] = 'DESC';
-    //             break;
-    //     }
-    // }
-
     return $args;
 }
 add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
 /*** END PUBLICATONS */
 
+/*** START POSTS */
+// Backend
+function rest_posts_external_publishers($args, $request)
+{
+    $hasExternalPublishers = $request->get_param('hasExternalPublishers');
+
+    // Handle both boolean true and string 'true'
+    if ($hasExternalPublishers === true || $hasExternalPublishers === 'true') {
+        $args['tax_query'] = array(
+            array(
+                'taxonomy' => 'external_publisher',
+                'operator' => 'EXISTS'
+            )
+        );
+    }
+
+    return $args;
+}
+add_filter('rest_post_query', 'rest_posts_external_publishers', 10, 2);
+/*** END POSTS */
+
 /*** FRONT END */
+
 function variations_pre_render_block($pre_render, $parsed_block)
 {
+    // Handle blocks WITH namespace (your variations)
     if (isset($parsed_block['attrs']['namespace'])) {
         $namespace = $parsed_block['attrs']['namespace'];
 
         $filter_function = function ($query, $block) use ($parsed_block, $namespace) {
+            // Get block attributes from WP_Block object
+            $block_attrs = $block->parsed_block['attrs'] ?? [];
+
+            // Only apply to the exact same block by comparing queryId
+            if (
+                !isset($block_attrs['queryId']) ||
+                !isset($parsed_block['attrs']['queryId']) ||
+                $block_attrs['queryId'] !== $parsed_block['attrs']['queryId']
+            ) {
+                return $query;
+            }
+
             $meta_query = [];
 
             // For pubs-feed blocks
@@ -174,7 +127,7 @@ function variations_pre_render_block($pre_render, $parsed_block)
                         'value' => 'i:' . $author_id . ';',
                         'compare' => 'LIKE'
                     );
-                }                
+                }
 
                 if (!empty($meta_query)) {
                     $query['meta_query'] = $meta_query;
@@ -199,14 +152,55 @@ function variations_pre_render_block($pre_render, $parsed_block)
         };
 
         add_filter('query_loop_block_query_vars', $filter_function, 10, 2);
+    }
 
-        add_action('loop_end', function () use ($filter_function) {
-            remove_filter('query_loop_block_query_vars', $filter_function, 10, 2);
-        });
+    // Handle posts query blocks separately
+    if (
+        $parsed_block['blockName'] === 'core/query' &&
+        isset($parsed_block['attrs']['query']['postType']) &&
+        $parsed_block['attrs']['query']['postType'] === 'post'
+    ) {
+        $filter_function = function ($query, $block) use ($parsed_block) {
+
+            // Try multiple ways to get the queryId
+            $block_query_id = null;
+
+            if (isset($block->parsed_block['attrs']['queryId'])) {
+                $block_query_id = $block->parsed_block['attrs']['queryId'];
+            }
+
+            if (isset($block->attributes['queryId'])) {
+                $block_query_id = $block->attributes['queryId'];
+            }
+
+            if (isset($block->context['queryId'])) {
+                $block_query_id = $block->context['queryId'];
+            }
+
+            // Only proceed if we have a matching queryId
+            if ($block_query_id == $parsed_block['attrs']['queryId']) {
+
+                $hasExternalPublishers = $parsed_block['attrs']['query']['hasExternalPublishers'] ?? false;
+
+                if ($hasExternalPublishers == 1 || $hasExternalPublishers === true || $hasExternalPublishers === 'true') {
+                    $query['tax_query'] = array(
+                        array(
+                            'taxonomy' => 'external_publisher',
+                            'operator' => 'EXISTS'
+                        )
+                    );
+                }
+            }
+
+            return $query;
+        };
+
+        add_filter('query_loop_block_query_vars', $filter_function, 10, 2);
     }
 
     return $pre_render;
 }
+
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
 add_filter('render_block', function ($block_content, $block) {
     // Only apply to pubs-feed query loop on author archive pages
@@ -251,6 +245,26 @@ add_filter('render_block', function ($block_content, $block) {
     return $block_content;
 }, 10, 2);
 
+// Register the custom REST parameter for posts
+function register_posts_rest_fields()
+{
+    register_rest_field('post', 'hasExternalPublishers', array(
+        'get_callback' => null, // We don't need to return this field
+        'update_callback' => null,
+        'schema' => array(
+            'description' => 'Filter posts by external publishers',
+            'type' => 'boolean',
+        ),
+    ));
+}
+add_action('rest_api_init', 'register_posts_rest_fields');
 
+// Add the parameter to the posts collection endpoint
+function add_custom_query_vars($valid_vars)
+{
+    $valid_vars = array_merge($valid_vars, array('hasExternalPublishers'));
+    return $valid_vars;
+}
+add_filter('rest_query_vars', 'add_custom_query_vars');
 
 /** END FRONT END */

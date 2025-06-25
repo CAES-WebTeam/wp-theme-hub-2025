@@ -268,11 +268,17 @@ figcaption a {
         width: 100%;
         display: flex;
         flex-direction: row;
+        align-items: center;
         justify-content: space-between;
+        padding: var(--wp--preset--spacing--50);
     }
 
     .caes-hub-sidebar-bottom {
         display: none;
+    }
+
+    .caes-hub-sidebar-group {
+        padding: 0 !important;
     }
 
 }

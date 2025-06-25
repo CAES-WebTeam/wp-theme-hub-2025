@@ -55,33 +55,11 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                         onChange={(value) => setAttributes({ mobileBreakpoint: value })}
                         help={__('CSS breakpoint for mobile layout (e.g., 768px)', 'caes-hub')}
                     />
-                    <TextControl
-                        label={__('Mobile Menu Label', 'caes-hub')}
-                        value={mobileMenuLabel}
-                        onChange={(value) => setAttributes({ mobileMenuLabel: value })}
-                        help={__('Text shown next to hamburger icon on mobile', 'caes-hub')}
-                        placeholder={__('Menu', 'caes-hub')}
-                    />
                 </PanelBody>
             </InspectorControls>
 
             <nav {...blockProps} aria-label="Main navigation">
                 {/* Mobile hamburger button preview in editor */}
-                <button 
-                    className="mobile-menu-toggle editor-preview" 
-                    disabled
-                    aria-label={mobileMenuLabel || __('Menu', 'caes-hub')}
-                    style={{ opacity: 0.6, pointerEvents: 'none' }}
-                >
-                    <span className="hamburger-icon">
-                        <span className="hamburger-line"></span>
-                        <span className="hamburger-line"></span>
-                        <span className="hamburger-line"></span>
-                    </span>
-                    <span className="mobile-menu-text">
-                        {mobileMenuLabel || __('Menu', 'caes-hub')}
-                    </span>
-                </button>
 
                 <ul className="nav-menu">
                     <InnerBlocks

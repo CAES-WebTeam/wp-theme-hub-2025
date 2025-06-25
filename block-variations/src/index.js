@@ -1,14 +1,14 @@
 import { registerBlockVariation } from '@wordpress/blocks';
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl } from '@wordpress/components';
+import { PanelBody, SelectControl, ToggleControl } from '@wordpress/components';
 
 /** Event Query Block Variation - START */
 
 // Register event query block variation
 const eventsVariation = 'upcoming-events';
 
-registerBlockVariation( 'core/query', {
+registerBlockVariation('core/query', {
   name: eventsVariation,
   title: 'Upcoming Events',
   description: 'Displays a list of upcoming events',
@@ -22,40 +22,40 @@ registerBlockVariation( 'core/query', {
       filterByDate: true
     },
   },
-  isActive: [ 'namespace' ],
-  scope: [ 'inserter' ],
+  isActive: ['namespace'],
+  scope: ['inserter'],
   innerBlocks: [
     [
       'core/post-template',
       {},
       [
-        [ 'core/post-title' ]
+        ['core/post-title']
       ],
     ]
   ]
 });
 
 // Check if block is using our Events variation
-const isEventsVariation = ( props ) => {
+const isEventsVariation = (props) => {
   const { attributes: { namespace } } = props;
   return namespace && namespace === eventsVariation;
 };
 
 // Add Inspector Controls for selecting event type
-const EventsVariationControls = ( { props: { attributes, setAttributes } } ) => {
+const EventsVariationControls = ({ props: { attributes, setAttributes } }) => {
   const { query } = attributes;
 
   return (
     <PanelBody title="Events Feed Settings">
       <SelectControl
         label="CAES or Extension"
-        value={ query.event_type }
+        value={query.event_type}
         options={[
           { value: 'All', label: 'All' },
           { value: 'CAES', label: 'CAES' },
           { value: 'Extension', label: 'Extension' }
         ]}
-        onChange={( value ) =>
+        onChange={(value) =>
           setAttributes({ query: { ...query, event_type: value } })
         }
       />
@@ -64,20 +64,20 @@ const EventsVariationControls = ( { props: { attributes, setAttributes } } ) => 
 };
 
 
-export const withEventsVariationControls = ( BlockEdit ) => ( props ) => {
-  return isEventsVariation( props ) ? (
+export const withEventsVariationControls = (BlockEdit) => (props) => {
+  return isEventsVariation(props) ? (
     <>
-      <BlockEdit { ...props } />
+      <BlockEdit {...props} />
       <InspectorControls>
-        <EventsVariationControls props={ props } />
+        <EventsVariationControls props={props} />
       </InspectorControls>
     </>
   ) : (
-    <BlockEdit { ...props } />
+    <BlockEdit {...props} />
   );
 };
 
-addFilter( 'editor.BlockEdit', 'core/query', withEventsVariationControls );
+addFilter('editor.BlockEdit', 'core/query', withEventsVariationControls);
 
 /** Event Query Block Variation - END */
 
@@ -85,7 +85,7 @@ addFilter( 'editor.BlockEdit', 'core/query', withEventsVariationControls );
 
 const publicationsVariation = 'pubs-feed';
 
-registerBlockVariation( 'core/query', {
+registerBlockVariation('core/query', {
   name: publicationsVariation,
   title: 'Publications Feed',
   description: 'Displays a feed of publications',
@@ -98,28 +98,28 @@ registerBlockVariation( 'core/query', {
       offset: 0
     },
   },
-  isActive: [ 'namespace' ],
-  scope: [ 'inserter' ],
+  isActive: ['namespace'],
+  scope: ['inserter'],
   // allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
   innerBlocks: [
     [
       'core/post-template',
       {},
       [
-        [ 'core/post-title' ]
+        ['core/post-title']
       ],
     ]
   ]
 });
 
 // Check if block is using our Publications variation
-const isPubsVariation = ( props ) => {
+const isPubsVariation = (props) => {
   const { attributes: { namespace } } = props;
   return namespace && namespace === publicationsVariation;
 };
 
 // Add Inspector Controls for selecting language
-const PubVariationControls = ( { props: { attributes, setAttributes } } ) => {
+const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
   const { query } = attributes;
 
   return (
@@ -127,50 +127,94 @@ const PubVariationControls = ( { props: { attributes, setAttributes } } ) => {
       {/* Language Selector */}
       <SelectControl
         label="Language"
-        value={ query.language }
+        value={query.language}
         options={[
           { value: '', label: '' },
           { value: '1', label: 'English' },
           { value: '2', label: 'Spanish' }
         ]}
-        onChange={( value ) =>
+        onChange={(value) =>
           setAttributes({ query: { ...query, language: value } })
         }
       />
-
-      {/* Order By Selector */}
-      {/* <SelectControl
-        label="Order By"
-        value={ query.pubOrderBy }
-        options={[
-          { value: 'date_desc', label: 'Newest to oldest' },
-          { value: 'date_asc', label: 'Oldest to newest' },
-          { value: 'title_asc', label: 'A → Z' },
-          { value: 'title_desc', label: 'Z → A' },
-          { value: 'recently_revised', label: 'Recently Revised' },
-          { value: 'recently_published', label: 'Recently Published' }
-        ]}
-        onChange={( value ) =>
-          setAttributes({ query: { ...query, pubOrderBy: value } })
-        }
-      /> */}
     </PanelBody>
   );
 };
 
-export const withPubVariationControls = ( BlockEdit ) => ( props ) => {
-  return isPubsVariation( props ) ? (
+export const withPubVariationControls = (BlockEdit) => (props) => {
+  return isPubsVariation(props) ? (
     <>
-      <BlockEdit { ...props } />
+      <BlockEdit {...props} />
       <InspectorControls>
-        <PubVariationControls props={ props } />
+        <PubVariationControls props={props} />
       </InspectorControls>
     </>
   ) : (
-    <BlockEdit { ...props } />
+    <BlockEdit {...props} />
   );
 };
 
-addFilter( 'editor.BlockEdit', 'core/query', withPubVariationControls );
+addFilter('editor.BlockEdit', 'core/query', withPubVariationControls);
 
 /** Publications Query Block Variation - END */
+
+/** Posts Query Block Controls - START */
+
+// Check if block is querying posts
+const isPostsQuery = (props) => {
+  // Safety checks first
+  if (!props || !props.attributes || !props.attributes.query) {
+    return false;
+  }
+
+  const { attributes: { query } } = props;
+  console.log('Checking if posts query:', query);
+  const isPost = query && query.postType === 'post';
+  console.log('Is post query:', isPost);
+  return isPost;
+};
+
+// Add Inspector Controls for posts queries
+const PostsQueryControls = ({ props: { attributes, setAttributes } }) => {
+  const { query } = attributes;
+
+  return (
+    <PanelBody title="Additional Feed Settings">
+      {/* External Publishers Toggle */}
+      <ToggleControl
+        label="Only show posts with external publishers"
+        checked={query.hasExternalPublishers || false}
+        onChange={(value) => {
+          console.log('Setting hasExternalPublishers to:', value);
+          console.log('Full query before update:', query);
+
+          const newQuery = {
+            ...query,
+            hasExternalPublishers: value
+          };
+
+          console.log('Full query after update:', newQuery);
+
+          setAttributes({ query: newQuery });
+        }}
+      />
+    </PanelBody>
+  );
+};
+
+export const withPostsQueryControls = (BlockEdit) => (props) => {
+  return isPostsQuery(props) ? (
+    <>
+      <BlockEdit {...props} />
+      <InspectorControls>
+        <PostsQueryControls props={props} />
+      </InspectorControls>
+    </>
+  ) : (
+    <BlockEdit {...props} />
+  );
+};
+
+addFilter('editor.BlockEdit', 'core/query', withPostsQueryControls);
+
+/** Posts Query Block Controls - END */

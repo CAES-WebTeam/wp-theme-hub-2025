@@ -36,7 +36,6 @@ if ($handSelectPosts) {
         $queryArgs['post_type'] = array('post', 'publications', 'shorthand_story');
     }
 
-
     // Execute the query
     $query = new WP_Query($queryArgs);
     $selectedPosts = wp_list_pluck($query->posts, 'ID'); // Get the post IDs from the query
@@ -60,22 +59,42 @@ if ($handSelectPosts) {
                         // ACF fields (fastest via get_post_meta)
                         $bgColorClass = get_post_meta($postId, 'carousel_caption_bg_color_override', true);
                         $hideExcerpt = get_post_meta($postId, 'carousel_hide_excerpt', true);
-                
+                        $primary_keyword_ids = get_post_meta($postId, 'primary_keywords', true);
+
                         // Post data
                         $postTitle = esc_html($post->post_title);
                         $postExcerpt = esc_html(get_the_excerpt($postId));
                         $postThumbnail = get_the_post_thumbnail_url($postId, 'full') ?: '';
-                
+
                         // Build class for content wrapper
                         $contentWrapperClasses = ['caes-hub-carousel-slide__content-wrapper'];
                         if (!empty($bgColorClass) && strtolower($bgColorClass) !== 'none') {
                             $classSlug = strtolower(str_replace(' ', '-', $bgColorClass));
                             $contentWrapperClasses[] = 'bg-' . esc_attr($classSlug);
                         }
-                
+
                         echo '<li class="caes-hub-carousel-slide">';
                         echo '<div class="' . implode(' ', $contentWrapperClasses) . '">';
                         echo '<div class="caes-hub-carousel-slide__content">';
+                        if ($primary_keyword_ids && !empty($primary_keyword_ids)) {
+                            echo '<span class="caes-hub-carousel-slide-primary-keyword is-style-caes-hub-merriweather-sans-uppercase" style="font-size: 0.875rem; margin-bottom: var(--wp--style--block-gap);">';
+
+                            $keyword_names = array();
+                            $ids_array = is_array($primary_keyword_ids) ? $primary_keyword_ids : array($primary_keyword_ids);
+
+                            foreach ($ids_array as $keyword_id) {
+                                $keyword_term = get_term($keyword_id, 'keywords');
+                                if ($keyword_term && !is_wp_error($keyword_term)) {
+                                    $keyword_names[] = $keyword_term->name;
+                                }
+                            }
+
+                            if (!empty($keyword_names)) {
+                                echo esc_html(implode(', ', $keyword_names));
+                            }
+
+                            echo '</span>';
+                        }
                         echo '<h2>';
                         echo '<a href="' . esc_url(get_permalink($postId)) . '">' . $postTitle . '</a>';
                         echo '</h2>';
@@ -89,7 +108,7 @@ if ($handSelectPosts) {
                         echo '</li>';
                     }
                 }
-                               
+
                 ?>
             </ul>
             <div class="caes-hub-carousel-controls-wrapper">

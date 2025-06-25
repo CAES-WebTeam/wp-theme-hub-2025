@@ -1,0 +1,62 @@
+{
+  "apiVersion": 3,
+  "name": "caes-hub/mobile-container",
+  "title": "Mobile Container",
+  "category": "design",
+  "description": "Container that shows content in mobile hamburger overlay, hidden on desktop",
+  "keywords": [
+    "mobile",
+    "hamburger",
+    "overlay",
+    "responsive"
+  ],
+  "textdomain": "caes-hub",
+  "attributes": {
+    "blockId": {
+      "type": "string",
+      "default": ""
+    },
+    "mobileBreakpoint": {
+      "type": "string",
+      "default": "768px"
+    },
+    "overlayPosition": {
+      "type": "string",
+      "default": "full",
+      "enum": [
+        "left",
+        "right",
+        "full"
+      ]
+    },
+    "overlayBackgroundColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "showCloseButton": {
+      "type": "boolean",
+      "default": true
+    },
+    "hamburgerLabel": {
+      "type": "string",
+      "default": "Menu"
+    }
+  },
+  "supports": {
+    "html": false,
+    "reusable": true,
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "color": {
+      "background": true,
+      "text": true
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js",
+  "render": "file:./render.php"
+}

@@ -129,6 +129,7 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   withEventsVariationControls: () => (/* binding */ withEventsVariationControls),
+/* harmony export */   withPostsQueryControls: () => (/* binding */ withPostsQueryControls),
 /* harmony export */   withPubVariationControls: () => (/* binding */ withPubVariationControls)
 /* harmony export */ });
 /* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
@@ -313,6 +314,72 @@ const withPubVariationControls = BlockEdit => props => {
 (0,_wordpress_hooks__WEBPACK_IMPORTED_MODULE_1__.addFilter)('editor.BlockEdit', 'core/query', withPubVariationControls);
 
 /** Publications Query Block Variation - END */
+
+/** Posts Query Block Controls - START */
+
+// Check if block is querying posts
+const isPostsQuery = props => {
+  // Safety checks first
+  if (!props || !props.attributes || !props.attributes.query) {
+    return false;
+  }
+  const {
+    attributes: {
+      query
+    }
+  } = props;
+  console.log('Checking if posts query:', query);
+  const isPost = query && query.postType === 'post';
+  console.log('Is post query:', isPost);
+  return isPost;
+};
+
+// Add Inspector Controls for posts queries
+const PostsQueryControls = ({
+  props: {
+    attributes,
+    setAttributes
+  }
+}) => {
+  const {
+    query
+  } = attributes;
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+    title: "Additional Feed Settings",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.ToggleControl, {
+      label: "Only show posts with external publishers",
+      checked: query.hasExternalPublishers || false,
+      onChange: value => {
+        console.log('Setting hasExternalPublishers to:', value);
+        console.log('Full query before update:', query);
+        const newQuery = {
+          ...query,
+          hasExternalPublishers: value
+        };
+        console.log('Full query after update:', newQuery);
+        setAttributes({
+          query: newQuery
+        });
+      }
+    })
+  });
+};
+const withPostsQueryControls = BlockEdit => props => {
+  return isPostsQuery(props) ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(BlockEdit, {
+      ...props
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(PostsQueryControls, {
+        props: props
+      })
+    })]
+  }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(BlockEdit, {
+    ...props
+  });
+};
+(0,_wordpress_hooks__WEBPACK_IMPORTED_MODULE_1__.addFilter)('editor.BlockEdit', 'core/query', withPostsQueryControls);
+
+/** Posts Query Block Controls - END */
 })();
 
 /******/ })()

@@ -1,0 +1,9 @@
+.wp-block-caes-hub-external-publisher {
+    .external-publisher-wrapper {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--wp--preset--spacing--30);
+        justify-content: start;
+    }
+}

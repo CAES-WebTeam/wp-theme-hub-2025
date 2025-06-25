@@ -29,6 +29,12 @@ function caes_hub_block_init()
 	// Register Hand Picked Post
 	register_block_type(get_template_directory() . '/blocks/build/blocks/hand-picked-post' );
 
+	// Register Primary Keyword
+	register_block_type(get_template_directory() . '/blocks/build/blocks/primary-keyword' );
+
+	// Register External Publisher
+	register_block_type(get_template_directory() . '/blocks/build/blocks/external-publisher' );
+
 	// Register Carousel
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel' );
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel-2' );
@@ -55,7 +61,6 @@ function caes_hub_block_init()
 
 	// Register Publication Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/expert-mark');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-block');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-authors');
 	// register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-featured-image');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-history');
@@ -77,6 +82,7 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/nav-flyout');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/nav-item');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/nav-container');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/mobile-container');
 
 }
 add_action('init', 'caes_hub_block_init');

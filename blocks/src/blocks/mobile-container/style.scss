@@ -1,0 +1,245 @@
+/* Mobile Container Block Styles */
+
+/* Base container - always visible, but content switches based on screen size */
+.wp-block-caes-hub-mobile-container {
+    margin-top: 0;
+    margin-block-start: 0px !important;
+    position: relative;
+}
+
+/* Mobile hamburger trigger button - hidden on desktop via inline styles */
+.mobile-hamburger-trigger {
+    align-items: center;
+    background: transparent;
+    color: inherit;
+    border: 0;
+    display: flex;
+    padding: var(--wp--preset--spacing--40);
+    transition: all .2s ease;
+}
+
+.mobile-hamburger-trigger:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    // border-color: #999;
+}
+
+.mobile-hamburger-trigger:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+.mobile-hamburger-trigger.is-active {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Hamburger icon */
+.hamburger-icon {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: transform .3s ease;
+    width: 28px;
+    height: 19px;
+}
+
+.hamburger-line {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 1px;
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+/* Animate hamburger to X when active */
+.mobile-hamburger-trigger.is-active .hamburger-icon {
+    transform: rotate(45deg);
+}
+
+.mobile-hamburger-trigger.is-active .hamburger-line:first-child {
+    transform: rotate(90deg) translateX(6px);
+}
+
+.mobile-hamburger-trigger.is-active .hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+
+.mobile-hamburger-trigger.is-active .hamburger-line:last-child {
+    transform: rotate(90deg) translateX(-6px);
+}
+
+/* Mobile overlay */
+.mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.is-open {
+    pointer-events: auto;
+    opacity: 1;
+}
+
+/* Overlay backdrop */
+.mobile-overlay-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+/* Overlay content container */
+.mobile-overlay-content {
+    position: relative;
+    height: 100%;
+    background-color: var(--overlay-bg-color, #ffffff);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    transition: transform 0.3s ease;
+}
+
+/* Default full screen - fade in instead of slide */
+.mobile-overlay-full .mobile-overlay-content {
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mobile-overlay-full.is-open .mobile-overlay-content {
+    opacity: 1;
+}
+
+/* Slide from right */
+.mobile-overlay-right .mobile-overlay-content {
+    max-width: 400px;
+    margin-left: auto;
+    transform: translateX(100%);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-overlay-right.is-open .mobile-overlay-content {
+    transform: translateX(0);
+}
+
+/* Slide from left */
+.mobile-overlay-left .mobile-overlay-content {
+    max-width: 400px;
+    margin-right: auto;
+    transform: translateX(-100%);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-overlay-left.is-open .mobile-overlay-content {
+    transform: translateX(0);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+
+    .mobile-overlay-right .mobile-overlay-content,
+    .mobile-overlay-left .mobile-overlay-content {
+        max-width: none;
+        width: 100%;
+        margin: 0;
+    }
+
+    .mobile-overlay-right .mobile-overlay-content {
+        transform: translateX(100%);
+    }
+
+    .mobile-overlay-left .mobile-overlay-content {
+        transform: translateX(-100%);
+    }
+
+    .mobile-overlay-right.is-open .mobile-overlay-content,
+    .mobile-overlay-left.is-open .mobile-overlay-content {
+        transform: translateX(0);
+    }
+}
+
+/* Close button */
+.mobile-overlay-close {
+    align-items: center;
+    background: var(--wp--preset--color--base);
+    border: 0;
+    color: var(--wp--preset--color--contrast);
+    display: flex;
+    font-size: 18px;
+    height: 48px;
+    justify-content: center;
+    transition: all .2s ease;
+    width: 48px;
+    z-index: 1;
+    margin-left: auto;
+    margin: var(--wp--preset--spacing--30) var(--wp--preset--spacing--30) var(--wp--preset--spacing--30) auto;
+}
+
+.mobile-overlay-close:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: #999;
+}
+
+.mobile-overlay-close:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+.close-icon {
+    line-height: 1;
+}
+
+/* Inner content area */
+.mobile-overlay-inner {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .mobile-overlay-content {
+        max-width: none;
+        width: 100%;
+    }
+
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+
+    .mobile-overlay,
+    .mobile-overlay-content,
+    .hamburger-icon,
+    .hamburger-line,
+    .submenu-arrow {
+        transition: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .mobile-hamburger-trigger {
+        border: 2px solid;
+    }
+
+    .mobile-overlay-backdrop {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+}
+
+// When logged into WP
+
+.logged-in .mobile-overlay {
+    top: var(--wp-admin--admin-bar--height);
+}

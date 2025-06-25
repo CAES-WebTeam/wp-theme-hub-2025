@@ -33,15 +33,15 @@ $SPACING_CLASSES = array(
 );
 
 // only set spacing class if columns are set to grid
-if ( $displayLayout == 'grid' && isset( $SPACING_CLASSES[ $customGapStep ] ) ) {
-    error_log( 'grid is set or spacing class exists: ' . $customGapStep );
-    error_log( 'aaaaah' . $displayLayout);
-    $spacing_class = $SPACING_CLASSES[ $customGapStep ];
-} else {
-    error_log( 'grid is NOOOOOT set or spacing class does not exist: ' . $customGapStep );
-    error_log( 'aaaaah2' . $displayLayout);
-    $spacing_class = '';
-}
+// if ( $displayLayout == 'grid' && isset( $SPACING_CLASSES[ $customGapStep ] ) ) {
+//     error_log( 'grid is set or spacing class exists: ' . $customGapStep );
+//     error_log( 'aaaaah' . $displayLayout);
+//     $spacing_class = $SPACING_CLASSES[ $customGapStep ];
+// } else {
+//     error_log( 'grid is NOOOOOT set or spacing class does not exist: ' . $customGapStep );
+//     error_log( 'aaaaah2' . $displayLayout);
+//     $spacing_class = '';
+// }
 
 $classes = trim( "$base_class $columns_class $spacing_class" );
 
@@ -127,9 +127,9 @@ if ( $feed_type === 'hand-picked' ) {
 }
 
 // Log query preparation time
-$prep_time = microtime( true );
-$preparation_duration = ( $prep_time - $start_time ) * 1000; // Convert to milliseconds
-error_log( sprintf( 'Hand Picked Post Block: Query preparation took %.2f ms', $preparation_duration ) );
+// $prep_time = microtime( true );
+// $preparation_duration = ( $prep_time - $start_time ) * 1000; // Convert to milliseconds
+// error_log( sprintf( 'Hand Picked Post Block: Query preparation took %.2f ms', $preparation_duration ) );
 
 // Create the query and time its execution
 $query_start_time = microtime( true );
@@ -137,23 +137,23 @@ $block_query = new WP_Query( $block_query_args );
 $query_end_time = microtime( true );
 
 // Calculate and log query execution time
-$query_duration = ( $query_end_time - $query_start_time ) * 1000; // Convert to milliseconds
-$total_duration = ( $query_end_time - $start_time ) * 1000; // Total time from start
+// $query_duration = ( $query_end_time - $query_start_time ) * 1000; // Convert to milliseconds
+// $total_duration = ( $query_end_time - $start_time ) * 1000; // Total time from start
 
-error_log( sprintf( 
-    'Hand Picked Post Block: Query executed in %.2f ms (total: %.2f ms) - Feed type: %s, Post types: %s, Found: %d posts', 
-    $query_duration,
-    $total_duration,
-    $feed_type,
-    implode( ', ', $post_type ),
-    $block_query->found_posts
-) );
+// error_log( sprintf( 
+//     'Hand Picked Post Block: Query executed in %.2f ms (total: %.2f ms) - Feed type: %s, Post types: %s, Found: %d posts', 
+//     $query_duration,
+//     $total_duration,
+//     $feed_type,
+//     implode( ', ', $post_type ),
+//     $block_query->found_posts
+// ) );
 
 // Log detailed query info for debugging if needed
-if ( $query_duration > 1000 ) { // Log slow queries (over 1 second)
-    error_log( 'Hand Picked Post Block: SLOW QUERY detected - Args: ' . print_r( $block_query_args, true ) );
-    error_log( 'Hand Picked Post Block: SLOW QUERY SQL: ' . $block_query->request );
-}
+// if ( $query_duration > 1000 ) { // Log slow queries (over 1 second)
+//     error_log( 'Hand Picked Post Block: SLOW QUERY detected - Args: ' . print_r( $block_query_args, true ) );
+//     error_log( 'Hand Picked Post Block: SLOW QUERY SQL: ' . $block_query->request );
+// }
 
 if ( $block_query->have_posts() ) {
     // Start timing for rendering
@@ -187,22 +187,22 @@ if ( $block_query->have_posts() ) {
     <?php
     
     // Log rendering time
-    $render_end_time = microtime( true );
-    $render_duration = ( $render_end_time - $render_start_time ) * 1000;
-    $complete_duration = ( $render_end_time - $start_time ) * 1000;
+    // $render_end_time = microtime( true );
+    // $render_duration = ( $render_end_time - $render_start_time ) * 1000;
+    // $complete_duration = ( $render_end_time - $start_time ) * 1000;
     
-    error_log( sprintf( 
-        'Hand Picked Post Block: Rendering took %.2f ms (complete block: %.2f ms)', 
-        $render_duration,
-        $complete_duration
-    ) );
+    // error_log( sprintf( 
+    //     'Hand Picked Post Block: Rendering took %.2f ms (complete block: %.2f ms)', 
+    //     $render_duration,
+    //     $complete_duration
+    // ) );
 } else {
     // No posts found - don't display anything (fallback behavior)
-    error_log( sprintf( 
-        'Hand Picked Post Block: No posts found with query (%.2f ms) - Args: %s', 
-        $query_duration,
-        print_r( $block_query_args, true )
-    ) );
+    // error_log( sprintf( 
+    //     'Hand Picked Post Block: No posts found with query (%.2f ms) - Args: %s', 
+    //     $query_duration,
+    //     print_r( $block_query_args, true )
+    // ) );
 }
 
 wp_reset_postdata();

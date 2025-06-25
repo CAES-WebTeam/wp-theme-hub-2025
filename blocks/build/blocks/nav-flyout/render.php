@@ -3,10 +3,6 @@
 $flyout_id = $block->context['fieldReport/flyoutId'] ?? '';
 $parent_nav_item = $block->context['fieldReport/parentNavItem'] ?? '';
 
-// Debug - let's see what we're getting
-error_log('Flyout render - flyoutId from context: ' . $flyout_id);
-error_log('Flyout render - all context: ' . print_r($block->context, true));
-
 $wrapper_attributes = get_block_wrapper_attributes([
     'class' => 'nav-flyout',
     'id' => $flyout_id, // This should now have the value

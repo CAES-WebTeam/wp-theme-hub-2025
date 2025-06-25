@@ -22,10 +22,6 @@
     "mobileBreakpoint": {
       "type": "string",
       "default": "768px"
-    },
-    "mobileMenuLabel": {
-      "type": "string",
-      "default": "Menu"
     }
   },
   "providesContext": {

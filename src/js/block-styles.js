@@ -113,3 +113,11 @@ wp.blocks.registerBlockStyle('caes-hub/toc-new', {
   name: 'caes-hub-style-2',
   label: 'Style 2'
 });
+wp.blocks.registerBlockStyle('caes-hub/primary-keyword', {
+  name: 'caes-hub-oswald-uppercase',
+  label: 'Oswald Uppercase'
+});
+wp.blocks.registerBlockStyle('caes-hub/primary-keyword', {
+  name: 'caes-hub-merriweather-sans-uppercase',
+  label: 'Merriweather Sans Uppercase'
+});

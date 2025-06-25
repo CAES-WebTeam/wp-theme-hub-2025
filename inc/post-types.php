@@ -204,6 +204,133 @@ function register_keywords_taxonomy()
 }
 add_action('init', 'register_keywords_taxonomy');
 
+// Primary Keywords ACF Field
+function create_primary_keyword_field() {
+    if( function_exists('acf_add_local_field_group') ):
+        acf_add_local_field_group(array(
+            'key' => 'group_primary_keyword',
+            'title' => 'Primary Keywords',
+            'fields' => array(
+                array(
+                    'key' => 'field_primary_keywords',
+                    'label' => 'Primary Keywords',
+                    'name' => 'primary_keywords', // Changed to plural
+                    'type' => 'taxonomy',
+                    'taxonomy' => 'keywords',
+                    'field_type' => 'multi_select', // Changed to multi_select
+                    'allow_null' => 1,
+                    'return_format' => 'object',
+                    'multiple' => 1, // Enable multiple selection
+                )
+            ),
+            'location' => array(
+                array(
+                    array(
+                        'param' => 'post_type',
+                        'operator' => '==',
+                        'value' => 'post',
+                    ),
+                ),
+                array(
+                    array(
+                        'param' => 'post_type',
+                        'operator' => '==',
+                        'value' => 'publications',
+                    ),
+                ),
+                array(
+                    array(
+                        'param' => 'post_type',
+                        'operator' => '==',
+                        'value' => 'shorthand_story',
+                    ),
+                ),
+            ),
+            'position' => 'side', // This puts it in the sidebar
+            'menu_order' => 0,
+            'style' => 'default',
+        ));
+    endif;
+}
+add_action('acf/init', 'create_primary_keyword_field');
+
+// External Publisher Taxonomy
+function create_external_publisher_taxonomy_and_field() {
+    // Register the taxonomy first
+    $labels = array(
+        'name'              => 'External Publishers',
+        'singular_name'     => 'External Publisher',
+        'search_items'      => 'Search External Publishers',
+        'all_items'         => 'All External Publishers',
+        'edit_item'         => 'Edit External Publisher',
+        'update_item'       => 'Update External Publisher',
+        'add_new_item'      => 'Add New External Publisher',
+        'new_item_name'     => 'New External Publisher Name',
+        'menu_name'         => 'External Publishers',
+    );
+
+    $args = array(
+        'hierarchical'      => false,
+        'labels'            => $labels,
+        'show_ui'           => true, // Since you're using ACF
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'external-publisher'),
+        'public'            => true,
+        'publicly_queryable' => true,
+        'show_in_rest'      => true,
+        'rest_base'         => 'external_publisher', // Explicit REST base
+    );
+
+    register_taxonomy('external_publisher', array('post'), $args);
+}
+add_action('init', 'create_external_publisher_taxonomy_and_field');
+
+// Hide the default WordPress taxonomy metabox since we're using ACF
+function hide_external_publisher_metabox() {
+    remove_meta_box('external_publisherdiv', 'post', 'side');
+}
+add_action('admin_menu', 'hide_external_publisher_metabox');
+
+// Fix Query Loop filtering for external_publisher taxonomy
+function fix_external_publisher_rest_query($args, $request) {
+    if (isset($request['external_publisher'])) {
+        $args['tax_query'] = array(
+            array(
+                'taxonomy' => 'external_publisher',
+                'field'    => 'term_id',
+                'terms'    => $request['external_publisher'],
+            ),
+        );
+    }
+    return $args;
+}
+add_filter('rest_post_query', 'fix_external_publisher_rest_query', 10, 2);
+
+// Debug: Log REST API requests for posts
+function debug_rest_post_requests($args, $request) {
+    error_log('=== REST POST REQUEST DEBUG ===');
+    error_log('Request params: ' . print_r($request->get_params(), true));
+    error_log('WP_Query args BEFORE our filter: ' . print_r($args, true));
+    
+    // Your existing filter logic
+    if (isset($request['external_publisher'])) {
+        error_log('External Publisher filter detected: ' . print_r($request['external_publisher'], true));
+        $args['tax_query'] = array(
+            array(
+                'taxonomy' => 'external_publisher',
+                'field'    => 'term_id',
+                'terms'    => $request['external_publisher'],
+            ),
+        );
+        error_log('WP_Query args AFTER our filter: ' . print_r($args, true));
+    } else {
+        error_log('No external_publisher parameter found in request');
+    }
+    
+    return $args;
+}
+add_filter('rest_post_query', 'debug_rest_post_requests', 10, 2);
 
 // Add a random placeholder image if no featured image is set
 add_filter( 'post_thumbnail_html', 'caes_ordered_placeholder_if_no_thumbnail', 10, 5 );

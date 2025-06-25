@@ -95,6 +95,109 @@
                     "slug": "merriweather"
                 },
                 {
+                    "fontFace": [
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "normal",
+                            "fontWeight": "300",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-300-normal.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "normal",
+                            "fontWeight": "400",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-400-normal.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "normal",
+                            "fontWeight": "500",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-500-normal.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "normal",
+                            "fontWeight": "600",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-600-normal.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "normal",
+                            "fontWeight": "700",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-700-normal.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "normal",
+                            "fontWeight": "800",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-800-normal.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "italic",
+                            "fontWeight": "300",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-300-italic.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "italic",
+                            "fontWeight": "400",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-400-italic.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "italic",
+                            "fontWeight": "500",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-500-italic.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "italic",
+                            "fontWeight": "600",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-600-italic.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "italic",
+                            "fontWeight": "700",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-700-italic.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Merriweather Sans",
+                            "fontStyle": "italic",
+                            "fontWeight": "800",
+                            "src": [
+                                "file:./assets/fonts/merriweather-sans/merriweather-sans-800-italic.woff2"
+                            ]
+                        }
+                    ],
+                    "fontFamily": "Merriweather Sans, sans-serif",
+                    "name": "Merriweather Sans",
+                    "slug": "merriweather-sans"
+                },
+                {
                     "name": "Georgia",
                     "slug": "georgia",
                     "fontFamily": "Georgia, serif",

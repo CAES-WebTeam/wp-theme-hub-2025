@@ -229,3 +229,20 @@ ul.is-style-caes-hub-list-checkbox {
         padding: 0 !important;
     }
 }
+
+// Font stuff
+
+.is-style-caes-hub-oswald-uppercase {
+    font-family: var(--wp--preset--font-family--oswald);
+    font-weight: 400;
+    text-transform: uppercase;
+}
+
+.is-style-caes-hub-merriweather-sans-uppercase {
+    font-family: var(--wp--preset--font-family--merriweather-sans);
+    font-weight: 400;
+    text-transform: uppercase;
+    border-left: 3px solid var(--wp--preset--color--bulldog-red);
+    line-height: 1;
+    padding-left: var(--wp--preset--spacing--20);
+}
