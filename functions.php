@@ -27,54 +27,57 @@ require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/import-legacy-slideshows-to-news.php';
 require get_template_directory() . '/inc/link-users.php';
 
-function debug_acf_field_config() {
-    if (isset($_GET['debug_acf_field']) && current_user_can('manage_options')) {
+function find_real_field_names() {
+    if (isset($_GET['find_fields']) && current_user_can('manage_options')) {
         $post_id = 5310;
         
-        echo '<h3>ACF Field Configuration Debug:</h3>';
+        echo '<h3>All ACF Fields for Post ' . $post_id . ':</h3>';
         
-        // Get ACF field object
-        $field_object = get_field_object('external_publisher', $post_id);
-        echo '<h4>Field Object:</h4>';
-        if ($field_object) {
-            echo 'Field Key: ' . $field_object['key'] . '<br>';
-            echo 'Field Name: ' . $field_object['name'] . '<br>';
-            echo 'Field Type: ' . $field_object['type'] . '<br>';
-            echo 'Return Format: ' . $field_object['return_format'] . '<br>';
-            echo 'Save Terms: ' . ($field_object['save_terms'] ? 'Yes' : 'No') . '<br>';
-            echo 'Load Terms: ' . ($field_object['load_terms'] ? 'Yes' : 'No') . '<br>';
-            echo 'Value: '; var_dump($field_object['value']); echo '<br>';
+        // Get all fields for this post
+        $fields = get_fields($post_id);
+        echo '<h4>get_fields() result:</h4>';
+        if ($fields) {
+            foreach ($fields as $field_name => $field_value) {
+                echo 'Field: ' . $field_name . ' = '; var_dump($field_value); echo '<br>';
+            }
         } else {
-            echo 'Field object not found!<br>';
+            echo 'No fields found with get_fields()<br>';
         }
         
-        // Check all meta keys that might be related
-        echo '<h4>All Meta Keys (filtered):</h4>';
-        $all_meta = get_post_meta($post_id);
-        foreach ($all_meta as $key => $value) {
-            if (strpos($key, 'external') !== false || strpos($key, 'publisher') !== false || strpos($key, 'field_') !== false) {
-                echo $key . ': '; 
-                if (is_array($value) && count($value) == 1) {
-                    var_dump($value[0]);
-                } else {
-                    var_dump($value);
-                }
-                echo '<br>';
+        // Try to get field objects for common variations
+        echo '<h4>Testing Field Name Variations:</h4>';
+        $variations = [
+            'external_publisher',
+            'external-publisher', 
+            'external_publishers',
+            'publisher',
+            'publishers'
+        ];
+        
+        foreach ($variations as $variation) {
+            $field_obj = get_field_object($variation, $post_id);
+            if ($field_obj) {
+                echo 'FOUND: ' . $variation . ' - Type: ' . $field_obj['type'] . '<br>';
+                echo 'Value: '; var_dump($field_obj['value']); echo '<br>';
+            } else {
+                echo 'Not found: ' . $variation . '<br>';
             }
         }
         
-        // Try to find the field by different methods
-        echo '<h4>Alternative Field Retrieval:</h4>';
-        
-        // Try with field key if we found one
-        if ($field_object && isset($field_object['key'])) {
-            $field_key = $field_object['key'];
-            echo 'Using field key ' . $field_key . ': '; 
-            var_dump(get_field($field_key, $post_id)); 
+        // Check what's actually selected in admin by trying all meta
+        echo '<h4>All Post Meta (including field references):</h4>';
+        $all_meta = get_post_meta($post_id);
+        foreach ($all_meta as $key => $value) {
+            echo $key . ': '; 
+            if (is_array($value) && count($value) == 1) {
+                echo $value[0];
+            } else {
+                var_dump($value);
+            }
             echo '<br>';
         }
         
-        wp_die('ACF Debug complete');
+        wp_die('Field discovery complete');
     }
 }
-add_action('init', 'debug_acf_field_config');
+add_action('init', 'find_real_field_names');
