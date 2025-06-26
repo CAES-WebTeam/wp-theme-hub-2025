@@ -45,7 +45,6 @@ function render_import_json_acf()
 
     echo '<form method="get">';
     echo '<input type="hidden" name="page" value="legacy-slider-import">';
-    echo '<input type="hidden" name="paged" value="' . esc_attr($current_page) . '">';
     echo '<label><input type="checkbox" name="show_unimported" value="1"' . checked($show_unimported_only, true, false) . '> Show only posts with missing images</label> ';
     submit_button('Filter', 'secondary', '', false);
     echo '</form>';
@@ -60,7 +59,6 @@ function render_import_json_acf()
     $all_matching_posts = [];
     
     if (!empty($story_ids)) {
-        // Use IN query instead of individual queries
         global $wpdb;
         $story_ids_placeholders = implode(',', array_fill(0, count($story_ids), '%s'));
         $results = $wpdb->get_results($wpdb->prepare("
@@ -77,71 +75,134 @@ function render_import_json_acf()
         }
     }
 
-    // Filter and paginate BEFORE doing expensive operations
-    $hide_missing = !isset($_GET['hide_missing']) || $_GET['hide_missing'] == '1';
+    $carousel_field_key = 'field_683a19a810dd8'; // legacy_gallery field
     
-    $filtered_grouped_data = [];
-    foreach ($grouped_data as $story_id => $images) {
-        $post_id = $all_matching_posts[$story_id] ?? 0;
+    // Helper function to check if an image is already in carousel
+    function is_image_in_carousel($post_id, $image_url, $filename, $carousel_field_key) {
+        if (!$post_id) return false;
         
-        if ($hide_missing && !$post_id) {
-            continue;
-        }
-        
-        $filtered_grouped_data[$story_id] = $images;
-    }
-
-    // Paginate first
-    $total_items = count($filtered_grouped_data);
-    $total_pages = ceil($total_items / $per_page);
-    
-    $paged_data = $total_pages > 1
-        ? array_slice($filtered_grouped_data, ($current_page - 1) * $per_page, $per_page, true)
-        : $filtered_grouped_data;
-
-    // NOW apply the unimported filter only to the current page's data
-    if ($show_unimported_only) {
-        $final_paged_data = [];
-        foreach ($paged_data as $story_id => $images) {
-            $post_id = $all_matching_posts[$story_id] ?? 0;
-            if (!$post_id) continue;
+        if (have_rows($carousel_field_key, $post_id) || have_rows('legacy_gallery', $post_id)) {
+            $field_ref = have_rows($carousel_field_key, $post_id) ? $carousel_field_key : 'legacy_gallery';
             
-            $imported_count = 0;
-            $carousel_field_key = 'field_683a19a810dd8';
-            
-            if (have_rows($carousel_field_key, $post_id)) {
-                while (have_rows($carousel_field_key, $post_id)) {
-                    the_row();
-                    $existing_caption = trim(get_sub_field('caption'));
+            while (have_rows($field_ref, $post_id)) {
+                the_row();
+                $existing_image_data = get_sub_field('image');
+                $existing_image_id = is_array($existing_image_data) ? $existing_image_data['ID'] : $existing_image_data;
+                
+                if ($existing_image_id) {
+                    // Check by source URL first (most reliable)
+                    $existing_source_url = get_post_meta($existing_image_id, '_source_image_url', true);
+                    if ($existing_source_url === $image_url) {
+                        return true;
+                    }
                     
-                    foreach ($images as $item) {
-                        $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
-                        if ($existing_caption === trim($caption)) {
-                            $imported_count++;
-                            break;
+                    // Fallback: check by filename
+                    if (!$existing_source_url) {
+                        $existing_filename = is_array($existing_image_data) ? $existing_image_data['filename'] : basename(get_attached_file($existing_image_id));
+                        $clean_file_name = preg_replace('/\.+/', '.', $filename);
+                        $clean_file_name = sanitize_file_name($clean_file_name);
+                        
+                        // Check for exact match or WordPress auto-renamed versions
+                        $base_name = pathinfo($clean_file_name, PATHINFO_FILENAME);
+                        $extension = pathinfo($clean_file_name, PATHINFO_EXTENSION);
+                        
+                        if ($existing_filename === $clean_file_name || 
+                            preg_match('/^' . preg_quote($base_name, '/') . '(-\d+)?\.' . preg_quote($extension, '/') . '$/i', $existing_filename)) {
+                            return true;
                         }
                     }
                 }
             }
-            
-            $all_imported = $imported_count === count($images);
-            if (!$all_imported) {
-                $final_paged_data[$story_id] = $images;
-            }
         }
-        $paged_data = $final_paged_data;
+        return false;
     }
 
-    if ($total_pages > 1) {
-        echo '<div class="tablenav"><div class="tablenav-pages"><span class="pagination-links">';
-        for ($i = 1; $i <= $total_pages; $i++) {
-            if ($i === $current_page) {
-                echo '<span class="page-numbers current">' . $i . '</span> ';
-            } else {
-                echo '<a class="page-numbers" href="' . esc_url(add_query_arg('paged', $i)) . '">' . $i . '</a> ';
-            }
+    // Filter data BEFORE pagination
+    $filtered_grouped_data = [];
+    foreach ($grouped_data as $story_id => $images) {
+        $post_id = $all_matching_posts[$story_id] ?? 0;
+        
+        // Skip posts without matching WordPress post
+        if (!$post_id) {
+            continue;
         }
-        echo '</span></div></div>';
+        
+        // If filtering for unimported only, check if any images are missing from carousel
+        if ($show_unimported_only) {
+            $has_unimported_images = false;
+            
+            foreach ($images as $item) {
+                $item_image_id = $item['IMAGE_ID'] ?? '';
+                $item_file_name = $item['IMAGE'][0]['WEB_VERSION_FILE_NAME'] ?? '';
+                if (!$item_image_id || !$item_file_name) continue;
+                
+                $item_image_url = "https://secure.caes.uga.edu/news/multimedia/images/{$item_image_id}/{$item_file_name}";
+                
+                if (!is_image_in_carousel($post_id, $item_image_url, $item_file_name, $carousel_field_key)) {
+                    $has_unimported_images = true;
+                    break;
+                }
+            }
+            
+            // Only include if it has unimported images
+            if ($has_unimported_images) {
+                $filtered_grouped_data[$story_id] = $images;
+            }
+        } else {
+            // Include all posts that have matching WordPress posts
+            $filtered_grouped_data[$story_id] = $images;
+        }
+    }
+
+    // Calculate pagination based on filtered results
+    $total_items = count($filtered_grouped_data);
+    $total_pages = ceil($total_items / $per_page);
+    
+    // Apply pagination to filtered data
+    $paged_data = [];
+    if ($total_items > 0) {
+        $offset = ($current_page - 1) * $per_page;
+        $paged_data = array_slice($filtered_grouped_data, $offset, $per_page, true);
+    }
+
+    // Display pagination info and controls
+    if ($total_items > 0) {
+        echo '<p>Showing ' . count($paged_data) . ' of ' . $total_items . ' stories';
+        if ($show_unimported_only) {
+            echo ' <strong>with unimported images</strong>';
+        }
+        echo '.</p>';
+        
+        if ($total_pages > 1) {
+            echo '<div class="tablenav"><div class="tablenav-pages"><span class="pagination-links">';
+            
+            // Previous page link
+            if ($current_page > 1) {
+                echo '<a class="page-numbers prev" href="' . esc_url(add_query_arg('paged', $current_page - 1)) . '">‹ Previous</a> ';
+            }
+            
+            // Page number links
+            for ($i = 1; $i <= $total_pages; $i++) {
+                if ($i === $current_page) {
+                    echo '<span class="page-numbers current">' . $i . '</span> ';
+                } else {
+                    echo '<a class="page-numbers" href="' . esc_url(add_query_arg('paged', $i)) . '">' . $i . '</a> ';
+                }
+            }
+            
+            // Next page link
+            if ($current_page < $total_pages) {
+                echo '<a class="page-numbers next" href="' . esc_url(add_query_arg('paged', $current_page + 1)) . '">Next ›</a>';
+            }
+            
+            echo '</span></div></div>';
+        }
+    } else {
+        echo '<p><strong>No stories found</strong>';
+        if ($show_unimported_only) {
+            echo ' with unimported images';
+        }
+        echo '.</p>';
     }
 
     echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -152,65 +213,109 @@ function render_import_json_acf()
     }
     echo '<input type="hidden" name="action" value="import_json_acf_images_bulk">';
     echo '<input type="hidden" name="paged" value="' . esc_attr($current_page) . '">';
-    echo '<table class="widefat fixed striped"><thead><tr>
-		<th><input type="checkbox" onclick="jQuery(\'.select-post\').prop(\'checked\', this.checked);"></th>
-		<th>Post Title</th><th>Story ID</th><th>Captions</th>
-		<th>Image Labels</th><th>Sequence</th><th>Imported</th>
-	</tr></thead><tbody>';
+    
+    if (!empty($paged_data)) {
+        echo '<table class="widefat fixed striped"><thead><tr>
+            <th><input type="checkbox" onclick="jQuery(\'.select-post\').prop(\'checked\', this.checked);"></th>
+            <th>Post Title</th><th>Story ID</th><th>Images</th>
+            <th>In Carousel</th>
+        </tr></thead><tbody>';
 
-    foreach ($paged_data as $story_id => $images) {
-        $post_id = $all_matching_posts[$story_id] ?? 0;
-        
-        if ($hide_missing && !$post_id) continue;
+        foreach ($paged_data as $story_id => $images) {
+            $post_id = $all_matching_posts[$story_id] ?? 0;
+            
+            if (!$post_id) continue;
 
-        $captions = $labels = $sequences = [];
-        $imported_count = 0;
-        $carousel_field_key = 'field_683a19a810dd8';
+            // Check which images are in carousel
+            $image_statuses = [];
+            $has_unassigned = false;
+            
+            foreach ($images as $item) {
+                $item_image_id = $item['IMAGE_ID'] ?? '';
+                $item_file_name = $item['IMAGE'][0]['WEB_VERSION_FILE_NAME'] ?? '';
+                $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
+                
+                $in_carousel = false;
+                if ($item_image_id && $item_file_name) {
+                    $item_image_url = "https://secure.caes.uga.edu/news/multimedia/images/{$item_image_id}/{$item_file_name}";
+                    $in_carousel = is_image_in_carousel($post_id, $item_image_url, $item_file_name, $carousel_field_key);
+                }
+                
+                if (!$in_carousel) {
+                    $has_unassigned = true;
+                }
+                
+                $image_statuses[] = [
+                    'caption' => $caption,
+                    'filename' => $item_file_name,
+                    'in_carousel' => $in_carousel
+                ];
+            }
+            
+            echo '<tr>';
+            echo '<td>';
+            if ($has_unassigned) {
+                echo '<input type="checkbox" class="select-post" name="bulk_items[' . esc_attr($post_id) . '][images]" value="' . esc_attr(json_encode($images)) . '">';
+            } else {
+                echo '&mdash;';
+            }
+            echo '</td>';
+            echo '<td><a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html(get_the_title($post_id)) . '</a></td>';
+            echo '<td>' . esc_html($story_id) . '</td>';
+            
+            // Display images info
+            echo '<td>';
+            foreach ($image_statuses as $i => $status) {
+                if ($i > 0) echo '<br>';
+                echo '<strong>' . ($i + 1) . ':</strong> ' . esc_html(substr($status['caption'], 0, 80));
+                if (strlen($status['caption']) > 80) echo '...';
+                echo '<br><small>' . esc_html($status['filename']) . '</small>';
+            }
+            echo '</td>';
+            
+            // Display carousel status
+            echo '<td>';
+            foreach ($image_statuses as $i => $status) {
+                if ($i > 0) echo '<br>';
+                echo '<strong>' . ($i + 1) . ':</strong> ';
+                if ($status['in_carousel']) {
+                    echo '<span style="color: green;">✓ Yes</span>';
+                } else {
+                    echo '<span style="color: red;">✗ No</span>';
+                }
+                echo '<br><small>&nbsp;</small>'; // spacing to match other column
+            }
+            echo '</td>';
+            
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+    }
+    echo '</form>';
+
+    // Show pagination again at bottom if needed
+    if ($total_pages > 1) {
+        echo '<div class="tablenav bottom"><div class="tablenav-pages"><span class="pagination-links">';
         
-        foreach ($images as $item) {
-            $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
-            $image_info = $item['IMAGE'][0] ?? [];
-            $captions[] = $caption;
-            $labels[] = $image_info['IMAGE_LABEL'] ?? '';
-            $sequences[] = $item['SEQUENCE_NUMBER'] ?? '';
+        if ($current_page > 1) {
+            echo '<a class="page-numbers prev" href="' . esc_url(add_query_arg('paged', $current_page - 1)) . '">‹ Previous</a> ';
         }
         
-        // Check imported status only for the posts we're displaying
-        if ($post_id && have_rows($carousel_field_key, $post_id)) {
-            while (have_rows($carousel_field_key, $post_id)) {
-                the_row();
-                $existing_caption = trim(get_sub_field('caption'));
-                
-                foreach ($captions as $caption) {
-                    if ($existing_caption === trim($caption)) {
-                        $imported_count++;
-                        break;
-                    }
-                }
+        for ($i = 1; $i <= $total_pages; $i++) {
+            if ($i === $current_page) {
+                echo '<span class="page-numbers current">' . $i . '</span> ';
+            } else {
+                echo '<a class="page-numbers" href="' . esc_url(add_query_arg('paged', $i)) . '">' . $i . '</a> ';
             }
         }
         
-        $all_imported = $imported_count === count($images);
-        
-        echo '<tr>';
-        echo '<td>';
-        if ($post_id && !$all_imported) {
-            echo '<input type="checkbox" class="select-post" name="bulk_items[' . esc_attr($post_id) . '][images]" value="' . esc_attr(json_encode($images)) . '">';
-        } else {
-            echo '&mdash;';
+        if ($current_page < $total_pages) {
+            echo '<a class="page-numbers next" href="' . esc_url(add_query_arg('paged', $current_page + 1)) . '">Next ›</a>';
         }
-        echo '</td>';
-        echo '<td>' . ($post_id ? '<a href="' . esc_url(get_edit_post_link($post_id)) . '">' . esc_html(get_the_title($post_id)) . '</a>' : '<em>Not found</em>') . '</td>';
-        echo '<td>' . esc_html($story_id) . '</td>';
-        echo '<td>' . implode('<br>', array_map('esc_html', $captions)) . '</td>';
-        echo '<td>' . implode('<br>', array_map('esc_html', $labels)) . '</td>';
-        echo '<td>' . implode('<br>', array_map('esc_html', $sequences)) . '</td>';
-        echo '<td>' . ($all_imported ? '<span style="color: green;">Yes</span>' : '<span style="color: red;">No</span>') . '</td>';
-        echo '</tr>';
+        
+        echo '</span></div></div>';
     }
-
-    echo '</tbody></table>';
-    echo '</form>';
 
     echo '<hr style="margin-top:2em; margin-bottom:2em;">';
     echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" onsubmit="return confirm(\'Are you sure you want to clear all carousel fields? This cannot be undone.\');">';
@@ -222,7 +327,7 @@ function render_import_json_acf()
     echo '</div>'; // .wrap
 }
 
-
+// ... rest of your functions remain the same ...
 add_action('admin_post_import_json_acf_images', 'handle_import_json_acf_images');
 
 function import_images_to_post($post_id, $images)
@@ -230,8 +335,18 @@ function import_images_to_post($post_id, $images)
     $assigned = 0;
     $carousel_field_key = 'field_683a19a810dd8';
 
+    // Get current post for debugging
+    $post_meta_id = get_post_meta($post_id, 'id', true);
+    $debug_mode = ($post_meta_id == '7955' || $post_meta_id == '8018' || $post_meta_id == '8159'); // Enable debugging for story IDs 7955, 8018, and 8159
+    
+    if ($debug_mode) {
+        error_log("=== DEBUGGING Story ID {$post_meta_id} → WordPress Post ID {$post_id} ===");
+        error_log("Total images to process: " . count($images));
+    }
+
     // Optional: wipe current carousel
     delete_field($carousel_field_key, $post_id);
+    delete_field('legacy_gallery', $post_id); // fallback
 
     $raw_acf_date = get_field('date_created', $post_id);
     $acf_timestamp = strtotime($raw_acf_date);
@@ -241,29 +356,73 @@ function import_images_to_post($post_id, $images)
     require_once ABSPATH . 'wp-admin/includes/file.php';
     require_once ABSPATH . 'wp-admin/includes/media.php';
 
-    foreach ($images as $item) {
+    foreach ($images as $index => $item) {
+        if ($debug_mode) {
+            error_log("--- Processing image " . ($index + 1) . " ---");
+            error_log("Raw item data: " . print_r($item, true));
+        }
+        
         $image_id = $item['IMAGE_ID'] ?? '';
         $caption = sanitize_text_field($item['IMAGE'][0]['DESCRIPTION'] ?? '');
         $original_file_name = $item['IMAGE'][0]['WEB_VERSION_FILE_NAME'] ?? '';
-        if (!$image_id || !$original_file_name) continue;
+        
+        if ($debug_mode) {
+            error_log("Image ID: '{$image_id}'");
+            error_log("Caption: '{$caption}'");
+            error_log("Original filename: '{$original_file_name}'");
+        }
+        
+        if (!$image_id || !$original_file_name) {
+            if ($debug_mode) {
+                error_log("SKIPPED: Missing image_id or filename");
+            }
+            continue;
+        }
 
         // Use original file name in the URL
         $image_url = "https://secure.caes.uga.edu/news/multimedia/images/{$image_id}/{$original_file_name}";
+        
+        if ($debug_mode) {
+            error_log("Image URL: {$image_url}");
+        }
 
-        // Check if already imported
-        $already_imported = false;
+        // Check if already assigned to carousel (simple approach)
+        $already_in_carousel = false;
         if (have_rows($carousel_field_key, $post_id)) {
             while (have_rows($carousel_field_key, $post_id)) {
                 the_row();
-                if (trim(get_sub_field('caption')) === $caption) {
-                    $already_imported = true;
-                    break;
+                $existing_image_id = get_sub_field('image');
+                if ($existing_image_id) {
+                    // Check by source URL first (most reliable)
+                    $existing_source_url = get_post_meta($existing_image_id, '_source_image_url', true);
+                    if ($existing_source_url === $image_url) {
+                        $already_in_carousel = true;
+                        if ($debug_mode) {
+                            error_log("SKIPPED: Already in carousel (source URL match)");
+                        }
+                        break;
+                    }
+                    
+                    // Fallback: check by filename if no source URL
+                    if (!$existing_source_url) {
+                        $existing_filename = basename(get_attached_file($existing_image_id));
+                        $clean_file_name = preg_replace('/\.+/', '.', $original_file_name);
+                        $clean_file_name = sanitize_file_name($clean_file_name);
+                        
+                        if ($existing_filename === $clean_file_name) {
+                            $already_in_carousel = true;
+                            if ($debug_mode) {
+                                error_log("SKIPPED: Already in carousel (filename match)");
+                            }
+                            break;
+                        }
+                    }
                 }
             }
         }
-        if ($already_imported) continue;
+        if ($already_in_carousel) continue;
 
-        // Check for existing attachment by URL
+        // Check for existing attachment by URL first
         $existing = get_posts([
             'post_type'   => 'attachment',
             'meta_key'    => '_source_image_url',
@@ -272,13 +431,90 @@ function import_images_to_post($post_id, $images)
             'post_status' => 'inherit',
         ]);
 
+        if ($debug_mode) {
+            error_log("Existing attachments found by URL: " . count($existing));
+        }
+
+        // If no existing attachment found by URL, check by filename + filesize as fallback
         if (empty($existing)) {
+            // Get the remote file size first
+            $headers = wp_remote_head($image_url);
+            $remote_filesize = 0;
+            if (!is_wp_error($headers)) {
+                $remote_filesize = wp_remote_retrieve_header($headers, 'content-length');
+            }
+            
+            if ($debug_mode) {
+                error_log("Remote file size: {$remote_filesize} bytes");
+            }
+            
+            if ($remote_filesize > 0) {
+                // Clean the filename for comparison
+                $clean_file_name = preg_replace('/\.+/', '.', $original_file_name);
+                $clean_file_name = sanitize_file_name($clean_file_name);
+                
+                // Search for existing attachments with same filename
+                $existing_by_filename = get_posts([
+                    'post_type'   => 'attachment',
+                    'meta_key'    => '_wp_attached_file',
+                    'meta_compare' => 'LIKE',
+                    'meta_value'  => '%' . $clean_file_name,
+                    'numberposts' => -1,
+                    'post_status' => 'inherit',
+                ]);
+                
+                if ($debug_mode) {
+                    error_log("Found " . count($existing_by_filename) . " attachments with similar filename");
+                }
+                
+                // Check filesize of matches
+                foreach ($existing_by_filename as $potential_match) {
+                    $file_path = get_attached_file($potential_match->ID);
+                    if ($file_path && file_exists($file_path)) {
+                        $local_filesize = filesize($file_path);
+                        if ($debug_mode) {
+                            error_log("Checking {$potential_match->ID}: local={$local_filesize}, remote={$remote_filesize}");
+                        }
+                        
+                        // If filesizes match, consider it the same file
+                        if ($local_filesize == $remote_filesize) {
+                            $existing = [$potential_match];
+                            if ($debug_mode) {
+                                error_log("Found existing attachment by filename+size match: ID {$potential_match->ID}");
+                            }
+                            // Tag this attachment with the source URL for future reference
+                            update_post_meta($potential_match->ID, '_source_image_url', esc_url_raw($image_url));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (empty($existing)) {
+            if ($debug_mode) {
+                error_log("Downloading image from: {$image_url}");
+            }
+            
             $tmp = download_url($image_url);
-            if (is_wp_error($tmp)) continue;
+            if (is_wp_error($tmp)) {
+                if ($debug_mode) {
+                    error_log("DOWNLOAD FAILED: " . $tmp->get_error_message());
+                }
+                continue;
+            }
+            
+            if ($debug_mode) {
+                error_log("Download successful, temp file: {$tmp}");
+            }
 
             // Sanitize *after* download, for WordPress purposes
             $clean_file_name = preg_replace('/\.+/', '.', $original_file_name);
             $clean_file_name = sanitize_file_name($clean_file_name);
+            
+            if ($debug_mode) {
+                error_log("Clean filename: '{$clean_file_name}'");
+            }
 
             $file_array = [
                 'name'     => $clean_file_name,
@@ -297,8 +533,15 @@ function import_images_to_post($post_id, $images)
             remove_filter('upload_dir', $custom_upload_dir);
 
             if (isset($upload['error'])) {
+                if ($debug_mode) {
+                    error_log("UPLOAD FAILED: " . $upload['error']);
+                }
                 @unlink($tmp);
                 continue;
+            }
+            
+            if ($debug_mode) {
+                error_log("Upload successful: " . print_r($upload, true));
             }
 
             $attachment = [
@@ -309,21 +552,50 @@ function import_images_to_post($post_id, $images)
             ];
 
             $attachment_id = wp_insert_attachment($attachment, $upload['file'], $post_id);
+            if ($debug_mode) {
+                error_log("Created attachment ID: {$attachment_id}");
+            }
+            
             wp_update_attachment_metadata($attachment_id, wp_generate_attachment_metadata($attachment_id, $upload['file']));
             update_post_meta($attachment_id, '_source_image_url', esc_url_raw($image_url));
         } else {
             $attachment_id = $existing[0]->ID;
+            if ($debug_mode) {
+                error_log("Using existing attachment ID: {$attachment_id}");
+            }
         }
 
         if (!empty($attachment_id)) {
-            add_row($carousel_field_key, [
+            $row_added = add_row($carousel_field_key, [
                 'image'   => $attachment_id,
                 'caption' => $caption,
             ], $post_id);
-            $assigned++;
+            
+            // If field key didn't work, try field name
+            if (!$row_added) {
+                $row_added = add_row('legacy_gallery', [
+                    'image'   => $attachment_id,
+                    'caption' => $caption,
+                ], $post_id);
+            }
+            
+            if ($debug_mode) {
+                error_log("ACF row added: " . ($row_added ? 'SUCCESS' : 'FAILED'));
+            }
+            
+            if ($row_added) {
+                $assigned++;
+            }
+        } else {
+            if ($debug_mode) {
+                error_log("ERROR: No attachment_id available");
+            }
         }
     }
 
+    if ($debug_mode) {
+        error_log("=== FINAL RESULT: {$assigned} images assigned ===");
+    }
 
     return $assigned;
 }
@@ -391,7 +663,6 @@ function handle_import_json_acf_images_bulk()
     wp_redirect(admin_url('admin.php?page=legacy-slider-import&import=' . ($total_assigned > 0 ? 'success' : 'fail') . '&paged=' . $paged));
     exit;
 }
-
 
 add_action('admin_post_import_json_acf_images_bulk', 'handle_import_json_acf_images_bulk');
 
