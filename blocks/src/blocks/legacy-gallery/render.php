@@ -2,7 +2,6 @@
 /**
  * Accessible Legacy Gallery Block Render
  * Displays images from ACF legacy_gallery field with filmstrip navigation
- * Hides filmstrip when only one image is present
  */
 
 // Get the current post ID
@@ -55,8 +54,7 @@ $total_images = count($legacy_gallery);
         </figure>
     </div>
 
-    <?php if ($total_images > 1): ?>
-    <!-- Gallery filmstrip navigation (only show if more than one image) -->
+    <!-- Gallery filmstrip navigation -->
     <nav class="gallery-filmstrip" aria-label="Gallery navigation">
         <div class="filmstrip-container">
             <ul class="filmstrip-list" role="tablist" aria-label="Gallery images">
@@ -98,13 +96,12 @@ $total_images = count($legacy_gallery);
         
         <!-- Screen reader navigation info -->
         <div class="gallery-sr-info sr-only" aria-live="polite" aria-atomic="true">
-            <span data-gallery-sr-current">Showing image 1 of <?php echo $total_images; ?></span>
+            <span data-gallery-sr-current>Showing image 1 of <?php echo $total_images; ?></span>
         </div>
     </nav>
-    <?php endif; ?>
 
     <!-- Additional metadata for screen readers -->
     <div class="gallery-metadata sr-only">
-        <p>Image gallery with <?php echo $total_images; ?> <?php echo $total_images === 1 ? 'image' : 'images'; ?>. <?php if ($total_images > 1): ?>Use arrow keys or tab to navigate between thumbnails, then press Enter or Space to view the full image.<?php endif; ?></p>
+        <p>Image gallery with <?php echo $total_images; ?> <?php echo $total_images === 1 ? 'image' : 'images'; ?>. Use arrow keys or tab to navigate between thumbnails, then press Enter or Space to view the full image.</p>
     </div>
 </div>
