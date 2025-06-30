@@ -302,6 +302,8 @@ figcaption a {
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: nowrap;
+        overflow-y: auto;
     }
 
     .caes-hub-content-actions {
@@ -415,6 +417,41 @@ figcaption a {
     }
 
 }
+
+/* Miscellaneous Icon Classes */
+
+.primary-keyword-read {
+    a {
+        text-decoration: none;
+    }
+
+    @include icon-before-text('../images/written.svg', 1.5rem, 1.5rem, var(--wp--preset--color--contrast));
+}
+
+.primary-keyword-listen {
+    a {
+        text-decoration: none;
+    }
+
+    @include icon-before-text('../images/audio.svg', 1.5rem, 1.5rem, var(--wp--preset--color--contrast));
+}
+
+.primary-keyword-watch {
+    a {
+        text-decoration: none;
+    }
+
+    @include icon-before-text('../images/video.svg', 1.5rem, 1.5rem, var(--wp--preset--color--contrast));
+}
+
+.primary-keyword-look {
+    a {
+        text-decoration: none;
+    }
+
+    @include icon-before-text('../images/gallery.svg', 1.5rem, 1.5rem, var(--wp--preset--color--contrast));
+}
+
 
 /* Helper Classes */
 

@@ -13,31 +13,45 @@ $post_id = get_the_ID();
 // Get the primary keywords from ACF for this specific post
 $primary_keywords = get_field('primary_keywords', $post_id);
 
-// Determine icon based on category
+// Determine icon based on post type first, then category
 $icon_svg = '';
+$icon_is_png = false;
+$icon_url = '';
 if ($show_category_icon) {
-    $categories = get_the_category($post_id);
-    $icon_map = [
-        'written' => 'written.svg',
-        'audio'   => 'audio.svg',
-        'video'   => 'video.svg',
-        'gallery' => 'gallery.svg',
-    ];
+    $post_type = get_post_type($post_id);
+    
+    // Check if post type is publications first
+    if ($post_type === 'publications') {
+        $icon_path = get_template_directory() . '/assets/images/expert-checkmark.png';
+        if (file_exists($icon_path)) {
+            $icon_is_png = true;
+            $icon_url = get_template_directory_uri() . '/assets/images/expert-checkmark.png';
+        }
+    } else {
+        // Use existing category-based logic for other post types
+        $categories = get_the_category($post_id);
+        $icon_map = [
+            'read' => 'written.svg',
+            'listen'   => 'audio.svg',
+            'watch'   => 'video.svg',
+            'look' => 'gallery.svg',
+        ];
 
-    foreach ($categories as $cat) {
-        $slug = $cat->slug;
-        if (isset($icon_map[$slug])) {
-            $icon_path = get_template_directory() . '/assets/images/' . $icon_map[$slug];
-            if (file_exists($icon_path)) {
-                $icon_svg = file_get_contents($icon_path);
+        foreach ($categories as $cat) {
+            $slug = $cat->slug;
+            if (isset($icon_map[$slug])) {
+                $icon_path = get_template_directory() . '/assets/images/' . $icon_map[$slug];
+                if (file_exists($icon_path)) {
+                    $icon_svg = file_get_contents($icon_path);
+                }
+                break;
             }
-            break;
         }
     }
 }
 
 // Only render if we have keywords OR if we should show an icon
-if ((!$primary_keywords || empty($primary_keywords)) && empty($icon_svg)) {
+if ((!$primary_keywords || empty($primary_keywords)) && empty($icon_svg) && !$icon_is_png) {
     return;
 }
 
@@ -49,9 +63,13 @@ $wrapper_attributes = get_block_wrapper_attributes([
 
 <div <?php echo $wrapper_attributes; ?>>
     <div class="primary-keywords-wrapper">
-        <?php if (!empty($icon_svg)): ?>
+        <?php if (!empty($icon_svg) || $icon_is_png): ?>
             <span class="primary-keyword-icon" aria-hidden="true">
-                <?php echo $icon_svg; ?>
+                <?php if ($icon_is_png): ?>
+                    <img src="<?php echo esc_url($icon_url); ?>" alt="" />
+                <?php else: ?>
+                    <?php echo $icon_svg; ?>
+                <?php endif; ?>
             </span>
         <?php endif; ?>
 

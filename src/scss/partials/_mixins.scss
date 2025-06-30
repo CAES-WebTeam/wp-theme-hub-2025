@@ -108,3 +108,35 @@
         margin-left: 8px;
     }
 }
+
+// Miscellaneous icons used prior or after text
+
+@mixin icon-before-text($url, $width, $height, $color) {
+    &::before {
+        content: "";
+        display: inline-block;
+        width: $width;
+        height: $height;
+        background-color: $color;
+        mask-image: url($url);
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: 0px 2px;
+        margin-right: var(--wp--preset--spacing--20);
+    }
+}
+
+@mixin icon-after-text($url, $width, $height, $color) {
+    &::after {
+        content: "";
+        display: inline-block;
+        width: $width;
+        height: $height;
+        background-color: $color;
+        mask-image: url($url);
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: 0px 2px;
+        margin-left: var(--wp--preset--spacing--20);
+    }
+}
