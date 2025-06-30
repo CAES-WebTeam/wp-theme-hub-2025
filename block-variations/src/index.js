@@ -161,60 +161,60 @@ addFilter('editor.BlockEdit', 'core/query', withPubVariationControls);
 /** Posts Query Block Controls - START */
 
 // Check if block is querying posts
-const isPostsQuery = (props) => {
-  // Safety checks first
-  if (!props || !props.attributes || !props.attributes.query) {
-    return false;
-  }
+// const isPostsQuery = (props) => {
+//   // Safety checks first
+//   if (!props || !props.attributes || !props.attributes.query) {
+//     return false;
+//   }
 
-  const { attributes: { query } } = props;
-  console.log('Checking if posts query:', query);
-  const isPost = query && query.postType === 'post';
-  console.log('Is post query:', isPost);
-  return isPost;
-};
+//   const { attributes: { query } } = props;
+//   console.log('Checking if posts query:', query);
+//   const isPost = query && query.postType === 'post';
+//   console.log('Is post query:', isPost);
+//   return isPost;
+// };
 
-// Add Inspector Controls for posts queries
-const PostsQueryControls = ({ props: { attributes, setAttributes } }) => {
-  const { query } = attributes;
+// // Add Inspector Controls for posts queries
+// const PostsQueryControls = ({ props: { attributes, setAttributes } }) => {
+//   const { query } = attributes;
 
-  return (
-    <PanelBody title="Additional Feed Settings">
-      {/* External Publishers Toggle */}
-      <ToggleControl
-        label="Only show posts with external publishers"
-        checked={query.hasExternalPublishers || false}
-        onChange={(value) => {
-          console.log('Setting hasExternalPublishers to:', value);
-          console.log('Full query before update:', query);
+//   return (
+//     <PanelBody title="Additional Feed Settings">
+//       {/* External Publishers Toggle */}
+//       <ToggleControl
+//         label="Only show posts with external publishers"
+//         checked={query.hasExternalPublishers || false}
+//         onChange={(value) => {
+//           console.log('Setting hasExternalPublishers to:', value);
+//           console.log('Full query before update:', query);
 
-          const newQuery = {
-            ...query,
-            hasExternalPublishers: value
-          };
+//           const newQuery = {
+//             ...query,
+//             hasExternalPublishers: value
+//           };
 
-          console.log('Full query after update:', newQuery);
+//           console.log('Full query after update:', newQuery);
 
-          setAttributes({ query: newQuery });
-        }}
-      />
-    </PanelBody>
-  );
-};
+//           setAttributes({ query: newQuery });
+//         }}
+//       />
+//     </PanelBody>
+//   );
+// };
 
-export const withPostsQueryControls = (BlockEdit) => (props) => {
-  return isPostsQuery(props) ? (
-    <>
-      <BlockEdit {...props} />
-      <InspectorControls>
-        <PostsQueryControls props={props} />
-      </InspectorControls>
-    </>
-  ) : (
-    <BlockEdit {...props} />
-  );
-};
+// export const withPostsQueryControls = (BlockEdit) => (props) => {
+//   return isPostsQuery(props) ? (
+//     <>
+//       <BlockEdit {...props} />
+//       <InspectorControls>
+//         <PostsQueryControls props={props} />
+//       </InspectorControls>
+//     </>
+//   ) : (
+//     <BlockEdit {...props} />
+//   );
+// };
 
-addFilter('editor.BlockEdit', 'core/query', withPostsQueryControls);
+// addFilter('editor.BlockEdit', 'core/query', withPostsQueryControls);
 
 /** Posts Query Block Controls - END */

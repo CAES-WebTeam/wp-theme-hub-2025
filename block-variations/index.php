@@ -65,143 +65,193 @@ add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
 
 /*** START POSTS */
 // Backend
-function rest_posts_external_publishers($args, $request)
-{
-    $hasExternalPublishers = $request->get_param('hasExternalPublishers');
+// function rest_posts_external_publishers($args, $request)
+// {
+//     $hasExternalPublishers = $request->get_param('hasExternalPublishers');
 
-    // Handle both boolean true and string 'true'
-    if ($hasExternalPublishers === true || $hasExternalPublishers === 'true') {
-        $args['tax_query'] = array(
-            array(
-                'taxonomy' => 'external_publisher',
-                'operator' => 'EXISTS'
-            )
-        );
-    }
+//     // Handle both boolean true and string 'true'
+//     if ($hasExternalPublishers === true || $hasExternalPublishers === 'true') {
+//         $args['tax_query'] = array(
+//             array(
+//                 'taxonomy' => 'external_publisher',
+//                 'operator' => 'EXISTS'
+//             )
+//         );
+//     }
 
-    return $args;
-}
-add_filter('rest_post_query', 'rest_posts_external_publishers', 10, 2);
+//     return $args;
+// }
+// add_filter('rest_post_query', 'rest_posts_external_publishers', 10, 2);
 /*** END POSTS */
 
 /*** FRONT END */
 
+// Store parsed blocks for reference in the filter
+$parsed_blocks_for_filtering = [];
+
 function variations_pre_render_block($pre_render, $parsed_block)
 {
-    // Handle blocks WITH namespace (your variations)
-    if (isset($parsed_block['attrs']['namespace'])) {
-        $namespace = $parsed_block['attrs']['namespace'];
-
-        $filter_function = function ($query, $block) use ($parsed_block, $namespace) {
-            // Get block attributes from WP_Block object
-            $block_attrs = $block->parsed_block['attrs'] ?? [];
-
-            // Only apply to the exact same block by comparing queryId
-            if (
-                !isset($block_attrs['queryId']) ||
-                !isset($parsed_block['attrs']['queryId']) ||
-                $block_attrs['queryId'] !== $parsed_block['attrs']['queryId']
-            ) {
-                return $query;
-            }
-
-            $meta_query = [];
-
-            // For pubs-feed blocks
-            if ('pubs-feed' === $namespace) {
-                // Filter by language
-                if (!empty($parsed_block['attrs']['query']['language'])) {
-                    $language_id = absint($parsed_block['attrs']['query']['language']);
-                    $meta_query[] = array(
-                        'key' => 'language',
-                        'value' => $language_id,
-                        'compare' => '='
-                    );
-                }
-
-                // Filter by author if on author archive
-                if (is_author()) {
-                    $author_id = get_queried_object_id();
-                    $meta_query[] = array(
-                        'key' => 'all_author_ids',
-                        'value' => 'i:' . $author_id . ';',
-                        'compare' => 'LIKE'
-                    );
-                }
-
-                if (!empty($meta_query)) {
-                    $query['meta_query'] = $meta_query;
-                }
-            }
-
-            // For upcoming-events blocks
-            if ('upcoming-events' === $namespace) {
-                if (!empty($parsed_block['attrs']['query']['event_type'])) {
-                    $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
-                    $query['meta_query'] = array(
-                        array(
-                            'key' => 'event_type',
-                            'value' => $event_type,
-                            'compare' => '='
-                        )
-                    );
-                }
-            }
-
-            return $query;
-        };
-
-        add_filter('query_loop_block_query_vars', $filter_function, 10, 2);
-    }
-
-    // Handle posts query blocks separately
-    if (
-        $parsed_block['blockName'] === 'core/query' &&
-        isset($parsed_block['attrs']['query']['postType']) &&
-        $parsed_block['attrs']['query']['postType'] === 'post'
-    ) {
-        $filter_function = function ($query, $block) use ($parsed_block) {
-
-            // Try multiple ways to get the queryId
-            $block_query_id = null;
-
-            if (isset($block->parsed_block['attrs']['queryId'])) {
-                $block_query_id = $block->parsed_block['attrs']['queryId'];
-            }
-
-            if (isset($block->attributes['queryId'])) {
-                $block_query_id = $block->attributes['queryId'];
-            }
-
-            if (isset($block->context['queryId'])) {
-                $block_query_id = $block->context['queryId'];
-            }
-
-            // Only proceed if we have a matching queryId
-            if ($block_query_id == $parsed_block['attrs']['queryId']) {
-
-                $hasExternalPublishers = $parsed_block['attrs']['query']['hasExternalPublishers'] ?? false;
-
-                if ($hasExternalPublishers == 1 || $hasExternalPublishers === true || $hasExternalPublishers === 'true') {
-                    $query['tax_query'] = array(
-                        array(
-                            'taxonomy' => 'external_publisher',
-                            'operator' => 'EXISTS'
-                        )
-                    );
-                }
-            }
-
-            return $query;
-        };
-
-        add_filter('query_loop_block_query_vars', $filter_function, 10, 2);
+    global $parsed_blocks_for_filtering;
+    
+    // Store blocks that need filtering
+    if (isset($parsed_block['attrs']['queryId'])) {
+        $query_id = $parsed_block['attrs']['queryId'];
+        $parsed_blocks_for_filtering[$query_id] = $parsed_block;
     }
 
     return $pre_render;
 }
 
+// Consolidated filter function for all query modifications
+function variations_query_filter($query, $block)
+{
+    global $parsed_blocks_for_filtering;
+    
+    // Get block query ID
+    $block_query_id = null;
+    if (isset($block->parsed_block['attrs']['queryId'])) {
+        $block_query_id = $block->parsed_block['attrs']['queryId'];
+    } elseif (isset($block->attributes['queryId'])) {
+        $block_query_id = $block->attributes['queryId'];
+    } elseif (isset($block->context['queryId'])) {
+        $block_query_id = $block->context['queryId'];
+    }
+
+    // Find matching parsed block
+    if (!$block_query_id || !isset($parsed_blocks_for_filtering[$block_query_id])) {
+        return $query;
+    }
+
+    $parsed_block = $parsed_blocks_for_filtering[$block_query_id];
+    $meta_query = [];
+    $tax_query = [];
+
+    // Handle blocks WITH namespace (your variations)
+    if (isset($parsed_block['attrs']['namespace'])) {
+        $namespace = $parsed_block['attrs']['namespace'];
+
+        // For pubs-feed blocks
+        if ('pubs-feed' === $namespace) {
+            // Filter by language
+            if (!empty($parsed_block['attrs']['query']['language'])) {
+                $language_id = absint($parsed_block['attrs']['query']['language']);
+                $meta_query[] = array(
+                    'key' => 'language',
+                    'value' => $language_id,
+                    'compare' => '='
+                );
+            }
+
+            // Filter by author if on author archive
+            if (is_author()) {
+                $author_id = get_queried_object_id();
+                $meta_query[] = array(
+                    'key' => 'all_author_ids',
+                    'value' => 'i:' . $author_id . ';',
+                    'compare' => 'LIKE'
+                );
+            }
+        }
+
+        // For upcoming-events blocks
+        if ('upcoming-events' === $namespace) {
+            if (!empty($parsed_block['attrs']['query']['event_type'])) {
+                $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
+                $meta_query[] = array(
+                    'key' => 'event_type',
+                    'value' => $event_type,
+                    'compare' => '='
+                );
+            }
+        }
+    }
+
+    // Handle posts query blocks (external publishers) - FIXED VERSION
+    // if (
+    //     isset($parsed_block['attrs']['query']['postType']) &&
+    //     $parsed_block['attrs']['query']['postType'] === 'post'
+    // ) {
+    //     // More robust checking for hasExternalPublishers
+    //     $hasExternalPublishers = false;
+        
+    //     // Check different possible locations for the parameter
+    //     if (isset($parsed_block['attrs']['query']['hasExternalPublishers'])) {
+    //         $hasExternalPublishers = $parsed_block['attrs']['query']['hasExternalPublishers'];
+    //     } elseif (isset($parsed_block['attrs']['hasExternalPublishers'])) {
+    //         $hasExternalPublishers = $parsed_block['attrs']['hasExternalPublishers'];
+    //     }
+
+    //     // Convert various formats to boolean
+    //     if ($hasExternalPublishers === 1 || 
+    //         $hasExternalPublishers === '1' || 
+    //         $hasExternalPublishers === true || 
+    //         $hasExternalPublishers === 'true') {
+            
+    //         $tax_query[] = array(
+    //             'taxonomy' => 'external_publisher',
+    //             'operator' => 'EXISTS'
+    //         );
+            
+    //         // Debug output - remove after testing
+    //         error_log('External publishers filter applied for post query');
+    //     }
+    // }
+
+    // Apply meta query if we have conditions
+    if (!empty($meta_query)) {
+        if (count($meta_query) > 1) {
+            $meta_query['relation'] = 'AND';
+        }
+        // Merge with existing meta_query if it exists
+        if (isset($query['meta_query'])) {
+            $query['meta_query'] = array_merge($query['meta_query'], $meta_query);
+            if (count($query['meta_query']) > 1 && !isset($query['meta_query']['relation'])) {
+                $query['meta_query']['relation'] = 'AND';
+            }
+        } else {
+            $query['meta_query'] = $meta_query;
+        }
+    }
+
+    // Apply tax query if we have conditions - IMPROVED HANDLING
+    if (!empty($tax_query)) {
+        // Handle existing tax_query properly
+        if (isset($query['tax_query']) && is_array($query['tax_query'])) {
+            // If there's already a tax_query, merge them
+            $existing_tax_query = $query['tax_query'];
+            
+            // Remove relation if it exists to add it back properly
+            if (isset($existing_tax_query['relation'])) {
+                $relation = $existing_tax_query['relation'];
+                unset($existing_tax_query['relation']);
+            } else {
+                $relation = 'AND';
+            }
+            
+            // Merge the arrays
+            $merged_tax_query = array_merge($existing_tax_query, $tax_query);
+            
+            // Add relation if we have multiple conditions
+            if (count($merged_tax_query) > 1) {
+                $merged_tax_query['relation'] = $relation;
+            }
+            
+            $query['tax_query'] = $merged_tax_query;
+        } else {
+            // No existing tax_query, just set ours
+            if (count($tax_query) > 1) {
+                $tax_query['relation'] = 'AND';
+            }
+            $query['tax_query'] = $tax_query;
+        }
+    }
+
+    return $query;
+}
+
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
+add_filter('query_loop_block_query_vars', 'variations_query_filter', 10, 2);
+
 add_filter('render_block', function ($block_content, $block) {
     // Only apply to pubs-feed query loop on author archive pages
     if (
@@ -246,18 +296,18 @@ add_filter('render_block', function ($block_content, $block) {
 }, 10, 2);
 
 // Register the custom REST parameter for posts
-function register_posts_rest_fields()
-{
-    register_rest_field('post', 'hasExternalPublishers', array(
-        'get_callback' => null, // We don't need to return this field
-        'update_callback' => null,
-        'schema' => array(
-            'description' => 'Filter posts by external publishers',
-            'type' => 'boolean',
-        ),
-    ));
-}
-add_action('rest_api_init', 'register_posts_rest_fields');
+// function register_posts_rest_fields()
+// {
+//     register_rest_field('post', 'hasExternalPublishers', array(
+//         'get_callback' => null, // We don't need to return this field
+//         'update_callback' => null,
+//         'schema' => array(
+//             'description' => 'Filter posts by external publishers',
+//             'type' => 'boolean',
+//         ),
+//     ));
+// }
+// add_action('rest_api_init', 'register_posts_rest_fields');
 
 // Add the parameter to the posts collection endpoint
 function add_custom_query_vars($valid_vars)
