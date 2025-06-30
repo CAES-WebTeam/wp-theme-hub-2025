@@ -57,8 +57,8 @@
 
 .filmstrip-container {
     margin-top: var(--wp--preset--spacing--40);
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    // overflow-x: auto;
+    // -webkit-overflow-scrolling: touch;
 }
 
 .filmstrip-list {
@@ -78,8 +78,8 @@
 .filmstrip-thumb {
     position: relative;
     display: block;
-    width: 100px;
-    height: 100px;
+    width: 75px;
+    height: 75px;
     overflow: hidden;
     background: none;
     padding: 0;
