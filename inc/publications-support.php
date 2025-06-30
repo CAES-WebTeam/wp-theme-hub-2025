@@ -313,6 +313,40 @@ function get_full_image_url($relative_path)
     }
 }
 
+// ===================
+// REWRITE RULES SECTION
+// ===================
+
+// Add topic rewrite rules for each post type
+function custom_topic_rewrite_rules() {
+    // Topic archives for each post type
+    add_rewrite_rule(
+        '^news/topic/([^/]+)/?$',
+        'index.php?topics=$matches[1]&post_type=post',
+        'top'
+    );
+    
+    add_rewrite_rule(
+        '^publications/topic/([^/]+)/?$',
+        'index.php?topics=$matches[1]&post_type=publications',
+        'top'
+    );
+    
+    add_rewrite_rule(
+        '^shorthand-story/topic/([^/]+)/?$',
+        'index.php?topics=$matches[1]&post_type=shorthand_story',
+        'top'
+    );
+    
+    // Add pagination support
+    add_rewrite_rule(
+        '^(news|publications|shorthand-story)/topic/([^/]+)/page/([0-9]+)/?$',
+        'index.php?topics=$matches[2]&post_type=$matches[1]&paged=$matches[3]',
+        'top'
+    );
+}
+add_action('init', 'custom_topic_rewrite_rules');
+
 // Custom rewrite rules for publications
 function custom_publications_rewrite_rules()
 {
@@ -347,6 +381,10 @@ function custom_publications_rewrite_rules()
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
+// ===================
+// QUERY VARS SECTION
+// ===================
+
 /**
  * Allow a custom query var for publications.
  */
@@ -356,6 +394,43 @@ function custom_publications_query_vars($query_vars)
     return $query_vars;
 }
 add_filter('query_vars', 'custom_publications_query_vars');
+
+// ===================
+// PERMALINK MODIFICATION SECTION
+// ===================
+
+// Modify topic links to be post-type specific
+function custom_topic_term_link($termlink, $term, $taxonomy) {
+    if ($taxonomy !== 'topics') {
+        return $termlink;
+    }
+    
+    // Determine context - check if we're on a specific post type archive or single post
+    global $wp_query;
+    $current_post_type = null;
+    
+    if (is_singular()) {
+        $current_post_type = get_post_type();
+    } elseif (is_post_type_archive()) {
+        $current_post_type = get_query_var('post_type');
+    } elseif (is_home() || is_category() || is_tag()) {
+        $current_post_type = 'post';
+    }
+    
+    // Map post types to URL prefixes
+    $url_prefixes = [
+        'post' => 'news',
+        'publications' => 'publications', 
+        'shorthand_story' => 'shorthand-story'
+    ];
+    
+    if ($current_post_type && isset($url_prefixes[$current_post_type])) {
+        return home_url("/{$url_prefixes[$current_post_type]}/topic/{$term->slug}/");
+    }
+    
+    return $termlink;
+}
+add_filter('term_link', 'custom_topic_term_link', 10, 3);
 
 /**
  * Modify the permalink structure for publication posts so that the URL includes the publication number.
@@ -376,6 +451,10 @@ function custom_publications_permalink($post_link, $post)
     return $post_link;
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
+
+// ===================
+// REDIRECT SECTION
+// ===================
 
 /**
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
@@ -420,6 +499,30 @@ function redirect_publications_to_canonical_url()
     }
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
+
+// ===================
+// QUERY PARSING SECTION
+// ===================
+
+// Handle the query for post-type specific topic archives
+function handle_topic_archive_query($query) {
+    if (!is_admin() && $query->is_main_query()) {
+        // Check if this is a topic archive with post_type specified
+        if (get_query_var('topics') && get_query_var('post_type')) {
+            $post_type = get_query_var('post_type');
+            
+            // Handle the special case where post_type=post for news URLs
+            if ($post_type === 'news') {
+                $post_type = 'post';
+            }
+            
+            $query->set('post_type', $post_type);
+            $query->is_tax = true;
+            $query->is_archive = true;
+        }
+    }
+}
+add_action('pre_get_posts', 'handle_topic_archive_query');
 
 /**
  * Modify the query for publications if a custom publication_number query variable is present.
