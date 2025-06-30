@@ -35,6 +35,9 @@ function caes_hub_block_init()
 	// Register External Publisher
 	register_block_type(get_template_directory() . '/blocks/build/blocks/external-publisher' );
 
+	// Legacy Gallery
+	register_block_type(get_template_directory() . '/blocks/build/blocks/legacy-gallery' );
+
 	// Register Carousel
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel' );
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel-2' );
