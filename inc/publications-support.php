@@ -33,6 +33,10 @@ function populate_acf_state_issue_field($field)
 }
 add_filter('acf/load_field/name=state_issue', 'populate_acf_state_issue_field');
 
+// ===================
+// PUBLICATION SUNSET DATE UNPUBLISHING
+// ===================
+
 // Schedule the cron job for sunsetting publications
 add_action('wp', function () {
     if (! wp_next_scheduled('unpublish_expired_publications')) {
@@ -77,6 +81,9 @@ register_deactivation_hook(__FILE__, function () {
     }
 });
 
+// ===================
+// PUBLICATION DYNAMIC PDF GENERATION
+// ===================
 
 /****** Publication Dynamic PDF ******/
 // Generate PDF fucntionality
@@ -146,8 +153,10 @@ function generate_pdf()
 add_action('admin_post_generate_pdf', 'generate_pdf');
 add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');
 
+// ===================
+// PUBLICATIONS IMPORT ACTIONS
+// ===================
 
-/****** IMPORT ACTIONS ******/
 add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     if (get_post_type($post_id) !== 'publications') return;
 
@@ -409,12 +418,27 @@ function custom_topic_term_link($termlink, $term, $taxonomy) {
     global $wp_query;
     $current_post_type = null;
     
-    if (is_singular()) {
-        $current_post_type = get_post_type();
-    } elseif (is_post_type_archive()) {
-        $current_post_type = get_query_var('post_type');
-    } elseif (is_home() || is_category() || is_tag()) {
-        $current_post_type = 'post';
+    // --- NEW LOGIC: Infer post type from current URL path first ---
+    $request_uri = $_SERVER['REQUEST_URI'];
+
+    if (strpos($request_uri, '/publications/') === 0) {
+        $current_post_type = 'publications';
+    } elseif (strpos($request_uri, '/news/') === 0) {
+        $current_post_type = 'post'; // 'post' is the internal post type for 'news'
+    } elseif (strpos($request_uri, '/shorthand-story/') === 0) {
+        $current_post_type = 'shorthand_story';
+    }
+    // --- END NEW LOGIC ---
+
+    // If post type not determined by URL, fall back to existing WordPress query checks
+    if ($current_post_type === null) {
+        if (is_singular()) {
+            $current_post_type = get_post_type();
+        } elseif (is_post_type_archive()) {
+            $current_post_type = get_query_var('post_type');
+        } elseif (is_home() || is_category() || is_tag()) {
+            $current_post_type = 'post';
+        }
     }
     
     // Map post types to URL prefixes
@@ -542,6 +566,9 @@ function custom_publications_parse_request($query)
 }
 add_action('pre_get_posts', 'custom_publications_parse_request');
 
+// ===================
+// CLONING FOR REVIEW SECTION
+// ===================
 
 // Add "Clone for Review" link to Publications row actions
 add_filter('post_row_actions', function ($actions, $post) {
@@ -658,6 +685,10 @@ add_action('enqueue_block_editor_assets', function () {
     ]);
 });
 
+// ===================
+// SUBTITLE FOR PUB TITLES
+// ===================
+
 // Add subtitle to publications title if it is used
 function append_subtitle_to_title($title, $id)
 {
@@ -717,8 +748,10 @@ function get_unique_author_users_from_publications()
     return $users;
 }
 
+// ===================
+// PUBLICATIONS SEARCH
+// ===================
 
-// Create Publications Search form
 function publications_search_form()
 {
     $topics = get_terms(array( // Changed variable name for clarity
