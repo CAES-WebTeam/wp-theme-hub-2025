@@ -170,57 +170,55 @@ add_action('init', function () {
 	));
 });
 
-
-
-// Register the 'Keywords' taxonomy for the Publications
-function register_keywords_taxonomy()
+// Register the 'Topics' taxonomy
+function register_topics_taxonomy()
 {
-	$labels = array(
-		'name'              => _x('Keywords', 'taxonomy general name'),
-		'singular_name'     => _x('Keyword', 'taxonomy singular name'),
-		'search_items'      => __('Search Keywords'),
-		'all_items'         => __('All Keywords'),
-		'parent_item'       => __('Parent Keyword'),
-		'parent_item_colon' => __('Parent Keyword:'),
-		'edit_item'         => __('Edit Keyword'),
-		'update_item'       => __('Update Keyword'),
-		'add_new_item'      => __('Add New Keyword'),
-		'new_item_name'     => __('New Keyword Name'),
-		'menu_name'         => __('Keywords'),
-	);
+    $labels = array(
+        'name'              => _x('Topics', 'taxonomy general name'),
+        'singular_name'     => _x('Topic', 'taxonomy singular name'),
+        'search_items'      => __('Search Topics'),
+        'all_items'         => __('All Topics'),
+        'parent_item'       => __('Parent Topic'),
+        'parent_item_colon' => __('Parent Topic:'),
+        'edit_item'         => __('Edit Topic'),
+        'update_item'       => __('Update Topic'),
+        'add_new_item'      => __('Add New Topic'),
+        'new_item_name'     => __('New Topic Name'),
+        'menu_name'         => __('Topics'),
+    );
 
-	$args = array(
-		'hierarchical'      => false,
-		'labels'            => $labels,
-		'show_ui'           => true,
-		'show_admin_column' => true,
-		'query_var'         => true,
-		'show_in_rest'      => true,
-		'rewrite'           => array('slug' => 'keyword'),
-	);
+    $args = array(
+        'hierarchical'      => false,
+        'labels'            => $labels,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'show_in_rest'      => true,
+        'rewrite'           => array('slug' => 'topic'), // Changed slug to 'topic'
+    );
 
-	// Register the taxonomy and associate it with the 'publications' post type
-	register_taxonomy('keywords', array('post', 'publications','shorthand_story'), $args);
+    // Register the taxonomy and associate it with the same post types
+    register_taxonomy('topics', array('post', 'publications','shorthand_story'), $args); // Changed taxonomy name to 'topics'
 }
-add_action('init', 'register_keywords_taxonomy');
+add_action('init', 'register_topics_taxonomy'); // Changed function name in action hook
 
-// Primary Keywords ACF Field
-function create_primary_keyword_field() {
+// Primary Topics ACF Field
+function create_primary_topics_field() {
     if( function_exists('acf_add_local_field_group') ):
         acf_add_local_field_group(array(
-            'key' => 'group_primary_keyword',
-            'title' => 'Primary Keywords',
+            'key' => 'group_primary_topic', // Changed group key for consistency
+            'title' => 'Primary Topics', // Changed title
             'fields' => array(
                 array(
-                    'key' => 'field_primary_keywords',
-                    'label' => 'Primary Keywords',
-                    'name' => 'primary_keywords', // Changed to plural
+                    'key' => 'field_primary_topics', // Changed field key for consistency
+                    'label' => 'Primary Topics', // Changed label
+                    'name' => 'primary_topics', // Changed name
                     'type' => 'taxonomy',
-                    'taxonomy' => 'keywords',
-                    'field_type' => 'multi_select', // Changed to multi_select
+                    'taxonomy' => 'topics', // Changed taxonomy to 'topics'
+                    'field_type' => 'multi_select',
                     'allow_null' => 1,
                     'return_format' => 'object',
-                    'multiple' => 1, // Enable multiple selection
+                    'multiple' => 1,
                 )
             ),
             'location' => array(
@@ -246,13 +244,14 @@ function create_primary_keyword_field() {
                     ),
                 ),
             ),
-            'position' => 'side', // This puts it in the sidebar
+            'position' => 'side',
             'menu_order' => 0,
             'style' => 'default',
         ));
     endif;
 }
-add_action('acf/init', 'create_primary_keyword_field');
+add_action('acf/init', 'create_primary_topics_field'); // Changed function name in action hook
+
 
 // External Publisher Taxonomy
 function create_external_publisher_taxonomy_and_field() {

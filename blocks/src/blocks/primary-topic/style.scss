@@ -1,5 +1,5 @@
-.wp-block-caes-hub-primary-keyword {
-    .primary-keywords-wrapper {
+.wp-block-caes-hub-primary-topic {
+    .primary-topics-wrapper {
         display: flex;
         align-items: center; // changed from align-content
         flex-wrap: wrap;
@@ -7,7 +7,7 @@
         justify-content: start;
     }
 
-    .primary-keyword-icon {
+    .primary-topic-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;

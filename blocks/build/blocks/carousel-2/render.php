@@ -1,4 +1,10 @@
 <?php
+/**
+ * Carousel Block Render Template
+ * This code displays posts in a carousel format, fetching a selected category.
+ */
+
+// Get attributes with proper defaults to match frontend
 $handSelectPosts = $attributes['handSelectPosts'];
 $selectedPosts = $attributes['selectedPosts'];
 $postType = $attributes['postType'] ?? 'post';
@@ -59,7 +65,8 @@ if ($handSelectPosts) {
                         // ACF fields (fastest via get_post_meta)
                         $bgColorClass = get_post_meta($postId, 'carousel_caption_bg_color_override', true);
                         $hideExcerpt = get_post_meta($postId, 'carousel_hide_excerpt', true);
-                        $primary_keyword_ids = get_post_meta($postId, 'primary_keywords', true);
+                        // Changed from 'primary_keywords' to 'primary_topics'
+                        $primary_topic_ids = get_post_meta($postId, 'primary_topics', true); 
 
                         // Post data
                         $postTitle = esc_html($post->post_title);
@@ -76,21 +83,27 @@ if ($handSelectPosts) {
                         echo '<li class="caes-hub-carousel-slide">';
                         echo '<div class="' . implode(' ', $contentWrapperClasses) . '">';
                         echo '<div class="caes-hub-carousel-slide__content">';
-                        if ($primary_keyword_ids && !empty($primary_keyword_ids)) {
-                            echo '<span class="caes-hub-carousel-slide-primary-keyword is-style-caes-hub-merriweather-sans-uppercase" style="font-size: 0.875rem; margin-bottom: var(--wp--style--block-gap);">';
+                        // Changed variable name from $primary_keyword_ids to $primary_topic_ids
+                        if ($primary_topic_ids && !empty($primary_topic_ids)) {
+                            // Changed class name for consistency
+                            echo '<span class="caes-hub-carousel-slide-primary-topic is-style-caes-hub-merriweather-sans-uppercase" style="font-size: 0.875rem; margin-bottom: var(--wp--style--block-gap);">';
 
-                            $keyword_names = array();
-                            $ids_array = is_array($primary_keyword_ids) ? $primary_keyword_ids : array($primary_keyword_ids);
+                            $topic_names = array(); // Changed variable name
+                            // Changed variable name from $primary_keyword_ids to $primary_topic_ids
+                            $ids_array = is_array($primary_topic_ids) ? $primary_topic_ids : array($primary_topic_ids);
 
-                            foreach ($ids_array as $keyword_id) {
-                                $keyword_term = get_term($keyword_id, 'keywords');
-                                if ($keyword_term && !is_wp_error($keyword_term)) {
-                                    $keyword_names[] = $keyword_term->name;
+                            // Changed variable name from $keyword_id to $topic_id
+                            foreach ($ids_array as $topic_id) {
+                                // Changed taxonomy from 'keywords' to 'topics' and variable name
+                                $topic_term = get_term($topic_id, 'topics'); 
+                                // Changed variable name
+                                if ($topic_term && !is_wp_error($topic_term)) {
+                                    $topic_names[] = $topic_term->name; // Changed variable name
                                 }
                             }
 
-                            if (!empty($keyword_names)) {
-                                echo esc_html(implode(', ', $keyword_names));
+                            if (!empty($topic_names)) { // Changed variable name
+                                echo esc_html(implode(', ', $topic_names)); // Changed variable name
                             }
 
                             echo '</span>';

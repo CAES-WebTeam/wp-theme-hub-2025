@@ -6,7 +6,6 @@ import {
     SelectControl, TextControl
 } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
-import ServerSideRender from '@wordpress/server-side-render';
 import './editor.scss';
 
 export default function Edit({ attributes, setAttributes }) {

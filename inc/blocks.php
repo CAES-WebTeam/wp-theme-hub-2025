@@ -29,8 +29,8 @@ function caes_hub_block_init()
 	// Register Hand Picked Post
 	register_block_type(get_template_directory() . '/blocks/build/blocks/hand-picked-post' );
 
-	// Register Primary Keyword
-	register_block_type(get_template_directory() . '/blocks/build/blocks/primary-keyword' );
+	// Register Primary Topic
+	register_block_type(get_template_directory() . '/blocks/build/blocks/primary-topic' );
 
 	// Register External Publisher
 	register_block_type(get_template_directory() . '/blocks/build/blocks/external-publisher' );

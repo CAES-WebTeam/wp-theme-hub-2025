@@ -1,7 +1,7 @@
 <?php
-/**
- * Primary Keyword Block Render Template
- */
+// Primary Keyword Block Render Template
+// This code is for a block that displays the primary topic.
+// It will now fetch the 'primary_topics' ACF field and display the terms.
 
 // Get block attributes
 $show_category_icon = $block['showCategoryIcon'] ?? false;
@@ -10,8 +10,9 @@ $enable_links = $block['enableLinks'] ?? true;
 // Get the current post ID
 $post_id = get_the_ID();
 
-// Get the primary keywords from ACF for this specific post
-$primary_keywords = get_field('primary_keywords', $post_id);
+// Get the primary topics from ACF for this specific post
+// Changed field name from 'primary_keywords' to 'primary_topics'
+$primary_topics = get_field('primary_topics', $post_id);
 
 // Determine icon based on post type first, then category
 $icon_svg = '';
@@ -50,21 +51,22 @@ if ($show_category_icon) {
     }
 }
 
-// Only render if we have keywords OR if we should show an icon
-if ((!$primary_keywords || empty($primary_keywords)) && empty($icon_svg) && !$icon_is_png) {
+// Only render if we have topics OR if we should show an icon
+// Changed variable name from $primary_keywords to $primary_topics
+if ((!$primary_topics || empty($primary_topics)) && empty($icon_svg) && !$icon_is_png) {
     return;
 }
 
 // Get block wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
-    'class' => 'wp-block-caes-hub-primary-keyword'
+    'class' => 'wp-block-caes-hub-primary-topic' // Changed class name for consistency
 ]);
 ?>
 
 <div <?php echo $wrapper_attributes; ?>>
-    <div class="primary-keywords-wrapper">
+    <div class="primary-topics-wrapper">
         <?php if (!empty($icon_svg) || $icon_is_png): ?>
-            <span class="primary-keyword-icon" aria-hidden="true">
+            <span class="primary-topic-icon" aria-hidden="true">
                 <?php if ($icon_is_png): ?>
                     <img src="<?php echo esc_url($icon_url); ?>" alt="" />
                 <?php else: ?>
@@ -73,23 +75,23 @@ $wrapper_attributes = get_block_wrapper_attributes([
             </span>
         <?php endif; ?>
 
-        <?php if ($primary_keywords && !empty($primary_keywords)): ?>
-            <?php foreach ($primary_keywords as $index => $keyword): ?>
-                <span class="primary-keyword-item">
+        <?php if ($primary_topics && !empty($primary_topics)): ?>
+            <?php foreach ($primary_topics as $index => $topic): ?>
+                <span class="primary-topic-item">
                     <?php if ($enable_links): ?>
-                        <a href="<?php echo esc_url(get_term_link($keyword)); ?>" 
-                           class="primary-keyword-link"
+                        <a href="<?php echo esc_url(get_term_link($topic)); ?>"
+                           class="primary-topic-link"
                            rel="tag">
-                            <?php echo esc_html($keyword->name); ?>
+                            <?php echo esc_html($topic->name); ?>
                         </a>
                     <?php else: ?>
-                        <span class="primary-keyword-text">
-                            <?php echo esc_html($keyword->name); ?>
+                        <span class="primary-topic-text">
+                            <?php echo esc_html($topic->name); ?>
                         </span>
                     <?php endif; ?>
 
-                    <?php if ($index < count($primary_keywords) - 1): ?>
-                        <span class="primary-keyword-separator">, </span>
+                    <?php if ($index < count($primary_topics) - 1): ?>
+                        <span class="primary-topic-separator">, </span>
                     <?php endif; ?>
                 </span>
             <?php endforeach; ?>

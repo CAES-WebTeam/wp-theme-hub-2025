@@ -6,7 +6,7 @@
   "title": "Related and Hand Picked Posts",
   "category": "widgets",
   "icon": "block-default",
-  "description": "Displays either related (based on keyword or other taxonomy) or hand selected posts.",
+  "description": "Displays either related (based on topic or other taxonomy) or hand selected posts.",
   "example": {},
   "supports": {
     "align": true,
@@ -38,7 +38,7 @@
     },
     "feedType": {
       "type": "string",
-      "default": "related-keywords"
+      "default": "related-topics"
     },
     "queryId": {
       "type": "number",

@@ -53,7 +53,7 @@ export default function Edit({ attributes, setAttributes }) {
     const {
         postIds = [],
         postType = ['post'],
-        feedType = 'related-keywords',
+        feedType = 'related-topics',
         numberOfItems = 5,
         customGapStep = 0,
         displayLayout = 'list',
@@ -149,7 +149,7 @@ export default function Edit({ attributes, setAttributes }) {
                         label={__('Feed Type', 'hand-picked-post')}
                         selected={feedType}
                         options={[
-                            { label: __('Related Keywords', 'hand-picked-post'), value: 'related-keywords' },
+                            { label: __('Related Topics', 'hand-picked-post'), value: 'related-topics' },
                             { label: __('Hand Pick Posts', 'hand-picked-post'), value: 'hand-picked' },
                         ]}
                         onChange={(value) => setAttributes({ feedType: value, postIds: [] })}
@@ -188,7 +188,7 @@ export default function Edit({ attributes, setAttributes }) {
                         </>
                     )}
 
-                    {feedType === 'related-keywords' && (
+                    {feedType === 'related-topics' && (
                         <NumberControl
                             label={__('Number of Items', 'hand-picked-post')}
                             value={numberOfItems}
@@ -281,7 +281,7 @@ export default function Edit({ attributes, setAttributes }) {
                         </p>
                     )}
 
-                    {((feedType === 'hand-picked' && postIds && postIds.length > 0) || feedType === 'related-keywords') && (
+                    {((feedType === 'hand-picked' && postIds && postIds.length > 0) || feedType === 'related-topics') && (
                         <InnerBlocks
                             template={DEFAULT_TEMPLATE}
                             templateLock={false}

@@ -1,13 +1,13 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "caes-hub/primary-keyword",
+  "name": "caes-hub/primary-topic",
   "version": "0.1.0",
-  "title": "Primary Keyword",
+  "title": "Primary Topic",
   "textdomain": "caes-hub",
   "category": "theme",
   "icon": "star-filled",
-  "description": "Displays the primary keyword(s), with additional options.",
+  "description": "Displays the primary topic(s), with additional options.",
   "acf": {
     "mode": "preview",
     "renderTemplate": "./render.php"

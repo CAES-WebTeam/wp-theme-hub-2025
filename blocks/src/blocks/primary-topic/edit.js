@@ -22,7 +22,7 @@ export default function Edit({ attributes, setAttributes }) {
     return (
         <>
             <InspectorControls>
-                <PanelBody title={__('Primary Keyword Settings', 'caes-hub')}>
+                <PanelBody title={__('Primary Topic Settings', 'caes-hub')}>
                     <ToggleControl
                         label={__('Show Category Icon', 'caes-hub')}
                         checked={showCategoryIcon}
@@ -33,7 +33,7 @@ export default function Edit({ attributes, setAttributes }) {
                         label={__('Enable Links', 'caes-hub')}
                         checked={enableLinks}
                         onChange={(value) => setAttributes({ enableLinks: value })}
-                        help={__('Make keywords clickable links to their archive pages', 'caes-hub')}
+                        help={__('Make topics clickable links to their archive pages', 'caes-hub')}
                     />
                 </PanelBody>
 
@@ -41,10 +41,10 @@ export default function Edit({ attributes, setAttributes }) {
             </InspectorControls>
 
             <div {...blockProps}>
-                <div className="primary-keywords-wrapper">
-                    <div className="primary-keywords-placeholder">
+                <div className="primary-topics-wrapper">
+                    <div className="primary-topics-placeholder">
                         {showCategoryIcon && (
-                            <span className="primary-keyword-category-icon" aria-hidden="true" style={{ marginRight: "8px" }}>
+                            <span className="primary-topic-category-icon" aria-hidden="true" style={{ marginRight: "8px" }}>
                                 <svg width="16" height="16" viewBox="0 0 192 199.92" fill="currentColor">
                                     <defs>
                                         <clipPath id="9be5ba86e0">
@@ -65,12 +65,12 @@ export default function Edit({ attributes, setAttributes }) {
                                 </svg>
                             </span>
                         )}
-                        <span className="primary-keyword-link">
-                            {__('Primary Keyword', 'caes-hub')}
+                        <span className="primary-topic-link">
+                            {__('Primary Topic', 'caes-hub')}
                         </span>
-                        <span className="primary-keyword-separator">, </span>
-                        <span className="primary-keyword-link">
-                            {__('Another Keyword', 'caes-hub')}
+                        <span className="primary-topic-separator">, </span>
+                        <span className="primary-topic-link">
+                            {__('Another Topic', 'caes-hub')}
                         </span>
                     </div>
                 </div>

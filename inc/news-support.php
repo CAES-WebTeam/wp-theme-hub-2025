@@ -164,7 +164,7 @@ add_action('admin_init', function () {
 });
 
 
-/***   Sync Keywords to News Story  ***/
+/*** Sync Keywords to News Story  ***/
 add_action('admin_init', function () {
     if (!current_user_can('manage_options') || !isset($_GET['associate_keywords_to_posts'])) return;
 
@@ -202,9 +202,9 @@ add_action('admin_init', function () {
         if (empty($posts)) continue;
         $post_id = $posts[0];
 
-        // Find term in 'keywords' taxonomy by ACF field "keyword_id"
+        // Find term in 'topics' taxonomy by ACF field "keyword_id"
         $terms = get_terms([
-            'taxonomy' => 'keywords',
+            'taxonomy' => 'topics', // Changed from 'keywords' to 'topics'
             'hide_empty' => false,
             'meta_query' => [[
                 'key' => 'keyword_id',
@@ -217,17 +217,17 @@ add_action('admin_init', function () {
         $term_id = $terms[0]->term_id;
 
         // Get current terms
-        $existing_terms = wp_get_object_terms($post_id, 'keywords', ['fields' => 'ids']);
+        $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']); // Changed from 'keywords' to 'topics'
 
         // Prevent duplicates
         if (!in_array($term_id, $existing_terms)) {
             $existing_terms[] = $term_id;
-            wp_set_object_terms($post_id, $existing_terms, 'keywords');
+            wp_set_object_terms($post_id, $existing_terms, 'topics'); // Changed from 'keywords' to 'topics'
             $linked++;
         }
     }
 
-    wp_die("Keyword linking complete. Keywords linked to posts: {$linked}");
+    wp_die("Topic linking complete. Topics linked to posts: {$linked}"); // Updated message
 });
 
 

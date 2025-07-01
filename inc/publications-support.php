@@ -276,14 +276,14 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     if ($pub_id && !empty($keyword_map[$pub_id])) {
         foreach ($keyword_map[$pub_id] as $kw_id) {
             $terms = get_terms([
-                'taxonomy' => 'keywords',
+                'taxonomy' => 'topics',
                 'hide_empty' => false,
                 'meta_query' => [
                     [ 'key' => 'keyword_id', 'value' => $kw_id ]
                 ]
             ]);
             if (!empty($terms) && !is_wp_error($terms)) {
-                wp_set_object_terms($post_id, intval($terms[0]->term_id), 'keywords', true);
+                wp_set_object_terms($post_id, intval($terms[0]->term_id), 'topics', true);
             }
         }
     }
@@ -721,8 +721,8 @@ function get_unique_author_users_from_publications()
 // Create Publications Search form
 function publications_search_form()
 {
-    $keywords = get_terms(array(
-        'taxonomy' => 'keywords',
+    $topics = get_terms(array( // Changed variable name for clarity
+        'taxonomy' => 'topics',
         'hide_empty' => false,
     ));
     $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
@@ -734,14 +734,14 @@ function publications_search_form()
         </div>
         <div style="display:flex; gap:20px; margin-top:25px;">
             <div>
-                <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#keywordsModal"><strong>Keywords</strong></a></div>
-                <div id="keywordsModal" class="modal">
+                <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#topicsModal"><strong>Topics</strong></a></div>
+                <div id="topicsModal" class="modal">
                   <div class="modal-content">
                     <a href="#" class="close">&times;</a>
-                    <h3 style="margin:0 0 5px;">Keywords</h3>
-                    <input type="text" id="inputKeywords" onkeyup="filterCheckboxList('inputKeywords', 'listKeywords')" placeholder="Search for keywords..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;">
-                    <div id="listKeywords" class="scroller">
-                    <?php foreach ($keywords as $term): ?><div><input type="checkbox" name="keywords[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['keywords']) && in_array($term->slug, $_GET['keywords'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></div><?php endforeach; ?>
+                    <h3 style="margin:0 0 5px;">Topics</h3>
+                    <input type="text" id="inputTopics" onkeyup="filterCheckboxList('inputTopics', 'listTopics')" placeholder="Search for topics..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;">
+                    <div id="listTopics" class="scroller">
+                    <?php foreach ($topics as $term): // Changed variable name to $topics ?><div><input type="checkbox" name="topics[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['topics']) && in_array($term->slug, $_GET['topics'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></div><?php endforeach; ?>
                     </div>
                   </div>
                 </div>
@@ -753,7 +753,7 @@ function publications_search_form()
                   <div class="modal-content">
                     <a href="#" class="close">&times;</a>
                     <h3 style="margin:0 0 5px;">Authors</h3>
-                    <input type="text" id="inputAuthors" onkeyup="filterCheckboxList('inputAuthors', 'listAuthors')" placeholder="Search for keywords..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;" />
+                    <input type="text" id="inputAuthors" onkeyup="filterCheckboxList('inputAuthors', 'listAuthors')" placeholder="Search for topics..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;" />
                     <div id="listAuthors" class="scroller">
                     <?php foreach ($authors as $user): ?><div><input type="checkbox" name="authors[]" value="<?php echo esc_attr($user->ID); ?>" <?php if (!empty($_GET['authors']) && in_array($user->ID, $_GET['authors'])) echo 'checked'; ?>> <?php echo esc_html($user->last_name); ?>, <?php echo esc_html($user->first_name); ?></div><?php endforeach; ?>
                     </div>
@@ -849,12 +849,12 @@ function shortcode_publication_results()
         'meta_query' => [],
     ];
 
-    // Keywords
-    if (!empty($_GET['keywords']) && is_array($_GET['keywords'])) {
+    // Topics
+    if (!empty($_GET['topics']) && is_array($_GET['topics'])) {
         $args['tax_query'][] = [
-            'taxonomy' => 'keywords',
+            'taxonomy' => 'topics',
             'field'    => 'slug',
-            'terms'    => array_map('sanitize_text_field', $_GET['keywords']),
+            'terms'    => array_map('sanitize_text_field', $_GET['topics']),
         ];
     }
 

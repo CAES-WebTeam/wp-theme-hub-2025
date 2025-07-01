@@ -48,7 +48,7 @@ function Edit({
   const {
     postIds = [],
     postType = ['post'],
-    feedType = 'related-keywords',
+    feedType = 'related-topics',
     numberOfItems = 5,
     customGapStep = 0,
     displayLayout = 'list',
@@ -130,8 +130,8 @@ function Edit({
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Feed Type', 'hand-picked-post'),
           selected: feedType,
           options: [{
-            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Related Keywords', 'hand-picked-post'),
-            value: 'related-keywords'
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Related Topics', 'hand-picked-post'),
+            value: 'related-topics'
           }, {
             label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hand Pick Posts', 'hand-picked-post'),
             value: 'hand-picked'
@@ -166,7 +166,7 @@ function Edit({
               });
             }
           })]
-        }), feedType === 'related-keywords' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
+        }), feedType === 'related-topics' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number of Items', 'hand-picked-post'),
           value: numberOfItems,
           min: 1,
@@ -262,7 +262,7 @@ function Edit({
         children: [feedType === 'hand-picked' && (!postIds || postIds.length === 0) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
           className: "hand-picked-post-empty",
           children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Please select one or more posts from the sidebar.', 'hand-picked-post')
-        }), (feedType === 'hand-picked' && postIds && postIds.length > 0 || feedType === 'related-keywords') && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+        }), (feedType === 'hand-picked' && postIds && postIds.length > 0 || feedType === 'related-topics') && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
           template: DEFAULT_TEMPLATE,
           templateLock: false,
           renderAppender: _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks.ButtonBlockAppender
@@ -450,7 +450,7 @@ module.exports = window["wp"]["i18n"];
   \************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Related and Hand Picked Posts","category":"widgets","icon":"block-default","description":"Displays either related (based on keyword or other taxonomy) or hand selected posts.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postIds":{"type":"array","default":[]},"postType":{"type":"array","default":["post"]},"feedType":{"type":"string","default":"related-keywords"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}},"numberOfItems":{"type":"number","default":3},"displayLayout":{"type":"string","default":"list"},"columns":{"type":"number","default":3},"customGapStep":{"type":"number","default":3},"gridItemPosition":{"type":"string","default":"manual"},"gridAutoColumnWidth":{"type":"number","default":12},"gridAutoColumnUnit":{"type":"string","default":"rem"}},"providesContext":{"caes-hub/hand-picked-post/postIds":"postIds","caes-hub/hand-picked-post/postType":"postType","caes-hub/hand-picked-post/queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Related and Hand Picked Posts","category":"widgets","icon":"block-default","description":"Displays either related (based on topic or other taxonomy) or hand selected posts.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postIds":{"type":"array","default":[]},"postType":{"type":"array","default":["post"]},"feedType":{"type":"string","default":"related-topics"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}},"numberOfItems":{"type":"number","default":3},"displayLayout":{"type":"string","default":"list"},"columns":{"type":"number","default":3},"customGapStep":{"type":"number","default":3},"gridItemPosition":{"type":"string","default":"manual"},"gridAutoColumnWidth":{"type":"number","default":12},"gridAutoColumnUnit":{"type":"string","default":"rem"}},"providesContext":{"caes-hub/hand-picked-post/postIds":"postIds","caes-hub/hand-picked-post/postType":"postType","caes-hub/hand-picked-post/queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 
