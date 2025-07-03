@@ -154,6 +154,31 @@ add_action('admin_post_generate_pdf', 'generate_pdf');
 add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');
 
 // ===================
+// HELPERS FOR IMPORT
+// ===================
+
+function clean_wysiwyg_content($content)
+{
+    if (empty($content)) {
+        return $content;
+    }
+
+    // Clean unwanted characters
+    $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
+
+    // Fix escaped forward slashes from JSON
+    $content = str_replace(['<\/'], ['</'], $content);
+
+    // Remove empty paragraphs
+    $content = preg_replace('/<p>\s*<\/p>/', '', $content);
+
+    // Trim whitespace
+    $content = trim($content);
+
+    return $content;
+}
+
+// ===================
 // PUBLICATIONS IMPORT ACTIONS
 // ===================
 
@@ -217,29 +242,8 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
     $content = preg_replace('/<p>\s*<\/p>/', '', $content);
 
-    function clean_wysiwyg_content($content)
-    {
-        if (empty($content)) {
-            return $content;
-        }
-
-        // Clean unwanted characters
-        $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
-
-        // Fix escaped forward slashes from JSON
-        $content = str_replace(['<\/'], ['</'], $content);
-
-        // Remove empty paragraphs
-        $content = preg_replace('/<p>\s*<\/p>/', '', $content);
-
-        // Trim whitespace
-        $content = trim($content);
-
-        return $content;
-    }
-
     // Then you could use it for multiple fields like this:
-    
+
     $fields_to_clean = ['summary']; // Add your field names here
     foreach ($fields_to_clean as $field_name) {
         $field_value = get_field($field_name, $post_id);
@@ -250,7 +254,7 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
             }
         }
     }
-    
+
 
     // Replace inline images
     preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $content, $matches);
