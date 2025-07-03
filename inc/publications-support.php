@@ -238,9 +238,8 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     $original_content = get_post_field('post_content', $post_id);
     $content = $original_content;
 
-    // Clean unwanted characters
-    $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
-    $content = preg_replace('/<p>\s*<\/p>/', '', $content);
+    // Clean unwanted characters from main content using the same function
+    $content = clean_wysiwyg_content($content);
 
     // Then you could use it for multiple fields like this:
 
