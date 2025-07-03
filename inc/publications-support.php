@@ -217,6 +217,41 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
     $content = preg_replace('/<p>\s*<\/p>/', '', $content);
 
+    function clean_wysiwyg_content($content)
+    {
+        if (empty($content)) {
+            return $content;
+        }
+
+        // Clean unwanted characters
+        $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
+
+        // Fix escaped forward slashes from JSON
+        $content = str_replace(['<\/'], ['</'], $content);
+
+        // Remove empty paragraphs
+        $content = preg_replace('/<p>\s*<\/p>/', '', $content);
+
+        // Trim whitespace
+        $content = trim($content);
+
+        return $content;
+    }
+
+    // Then you could use it for multiple fields like this:
+    
+    $fields_to_clean = ['summary']; // Add your field names here
+    foreach ($fields_to_clean as $field_name) {
+        $field_value = get_field($field_name, $post_id);
+        if (!empty($field_value)) {
+            $cleaned_value = clean_wysiwyg_content($field_value);
+            if ($cleaned_value !== $field_value) {
+                update_field($field_name, $cleaned_value, $post_id);
+            }
+        }
+    }
+    
+
     // Replace inline images
     preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $content, $matches);
     if (!empty($matches[1])) {
@@ -288,7 +323,7 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
                 'taxonomy' => 'topics',
                 'hide_empty' => false,
                 'meta_query' => [
-                    [ 'key' => 'keyword_id', 'value' => $kw_id ]
+                    ['key' => 'keyword_id', 'value' => $kw_id]
                 ]
             ]);
             if (!empty($terms) && !is_wp_error($terms)) {
@@ -327,26 +362,27 @@ function get_full_image_url($relative_path)
 // ===================
 
 // Add topic rewrite rules for each post type
-function custom_topic_rewrite_rules() {
+function custom_topic_rewrite_rules()
+{
     // Topic archives for each post type
     add_rewrite_rule(
         '^news/topic/([^/]+)/?$',
         'index.php?topics=$matches[1]&post_type=post',
         'top'
     );
-    
+
     add_rewrite_rule(
         '^publications/topic/([^/]+)/?$',
         'index.php?topics=$matches[1]&post_type=publications',
         'top'
     );
-    
+
     add_rewrite_rule(
         '^shorthand-story/topic/([^/]+)/?$',
         'index.php?topics=$matches[1]&post_type=shorthand_story',
         'top'
     );
-    
+
     // Add pagination support
     add_rewrite_rule(
         '^(news|publications|shorthand-story)/topic/([^/]+)/page/([0-9]+)/?$',
@@ -409,15 +445,16 @@ add_filter('query_vars', 'custom_publications_query_vars');
 // ===================
 
 // Modify topic links to be post-type specific
-function custom_topic_term_link($termlink, $term, $taxonomy) {
+function custom_topic_term_link($termlink, $term, $taxonomy)
+{
     if ($taxonomy !== 'topics') {
         return $termlink;
     }
-    
+
     // Determine context - check if we're on a specific post type archive or single post
     global $wp_query;
     $current_post_type = null;
-    
+
     // --- NEW LOGIC: Infer post type from current URL path first ---
     $request_uri = $_SERVER['REQUEST_URI'];
 
@@ -440,18 +477,18 @@ function custom_topic_term_link($termlink, $term, $taxonomy) {
             $current_post_type = 'post';
         }
     }
-    
+
     // Map post types to URL prefixes
     $url_prefixes = [
         'post' => 'news',
-        'publications' => 'publications', 
+        'publications' => 'publications',
         'shorthand_story' => 'shorthand-story'
     ];
-    
+
     if ($current_post_type && isset($url_prefixes[$current_post_type])) {
         return home_url("/{$url_prefixes[$current_post_type]}/topic/{$term->slug}/");
     }
-    
+
     return $termlink;
 }
 add_filter('term_link', 'custom_topic_term_link', 10, 3);
@@ -529,17 +566,18 @@ add_action('template_redirect', 'redirect_publications_to_canonical_url');
 // ===================
 
 // Handle the query for post-type specific topic archives
-function handle_topic_archive_query($query) {
+function handle_topic_archive_query($query)
+{
     if (!is_admin() && $query->is_main_query()) {
         // Check if this is a topic archive with post_type specified
         if (get_query_var('topics') && get_query_var('post_type')) {
             $post_type = get_query_var('post_type');
-            
+
             // Handle the special case where post_type=post for news URLs
             if ($post_type === 'news') {
                 $post_type = 'post';
             }
-            
+
             $query->set('post_type', $post_type);
             $query->is_tax = true;
             $query->is_archive = true;
@@ -769,28 +807,29 @@ function publications_search_form()
             <div>
                 <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#topicsModal"><strong>Topics</strong></a></div>
                 <div id="topicsModal" class="modal">
-                  <div class="modal-content">
-                    <a href="#" class="close">&times;</a>
-                    <h3 style="margin:0 0 5px;">Topics</h3>
-                    <input type="text" id="inputTopics" onkeyup="filterCheckboxList('inputTopics', 'listTopics')" placeholder="Search for topics..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;">
-                    <div id="listTopics" class="scroller">
-                    <?php foreach ($topics as $term): // Changed variable name to $topics ?><div><input type="checkbox" name="topics[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['topics']) && in_array($term->slug, $_GET['topics'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></div><?php endforeach; ?>
+                    <div class="modal-content">
+                        <a href="#" class="close">&times;</a>
+                        <h3 style="margin:0 0 5px;">Topics</h3>
+                        <input type="text" id="inputTopics" onkeyup="filterCheckboxList('inputTopics', 'listTopics')" placeholder="Search for topics..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;">
+                        <div id="listTopics" class="scroller">
+                            <?php foreach ($topics as $term): // Changed variable name to $topics 
+                            ?><div><input type="checkbox" name="topics[]" value="<?php echo esc_attr($term->slug); ?>" <?php if (!empty($_GET['topics']) && in_array($term->slug, $_GET['topics'])) echo 'checked'; ?>> <?php echo esc_html($term->name); ?></div><?php endforeach; ?>
+                        </div>
                     </div>
-                  </div>
                 </div>
             </div>
             <div>
                 <?php $authors = get_unique_author_users_from_publications(); ?>
                 <div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" href="#authorsModal"><strong>Authors</strong></a></div>
                 <div id="authorsModal" class="modal">
-                  <div class="modal-content">
-                    <a href="#" class="close">&times;</a>
-                    <h3 style="margin:0 0 5px;">Authors</h3>
-                    <input type="text" id="inputAuthors" onkeyup="filterCheckboxList('inputAuthors', 'listAuthors')" placeholder="Search for topics..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;" />
-                    <div id="listAuthors" class="scroller">
-                    <?php foreach ($authors as $user): ?><div><input type="checkbox" name="authors[]" value="<?php echo esc_attr($user->ID); ?>" <?php if (!empty($_GET['authors']) && in_array($user->ID, $_GET['authors'])) echo 'checked'; ?>> <?php echo esc_html($user->last_name); ?>, <?php echo esc_html($user->first_name); ?></div><?php endforeach; ?>
+                    <div class="modal-content">
+                        <a href="#" class="close">&times;</a>
+                        <h3 style="margin:0 0 5px;">Authors</h3>
+                        <input type="text" id="inputAuthors" onkeyup="filterCheckboxList('inputAuthors', 'listAuthors')" placeholder="Search for topics..." style="width:100%; font-size:15px; border:1px solid #ddd; padding:5px 15px; box-sizing:border-box;" />
+                        <div id="listAuthors" class="scroller">
+                            <?php foreach ($authors as $user): ?><div><input type="checkbox" name="authors[]" value="<?php echo esc_attr($user->ID); ?>" <?php if (!empty($_GET['authors']) && in_array($user->ID, $_GET['authors'])) echo 'checked'; ?>> <?php echo esc_html($user->last_name); ?>, <?php echo esc_html($user->first_name); ?></div><?php endforeach; ?>
+                        </div>
                     </div>
-                  </div>
                 </div>
             </div>
             <div>
@@ -811,55 +850,128 @@ function publications_search_form()
             </div>
         </div>
         <style>
-        .wp-block-search__inside-wrapper { display: flex; flex: auto; flex-wrap: nowrap; max-width: 100%; }
-        .wp-block-search__input { appearance: none; border: 1px solid #949494; flex-grow: 1; margin-left: 0; margin-right: 0; min-width: 3rem; padding: 8px; text-decoration: unset!important; }   
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 999; }
-        .modal:target { opacity: 1; pointer-events: auto; }
-        .modal-content { position: relative; margin: 10% auto; padding: 20px; background: #fff; width: 90%; max-width: 400px; height:425px; border-radius: 8px; }
-        .scroller { overflow:auto; height:325px; }
-        .close { position: absolute; top: 10px; right: 15px; text-decoration: none; font-size: 24px; color: #333; }
-        .filter-pill { display: flex; align-items: center; background: #eaeaea; border-radius: 30px; padding: 5px 12px; font-size: 14px; line-height: 1; }
-        .filter-pill span { margin-right: 8px; }
-        .filter-pill button { background: none; border: none; font-size: 16px; cursor: pointer; color: #888; }
+            .wp-block-search__inside-wrapper {
+                display: flex;
+                flex: auto;
+                flex-wrap: nowrap;
+                max-width: 100%;
+            }
+
+            .wp-block-search__input {
+                appearance: none;
+                border: 1px solid #949494;
+                flex-grow: 1;
+                margin-left: 0;
+                margin-right: 0;
+                min-width: 3rem;
+                padding: 8px;
+                text-decoration: unset !important;
+            }
+
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+                z-index: 999;
+            }
+
+            .modal:target {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .modal-content {
+                position: relative;
+                margin: 10% auto;
+                padding: 20px;
+                background: #fff;
+                width: 90%;
+                max-width: 400px;
+                height: 425px;
+                border-radius: 8px;
+            }
+
+            .scroller {
+                overflow: auto;
+                height: 325px;
+            }
+
+            .close {
+                position: absolute;
+                top: 10px;
+                right: 15px;
+                text-decoration: none;
+                font-size: 24px;
+                color: #333;
+            }
+
+            .filter-pill {
+                display: flex;
+                align-items: center;
+                background: #eaeaea;
+                border-radius: 30px;
+                padding: 5px 12px;
+                font-size: 14px;
+                line-height: 1;
+            }
+
+            .filter-pill span {
+                margin-right: 8px;
+            }
+
+            .filter-pill button {
+                background: none;
+                border: none;
+                font-size: 16px;
+                cursor: pointer;
+                color: #888;
+            }
         </style>
         <script>
-        function filterCheckboxList(inputId, listId) {
-          var input = document.getElementById(inputId);
-          var filter = input.value.toUpperCase();
-          var container = document.getElementById(listId);
-          var items = container.querySelectorAll('label, div');
-          items.forEach(function(item) {
-            var text = item.textContent || item.innerText;
-            if (text.toUpperCase().indexOf(filter) > -1) {
-              item.style.display = "";
-            } else {
-              item.style.display = "none";
+            function filterCheckboxList(inputId, listId) {
+                var input = document.getElementById(inputId);
+                var filter = input.value.toUpperCase();
+                var container = document.getElementById(listId);
+                var items = container.querySelectorAll('label, div');
+                items.forEach(function(item) {
+                    var text = item.textContent || item.innerText;
+                    if (text.toUpperCase().indexOf(filter) > -1) {
+                        item.style.display = "";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
             }
-          });
-        }
-        function updateSelectedFilters() {
-          const output = document.getElementById('selectedFilters');
-          output.innerHTML = '';
-          const checkedInputs = document.querySelectorAll('input[type="checkbox"]:checked');
-          checkedInputs.forEach(function(input) {
-            const label = input.closest('label') || input.parentElement;
-            const text = label.textContent.trim();
-            const pill = document.createElement('div');
-            pill.className = 'filter-pill';
-            pill.innerHTML = `<span>${text}</span><button type="button" aria-label="Remove">&times;</button>`;
-            pill.querySelector('button').addEventListener('click', function() {
-              input.checked = false;
-              updateSelectedFilters();
+
+            function updateSelectedFilters() {
+                const output = document.getElementById('selectedFilters');
+                output.innerHTML = '';
+                const checkedInputs = document.querySelectorAll('input[type="checkbox"]:checked');
+                checkedInputs.forEach(function(input) {
+                    const label = input.closest('label') || input.parentElement;
+                    const text = label.textContent.trim();
+                    const pill = document.createElement('div');
+                    pill.className = 'filter-pill';
+                    pill.innerHTML = `<span>${text}</span><button type="button" aria-label="Remove">&times;</button>`;
+                    pill.querySelector('button').addEventListener('click', function() {
+                        input.checked = false;
+                        updateSelectedFilters();
+                    });
+                    output.appendChild(pill);
+                });
+            }
+            document.addEventListener('DOMContentLoaded', () => {
+                updateSelectedFilters();
+                document.querySelectorAll('input[type="checkbox"]').forEach(input => {
+                    input.addEventListener('change', updateSelectedFilters);
+                });
             });
-            output.appendChild(pill);
-          });
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-          updateSelectedFilters();
-          document.querySelectorAll('input[type="checkbox"]').forEach(input => {
-            input.addEventListener('change', updateSelectedFilters);
-          });
-        });
         </script>
     </form>
 <?php return ob_get_clean();
