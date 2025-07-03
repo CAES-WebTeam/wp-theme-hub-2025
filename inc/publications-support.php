@@ -169,6 +169,9 @@ function clean_wysiwyg_content($content)
     // Fix escaped forward slashes from JSON
     $content = str_replace(['<\/'], ['</'], $content);
 
+    // Convert HTML entities
+    $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
     // Remove empty paragraphs
     $content = preg_replace('/<p>\s*<\/p>/', '', $content);
 
