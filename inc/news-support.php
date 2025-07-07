@@ -1,99 +1,17 @@
 <?php
 
-/***  Sync News Stories with Story Writers Users  ***/
-add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['link_writers_to_stories'])) return;
-
-    $json_file_path = get_template_directory() . '/json/news-writers-association.json';
-
-    if (!file_exists($json_file_path)) {
-        wp_die('Data file not found.');
-    }
-
-    // Read and sanitize JSON
-    $json_data = file_get_contents($json_file_path);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-    $records = json_decode($json_data, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_die('JSON decode error: ' . json_last_error_msg());
-    }
-
-    $linked = 0;
-
-    foreach ($records as $pair) {
-        $story_id = intval($pair['STORY_ID']);
-        $writer_id = intval($pair['WRITER_ID']);
-
-        // Find post with matching ACF 'id'
-        $posts = get_posts([
-            'post_type' => 'post',
-            'meta_key' => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields' => 'ids',
-        ]);
-
-        if (empty($posts)) continue;
-        $post_id = $posts[0];
-
-        // Find user with matching ACF 'writer_id'
-        $users = get_users([
-            'meta_key' => 'writer_id',
-            'meta_value' => $writer_id,
-            'number' => 1,
-            'fields' => 'ID',
-        ]);
-
-        if (empty($users)) continue;
-        $user_id = $users[0];
-
-        // Load existing experts (always an array)
-        $authors = get_field('authors', $post_id);
-        if (!is_array($authors)) $authors = [];
-
-        $already_added = false;
-        foreach ($authors as $row) {
-            $existing_user = $row['user'];
-
-            // Normalize to user ID
-            if (is_object($existing_user) && isset($existing_user->ID)) {
-                $existing_user = $existing_user->ID;
-            } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
-                $existing_user = $existing_user['ID'];
-            }
-
-            if (intval($existing_user) === intval($user_id)) {
-                $already_added = true;
-                break;
-            }
-        }
-
-        // Add user if not already in the repeater
-        if (!$already_added) {
-            $authors[] = ['user' => $user_id];
-            update_field('authors', $authors, $post_id);
-            $linked++;
-        }
-    }
-
-    wp_die("Writer linking complete. Writers linked to posts: {$linked}");
-});
-
-
-/***  Sync News Stories with Story Expert/Source Users  ***/
+/*** Sync Keywords to News Story  ***/
 // add_action('admin_init', function () {
-//     if (!current_user_can('manage_options') || !isset($_GET['link_experts_to_stories'])) return;
+//     if (!current_user_can('manage_options') || !isset($_GET['associate_keywords_to_posts'])) return;
 
-//     $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+//     $json_file = get_template_directory() . '/json/NEWS_ASSOCIATION_STORY_KEYWORD.json';
 
-//     if (!file_exists($json_file_path)) {
-//         wp_die('Data file not found.');
+//     if (!file_exists($json_file)) {
+//         wp_die('JSON file not found.');
 //     }
 
-//     // Read and sanitize JSON
-//     $json_data = file_get_contents($json_file_path);
+//     // Read and clean
+//     $json_data = file_get_contents($json_file);
 //     $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
 //     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 //     $records = json_decode($json_data, true);
@@ -106,11 +24,11 @@ add_action('admin_init', function () {
 
 //     foreach ($records as $pair) {
 //         $story_id = intval($pair['STORY_ID']);
-//         $expert_id = intval($pair['SOURCE_EXPERT_ID']);
+//         $topic_id = intval($pair['KEYWORD_ID']);
 
-//         // Find post with matching ACF 'id'
+//         // Find the post by ACF field "id"
 //         $posts = get_posts([
-//             'post_type' => 'post',
+//             'post_type' => 'any',
 //             'meta_key' => 'id',
 //             'meta_value' => $story_id,
 //             'numberposts' => 1,
@@ -120,276 +38,194 @@ add_action('admin_init', function () {
 //         if (empty($posts)) continue;
 //         $post_id = $posts[0];
 
-//         // Find user with matching ACF 'source_expert_id'
-//         $users = get_users([
-//             'meta_key' => 'source_expert_id',
-//             'meta_value' => $expert_id,
-//             'number' => 1,
-//             'fields' => 'ID',
+//         // Find term in 'topics' taxonomy by ACF field "keyword_id"
+//         $terms = get_terms([
+//             'taxonomy' => 'topics', // Changed from 'keywords' to 'topics'
+//             'hide_empty' => false,
+//             'meta_query' => [[
+//                 'key' => 'topic_id',
+//                 'value' => $topic_id,
+//                 'compare' => '='
+//             ]]
 //         ]);
 
-//         if (empty($users)) continue;
-//         $user_id = $users[0];
+//         if (empty($terms) || is_wp_error($terms)) continue;
+//         $term_id = $terms[0]->term_id;
 
-//         // Load existing experts (always an array)
-//         $experts = get_field('experts', $post_id);
-//         if (!is_array($experts)) $experts = [];
+//         // Get current terms
+//         $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']); // Changed from 'keywords' to 'topics'
 
-//         $already_added = false;
-//         foreach ($experts as $row) {
-//             $existing_user = $row['user'];
-
-//             // Normalize to user ID
-//             if (is_object($existing_user) && isset($existing_user->ID)) {
-//                 $existing_user = $existing_user->ID;
-//             } elseif (is_array($existing_user) && isset($existing_user['ID'])) {
-//                 $existing_user = $existing_user['ID'];
-//             }
-
-//             if (intval($existing_user) === intval($user_id)) {
-//                 $already_added = true;
-//                 break;
-//             }
-//         }
-
-//         // Add user if not already in the repeater
-//         if (!$already_added) {
-//             $experts[] = ['user' => $user_id];
-//             update_field('experts', $experts, $post_id);
+//         // Prevent duplicates
+//         if (!in_array($term_id, $existing_terms)) {
+//             $existing_terms[] = $term_id;
+//             wp_set_object_terms($post_id, $existing_terms, 'topics'); // Changed from 'keywords' to 'topics'
 //             $linked++;
 //         }
 //     }
 
-//     wp_die("Expert linking complete. Experts linked to posts: {$linked}");
+//     wp_die("Topic linking complete. Topics linked to posts: {$linked}"); // Updated message
 // });
 
 
-/*** Sync Keywords to News Story  ***/
-add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['associate_keywords_to_posts'])) return;
+// // News Image association
+// add_action('admin_init', function () {
+//     if (!current_user_can('manage_options') || !isset($_GET['link_story_images'])) return;
 
-    $json_file = get_template_directory() . '/json/NEWS_ASSOCIATION_STORY_KEYWORD.json';
+//     $json_file = get_template_directory() . '/json/news-image-association.json';
 
-    if (!file_exists($json_file)) {
-        wp_die('JSON file not found.');
-    }
+//     if (!file_exists($json_file)) {
+//         wp_die('JSON file not found.');
+//     }
 
-    // Read and clean
-    $json_data = file_get_contents($json_file);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-    $records = json_decode($json_data, true);
+//     $json_data = file_get_contents($json_file);
+//     $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+//     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+//     $records = json_decode($json_data, true);
 
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_die('JSON decode error: ' . json_last_error_msg());
-    }
+//     if (json_last_error() !== JSON_ERROR_NONE) {
+//         wp_die('JSON decode error: ' . json_last_error_msg());
+//     }
 
-    $linked = 0;
+//     // Handle batch parameters
+//     $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
+//     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 500;
 
-    foreach ($records as $pair) {
-        $story_id = intval($pair['STORY_ID']);
-        $topic_id = intval($pair['KEYWORD_ID']);
+//     $records = array_slice($records, $start, $limit);
 
-        // Find the post by ACF field "id"
-        $posts = get_posts([
-            'post_type' => 'any',
-            'meta_key' => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields' => 'ids',
-        ]);
+//     $updated = 0;
 
-        if (empty($posts)) continue;
-        $post_id = $posts[0];
+//     foreach ($records as $record) {
+//         $story_id = intval($record['STORY_ID']);
+//         $image_id = intval($record['IMAGE_ID']);
 
-        // Find term in 'topics' taxonomy by ACF field "keyword_id"
-        $terms = get_terms([
-            'taxonomy' => 'topics', // Changed from 'keywords' to 'topics'
-            'hide_empty' => false,
-            'meta_query' => [[
-                'key' => 'topic_id',
-                'value' => $topic_id,
-                'compare' => '='
-            ]]
-        ]);
+//         if (!$story_id || !$image_id) continue;
 
-        if (empty($terms) || is_wp_error($terms)) continue;
-        $term_id = $terms[0]->term_id;
+//         // Find post by ACF 'id' field
+//         $posts = get_posts([
+//             'post_type'  => 'post',
+//             'meta_key'   => 'id',
+//             'meta_value' => $story_id,
+//             'numberposts' => 1,
+//             'fields'     => 'ids',
+//         ]);
 
-        // Get current terms
-        $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']); // Changed from 'keywords' to 'topics'
+//         if (empty($posts)) continue;
+//         $post_id = $posts[0];
 
-        // Prevent duplicates
-        if (!in_array($term_id, $existing_terms)) {
-            $existing_terms[] = $term_id;
-            wp_set_object_terms($post_id, $existing_terms, 'topics'); // Changed from 'keywords' to 'topics'
-            $linked++;
-        }
-    }
+//         update_field('image_id', $image_id, $post_id);
+//         $updated++;
+//     }
 
-    wp_die("Topic linking complete. Topics linked to posts: {$linked}"); // Updated message
-});
-
-
-// News Image association
-add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['link_story_images'])) return;
-
-    $json_file = get_template_directory() . '/json/news-image-association.json';
-
-    if (!file_exists($json_file)) {
-        wp_die('JSON file not found.');
-    }
-
-    $json_data = file_get_contents($json_file);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-    $records = json_decode($json_data, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_die('JSON decode error: ' . json_last_error_msg());
-    }
-
-    // Handle batch parameters
-    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
-    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 500;
-
-    $records = array_slice($records, $start, $limit);
-
-    $updated = 0;
-
-    foreach ($records as $record) {
-        $story_id = intval($record['STORY_ID']);
-        $image_id = intval($record['IMAGE_ID']);
-
-        if (!$story_id || !$image_id) continue;
-
-        // Find post by ACF 'id' field
-        $posts = get_posts([
-            'post_type'  => 'post',
-            'meta_key'   => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields'     => 'ids',
-        ]);
-
-        if (empty($posts)) continue;
-        $post_id = $posts[0];
-
-        update_field('image_id', $image_id, $post_id);
-        $updated++;
-    }
-
-    wp_die("Batch processed from index {$start} to " . ($start + $limit - 1) . ". Total updated: {$updated}");
-});
+//     wp_die("Batch processed from index {$start} to " . ($start + $limit - 1) . ". Total updated: {$updated}");
+// });
 
 
 
-// Add News Web Image File Name
-add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['assign_web_image_filenames'])) return;
+// // Add News Web Image File Name
+// add_action('admin_init', function () {
+//     if (!current_user_can('manage_options') || !isset($_GET['assign_web_image_filenames'])) return;
 
-    $json_file = get_template_directory() . '/json/news-image.json';
+//     $json_file = get_template_directory() . '/json/news-image.json';
 
-    if (!file_exists($json_file)) {
-        wp_die('JSON file not found.');
-    }
+//     if (!file_exists($json_file)) {
+//         wp_die('JSON file not found.');
+//     }
 
-    $json_data = file_get_contents($json_file);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Ensure proper encoding
-    $records = json_decode($json_data, true);
+//     $json_data = file_get_contents($json_file);
+//     $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove BOM
+//     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Ensure proper encoding
+//     $records = json_decode($json_data, true);
 
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_die('JSON decode error: ' . json_last_error_msg());
-    }
+//     if (json_last_error() !== JSON_ERROR_NONE) {
+//         wp_die('JSON decode error: ' . json_last_error_msg());
+//     }
 
-    // Batch control
-    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
-    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 500;
+//     // Batch control
+//     $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
+//     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 500;
 
-    $batch = array_slice($records, $start, $limit);
+//     $batch = array_slice($records, $start, $limit);
 
-    $updated = 0;
+//     $updated = 0;
 
-    foreach ($batch as $record) {
-        $image_id = intval($record['ID']);
-        $filename = trim($record['WEB_VERSION_FILE_NAME'] ?? '');
+//     foreach ($batch as $record) {
+//         $image_id = intval($record['ID']);
+//         $filename = trim($record['WEB_VERSION_FILE_NAME'] ?? '');
 
-        if (!$image_id || !$filename) continue;
+//         if (!$image_id || !$filename) continue;
 
-        // Find posts with matching ACF field 'image_id'
-        $posts = get_posts([
-            'post_type'  => 'post',
-            'meta_key'   => 'image_id',
-            'meta_value' => $image_id,
-            'numberposts' => -1,
-            'fields'     => 'ids',
-        ]);
+//         // Find posts with matching ACF field 'image_id'
+//         $posts = get_posts([
+//             'post_type'  => 'post',
+//             'meta_key'   => 'image_id',
+//             'meta_value' => $image_id,
+//             'numberposts' => -1,
+//             'fields'     => 'ids',
+//         ]);
 
-        foreach ($posts as $post_id) {
-            update_field('web_version_file_name', $filename, $post_id);
-            $updated++;
-        }
-    }
+//         foreach ($posts as $post_id) {
+//             update_field('web_version_file_name', $filename, $post_id);
+//             $updated++;
+//         }
+//     }
 
-    wp_die("Processed records {$start} to " . ($start + $limit - 1) . ". Total posts updated: {$updated}");
-});
+//     wp_die("Processed records {$start} to " . ($start + $limit - 1) . ". Total posts updated: {$updated}");
+// });
 
 
-// Assign Featured Iamge
-add_action('admin_init', function () {
-    if (!current_user_can('manage_options') || !isset($_GET['import_featured_images'])) return;
+// // Assign Featured Iamge
+// add_action('admin_init', function () {
+//     if (!current_user_can('manage_options') || !isset($_GET['import_featured_images'])) return;
 
-    // Get batch controls
-    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
-    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
+//     // Get batch controls
+//     $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
+//     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 100;
 
-    $all_posts = get_posts([
-        'post_type'      => 'post',
-        'post_status'    => 'any',
-        'fields'         => 'ids',
-        'orderby'        => 'ID',
-        'order'          => 'ASC',
-        'posts_per_page' => -1,
-    ]);
+//     $all_posts = get_posts([
+//         'post_type'      => 'post',
+//         'post_status'    => 'any',
+//         'fields'         => 'ids',
+//         'orderby'        => 'ID',
+//         'order'          => 'ASC',
+//         'posts_per_page' => -1,
+//     ]);
 
-    $batch_posts = array_slice($all_posts, $start, $limit);
+//     $batch_posts = array_slice($all_posts, $start, $limit);
 
-    $updated = 0;
+//     $updated = 0;
 
-    foreach ($batch_posts as $post_id) {
-        $image_id  = get_field('image_id', $post_id);
-        $filename  = get_field('web_version_file_name', $post_id);
+//     foreach ($batch_posts as $post_id) {
+//         $image_id  = get_field('image_id', $post_id);
+//         $filename  = get_field('web_version_file_name', $post_id);
 
-        if (!$image_id || !$filename) continue;
-        if (has_post_thumbnail($post_id)) continue;
+//         if (!$image_id || !$filename) continue;
+//         if (has_post_thumbnail($post_id)) continue;
 
-        $image_url = "https://secure.caes.uga.edu/news/multimedia/images/{$image_id}/{$filename}";
+//         $image_url = "https://secure.caes.uga.edu/news/multimedia/images/{$image_id}/{$filename}";
 
-        $tmp = download_url($image_url);
-        if (is_wp_error($tmp)) {
-            continue;
-        }
+//         $tmp = download_url($image_url);
+//         if (is_wp_error($tmp)) {
+//             continue;
+//         }
 
-        $file_array = [
-            'name'     => basename($filename),
-            'tmp_name' => $tmp,
-        ];
+//         $file_array = [
+//             'name'     => basename($filename),
+//             'tmp_name' => $tmp,
+//         ];
 
-        $attachment_id = media_handle_sideload($file_array, $post_id);
+//         $attachment_id = media_handle_sideload($file_array, $post_id);
 
-        if (is_wp_error($attachment_id)) {
-            @unlink($tmp);
-            continue;
-        }
+//         if (is_wp_error($attachment_id)) {
+//             @unlink($tmp);
+//             continue;
+//         }
 
-        set_post_thumbnail($post_id, $attachment_id);
-        $updated++;
-    }
+//         set_post_thumbnail($post_id, $attachment_id);
+//         $updated++;
+//     }
 
-    wp_die("Processed posts {$start} to " . ($start + $limit - 1) . ". Featured images assigned: {$updated}");
-});
+//     wp_die("Processed posts {$start} to " . ($start + $limit - 1) . ". Featured images assigned: {$updated}");
+// });
 
 
 // Replace permalink with ACF external URL if set and valid

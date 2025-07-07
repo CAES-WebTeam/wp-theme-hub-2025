@@ -29,3 +29,4 @@ require get_template_directory() . '/inc/link-users.php';
 // require get_template_directory() . '/inc/tax-renamer.php';
 require get_template_directory() . '/inc/bulk-topic-moverr.php';
 require get_template_directory() . '/inc/pub-history-update.php';
+require get_template_directory() . '/inc/story-association-meta-tools.php';
