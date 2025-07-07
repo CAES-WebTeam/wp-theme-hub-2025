@@ -329,7 +329,7 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
                 'taxonomy' => 'topics',
                 'hide_empty' => false,
                 'meta_query' => [
-                    ['key' => 'keyword_id', 'value' => $kw_id]
+                    ['key' => 'topic_id', 'value' => $kw_id]
                 ]
             ]);
             if (!empty($terms) && !is_wp_error($terms)) {
