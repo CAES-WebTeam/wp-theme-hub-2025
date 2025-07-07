@@ -646,6 +646,7 @@ function import_news_writers() {
     $json_file_path = get_template_directory() . '/json/news-writers.json';
 
     if (!file_exists($json_file_path)) {
+        error_log('DEBUG WRITER: News Writers JSON file not found at ' . $json_file_path);
         return new WP_Error('file_not_found', 'News Writers JSON file not found.');
     }
 
@@ -657,6 +658,7 @@ function import_news_writers() {
 
     $records = json_decode($json_data, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log('DEBUG WRITER: JSON decode error: ' . json_last_error_msg());
         return new WP_Error('json_decode_error', 'News Writers JSON decode error: ' . json_last_error_msg());
     }
 
@@ -666,10 +668,17 @@ function import_news_writers() {
 
     // Iterate through each record in the JSON data.
     foreach ($records as $person) {
+        // Specifically log data for Elmer Gray if found, or for all if names are empty.
+        $current_name = (isset($person['FIRST_NAME']) ? $person['FIRST_NAME'] : '') . ' ' . (isset($person['LAST_NAME']) ? $person['LAST_NAME'] : '');
+        if (strpos($current_name, 'Elmer Gray') !== false || (empty($person['FIRST_NAME']) && empty($person['LAST_NAME']))) {
+            error_log('DEBUG WRITER: Processing record: ' . print_r($person, true));
+        }
+
         $email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
         $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
         $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
         $personnel_id = $person['PERSONNEL_ID'] ?? null;
+        $writer_id_from_json = $person['ID'] ?? null; // Capture the ID field from JSON.
 
         $user_id = null;
 
@@ -688,15 +697,17 @@ function import_news_writers() {
                 ]);
 
                 if (is_wp_error($user_id)) {
-                    error_log("User creation failed for writer {$email}: " . $user_id->get_error_message());
+                    error_log("DEBUG WRITER: User creation failed for writer {$email}: " . $user_id->get_error_message());
                     continue; // Skip to next record on error.
                 }
 
                 $created++;
+                error_log("DEBUG WRITER: Created new user with ID {$user_id} for {$email} ({$first_name} {$last_name}).");
             } else {
                 // If user exists by email, just get their ID for updating.
                 $user_id = $user->ID;
                 $updated++;
+                error_log("DEBUG WRITER: Found existing user by email {$email} with ID {$user_id} for {$first_name} {$last_name}.");
             }
         }
 
@@ -712,11 +723,14 @@ function import_news_writers() {
             if (!empty($users)) {
                 $user_id = $users[0];
                 $linked++;
+                error_log("DEBUG WRITER: Found existing user by personnel_id {$personnel_id} with ID {$user_id} for {$first_name} {$last_name}.");
+            } else {
+                error_log("DEBUG WRITER: No existing user found by personnel_id {$personnel_id} for {$first_name} {$last_name}.");
             }
         }
 
         // If still no user_id (meaning no email and no matching personnel_id), create with placeholder email.
-        if (!$email && !$personnel_id) {
+        if (!$user_id && !$email && !$personnel_id) {
             $placeholder_email = generate_placeholder_email($first_name, $last_name);
             $user_id = wp_insert_user([
                 'user_login' => sanitize_user($placeholder_email),
@@ -728,26 +742,42 @@ function import_news_writers() {
             ]);
 
             if (is_wp_error($user_id)) {
-                error_log("User creation failed for writer {$first_name} {$last_name} with placeholder: " . $user_id->get_error_message());
+                error_log("DEBUG WRITER: User creation failed for writer {$first_name} {$last_name} with placeholder: " . $user_id->get_error_message());
                 continue; // Skip to next record on error.
             }
 
             $created++;
+            error_log("DEBUG WRITER: Created new user with ID {$user_id} for {$first_name} {$last_name} using placeholder email: {$placeholder_email}.");
         }
 
         // Update ACF fields if a user was found or created.
         if ($user_id) {
+            error_log("DEBUG WRITER: Attempting to update ACF fields for user ID: {$user_id} ({$first_name} {$last_name}).");
             update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
             update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
             // Update personnel_id if provided and not already set.
             if ( $personnel_id && empty(get_user_meta($user_id, 'personnel_id', true)) ) {
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+                error_log("DEBUG WRITER: Updated personnel_id to {$personnel_id} for user {$user_id}.");
             }
-            update_field('writer_id', $person['ID'], 'user_' . $user_id);
+
+            // --- Specific Debugging for writer_id ---
+            error_log("DEBUG WRITER: Trying to set writer_id for user {$user_id} to value '{$writer_id_from_json}'.");
+            $update_result = update_field('writer_id', $writer_id_from_json, 'user_' . $user_id);
+
+            if ($update_result === false) {
+                error_log("DEBUG WRITER: Failed to update 'writer_id' for user {$user_id}. This could mean the field doesn't exist or is not configured correctly for users.");
+            } else {
+                error_log("DEBUG WRITER: Successfully updated 'writer_id' to '{$writer_id_from_json}' for user {$user_id}.");
+            }
+            // --- End Specific Debugging for writer_id ---
+
             update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
             update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
             update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
             update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
+        } else {
+            error_log("DEBUG WRITER: No user_id obtained for record: " . print_r($person, true));
         }
     }
 
