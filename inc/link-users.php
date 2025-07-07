@@ -66,7 +66,6 @@ function render_content_linking_admin_page() {
         <button id="stop-processing" class="button button-secondary" style="margin-left: 10px; display: none;">Stop Processing</button>
         <button id="check-status" class="button" style="margin-left: 10px;">Check Current Status</button>
 
-        <!-- Custom Confirmation Modal -->
         <div id="confirm-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
             <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
                 <h2 style="margin-top: 0;">Confirm Action</h2>
@@ -392,7 +391,7 @@ function render_content_linking_admin_page() {
                 html += '<p><strong>' + typeLabel + ' linked to posts:</strong> ' + cumulativeStats.linked + '</p>';
                 html += '<p><strong>Stories found:</strong> ' + cumulativeStats.stories_found + '</p>';
                 html += '<p><strong>' + typeLabel + ' found:</strong> ' + cumulativeStats.users_found + '</p>';
-                html += '<p><strong>Already linked (skipped):</strong> ' + cumulativeStats.already_linked + '</p>';
+                html += '<p><strong>Already linked (skipped):</b> ' + cumulativeStats.already_linked + '</p>';
             } else { // clearing
                 html += '<p><strong>Total posts cleared:</strong> ' + cumulativeStats.cleared + '</p>';
                 html += '<p><strong>Posts processed:</strong> ' + cumulativeStats.stories_found + '</p>'; // Renamed for clarity in clearing
@@ -622,6 +621,10 @@ function process_content_linking_batch_callback() {
             if (!$already_added) {
                 $existing_linked_users[] = ['user' => $user_id];
                 update_field($story_user_field, $existing_linked_users, $post_id);
+                do_action('acf/save_post', $post_id);
+                clean_post_cache($post_id);
+                wp_cache_delete( $post_id, 'post_meta' );
+
                 $stats['linked']++;
                 $stats['success_details'][] = [
                     'message' => "✓ LINKED {$user_type_label}: \"{$display_name}\" → \"{$post_title}\"",
@@ -730,6 +733,10 @@ function process_content_clearing_batch_callback() {
             if (!empty($current_field_value)) {
                 // Clear the ACF repeater field by setting it to an empty array
                 update_field($story_user_field, [], $post_id);
+                do_action('acf/save_post', $post_id);
+                clean_post_cache($post_id);
+                wp_cache_delete( $post_id, 'post_meta' );
+
                 $stats['cleared']++;
                 $stats['success_details'][] = [
                     'message' => "🗑️ CLEARED: All {$user_type_label}s from \"{$post_title}\" (Post ID: {$post_id})",

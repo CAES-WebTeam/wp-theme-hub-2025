@@ -33,9 +33,9 @@ $oneLine = $displayVersion === 'names-and-titles';
 $useGrid = $displayVersion === 'name-and-title-below' && $grid;
 
 // Get ACF fields
-$authors = get_field('authors', $post_id);
-$translators = get_field('translator', $post_id);
-$sources = get_field('experts', $post_id);
+$authors = get_field('authors', $post_id, false);
+$translators = get_field('translator', $post_id, false);
+$sources = get_field('experts', $post_id, false);
 
 switch ($type) {
     case 'translators':
@@ -77,56 +77,46 @@ if (!function_exists('process_people')) {
 
         if ($people) {
             foreach ($people as $item) {
-                $type = strtolower($item['type'] ?? '');
-                $user = $item['user'] ?? null;
-                $custom = $item['custom_user'] ?? [];
+                // Determine the correct user ID from the item
+                $user_id_candidate = null;
 
-                if ($type === 'user' && !empty($user)) {
-                    $user_id = is_array($user) ? ($user['ID'] ?? null) : $user;
-                    if ($user_id) {
-                        $first_name = get_the_author_meta('first_name', $user_id);
-                        $last_name = get_the_author_meta('last_name', $user_id);
-                        $profile_url = get_author_posts_url($user_id);
-                        $title = get_the_author_meta('title', $user_id);
+                // First, try the 'user' key (how ACF usually returns it)
+                if (isset($item['user']) && !empty($item['user'])) {
+                    $user_id_candidate = $item['user'];
+                }
 
-                        if ($asSnippet) {
-                            $names[] = trim("$first_name $last_name");
-                        } else {
-                            if ($oneLine) {
-                                $output .= '<p class="pub-author-oneline">';
-                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
-                                if ($title) {
-                                    $output .= ', ' . esc_html($title);
-                                }
-                                $output .= '</p>';
-                            } else {
-                                $output .= '<div class="pub-author">';
-                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
-                                if ($title) {
-                                    $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
-                                }
-                                $output .= '</div>';
-                            }
-                        }
+                // If 'user' key is empty, check for known ACF internal field keys
+                // These keys come from your debug logs: field_680a5264b5ab0 for authors, field_67e174198d9a2 for experts
+                if (empty($user_id_candidate)) {
+                    if (isset($item['field_680a5264b5ab0']) && is_numeric($item['field_680a5264b5ab0'])) {
+                        $user_id_candidate = $item['field_680a5264b5ab0'];
+                    } elseif (isset($item['field_67e174198d9a2']) && is_numeric($item['field_67e174198d9a2'])) {
+                        $user_id_candidate = $item['field_67e174198d9a2'];
                     }
-                } elseif ($type === 'custom' && !empty($custom['first_name']) && !empty($custom['last_name'])) {
-                    $first_name = $custom['first_name'];
-                    $last_name = $custom['last_name'];
-                    $title = $custom['title'] ?? '';
+                }
+
+                // Ensure the extracted user_id is a simple ID, not an array if ACF passes it that way
+                $user_id = is_array($user_id_candidate) ? ($user_id_candidate['ID'] ?? null) : $user_id_candidate;
+
+                if ($user_id) {
+                    $first_name = get_the_author_meta('first_name', $user_id);
+                    $last_name = get_the_author_meta('last_name', $user_id);
+                    $profile_url = get_author_posts_url($user_id);
+                    $title = get_the_author_meta('title', $user_id);
 
                     if ($asSnippet) {
                         $names[] = trim("$first_name $last_name");
                     } else {
                         if ($oneLine) {
                             $output .= '<p class="pub-author-oneline">';
-                            $output .= '<a class="pub-author-name" href="#">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                            $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
                             if ($title) {
                                 $output .= ', ' . esc_html($title);
                             }
                             $output .= '</p>';
                         } else {
                             $output .= '<div class="pub-author">';
-                            $output .= '<a class="pub-author-name" href="#">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                            $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
                             if ($title) {
                                 $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
                             }
@@ -185,3 +175,4 @@ if ($data) {
 
     echo '</div>';
 }
+?>

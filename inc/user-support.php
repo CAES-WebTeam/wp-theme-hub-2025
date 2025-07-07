@@ -1001,17 +1001,3 @@ function user_data_management_page_content() {
     </div>
     <?php
 }
-
-/**
- * ---------------------------------------------------------------------------------
- * 8. Debugging / Development Section
- * ---------------------------------------------------------------------------------
- * This section contains code primarily for debugging purposes, such as logging
- * user metadata. It typically would not be present in a production environment
- * or would be conditionally enabled.
- */
-
-// Example: Get all user meta for a specific user ID and log it to the debug.log file.
-$user_id = 3367; // Replace with an actual user ID for debugging.
-$all_meta = get_user_meta($user_id);
-error_log("All user meta for user ID {$user_id}: " . print_r($all_meta, true));
