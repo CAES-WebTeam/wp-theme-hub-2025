@@ -1,7 +1,7 @@
 <?php
 
 // Exit if accessed directly to prevent unauthorized access.
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
@@ -143,7 +143,7 @@ function generate_placeholder_email($first, $last)
 
     // Fallback to 'user' or a unique ID if name parts are empty to ensure uniqueness.
     if (empty($first_clean)) $first_clean = 'user';
-    if (empty( $last_clean )) $last_clean = uniqid();
+    if (empty($last_clean)) $last_clean = uniqid();
 
     return "{$first_clean}.{$last_clean}@placeholder.uga.edu";
 }
@@ -204,7 +204,10 @@ function sync_personnel_users()
 
     $existing_user_ids = [];
     foreach ($existing_users as $user) {
-        $existing_user_ids[get_user_meta($user->ID, 'personnel_id', true)] = $user->ID;
+        $personnel_id_meta = get_user_meta($user->ID, 'personnel_id', true);
+        if ($personnel_id_meta) {
+            $existing_user_ids[$personnel_id_meta] = $user->ID;
+        }
     }
 
     $api_user_ids = []; // To keep track of personnel_ids from the current API fetch.
@@ -242,20 +245,70 @@ function sync_personnel_users()
 
         $api_user_ids[] = $personnel_id;
 
-        // Check if the user already exists by personnel_id.
-        if (!isset($existing_user_ids[$personnel_id])) {
+        $user_id = null;
+
+        // First, check if the user already exists by personnel_id.
+        if (isset($existing_user_ids[$personnel_id])) {
+            $user_id = $existing_user_ids[$personnel_id];
+            error_log("Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
+        } else {
+            // Fallback: Check if user exists by email (for users who might not have personnel_id set)
+            $existing_user = get_user_by('email', $email);
+            if ($existing_user && in_array('personnel_user', $existing_user->roles)) {
+                $user_id = $existing_user->ID;
+                error_log("Found existing personnel_user by email {$email}: User ID {$user_id} (missing personnel_id)");
+            }
+        }
+
+        if ($user_id) {
+            // Update Existing User
+            $updated_count++;
+
+            // Update core WordPress user fields.
+            wp_update_user([
+                'ID' => $user_id,
+                'user_email' => $email,
+                'first_name' => $first_name,
+                'last_name' => $last_name
+            ]);
+
+            // Update ACF fields for the existing user.
+            update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
+            update_field('college_id', $college_id, 'user_' . $user_id);
+            update_field('title', $title, 'user_' . $user_id);
+            update_field('phone_number', $phone, 'user_' . $user_id);
+            update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
+            update_field('fax_number', $fax, 'user_' . $user_id);
+            update_field('department', $department, 'user_' . $user_id);
+            update_field('program_area', $program_area, 'user_' . $user_id);
+            update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
+            update_field('mailing_address', $mailing_address, 'user_' . $user_id);
+            update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
+            update_field('mailing_city', $mailing_city, 'user_' . $user_id);
+            update_field('mailing_state', $mailing_state, 'user_' . $user_id);
+            update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
+            update_field('shipping_address', $shipping_address, 'user_' . $user_id);
+            update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
+            update_field('shipping_city', $shipping_city, 'user_' . $user_id);
+            update_field('shipping_state', $shipping_state, 'user_' . $user_id);
+            update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
+            update_field('image_name', $image_name, 'user_' . $user_id);
+
+            error_log("Updated existing user {$user_id} with personnel_id {$personnel_id}");
+        } else {
             // Create New User if not found.
             $user_id = wp_insert_user([
                 'user_login' => $username,
                 'user_email' => $email,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
-                'user_pass' => wp_generate_password(), // Generate a strong password.
+                'user_pass' => wp_generate_password(),
                 'role' => 'personnel_user'
             ]);
 
             if (!is_wp_error($user_id)) {
                 $created_count++;
+
                 // Update ACF fields for the new user.
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 update_field('college_id', $college_id, 'user_' . $user_id);
@@ -277,39 +330,11 @@ function sync_personnel_users()
                 update_field('shipping_state', $shipping_state, 'user_' . $user_id);
                 update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
                 update_field('image_name', $image_name, 'user_' . $user_id);
-            }
-        } else {
-            // Update Existing User if found.
-            $user_id = $existing_user_ids[$personnel_id];
-            $updated_count++;
-            // Update core WordPress user fields.
-            wp_update_user([
-                'ID' => $user_id,
-                'user_email' => $email,
-                'first_name' => $first_name,
-                'last_name' => $last_name
-            ]);
 
-            // Update ACF fields for the existing user.
-            update_field('college_id', $college_id, 'user_' . $user_id);
-            update_field('title', $title, 'user_' . $user_id);
-            update_field('phone_number', $phone, 'user_' . $user_id);
-            update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
-            update_field('fax_number', $fax, 'user_' . $user_id);
-            update_field('department', $department, 'user_' . $user_id);
-            update_field('program_area', $program_area, 'user_' . $user_id);
-            update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
-            update_field('mailing_address', $mailing_address, 'user_' . $user_id);
-            update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
-            update_field('mailing_city', $mailing_city, 'user_' . $user_id);
-            update_field('mailing_state', $mailing_state, 'user_' . $user_id);
-            update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
-            update_field('shipping_address', $shipping_address, 'user_' . $user_id);
-            update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
-            update_field('shipping_city', $shipping_city, 'user_' . $user_id);
-            update_field('shipping_state', $shipping_state, 'user_' . $user_id);
-            update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
-            update_field('image_name', $image_name, 'user_' . $user_id);
+                error_log("Created new user {$user_id} with personnel_id {$personnel_id}");
+            } else {
+                error_log("Failed to create user for personnel_id {$personnel_id}: " . $user_id->get_error_message());
+            }
         }
     }
 
@@ -377,7 +402,10 @@ function sync_personnel_users2()
 
     $existing_user_ids = [];
     foreach ($existing_users as $user) {
-        $existing_user_ids[get_user_meta($user->ID, 'personnel_id', true)] = $user->ID;
+        $personnel_id_meta = get_user_meta($user->ID, 'personnel_id', true);
+        if ($personnel_id_meta) {
+            $existing_user_ids[$personnel_id_meta] = $user->ID;
+        }
     }
 
     $api_user_ids = []; // To keep track of personnel_ids from the current API fetch.
@@ -414,10 +442,59 @@ function sync_personnel_users2()
 
         $api_user_ids[] = $personnel_id;
 
-        // Check if the user already exists by personnel_id.
-        if (!isset($existing_user_ids[$personnel_id])) {
+        $user_id = null;
+
+        // First, check if the user already exists by personnel_id.
+        if (isset($existing_user_ids[$personnel_id])) {
+            $user_id = $existing_user_ids[$personnel_id];
+            error_log("Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
+        } else {
+            // Fallback: Check if user exists by email (for users who might not have personnel_id set)
+            $existing_user = get_user_by('email', $email);
+            if ($existing_user && in_array('personnel_user', $existing_user->roles)) {
+                $user_id = $existing_user->ID;
+                error_log("Found existing personnel_user by email {$email}: User ID {$user_id} (missing personnel_id)");
+            }
+        }
+
+        if ($user_id) {
+            // Update Existing User
+            $updated_count++;
+            
+            // Update core WordPress user fields.
+            wp_update_user([
+                'ID' => $user_id,
+                'user_email' => $email,
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+            ]);
+
+            // Update ACF fields for the existing user.
+            update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
+            update_field('college_id', $college_id, 'user_' . $user_id);
+            update_field('title', $title, 'user_' . $user_id);
+            update_field('phone_number', $phone, 'user_' . $user_id);
+            update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
+            update_field('fax_number', $fax, 'user_' . $user_id);
+            update_field('department', $department, 'user_' . $user_id);
+            update_field('program_area', $program_area, 'user_' . $user_id);
+            update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
+            update_field('mailing_address', $mailing_address, 'user_' . $user_id);
+            update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
+            update_field('mailing_city', $mailing_city, 'user_' . $user_id);
+            update_field('mailing_state', $mailing_state, 'user_' . $user_id);
+            update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
+            update_field('shipping_address', $shipping_address, 'user_' . $user_id);
+            update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
+            update_field('shipping_city', $shipping_city, 'user_' . $user_id);
+            update_field('shipping_state', $shipping_state, 'user_' . $user_id);
+            update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
+            update_field('image_name', $image_name, 'user_' . $user_id);
+            
+            error_log("Updated existing user {$user_id} with personnel_id {$personnel_id}");
+        } else {
+            // Create New User if not found.
             try {
-                // Create New User if not found.
                 $user_id = wp_insert_user([
                     'user_login' => $username,
                     'user_email' => $email,
@@ -433,6 +510,7 @@ function sync_personnel_users2()
 
             if (!is_wp_error($user_id)) {
                 $created_count++;
+                
                 // Update ACF fields for the new user.
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 update_field('college_id', $college_id, 'user_' . $user_id);
@@ -454,39 +532,11 @@ function sync_personnel_users2()
                 update_field('shipping_state', $shipping_state, 'user_' . $user_id);
                 update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
                 update_field('image_name', $image_name, 'user_' . $user_id);
+                
+                error_log("Created new user {$user_id} with personnel_id {$personnel_id}");
+            } else {
+                error_log("Failed to create user for personnel_id {$personnel_id}: " . $user_id->get_error_message());
             }
-        } else {
-            // Update Existing User if found.
-            $user_id = $existing_user_ids[$personnel_id];
-            $updated_count++;
-            // Update core WordPress user fields.
-            wp_update_user([
-                'ID' => $user_id,
-                'user_email' => $email,
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-            ]);
-
-            // Update ACF fields for the existing user.
-            update_field('college_id', $college_id, 'user_' . $user_id);
-            update_field('title', $title, 'user_' . $user_id);
-            update_field('phone_number', $phone, 'user_' . $user_id);
-            update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
-            update_field('fax_number', $fax, 'user_' . $user_id);
-            update_field('department', $department, 'user_' . $user_id);
-            update_field('program_area', $program_area, 'user_' . $user_id);
-            update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
-            update_field('mailing_address', $mailing_address, 'user_' . $user_id);
-            update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
-            update_field('mailing_city', $mailing_city, 'user_' . $user_id);
-            update_field('mailing_state', $mailing_state, 'user_' . $user_id);
-            update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
-            update_field('shipping_address', $shipping_address, 'user_' . $user_id);
-            update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
-            update_field('shipping_city', $shipping_city, 'user_' . $user_id);
-            update_field('shipping_state', $shipping_state, 'user_' . $user_id);
-            update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
-            update_field('image_name', $image_name, 'user_' . $user_id);
         }
     }
 
@@ -497,7 +547,6 @@ function sync_personnel_users2()
         'message' => "Inactive Personnel users synced successfully. Created: {$created_count}, Updated: {$updated_count}."
     ];
 }
-
 
 /**
  * ---------------------------------------------------------------------------------
@@ -515,7 +564,8 @@ function sync_personnel_users2()
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
  */
-function import_news_experts() {
+function import_news_experts()
+{
     $json_file_path = get_template_directory() . '/json/news-experts.json';
 
     if (!file_exists($json_file_path)) {
@@ -614,7 +664,7 @@ function import_news_experts() {
             update_field('description', $person['DESCRIPTION'] ?? '', 'user_' . $user_id);
             // Update personnel_id if provided and not already set (to avoid overwriting API data if that's the source of truth).
             // If JSON is the definitive source for personnel_id for experts, this 'if' condition could be removed.
-            if ( $personnel_id && empty(get_user_meta($user_id, 'personnel_id', true)) ) {
+            if ($personnel_id && empty(get_user_meta($user_id, 'personnel_id', true))) {
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
             }
             update_field('source_expert_id', $person['ID'], 'user_' . $user_id);
@@ -642,7 +692,8 @@ function import_news_experts() {
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
  */
-function import_news_writers() {
+function import_news_writers()
+{
     $json_file_path = get_template_directory() . '/json/news-writers.json';
 
     if (!file_exists($json_file_path)) {
@@ -756,7 +807,7 @@ function import_news_writers() {
             update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
             update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
             // Update personnel_id if provided and not already set.
-            if ( $personnel_id && empty(get_user_meta($user_id, 'personnel_id', true)) ) {
+            if ($personnel_id && empty(get_user_meta($user_id, 'personnel_id', true))) {
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 error_log("DEBUG WRITER: Updated personnel_id to {$personnel_id} for user {$user_id}.");
             }
@@ -805,7 +856,8 @@ function import_news_writers() {
  */
 add_action('admin_menu', 'add_user_data_management_page');
 
-function add_user_data_management_page() {
+function add_user_data_management_page()
+{
     add_submenu_page(
         'tools.php', // Parent slug for the 'Tools' menu.
         'User Data Management', // Page title.
@@ -820,7 +872,8 @@ function add_user_data_management_page() {
  * Renders the content of the 'User Data Management' admin page.
  * Handles form submissions for various data operations and displays messages.
  */
-function user_data_management_page_content() {
+function user_data_management_page_content()
+{
     // Check user capabilities for security.
     if (!current_user_can('manage_options')) {
         wp_die(__('You do not have sufficient permissions to access this page.'));
@@ -837,7 +890,7 @@ function user_data_management_page_content() {
         // Start output buffering to capture messages and flush them incrementally.
         // This is crucial for showing real-time progress for long operations.
         ob_start();
-        ?>
+?>
         <div class="wrap">
             <h1>User Data Management</h1>
             <p><strong>Starting data operation: <span style="color: blue;"><?php echo esc_html(str_replace('_', ' ', $action)); ?></span>. Please do not close this window.</strong></p>
@@ -847,115 +900,128 @@ function user_data_management_page_content() {
                 ob_flush();
                 flush();
                 ?>
-        <?php
+                <?php
 
-        // Use a switch statement to perform the requested action.
-        switch ($action) {
-            case 'import_experts':
-                $current_action_name = 'Importing News Experts';
-                echo '<div class="notice notice-info"><p>🚀 Starting to import news experts from the JSON file...</p></div>';
-                ob_flush(); flush();
-                $result = import_news_experts();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Error during News Experts import:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>News Experts import complete:</strong> ' . esc_html($result['message']) . '</p></div>';
+                // Use a switch statement to perform the requested action.
+                switch ($action) {
+                    case 'import_experts':
+                        $current_action_name = 'Importing News Experts';
+                        echo '<div class="notice notice-info"><p>🚀 Starting to import news experts from the JSON file...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = import_news_experts();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Error during News Experts import:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>News Experts import complete:</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        break;
+
+                    case 'import_writers':
+                        $current_action_name = 'Importing News Writers';
+                        echo '<div class="notice notice-info"><p>✍️ Starting to import news writers from the JSON file...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = import_news_writers();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Error during News Writers import:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>News Writers import complete:</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        break;
+
+                    case 'sync_personnel_active':
+                        $current_action_name = 'Syncing Active Personnel';
+                        echo '<div class="notice notice-info"><p>🔄 Connecting to external API to sync active personnel...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = sync_personnel_users();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Error syncing active personnel:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>Active Personnel sync complete:</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        break;
+
+                    case 'sync_personnel_inactive':
+                        $current_action_name = 'Syncing Inactive Personnel';
+                        echo '<div class="notice notice-info"><p>♻️ Connecting to external API to sync inactive/archived personnel...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = sync_personnel_users2();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Error syncing inactive personnel:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>Inactive Personnel sync complete:</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        break;
+
+                    case 'run_all_syncs':
+                        $current_action_name = 'Running All Synchronizations';
+                        echo '<div class="notice notice-info"><p>✨ <strong>Beginning all scheduled user data synchronization and import operations...</strong></p></div>';
+                        ob_flush();
+                        flush();
+
+                        // 1. Import News Experts
+                        echo '<div class="notice notice-info"><p>➡️ Step 1 of 4: Importing News Experts from `news-experts.json`...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = import_news_experts();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Step 1 Error (News Experts):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>Step 1 Complete (News Experts):</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        ob_flush();
+                        flush();
+
+                        // 2. Import News Writers
+                        echo '<div class="notice notice-info"><p>➡️ Step 2 of 4: Importing News Writers from `news-writers.json`...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = import_news_writers();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Step 2 Error (News Writers):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>Step 2 Complete (News Writers):</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        ob_flush();
+                        flush();
+
+                        // 3. Sync Active Personnel
+                        echo '<div class="notice notice-info"><p>➡️ Step 3 of 4: Syncing Active Personnel from primary external API...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = sync_personnel_users();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Step 3 Error (Active Personnel):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>Step 3 Complete (Active Personnel):</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        ob_flush();
+                        flush();
+
+                        // 4. Sync Inactive Personnel
+                        echo '<div class="notice notice-info"><p>➡️ Step 4 of 4: Syncing Inactive/Archived Personnel from secondary external API...</p></div>';
+                        ob_flush();
+                        flush();
+                        $result = sync_personnel_users2();
+                        if (is_wp_error($result)) {
+                            echo '<div class="notice notice-error"><p>❌ <strong>Step 4 Error (Inactive Personnel):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
+                        } else {
+                            echo '<div class="notice notice-success"><p>✅ <strong>Step 4 Complete (Inactive Personnel):</strong> ' . esc_html($result['message']) . '</p></div>';
+                        }
+                        ob_flush();
+                        flush();
+
+                        echo '<div class="notice notice-success"><p>🎉 <strong>All user data sync and import operations have finished successfully!</strong></p></div>';
+                        break;
                 }
-                break;
-
-            case 'import_writers':
-                $current_action_name = 'Importing News Writers';
-                echo '<div class="notice notice-info"><p>✍️ Starting to import news writers from the JSON file...</p></div>';
-                ob_flush(); flush();
-                $result = import_news_writers();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Error during News Writers import:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>News Writers import complete:</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                break;
-
-            case 'sync_personnel_active':
-                $current_action_name = 'Syncing Active Personnel';
-                echo '<div class="notice notice-info"><p>🔄 Connecting to external API to sync active personnel...</p></div>';
-                ob_flush(); flush();
-                $result = sync_personnel_users();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Error syncing active personnel:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>Active Personnel sync complete:</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                break;
-
-            case 'sync_personnel_inactive':
-                $current_action_name = 'Syncing Inactive Personnel';
-                echo '<div class="notice notice-info"><p>♻️ Connecting to external API to sync inactive/archived personnel...</p></div>';
-                ob_flush(); flush();
-                $result = sync_personnel_users2();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Error syncing inactive personnel:</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>Inactive Personnel sync complete:</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                break;
-
-            case 'run_all_syncs':
-                $current_action_name = 'Running All Synchronizations';
-                echo '<div class="notice notice-info"><p>✨ <strong>Beginning all scheduled user data synchronization and import operations...</strong></p></div>';
-                ob_flush(); flush();
-
-                // 1. Import News Experts
-                echo '<div class="notice notice-info"><p>➡️ Step 1 of 4: Importing News Experts from `news-experts.json`...</p></div>';
-                ob_flush(); flush();
-                $result = import_news_experts();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Step 1 Error (News Experts):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>Step 1 Complete (News Experts):</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                ob_flush(); flush();
-
-                // 2. Import News Writers
-                echo '<div class="notice notice-info"><p>➡️ Step 2 of 4: Importing News Writers from `news-writers.json`...</p></div>';
-                ob_flush(); flush();
-                $result = import_news_writers();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Step 2 Error (News Writers):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>Step 2 Complete (News Writers):</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                ob_flush(); flush();
-
-                // 3. Sync Active Personnel
-                echo '<div class="notice notice-info"><p>➡️ Step 3 of 4: Syncing Active Personnel from primary external API...</p></div>';
-                ob_flush(); flush();
-                $result = sync_personnel_users();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Step 3 Error (Active Personnel):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>Step 3 Complete (Active Personnel):</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                ob_flush(); flush();
-
-                // 4. Sync Inactive Personnel
-                echo '<div class="notice notice-info"><p>➡️ Step 4 of 4: Syncing Inactive/Archived Personnel from secondary external API...</p></div>';
-                ob_flush(); flush();
-                $result = sync_personnel_users2();
-                if (is_wp_error($result)) {
-                    echo '<div class="notice notice-error"><p>❌ <strong>Step 4 Error (Inactive Personnel):</strong> ' . esc_html($result->get_error_message()) . '</p></div>';
-                } else {
-                    echo '<div class="notice notice-success"><p>✅ <strong>Step 4 Complete (Inactive Personnel):</strong> ' . esc_html($result['message']) . '</p></div>';
-                }
-                ob_flush(); flush();
-
-                echo '<div class="notice notice-success"><p>🎉 <strong>All user data sync and import operations have finished successfully!</strong></p></div>';
-                break;
-        }
-        ?>
+                ?>
             </div>
             <p><a href="<?php echo esc_url(admin_url('tools.php?page=user-data-management')); ?>" class="button button-primary">← Back to User Data Management</a></p>
         </div>
-        <?php
+    <?php
         // End output buffering and flush all contents.
         ob_end_flush();
         exit; // Exit after processing the action to prevent displaying the form again.
@@ -1029,5 +1095,5 @@ function user_data_management_page_content() {
             </p>
         </form>
     </div>
-    <?php
+<?php
 }
