@@ -2,6 +2,9 @@
     "$schema": "https://schemas.wp.org/trunk/theme.json",
     "version": 3,
     "settings": {
+        "background": {
+			"backgroundImage": true
+		},
         "layout": {
             "contentSize": "42.5rem",
             "wideSize": "60rem"

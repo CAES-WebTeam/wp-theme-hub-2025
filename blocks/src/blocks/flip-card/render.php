@@ -5,7 +5,7 @@
 
 // Get the attributes
 $show_preview = $attributes['showPreview'] ?? false;
-$min_height = $attributes['minHeight'] ?? 300;
+$min_height = absint($attributes['minHeight'] ?? 300);
 
 // Get the block wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
