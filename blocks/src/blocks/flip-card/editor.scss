@@ -1,0 +1,10 @@
+// Editor specific styles
+
+// Ensure WordPress block styling still works
+.flip-card-container .wp-block-group {
+	
+	// Remove default group margins that might interfere
+	.wp-block-group__inner-container {
+		margin: 0;
+	}
+}

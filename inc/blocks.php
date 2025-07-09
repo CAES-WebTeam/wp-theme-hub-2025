@@ -35,6 +35,9 @@ function caes_hub_block_init()
 	// Register External Publisher
 	register_block_type(get_template_directory() . '/blocks/build/blocks/external-publisher' );
 
+	// Register Flip Card
+	register_block_type(get_template_directory() . '/blocks/build/blocks/flip-card' );
+
 	// Legacy Gallery
 	register_block_type(get_template_directory() . '/blocks/build/blocks/legacy-gallery' );
 
@@ -48,13 +51,10 @@ function caes_hub_block_init()
 	// Register Event Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-form');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-block');
-	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-featured'); // Not sure we need this one?
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-description');
-	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date'); // Ditto, this one's functionality is covered by date-time.
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-register');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date-time');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-location');
-	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-location-snippet'); // Not needed, duplicates event-details-location
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-online-location');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-cost');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-parking');
@@ -65,7 +65,6 @@ function caes_hub_block_init()
 	// Register Publication Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/expert-mark');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-authors');
-	// register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-featured-image');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-history');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-number');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-resources');

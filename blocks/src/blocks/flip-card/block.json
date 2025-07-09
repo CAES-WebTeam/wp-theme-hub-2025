@@ -1,0 +1,42 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "caes-hub/flip-card",
+    "version": "0.1.0",
+    "title": "Flip Card",
+    "category": "widgets",
+    "description": "Displays a flip card with back and front content.",
+    "supports": {
+        "align": true,
+        "html": false,
+        "color": {
+            "background": true,
+            "text": true,
+            "link": true
+        },
+        "spacing": {
+            "margin": true,
+            "padding": true
+        },
+        "shadow": true,
+        "layout": {
+            "allowOrientation": true
+        }
+    },
+    "attributes": {
+        "showPreview": {
+            "type": "boolean",
+            "default": false
+        },
+        "minHeight": {
+            "type": "number",
+            "default": 300
+        }
+    },
+    "textdomain": "flip-card",
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css",
+    "render": "file:./render.php",
+    "viewScript": "file:./view.js"
+}
