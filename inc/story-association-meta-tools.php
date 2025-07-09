@@ -336,12 +336,36 @@ function story_meta_association_link_story_images() {
     // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 
+    // Begin development feature: API call
+
+    $api_url = 'https://devssl.caes.uga.edu/rest/news/getAssociationStoryImage';
+
+    // Fetch data from the API.
+    $response = wp_remote_get($api_url);
+    if (is_wp_error($response)) {
+        error_log('API Request Failed for News Association Story Image: ' . $response->get_error_message());
+        return new WP_Error('api_error', 'News Association Story Image API Request Failed: ' . $response->get_error_message());
+    }
+
+    $raw_JSON = wp_remote_retrieve_body($response);
+    $decoded_JSON = json_decode($data, true);
+
+    if (!is_array($decoded_JSON)) {
+        error_log('Invalid API response for News Association Story Image.');
+        return new WP_Error('invalid_response', 'Invalid API response for News Association Story Image.');
+    }
+
+    // End development feature: API call
+
+
+
+
     // --- Start of modifications ---
     // Instead of using echo and die, which break the AJAX response, we'll send a JSON response
     // that includes the $json_data in the log, and mark it as finished so the frontend stops.
     wp_send_json_success([
-        'message' => 'Execution stopped at line 338. Contents of $json_data:',
-        'log' => [json_encode(json_decode($json_data, true), JSON_PRETTY_PRINT)], // Pretty print the JSON for readability
+        'message' => 'Execution stopped at line 338. Contents of $raw_JSON:',
+        'log' => [json_encode(json_decode($raw_JSON, true), JSON_PRETTY_PRINT)], // Pretty print the JSON for readability
         'finished' => true, // Mark as finished so the frontend stops polling
         'start' => 0, // Reset start to prevent further batches
     ]);
