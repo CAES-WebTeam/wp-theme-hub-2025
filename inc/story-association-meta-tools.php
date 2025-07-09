@@ -336,11 +336,16 @@ function story_meta_association_link_story_images() {
     // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 
-    //Jesse's dump and break
-    echo '<pre>';
-    var_dump($json_data);
-    echo '</pre>';
-    die('Jesse broke execution.');
+    // --- Start of modifications ---
+    // Instead of using echo and die, which break the AJAX response, we'll send a JSON response
+    // that includes the $json_data in the log, and mark it as finished so the frontend stops.
+    wp_send_json_success([
+        'message' => 'Execution stopped at line 338. Contents of $json_data:',
+        'log' => [json_encode(json_decode($json_data, true), JSON_PRETTY_PRINT)], // Pretty print the JSON for readability
+        'finished' => true, // Mark as finished so the frontend stops polling
+        'start' => 0, // Reset start to prevent further batches
+    ]);
+    // --- End of modifications ---
 
     // Decodes the JSON string into a PHP associative array.
     // 'true' ensures objects are returned as associative arrays.
