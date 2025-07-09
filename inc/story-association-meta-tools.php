@@ -302,38 +302,72 @@ function story_meta_association_sync_keywords() {
 
 // AJAX handler for Link Story Images
 add_action('wp_ajax_link_story_images', 'story_meta_association_link_story_images');
+// Registers the AJAX action 'link_story_images' to call the 'story_meta_association_link_story_images' function.
+// This allows JavaScript on the frontend (or an admin script) to trigger this PHP function.
+
 function story_meta_association_link_story_images() {
+    // Verifies the nonce to protect against CSRF attacks.
+    // 'story_meta_association_tools_nonce' is the action name used when creating the nonce,
+    // and 'nonce' is the name of the POST variable where the nonce is expected.
     check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
 
+    // Checks if the current user has 'manage_options' capability (typically administrators).
+    // If not, it sends a JSON error response and terminates the script, ensuring only authorized users can run this.
     if (!current_user_can('manage_options')) {
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
+    // Defines the path to the JSON file containing the story-image association data.
+    // get_template_directory() gets the absolute path to the current theme's directory.
     $json_file = get_template_directory() . '/json/news-image-association.json';
 
+    // Checks if the specified JSON file exists.
+    // If not, it sends a JSON error response with the file path and terminates.
     if (!file_exists($json_file)) {
         wp_send_json_error('JSON file not found: ' . $json_file);
     }
 
+    // Reads the entire content of the JSON file into a string.
     $json_data = file_get_contents($json_file);
+    // Removes a UTF-8 Byte Order Mark (BOM) if present at the beginning of the string.
+    // BOMs can interfere with json_decode().
     $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+    // Ensures the data is correctly UTF-8 encoded. While the previous line handles BOM,
+    // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+
+    //Jesse's dump and break
+    echo '<pre>';
+    var_dump($json_data);
+    echo '</pre>';
+    die('Jesse broke execution.');
+
+    // Decodes the JSON string into a PHP associative array.
+    // 'true' ensures objects are returned as associative arrays.
     $records = json_decode($json_data, true);
 
+    // Checks for JSON decoding errors.
+    // If an error occurred during decoding, it sends a JSON error response with the error message.
     if (json_last_error() !== JSON_ERROR_NONE) {
         wp_send_json_error('JSON decode error: ' . json_last_error_msg());
     }
 
+    // Retrieves the 'start' index from the POST request, or defaults to 0.
+    // This parameter is used for batch processing to determine which record to start from.
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
     $limit = 500; // Batch limit
 
     $total_records = count($records);
+    // Extracts a subset of records for the current batch, starting from '$start' for '$limit' records.
     $batch_records = array_slice($records, $start, $limit);
 
-    $updated = 0;
-    $log = [];
+    $updated = 0; // Counter for records successfully updated in the current batch.
+    $log = [];    // Array to store log messages for the current batch.
 
+    // Checks if the current batch of records is empty.
+    // This typically means all records have been processed.
     if (empty($batch_records)) {
+        // Sends a success JSON response indicating completion.
         wp_send_json_success([
             'message' => "Image linking complete. No more records to process.",
             'finished' => true,
@@ -341,16 +375,23 @@ function story_meta_association_link_story_images() {
         ]);
     }
 
+    // Loops through each record in the current batch.
     foreach ($batch_records as $index => $record) {
+        // Extracts and sanitizes 'STORY_ID' and 'IMAGE_ID' from the current record.
         $story_id = intval($record['STORY_ID']);
         $image_id = intval($record['IMAGE_ID']);
+        // Calculates the absolute index of the current record within the total records.
         $current_index = $start + $index;
 
+        // Skips the record if either 'STORY_ID' or 'IMAGE_ID' is missing or invalid (0 after intval).
         if (!$story_id || !$image_id) {
             $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Skipping due to missing Story ID or Image ID.";
-            continue;
+            continue; // Move to the next record in the batch.
         }
 
+        // Queries WordPress posts to find a 'post' type post with a custom field 'id' matching '$story_id'.
+        // 'numberposts' => 1 ensures only one post is returned, as we expect a unique match.
+        // 'fields' => 'ids' returns only the post ID, optimizing the query.
         $posts = get_posts([
             'post_type'  => 'post',
             'meta_key'   => 'id',
@@ -359,25 +400,33 @@ function story_meta_association_link_story_images() {
             'fields'     => 'ids',
         ]);
 
+        // If no post is found for the given 'STORY_ID', logs a message and skips to the next record.
         if (empty($posts)) {
             $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Post with Story ID {$story_id} not found.";
-            continue;
+            continue; // Move to the next record in the batch.
         }
+        // Retrieves the ID of the found post.
         $post_id = $posts[0];
 
+        // Updates a custom field named 'image_id' for the found post with the '$image_id'.
+        // This assumes 'image_id' is a custom field registered, probably by ACF.
         update_field('image_id', $image_id, $post_id);
-        $updated++;
+        $updated++; // Increments the counter for successfully updated records.
+        // Logs the successful update.
         $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Updated Post ID {$post_id} with Image ID {$image_id}.";
     }
 
+    // Calculates the starting index for the *next* batch.
     $next_start = $start + count($batch_records);
+    // Determines if all records have been processed.
     $finished = ($next_start >= $total_records);
 
+    // Sends a JSON success response with details about the processed batch.
     wp_send_json_success([
-        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Total updated in this batch: {$updated}. Total records: {$total_records}",
-        'start'    => $next_start,
-        'finished' => $finished,
-        'log'      => $log,
+        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Total updated in this batch: {$updated}. Total records: {$total_records}", // Summary message.
+        'start'    => $next_start, // The starting index for the next AJAX call.
+        'finished' => $finished,   // Boolean indicating if all processing is complete.
+        'log'      => $log,        // Array of log messages for this batch.
     ]);
 }
 
