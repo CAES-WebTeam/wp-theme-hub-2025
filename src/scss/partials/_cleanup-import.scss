@@ -1,3 +1,58 @@
+// Mixins
+
+@mixin figure-image-styles {
+    display: inline-block;
+    clear: both;
+    margin: var(--wp--style--block-gap) auto;
+
+    &.align-left {
+        float: left;
+        margin: 0 var(--wp--style--block-gap) 0 0 !important;
+        margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    }
+
+    &.align-right {
+        float: right;
+        margin: 0 0 0 var(--wp--style--block-gap) !important;
+        margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
+    }
+
+    &.image-center,
+    &.align-center {
+        margin: var(--wp--style--block-gap) auto 0 auto;
+        display: table;
+    }
+
+    &:first-child {
+        margin-top: 0;
+    }
+
+    img {
+        max-width: 100%;
+        margin: 0;
+        display: block;
+        height: auto;
+        box-shadow: none;
+
+        &.image-center,
+        &.image-left,
+        &.image-right {
+            margin: 0;
+            clear: unset;
+            float: unset;
+        }
+    }
+
+    figcaption {
+        background-color: var(--wp--preset--color--base-two);
+        color: var(--wp--preset--color--contrast);
+        font-size: var(--wp--preset--font-size--small);
+        margin-top: 0;
+        padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+    }
+}
+
+
 // These styles are used to cleanup the content that was imported from our older systems.
 
 .classic-content-wrapper {
@@ -423,60 +478,7 @@
 
     figure.image,
     figure {
-
-        display: inline-block;
-        clear: both;
-        margin: var(--wp--style--block-gap) auto;
-
-        &.align-left {
-            float: left;
-            margin: 0 var(--wp--style--block-gap) 0 0 !important;
-            margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
-        }
-
-        &.align-right {
-            float: right;
-            margin: 0 0 0 var(--wp--style--block-gap) !important;
-            margin-inline-end: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70)) !important;
-        }
-
-        &.image-center,
-        &.align-center {
-            margin: var(--wp--style--block-gap) auto 0 auto;
-        }
-
-        &:first-child {
-            margin-top: 0;
-        }
-
-        img {
-            max-width: 100%;
-            margin: 0;
-            display: block;
-            height: auto;
-            box-shadow: none;
-
-            &.image-center,
-            &.image-left,
-            &.image-right {
-                margin: 0;
-                clear: unset;
-                float: unset;
-            }
-
-        }
-
-        figcaption {
-            background-color: var(--wp--preset--color--base-two);
-            color: var(--wp--preset--color--contrast);
-            font-size: var(--wp--preset--font-size--small);
-            margin-top: 0px;
-            padding-top: var(--wp--preset--spacing--30);
-            padding-right: var(--wp--preset--spacing--40);
-            padding-bottom: var(--wp--preset--spacing--30);
-            padding-left: var(--wp--preset--spacing--40);
-        }
-
+        @include figure-image-styles;
     }
 
     // Clear line
@@ -498,6 +500,17 @@
         }
     }
 
+}
+
+figure.image:not(.wp-block-image) {
+    @include figure-image-styles;
+}
+
+figure.image:not(.wp-block-image) {
+    &.image-center,
+    &.align-center {
+        display: table;
+    }
 }
 
 // Stories
