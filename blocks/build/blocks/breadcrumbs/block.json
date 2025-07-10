@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/breadcrumbs",
+  "version": "1.0.0",
+  "title": "Breadcrumbs",
+  "category": "widgets",
+  "icon": "admin-home",
+  "description": "Display hierarchical breadcrumb navigation for the current page.",
+  "keywords": [
+    "breadcrumbs",
+    "navigation",
+    "hierarchy"
+  ],
+  "textdomain": "your-textdomain",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "className": true,
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true
+    },
+    "color": {
+      "text": true,
+      "link": true,
+      "background": true
+    }
+  },
+  "attributes": {
+    "showHome": {
+      "type": "boolean",
+      "default": true
+    },
+    "homeText": {
+      "type": "string",
+      "default": "Home"
+    },
+    "maxDepth": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

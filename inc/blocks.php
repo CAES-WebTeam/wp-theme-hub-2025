@@ -4,6 +4,10 @@
 // Register Blocks
 function caes_hub_block_init()
 {
+
+	// Register breadcrumbs block
+	register_block_type(get_template_directory() . '/blocks/build/blocks/breadcrumbs' );
+	
 	// Register Header Brand block
 	register_block_type(get_template_directory() . '/blocks/build/blocks/header-brand' );
 
