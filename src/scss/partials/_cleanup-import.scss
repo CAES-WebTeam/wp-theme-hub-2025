@@ -506,6 +506,12 @@ figure.image:not(.wp-block-image) {
     @include figure-image-styles;
 }
 
+figure.image:not(.wp-block-image):not(.align-left):not(.align-right):not(.align-center) {
+    img {
+        width: 100%;
+    }
+}
+
 figure.image:not(.wp-block-image) {
     &.image-center,
     &.align-center {
