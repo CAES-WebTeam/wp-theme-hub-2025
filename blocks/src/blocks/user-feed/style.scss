@@ -66,11 +66,13 @@
             }
 
             .wp-block-caes-hub-user-image {
-                transition: box-shadow 0.3s ease-in-out;
+                transition: transform 0.3s ease-in-out;
                 img {
                     transition: transform 0.3s ease-in-out;
                 }
             }
+
+            transition: box-shadow 0.3s ease-in-out;
 
             &:hover,
             &:focus-within {
