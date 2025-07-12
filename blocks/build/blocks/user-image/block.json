@@ -31,6 +31,22 @@
     "mobileVersion": {
       "type": "boolean",
       "default": false
+    },
+    "aspectRatio": {
+      "type": "string",
+      "default": "auto"
+    },
+    "width": {
+      "type": "number",
+      "default": 100
+    },
+    "widthUnit": {
+      "type": "string",
+      "default": "%"
+    },
+    "fullHeight": {
+      "type": "boolean",
+      "default": false
     }
   },
   "editorScript": "file:./index.js",

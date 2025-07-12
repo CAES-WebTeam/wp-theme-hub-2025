@@ -16,7 +16,7 @@
       "typography": {
         "lineHeight": true,
         "fontSize": true,
-        "textTransform": true
+        "textAlign": true
       },
       "color": {
         "background": true,
@@ -27,6 +27,7 @@
         "margin": true
       }
     },
+    "usesContext": ["caes-hub/user-feed/userId", "caes-hub/user-feed/user"],
     "editorScript": "file:./index.js",
       "editorStyle": "file:./index.css",
       "style": "file:./style-index.css"

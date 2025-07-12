@@ -1,39 +1,55 @@
 {
-    "$schema": "https://schemas.wp.org/trunk/block.json",
-    "apiVersion": 3,
-    "name": "caes-hub/user-image",
-    "version": "0.1.0",
-    "title": "User Profile Photo",
-    "category": "theme",
-    "icon": "admin-users",
-    "description": "Displays the user's profile photo.",
-    "acf": {
-      "mode": "preview",
-      "renderTemplate": "./render.php"
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/user-image",
+  "version": "0.1.0",
+  "title": "User Profile Photo",
+  "category": "theme",
+  "icon": "admin-users",
+  "description": "Displays the user's profile photo.",
+  "acf": {
+    "mode": "preview",
+    "renderTemplate": "./render.php"
+  },
+  "supports": {
+    "anchor": true,
+    "typography": {
+      "lineHeight": true,
+      "fontSize": true,
+      "textTransform": true
     },
-    "supports": {
-      "anchor": true,
-      "typography": {
-        "lineHeight": true,
-        "fontSize": true,
-        "textTransform": true
-      },
-      "color": {
-        "background": true,
-        "text": true
-      },
-      "spacing": {
-        "padding": true,
-        "margin": true
-      }
+    "color": {
+      "background": true,
+      "text": true
     },
-    "attributes": {
-      "mobileVersion": {
-        "type": "boolean",
-        "default": false
-      }
+    "spacing": {
+      "padding": true,
+      "margin": true
+    }
+  },
+  "attributes": {
+    "mobileVersion": {
+      "type": "boolean",
+      "default": false
     },
-    "editorScript": "file:./index.js",
-      "editorStyle": "file:./index.css",
-      "style": "file:./style-index.css"
-  }
+    "aspectRatio": {
+      "type": "string",
+      "default": "auto"
+    },
+    "width": {
+      "type": "number",
+      "default": 100
+    },
+    "widthUnit": {
+      "type": "string",
+      "default": "%"
+    },
+    "fullHeight": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "editorScript": "file:./index.js",
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css"
+}

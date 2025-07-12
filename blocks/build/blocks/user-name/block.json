@@ -16,7 +16,7 @@
     "typography": {
       "lineHeight": true,
       "fontSize": true,
-      "textTransform": true
+      "textAlign": true
     },
     "color": {
       "background": true,
@@ -31,8 +31,16 @@
     "element": {
       "type": "string",
       "default": "h1"
+    },
+    "linkToProfile": {
+      "type": "boolean",
+      "default": false
     }
   },
+  "usesContext": [
+    "userId",
+    "user"
+  ],
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
   "style": "file:./style-index.css"

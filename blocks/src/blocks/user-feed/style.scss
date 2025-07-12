@@ -1,0 +1,88 @@
+/* User Feed Grid Layout */
+.wp-block-caes-hub-user-feed {
+
+    .user-feed-grid {
+        display: grid;
+        gap: 1rem;
+
+        @for $i from 1 through 16 {
+            &.columns-#{$i} {
+                grid-template-columns: repeat(#{$i}, 1fr);
+            }
+        }
+
+        &> :is(*, div) {
+            margin: 0;
+        }
+
+        &.gap-wp-preset-spacing-20 {
+            gap: var(--wp--preset--spacing--20);
+        }
+
+        &.gap-wp-preset-spacing-30 {
+            gap: var(--wp--preset--spacing--30);
+        }
+
+        &.gap-wp-preset-spacing-40 {
+            gap: var(--wp--preset--spacing--40);
+        }
+
+        &.gap-wp-preset-spacing-50 {
+            gap: var(--wp--preset--spacing--50);
+        }
+
+        &.gap-wp-preset-spacing-60 {
+            gap: var(--wp--preset--spacing--60);
+        }
+
+        &.gap-wp-preset-spacing-70 {
+            gap: var(--wp--preset--spacing--70);
+        }
+
+        &.gap-wp-preset-spacing-80 {
+            gap: var(--wp--preset--spacing--80);
+        }
+
+    }
+
+    &.link-item-with-name {
+        .caes-hub-user-feed-item {
+            position: relative;
+
+            .wp-block-caes-hub-user-name {
+                a {
+                    text-decoration: none;
+
+                    &:after {
+                        content: "";
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        right: 0;
+                        bottom: 0;
+                        z-index: 1;
+                    }
+                }
+            }
+
+            .wp-block-caes-hub-user-image {
+                transition: box-shadow 0.3s ease-in-out;
+                img {
+                    transition: transform 0.3s ease-in-out;
+                }
+            }
+
+            &:hover,
+            &:focus-within {
+                box-shadow: var(--wp--preset--shadow--large-dark);
+                .wp-block-caes-hub-user-image {
+                    img {
+                        transform: scale(1.1);
+                    }
+                }
+
+            }
+        }
+    }
+
+}

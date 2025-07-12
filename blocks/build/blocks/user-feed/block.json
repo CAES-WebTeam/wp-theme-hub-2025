@@ -1,0 +1,79 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/user-feed",
+  "version": "0.1.0",
+  "title": "User Feed",
+  "category": "widgets",
+  "icon": "admin-users",
+  "description": "Displays a feed of users based on selected criteria.",
+  "example": {},
+  "supports": {
+    "align": true,
+    "html": false,
+    "color": {
+      "background": true,
+      "text": true,
+      "link": true
+    },
+    "spacing": {
+      "margin": true,
+      "padding": true
+    },
+    "shadow": true,
+    "layout": {
+      "allowOrientation": true
+    }
+  },
+  "attributes": {
+    "className": {
+      "type": "string",
+      "default": "link-item-with-name"
+    },
+    "userIds": {
+      "type": "array",
+      "default": []
+    },
+    "feedType": {
+      "type": "string",
+      "default": "hand-picked"
+    },
+    "numberOfUsers": {
+      "type": "number",
+      "default": 5
+    },
+    "customGapStep": {
+      "type": "number",
+      "default": 5
+    },
+    "displayLayout": {
+      "type": "string",
+      "default": "list"
+    },
+    "columns": {
+      "type": "number",
+      "default": 3
+    },
+    "gridItemPosition": {
+      "type": "string",
+      "default": "auto"
+    },
+    "gridAutoColumnWidth": {
+      "type": "number",
+      "default": 24
+    },
+    "gridAutoColumnUnit": {
+      "type": "string",
+      "default": "rem"
+    }
+  },
+  "providesContext": {
+    "caes-hub/user-feed/userId": "userId",
+    "caes-hub/user-feed/user": "user"
+  },
+  "textdomain": "user-feed",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

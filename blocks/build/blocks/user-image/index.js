@@ -24,8 +24,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__);
 
 
-// import { useBlockProps } from '@wordpress/block-editor';
-
 
 
 
@@ -34,26 +32,115 @@ function Edit({
   attributes,
   setAttributes
 }) {
+  const {
+    mobileVersion,
+    aspectRatio,
+    width,
+    widthUnit,
+    fullHeight
+  } = attributes;
+
+  // Aspect ratio options matching WordPress image block
+  const aspectRatioOptions = [{
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Original'),
+    value: 'auto'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Square'),
+    value: '1'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('16:9'),
+    value: '16/9'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('4:3'),
+    value: '4/3'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('3:2'),
+    value: '3/2'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('9:16'),
+    value: '9/16'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('3:4'),
+    value: '3/4'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('2:3'),
+    value: '2/3'
+  }];
+
+  // Generate inline styles for preview
+  const imageStyles = {
+    aspectRatio: aspectRatio !== 'auto' ? aspectRatio : undefined,
+    width: fullHeight ? '100%' : `${width}${widthUnit}`,
+    height: fullHeight ? '100%' : undefined,
+    objectFit: aspectRatio !== 'auto' || fullHeight ? 'cover' : undefined
+  };
+  const figureStyles = {
+    width: fullHeight ? '100%' : `${width}${widthUnit}`,
+    height: fullHeight ? '100%' : undefined
+  };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Panel, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-            label: "Mobile version",
-            checked: attributes.mobileVersion,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+          title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display Settings'),
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Mobile version'),
+            checked: mobileVersion,
             onChange: value => setAttributes({
               mobileVersion: value
             })
-          })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Full height'),
+            checked: fullHeight,
+            onChange: value => setAttributes({
+              fullHeight: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Make the image container fill 100% of the parent height.')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Aspect Ratio'),
+            value: aspectRatio,
+            options: aspectRatioOptions,
+            onChange: value => setAttributes({
+              aspectRatio: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set the aspect ratio for the image. "Original" maintains the natural proportions.')
+          }), !fullHeight && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalUnitControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Width'),
+            value: `${width}${widthUnit}`,
+            onChange: value => {
+              const parsed = parseFloat(value);
+              const unit = value.replace(parsed.toString(), '') || '%';
+              setAttributes({
+                width: parsed || 100,
+                widthUnit: unit
+              });
+            },
+            units: [{
+              value: '%',
+              label: '%',
+              default: 100
+            }, {
+              value: 'px',
+              label: 'px',
+              default: 300
+            }, {
+              value: 'rem',
+              label: 'rem',
+              default: 20
+            }],
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set the width of the image container.')
+          })]
         })
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("figure", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
-        className: attributes.mobileVersion ? 'mobile-version' : ''
+        className: mobileVersion ? 'mobile-version' : '',
+        style: figureStyles
       }),
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("img", {
         src: _assets_images_cat_stock_jpg__WEBPACK_IMPORTED_MODULE_4__,
-        alt: "Cat"
+        alt: "Cat",
+        style: imageStyles
       })
     })]
   });
@@ -199,7 +286,7 @@ module.exports = window["wp"]["i18n"];
   \******************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-image","version":"0.1.0","title":"User Profile Photo","category":"theme","icon":"admin-users","description":"Displays the user\'s profile photo.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textTransform":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"mobileVersion":{"type":"boolean","default":false}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-image","version":"0.1.0","title":"User Profile Photo","category":"theme","icon":"admin-users","description":"Displays the user\'s profile photo.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textTransform":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"mobileVersion":{"type":"boolean","default":false},"aspectRatio":{"type":"string","default":"auto"},"width":{"type":"number","default":100},"widthUnit":{"type":"string","default":"%"},"fullHeight":{"type":"boolean","default":false}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

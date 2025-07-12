@@ -21,50 +21,33 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/user-name/editor.scss");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
 /* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__);
-/**
- * Retrieves the translation of text.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
- */
-
-
-/**
- * React hook that is used to mark the block wrapper element.
- * It provides all the necessary props like the class name.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
- */
-// import { useBlockProps } from '@wordpress/block-editor';
 
 
 
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * Those files can contain any CSS code that gets applied to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
 
-
-/**
- * The edit function describes the structure of your block in the context of the
- * editor. This represents what the editor will render when the block is used.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-edit-save/#edit
- *
- * @return {Element} Element to render.
- */
 
 function Edit({
   attributes,
   setAttributes
 }) {
+  const {
+    element,
+    linkToProfile
+  } = attributes;
+  const nameContent = linkToProfile ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+    href: "#",
+    style: {
+      textDecoration: 'underline',
+      color: 'inherit'
+    },
+    children: "Jane Doe"
+  }) : 'Jane Doe';
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Element', 'caes-hub'),
-          value: attributes.element,
+          value: element,
           options: [{
             label: 'Heading 1',
             value: 'h1'
@@ -90,14 +73,21 @@ function Edit({
           onChange: val => setAttributes({
             element: val
           })
-        })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Link to Profile', 'caes-hub'),
+          help: linkToProfile ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Name will link to user profile.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Name will display without link.', 'caes-hub'),
+          checked: linkToProfile,
+          onChange: val => setAttributes({
+            linkToProfile: val
+          })
+        })]
       })
-    }), attributes.element ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(attributes.element, {
+    }), element ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(attributes.element, {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: "Jane Doe"
+      children: nameContent
     }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: "Jane Doe"
+      children: nameContent
     })]
   });
 }
@@ -232,7 +222,7 @@ module.exports = window["wp"]["i18n"];
   \*****************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-name","version":"0.1.0","title":"User Name","category":"theme","icon":"admin-users","description":"Displays the user\'s name.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textTransform":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"element":{"type":"string","default":"h1"}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-name","version":"0.1.0","title":"User Name","category":"theme","icon":"admin-users","description":"Displays the user\'s name.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textAlign":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"element":{"type":"string","default":"h1"},"linkToProfile":{"type":"boolean","default":false}},"usesContext":["userId","user"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

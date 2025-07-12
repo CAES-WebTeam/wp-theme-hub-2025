@@ -1,28 +1,66 @@
- .wp-block-caes-hub-user-image {
-    aspect-ratio: 3/4;
-    height: 100%;
-    width: 100%;
+.wp-block-caes-hub-user-image {
+    position: relative;
+    line-height: 0; // Eliminate any line-height spacing
+    overflow: hidden;
+    
     img {
-        object-fit: cover;
+        height: auto;
         width: 100%;
-        height: 100%;
+        display: block; // Remove inline spacing
+        vertical-align: top; // Backup for any inline behavior
+        
+        // When aspect ratio is applied, ensure proper object fitting
+        &[style*="aspect-ratio"] {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+        
+        // When full height is applied
+        &[style*="height: 100%"] {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
     }
+    
+    // When figure has full height
+    &[style*="height: 100%"] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+    }
+    
+    // Responsive behavior
     &.desktop-version {
         display: block;
     }
+    
     &.mobile-version {
         display: none;
     }
- }
+}
 
- @media screen and (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .wp-block-caes-hub-user-image {
         &.desktop-version {
             display: none;
         }
+        
         &.mobile-version {
             display: block;
-            max-width: 200px;
+            
+            
+            // Override width for mobile if it's too large
+            // &[style*="width"] {
+            //     max-width: min(200px, var(--width, 100%)) !important;
+            // }
         }
     }
- }
+}

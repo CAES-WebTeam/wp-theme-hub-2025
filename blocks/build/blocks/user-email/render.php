@@ -2,7 +2,7 @@
 
 
 // Get author ID
-$author_id = get_queried_object_id();
+$author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_user_id'] : get_queried_object_id();
 
 // Get email
 $email = get_the_author_meta('user_email', $author_id);
