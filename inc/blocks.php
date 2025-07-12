@@ -79,6 +79,7 @@ function caes_hub_block_init()
 
 	// Register User Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-feed');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-department');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-name');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-position');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-email');
