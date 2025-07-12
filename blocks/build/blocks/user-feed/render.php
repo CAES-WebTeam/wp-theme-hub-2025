@@ -61,18 +61,30 @@ if ($feed_type === 'hand-picked') {
         return;
     }
 
-    $block_query_args = array(
-        'include'    => $user_ids,
-        'orderby'    => 'include',
-        'number'     => count($user_ids),
-    );
+    // Create cache key based on user IDs
+    $cache_key = 'user_feed_users_' . md5(implode('_', $user_ids));
+    
+    // Try to get cached users first
+    $users = wp_cache_get($cache_key, 'caes_user_feed');
+    
+    if (false === $users) {
+        // Cache miss - fetch users from database
+        $block_query_args = array(
+            'include'    => $user_ids,
+            'orderby'    => 'include',
+            'number'     => count($user_ids),
+        );
+        
+        $user_query = new WP_User_Query($block_query_args);
+        $users = $user_query->get_results();
+        
+        // Cache the results for 1 hour (3600 seconds)
+        // You can adjust this time based on how often user data changes
+        wp_cache_set($cache_key, $users, 'caes_user_feed', HOUR_IN_SECONDS);
+    }
 } else {
     return;
 }
-
-// Create the user query
-$user_query = new WP_User_Query($block_query_args);
-$users = $user_query->get_results();
 
 if (!empty($users)) {
 ?>
