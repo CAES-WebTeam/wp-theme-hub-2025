@@ -155,7 +155,7 @@ module.exports = window["wp"]["i18n"];
   \***********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-department","version":"0.1.0","title":"User Department","category":"theme","icon":"admin-users","description":"Displays the user\'s department.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textAlign":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"usesContext":["caes-hub/user-feed/userId","caes-hub/user-feed/user"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-department","version":"0.1.0","title":"User Department","category":"theme","icon":"admin-users","description":"Displays the user\'s department.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textAlign":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"__experimentalBorder":{"color":true,"radius":true,"style":true,"width":true}},"usesContext":["caes-hub/user-feed/userId","caes-hub/user-feed/user"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 
