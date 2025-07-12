@@ -8,27 +8,36 @@
     "icon": "admin-users",
     "description": "Displays the user's department.",
     "acf": {
-      "mode": "preview",
-      "renderTemplate": "./render.php"
+        "mode": "preview",
+        "renderTemplate": "./render.php"
     },
     "supports": {
-      "anchor": true,
-      "typography": {
-        "lineHeight": true,
-        "fontSize": true,
-        "textAlign": true
-      },
-      "color": {
-        "background": true,
-        "text": true
-      },
-      "spacing": {
-        "padding": true,
-        "margin": true
-      }
+        "anchor": true,
+        "typography": {
+            "lineHeight": true,
+            "fontSize": true,
+            "textAlign": true
+        },
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "padding": true,
+            "margin": true
+        },
+        "__experimentalBorder": {
+            "color": true,
+            "radius": true,
+            "style": true,
+            "width": true
+        }
     },
-    "usesContext": ["caes-hub/user-feed/userId", "caes-hub/user-feed/user"],
+    "usesContext": [
+        "caes-hub/user-feed/userId",
+        "caes-hub/user-feed/user"
+    ],
     "editorScript": "file:./index.js",
-      "editorStyle": "file:./index.css",
-      "style": "file:./style-index.css"
-  }
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css"
+}
