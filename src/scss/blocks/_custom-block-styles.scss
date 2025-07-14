@@ -222,6 +222,25 @@ ul.is-style-caes-hub-list-checkbox {
     width: 100%;
 }
 
+.is-style-caes-hub-step {
+    position: relative;
+    overflow: hidden;
+    padding-right: 60px;
+}
+
+.is-style-caes-hub-step::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 100%; 
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64.237 150.678' preserveAspectRatio='none'%3E%3Cpath d='M10 150.678l54.238-75.339L10 0H0l54.238 75.339L0 150.678z' fill='%23fff' style='isolation:isolate'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center right;
+}
+
 // POST TERMS
 
 @media print {

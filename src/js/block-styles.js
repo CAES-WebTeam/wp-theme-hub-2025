@@ -100,6 +100,11 @@ wp.blocks.registerBlockStyle( 'core/group', {
   label: 'Align Right 40%'
 })
 
+wp.blocks.registerBlockStyle( 'core/group', {
+  name: 'caes-hub-step',
+  label: 'Step Arrow Right'
+})
+
 // CUSTOM BLOCKS
 wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
   name: 'caes-hub-compact',
