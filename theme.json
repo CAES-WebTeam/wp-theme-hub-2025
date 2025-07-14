@@ -377,7 +377,7 @@
             "gradients": [
                 {
                     "slug": "olympic-half",
-                    "gradient": "linear-gradient(to bottom, var(--wp--preset--color--olympic) 66%, transparent 33%)",
+                    "gradient": "linear-gradient(to bottom, rgb(0, 78, 96) 0px, rgb(0, 78, 96) 400px, transparent 200px, transparent 100%)",
                     "name": "Olympic to transparent"
                 }
             ]
