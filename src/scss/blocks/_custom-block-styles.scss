@@ -241,6 +241,12 @@ ul.is-style-caes-hub-list-checkbox {
     background-position: center right;
 }
 
+@media screen and (max-width: 781px) {
+    .is-style-caes-hub-step::after {
+        display: none;
+    }
+}
+
 // POST TERMS
 
 @media print {
