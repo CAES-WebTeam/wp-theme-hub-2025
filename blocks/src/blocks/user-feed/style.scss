@@ -72,11 +72,11 @@
                 }
             }
 
-            transition: box-shadow 0.3s ease-in-out;
+            // transition: box-shadow 0.3s ease-in-out;
 
             &:hover,
             &:focus-within {
-                box-shadow: var(--wp--preset--shadow--small-dark);
+                // box-shadow: var(--wp--preset--shadow--small-dark);
                 .wp-block-caes-hub-user-image {
                     img {
                         transform: scale(1.1);
