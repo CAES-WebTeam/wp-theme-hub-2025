@@ -9,7 +9,6 @@
   "description": "Displays a feed of users based on selected criteria.",
   "example": {},
   "supports": {
-    "align": true,
     "html": false,
     "color": {
       "background": true,
