@@ -337,7 +337,7 @@ function story_meta_association_link_story_images() {
     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 
      // Begin development feature: API call
-    $api_url = 'https://devssl.caes.uga.edu/rest/news/getAssociationStoryImage';
+    $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
     $decoded_API_response = null; // Initialize to null
 
     try {
