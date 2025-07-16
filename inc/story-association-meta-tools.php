@@ -336,23 +336,38 @@ function story_meta_association_link_story_images() {
     // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 
-    // Begin development feature: API call
-
+     // Begin development feature: API call
     $api_url = 'https://devssl.caes.uga.edu/rest/news/getAssociationStoryImage';
+    $decoded_API_response = null; // Initialize to null
 
-    // Fetch data from the API.
-    $response = wp_remote_get($api_url);
-    if (is_wp_error($response)) {
-        error_log('API Request Failed for News Association Story Image: ' . $response->get_error_message());
-        return new WP_Error('api_error', 'News Association Story Image API Request Failed: ' . $response->get_error_message());
-    }
+    try {
+        // Fetch data from the API.
+        $response = wp_remote_get($api_url);
 
-    $raw_JSON = wp_remote_retrieve_body($response);
-    $decoded_JSON = json_decode($data, true);
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
 
-    if (!is_array($decoded_JSON)) {
-        error_log('Invalid API response for News Association Story Image.');
-        return new WP_Error('invalid_response', 'Invalid API response for News Association Story Image.');
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        // Merge API data with local JSON data if needed, or replace based on logic
+        // For this example, we'll assume the local JSON is still the primary,
+        // and this API call was for validation or supplementary data.
+        // If the intent was to replace $records with API data:
+        // $records = $decoded_API_response;
+
+    } catch (Exception $e) {
+        error_log('News Association Story Image API Error: ' . $e->getMessage());
+        wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
     }
 
     // End development feature: API call
