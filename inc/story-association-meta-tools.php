@@ -327,14 +327,14 @@ function story_meta_association_link_story_images() {
         wp_send_json_error('JSON file not found: ' . $json_file);
     }
 
-    // Reads the entire content of the JSON file into a string.
-    $json_data = file_get_contents($json_file);
-    // Removes a UTF-8 Byte Order Mark (BOM) if present at the beginning of the string.
-    // BOMs can interfere with json_decode().
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    // Ensures the data is correctly UTF-8 encoded. While the previous line handles BOM,
-    // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+    // // Reads the entire content of the JSON file into a string.
+    // $json_data = file_get_contents($json_file);
+    // // Removes a UTF-8 Byte Order Mark (BOM) if present at the beginning of the string.
+    // // BOMs can interfere with json_decode().
+    // $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+    // // Ensures the data is correctly UTF-8 encoded. While the previous line handles BOM,
+    // // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
+    // $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 
      // Begin development feature: API call
     $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
@@ -359,11 +359,7 @@ function story_meta_association_link_story_images() {
             throw new Exception('Invalid API response format: Expected an array.');
         }
 
-        // Merge API data with local JSON data if needed, or replace based on logic
-        // For this example, we'll assume the local JSON is still the primary,
-        // and this API call was for validation or supplementary data.
-        // If the intent was to replace $records with API data:
-        // $records = $decoded_API_response;
+        $records = $decoded_API_response;
 
     } catch (Exception $e) {
         error_log('News Association Story Image API Error: ' . $e->getMessage());
@@ -388,7 +384,7 @@ function story_meta_association_link_story_images() {
 
     // Decodes the JSON string into a PHP associative array.
     // 'true' ensures objects are returned as associative arrays.
-    $records = json_decode($json_data, true);
+    // $records = json_decode($json_data, true);
 
     // Checks for JSON decoding errors.
     // If an error occurred during decoding, it sends a JSON error response with the error message.
