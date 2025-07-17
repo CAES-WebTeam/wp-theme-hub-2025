@@ -555,3 +555,6 @@ figcaption a {
 @import 'partials/_shorthand.scss';
 @import 'partials/_to-top-button.scss';
 @import 'partials/_cleanup-import.scss';
+
+/* Plugin Overrides */
+@import 'plugin-overrides/relevanssi-live-search.scss';

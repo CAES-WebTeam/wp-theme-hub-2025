@@ -581,6 +581,10 @@
         {
             "name": "saved-posts",
             "title": "Saved Posts"
+        },
+        { 
+            "name": "page-olympic-accent",
+            "title": "Page with Olympic Accent Header"
         }
     ]
 }
