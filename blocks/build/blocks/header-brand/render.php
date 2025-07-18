@@ -1,8 +1,12 @@
 <?php
 
-/**
- * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
- */
+function caes_hub_get_search_form_without_live() {
+    // Disable Relevanssi live search hijack filter just for this call
+    add_filter( 'relevanssi_live_search_hijack_get_search_form', '__return_false' );
+    get_search_form();
+    remove_filter( 'relevanssi_live_search_hijack_get_search_form', '__return_false' );
+}
+
 ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
@@ -11,6 +15,6 @@
 		<span class="caes-hub-header-brand-text">Field Report</span>
 	</a>
 	<div class="caes-hub-header-search caes-hub-header-search--desktop">
-		<?php get_search_form(); ?>
+		<?php caes_hub_get_search_form_without_live(); ?>
 	</div>
 </div>
