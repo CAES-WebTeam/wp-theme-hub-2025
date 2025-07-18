@@ -38,7 +38,7 @@ function story_meta_association_tools_render_page() {
         <hr>
 
         <h2>2. Link Story Images</h2>
-        <p>Reads `news-image-association.json` and links images to posts via the 'image_id' ACF field. This process runs in batches of 500 records.</p>
+        <p>Accesses an API and links images to posts via the 'image_id' ACF field. This process runs in batches of 500 records.</p>
         <button class="button button-primary" id="link-story-images-btn">Run Image Linking</button>
         <div id="link-story-images-log" class="log-area"></div>
 
@@ -229,20 +229,55 @@ function story_meta_association_sync_keywords() {
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
-    $json_file = get_template_directory() . '/json/NEWS_ASSOCIATION_STORY_KEYWORD.json';
+    // Begin JSON ingestion
 
-    if (!file_exists($json_file)) {
-        wp_send_json_error('Data file not found: ' . $json_file);
+    // $json_file = get_template_directory() . '/json/NEWS_ASSOCIATION_STORY_KEYWORD.json';
+
+    // if (!file_exists($json_file)) {
+    //     wp_send_json_error('Data file not found: ' . $json_file);
+    // }
+
+    // $json_data = file_get_contents($json_file);
+    // $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+    // $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+    // $records = json_decode($json_data, true);
+
+    // if (json_last_error() !== JSON_ERROR_NONE) {
+    //     wp_send_json_error('JSON decode error: ' . json_last_error_msg());
+    // }
+
+    // End JSON ingestion
+
+    // Begin API call (replaces JSON ingestion)
+    $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryKeyword';
+    $decoded_API_response = null; // Initialize to null
+
+    try {
+        // Fetch data from the API.
+        $response = wp_remote_get($api_url);
+
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        $records = $decoded_API_response;
+
+    } catch (Exception $e) {
+        error_log('News Association Story Image API Error: ' . $e->getMessage());
+        wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
     }
-
-    $json_data = file_get_contents($json_file);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-    $records = json_decode($json_data, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_send_json_error('JSON decode error: ' . json_last_error_msg());
-    }
+    // End API call
 
     $linked = 0;
     $total_records = count($records);
