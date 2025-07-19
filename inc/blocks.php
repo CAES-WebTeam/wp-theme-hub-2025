@@ -92,5 +92,8 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/nav-container');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/mobile-container');
 
+	// Relevanssi Search Block
+	register_block_type(get_template_directory() . '/blocks/build/blocks/relevanssi-search');
+
 }
 add_action('init', 'caes_hub_block_init');
