@@ -82,8 +82,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to fetch and display search results
     const fetchAndDisplaySearchResults = (page = 1) => {
       if (!resultsContainer) return;
-      resultsContainer.innerHTML = '<p class="loading-message">Loading results...</p>';
+
+      // Replace the simple loading message with the plant animation
+      resultsContainer.innerHTML = `
+                <div class="plant-loading-container">
+                    <div class="plant-animation">
+                        <div class="plant-stem">
+                            <div class="plant-leaf leaf-1"></div>
+                            <div class="plant-leaf leaf-2"></div>
+                            <div class="plant-leaf leaf-3"></div>
+                            <div class="plant-leaf leaf-4"></div>
+                            <div class="plant-leaf leaf-5"></div>
+                            <div class="plant-leaf leaf-6"></div>
+                        </div>
+                        <div class="plant-stem-2">
+                            <div class="plant-leaf leaf-2-1 light"></div>
+                            <div class="plant-leaf leaf-2-2 light"></div>
+                            <div class="plant-leaf leaf-2-3"></div>
+                            <div class="plant-leaf leaf-2-4"></div>
+                        </div>
+                        <div class="plant-stem-3">
+                            <div class="plant-leaf leaf-3-1"></div>
+                            <div class="plant-leaf leaf-3-2 light"></div>
+                            <div class="plant-leaf leaf-3-3 light"></div>
+                            <div class="plant-leaf leaf-3-4"></div>
+                        </div>
+                    </div>
+                    <p class="loading-text">Loading results...</p>
+                </div>
+            `;
       const formData = new FormData();
+
+      // ... rest of your existing fetchAndDisplaySearchResults function stays the same ...
 
       // Security: Add nonce and action for the WordPress AJAX handler.
       formData.append('action', 'caes_hub_search_results');

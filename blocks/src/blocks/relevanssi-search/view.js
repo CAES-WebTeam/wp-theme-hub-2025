@@ -84,24 +84,53 @@ document.addEventListener('DOMContentLoaded', () => {
         // Function to fetch and display search results
         const fetchAndDisplaySearchResults = (page = 1) => {
             if (!resultsContainer) return;
-
-            resultsContainer.innerHTML = '<p class="loading-message">Loading results...</p>';
-
+        
+            // Replace the simple loading message with the plant animation
+            resultsContainer.innerHTML = `
+                <div class="plant-loading-container">
+                    <div class="plant-animation">
+                        <div class="plant-stem">
+                            <div class="plant-leaf leaf-1"></div>
+                            <div class="plant-leaf leaf-2"></div>
+                            <div class="plant-leaf leaf-3"></div>
+                            <div class="plant-leaf leaf-4"></div>
+                            <div class="plant-leaf leaf-5"></div>
+                            <div class="plant-leaf leaf-6"></div>
+                        </div>
+                        <div class="plant-stem-2">
+                            <div class="plant-leaf leaf-2-1 light"></div>
+                            <div class="plant-leaf leaf-2-2 light"></div>
+                            <div class="plant-leaf leaf-2-3"></div>
+                            <div class="plant-leaf leaf-2-4"></div>
+                        </div>
+                        <div class="plant-stem-3">
+                            <div class="plant-leaf leaf-3-1"></div>
+                            <div class="plant-leaf leaf-3-2 light"></div>
+                            <div class="plant-leaf leaf-3-3 light"></div>
+                            <div class="plant-leaf leaf-3-4"></div>
+                        </div>
+                    </div>
+                    <p class="loading-text">Loading results...</p>
+                </div>
+            `;
+        
             const formData = new FormData();
-
+        
+            // ... rest of your existing fetchAndDisplaySearchResults function stays the same ...
+            
             // Security: Add nonce and action for the WordPress AJAX handler.
             formData.append('action', 'caes_hub_search_results');
             if (window.caesHubAjax && window.caesHubAjax.nonce) {
                 formData.append('security', caesHubAjax.nonce);
             }
-
+        
             // Collect data from form elements
             const searchTerm = searchInput ? searchInput.value : '';
             formData.append('s', searchTerm);
             formData.append('paged', page);
             formData.append('taxonomySlug', blockTaxonomySlug);
             formData.append('allowedPostTypes', JSON.stringify(blockAllowedPostTypes));
-
+        
             if (sortByDateSelect) {
                 const selectedOrder = sortByDateSelect.value;
                 if (selectedOrder === 'post_date_desc') {
@@ -114,29 +143,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('orderby', 'relevance');
                 }
             }
-
+        
             if (postTypeSelect && postTypeSelect.value) {
                 formData.append('post_type', postTypeSelect.value);
             }
-
+        
             // Initialize checkedTopicSlugs outside the if block
             let checkedTopicSlugs = [];
-
+        
             if (topicsModal) {
                 checkedTopicSlugs = Array.from(topicsModal.querySelectorAll('input[type="checkbox"]:checked'))
                     .map(cb => cb.value)
                     .filter(slug => slug !== '');
-
+        
                 if (checkedTopicSlugs.length > 0) {
                     checkedTopicSlugs.forEach(slug => {
                         formData.append(`${blockTaxonomySlug}[]`, slug);
                     });
                 }
             }
-
+        
             // Update the search title
             updateSearchTitle(searchTerm);
-
+        
             fetch(caesHubAjax.ajaxurl, {
                 method: 'POST',
                 body: formData,
@@ -200,10 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultsContainer.innerHTML = '<p class="error-message">Error loading results. Please try again.</p>';
                     updateResultsCount(null); // Hide count on error
                 });
-
+        
             updateURL(formData);
             renderSelectedTopicFilters(checkedTopicSlugs);
         };
+        
 
         // Function to update the browser URL
         const updateURL = (formData) => {
