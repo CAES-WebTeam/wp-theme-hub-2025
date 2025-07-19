@@ -321,7 +321,7 @@
             width: 4px;
             height: 0;
             background: #228B22;
-            animation: grow 0.8s ease-out forwards; /* Adjusted from 1.5s */
+            animation: grow 0.3s ease-out forwards; /* Much faster growth */
             bottom: 0;
         }
 
@@ -342,7 +342,7 @@
             width: 4px;
             height: 0;
             background: #228B22;
-            animation: grow2 0.9s ease-out 0.1s forwards; /* Adjusted from 1.8s, delay from 0.3s */
+            animation: grow2 0.35s ease-out 0.05s forwards; /* Slightly longer, slight delay */
             bottom: 0;
         }
 
@@ -354,7 +354,7 @@
             width: 4px;
             height: 0;
             background: #228B22;
-            animation: grow3 0.8s ease-out 0.2s forwards; /* Adjusted from 1.6s, delay from 0.6s */
+            animation: grow3 0.3s ease-out 0.1s forwards; /* Same as first, more delay */
             bottom: 0;
         }
 
@@ -374,7 +374,7 @@
             top: 140px;
             width: 34px;
             height: 24px;
-            animation: leafGrow 0.3s ease-out 0.9s forwards, wiggle 2s ease-in-out 2s infinite; /* Adjusted delay from 1.8s */
+            animation: leafGrow 0.15s ease-out 0.4s forwards, wiggle 2s ease-in-out 0.55s infinite;
         }
 
         .leaf-right {
@@ -383,7 +383,7 @@
             width: 34px;
             height: 24px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1s forwards, wiggleRight 2s ease-in-out 2.1s infinite; /* Adjusted delay from 2s */
+            animation: leafGrowRight 0.15s ease-out 0.45s forwards, wiggleRight 2s ease-in-out 0.6s infinite;
         }
 
         .leaf-left-2 {
@@ -391,7 +391,7 @@
             top: 110px;
             width: 30px;
             height: 20px;
-            animation: leafGrow 0.3s ease-out 1.1s forwards, wiggle 2s ease-in-out 2.2s infinite; /* Adjusted delay from 2.2s */
+            animation: leafGrow 0.15s ease-out 0.5s forwards, wiggle 2s ease-in-out 0.65s infinite;
         }
 
         .leaf-right-2 {
@@ -400,7 +400,7 @@
             width: 30px;
             height: 20px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.2s forwards, wiggleRight 2s ease-in-out 2.3s infinite; /* Adjusted delay from 2.4s */
+            animation: leafGrowRight 0.15s ease-out 0.55s forwards, wiggleRight 2s ease-in-out 0.7s infinite;
         }
 
         .leaf-left-3 {
@@ -408,7 +408,7 @@
             top: 80px;
             width: 26px;
             height: 17px;
-            animation: leafGrow 0.3s ease-out 1.3s forwards, wiggle 2s ease-in-out 2.4s infinite; /* Adjusted delay from 2.6s */
+            animation: leafGrow 0.15s ease-out 0.6s forwards, wiggle 2s ease-in-out 0.75s infinite;
         }
 
         .leaf-right-3 {
@@ -417,7 +417,7 @@
             width: 26px;
             height: 17px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.4s forwards, wiggleRight 2s ease-in-out 2.5s infinite; /* Adjusted delay from 2.8s */
+            animation: leafGrowRight 0.15s ease-out 0.65s forwards, wiggleRight 2s ease-in-out 0.8s infinite;
         }
 
         .leaf-left-4 {
@@ -425,7 +425,7 @@
             top: 50px;
             width: 22px;
             height: 14px;
-            animation: leafGrow 0.3s ease-out 1.5s forwards, wiggle 2s ease-in-out 2.6s infinite; /* Adjusted delay from 3s */
+            animation: leafGrow 0.15s ease-out 0.7s forwards, wiggle 2s ease-in-out 0.85s infinite;
         }
 
         .leaf-right-4 {
@@ -434,7 +434,7 @@
             width: 22px;
             height: 14px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.6s forwards, wiggleRight 2s ease-in-out 2.7s infinite; /* Adjusted delay from 3.2s */
+            animation: leafGrowRight 0.15s ease-out 0.75s forwards, wiggleRight 2s ease-in-out 0.9s infinite;
         }
 
         .leaf-left-5 {
@@ -442,7 +442,7 @@
             top: 20px;
             width: 18px;
             height: 11px;
-            animation: leafGrow 0.3s ease-out 1.7s forwards, wiggle 2s ease-in-out 2.8s infinite; /* Adjusted delay from 3.4s */
+            animation: leafGrow 0.15s ease-out 0.8s forwards, wiggle 2s ease-in-out 0.95s infinite;
         }
 
         .leaf-right-5 {
@@ -451,7 +451,7 @@
             width: 18px;
             height: 11px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.8s forwards, wiggleRight 2s ease-in-out 2.9s infinite; /* Adjusted delay from 3.6s */
+            animation: leafGrowRight 0.15s ease-out 0.85s forwards, wiggleRight 2s ease-in-out 1s infinite;
         }
 
         @keyframes grow {
@@ -492,7 +492,7 @@
             top: 90px;
             width: 28px;
             height: 18px;
-            animation: leafGrow 0.3s ease-out 1.2s forwards, wiggle 2s ease-in-out 2.3s infinite; /* Adjusted delay from 2.4s */
+            animation: leafGrow 0.15s ease-out 0.5s forwards, wiggle 2s ease-in-out 0.65s infinite;
         }
 
         .p2-leaf-right {
@@ -501,7 +501,7 @@
             width: 28px;
             height: 18px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.3s forwards, wiggleRight 2s ease-in-out 2.4s infinite; /* Adjusted delay from 2.6s */
+            animation: leafGrowRight 0.15s ease-out 0.55s forwards, wiggleRight 2s ease-in-out 0.7s infinite;
         }
 
         .p2-leaf-left-2 {
@@ -509,7 +509,7 @@
             top: 60px;
             width: 24px;
             height: 15px;
-            animation: leafGrow 0.3s ease-out 1.4s forwards, wiggle 2s ease-in-out 2.5s infinite; /* Adjusted delay from 2.8s */
+            animation: leafGrow 0.15s ease-out 0.6s forwards, wiggle 2s ease-in-out 0.75s infinite;
         }
 
         .p2-leaf-right-2 {
@@ -518,7 +518,7 @@
             width: 24px;
             height: 15px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.5s forwards, wiggleRight 2s ease-in-out 2.6s infinite; /* Adjusted delay from 3s */
+            animation: leafGrowRight 0.15s ease-out 0.65s forwards, wiggleRight 2s ease-in-out 0.8s infinite;
         }
 
         .p2-leaf-left-3 {
@@ -526,7 +526,7 @@
             top: 30px;
             width: 20px;
             height: 12px;
-            animation: leafGrow 0.3s ease-out 1.6s forwards, wiggle 2s ease-in-out 2.7s infinite; /* Adjusted delay from 3.2s */
+            animation: leafGrow 0.15s ease-out 0.7s forwards, wiggle 2s ease-in-out 0.85s infinite;
         }
 
         .p2-leaf-right-3 {
@@ -535,7 +535,7 @@
             width: 20px;
             height: 12px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.7s forwards, wiggleRight 2s ease-in-out 2.8s infinite; /* Adjusted delay from 3.4s */
+            animation: leafGrowRight 0.15s ease-out 0.75s forwards, wiggleRight 2s ease-in-out 0.9s infinite;
         }
 
         /* Plant 3 leaves */
@@ -544,7 +544,7 @@
             top: 110px;
             width: 32px;
             height: 22px;
-            animation: leafGrow 0.3s ease-out 1.3s forwards, wiggle 2s ease-in-out 2.4s infinite; /* Adjusted delay from 2.7s */
+            animation: leafGrow 0.15s ease-out 0.55s forwards, wiggle 2s ease-in-out 0.7s infinite;
         }
 
         .p3-leaf-right {
@@ -553,7 +553,7 @@
             width: 32px;
             height: 22px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.4s forwards, wiggleRight 2s ease-in-out 2.5s infinite; /* Adjusted delay from 2.9s */
+            animation: leafGrowRight 0.15s ease-out 0.6s forwards, wiggleRight 2s ease-in-out 0.75s infinite;
         }
 
         .p3-leaf-left-2 {
@@ -561,7 +561,7 @@
             top: 80px;
             width: 28px;
             height: 18px;
-            animation: leafGrow 0.3s ease-out 1.5s forwards, wiggle 2s ease-in-out 2.6s infinite; /* Adjusted delay from 3.1s */
+            animation: leafGrow 0.15s ease-out 0.65s forwards, wiggle 2s ease-in-out 0.8s infinite;
         }
 
         .p3-leaf-right-2 {
@@ -570,7 +570,7 @@
             width: 28px;
             height: 18px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.6s forwards, wiggleRight 2s ease-in-out 2.7s infinite; /* Adjusted delay from 3.3s */
+            animation: leafGrowRight 0.15s ease-out 0.7s forwards, wiggleRight 2s ease-in-out 0.85s infinite;
         }
 
         .p3-leaf-left-3 {
@@ -578,7 +578,7 @@
             top: 50px;
             width: 24px;
             height: 15px;
-            animation: leafGrow 0.3s ease-out 1.7s forwards, wiggle 2s ease-in-out 2.8s infinite; /* Adjusted delay from 3.5s */
+            animation: leafGrow 0.15s ease-out 0.75s forwards, wiggle 2s ease-in-out 0.9s infinite;
         }
 
         .p3-leaf-right-3 {
@@ -587,7 +587,7 @@
             width: 24px;
             height: 15px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 1.8s forwards, wiggleRight 2s ease-in-out 2.9s infinite; /* Adjusted delay from 3.7s */
+            animation: leafGrowRight 0.15s ease-out 0.8s forwards, wiggleRight 2s ease-in-out 0.95s infinite;
         }
 
         .p3-leaf-left-4 {
@@ -595,7 +595,7 @@
             top: 20px;
             width: 20px;
             height: 12px;
-            animation: leafGrow 0.3s ease-out 1.9s forwards, wiggle 2s ease-in-out 3s infinite; /* Adjusted delay from 3.9s */
+            animation: leafGrow 0.15s ease-out 0.85s forwards, wiggle 2s ease-in-out 1s infinite;
         }
 
         .p3-leaf-right-4 {
@@ -604,7 +604,7 @@
             width: 20px;
             height: 12px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.3s ease-out 2s forwards, wiggleRight 2s ease-in-out 3.1s infinite; /* Adjusted delay from 4.1s */
+            animation: leafGrowRight 0.15s ease-out 0.9s forwards, wiggleRight 2s ease-in-out 1.05s infinite;
         }
     }
 

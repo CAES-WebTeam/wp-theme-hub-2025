@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
             // Track when the fetch starts and ensure minimum display time for animation
             const fetchStartTime = Date.now();
-            const minimumDisplayTime = 2000; // 5 seconds to see full animation including wiggling (last leaf finishes at 4.1s)
+            const minimumDisplayTime = 1000; // 5 seconds to see full animation including wiggling (last leaf finishes at 4.1s)
         
             fetch(caesHubAjax.ajaxurl, {
                 method: 'POST',
