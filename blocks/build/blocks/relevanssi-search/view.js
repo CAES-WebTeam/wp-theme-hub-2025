@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchAndDisplaySearchResults = (page = 1) => {
       if (!resultsContainer) return;
 
-      // Use the EXACT same beautiful plant animation structure we made together!
+      // Use the EXACT same beautiful plant animation structure from the original!
       resultsContainer.innerHTML = `
                 <div class="plant-loading-container">
                     <div class="plant-garden">
@@ -94,6 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="leaf leaf-right-2 darker"></div>
                             <div class="leaf leaf-left-3 dark"></div>
                             <div class="leaf leaf-right-3"></div>
+                            <div class="leaf leaf-left-4"></div>
+                            <div class="leaf leaf-right-4 dark"></div>
+                            <div class="leaf leaf-left-5 darker"></div>
+                            <div class="leaf leaf-right-5"></div>
                         </div>
         
                         <div class="plant-2">
@@ -101,6 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="leaf p2-leaf-right"></div>
                             <div class="leaf p2-leaf-left-2 darker"></div>
                             <div class="leaf p2-leaf-right-2"></div>
+                            <div class="leaf p2-leaf-left-3 dark"></div>
+                            <div class="leaf p2-leaf-right-3"></div>
                         </div>
         
                         <div class="plant-3">
@@ -108,6 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="leaf p3-leaf-right dark"></div>
                             <div class="leaf p3-leaf-left-2 darker"></div>
                             <div class="leaf p3-leaf-right-2"></div>
+                            <div class="leaf p3-leaf-left-3 dark"></div>
+                            <div class="leaf p3-leaf-right-3"></div>
+                            <div class="leaf p3-leaf-left-4"></div>
+                            <div class="leaf p3-leaf-right-4 darker"></div>
                         </div>
                     </div>
                     <p class="loading-text">Loading results...</p>
@@ -159,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Track when the fetch starts and ensure minimum display time for animation
       const fetchStartTime = Date.now();
-      const minimumDisplayTime = 4000; // 4 seconds to see full animation including some wiggling
+      const minimumDisplayTime = 2000; // 5 seconds to see full animation including wiggling (last leaf finishes at 4.1s)
 
       fetch(caesHubAjax.ajaxurl, {
         method: 'POST',

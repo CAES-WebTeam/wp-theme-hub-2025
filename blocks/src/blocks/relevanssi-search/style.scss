@@ -304,39 +304,58 @@
         min-height: 200px;
         border-radius: 8px;
         margin: var(--wp--preset--spacing--40) 0;
-        
+        position: relative;
+
         .plant-garden {
             position: relative;
-            height: 140px;
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 20px;
+            height: 160px;
+            width: 200px;
             margin-bottom: var(--wp--preset--spacing--40);
         }
 
         .plant {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
             width: 4px;
             height: 0;
             background: #228B22;
-            animation: grow 1.5s ease-out forwards;
-            position: relative;
+            animation: grow 0.8s ease-out forwards; /* Adjusted from 1.5s */
+            bottom: 0;
+        }
+
+        .loading-text {
+            color: var(--wp--preset--color--contrast);
+            font-family: var(--wp--preset--font-family--georgia);
+            font-size: var(--wp--preset--font-size--normal);
+            text-align: center;
+            font-weight: 500;
+            margin-top: var(--wp--preset--spacing--30);
         }
 
         .plant-2 {
+            position: absolute;
+            bottom: 50px;
+            left: 30%;
+            transform: translateX(-50%);
             width: 4px;
             height: 0;
             background: #228B22;
-            animation: grow2 1.8s ease-out 0.3s forwards;
-            position: relative;
+            animation: grow2 0.9s ease-out 0.1s forwards; /* Adjusted from 1.8s, delay from 0.3s */
+            bottom: 0;
         }
 
         .plant-3 {
+            position: absolute;
+            bottom: 50px;
+            left: 70%;
+            transform: translateX(-50%);
             width: 4px;
             height: 0;
             background: #228B22;
-            animation: grow3 1.6s ease-out 0.6s forwards;
-            position: relative;
+            animation: grow3 0.8s ease-out 0.2s forwards; /* Adjusted from 1.6s, delay from 0.6s */
+            bottom: 0;
         }
 
         .leaf {
@@ -350,39 +369,38 @@
         .leaf.dark { background: #228B22; }
         .leaf.darker { background: #006400; }
 
-        // Main plant leaves (tallest)
         .leaf-left {
             left: -26px;
-            top: 20px;
+            top: 140px;
             width: 34px;
             height: 24px;
-            animation: leafGrow 0.5s ease-out 1.8s forwards, wiggle 2s ease-in-out 3.5s infinite;
+            animation: leafGrow 0.3s ease-out 0.9s forwards, wiggle 2s ease-in-out 2s infinite; /* Adjusted delay from 1.8s */
         }
 
         .leaf-right {
             right: -26px;
-            top: 35px;
+            top: 125px;
             width: 34px;
             height: 24px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 2s forwards, wiggleRight 2s ease-in-out 3.7s infinite;
+            animation: leafGrowRight 0.3s ease-out 1s forwards, wiggleRight 2s ease-in-out 2.1s infinite; /* Adjusted delay from 2s */
         }
 
         .leaf-left-2 {
             left: -24px;
-            top: 50px;
+            top: 110px;
             width: 30px;
             height: 20px;
-            animation: leafGrow 0.5s ease-out 2.2s forwards, wiggle 2s ease-in-out 3.9s infinite;
+            animation: leafGrow 0.3s ease-out 1.1s forwards, wiggle 2s ease-in-out 2.2s infinite; /* Adjusted delay from 2.2s */
         }
 
         .leaf-right-2 {
             right: -24px;
-            top: 65px;
+            top: 95px;
             width: 30px;
             height: 20px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 2.4s forwards, wiggleRight 2s ease-in-out 4.1s infinite;
+            animation: leafGrowRight 0.3s ease-out 1.2s forwards, wiggleRight 2s ease-in-out 2.3s infinite; /* Adjusted delay from 2.4s */
         }
 
         .leaf-left-3 {
@@ -390,107 +408,62 @@
             top: 80px;
             width: 26px;
             height: 17px;
-            animation: leafGrow 0.5s ease-out 2.6s forwards, wiggle 2s ease-in-out 4.3s infinite;
+            animation: leafGrow 0.3s ease-out 1.3s forwards, wiggle 2s ease-in-out 2.4s infinite; /* Adjusted delay from 2.6s */
         }
 
         .leaf-right-3 {
             right: -22px;
-            top: 95px;
+            top: 65px;
             width: 26px;
             height: 17px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 2.8s forwards, wiggleRight 2s ease-in-out 4.5s infinite;
+            animation: leafGrowRight 0.3s ease-out 1.4s forwards, wiggleRight 2s ease-in-out 2.5s infinite; /* Adjusted delay from 2.8s */
         }
 
-        // Plant 2 leaves (medium height)
-        .p2-leaf-left {
-            left: -22px;
-            top: 30px;
-            width: 28px;
-            height: 18px;
-            animation: leafGrow 0.5s ease-out 2.4s forwards, wiggle 2s ease-in-out 4s infinite;
-        }
-
-        .p2-leaf-right {
-            right: -22px;
-            top: 45px;
-            width: 28px;
-            height: 18px;
-            transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 2.6s forwards, wiggleRight 2s ease-in-out 4.2s infinite;
-        }
-
-        .p2-leaf-left-2 {
+        .leaf-left-4 {
             left: -20px;
-            top: 60px;
-            width: 24px;
-            height: 15px;
-            animation: leafGrow 0.5s ease-out 2.8s forwards, wiggle 2s ease-in-out 4.4s infinite;
+            top: 50px;
+            width: 22px;
+            height: 14px;
+            animation: leafGrow 0.3s ease-out 1.5s forwards, wiggle 2s ease-in-out 2.6s infinite; /* Adjusted delay from 3s */
         }
 
-        .p2-leaf-right-2 {
+        .leaf-right-4 {
             right: -20px;
-            top: 75px;
-            width: 24px;
-            height: 15px;
+            top: 35px;
+            width: 22px;
+            height: 14px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 3s forwards, wiggleRight 2s ease-in-out 4.6s infinite;
+            animation: leafGrowRight 0.3s ease-out 1.6s forwards, wiggleRight 2s ease-in-out 2.7s infinite; /* Adjusted delay from 3.2s */
         }
 
-        // Plant 3 leaves (medium-tall height)
-        .p3-leaf-left {
-            left: -24px;
-            top: 25px;
-            width: 32px;
-            height: 22px;
-            animation: leafGrow 0.5s ease-out 2.7s forwards, wiggle 2s ease-in-out 4.3s infinite;
+        .leaf-left-5 {
+            left: -17px;
+            top: 20px;
+            width: 18px;
+            height: 11px;
+            animation: leafGrow 0.3s ease-out 1.7s forwards, wiggle 2s ease-in-out 2.8s infinite; /* Adjusted delay from 3.4s */
         }
 
-        .p3-leaf-right {
-            right: -24px;
-            top: 40px;
-            width: 32px;
-            height: 22px;
+        .leaf-right-5 {
+            right: -17px;
+            top: 5px;
+            width: 18px;
+            height: 11px;
             transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 2.9s forwards, wiggleRight 2s ease-in-out 4.5s infinite;
+            animation: leafGrowRight 0.3s ease-out 1.8s forwards, wiggleRight 2s ease-in-out 2.9s infinite; /* Adjusted delay from 3.6s */
         }
 
-        .p3-leaf-left-2 {
-            left: -22px;
-            top: 55px;
-            width: 28px;
-            height: 18px;
-            animation: leafGrow 0.5s ease-out 3.1s forwards, wiggle 2s ease-in-out 4.7s infinite;
-        }
-
-        .p3-leaf-right-2 {
-            right: -22px;
-            top: 70px;
-            width: 28px;
-            height: 18px;
-            transform: scale(0) scaleX(-1);
-            animation: leafGrowRight 0.5s ease-out 3.3s forwards, wiggleRight 2s ease-in-out 4.9s infinite;
-        }
-
-        .loading-text {
-            color: var(--wp--preset--color--contrast);
-            font-family: var(--wp--preset--font-family--georgia);
-            font-size: var(--wp--preset--font-size--normal);
-            text-align: center;
-            font-weight: 500;
-        }
-
-        // Animations - keeping the exact same ones from the original
         @keyframes grow {
-            to { height: 120px; }
+            to { height: 160px; }
         }
 
         @keyframes grow2 {
-            to { height: 100px; }
+            to { height: 120px; }
         }
 
         @keyframes grow3 {
-            to { height: 110px; }
+            to { height: 140px; }
         }
 
         @keyframes leafGrow {
@@ -511,6 +484,127 @@
             0%, 100% { transform: scale(1) scaleX(-1) rotate(0deg); }
             25% { transform: scale(1) scaleX(-1) rotate(-3deg); }
             75% { transform: scale(1) scaleX(-1) rotate(3deg); }
+        }
+
+        /* Plant 2 leaves */
+        .p2-leaf-left {
+            left: -22px;
+            top: 90px;
+            width: 28px;
+            height: 18px;
+            animation: leafGrow 0.3s ease-out 1.2s forwards, wiggle 2s ease-in-out 2.3s infinite; /* Adjusted delay from 2.4s */
+        }
+
+        .p2-leaf-right {
+            right: -22px;
+            top: 75px;
+            width: 28px;
+            height: 18px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 1.3s forwards, wiggleRight 2s ease-in-out 2.4s infinite; /* Adjusted delay from 2.6s */
+        }
+
+        .p2-leaf-left-2 {
+            left: -20px;
+            top: 60px;
+            width: 24px;
+            height: 15px;
+            animation: leafGrow 0.3s ease-out 1.4s forwards, wiggle 2s ease-in-out 2.5s infinite; /* Adjusted delay from 2.8s */
+        }
+
+        .p2-leaf-right-2 {
+            right: -20px;
+            top: 45px;
+            width: 24px;
+            height: 15px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 1.5s forwards, wiggleRight 2s ease-in-out 2.6s infinite; /* Adjusted delay from 3s */
+        }
+
+        .p2-leaf-left-3 {
+            left: -17px;
+            top: 30px;
+            width: 20px;
+            height: 12px;
+            animation: leafGrow 0.3s ease-out 1.6s forwards, wiggle 2s ease-in-out 2.7s infinite; /* Adjusted delay from 3.2s */
+        }
+
+        .p2-leaf-right-3 {
+            right: -17px;
+            top: 15px;
+            width: 20px;
+            height: 12px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 1.7s forwards, wiggleRight 2s ease-in-out 2.8s infinite; /* Adjusted delay from 3.4s */
+        }
+
+        /* Plant 3 leaves */
+        .p3-leaf-left {
+            left: -24px;
+            top: 110px;
+            width: 32px;
+            height: 22px;
+            animation: leafGrow 0.3s ease-out 1.3s forwards, wiggle 2s ease-in-out 2.4s infinite; /* Adjusted delay from 2.7s */
+        }
+
+        .p3-leaf-right {
+            right: -24px;
+            top: 95px;
+            width: 32px;
+            height: 22px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 1.4s forwards, wiggleRight 2s ease-in-out 2.5s infinite; /* Adjusted delay from 2.9s */
+        }
+
+        .p3-leaf-left-2 {
+            left: -22px;
+            top: 80px;
+            width: 28px;
+            height: 18px;
+            animation: leafGrow 0.3s ease-out 1.5s forwards, wiggle 2s ease-in-out 2.6s infinite; /* Adjusted delay from 3.1s */
+        }
+
+        .p3-leaf-right-2 {
+            right: -22px;
+            top: 65px;
+            width: 28px;
+            height: 18px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 1.6s forwards, wiggleRight 2s ease-in-out 2.7s infinite; /* Adjusted delay from 3.3s */
+        }
+
+        .p3-leaf-left-3 {
+            left: -20px;
+            top: 50px;
+            width: 24px;
+            height: 15px;
+            animation: leafGrow 0.3s ease-out 1.7s forwards, wiggle 2s ease-in-out 2.8s infinite; /* Adjusted delay from 3.5s */
+        }
+
+        .p3-leaf-right-3 {
+            right: -20px;
+            top: 35px;
+            width: 24px;
+            height: 15px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 1.8s forwards, wiggleRight 2s ease-in-out 2.9s infinite; /* Adjusted delay from 3.7s */
+        }
+
+        .p3-leaf-left-4 {
+            left: -18px;
+            top: 20px;
+            width: 20px;
+            height: 12px;
+            animation: leafGrow 0.3s ease-out 1.9s forwards, wiggle 2s ease-in-out 3s infinite; /* Adjusted delay from 3.9s */
+        }
+
+        .p3-leaf-right-4 {
+            right: -18px;
+            top: 5px;
+            width: 20px;
+            height: 12px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.3s ease-out 2s forwards, wiggleRight 2s ease-in-out 3.1s infinite; /* Adjusted delay from 4.1s */
         }
     }
 
