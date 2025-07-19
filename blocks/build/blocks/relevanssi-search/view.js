@@ -156,6 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Update the search title
       updateSearchTitle(searchTerm);
+
+      // Track when the fetch starts and ensure minimum display time for animation
+      const fetchStartTime = Date.now();
+      const minimumDisplayTime = 4000; // 4 seconds to see full animation including some wiggling
+
       fetch(caesHubAjax.ajaxurl, {
         method: 'POST',
         body: formData
@@ -165,55 +170,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return response.text();
       }).then(html => {
-        resultsContainer.innerHTML = html;
+        const fetchEndTime = Date.now();
+        const elapsedTime = fetchEndTime - fetchStartTime;
+        const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
 
-        // Extract results count from the response
-        let resultsCount = null;
+        // Wait for the remaining time before showing results
+        setTimeout(() => {
+          resultsContainer.innerHTML = html;
 
-        // Method 1: Look for a data attribute on the results container
-        const resultsWrapper = resultsContainer.querySelector('[data-results-count]');
-        if (resultsWrapper) {
-          resultsCount = parseInt(resultsWrapper.getAttribute('data-results-count'), 10);
-        }
+          // Extract results count from the response
+          let resultsCount = null;
 
-        // Method 2: Look for a hidden input with the count
-        const countInput = resultsContainer.querySelector('input[name="results_count"]');
-        if (countInput && resultsCount === null) {
-          resultsCount = parseInt(countInput.value, 10);
-        }
+          // Method 1: Look for a data attribute on the results container
+          const resultsWrapper = resultsContainer.querySelector('[data-results-count]');
+          if (resultsWrapper) {
+            resultsCount = parseInt(resultsWrapper.getAttribute('data-results-count'), 10);
+          }
 
-        // Method 3: Look for a specific element with the count
-        const countElement = resultsContainer.querySelector('.wp-query-results-count');
-        if (countElement && resultsCount === null) {
-          resultsCount = parseInt(countElement.textContent, 10);
-        }
+          // Method 2: Look for a hidden input with the count
+          const countInput = resultsContainer.querySelector('input[name="results_count"]');
+          if (countInput && resultsCount === null) {
+            resultsCount = parseInt(countInput.value, 10);
+          }
 
-        // Method 4: Try to parse from existing pagination or results info
-        if (resultsCount === null) {
-          // Look for WordPress pagination info
-          const paginationInfo = resultsContainer.querySelector('.pagination-info, .wp-pagenavi');
-          if (paginationInfo) {
-            const match = paginationInfo.textContent.match(/(\d+)\s+(?:results?|posts?|items?)/i);
-            if (match) {
-              resultsCount = parseInt(match[1], 10);
+          // Method 3: Look for a specific element with the count
+          const countElement = resultsContainer.querySelector('.wp-query-results-count');
+          if (countElement && resultsCount === null) {
+            resultsCount = parseInt(countElement.textContent, 10);
+          }
+
+          // Method 4: Try to parse from existing pagination or results info
+          if (resultsCount === null) {
+            // Look for WordPress pagination info
+            const paginationInfo = resultsContainer.querySelector('.pagination-info, .wp-pagenavi');
+            if (paginationInfo) {
+              const match = paginationInfo.textContent.match(/(\d+)\s+(?:results?|posts?|items?)/i);
+              if (match) {
+                resultsCount = parseInt(match[1], 10);
+              }
             }
           }
-        }
 
-        // Method 5: Count actual result items as fallback
-        if (resultsCount === null) {
-          const resultItems = resultsContainer.querySelectorAll('.search-result-item, article, .post, .result-item');
-          if (resultItems.length > 0) {
-            // This is just the current page count, not total - but better than nothing
-            resultsCount = resultItems.length;
+          // Method 5: Count actual result items as fallback
+          if (resultsCount === null) {
+            const resultItems = resultsContainer.querySelectorAll('.search-result-item, article, .post, .result-item');
+            if (resultItems.length > 0) {
+              // This is just the current page count, not total - but better than nothing
+              resultsCount = resultItems.length;
+            }
           }
-        }
-        updateResultsCount(resultsCount);
-        attachPaginationListeners();
+          updateResultsCount(resultsCount);
+          attachPaginationListeners();
+        }, remainingTime);
       }).catch(error => {
         console.error('Error fetching search results:', error);
-        resultsContainer.innerHTML = '<p class="error-message">Error loading results. Please try again.</p>';
-        updateResultsCount(null); // Hide count on error
+        // Still respect minimum time even on error
+        const fetchEndTime = Date.now();
+        const elapsedTime = fetchEndTime - fetchStartTime;
+        const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
+        setTimeout(() => {
+          resultsContainer.innerHTML = '<p class="error-message">Error loading results. Please try again.</p>';
+          updateResultsCount(null); // Hide count on error
+        }, remainingTime);
       });
       updateURL(formData);
       renderSelectedTopicFilters(checkedTopicSlugs);
