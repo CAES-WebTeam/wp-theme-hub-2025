@@ -85,29 +85,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const fetchAndDisplaySearchResults = (page = 1) => {
             if (!resultsContainer) return;
         
-            // Replace the simple loading message with the plant animation
+            // Use the EXACT same beautiful plant animation structure we made together!
             resultsContainer.innerHTML = `
                 <div class="plant-loading-container">
-                    <div class="plant-animation">
-                        <div class="plant-stem">
-                            <div class="plant-leaf leaf-1"></div>
-                            <div class="plant-leaf leaf-2"></div>
-                            <div class="plant-leaf leaf-3"></div>
-                            <div class="plant-leaf leaf-4"></div>
-                            <div class="plant-leaf leaf-5"></div>
-                            <div class="plant-leaf leaf-6"></div>
+                    <div class="plant-garden">
+                        <div class="plant">
+                            <div class="leaf leaf-left dark"></div>
+                            <div class="leaf leaf-right"></div>
+                            <div class="leaf leaf-left-2"></div>
+                            <div class="leaf leaf-right-2 darker"></div>
+                            <div class="leaf leaf-left-3 dark"></div>
+                            <div class="leaf leaf-right-3"></div>
                         </div>
-                        <div class="plant-stem-2">
-                            <div class="plant-leaf leaf-2-1 light"></div>
-                            <div class="plant-leaf leaf-2-2 light"></div>
-                            <div class="plant-leaf leaf-2-3"></div>
-                            <div class="plant-leaf leaf-2-4"></div>
+        
+                        <div class="plant-2">
+                            <div class="leaf p2-leaf-left dark"></div>
+                            <div class="leaf p2-leaf-right"></div>
+                            <div class="leaf p2-leaf-left-2 darker"></div>
+                            <div class="leaf p2-leaf-right-2"></div>
                         </div>
-                        <div class="plant-stem-3">
-                            <div class="plant-leaf leaf-3-1"></div>
-                            <div class="plant-leaf leaf-3-2 light"></div>
-                            <div class="plant-leaf leaf-3-3 light"></div>
-                            <div class="plant-leaf leaf-3-4"></div>
+        
+                        <div class="plant-3">
+                            <div class="leaf p3-leaf-left"></div>
+                            <div class="leaf p3-leaf-right dark"></div>
+                            <div class="leaf p3-leaf-left-2 darker"></div>
+                            <div class="leaf p3-leaf-right-2"></div>
                         </div>
                     </div>
                     <p class="loading-text">Loading results...</p>
@@ -116,8 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
             const formData = new FormData();
         
-            // ... rest of your existing fetchAndDisplaySearchResults function stays the same ...
-            
             // Security: Add nonce and action for the WordPress AJAX handler.
             formData.append('action', 'caes_hub_search_results');
             if (window.caesHubAjax && window.caesHubAjax.nonce) {
@@ -233,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateURL(formData);
             renderSelectedTopicFilters(checkedTopicSlugs);
         };
+        
         
 
         // Function to update the browser URL
