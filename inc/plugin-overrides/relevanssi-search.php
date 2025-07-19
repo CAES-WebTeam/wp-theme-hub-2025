@@ -12,6 +12,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             's'              => $search_query,
             'posts_per_page' => 10,
             'paged'          => $paged,
+            'post_status'    => 'publish'
         );
 
         // Handle post_type: if empty, search all allowed post types instead of defaulting to 'post' 
