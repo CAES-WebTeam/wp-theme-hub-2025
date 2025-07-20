@@ -32,6 +32,7 @@ $SPACING_CLASSES = array(
     7 => 'gap-wp-preset-spacing-80',
 );
 
+$spacing_class = isset($SPACING_CLASSES[$customGapStep]) ? $SPACING_CLASSES[$customGapStep] : '';
 $classes = trim("$base_class $columns_class $spacing_class");
 
 // Generate inline grid styles for auto layout
