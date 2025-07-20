@@ -4,9 +4,9 @@
 if (! function_exists('caes_hub_render_relevanssi_search_results')) {
     function caes_hub_render_relevanssi_search_results($search_query, $orderby, $order, $post_type, $taxonomy_slug, $topic_terms, $paged = 1, $allowed_post_types_from_block = array()) // Add this new parameter
     {
-        error_log('RENDER: caes_hub_render_relevanssi_search_results function called.');
-        error_log('RENDER: Incoming Params: s=' . $search_query . ', orderby=' . $orderby . ', order=' . $order . ', post_type=' . $post_type . ', taxonomy_slug=' . $taxonomy_slug . ', topic_terms=' . print_r($topic_terms, true) . ', paged=' . $paged);
-        error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true)); // DEBUG
+        // error_log('RENDER: caes_hub_render_relevanssi_search_results function called.');
+        // error_log('RENDER: Incoming Params: s=' . $search_query . ', orderby=' . $orderby . ', order=' . $order . ', post_type=' . $post_type . ', taxonomy_slug=' . $taxonomy_slug . ', topic_terms=' . print_r($topic_terms, true) . ', paged=' . $paged);
+        // error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true)); // DEBUG
 
         $args = array(
             's'              => $search_query,
@@ -46,14 +46,14 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             );
         }
 
-        error_log('RENDER: Final WP_Query Args: ' . print_r($args, true));
+        // error_log('RENDER: Final WP_Query Args: ' . print_r($args, true));
 
         if (function_exists('relevanssi_do_query')) {
-            error_log('RENDER: Relevanssi is active. Preparing WP_Query for relevanssi_do_query.');
+            // error_log('RENDER: Relevanssi is active. Preparing WP_Query for relevanssi_do_query.');
             $query = new WP_Query($args);
             relevanssi_do_query($query);
         } else {
-            error_log('RENDER: Relevanssi not active. Using standard WP_Query.');
+            // error_log('RENDER: Relevanssi not active. Using standard WP_Query.');
             $query = new WP_Query($args);
         }
 
@@ -111,7 +111,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 
                 echo '</ul>';
                 echo '</div>';
-                error_log('RENDER: Results found: ' . $post_count . ' posts.');
+                // error_log('RENDER: Results found: ' . $post_count . ' posts.');
                 the_posts_pagination(
                     array(
                         'prev_text'          => __('Previous', 'caes-hub'),
@@ -120,7 +120,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                     )
                 );
             } else {
-                error_log('RENDER: No results found by WP_Query/Relevanssi.');
+                // error_log('RENDER: No results found by WP_Query/Relevanssi.');
                 ?>
                 <p><?php esc_html_e('No results found.', 'caes-hub'); ?></p>
             <?php
@@ -129,7 +129,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             // Restore the original global $wp_query 
             $wp_query = $original_query;
             wp_reset_postdata();
-            error_log('RENDER: wp_reset_postdata() called and global $wp_query restored.');
+            // error_log('RENDER: wp_reset_postdata() called and global $wp_query restored.');
             ?>
         </div>
 <?php
@@ -150,20 +150,20 @@ add_action('init', 'caes_hub_register_relevanssi_ajax_action');
  */
 function caes_hub_handle_relevanssi_ajax_search()
 {
-    error_log('AJAX: caes_hub_handle_relevanssi_ajax_search function called.');
+    // error_log('AJAX: caes_hub_handle_relevanssi_ajax_search function called.');
 
     if (! defined('DOING_AJAX') || ! DOING_AJAX) {
         error_log('AJAX: Not an AJAX request. Exiting.');
         wp_die('Not an AJAX request.', 403);
     }
 
-    error_log('AJAX: $_POST Data: ' . print_r($_POST, true));
+    // error_log('AJAX: $_POST Data: ' . print_r($_POST, true));
 
     $taxonomy_slug = 'category';
     if (isset($_POST['taxonomySlug'])) {
         $taxonomy_slug = sanitize_text_field(wp_unslash($_POST['taxonomySlug']));
     }
-    error_log('AJAX: Determined taxonomy_slug: ' . $taxonomy_slug);
+    // error_log('AJAX: Determined taxonomy_slug: ' . $taxonomy_slug);
 
     $ajax_s           = isset($_POST['s']) ? sanitize_text_field(wp_unslash($_POST['s'])) : '';
     $ajax_orderby     = isset($_POST['orderby']) ? sanitize_text_field(wp_unslash($_POST['orderby'])) : '';
@@ -182,19 +182,19 @@ function caes_hub_handle_relevanssi_ajax_search()
         }
     }
 
-    error_log('AJAX: Sanitized Query Params for render function:');
-    error_log('  s: ' . $ajax_s);
-    error_log('  orderby: ' . $ajax_orderby);
-    error_log('  order: ' . $ajax_order);
-    error_log('  post_type: ' . $ajax_post_type);
-    error_log('  topic_terms: ' . print_r($ajax_topic_terms, true));
-    error_log('  paged: ' . $ajax_paged);
-    error_log('  allowedPostTypes: ' . print_r($ajax_allowed_post_types, true)); // DEBUG
+    // error_log('AJAX: Sanitized Query Params for render function:');
+    // error_log('  s: ' . $ajax_s);
+    // error_log('  orderby: ' . $ajax_orderby);
+    // error_log('  order: ' . $ajax_order);
+    // error_log('  post_type: ' . $ajax_post_type);
+    // error_log('  topic_terms: ' . print_r($ajax_topic_terms, true));
+    // error_log('  paged: ' . $ajax_paged);
+    // error_log('  allowedPostTypes: ' . print_r($ajax_allowed_post_types, true)); // DEBUG
 
     // Pass the allowed post types to the render function for AJAX requests
     echo caes_hub_render_relevanssi_search_results($ajax_s, $ajax_orderby, $ajax_order, $ajax_post_type, $taxonomy_slug, $ajax_topic_terms, $ajax_paged, $ajax_allowed_post_types);
 
-    error_log('AJAX: wp_die() called.');
+    // error_log('AJAX: wp_die() called.');
     wp_die();
 }
 
