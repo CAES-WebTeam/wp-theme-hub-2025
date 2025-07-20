@@ -27,7 +27,7 @@ $current_author_slugs = array();
 if ($show_author_filter && isset($_GET['author_slug'])) {
 	$current_author_slugs = explode(',', sanitize_text_field(wp_unslash($_GET['author_slug'])));
 	// Validate author slugs
-	$current_author_slugs = array_filter($current_author_slugs, function($slug) {
+	$current_author_slugs = array_filter($current_author_slugs, function ($slug) {
 		return preg_match('/^[a-zA-Z0-9\-_]+$/', $slug);
 	});
 }
@@ -225,30 +225,25 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 								<input type="search" id="authors-modal-search-input" class="authors-modal-search-input" placeholder="<?php esc_attr_e('Search authors...', 'caes-hub'); ?>" aria-controls="authors-modal-checkboxes-list">
 								<div class="authors-modal-checkboxes" id="authors-modal-checkboxes-list">
 									<?php
-									// Get unique authors from ACF 'authors' repeater field across all allowed post types
+									// EMERGENCY FIX: More efficient author loading
 									$author_user_ids = [];
 
-									// Get all published posts from allowed post types
-									$posts = get_posts([
-										'post_type'      => $allowed_post_types,
-										'posts_per_page' => -1,
-										'post_status'    => 'publish',
-										'fields'         => 'ids',
-									]);
+									// Use direct SQL to get author IDs without loading full post data
+									global $wpdb;
+									$author_meta_query = $wpdb->prepare("
+                            SELECT DISTINCT meta_value 
+                            FROM {$wpdb->postmeta} pm
+                            INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+                            WHERE pm.meta_key LIKE %s 
+                            AND pm.meta_value REGEXP '^[0-9]+$'
+                            AND p.post_status = 'publish'
+                            AND p.post_type IN ('" . implode("','", array_map('esc_sql', $allowed_post_types)) . "')
+                            LIMIT 500
+                        ", 'authors_%_user');
 
-									foreach ($posts as $post_id) {
-										if (have_rows('authors', $post_id)) {
-											while (have_rows('authors', $post_id)) {
-												the_row();
-												$user = get_sub_field('user');
-
-												if (is_array($user) && isset($user['ID'])) {
-													$author_user_ids[] = $user['ID'];
-												} elseif (is_numeric($user)) {
-													$author_user_ids[] = (int) $user;
-												}
-											}
-										}
+									$author_ids_from_db = $wpdb->get_col($author_meta_query);
+									if ($author_ids_from_db) {
+										$author_user_ids = array_map('intval', $author_ids_from_db);
 									}
 
 									// Get unique user IDs and fetch user data
@@ -273,7 +268,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 										// Add an "All Authors" option.
 										printf(
 											'<label><input type="checkbox" name="author_slug[]" value="" %s> %s</label>',
-											empty($current_author_slugs) ? 'checked' : '', // Check "All Authors" if no specific authors are selected.
+											empty($current_author_slugs) ? 'checked' : '',
 											esc_html__('All Authors', 'caes-hub')
 										);
 
@@ -287,7 +282,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 											// Use user_nicename (slug) instead of ID for security
 											printf(
 												'<label><input type="checkbox" name="author_slug[]" value="%1$s" %2$s> %3$s</label>',
-												esc_attr($author->user_nicename), // Use slug instead of ID
+												esc_attr($author->user_nicename),
 												in_array($author->user_nicename, $current_author_slugs, true) ? 'checked' : '',
 												esc_html($display_name)
 											);
