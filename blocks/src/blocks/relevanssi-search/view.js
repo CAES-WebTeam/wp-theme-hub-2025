@@ -16,16 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const blockTaxonomySlug = block.dataset.taxonomySlug || 'category';
         const blockAllowedPostTypes = block.dataset.allowedPostTypes ? JSON.parse(block.dataset.allowedPostTypes) : [];
 
-        // Modal elements
+        // Modal elements - Topics
         const openTopicsModalButton = block.querySelector('.open-topics-modal');
         const topicsModal = block.querySelector('#topics-modal');
         const topicsModalCloseButton = topicsModal ? topicsModal.querySelector('.topics-modal-close') : null;
         const applyTopicsFilterButton = topicsModal ? topicsModal.querySelector('.apply-topics-filter') : null;
 
+        // Modal elements - Authors
+        const openAuthorsModalButton = block.querySelector('.open-authors-modal');
+        const authorsModal = block.querySelector('#authors-modal');
+        const authorsModalCloseButton = authorsModal ? authorsModal.querySelector('.authors-modal-close') : null;
+        const applyAuthorsFilterButton = authorsModal ? authorsModal.querySelector('.apply-authors-filter') : null;
+
         // Ensure all checkbox labels have a consistent class for searching
         if (topicsModal) {
             topicsModal.querySelectorAll('.topics-modal-checkboxes label').forEach(label => {
                 label.classList.add('topic-checkbox-item');
+            });
+        }
+
+        if (authorsModal) {
+            authorsModal.querySelectorAll('.authors-modal-checkboxes label').forEach(label => {
+                label.classList.add('author-checkbox-item');
             });
         }
 
@@ -140,6 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('paged', page);
             formData.append('taxonomySlug', blockTaxonomySlug);
             formData.append('allowedPostTypes', JSON.stringify(blockAllowedPostTypes));
+            
+            // Pass filter toggle states
+            formData.append('showDateSort', sortByDateSelect ? 'true' : 'false');
+            formData.append('showPostTypeFilter', postTypeSelect ? 'true' : 'false');
+            formData.append('showTopicFilter', topicsModal ? 'true' : 'false');
+            formData.append('showAuthorFilter', authorsModal ? 'true' : 'false');
         
             if (sortByDateSelect) {
                 const selectedOrder = sortByDateSelect.value;
@@ -169,6 +187,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (checkedTopicSlugs.length > 0) {
                     checkedTopicSlugs.forEach(slug => {
                         formData.append(`${blockTaxonomySlug}[]`, slug);
+                    });
+                }
+            }
+
+            // Initialize checkedAuthorSlugs for authors filter - using SLUGS instead of IDs
+            let checkedAuthorSlugs = [];
+        
+            if (authorsModal) {
+                checkedAuthorSlugs = Array.from(authorsModal.querySelectorAll('input[type="checkbox"]:checked'))
+                    .map(cb => cb.value)
+                    .filter(slug => slug !== '');
+        
+                if (checkedAuthorSlugs.length > 0) {
+                    checkedAuthorSlugs.forEach(slug => {
+                        formData.append('author_slug[]', slug); // Use author_slug[] instead of author[]
                     });
                 }
             }
@@ -259,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         
             updateURL(formData);
-            renderSelectedTopicFilters(checkedTopicSlugs);
+            renderSelectedFilters(checkedTopicSlugs, checkedAuthorSlugs);
         };
         
 
@@ -269,8 +302,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create a clean set of params for the URL
             for (const [key, value] of formData.entries()) {
                 // IMPORTANT: Removed 'paged' from the exclusion list so it's included in the URL
-                if (!['action', 'security', 'allowedPostTypes'].includes(key)) {
-                    // Handle array parameters like taxonomy slugs
+                if (!['action', 'security', 'allowedPostTypes', 'showDateSort', 'showPostTypeFilter', 'showTopicFilter', 'showAuthorFilter'].includes(key)) {
+                    // Handle array parameters like taxonomy slugs and author slugs
                     if (key.endsWith('[]')) {
                         const paramName = key.slice(0, -2);
                         // Append multiple values for the same parameter name
@@ -284,13 +317,16 @@ document.addEventListener('DOMContentLoaded', () => {
             window.history.pushState({ path: newUrl }, '', newUrl);
         };
 
-        const renderSelectedTopicFilters = (slugs) => {
+        const renderSelectedFilters = (topicSlugs, authorSlugs) => {
             const selectedContainer = block.querySelector('.selected-topic-filters');
             if (!selectedContainer) return;
         
             selectedContainer.innerHTML = ''; // Clear old pills
         
-            if (!slugs.length) return;
+            const hasTopicFilters = topicSlugs && topicSlugs.length > 0;
+            const hasAuthorFilters = authorSlugs && authorSlugs.length > 0;
+        
+            if (!hasTopicFilters && !hasAuthorFilters) return;
         
             // Add "Filters applied:" text
             const filtersLabel = document.createElement('span');
@@ -302,29 +338,59 @@ document.addEventListener('DOMContentLoaded', () => {
             const filtersWrapper = document.createElement('div');
             filtersWrapper.className = 'filters-wrapper';
         
-            slugs.forEach(slug => {
-                const checkbox = topicsModal.querySelector(`input[value="${slug}"]`);
-                const label = checkbox?.parentElement?.textContent.trim() || slug;
-        
-                const pill = document.createElement('div');
-                pill.className = 'topic-pill';
-        
-                const textSpan = document.createElement('span');
-                textSpan.textContent = label;
-        
-                const removeBtn = document.createElement('button');
-                removeBtn.setAttribute('type', 'button');
-                removeBtn.setAttribute('aria-label', `Remove filter ${label}`);
-                removeBtn.innerHTML = '&times;';
-                removeBtn.addEventListener('click', () => {
-                    if (checkbox) checkbox.checked = false;
-                    fetchAndDisplaySearchResults();
+            // Render topic filter pills
+            if (hasTopicFilters) {
+                topicSlugs.forEach(slug => {
+                    const checkbox = topicsModal.querySelector(`input[value="${slug}"]`);
+                    const label = checkbox?.parentElement?.textContent.trim() || slug;
+            
+                    const pill = document.createElement('div');
+                    pill.className = 'topic-pill';
+            
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = label;
+            
+                    const removeBtn = document.createElement('button');
+                    removeBtn.setAttribute('type', 'button');
+                    removeBtn.setAttribute('aria-label', `Remove filter ${label}`);
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.addEventListener('click', () => {
+                        if (checkbox) checkbox.checked = false;
+                        fetchAndDisplaySearchResults();
+                    });
+            
+                    pill.appendChild(textSpan);
+                    pill.appendChild(removeBtn);
+                    filtersWrapper.appendChild(pill);
                 });
-        
-                pill.appendChild(textSpan);
-                pill.appendChild(removeBtn);
-                filtersWrapper.appendChild(pill);
-            });
+            }
+
+            // Render author filter pills - now using author slugs
+            if (hasAuthorFilters) {
+                authorSlugs.forEach(slug => {
+                    const checkbox = authorsModal.querySelector(`input[value="${slug}"]`);
+                    const label = checkbox?.parentElement?.textContent.trim() || slug;
+            
+                    const pill = document.createElement('div');
+                    pill.className = 'author-pill';
+            
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = label;
+            
+                    const removeBtn = document.createElement('button');
+                    removeBtn.setAttribute('type', 'button');
+                    removeBtn.setAttribute('aria-label', `Remove filter ${label}`);
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.addEventListener('click', () => {
+                        if (checkbox) checkbox.checked = false;
+                        fetchAndDisplaySearchResults();
+                    });
+            
+                    pill.appendChild(textSpan);
+                    pill.appendChild(removeBtn);
+                    filtersWrapper.appendChild(pill);
+                });
+            }
         
             const clearAllBtn = document.createElement('button');
             clearAllBtn.textContent = 'Clear all';
@@ -332,7 +398,12 @@ document.addEventListener('DOMContentLoaded', () => {
             clearAllBtn.setAttribute('type', 'button');
             clearAllBtn.setAttribute('aria-label', 'Clear all selected filters');
             clearAllBtn.addEventListener('click', () => {
-                topicsModal.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => cb.checked = false);
+                if (topicsModal) {
+                    topicsModal.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => cb.checked = false);
+                }
+                if (authorsModal) {
+                    authorsModal.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => cb.checked = false);
+                }
                 fetchAndDisplaySearchResults();
             });
         
@@ -399,12 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Initialize on page load
         const urlParams = new URLSearchParams(window.location.search);
-        if (
-            urlParams.has('s') ||
+        const hasActiveFilters = urlParams.has('s') ||
             urlParams.has('orderby') ||
             urlParams.has('post_type') ||
-            urlParams.getAll(blockTaxonomySlug).length
-        ) {
+            urlParams.getAll(blockTaxonomySlug).length ||
+            (authorsModal && urlParams.getAll('author_slug').length); // Check for author_slug instead of author
+            
+        if (hasActiveFilters) {
             fetchAndDisplaySearchResults();
         }
 
@@ -425,19 +497,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sortByDateSelect) sortByDateSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
         if (postTypeSelect) postTypeSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
 
-        // --- Modal Logic ---
+        // --- Topics Modal Logic ---
         if (openTopicsModalButton && topicsModal) {
             let previouslyFocusedElement;
 
             // Helper to get all tabbable elements within the modal
-            const getTabbableElements = () => {
+            const getTopicsTabbableElements = () => {
                 return Array.from(topicsModal.querySelectorAll(
                     'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
                 )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0); // Filter out hidden elements
             };
 
-            const trapFocus = (e) => {
-                const tabbableElements = getTabbableElements();
+            const trapTopicsFocus = (e) => {
+                const tabbableElements = getTopicsTabbableElements();
                 if (tabbableElements.length === 0) return; // No tabbable elements, nothing to trap
 
                 const firstTabbableElement = tabbableElements[0];
@@ -456,46 +528,46 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else if (e.key === 'Escape') {
-                    closeModal();
+                    closeTopicsModal();
                 }
             };
 
-            const openModal = () => {
+            const openTopicsModal = () => {
                 previouslyFocusedElement = document.activeElement;
                 topicsModal.style.display = 'flex';
                 openTopicsModalButton.setAttribute('aria-expanded', 'true');
                 topicsModal.removeAttribute('aria-hidden');
 
                 // Set focus to the first tabbable element inside the modal
-                const tabbableElements = getTabbableElements();
+                const tabbableElements = getTopicsTabbableElements();
                 if (tabbableElements.length > 0) {
                     tabbableElements[0].focus();
                 }
 
-                document.addEventListener('keydown', trapFocus);
+                document.addEventListener('keydown', trapTopicsFocus);
             };
 
-            const closeModal = () => {
+            const closeTopicsModal = () => {
                 topicsModal.style.display = 'none';
                 openTopicsModalButton.setAttribute('aria-expanded', 'false');
                 topicsModal.setAttribute('aria-hidden', 'true');
 
-                document.removeEventListener('keydown', trapFocus);
+                document.removeEventListener('keydown', trapTopicsFocus);
                 if (previouslyFocusedElement) {
                     previouslyFocusedElement.focus();
                 }
             };
 
-            openTopicsModalButton.addEventListener('click', openModal);
+            openTopicsModalButton.addEventListener('click', openTopicsModal);
 
             if (topicsModalCloseButton) {
-                topicsModalCloseButton.addEventListener('click', closeModal);
+                topicsModalCloseButton.addEventListener('click', closeTopicsModal);
             }
 
             if (applyTopicsFilterButton) {
                 applyTopicsFilterButton.addEventListener('click', () => {
                     fetchAndDisplaySearchResults();
-                    closeModal();
+                    closeTopicsModal();
                 });
             } else {
                 // Fallback if no specific 'Apply Filter' button (though recommended to have one)
@@ -503,8 +575,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkbox.addEventListener('change', () => {
                         fetchAndDisplaySearchResults();
                         // Consider if you want to close the modal here or only with an explicit apply button
-                        // If you uncomment closeModal(), users might find it jarring if modal closes on every click.
-                        // closeModal();
+                        // If you uncomment closeTopicsModal(), users might find it jarring if modal closes on every click.
+                        // closeTopicsModal();
                     });
                 });
             }
@@ -512,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Close modal if clicking outside of it
             window.addEventListener('click', (event) => {
                 if (event.target === topicsModal) {
-                    closeModal();
+                    closeTopicsModal();
                 }
             });
 
@@ -522,6 +594,110 @@ document.addEventListener('DOMContentLoaded', () => {
                 topicSearchInput.addEventListener('input', (e) => {
                     const searchTerm = e.target.value.toLowerCase();
                     topicsModal.querySelectorAll('.topic-checkbox-item').forEach(item => {
+                        const label = item.textContent.toLowerCase();
+                        item.style.display = label.includes(searchTerm) ? '' : 'none';
+                    });
+                });
+            }
+        }
+
+        // --- Authors Modal Logic ---
+        if (openAuthorsModalButton && authorsModal) {
+            let previouslyFocusedElementAuthors;
+
+            // Helper to get all tabbable elements within the authors modal
+            const getAuthorsTabbableElements = () => {
+                return Array.from(authorsModal.querySelectorAll(
+                    'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
+                )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0); // Filter out hidden elements
+            };
+
+            const trapAuthorsFocus = (e) => {
+                const tabbableElements = getAuthorsTabbableElements();
+                if (tabbableElements.length === 0) return; // No tabbable elements, nothing to trap
+
+                const firstTabbableElement = tabbableElements[0];
+                const lastTabbableElement = tabbableElements[tabbableElements.length - 1];
+
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) { // Shift + Tab
+                        if (document.activeElement === firstTabbableElement) {
+                            lastTabbableElement.focus();
+                            e.preventDefault();
+                        }
+                    } else { // Tab
+                        if (document.activeElement === lastTabbableElement) {
+                            firstTabbableElement.focus();
+                            e.preventDefault();
+                        }
+                    }
+                } else if (e.key === 'Escape') {
+                    closeAuthorsModal();
+                }
+            };
+
+            const openAuthorsModal = () => {
+                previouslyFocusedElementAuthors = document.activeElement;
+                authorsModal.style.display = 'flex';
+                openAuthorsModalButton.setAttribute('aria-expanded', 'true');
+                authorsModal.removeAttribute('aria-hidden');
+
+                // Set focus to the first tabbable element inside the modal
+                const tabbableElements = getAuthorsTabbableElements();
+                if (tabbableElements.length > 0) {
+                    tabbableElements[0].focus();
+                }
+
+                document.addEventListener('keydown', trapAuthorsFocus);
+            };
+
+            const closeAuthorsModal = () => {
+                authorsModal.style.display = 'none';
+                openAuthorsModalButton.setAttribute('aria-expanded', 'false');
+                authorsModal.setAttribute('aria-hidden', 'true');
+
+                document.removeEventListener('keydown', trapAuthorsFocus);
+                if (previouslyFocusedElementAuthors) {
+                    previouslyFocusedElementAuthors.focus();
+                }
+            };
+
+            openAuthorsModalButton.addEventListener('click', openAuthorsModal);
+
+            if (authorsModalCloseButton) {
+                authorsModalCloseButton.addEventListener('click', closeAuthorsModal);
+            }
+
+            if (applyAuthorsFilterButton) {
+                applyAuthorsFilterButton.addEventListener('click', () => {
+                    fetchAndDisplaySearchResults();
+                    closeAuthorsModal();
+                });
+            } else {
+                // Fallback if no specific 'Apply Filter' button (though recommended to have one)
+                authorsModal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        fetchAndDisplaySearchResults();
+                        // Consider if you want to close the modal here or only with an explicit apply button
+                        // If you uncomment closeAuthorsModal(), users might find it jarring if modal closes on every click.
+                        // closeAuthorsModal();
+                    });
+                });
+            }
+
+            // Close modal if clicking outside of it
+            window.addEventListener('click', (event) => {
+                if (event.target === authorsModal) {
+                    closeAuthorsModal();
+                }
+            });
+
+            // Author search inside the modal
+            const authorSearchInput = authorsModal.querySelector('.authors-modal-search-input');
+            if (authorSearchInput) {
+                authorSearchInput.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    authorsModal.querySelectorAll('.author-checkbox-item').forEach(item => {
                         const label = item.textContent.toLowerCase();
                         item.style.display = label.includes(searchTerm) ? '' : 'none';
                     });

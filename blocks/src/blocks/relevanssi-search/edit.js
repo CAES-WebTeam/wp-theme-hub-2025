@@ -25,7 +25,7 @@ import './editor.scss';
  * @return {WPElement} Element to render.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { showDateSort, showPostTypeFilter, showTopicFilter, postTypes, taxonomySlug } = attributes;
+	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, postTypes, taxonomySlug } = attributes;
 	const blockProps = useBlockProps();
 
 	// State to hold available post types for the checkbox list
@@ -125,6 +125,16 @@ export default function Edit({ attributes, setAttributes }) {
 							)}
 						/>
 					)}
+					<ToggleControl
+						label={__('Show Author Filter', 'caes-hub')}
+						checked={showAuthorFilter}
+						onChange={(value) => setAttributes({ showAuthorFilter: value })}
+						help={
+							showAuthorFilter
+								? __('Author filter dropdown will be visible.', 'caes-hub')
+								: __('Author filter dropdown will be hidden.', 'caes-hub')
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<div className="caes-hub-relevanssi-search-filters-editor">
@@ -137,6 +147,7 @@ export default function Edit({ attributes, setAttributes }) {
 				{showDateSort && <p> - {__('Date Sorting Enabled', 'caes-hub')}</p>}
 				{showPostTypeFilter && <p> - {__('Post Type Filter Enabled', 'caes-hub')}</p>}
 				{showTopicFilter && <p> - {__('Topics Filter Enabled (Checkboxes, Taxonomy: ', 'caes-hub')}{taxonomySlug})</p>}
+				{showAuthorFilter && <p> - {__('Author Filter Enabled', 'caes-hub')}</p>}
 			</div>
 		</div>
 	);

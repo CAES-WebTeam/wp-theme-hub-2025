@@ -2,11 +2,12 @@
 /** * Renders Relevanssi search results HTML using block syntax. 
  */
 if (! function_exists('caes_hub_render_relevanssi_search_results')) {
-    function caes_hub_render_relevanssi_search_results($search_query, $orderby, $order, $post_type, $taxonomy_slug, $topic_terms, $paged = 1, $allowed_post_types_from_block = array()) // Add this new parameter
+    function caes_hub_render_relevanssi_search_results($search_query, $orderby, $order, $post_type, $taxonomy_slug, $topic_terms, $paged = 1, $allowed_post_types_from_block = array(), $author_ids = array()) // Add author_ids parameter
     {
         // error_log('RENDER: caes_hub_render_relevanssi_search_results function called.');
         // error_log('RENDER: Incoming Params: s=' . $search_query . ', orderby=' . $orderby . ', order=' . $order . ', post_type=' . $post_type . ', taxonomy_slug=' . $taxonomy_slug . ', topic_terms=' . print_r($topic_terms, true) . ', paged=' . $paged);
-        // error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true)); // DEBUG
+        // error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true));
+        // error_log('RENDER: author_ids: ' . print_r($author_ids, true)); // DEBUG author IDs
 
         $args = array(
             's'              => $search_query,
@@ -44,6 +45,57 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                     'operator' => 'IN',
                 ),
             );
+        }
+
+        // Handle author filtering using ACF fields (WordPress-native optimized approach)
+        // Note: author_ids will be empty if showAuthorFilter toggle is disabled
+        if (!empty($author_ids)) {
+            // Use a single meta_query with IN comparison for all author positions
+            $meta_query_or_conditions = array('relation' => 'OR');
+            
+            // Instead of checking each author separately, check all positions for all authors
+            for ($i = 0; $i <= 9; $i++) {
+                $meta_query_or_conditions[] = array(
+                    'key' => "authors_{$i}_user",
+                    'value' => $author_ids, // Pass the whole array
+                    'compare' => 'IN'       // Use IN instead of multiple = comparisons
+                );
+            }
+            
+            // Single query to get all posts with any of the selected authors
+            $author_posts_query = new WP_Query(array(
+                'post_type' => !empty($post_type) ? array($post_type) : 
+                    (empty($allowed_post_types_from_block) ? array('post', 'page') : 
+                    array_filter($allowed_post_types_from_block, function ($type) {
+                        return $type !== 'shorthand_story';
+                    })),
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'post_status' => 'publish',
+                'meta_query' => $meta_query_or_conditions,
+                'no_found_rows' => true, // Skip pagination counting for performance
+                'update_post_meta_cache' => false, // Skip meta cache
+                'update_post_term_cache' => false  // Skip term cache
+            ));
+            
+            $author_post_ids = $author_posts_query->posts;
+            
+            // Clean up
+            wp_reset_postdata();
+            
+            if (!empty($author_post_ids)) {
+                $args['post__in'] = $author_post_ids;
+            } else {
+                // No posts found with selected authors - force no results
+                $args['post__in'] = array(-999999); // Non-existent post ID
+                $args['meta_query'] = array(
+                    array(
+                        'key' => 'force_no_results_dummy_key',
+                        'value' => 'force_no_results_dummy_value',
+                        'compare' => '='
+                    )
+                );
+            }
         }
 
         // error_log('RENDER: Final WP_Query Args: ' . print_r($args, true));
@@ -165,12 +217,42 @@ function caes_hub_handle_relevanssi_ajax_search()
     }
     // error_log('AJAX: Determined taxonomy_slug: ' . $taxonomy_slug);
 
+    // Get filter toggle states from AJAX request
+    $show_author_filter = isset($_POST['showAuthorFilter']) && $_POST['showAuthorFilter'] === 'true';
+    $show_topic_filter = isset($_POST['showTopicFilter']) && $_POST['showTopicFilter'] === 'true';
+
     $ajax_s           = isset($_POST['s']) ? sanitize_text_field(wp_unslash($_POST['s'])) : '';
     $ajax_orderby     = isset($_POST['orderby']) ? sanitize_text_field(wp_unslash($_POST['orderby'])) : '';
     $ajax_order       = isset($_POST['order']) ? sanitize_text_field(wp_unslash($_POST['order'])) : '';
     $ajax_post_type   = isset($_POST['post_type']) ? sanitize_text_field(wp_unslash($_POST['post_type'])) : '';
-    $ajax_topic_terms = isset($_POST[$taxonomy_slug]) ? array_map('sanitize_text_field', wp_unslash($_POST[$taxonomy_slug])) : array();
+    
+    // Only process topic terms if topic filter is enabled
+    $ajax_topic_terms = array();
+    if ($show_topic_filter && isset($_POST[$taxonomy_slug])) {
+        $ajax_topic_terms = array_map('sanitize_text_field', wp_unslash($_POST[$taxonomy_slug]));
+    }
+    
     $ajax_paged       = isset($_POST['paged']) ? intval(wp_unslash($_POST['paged'])) : 1;
+
+    // Only process author slugs if author filter is enabled - SECURITY: using slugs instead of IDs
+    $ajax_author_ids = array();
+    if ($show_author_filter && isset($_POST['author_slug']) && is_array($_POST['author_slug'])) {
+        $ajax_author_slugs = array_map('sanitize_text_field', wp_unslash($_POST['author_slug']));
+        $ajax_author_slugs = array_filter($ajax_author_slugs); // Remove any empty values
+        
+        // Validate author slugs for security
+        $ajax_author_slugs = array_filter($ajax_author_slugs, function($slug) {
+            return preg_match('/^[a-zA-Z0-9\-_]+$/', $slug);
+        });
+        
+        // Convert slugs back to IDs for internal processing
+        foreach ($ajax_author_slugs as $slug) {
+            $user = get_user_by('slug', $slug);
+            if ($user) {
+                $ajax_author_ids[] = $user->ID;
+            }
+        }
+    }
 
     // Get allowed_post_types from the AJAX request if passed, or default.
     // You'll need to pass this from view.js in the AJAX request.
@@ -188,11 +270,12 @@ function caes_hub_handle_relevanssi_ajax_search()
     // error_log('  order: ' . $ajax_order);
     // error_log('  post_type: ' . $ajax_post_type);
     // error_log('  topic_terms: ' . print_r($ajax_topic_terms, true));
+    // error_log('  author_ids: ' . print_r($ajax_author_ids, true));
     // error_log('  paged: ' . $ajax_paged);
-    // error_log('  allowedPostTypes: ' . print_r($ajax_allowed_post_types, true)); // DEBUG
+    // error_log('  allowedPostTypes: ' . print_r($ajax_allowed_post_types, true));
 
-    // Pass the allowed post types to the render function for AJAX requests
-    echo caes_hub_render_relevanssi_search_results($ajax_s, $ajax_orderby, $ajax_order, $ajax_post_type, $taxonomy_slug, $ajax_topic_terms, $ajax_paged, $ajax_allowed_post_types);
+    // Pass the allowed post types and author IDs to the render function for AJAX requests
+    echo caes_hub_render_relevanssi_search_results($ajax_s, $ajax_orderby, $ajax_order, $ajax_post_type, $taxonomy_slug, $ajax_topic_terms, $ajax_paged, $ajax_allowed_post_types, $ajax_author_ids);
 
     // error_log('AJAX: wp_die() called.');
     wp_die();

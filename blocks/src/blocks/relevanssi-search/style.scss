@@ -100,7 +100,7 @@
 		}
 
 		// Styles for the new topic filter button
-		.open-topics-modal {
+		.open-topics-modal, .open-authors-modal {
 			align-items: center;
 			background-color: var(--wp--preset--color--base);
 			border: 1px solid var(--wp--preset--color--contrast-two);
@@ -130,7 +130,7 @@
 	}
 
 	// --- Modal Styles ---
-	.topics-modal-overlay {
+	.topics-modal-overlay, .authors-modal-overlay {
 		align-items: center;
 		background-color: rgba(0, 0, 0, .5);
 		display: none;
@@ -145,12 +145,12 @@
 	}
 
 	@media screen and (max-width: 782px) {
-		.topics-modal-overlay {
+		.topics-modal-overlay, .authors-modal-overlay {
 			width: 100%;
 		}
 	}
 
-	.topics-modal-content {
+	.topics-modal-content, .authors-modal-content {
 		background-color: var(--wp--preset--color--base);
 		border-radius: 0.5rem;
 		box-shadow: var(--wp--preset--shadow--small-dark);
@@ -163,7 +163,7 @@
 		max-width: 90%;
 	}
 
-	.topics-modal-header {
+	.topics-modal-header, .authors-modal-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -177,7 +177,7 @@
 			color: #333;
 		}
 
-		.topics-modal-close {
+		.topics-modal-close, .authors-modal-close {
 			background: none;
 			border: none;
 			font-size: var(--wp--preset--font-size--medium);
@@ -192,7 +192,7 @@
 		}
 	}
 
-	.topics-modal-body {
+	.topics-modal-body, .authors-modal-body {
 		display: flex;
 		flex-direction: column;
 		gap: 15px;
@@ -201,7 +201,7 @@
 		min-height: 0;
 		/* Important for flex children with overflow */
 
-		.topics-modal-search-input {
+		.topics-modal-search-input, .authors-modal-search-input {
 			width: 100%;
 			padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--50);
 			border: 1px solid var(--wp--preset--color--contrast-two);
@@ -218,7 +218,7 @@
 			}
 		}
 
-		.topics-modal-checkboxes {
+		.topics-modal-checkboxes, .authors-modal-checkboxes {
 			display: flex;
 			flex-direction: column;
 			gap: 10px;
@@ -245,13 +245,13 @@
 		}
 	}
 
-	.selected-topic-filters {
+	.selected-topic-filters, .selected-author-filters {
 		display: flex;
 		flex-wrap: wrap;
 		margin-top: 1em;
 		gap: 0.5em;
 
-		.topic-pill {
+		.topic-pill, .author-pill {
 			background: var(--wp--preset--color--olympic);
 			color: var(--wp--preset--color--base);
 			padding: 0.3em 0.8em;
