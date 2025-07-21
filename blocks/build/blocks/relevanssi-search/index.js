@@ -1,4 +1,5 @@
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
 /***/ "./src/blocks/relevanssi-search/edit.js":
@@ -7,7 +8,6 @@
   \**********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ Edit)
@@ -328,13 +328,60 @@ function Edit({
 
 /***/ }),
 
+/***/ "./src/blocks/relevanssi-search/index.js":
+/*!***********************************************!*\
+  !*** ./src/blocks/relevanssi-search/index.js ***!
+  \***********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/relevanssi-search/style.scss");
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/relevanssi-search/edit.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./block.json */ "./src/blocks/relevanssi-search/block.json");
+/**
+ * Registers a new block provided a unique name and an object defining its behavior.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
+ */
+
+
+/**
+ * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
+ * All files containing `style` keyword are bundled together. The code used
+ * gets applied both to the front of your site and to the editor.
+ *
+ * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
+ */
+
+
+/**
+ * Internal dependencies
+ */
+
+
+
+/**
+ * Every block starts by registering a new block type definition.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
+ */
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_3__.name, {
+  /**
+   * @see ./edit.js
+   */
+  edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"]
+});
+
+/***/ }),
+
 /***/ "./src/blocks/relevanssi-search/editor.scss":
 /*!**************************************************!*\
   !*** ./src/blocks/relevanssi-search/editor.scss ***!
   \**************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-"use strict";
 __webpack_require__.r(__webpack_exports__);
 // extracted by mini-css-extract-plugin
 
@@ -345,9 +392,11 @@ __webpack_require__.r(__webpack_exports__);
 /*!*************************************************!*\
   !*** ./src/blocks/relevanssi-search/style.scss ***!
   \*************************************************/
-/***/ (() => {
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-throw new Error("Module build failed (from ./node_modules/mini-css-extract-plugin/dist/loader.js):\nHookWebpackError: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\nexpected selector.\n\u001b[34m    ╷\u001b[0m\n\u001b[34m337 │\u001b[0m             .page-numbers:not(\u001b[31m\u001b[0m'.dots') {\n\u001b[34m    │\u001b[0m \u001b[31m                              ^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n  src/blocks/relevanssi-search/style.scss 337:31  root stylesheet\n    at tryRunOrWebpackError (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/HookWebpackError.js:86:9)\n    at __webpack_require_module__ (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5299:12)\n    at __webpack_require__ (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5256:18)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5328:20\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3485:9)\n    at done (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3527:9)\n    at Hook.eval [as callAsync] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)\n    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/Hook.js:18:14)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5234:43\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3482:9)\n    at timesSync (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:2297:7)\n    at Object.eachLimit (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3463:5)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5196:16\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3485:9)\n    at timesSync (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:2297:7)\n    at Object.eachLimit (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3463:5)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5164:15\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3485:9)\n    at done (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3527:9)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5110:8\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:3531:6\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/HookWebpackError.js:67:2\n    at Hook.eval [as callAsync] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)\n    at Cache.store (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:111:20)\n    at ItemCacheFacade.store (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/CacheFacade.js:141:15)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:3530:11\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:95:34\n    at Array.<anonymous> (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/cache/MemoryCachePlugin.js:45:13)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:95:19\n    at Hook.eval [as callAsync] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:19:1)\n    at Cache.get (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:79:18)\n    at ItemCacheFacade.get (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/CacheFacade.js:115:15)\n    at Compilation._codeGenerationModule (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:3498:9)\n    at codeGen (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5098:11)\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3482:9)\n    at timesSync (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:2297:7)\n    at Object.eachLimit (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3463:5)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5128:14\n    at processQueue (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/util/processAsyncTree.js:61:4)\n    at processTicksAndRejections (node:internal/process/task_queues:77:11)\n    at runNextTicks (node:internal/process/task_queues:64:3)\n    at process.processImmediate (node:internal/timers:449:9)\n-- inner error --\nError: Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\nexpected selector.\n\u001b[34m    ╷\u001b[0m\n\u001b[34m337 │\u001b[0m             .page-numbers:not(\u001b[31m\u001b[0m'.dots') {\n\u001b[34m    │\u001b[0m \u001b[31m                              ^\u001b[0m\n\u001b[34m    ╵\u001b[0m\n  src/blocks/relevanssi-search/style.scss 337:31  root stylesheet\n    at Object.<anonymous> (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/src/blocks/relevanssi-search/style.scss:1:7)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/javascript/JavascriptModulesPlugin.js:494:10\n    at Hook.eval [as call] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:19:10), <anonymous>:7:1)\n    at Hook.CALL_DELEGATE [as _call] (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/Hook.js:14:14)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5301:39\n    at tryRunOrWebpackError (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/HookWebpackError.js:81:7)\n    at __webpack_require_module__ (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5299:12)\n    at __webpack_require__ (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5256:18)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5328:20\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3485:9)\n    at done (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3527:9)\n    at Hook.eval [as callAsync] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)\n    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/Hook.js:18:14)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5234:43\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3482:9)\n    at timesSync (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:2297:7)\n    at Object.eachLimit (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3463:5)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5196:16\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3485:9)\n    at timesSync (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:2297:7)\n    at Object.eachLimit (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3463:5)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5164:15\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3485:9)\n    at done (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3527:9)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5110:8\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:3531:6\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/HookWebpackError.js:67:2\n    at Hook.eval [as callAsync] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:15:1)\n    at Cache.store (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:111:20)\n    at ItemCacheFacade.store (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/CacheFacade.js:141:15)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:3530:11\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:95:34\n    at Array.<anonymous> (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/cache/MemoryCachePlugin.js:45:13)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:95:19\n    at Hook.eval [as callAsync] (eval at create (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:19:1)\n    at Cache.get (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Cache.js:79:18)\n    at ItemCacheFacade.get (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/CacheFacade.js:115:15)\n    at Compilation._codeGenerationModule (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:3498:9)\n    at codeGen (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5098:11)\n    at symbolIterator (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3482:9)\n    at timesSync (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:2297:7)\n    at Object.eachLimit (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/neo-async/async.js:3463:5)\n    at /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/Compilation.js:5128:14\n    at processQueue (/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/webpack/lib/util/processAsyncTree.js:61:4)\n    at processTicksAndRejections (node:internal/process/task_queues:77:11)\n    at runNextTicks (node:internal/process/task_queues:64:3)\n    at process.processImmediate (node:internal/timers:449:9)\n\nGenerated code for /Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!/Users/ashleywilliams/Documents/_CODE/github/wp-theme-hub-2025/blocks/src/blocks/relevanssi-search/style.scss\n1 | throw new Error(\"Module build failed (from ./node_modules/sass-loader/dist/cjs.js):\\nexpected selector.\\n\\u001b[34m    ╷\\u001b[0m\\n\\u001b[34m337 │\\u001b[0m             .page-numbers:not(\\u001b[31m\\u001b[0m'.dots') {\\n\\u001b[34m    │\\u001b[0m \\u001b[31m                              ^\\u001b[0m\\n\\u001b[34m    ╵\\u001b[0m\\n  src/blocks/relevanssi-search/style.scss 337:31  root stylesheet\");");
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
 
 /***/ }),
 
@@ -357,7 +406,6 @@ throw new Error("Module build failed (from ./node_modules/mini-css-extract-plugi
   \**********************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["ReactJSXRuntime"];
 
 /***/ }),
@@ -368,7 +416,6 @@ module.exports = window["ReactJSXRuntime"];
   \*************************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["wp"]["blockEditor"];
 
 /***/ }),
@@ -379,7 +426,6 @@ module.exports = window["wp"]["blockEditor"];
   \********************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["wp"]["blocks"];
 
 /***/ }),
@@ -390,7 +436,6 @@ module.exports = window["wp"]["blocks"];
   \************************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["wp"]["components"];
 
 /***/ }),
@@ -401,7 +446,6 @@ module.exports = window["wp"]["components"];
   \******************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["wp"]["data"];
 
 /***/ }),
@@ -412,7 +456,6 @@ module.exports = window["wp"]["data"];
   \*********************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["wp"]["element"];
 
 /***/ }),
@@ -423,7 +466,6 @@ module.exports = window["wp"]["element"];
   \******************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = window["wp"]["i18n"];
 
 /***/ }),
@@ -434,7 +476,6 @@ module.exports = window["wp"]["i18n"];
   \*************************************************/
 /***/ ((module) => {
 
-"use strict";
 module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/relevanssi-search","version":"1.0.0","title":"CAES Hub Relevanssi Search","category":"widgets","icon":"search","description":"A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.","supports":{"html":false,"spacing":{"margin":true,"padding":true}},"attributes":{"showDateSort":{"type":"boolean","default":true},"showPostTypeFilter":{"type":"boolean","default":true},"showTopicFilter":{"type":"boolean","default":true},"showAuthorFilter":{"type":"boolean","default":true},"showLanguageFilter":{"type":"boolean","default":false},"showHeading":{"type":"boolean","default":true},"showButton":{"type":"boolean","default":false},"buttonText":{"type":"string","default":""},"buttonUrl":{"type":"string","default":""},"postTypes":{"type":"array","default":["post","page"],"items":{"type":"string"}},"taxonomySlug":{"type":"string","default":"category"},"headingColor":{"type":"string","default":""},"headingAlignment":{"type":"string","default":"left"},"customHeading":{"type":"string","default":""},"resultsPageUrl":{"type":"string","default":""}},"textdomain":"caes-hub","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
 
 /***/ })
@@ -465,7 +506,42 @@ module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/tru
 /******/ 		return module.exports;
 /******/ 	}
 /******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat get default export */
 /******/ 	(() => {
 /******/ 		// getDefaultExport function for compatibility with non-harmony modules
@@ -506,56 +582,68 @@ module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/tru
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/relevanssi-search/index": 0,
+/******/ 			"blocks/relevanssi-search/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunktheme_blocks"] = globalThis["webpackChunktheme_blocks"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
-(() => {
-"use strict";
-/*!***********************************************!*\
-  !*** ./src/blocks/relevanssi-search/index.js ***!
-  \***********************************************/
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
-/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/relevanssi-search/style.scss");
-/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_style_scss__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/relevanssi-search/edit.js");
-/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./block.json */ "./src/blocks/relevanssi-search/block.json");
-/**
- * Registers a new block provided a unique name and an object defining its behavior.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
- */
-
-
-/**
- * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
- * All files containing `style` keyword are bundled together. The code used
- * gets applied both to the front of your site and to the editor.
- *
- * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
- */
-
-
-/**
- * Internal dependencies
- */
-
-
-
-/**
- * Every block starts by registering a new block type definition.
- *
- * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
- */
-(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_3__.name, {
-  /**
-   * @see ./edit.js
-   */
-  edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"]
-});
-})();
-
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/relevanssi-search/style-index"], () => (__webpack_require__("./src/blocks/relevanssi-search/index.js")))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
 /******/ })()
 ;
 //# sourceMappingURL=index.js.map
