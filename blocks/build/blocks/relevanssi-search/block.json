@@ -35,6 +35,22 @@
       "type": "boolean",
       "default": false
     },
+    "showHeading": {
+      "type": "boolean",
+      "default": true
+    },
+    "showButton": {
+      "type": "boolean",
+      "default": false
+    },
+    "buttonText": {
+      "type": "string",
+      "default": ""
+    },
+    "buttonUrl": {
+      "type": "string",
+      "default": ""
+    },
     "postTypes": {
       "type": "array",
       "default": [

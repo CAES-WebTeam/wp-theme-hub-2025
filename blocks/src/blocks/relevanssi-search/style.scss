@@ -286,6 +286,31 @@
 		margin-top: var(--wp--preset--spacing--50);
 	}
 
+    // .search-button-container {
+    //     margin-top: var(--wp--style--block-gap);
+    // }
+
+    .search-custom-button {
+        padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
+        display: inline-block;
+        color: inherit;
+        line-height: 1;
+    }
+
+    &.search-only-with-button {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        &.search-only-with-button {
+            .relevanssi-search-form {
+                flex: 1;
+            }
+            .search-button-container {
+                flex-shrink: 0;
+            }
+        }
+    }
+
 	// Plant loading animation
 	.plant-loading-container {
         display: flex;

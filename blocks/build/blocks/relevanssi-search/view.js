@@ -13,9 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = block.querySelector('.relevanssi-search-form');
     if (!form) return;
 
-    // Get results page URL to determine if this is a search-only block
+    // Get block configuration from data attributes
     const resultsPageUrl = block.dataset.resultsPageUrl || '';
     const isSearchOnlyBlock = resultsPageUrl !== '';
+    const showHeading = block.dataset.showHeading === 'true';
     const searchInput = form.querySelector('#relevanssi-search-input');
     const sortByDateSelect = form.querySelector('#relevanssi-sort-by-date');
     const postTypeSelect = form.querySelector('#relevanssi-post-type-filter');
@@ -46,9 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // The browser will navigate to the results page with the search query
       });
 
-      // Update search title on initial page load for consistency
-      const initialSearchTerm = searchInput ? searchInput.value : '';
-      updateSearchTitle(initialSearchTerm);
+      // Update search title on initial page load for consistency (only if heading is enabled)
+      if (showHeading) {
+        const initialSearchTerm = searchInput ? searchInput.value : '';
+        updateSearchTitle(initialSearchTerm);
+      }
       return; // Exit early - no need to set up AJAX or advanced features
     }
 
@@ -66,11 +69,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Function to update the search title (H1 only)
+    // Function to update the search title (H1 only) - only if heading is enabled
     const updateSearchTitle = searchTerm => {
+      if (!showHeading) return; // Don't create or update heading if it's disabled
+
       let titleElement = block.querySelector('.search-results-title');
       if (!titleElement) {
-        // Create title if it doesn't exist
+        // Create title if it doesn't exist and heading is enabled
         titleElement = document.createElement('h1');
         titleElement.className = 'search-results-title';
         // Insert before the form
@@ -254,8 +259,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Update the search title (H1 only)
-      updateSearchTitle(searchTerm);
+      // Update the search title (H1 only) - only if heading is enabled
+      if (showHeading) {
+        updateSearchTitle(searchTerm);
+      }
 
       // Track when the fetch starts and ensure minimum display time for animation
       const fetchStartTime = Date.now();
@@ -505,9 +512,11 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchAndDisplaySearchResults();
     }
 
-    // Update search title on initial page load (always show an H1)
-    const initialSearchTerm = searchInput ? searchInput.value : '';
-    updateSearchTitle(initialSearchTerm);
+    // Update search title on initial page load (only if heading is enabled)
+    if (showHeading) {
+      const initialSearchTerm = searchInput ? searchInput.value : '';
+      updateSearchTitle(initialSearchTerm);
+    }
 
     // Call this on initial page load if there are existing results
     if (resultsContainer && resultsContainer.children.length > 0) {

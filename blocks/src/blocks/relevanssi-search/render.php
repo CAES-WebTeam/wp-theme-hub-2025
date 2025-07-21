@@ -12,6 +12,10 @@ $show_post_type_filter = $attributes['showPostTypeFilter'] ?? true;
 $show_topic_filter     = $attributes['showTopicFilter'] ?? true;
 $show_author_filter    = $attributes['showAuthorFilter'] ?? true;
 $show_language_filter  = $attributes['showLanguageFilter'] ?? false;
+$show_heading          = $attributes['showHeading'] ?? true;
+$show_button           = $attributes['showButton'] ?? false;
+$button_text           = $attributes['buttonText'] ?? '';
+$button_url            = $attributes['buttonUrl'] ?? '';
 $allowed_post_types    = $attributes['postTypes'] ?? array();
 $taxonomy_slug         = $attributes['taxonomySlug'] ?? 'category';
 $results_page_url      = $attributes['resultsPageUrl'] ?? '';
@@ -87,9 +91,16 @@ $is_ajax_request = defined('DOING_AJAX') && DOING_AJAX;
 $should_show_results = !$is_search_only_block || !empty($current_search_query) || $active_filters_exist;
 
 // Build the block's HTML attributes.
+$wrapper_classes = ['caes-hub-relevanssi-search'];
+
+// Add special class when it's search-only with button enabled
+if ($is_search_only_block && $show_button && !empty($button_text) && !empty($button_url)) {
+	$wrapper_classes[] = 'search-only-with-button';
+}
+
 $wrapper_attributes = get_block_wrapper_attributes(
 	array(
-		'class' => 'caes-hub-relevanssi-search',
+		'class' => implode(' ', $wrapper_classes),
 	)
 );
 
@@ -112,6 +123,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 	data-taxonomy-slug="<?php echo esc_attr($taxonomy_slug); ?>"
 	data-allowed-post-types="<?php echo esc_attr(json_encode($allowed_post_types)); ?>"
 	data-show-language-filter="<?php echo esc_attr($show_language_filter ? 'true' : 'false'); ?>"
+	data-show-heading="<?php echo esc_attr($show_heading ? 'true' : 'false'); ?>"
 	data-custom-heading="<?php echo esc_attr($attributes['customHeading'] ?? ''); ?>"
 	data-results-page-url="<?php echo esc_attr($results_page_url); ?>">
 	<script>
@@ -119,20 +131,22 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 			ajaxurl: '<?php echo admin_url('admin-ajax.php'); ?>'
 		};
 	</script>
-	<?php
-	// H1 is always just the base heading (no "results for" part)
-	$base_heading = !empty($attributes['customHeading']) ? $attributes['customHeading'] : esc_html__('Search', 'caes-hub');
-	?>
-	<h1 class="search-results-title" style="<?php
-											$heading_styles = array();
-											if (!empty($attributes['headingColor'])) {
-												$heading_styles[] = 'color: ' . esc_attr($attributes['headingColor']);
-											}
-											if (!empty($attributes['headingAlignment'])) {
-												$heading_styles[] = 'text-align: ' . esc_attr($attributes['headingAlignment']);
-											}
-											echo implode('; ', $heading_styles);
-											?>"><?php echo esc_html($base_heading); ?></h1>
+	<?php if ($show_heading) : ?>
+		<?php
+		// H1 is always just the base heading (no "results for" part)
+		$base_heading = !empty($attributes['customHeading']) ? $attributes['customHeading'] : esc_html__('Search', 'caes-hub');
+		?>
+		<h1 class="search-results-title" style="<?php
+												$heading_styles = array();
+												if (!empty($attributes['headingColor'])) {
+													$heading_styles[] = 'color: ' . esc_attr($attributes['headingColor']);
+												}
+												if (!empty($attributes['headingAlignment'])) {
+													$heading_styles[] = 'text-align: ' . esc_attr($attributes['headingAlignment']);
+												}
+												echo implode('; ', $heading_styles);
+												?>"><?php echo esc_html($base_heading); ?></h1>
+	<?php endif; ?>
 	
 	<?php
 	// Determine form action: if resultsPageUrl is specified, use it; otherwise use home URL
@@ -422,6 +436,15 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 			</div>
 		<?php endif; ?>
 	</form>
+	
+	<!-- Custom Button (appears on both search-only and full results blocks) -->
+	<?php if ($show_button && !empty($button_text) && !empty($button_url)) : ?>
+		<div class="search-button-container">
+			<a href="<?php echo esc_url($button_url); ?>" class="search-custom-button" role="button">
+				<?php echo esc_html($button_text); ?>
+			</a>
+		</div>
+	<?php endif; ?>
 	
 	<?php if (!$is_search_only_block) : ?>
 		<div class="selected-topic-filters" role="region" aria-label="Selected filters" aria-live="polite">

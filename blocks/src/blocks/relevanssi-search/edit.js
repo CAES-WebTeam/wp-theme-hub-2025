@@ -26,7 +26,23 @@ import './editor.scss';
  * @return {WPElement} Element to render.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, showLanguageFilter, postTypes, taxonomySlug, headingColor, headingAlignment, customHeading, resultsPageUrl } = attributes;
+	const { 
+		showDateSort, 
+		showPostTypeFilter, 
+		showTopicFilter, 
+		showAuthorFilter, 
+		showLanguageFilter, 
+		showHeading,
+		showButton,
+		buttonText,
+		buttonUrl,
+		postTypes, 
+		taxonomySlug, 
+		headingColor, 
+		headingAlignment, 
+		customHeading, 
+		resultsPageUrl 
+	} = attributes;
 	const blockProps = useBlockProps();
 
 	// State to hold available post types for the checkbox list
@@ -82,34 +98,80 @@ export default function Edit({ attributes, setAttributes }) {
 					)}
 				</PanelBody>
 				<PanelBody title={__('Heading Settings', 'caes-hub')}>
-					<SelectControl
-						label={__('Text Alignment', 'caes-hub')}
-						value={headingAlignment}
-						onChange={(value) => setAttributes({ headingAlignment: value })}
-						options={[
-							{ label: __('Left', 'caes-hub'), value: 'left' },
-							{ label: __('Center', 'caes-hub'), value: 'center' },
-							{ label: __('Right', 'caes-hub'), value: 'right' }
+					<ToggleControl
+						label={__('Show Heading', 'caes-hub')}
+						checked={showHeading}
+						onChange={(value) => setAttributes({ showHeading: value })}
+						help={
+							showHeading
+								? __('Heading will be displayed above the search form.', 'caes-hub')
+								: __('Heading will be hidden.', 'caes-hub')
+						}
+					/>
+					{showHeading && (
+						<>
+							<SelectControl
+								label={__('Text Alignment', 'caes-hub')}
+								value={headingAlignment}
+								onChange={(value) => setAttributes({ headingAlignment: value })}
+								options={[
+									{ label: __('Left', 'caes-hub'), value: 'left' },
+									{ label: __('Center', 'caes-hub'), value: 'center' },
+									{ label: __('Right', 'caes-hub'), value: 'right' }
+								]}
+							/>
+							<TextControl
+								label={__('Custom Heading Text', 'caes-hub')}
+								value={customHeading}
+								onChange={(value) => setAttributes({ customHeading: value })}
+								help={__('Leave blank to use default text ("Search" or "Search results for: [query]")', 'caes-hub')}
+								placeholder={__('e.g., Search Expert Resources', 'caes-hub')}
+							/>
+						</>
+					)}
+				</PanelBody>
+				{showHeading && (
+					<PanelColorSettings
+						title={__('Heading Color', 'caes-hub')}
+						colorSettings={[
+							{
+								value: headingColor,
+								onChange: (value) => setAttributes({ headingColor: value }),
+								label: __('Text Color', 'caes-hub')
+							}
 						]}
 					/>
-					<TextControl
-						label={__('Custom Heading Text', 'caes-hub')}
-						value={customHeading}
-						onChange={(value) => setAttributes({ customHeading: value })}
-						help={__('Leave blank to use default text ("Search" or "Search results for: [query]")', 'caes-hub')}
-						placeholder={__('e.g., Search Expert Resources', 'caes-hub')}
-					/>
-				</PanelBody>
-				<PanelColorSettings
-					title={__('Heading Color', 'caes-hub')}
-					colorSettings={[
-						{
-							value: headingColor,
-							onChange: (value) => setAttributes({ headingColor: value }),
-							label: __('Text Color', 'caes-hub')
+				)}
+				<PanelBody title={__('Button Settings', 'caes-hub')}>
+					<ToggleControl
+						label={__('Show Button', 'caes-hub')}
+						checked={showButton}
+						onChange={(value) => setAttributes({ showButton: value })}
+						help={
+							showButton
+								? __('A custom button will be displayed next to the filters.', 'caes-hub')
+								: __('No additional button will be shown.', 'caes-hub')
 						}
-					]}
-				/>
+					/>
+					{showButton && (
+						<>
+							<TextControl
+								label={__('Button Text', 'caes-hub')}
+								value={buttonText}
+								onChange={(value) => setAttributes({ buttonText: value })}
+								help={__('Enter the text to display on the button.', 'caes-hub')}
+								placeholder={__('e.g., Advanced Search', 'caes-hub')}
+							/>
+							<TextControl
+								label={__('Button URL', 'caes-hub')}
+								value={buttonUrl}
+								onChange={(value) => setAttributes({ buttonUrl: value })}
+								help={__('Enter the URL the button should link to.', 'caes-hub')}
+								placeholder={__('e.g., /advanced-search/', 'caes-hub')}
+							/>
+						</>
+					)}
+				</PanelBody>
 				<PanelBody title={__('Search Filter Settings', 'caes-hub')}>
 					<ToggleControl
 						label={__('Show Date Sorting', 'caes-hub')}
@@ -207,6 +269,16 @@ export default function Edit({ attributes, setAttributes }) {
 				{resultsPageUrl && (
 					<p style={{ backgroundColor: '#f0f6fc', padding: '10px', border: '1px solid #c3c4c7', borderRadius: '4px', marginTop: '10px' }}>
 						<strong>{__('Search-only mode:', 'caes-hub')}</strong> {__('Redirects to', 'caes-hub')} {resultsPageUrl}
+					</p>
+				)}
+				{!showHeading && (
+					<p style={{ backgroundColor: '#fff3cd', padding: '10px', border: '1px solid #ffd60a', borderRadius: '4px', marginTop: '10px' }}>
+						<strong>{__('Note:', 'caes-hub')}</strong> {__('Heading is hidden', 'caes-hub')}
+					</p>
+				)}
+				{showButton && (
+					<p style={{ backgroundColor: '#d1ecf1', padding: '10px', border: '1px solid #bee5eb', borderRadius: '4px', marginTop: '10px' }}>
+						<strong>{__('Button enabled:', 'caes-hub')}</strong> {buttonText || __('(No text set)', 'caes-hub')} → {buttonUrl || __('(No URL set)', 'caes-hub')}
 					</p>
 				)}
 				{showDateSort && <p> - {__('Date Sorting Enabled', 'caes-hub')}</p>}
