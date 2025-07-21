@@ -356,7 +356,8 @@
                 }
 
                 &.current {
-                    border: 1px solid var(--wp--preset--color--base-three);
+                    border: none;
+                    background-color: transparent;
                     font-weight: bold;
                 }
             }
