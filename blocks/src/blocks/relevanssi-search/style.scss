@@ -327,8 +327,14 @@
 
     // Pagination
     .relevanssi-search-results .navigation {
+        margin-top: var(--wp--preset--spacing--60);
+
         .nav-links {
-            .page-numbers {
+            display: flex;
+            gap: var(--wp--preset--spacing--20);
+            justify-content: center;
+
+            .page-numbers:not('.dots') {
                 padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
                 background: var(--wp--preset--color--base);
                 line-height: 1;
