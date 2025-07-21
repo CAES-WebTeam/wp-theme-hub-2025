@@ -37,6 +37,10 @@
     "displayOption": {
       "type": "string",
       "default": "bio"
+    },
+    "enableFallback": {
+      "type": "boolean",
+      "default": false
     }
   },
   "usesContext": [

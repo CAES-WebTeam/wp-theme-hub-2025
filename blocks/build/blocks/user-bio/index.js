@@ -31,18 +31,28 @@ function Edit({
   setAttributes
 }) {
   const {
-    displayOption
+    displayOption,
+    enableFallback
   } = attributes;
   const onChangeDisplayOption = newOption => {
     setAttributes({
       displayOption: newOption
     });
   };
+  const onChangeFallback = newValue => {
+    setAttributes({
+      enableFallback: newValue
+    });
+  };
+  const getFallbackText = () => {
+    if (!enableFallback) return '';
+    return displayOption === 'bio' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)(' (fallback to tagline)', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)(' (fallback to biography)', 'caes-hub');
+  };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display Settings', 'caes-hub'),
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display Option', 'caes-hub'),
           value: displayOption,
           options: [{
@@ -54,11 +64,16 @@ function Edit({
           }],
           onChange: onChangeDisplayOption,
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Choose whether to display the user\'s biography or tagline.', 'caes-hub')
-        })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enable Fallback', 'caes-hub'),
+          checked: enableFallback,
+          onChange: onChangeFallback,
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('If enabled, will fall back to the other option if the primary choice is empty.', 'caes-hub')
+        })]
       })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: displayOption === 'bio' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('User Biography', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('User Tagline', 'caes-hub')
+      children: [displayOption === 'bio' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('User Biography', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('User Tagline', 'caes-hub'), getFallbackText()]
     })]
   });
 }
@@ -193,7 +208,7 @@ module.exports = window["wp"]["i18n"];
   \****************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-bio","version":"0.1.0","title":"User Biography or Tagline","category":"theme","icon":"admin-users","description":"Displays the user\'s biography or tagline.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textAlign":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"__experimentalBorder":{"color":true,"radius":true,"style":true,"width":true}},"attributes":{"displayOption":{"type":"string","default":"bio"}},"usesContext":["caes-hub/user-feed/userId","caes-hub/user-feed/user"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-bio","version":"0.1.0","title":"User Biography or Tagline","category":"theme","icon":"admin-users","description":"Displays the user\'s biography or tagline.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"typography":{"lineHeight":true,"fontSize":true,"textAlign":true},"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"__experimentalBorder":{"color":true,"radius":true,"style":true,"width":true}},"attributes":{"displayOption":{"type":"string","default":"bio"},"enableFallback":{"type":"boolean","default":false}},"usesContext":["caes-hub/user-feed/userId","caes-hub/user-feed/user"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 
