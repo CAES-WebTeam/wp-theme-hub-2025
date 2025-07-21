@@ -138,9 +138,9 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 
 			<?php if ($show_post_type_filter && ! empty($allowed_post_types)) : ?>
 				<div class="filter-item post-type-filter">
-					<label for="relevanssi-post-type-filter" class="sr-only"><?php esc_html_e('Filter by Post Type', 'caes-hub'); ?></label>
+					<label for="relevanssi-post-type-filter" class="sr-only"><?php esc_html_e('Filter by Content', 'caes-hub'); ?></label>
 					<select name="post_type" id="relevanssi-post-type-filter">
-						<option value="" <?php selected($current_post_type, ''); ?>><?php esc_html_e('All', 'caes-hub'); ?></option>
+						<option value="" <?php selected($current_post_type, ''); ?>><?php esc_html_e('All Content', 'caes-hub'); ?></option>
 						<?php
 						foreach ($allowed_post_types as $pt_slug) {
 							// Skip "Shorthand Story" post type entirely
