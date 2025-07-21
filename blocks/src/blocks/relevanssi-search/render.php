@@ -11,6 +11,7 @@ $show_date_sort        = $attributes['showDateSort'] ?? true;
 $show_post_type_filter = $attributes['showPostTypeFilter'] ?? true;
 $show_topic_filter     = $attributes['showTopicFilter'] ?? true;
 $show_author_filter    = $attributes['showAuthorFilter'] ?? true;
+$show_language_filter  = $attributes['showLanguageFilter'] ?? false;
 $allowed_post_types    = $attributes['postTypes'] ?? array();
 $taxonomy_slug         = $attributes['taxonomySlug'] ?? 'category';
 
@@ -21,6 +22,24 @@ $current_order        = isset($_GET['order']) ? sanitize_text_field(wp_unslash($
 
 // For topics, handle multiple selections. The URL parameter will be comma-separated.
 $current_topic_terms = isset($_GET[$taxonomy_slug]) ? explode(',', sanitize_text_field(wp_unslash($_GET[$taxonomy_slug]))) : array();
+
+// For language, handle single selection from select dropdown
+$current_language = isset($_GET['language']) ? sanitize_text_field(wp_unslash($_GET['language'])) : '';
+
+// Convert pretty language slug to database ID for processing
+$current_language_for_query = $current_language;
+if (!empty($current_language)) {
+	$language_slug_to_id = array(
+		'english' => '1',
+		'spanish' => '2',
+		'chinese' => '3',
+		'other' => '4'
+	);
+	
+	if (isset($language_slug_to_id[$current_language])) {
+		$current_language_for_query = $language_slug_to_id[$current_language];
+	}
+}
 
 // For authors, handle multiple selections using SLUGS instead of IDs for security
 $current_author_slugs = array();
@@ -46,10 +65,14 @@ if (!empty($current_author_slugs)) {
 // Handle post_type parameter - ignore 'post' if it's from a default WordPress search
 $current_post_type = isset($_GET['post_type']) ? sanitize_text_field(wp_unslash($_GET['post_type'])) : '';
 // If post_type is 'post' and no other filters are active, treat it as "All Content Types"
-$active_filters_exist = !empty($current_orderby) || !empty($current_topic_terms) || ($show_author_filter && !empty($current_author_ids));
+$active_filters_exist = !empty($current_orderby) || !empty($current_topic_terms) || ($show_author_filter && !empty($current_author_ids)) || !empty($current_language);
 if ($current_post_type === 'post' && !$active_filters_exist) {
 	$current_post_type = '';
 }
+
+// Check if publications post type is relevant for language filter
+$is_publications_relevant = ($current_post_type === 'publications' || $current_post_type === 'publication') || 
+                           (empty($current_post_type) && (in_array('publications', $allowed_post_types) || in_array('publication', $allowed_post_types)));
 
 // Determine if this is an AJAX request for search results.
 $is_ajax_request = defined('DOING_AJAX') && DOING_AJAX;
@@ -78,7 +101,8 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 <div <?php echo $wrapper_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		?>
 	data-taxonomy-slug="<?php echo esc_attr($taxonomy_slug); ?>"
-	data-allowed-post-types="<?php echo esc_attr(json_encode($allowed_post_types)); ?>">
+	data-allowed-post-types="<?php echo esc_attr(json_encode($allowed_post_types)); ?>"
+	data-show-language-filter="<?php echo esc_attr($show_language_filter ? 'true' : 'false'); ?>">
 	<script>
 		window.caesHubAjax = {
 			ajaxurl: '<?php echo admin_url('admin-ajax.php'); ?>'
@@ -140,6 +164,76 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 									selected($current_post_type, $pt_slug, false),
 									esc_html($display_label)
 								);
+							}
+						}
+						?>
+					</select>
+				</div>
+			<?php endif; ?>
+
+			<?php if ($show_language_filter && $is_publications_relevant) : ?>
+				<div class="filter-item language-filter">
+					<label for="relevanssi-language-filter" class="sr-only"><?php esc_html_e('Filter by Language', 'caes-hub'); ?></label>
+					<select name="language" id="relevanssi-language-filter">
+						<option value="" <?php selected($current_language, ''); ?>><?php esc_html_e('All Languages', 'caes-hub'); ?></option>
+						<?php
+						// Language mapping: ID => Label
+						$language_id_to_label = array(
+							'1' => 'English',
+							'2' => 'Spanish', 
+							'3' => 'Chinese',
+							'4' => 'Other'
+						);
+
+						// Pretty URL mapping: slug => ID
+						$language_slug_to_id = array(
+							'english' => '1',
+							'spanish' => '2',
+							'chinese' => '3',
+							'other' => '4'
+						);
+
+						// Reverse mapping: ID => slug
+						$language_id_to_slug = array_flip($language_slug_to_id);
+
+						// Convert current language from pretty slug to ID if needed
+						$current_language_id = $current_language;
+						if (isset($language_slug_to_id[$current_language])) {
+							$current_language_id = $language_slug_to_id[$current_language];
+						}
+
+						// Get available languages from ACF field values for publications
+						global $wpdb;
+						$language_query = $wpdb->prepare("
+							SELECT DISTINCT meta_value 
+							FROM {$wpdb->postmeta} pm
+							INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+							WHERE pm.meta_key = %s 
+							AND pm.meta_value != ''
+							AND p.post_status = 'publish'
+							AND p.post_type IN ('publications', 'publication')
+							ORDER BY pm.meta_value ASC
+						", 'language');
+
+						$languages = $wpdb->get_col($language_query);
+						
+						if (!empty($languages)) {
+							foreach ($languages as $language_id) {
+								$language_id = trim($language_id);
+								if (!empty($language_id) && isset($language_id_to_label[$language_id])) {
+									$language_label = $language_id_to_label[$language_id];
+									$language_slug = $language_id_to_slug[$language_id];
+									
+									// Use pretty slug as value, but check against current selection
+									$is_selected = ($current_language === $language_slug) || ($current_language_id === $language_id);
+									
+									printf(
+										'<option value="%s" %s>%s</option>',
+										esc_attr($language_slug),
+										$is_selected ? 'selected' : '',
+										esc_html($language_label)
+									);
+								}
 							}
 						}
 						?>
@@ -310,7 +404,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 		// The function is now defined in functions.php.
 		// Author IDs are already converted from slugs above
 
-		echo caes_hub_render_relevanssi_search_results($current_search_query, $current_orderby, $current_order, $current_post_type, $taxonomy_slug, $current_topic_terms, 1, $allowed_post_types, $current_author_ids);
+		echo caes_hub_render_relevanssi_search_results($current_search_query, $current_orderby, $current_order, $current_post_type, $taxonomy_slug, $current_topic_terms, 1, $allowed_post_types, $current_author_ids, $current_language_for_query);
 		?>
 	</div>
 

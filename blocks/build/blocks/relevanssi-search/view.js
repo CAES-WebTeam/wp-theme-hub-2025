@@ -14,9 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = form.querySelector('#relevanssi-search-input');
     const sortByDateSelect = form.querySelector('#relevanssi-sort-by-date');
     const postTypeSelect = form.querySelector('#relevanssi-post-type-filter');
+    const languageSelect = form.querySelector('#relevanssi-language-filter'); // Add language select
     const resultsContainer = block.querySelector('.relevanssi-ajax-search-results-container');
     const blockTaxonomySlug = block.dataset.taxonomySlug || 'category';
     const blockAllowedPostTypes = block.dataset.allowedPostTypes ? JSON.parse(block.dataset.allowedPostTypes) : [];
+    const showLanguageFilter = block.dataset.showLanguageFilter === 'true'; // Get language filter state
 
     // Modal elements - Topics
     const openTopicsModalButton = block.querySelector('.open-topics-modal');
@@ -154,6 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
       formData.append('showPostTypeFilter', postTypeSelect ? 'true' : 'false');
       formData.append('showTopicFilter', topicsModal ? 'true' : 'false');
       formData.append('showAuthorFilter', authorsModal ? 'true' : 'false');
+      formData.append('showLanguageFilter', showLanguageFilter ? 'true' : 'false'); // Add language filter state
+
       if (sortByDateSelect) {
         const selectedOrder = sortByDateSelect.value;
         if (selectedOrder === 'post_date_desc') {
@@ -168,6 +172,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (postTypeSelect && postTypeSelect.value) {
         formData.append('post_type', postTypeSelect.value);
+      }
+
+      // Handle language selection
+      if (languageSelect && languageSelect.value) {
+        formData.append('language', languageSelect.value);
       }
 
       // Initialize checkedTopicSlugs outside the if block
@@ -280,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Create a clean set of params for the URL
       for (const [key, value] of formData.entries()) {
         // IMPORTANT: Removed 'paged' from the exclusion list so it's included in the URL
-        if (!['action', 'security', 'allowedPostTypes', 'showDateSort', 'showPostTypeFilter', 'showTopicFilter', 'showAuthorFilter'].includes(key)) {
+        if (!['action', 'security', 'allowedPostTypes', 'showDateSort', 'showPostTypeFilter', 'showTopicFilter', 'showAuthorFilter', 'showLanguageFilter'].includes(key)) {
           // Handle array parameters like taxonomy slugs and author slugs
           if (key.endsWith('[]')) {
             const paramName = key.slice(0, -2);
@@ -433,7 +442,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize on page load
     const urlParams = new URLSearchParams(window.location.search);
-    const hasActiveFilters = urlParams.has('s') || urlParams.has('orderby') || urlParams.has('post_type') || urlParams.getAll(blockTaxonomySlug).length || authorsModal && urlParams.getAll('author_slug').length; // Check for author_slug instead of author
+    const hasActiveFilters = urlParams.has('s') || urlParams.has('orderby') || urlParams.has('post_type') || urlParams.has('language') ||
+    // Add language to active filters check
+    urlParams.getAll(blockTaxonomySlug).length || authorsModal && urlParams.getAll('author_slug').length; // Check for author_slug instead of author
 
     if (hasActiveFilters) {
       fetchAndDisplaySearchResults();
@@ -453,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     if (sortByDateSelect) sortByDateSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
     if (postTypeSelect) postTypeSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
+    if (languageSelect) languageSelect.addEventListener('change', () => fetchAndDisplaySearchResults()); // Add language change listener
 
     // --- Topics Modal Logic ---
     if (openTopicsModalButton && topicsModal) {

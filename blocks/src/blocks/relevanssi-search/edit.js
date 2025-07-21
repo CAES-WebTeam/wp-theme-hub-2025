@@ -25,11 +25,14 @@ import './editor.scss';
  * @return {WPElement} Element to render.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, postTypes, taxonomySlug } = attributes;
+	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, showLanguageFilter, postTypes, taxonomySlug } = attributes;
 	const blockProps = useBlockProps();
 
 	// State to hold available post types for the checkbox list
 	const [availablePostTypes, setAvailablePostTypes] = useState([]);
+
+	// Check if publications post type is selected
+	const isPublicationsSelected = postTypes.includes('publications');
 
 	// Fetch all public post types using @wordpress/data
 	const fetchedPostTypes = useSelect((select) => {
@@ -135,6 +138,18 @@ export default function Edit({ attributes, setAttributes }) {
 								: __('Author filter dropdown will be hidden.', 'caes-hub')
 						}
 					/>
+					{isPublicationsSelected && (
+						<ToggleControl
+							label={__('Show Language Filter', 'caes-hub')}
+							checked={showLanguageFilter}
+							onChange={(value) => setAttributes({ showLanguageFilter: value })}
+							help={
+								showLanguageFilter
+									? __('Language filter (checkboxes) will be visible for publications. Uses ACF custom field "language".', 'caes-hub')
+									: __('Language filter (checkboxes) will be hidden.', 'caes-hub')
+							}
+						/>
+					)}
 				</PanelBody>
 			</InspectorControls>
 			<div className="caes-hub-relevanssi-search-filters-editor">
@@ -148,6 +163,9 @@ export default function Edit({ attributes, setAttributes }) {
 				{showPostTypeFilter && <p> - {__('Post Type Filter Enabled', 'caes-hub')}</p>}
 				{showTopicFilter && <p> - {__('Topics Filter Enabled (Checkboxes, Taxonomy: ', 'caes-hub')}{taxonomySlug})</p>}
 				{showAuthorFilter && <p> - {__('Author Filter Enabled', 'caes-hub')}</p>}
+				{isPublicationsSelected && showLanguageFilter && (
+					<p> - {__('Language Filter Enabled (Checkboxes, ACF Field: language)', 'caes-hub')}</p>
+				)}
 			</div>
 		</div>
 	);

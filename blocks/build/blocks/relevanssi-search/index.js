@@ -61,6 +61,7 @@ function Edit({
     showPostTypeFilter,
     showTopicFilter,
     showAuthorFilter,
+    showLanguageFilter,
     postTypes,
     taxonomySlug
   } = attributes;
@@ -68,6 +69,9 @@ function Edit({
 
   // State to hold available post types for the checkbox list
   const [availablePostTypes, setAvailablePostTypes] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useState)([]);
+
+  // Check if publications post type is selected
+  const isPublicationsSelected = postTypes.includes('publications');
 
   // Fetch all public post types using @wordpress/data
   const fetchedPostTypes = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => {
@@ -154,6 +158,13 @@ function Edit({
             showAuthorFilter: value
           }),
           help: showAuthorFilter ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Author filter dropdown will be visible.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Author filter dropdown will be hidden.', 'caes-hub')
+        }), isPublicationsSelected && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Language Filter', 'caes-hub'),
+          checked: showLanguageFilter,
+          onChange: value => setAttributes({
+            showLanguageFilter: value
+          }),
+          help: showLanguageFilter ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Language filter (checkboxes) will be visible for publications. Uses ACF custom field "language".', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Language filter (checkboxes) will be hidden.', 'caes-hub')
         })]
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
@@ -170,6 +181,8 @@ function Edit({
         children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Topics Filter Enabled (Checkboxes, Taxonomy: ', 'caes-hub'), taxonomySlug, ")"]
       }), showAuthorFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
         children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Author Filter Enabled', 'caes-hub')]
+      }), isPublicationsSelected && showLanguageFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Language Filter Enabled (Checkboxes, ACF Field: language)', 'caes-hub')]
       })]
     })]
   });
@@ -325,7 +338,7 @@ module.exports = window["wp"]["i18n"];
   \*************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/relevanssi-search","version":"1.0.0","title":"CAES Hub Relevanssi Search","category":"widgets","icon":"search","description":"A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.","supports":{"html":false,"spacing":{"margin":true,"padding":true}},"attributes":{"showDateSort":{"type":"boolean","default":true},"showPostTypeFilter":{"type":"boolean","default":true},"showTopicFilter":{"type":"boolean","default":true},"showAuthorFilter":{"type":"boolean","default":true},"postTypes":{"type":"array","default":["post","page"],"items":{"type":"string"}},"taxonomySlug":{"type":"string","default":"category"}},"textdomain":"caes-hub","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/relevanssi-search","version":"1.0.0","title":"CAES Hub Relevanssi Search","category":"widgets","icon":"search","description":"A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.","supports":{"html":false,"spacing":{"margin":true,"padding":true}},"attributes":{"showDateSort":{"type":"boolean","default":true},"showPostTypeFilter":{"type":"boolean","default":true},"showTopicFilter":{"type":"boolean","default":true},"showAuthorFilter":{"type":"boolean","default":true},"showLanguageFilter":{"type":"boolean","default":false},"postTypes":{"type":"array","default":["post","page"],"items":{"type":"string"}},"taxonomySlug":{"type":"string","default":"category"}},"textdomain":"caes-hub","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
 
 /***/ })
 

@@ -31,6 +31,10 @@
 			"type": "boolean",
 			"default": true
 		},
+		"showLanguageFilter": {
+			"type": "boolean",
+			"default": false
+		},
 		"postTypes": {
 			"type": "array",
 			"default": ["post", "page"],
