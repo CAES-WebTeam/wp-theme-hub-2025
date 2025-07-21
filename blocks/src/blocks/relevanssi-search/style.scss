@@ -345,7 +345,7 @@
                 transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
 
                 // hover when not current
-                &:not(.current):hover {
+                &:not(.current):not(.dots):hover {
                     background: var(--wp--preset--color--bulldog-red);
                     color: var(--wp--preset--color--base);
                 }
