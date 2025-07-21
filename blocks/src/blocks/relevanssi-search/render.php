@@ -35,7 +35,7 @@ if (!empty($current_language)) {
 		'chinese' => '3',
 		'other' => '4'
 	);
-	
+
 	if (isset($language_slug_to_id[$current_language])) {
 		$current_language_for_query = $language_slug_to_id[$current_language];
 	}
@@ -71,8 +71,8 @@ if ($current_post_type === 'post' && !$active_filters_exist) {
 }
 
 // Check if publications post type is relevant for language filter
-$is_publications_relevant = ($current_post_type === 'publications' || $current_post_type === 'publication') || 
-                           (empty($current_post_type) && (in_array('publications', $allowed_post_types) || in_array('publication', $allowed_post_types)));
+$is_publications_relevant = ($current_post_type === 'publications' || $current_post_type === 'publication') ||
+	(empty($current_post_type) && (in_array('publications', $allowed_post_types) || in_array('publication', $allowed_post_types)));
 
 // Determine if this is an AJAX request for search results.
 $is_ajax_request = defined('DOING_AJAX') && DOING_AJAX;
@@ -102,15 +102,27 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 		?>
 	data-taxonomy-slug="<?php echo esc_attr($taxonomy_slug); ?>"
 	data-allowed-post-types="<?php echo esc_attr(json_encode($allowed_post_types)); ?>"
-	data-show-language-filter="<?php echo esc_attr($show_language_filter ? 'true' : 'false'); ?>">
+	data-show-language-filter="<?php echo esc_attr($show_language_filter ? 'true' : 'false'); ?>"
+	data-custom-heading="<?php echo esc_attr($attributes['customHeading'] ?? ''); ?>">
 	<script>
 		window.caesHubAjax = {
 			ajaxurl: '<?php echo admin_url('admin-ajax.php'); ?>'
 		};
 	</script>
-	<?php if (! empty($current_search_query)) : ?>
-		<h1 class="search-results-title"><?php printf(esc_html__('Search results for: %s', 'caes-hub'), esc_html($current_search_query)); ?></h1>
-	<?php endif; ?>
+	<?php
+	// H1 is always just the base heading (no "results for" part)
+	$base_heading = !empty($attributes['customHeading']) ? $attributes['customHeading'] : esc_html__('Search', 'caes-hub');
+	?>
+	<h1 class="search-results-title" style="<?php
+											$heading_styles = array();
+											if (!empty($attributes['headingColor'])) {
+												$heading_styles[] = 'color: ' . esc_attr($attributes['headingColor']);
+											}
+											if (!empty($attributes['headingAlignment'])) {
+												$heading_styles[] = 'text-align: ' . esc_attr($attributes['headingAlignment']);
+											}
+											echo implode('; ', $heading_styles);
+											?>"><?php echo esc_html($base_heading); ?></h1>
 	<form role="search" method="get" class="relevanssi-search-form" action="<?php echo esc_url(home_url('/')); ?>">
 		<div class="search-input-group">
 			<label for="relevanssi-search-input" class="sr-only"><?php esc_html_e('Search', 'caes-hub'); ?></label>
@@ -180,7 +192,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 						// Language mapping: ID => Label
 						$language_id_to_label = array(
 							'1' => 'English',
-							'2' => 'Spanish', 
+							'2' => 'Spanish',
 							'3' => 'Chinese',
 							'4' => 'Other'
 						);
@@ -216,17 +228,17 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 						", 'language');
 
 						$languages = $wpdb->get_col($language_query);
-						
+
 						if (!empty($languages)) {
 							foreach ($languages as $language_id) {
 								$language_id = trim($language_id);
 								if (!empty($language_id) && isset($language_id_to_label[$language_id])) {
 									$language_label = $language_id_to_label[$language_id];
 									$language_slug = $language_id_to_slug[$language_id];
-									
+
 									// Use pretty slug as value, but check against current selection
 									$is_selected = ($current_language === $language_slug) || ($current_language_id === $language_id);
-									
+
 									printf(
 										'<option value="%s" %s>%s</option>',
 										esc_attr($language_slug),

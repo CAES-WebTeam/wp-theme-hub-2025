@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Function to update or create the search title
+    // Function to update the search title (H1 only)
     const updateSearchTitle = searchTerm => {
       let titleElement = block.querySelector('.search-results-title');
       if (!titleElement) {
@@ -54,28 +54,62 @@ document.addEventListener('DOMContentLoaded', () => {
         // Insert before the form
         form.parentNode.insertBefore(titleElement, form);
       }
-      if (searchTerm && searchTerm.trim()) {
-        titleElement.textContent = `Search results for: "${searchTerm.trim()}"`;
-      } else {
-        titleElement.textContent = 'Search';
-      }
+
+      // H1 is always just the base heading
+      const customHeading = block.getAttribute('data-custom-heading');
+      const baseHeading = customHeading || 'Search';
+      titleElement.textContent = baseHeading;
       titleElement.style.display = 'block';
     };
 
-    // Function to update or create the results count
+    // Function to update the H2 results heading (called after AJAX response)
+    const updateResultsHeading = searchTerm => {
+      let existingHeading = block.querySelector('.search-results-heading');
+      if (existingHeading) {
+        existingHeading.remove();
+      }
+      if (searchTerm && searchTerm.trim()) {
+        const resultsHeading = document.createElement('h2');
+        resultsHeading.className = 'search-results-heading';
+        resultsHeading.textContent = `Results for: "${searchTerm.trim()}"`;
+        resultsHeading.style.display = 'block';
+
+        // Find the selected filters container
+        const selectedContainer = block.querySelector('.selected-topic-filters');
+
+        // Insert AFTER the selected filters container if it exists and has content,
+        // otherwise, insert after the form.
+        if (selectedContainer && selectedContainer.children.length > 0) {
+          selectedContainer.parentNode.insertBefore(resultsHeading, selectedContainer.nextSibling);
+        } else if (form) {
+          form.parentNode.insertBefore(resultsHeading, form.nextSibling);
+        } else {
+          // Fallback if neither exists
+          block.prepend(resultsHeading);
+        }
+      }
+    };
+
+    // Function to update or create the results count (keep this as previously modified)
     const updateResultsCount = count => {
       let countElement = block.querySelector('.search-results-count');
+      const resultsHeading = block.querySelector('.search-results-heading'); // Get the H2 element
+
       if (!countElement) {
         countElement = document.createElement('div');
         countElement.className = 'search-results-count';
 
-        // Insert after the selected filters container
-        const selectedContainer = block.querySelector('.selected-topic-filters');
-        if (selectedContainer) {
-          selectedContainer.parentNode.insertBefore(countElement, selectedContainer.nextSibling);
+        // Insert AFTER the results heading (H2) if it exists
+        if (resultsHeading) {
+          resultsHeading.parentNode.insertBefore(countElement, resultsHeading.nextSibling);
         } else {
-          // Fallback: insert after the form if no filters container
-          form.parentNode.insertBefore(countElement, form.nextSibling);
+          // Fallback: if no H2 (e.g., no search term), insert after selected filters or form
+          const selectedContainer = block.querySelector('.selected-topic-filters');
+          if (selectedContainer) {
+            selectedContainer.parentNode.insertBefore(countElement, selectedContainer.nextSibling);
+          } else {
+            form.parentNode.insertBefore(countElement, form.nextSibling);
+          }
         }
       }
       if (count !== undefined && count !== null && count > 0) {
@@ -86,8 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         countElement.style.display = 'block';
       } else {
-        // Hide the count element when there are 0 results or count is null
-        // Let the PHP handle the "No results found" message
         countElement.style.display = 'none';
       }
     };
@@ -201,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Update the search title
+      // Update the search title (H1 only)
       updateSearchTitle(searchTerm);
 
       // Track when the fetch starts and ensure minimum display time for animation
@@ -223,6 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Wait for the remaining time before showing results
         setTimeout(() => {
           resultsContainer.innerHTML = html;
+
+          // Update the H2 results heading AFTER DOM is updated
+          updateResultsHeading(searchTerm);
 
           // Extract results count from the response
           let resultsCount = null;

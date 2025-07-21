@@ -37,7 +37,10 @@
 		},
 		"postTypes": {
 			"type": "array",
-			"default": ["post", "page"],
+			"default": [
+				"post",
+				"page"
+			],
 			"items": {
 				"type": "string"
 			}
@@ -45,6 +48,18 @@
 		"taxonomySlug": {
 			"type": "string",
 			"default": "category"
+		},
+		"headingColor": {
+			"type": "string",
+			"default": ""
+		},
+		"headingAlignment": {
+			"type": "string",
+			"default": "left"
+		},
+		"customHeading": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"textdomain": "caes-hub",
@@ -52,5 +67,5 @@
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
 	"viewScript": "file:./view.js",
-    "render": "file:./render.php"
+	"render": "file:./render.php"
 }

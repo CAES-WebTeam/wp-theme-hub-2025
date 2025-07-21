@@ -379,6 +379,11 @@
                     "slug": "olympic-half",
                     "gradient": "linear-gradient(to bottom, rgb(0, 78, 96) 0px, rgb(0, 78, 96) 400px, transparent 200px, transparent 100%)",
                     "name": "Olympic to transparent"
+                },
+                {
+                    "slug": "olympic-half-for-search",
+                    "gradient": "linear-gradient(to bottom, var(--wp--preset--color--olympic) 0px, var(--wp--preset--color--olympic) 190px, transparent 190px)",
+                    "name": "Olympic to transparent for search"
                 }
             ]
         },

@@ -43,10 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Function to update or create the search title
+        // Function to update the search title (H1 only)
         const updateSearchTitle = (searchTerm) => {
             let titleElement = block.querySelector('.search-results-title');
-            
+
             if (!titleElement) {
                 // Create title if it doesn't exist
                 titleElement = document.createElement('h1');
@@ -54,33 +54,66 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Insert before the form
                 form.parentNode.insertBefore(titleElement, form);
             }
-            
-            if (searchTerm && searchTerm.trim()) {
-                titleElement.textContent = `Search results for: "${searchTerm.trim()}"`;
-            } else {
-                titleElement.textContent = 'Search';
-            }
+
+            // H1 is always just the base heading
+            const customHeading = block.getAttribute('data-custom-heading');
+            const baseHeading = customHeading || 'Search';
+            titleElement.textContent = baseHeading;
             titleElement.style.display = 'block';
         };
 
-        // Function to update or create the results count
+        // Function to update the H2 results heading (called after AJAX response)
+        const updateResultsHeading = (searchTerm) => {
+            let existingHeading = block.querySelector('.search-results-heading');
+            if (existingHeading) {
+                existingHeading.remove();
+            }
+
+            if (searchTerm && searchTerm.trim()) {
+                const resultsHeading = document.createElement('h2');
+                resultsHeading.className = 'search-results-heading';
+                resultsHeading.textContent = `Results for: "${searchTerm.trim()}"`;
+                resultsHeading.style.display = 'block';
+
+                // Find the selected filters container
+                const selectedContainer = block.querySelector('.selected-topic-filters');
+
+                // Insert AFTER the selected filters container if it exists and has content,
+                // otherwise, insert after the form.
+                if (selectedContainer && selectedContainer.children.length > 0) {
+                    selectedContainer.parentNode.insertBefore(resultsHeading, selectedContainer.nextSibling);
+                } else if (form) {
+                    form.parentNode.insertBefore(resultsHeading, form.nextSibling);
+                } else {
+                    // Fallback if neither exists
+                    block.prepend(resultsHeading);
+                }
+            }
+        };
+
+        // Function to update or create the results count (keep this as previously modified)
         const updateResultsCount = (count) => {
             let countElement = block.querySelector('.search-results-count');
-            
+            const resultsHeading = block.querySelector('.search-results-heading'); // Get the H2 element
+
             if (!countElement) {
                 countElement = document.createElement('div');
                 countElement.className = 'search-results-count';
-                
-                // Insert after the selected filters container
-                const selectedContainer = block.querySelector('.selected-topic-filters');
-                if (selectedContainer) {
-                    selectedContainer.parentNode.insertBefore(countElement, selectedContainer.nextSibling);
+
+                // Insert AFTER the results heading (H2) if it exists
+                if (resultsHeading) {
+                    resultsHeading.parentNode.insertBefore(countElement, resultsHeading.nextSibling);
                 } else {
-                    // Fallback: insert after the form if no filters container
-                    form.parentNode.insertBefore(countElement, form.nextSibling);
+                    // Fallback: if no H2 (e.g., no search term), insert after selected filters or form
+                    const selectedContainer = block.querySelector('.selected-topic-filters');
+                    if (selectedContainer) {
+                        selectedContainer.parentNode.insertBefore(countElement, selectedContainer.nextSibling);
+                    } else {
+                        form.parentNode.insertBefore(countElement, form.nextSibling);
+                    }
                 }
             }
-            
+
             if (count !== undefined && count !== null && count > 0) {
                 if (count === 1) {
                     countElement.textContent = '1 result found';
@@ -89,8 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 countElement.style.display = 'block';
             } else {
-                // Hide the count element when there are 0 results or count is null
-                // Let the PHP handle the "No results found" message
                 countElement.style.display = 'none';
             }
         };
@@ -98,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Function to fetch and display search results
         const fetchAndDisplaySearchResults = (page = 1) => {
             if (!resultsContainer) return;
-        
+
             // Use the EXACT same beautiful plant animation structure from the original!
             resultsContainer.innerHTML = `
                 <div class="plant-loading-container">
@@ -139,29 +170,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="loading-text">Loading results...</p>
                 </div>
             `;
-        
+
             const formData = new FormData();
-        
+
             // Security: Add nonce and action for the WordPress AJAX handler.
             formData.append('action', 'caes_hub_search_results');
             if (window.caesHubAjax && window.caesHubAjax.nonce) {
                 formData.append('security', caesHubAjax.nonce);
             }
-        
+
             // Collect data from form elements
             const searchTerm = searchInput ? searchInput.value : '';
             formData.append('s', searchTerm);
             formData.append('paged', page);
             formData.append('taxonomySlug', blockTaxonomySlug);
             formData.append('allowedPostTypes', JSON.stringify(blockAllowedPostTypes));
-            
+
             // Pass filter toggle states
             formData.append('showDateSort', sortByDateSelect ? 'true' : 'false');
             formData.append('showPostTypeFilter', postTypeSelect ? 'true' : 'false');
             formData.append('showTopicFilter', topicsModal ? 'true' : 'false');
             formData.append('showAuthorFilter', authorsModal ? 'true' : 'false');
             formData.append('showLanguageFilter', showLanguageFilter ? 'true' : 'false'); // Add language filter state
-        
+
             if (sortByDateSelect) {
                 const selectedOrder = sortByDateSelect.value;
                 if (selectedOrder === 'post_date_desc') {
@@ -174,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     formData.append('orderby', 'relevance');
                 }
             }
-        
+
             if (postTypeSelect && postTypeSelect.value) {
                 formData.append('post_type', postTypeSelect.value);
             }
@@ -183,15 +214,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (languageSelect && languageSelect.value) {
                 formData.append('language', languageSelect.value);
             }
-        
+
             // Initialize checkedTopicSlugs outside the if block
             let checkedTopicSlugs = [];
-        
+
             if (topicsModal) {
                 checkedTopicSlugs = Array.from(topicsModal.querySelectorAll('input[type="checkbox"]:checked'))
                     .map(cb => cb.value)
                     .filter(slug => slug !== '');
-        
+
                 if (checkedTopicSlugs.length > 0) {
                     checkedTopicSlugs.forEach(slug => {
                         formData.append(`${blockTaxonomySlug}[]`, slug);
@@ -201,26 +232,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Initialize checkedAuthorSlugs for authors filter - using SLUGS instead of IDs
             let checkedAuthorSlugs = [];
-        
+
             if (authorsModal) {
                 checkedAuthorSlugs = Array.from(authorsModal.querySelectorAll('input[type="checkbox"]:checked'))
                     .map(cb => cb.value)
                     .filter(slug => slug !== '');
-        
+
                 if (checkedAuthorSlugs.length > 0) {
                     checkedAuthorSlugs.forEach(slug => {
                         formData.append('author_slug[]', slug); // Use author_slug[] instead of author[]
                     });
                 }
             }
-        
-            // Update the search title
+
+            // Update the search title (H1 only)
             updateSearchTitle(searchTerm);
-        
+
             // Track when the fetch starts and ensure minimum display time for animation
             const fetchStartTime = Date.now();
             const minimumDisplayTime = 0;
-        
+
             fetch(caesHubAjax.ajaxurl, {
                 method: 'POST',
                 body: formData,
@@ -235,32 +266,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fetchEndTime = Date.now();
                     const elapsedTime = fetchEndTime - fetchStartTime;
                     const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
-        
+
                     // Wait for the remaining time before showing results
                     setTimeout(() => {
                         resultsContainer.innerHTML = html;
-                        
+
+                        // Update the H2 results heading AFTER DOM is updated
+                        updateResultsHeading(searchTerm);
+
                         // Extract results count from the response
                         let resultsCount = null;
-                        
+
                         // Method 1: Look for a data attribute on the results container
                         const resultsWrapper = resultsContainer.querySelector('[data-results-count]');
                         if (resultsWrapper) {
                             resultsCount = parseInt(resultsWrapper.getAttribute('data-results-count'), 10);
                         }
-                        
+
                         // Method 2: Look for a hidden input with the count
                         const countInput = resultsContainer.querySelector('input[name="results_count"]');
                         if (countInput && resultsCount === null) {
                             resultsCount = parseInt(countInput.value, 10);
                         }
-                        
+
                         // Method 3: Look for a specific element with the count
                         const countElement = resultsContainer.querySelector('.wp-query-results-count');
                         if (countElement && resultsCount === null) {
                             resultsCount = parseInt(countElement.textContent, 10);
                         }
-                        
+
                         // Method 4: Try to parse from existing pagination or results info
                         if (resultsCount === null) {
                             // Look for WordPress pagination info
@@ -272,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             }
                         }
-                        
+
                         // Method 5: Count actual result items as fallback
                         if (resultsCount === null) {
                             const resultItems = resultsContainer.querySelectorAll('.search-result-item, article, .post, .result-item');
@@ -281,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 resultsCount = resultItems.length;
                             }
                         }
-                        
+
                         updateResultsCount(resultsCount);
                         attachPaginationListeners();
                     }, remainingTime);
@@ -292,17 +326,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fetchEndTime = Date.now();
                     const elapsedTime = fetchEndTime - fetchStartTime;
                     const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
-                    
+
                     setTimeout(() => {
                         resultsContainer.innerHTML = '<p class="error-message">Error loading results. Please try again.</p>';
                         updateResultsCount(null); // Hide count on error
                     }, remainingTime);
                 });
-        
+
             updateURL(formData);
             renderSelectedFilters(checkedTopicSlugs, checkedAuthorSlugs);
         };
-        
+
 
         // Function to update the browser URL
         const updateURL = (formData) => {
@@ -328,36 +362,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const renderSelectedFilters = (topicSlugs, authorSlugs) => {
             const selectedContainer = block.querySelector('.selected-topic-filters');
             if (!selectedContainer) return;
-        
+
             selectedContainer.innerHTML = ''; // Clear old pills
-        
+
             const hasTopicFilters = topicSlugs && topicSlugs.length > 0;
             const hasAuthorFilters = authorSlugs && authorSlugs.length > 0;
-        
+
             if (!hasTopicFilters && !hasAuthorFilters) return;
-        
+
             // Add "Filters applied:" text
             const filtersLabel = document.createElement('span');
             filtersLabel.textContent = 'Filters applied:';
             filtersLabel.className = 'filters-applied-label';
             selectedContainer.appendChild(filtersLabel);
-        
+
             // Create container for the filter pills and clear button
             const filtersWrapper = document.createElement('div');
             filtersWrapper.className = 'filters-wrapper';
-        
+
             // Render topic filter pills
             if (hasTopicFilters) {
                 topicSlugs.forEach(slug => {
                     const checkbox = topicsModal.querySelector(`input[value="${slug}"]`);
                     const label = checkbox?.parentElement?.textContent.trim() || slug;
-            
+
                     const pill = document.createElement('div');
                     pill.className = 'topic-pill';
-            
+
                     const textSpan = document.createElement('span');
                     textSpan.textContent = label;
-            
+
                     const removeBtn = document.createElement('button');
                     removeBtn.setAttribute('type', 'button');
                     removeBtn.setAttribute('aria-label', `Remove filter ${label}`);
@@ -366,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (checkbox) checkbox.checked = false;
                         fetchAndDisplaySearchResults();
                     });
-            
+
                     pill.appendChild(textSpan);
                     pill.appendChild(removeBtn);
                     filtersWrapper.appendChild(pill);
@@ -378,13 +412,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 authorSlugs.forEach(slug => {
                     const checkbox = authorsModal.querySelector(`input[value="${slug}"]`);
                     const label = checkbox?.parentElement?.textContent.trim() || slug;
-            
+
                     const pill = document.createElement('div');
                     pill.className = 'author-pill';
-            
+
                     const textSpan = document.createElement('span');
                     textSpan.textContent = label;
-            
+
                     const removeBtn = document.createElement('button');
                     removeBtn.setAttribute('type', 'button');
                     removeBtn.setAttribute('aria-label', `Remove filter ${label}`);
@@ -393,13 +427,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (checkbox) checkbox.checked = false;
                         fetchAndDisplaySearchResults();
                     });
-            
+
                     pill.appendChild(textSpan);
                     pill.appendChild(removeBtn);
                     filtersWrapper.appendChild(pill);
                 });
             }
-        
+
             const clearAllBtn = document.createElement('button');
             clearAllBtn.textContent = 'Clear all';
             clearAllBtn.className = 'clear-all';
@@ -414,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 fetchAndDisplaySearchResults();
             });
-        
+
             filtersWrapper.appendChild(clearAllBtn);
             selectedContainer.appendChild(filtersWrapper);
         };
@@ -450,27 +484,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check for initial results count on page load
         const extractInitialResultsCount = () => {
             let resultsCount = null;
-            
+
             // Try the same methods as in fetchAndDisplaySearchResults
             const resultsWrapper = resultsContainer.querySelector('[data-results-count]');
             if (resultsWrapper) {
                 resultsCount = parseInt(resultsWrapper.getAttribute('data-results-count'), 10);
             }
-            
+
             if (resultsCount === null) {
                 const countInput = resultsContainer.querySelector('input[name="results_count"]');
                 if (countInput) {
                     resultsCount = parseInt(countInput.value, 10);
                 }
             }
-            
+
             if (resultsCount === null) {
                 const countElement = resultsContainer.querySelector('.wp-query-results-count');
                 if (countElement) {
                     resultsCount = parseInt(countElement.textContent, 10);
                 }
             }
-            
+
             if (resultsCount !== null) {
                 updateResultsCount(resultsCount);
             }
@@ -484,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
             urlParams.has('language') || // Add language to active filters check
             urlParams.getAll(blockTaxonomySlug).length ||
             (authorsModal && urlParams.getAll('author_slug').length); // Check for author_slug instead of author
-            
+
         if (hasActiveFilters) {
             fetchAndDisplaySearchResults();
         }
@@ -714,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
-        
+
         attachPaginationListeners();
     });
 });

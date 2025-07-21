@@ -3,9 +3,10 @@
  */
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl, TextControl, CheckboxControl } from '@wordpress/components';
+import { PanelBody, ToggleControl, TextControl, CheckboxControl, SelectControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useState, useEffect } from '@wordpress/element';
+import { PanelColorSettings } from '@wordpress/block-editor';
 
 /**
  * Internal dependencies
@@ -25,7 +26,7 @@ import './editor.scss';
  * @return {WPElement} Element to render.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, showLanguageFilter, postTypes, taxonomySlug } = attributes;
+	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, showLanguageFilter, postTypes, taxonomySlug, headingColor, headingAlignment, customHeading } = attributes;
 	const blockProps = useBlockProps();
 
 	// State to hold available post types for the checkbox list
@@ -65,6 +66,35 @@ export default function Edit({ attributes, setAttributes }) {
 	return (
 		<div {...blockProps}>
 			<InspectorControls>
+				<PanelBody title={__('Heading Settings', 'caes-hub')}>
+					<SelectControl
+						label={__('Text Alignment', 'caes-hub')}
+						value={headingAlignment}
+						onChange={(value) => setAttributes({ headingAlignment: value })}
+						options={[
+							{ label: __('Left', 'caes-hub'), value: 'left' },
+							{ label: __('Center', 'caes-hub'), value: 'center' },
+							{ label: __('Right', 'caes-hub'), value: 'right' }
+						]}
+					/>
+					<TextControl
+						label={__('Custom Heading Text', 'caes-hub')}
+						value={customHeading}
+						onChange={(value) => setAttributes({ customHeading: value })}
+						help={__('Leave blank to use default text ("Search" or "Search results for: [query]")', 'caes-hub')}
+						placeholder={__('e.g., Search Expert Resources', 'caes-hub')}
+					/>
+				</PanelBody>
+				<PanelColorSettings
+					title={__('Heading Color', 'caes-hub')}
+					colorSettings={[
+						{
+							value: headingColor,
+							onChange: (value) => setAttributes({ headingColor: value }),
+							label: __('Text Color', 'caes-hub')
+						}
+					]}
+				/>
 				<PanelBody title={__('Search Filter Settings', 'caes-hub')}>
 					<ToggleControl
 						label={__('Show Date Sorting', 'caes-hub')}

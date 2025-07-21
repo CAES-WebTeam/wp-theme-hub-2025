@@ -48,6 +48,18 @@
     "taxonomySlug": {
       "type": "string",
       "default": "category"
+    },
+    "headingColor": {
+      "type": "string",
+      "default": ""
+    },
+    "headingAlignment": {
+      "type": "string",
+      "default": "left"
+    },
+    "customHeading": {
+      "type": "string",
+      "default": ""
     }
   },
   "textdomain": "caes-hub",
