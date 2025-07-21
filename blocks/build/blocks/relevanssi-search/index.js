@@ -67,7 +67,8 @@ function Edit({
     taxonomySlug,
     headingColor,
     headingAlignment,
-    customHeading
+    customHeading,
+    resultsPageUrl
   } = attributes;
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
 
@@ -102,6 +103,29 @@ function Edit({
     ...blockProps,
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Results Page Settings', 'caes-hub'),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Results Page URL', 'caes-hub'),
+          value: resultsPageUrl,
+          onChange: value => setAttributes({
+            resultsPageUrl: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Optional: Enter a URL to redirect search submissions to another page with the full search results. Leave blank to show results on the same page.', 'caes-hub'),
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('e.g., /search-results/', 'caes-hub')
+        }), resultsPageUrl && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+          className: "description",
+          style: {
+            marginTop: '10px',
+            padding: '10px',
+            backgroundColor: '#f0f6fc',
+            border: '1px solid #c3c4c7',
+            borderRadius: '4px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('How it works:', 'caes-hub')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("br", {}), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('When specified, this block becomes a "search-only" form that redirects to the results page. The target page should also have this block configured with all desired filters enabled.', 'caes-hub')]
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading Settings', 'caes-hub'),
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Text Alignment', 'caes-hub'),
@@ -213,6 +237,17 @@ function Edit({
         children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Relevanssi Search Filters Block', 'caes-hub')
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
         children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Configure sorting and filtering options in the block settings sidebar.', 'caes-hub')
+      }), resultsPageUrl && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        style: {
+          backgroundColor: '#f0f6fc',
+          padding: '10px',
+          border: '1px solid #c3c4c7',
+          borderRadius: '4px',
+          marginTop: '10px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Search-only mode:', 'caes-hub')
+        }), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Redirects to', 'caes-hub'), " ", resultsPageUrl]
       }), showDateSort && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
         children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Date Sorting Enabled', 'caes-hub')]
       }), showPostTypeFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
@@ -378,7 +413,7 @@ module.exports = window["wp"]["i18n"];
   \*************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/relevanssi-search","version":"1.0.0","title":"CAES Hub Relevanssi Search","category":"widgets","icon":"search","description":"A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.","supports":{"html":false,"spacing":{"margin":true,"padding":true}},"attributes":{"showDateSort":{"type":"boolean","default":true},"showPostTypeFilter":{"type":"boolean","default":true},"showTopicFilter":{"type":"boolean","default":true},"showAuthorFilter":{"type":"boolean","default":true},"showLanguageFilter":{"type":"boolean","default":false},"postTypes":{"type":"array","default":["post","page"],"items":{"type":"string"}},"taxonomySlug":{"type":"string","default":"category"},"headingColor":{"type":"string","default":""},"headingAlignment":{"type":"string","default":"left"},"customHeading":{"type":"string","default":""}},"textdomain":"caes-hub","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/relevanssi-search","version":"1.0.0","title":"CAES Hub Relevanssi Search","category":"widgets","icon":"search","description":"A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.","supports":{"html":false,"spacing":{"margin":true,"padding":true}},"attributes":{"showDateSort":{"type":"boolean","default":true},"showPostTypeFilter":{"type":"boolean","default":true},"showTopicFilter":{"type":"boolean","default":true},"showAuthorFilter":{"type":"boolean","default":true},"showLanguageFilter":{"type":"boolean","default":false},"postTypes":{"type":"array","default":["post","page"],"items":{"type":"string"}},"taxonomySlug":{"type":"string","default":"category"},"headingColor":{"type":"string","default":""},"headingAlignment":{"type":"string","default":"left"},"customHeading":{"type":"string","default":""},"resultsPageUrl":{"type":"string","default":""}},"textdomain":"caes-hub","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
 
 /***/ })
 

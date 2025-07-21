@@ -1,4 +1,37 @@
 <?php
+/** 
+ * Simple fix for search parameters on custom pages
+ */
+function simple_search_page_fix($wp) {
+    // Only proceed if there's a search parameter
+    if (!isset($_GET['s']) || empty($_GET['s'])) {
+        return;
+    }
+    
+    // Only proceed if WordPress thinks this is a search
+    if (!isset($wp->query_vars['s'])) {
+        return;
+    }
+    
+    // Check if this URL looks like a page (not the default search)
+    // Default search URLs are usually just /?s=query or /search/?s=query
+    $current_path = trim($wp->request, '/');
+    
+    // If there's a meaningful path (not empty, not just "search"), treat it as a page
+    if (!empty($current_path) && $current_path !== 'search') {
+        // Try to find a page at this path
+        $page = get_page_by_path($current_path);
+        
+        if ($page && $page->post_status === 'publish') {
+            // Override WordPress search behavior
+            unset($wp->query_vars['s']);
+            $wp->query_vars['page_id'] = $page->ID;
+        }
+    }
+}
+
+add_action('parse_request', 'simple_search_page_fix');
+
 /** * Renders Relevanssi search results HTML using block syntax. 
  */
 if (! function_exists('caes_hub_render_relevanssi_search_results')) {

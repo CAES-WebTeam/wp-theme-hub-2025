@@ -60,6 +60,10 @@
     "customHeading": {
       "type": "string",
       "default": ""
+    },
+    "resultsPageUrl": {
+      "type": "string",
+      "default": ""
     }
   },
   "textdomain": "caes-hub",

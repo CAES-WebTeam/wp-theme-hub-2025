@@ -26,7 +26,7 @@ import './editor.scss';
  * @return {WPElement} Element to render.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, showLanguageFilter, postTypes, taxonomySlug, headingColor, headingAlignment, customHeading } = attributes;
+	const { showDateSort, showPostTypeFilter, showTopicFilter, showAuthorFilter, showLanguageFilter, postTypes, taxonomySlug, headingColor, headingAlignment, customHeading, resultsPageUrl } = attributes;
 	const blockProps = useBlockProps();
 
 	// State to hold available post types for the checkbox list
@@ -66,6 +66,21 @@ export default function Edit({ attributes, setAttributes }) {
 	return (
 		<div {...blockProps}>
 			<InspectorControls>
+				<PanelBody title={__('Results Page Settings', 'caes-hub')}>
+					<TextControl
+						label={__('Results Page URL', 'caes-hub')}
+						value={resultsPageUrl}
+						onChange={(value) => setAttributes({ resultsPageUrl: value })}
+						help={__('Optional: Enter a URL to redirect search submissions to another page with the full search results. Leave blank to show results on the same page.', 'caes-hub')}
+						placeholder={__('e.g., /search-results/', 'caes-hub')}
+					/>
+					{resultsPageUrl && (
+						<p className="description" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#f0f6fc', border: '1px solid #c3c4c7', borderRadius: '4px' }}>
+							<strong>{__('How it works:', 'caes-hub')}</strong><br />
+							{__('When specified, this block becomes a "search-only" form that redirects to the results page. The target page should also have this block configured with all desired filters enabled.', 'caes-hub')}
+						</p>
+					)}
+				</PanelBody>
 				<PanelBody title={__('Heading Settings', 'caes-hub')}>
 					<SelectControl
 						label={__('Text Alignment', 'caes-hub')}
@@ -189,6 +204,11 @@ export default function Edit({ attributes, setAttributes }) {
 				<p>
 					{__('Configure sorting and filtering options in the block settings sidebar.', 'caes-hub')}
 				</p>
+				{resultsPageUrl && (
+					<p style={{ backgroundColor: '#f0f6fc', padding: '10px', border: '1px solid #c3c4c7', borderRadius: '4px', marginTop: '10px' }}>
+						<strong>{__('Search-only mode:', 'caes-hub')}</strong> {__('Redirects to', 'caes-hub')} {resultsPageUrl}
+					</p>
+				)}
 				{showDateSort && <p> - {__('Date Sorting Enabled', 'caes-hub')}</p>}
 				{showPostTypeFilter && <p> - {__('Post Type Filter Enabled', 'caes-hub')}</p>}
 				{showTopicFilter && <p> - {__('Topics Filter Enabled (Checkboxes, Taxonomy: ', 'caes-hub')}{taxonomySlug})</p>}

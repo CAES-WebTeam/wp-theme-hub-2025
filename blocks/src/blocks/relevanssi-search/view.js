@@ -1,6 +1,7 @@
 /**
  * This script handles the frontend interactivity for the Relevanssi Search Filters block.
- * It uses AJAX to fetch search results dynamically without page reloads.
+ * It uses AJAX to fetch search results dynamically without page reloads for full results blocks,
+ * and allows normal form submission for search-only blocks that redirect to a results page.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const searchFilterBlocks = document.querySelectorAll('.wp-block-caes-hub-relevanssi-search');
@@ -9,27 +10,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = block.querySelector('.relevanssi-search-form');
         if (!form) return;
 
+        // Get results page URL to determine if this is a search-only block
+        const resultsPageUrl = block.dataset.resultsPageUrl || '';
+        const isSearchOnlyBlock = resultsPageUrl !== '';
+
         const searchInput = form.querySelector('#relevanssi-search-input');
         const sortByDateSelect = form.querySelector('#relevanssi-sort-by-date');
         const postTypeSelect = form.querySelector('#relevanssi-post-type-filter');
-        const languageSelect = form.querySelector('#relevanssi-language-filter'); // Add language select
+        const languageSelect = form.querySelector('#relevanssi-language-filter');
         const resultsContainer = block.querySelector('.relevanssi-ajax-search-results-container');
         const blockTaxonomySlug = block.dataset.taxonomySlug || 'category';
         const blockAllowedPostTypes = block.dataset.allowedPostTypes ? JSON.parse(block.dataset.allowedPostTypes) : [];
-        const showLanguageFilter = block.dataset.showLanguageFilter === 'true'; // Get language filter state
+        const showLanguageFilter = block.dataset.showLanguageFilter === 'true';
 
-        // Modal elements - Topics
+        // Modal elements - Topics (only exist for full results blocks)
         const openTopicsModalButton = block.querySelector('.open-topics-modal');
         const topicsModal = block.querySelector('#topics-modal');
         const topicsModalCloseButton = topicsModal ? topicsModal.querySelector('.topics-modal-close') : null;
         const applyTopicsFilterButton = topicsModal ? topicsModal.querySelector('.apply-topics-filter') : null;
 
-        // Modal elements - Authors
+        // Modal elements - Authors (only exist for full results blocks)
         const openAuthorsModalButton = block.querySelector('.open-authors-modal');
         const authorsModal = block.querySelector('#authors-modal');
         const authorsModalCloseButton = authorsModal ? authorsModal.querySelector('.authors-modal-close') : null;
         const applyAuthorsFilterButton = authorsModal ? authorsModal.querySelector('.apply-authors-filter') : null;
 
+        // If this is a search-only block, set up simple form submission and exit
+        if (isSearchOnlyBlock) {
+            // For search-only blocks, allow normal form submission (no preventDefault)
+            // The form action is already set to the results page URL in render.php
+            form.addEventListener('submit', (e) => {
+                // Let the form submit normally - no AJAX needed
+                // The browser will navigate to the results page with the search query
+            });
+            
+            // Update search title on initial page load for consistency
+            const initialSearchTerm = searchInput ? searchInput.value : '';
+            updateSearchTitle(initialSearchTerm);
+            
+            return; // Exit early - no need to set up AJAX or advanced features
+        }
+
+        // The rest of this code only runs for full results blocks (no resultsPageUrl)
+        
         // Ensure all checkbox labels have a consistent class for searching
         if (topicsModal) {
             topicsModal.querySelectorAll('.topics-modal-checkboxes label').forEach(label => {
@@ -91,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Function to update or create the results count (keep this as previously modified)
+        // Function to update or create the results count
         const updateResultsCount = (count) => {
             let countElement = block.querySelector('.search-results-count');
             const resultsHeading = block.querySelector('.search-results-heading'); // Get the H2 element
@@ -191,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('showPostTypeFilter', postTypeSelect ? 'true' : 'false');
             formData.append('showTopicFilter', topicsModal ? 'true' : 'false');
             formData.append('showAuthorFilter', authorsModal ? 'true' : 'false');
-            formData.append('showLanguageFilter', showLanguageFilter ? 'true' : 'false'); // Add language filter state
+            formData.append('showLanguageFilter', showLanguageFilter ? 'true' : 'false');
 
             if (sortByDateSelect) {
                 const selectedOrder = sortByDateSelect.value;
@@ -337,7 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSelectedFilters(checkedTopicSlugs, checkedAuthorSlugs);
         };
 
-
         // Function to update the browser URL
         const updateURL = (formData) => {
             const params = new URLSearchParams();
@@ -455,6 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Function to handle pagination clicks
         const attachPaginationListeners = () => {
+            if (!resultsContainer) return;
+            
             resultsContainer.querySelectorAll('.page-numbers').forEach(link => {
                 link.addEventListener('click', e => {
                     e.preventDefault();
@@ -483,6 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Check for initial results count on page load
         const extractInitialResultsCount = () => {
+            if (!resultsContainer) return;
+            
             let resultsCount = null;
 
             // Try the same methods as in fetchAndDisplaySearchResults
@@ -515,9 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const hasActiveFilters = urlParams.has('s') ||
             urlParams.has('orderby') ||
             urlParams.has('post_type') ||
-            urlParams.has('language') || // Add language to active filters check
+            urlParams.has('language') ||
             urlParams.getAll(blockTaxonomySlug).length ||
-            (authorsModal && urlParams.getAll('author_slug').length); // Check for author_slug instead of author
+            (authorsModal && urlParams.getAll('author_slug').length);
 
         if (hasActiveFilters) {
             fetchAndDisplaySearchResults();
@@ -532,14 +558,16 @@ document.addEventListener('DOMContentLoaded', () => {
             extractInitialResultsCount();
         }
 
+        // Form submission handler - only prevent default for full results blocks
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             fetchAndDisplaySearchResults();
         });
 
+        // Event listeners for filter changes
         if (sortByDateSelect) sortByDateSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
         if (postTypeSelect) postTypeSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
-        if (languageSelect) languageSelect.addEventListener('change', () => fetchAndDisplaySearchResults()); // Add language change listener
+        if (languageSelect) languageSelect.addEventListener('change', () => fetchAndDisplaySearchResults());
 
         // --- Topics Modal Logic ---
         if (openTopicsModalButton && topicsModal) {
@@ -549,23 +577,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const getTopicsTabbableElements = () => {
                 return Array.from(topicsModal.querySelectorAll(
                     'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
-                )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0); // Filter out hidden elements
+                )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
             };
 
             const trapTopicsFocus = (e) => {
                 const tabbableElements = getTopicsTabbableElements();
-                if (tabbableElements.length === 0) return; // No tabbable elements, nothing to trap
+                if (tabbableElements.length === 0) return;
 
                 const firstTabbableElement = tabbableElements[0];
                 const lastTabbableElement = tabbableElements[tabbableElements.length - 1];
 
                 if (e.key === 'Tab') {
-                    if (e.shiftKey) { // Shift + Tab
+                    if (e.shiftKey) {
                         if (document.activeElement === firstTabbableElement) {
                             lastTabbableElement.focus();
                             e.preventDefault();
                         }
-                    } else { // Tab
+                    } else {
                         if (document.activeElement === lastTabbableElement) {
                             firstTabbableElement.focus();
                             e.preventDefault();
@@ -582,7 +610,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 openTopicsModalButton.setAttribute('aria-expanded', 'true');
                 topicsModal.removeAttribute('aria-hidden');
 
-                // Set focus to the first tabbable element inside the modal
                 const tabbableElements = getTopicsTabbableElements();
                 if (tabbableElements.length > 0) {
                     tabbableElements[0].focus();
@@ -614,25 +641,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeTopicsModal();
                 });
             } else {
-                // Fallback if no specific 'Apply Filter' button (though recommended to have one)
                 topicsModal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                     checkbox.addEventListener('change', () => {
                         fetchAndDisplaySearchResults();
-                        // Consider if you want to close the modal here or only with an explicit apply button
-                        // If you uncomment closeTopicsModal(), users might find it jarring if modal closes on every click.
-                        // closeTopicsModal();
                     });
                 });
             }
 
-            // Close modal if clicking outside of it
             window.addEventListener('click', (event) => {
                 if (event.target === topicsModal) {
                     closeTopicsModal();
                 }
             });
 
-            // Topic search inside the modal
             const topicSearchInput = topicsModal.querySelector('.topics-modal-search-input');
             if (topicSearchInput) {
                 topicSearchInput.addEventListener('input', (e) => {
@@ -649,27 +670,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (openAuthorsModalButton && authorsModal) {
             let previouslyFocusedElementAuthors;
 
-            // Helper to get all tabbable elements within the authors modal
             const getAuthorsTabbableElements = () => {
                 return Array.from(authorsModal.querySelectorAll(
                     'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
-                )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0); // Filter out hidden elements
+                )).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0);
             };
 
             const trapAuthorsFocus = (e) => {
                 const tabbableElements = getAuthorsTabbableElements();
-                if (tabbableElements.length === 0) return; // No tabbable elements, nothing to trap
+                if (tabbableElements.length === 0) return;
 
                 const firstTabbableElement = tabbableElements[0];
                 const lastTabbableElement = tabbableElements[tabbableElements.length - 1];
 
                 if (e.key === 'Tab') {
-                    if (e.shiftKey) { // Shift + Tab
+                    if (e.shiftKey) {
                         if (document.activeElement === firstTabbableElement) {
                             lastTabbableElement.focus();
                             e.preventDefault();
                         }
-                    } else { // Tab
+                    } else {
                         if (document.activeElement === lastTabbableElement) {
                             firstTabbableElement.focus();
                             e.preventDefault();
@@ -686,7 +706,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 openAuthorsModalButton.setAttribute('aria-expanded', 'true');
                 authorsModal.removeAttribute('aria-hidden');
 
-                // Set focus to the first tabbable element inside the modal
                 const tabbableElements = getAuthorsTabbableElements();
                 if (tabbableElements.length > 0) {
                     tabbableElements[0].focus();
@@ -718,25 +737,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeAuthorsModal();
                 });
             } else {
-                // Fallback if no specific 'Apply Filter' button (though recommended to have one)
                 authorsModal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                     checkbox.addEventListener('change', () => {
                         fetchAndDisplaySearchResults();
-                        // Consider if you want to close the modal here or only with an explicit apply button
-                        // If you uncomment closeAuthorsModal(), users might find it jarring if modal closes on every click.
-                        // closeAuthorsModal();
                     });
                 });
             }
 
-            // Close modal if clicking outside of it
             window.addEventListener('click', (event) => {
                 if (event.target === authorsModal) {
                     closeAuthorsModal();
                 }
             });
 
-            // Author search inside the modal
             const authorSearchInput = authorsModal.querySelector('.authors-modal-search-input');
             if (authorSearchInput) {
                 authorSearchInput.addEventListener('input', (e) => {
