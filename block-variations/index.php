@@ -46,7 +46,7 @@ add_filter('rest_events_query', 'rest_event_type', 10, 2);
 
 /*** END EVENTS */
 
-/*** START PUBLICATONS */
+/*** START PUBLICATIONS */
 // Backend
 function rest_pub_language_orderby($args, $request)
 {
@@ -61,28 +61,7 @@ function rest_pub_language_orderby($args, $request)
     return $args;
 }
 add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
-/*** END PUBLICATONS */
-
-/*** START POSTS */
-// Backend
-// function rest_posts_external_publishers($args, $request)
-// {
-//     $hasExternalPublishers = $request->get_param('hasExternalPublishers');
-
-//     // Handle both boolean true and string 'true'
-//     if ($hasExternalPublishers === true || $hasExternalPublishers === 'true') {
-//         $args['tax_query'] = array(
-//             array(
-//                 'taxonomy' => 'external_publisher',
-//                 'operator' => 'EXISTS'
-//             )
-//         );
-//     }
-
-//     return $args;
-// }
-// add_filter('rest_post_query', 'rest_posts_external_publishers', 10, 2);
-/*** END POSTS */
+/*** END PUBLICATIONS */
 
 /*** FRONT END */
 
@@ -164,38 +143,21 @@ function variations_query_filter($query, $block)
                 );
             }
         }
+
+        // For stories-feed blocks using custom author field
+        if ('stories-feed' === $namespace) {
+            // Filter by author if on author archive
+            if (is_author()) {
+                $author_id = get_queried_object_id();
+                $meta_query[] = array(
+                    'key' => 'all_author_ids', // Use the same custom field key
+                    'value' => 'i:' . $author_id . ';',
+                    'compare' => 'LIKE'
+                );
+            }
+        }
+
     }
-
-    // Handle posts query blocks (external publishers) - FIXED VERSION
-    // if (
-    //     isset($parsed_block['attrs']['query']['postType']) &&
-    //     $parsed_block['attrs']['query']['postType'] === 'post'
-    // ) {
-    //     // More robust checking for hasExternalPublishers
-    //     $hasExternalPublishers = false;
-        
-    //     // Check different possible locations for the parameter
-    //     if (isset($parsed_block['attrs']['query']['hasExternalPublishers'])) {
-    //         $hasExternalPublishers = $parsed_block['attrs']['query']['hasExternalPublishers'];
-    //     } elseif (isset($parsed_block['attrs']['hasExternalPublishers'])) {
-    //         $hasExternalPublishers = $parsed_block['attrs']['hasExternalPublishers'];
-    //     }
-
-    //     // Convert various formats to boolean
-    //     if ($hasExternalPublishers === 1 || 
-    //         $hasExternalPublishers === '1' || 
-    //         $hasExternalPublishers === true || 
-    //         $hasExternalPublishers === 'true') {
-            
-    //         $tax_query[] = array(
-    //             'taxonomy' => 'external_publisher',
-    //             'operator' => 'EXISTS'
-    //         );
-            
-    //         // Debug output - remove after testing
-    //         error_log('External publishers filter applied for post query');
-    //     }
-    // }
 
     // Apply meta query if we have conditions
     if (!empty($meta_query)) {
@@ -294,20 +256,6 @@ add_filter('render_block', function ($block_content, $block) {
 
     return $block_content;
 }, 10, 2);
-
-// Register the custom REST parameter for posts
-// function register_posts_rest_fields()
-// {
-//     register_rest_field('post', 'hasExternalPublishers', array(
-//         'get_callback' => null, // We don't need to return this field
-//         'update_callback' => null,
-//         'schema' => array(
-//             'description' => 'Filter posts by external publishers',
-//             'type' => 'boolean',
-//         ),
-//     ));
-// }
-// add_action('rest_api_init', 'register_posts_rest_fields');
 
 // Add the parameter to the posts collection endpoint
 function add_custom_query_vars($valid_vars)

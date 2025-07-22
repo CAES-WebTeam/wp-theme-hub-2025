@@ -158,63 +158,36 @@ addFilter('editor.BlockEdit', 'core/query', withPubVariationControls);
 
 /** Publications Query Block Variation - END */
 
-/** Posts Query Block Controls - START */
+/** Stories Query Block Variation - START */
 
-// Check if block is querying posts
-// const isPostsQuery = (props) => {
-//   // Safety checks first
-//   if (!props || !props.attributes || !props.attributes.query) {
-//     return false;
-//   }
+const storiesVariation = 'stories-feed'; // Define a unique namespace for your stories
 
-//   const { attributes: { query } } = props;
-//   console.log('Checking if posts query:', query);
-//   const isPost = query && query.postType === 'post';
-//   console.log('Is post query:', isPost);
-//   return isPost;
-// };
+registerBlockVariation('core/query', {
+  name: storiesVariation,
+  title: 'Stories Feed',
+  description: 'Displays a feed of stories',
+  icon: 'list-view',
+  attributes: {
+    namespace: storiesVariation,
+    query: {
+      postType: 'post', 
+      perPage: 4,
+      offset: 0
+    },
+  },
+  isActive: ['namespace'],
+  scope: ['inserter'],
+  innerBlocks: [
+    [
+      'core/post-template',
+      {},
+      [
+        ['core/post-title'],
+        ['core/post-date'],
+        ['core/post-excerpt']
+      ],
+    ]
+  ]
+});
 
-// // Add Inspector Controls for posts queries
-// const PostsQueryControls = ({ props: { attributes, setAttributes } }) => {
-//   const { query } = attributes;
-
-//   return (
-//     <PanelBody title="Additional Feed Settings">
-//       {/* External Publishers Toggle */}
-//       <ToggleControl
-//         label="Only show posts with external publishers"
-//         checked={query.hasExternalPublishers || false}
-//         onChange={(value) => {
-//           console.log('Setting hasExternalPublishers to:', value);
-//           console.log('Full query before update:', query);
-
-//           const newQuery = {
-//             ...query,
-//             hasExternalPublishers: value
-//           };
-
-//           console.log('Full query after update:', newQuery);
-
-//           setAttributes({ query: newQuery });
-//         }}
-//       />
-//     </PanelBody>
-//   );
-// };
-
-// export const withPostsQueryControls = (BlockEdit) => (props) => {
-//   return isPostsQuery(props) ? (
-//     <>
-//       <BlockEdit {...props} />
-//       <InspectorControls>
-//         <PostsQueryControls props={props} />
-//       </InspectorControls>
-//     </>
-//   ) : (
-//     <BlockEdit {...props} />
-//   );
-// };
-
-// addFilter('editor.BlockEdit', 'core/query', withPostsQueryControls);
-
-/** Posts Query Block Controls - END */
+/** Stories Query Block Variation - END */
