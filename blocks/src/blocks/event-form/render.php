@@ -6,7 +6,7 @@ acf_form_head();
 // Check if the user is logged in and has the correct roles
 if ( is_user_logged_in() ) {
 	$user = wp_get_current_user();
-	$allowed_roles = array('administrator', 'caes-staff', 'extension-staff');
+	$allowed_roles = array('administrator', 'caes-staff', 'extension-staff', 'event_submitter');
 	$current_page_id = get_the_ID();
 
 	if ( array_intersect($allowed_roles, $user->roles ) ) {
