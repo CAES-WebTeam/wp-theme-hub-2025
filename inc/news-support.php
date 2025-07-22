@@ -331,3 +331,41 @@ add_filter( 'render_block', function( $block_content, $block ) {
 
 	return $block_content;
 }, 10, 2 );
+
+function update_flat_expert_ids_meta($post_id)
+{
+    // Check if it's an autosave to prevent unnecessary processing
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    // Ensure this only runs for 'post' post type
+    if (get_post_type($post_id) !== 'post') {
+        return;
+    }
+
+    // Get the ACF repeater field called 'experts'
+    $experts = get_field('experts', $post_id);
+
+    // If no experts are selected or the field is empty, delete the meta key
+    if (!$experts || !is_array($experts)) {
+        delete_post_meta($post_id, 'all_expert_ids');
+        return;
+    }
+
+    $expert_ids = [];
+
+    foreach ($experts as $expert_row) {
+        // Ensure the 'user' sub-field exists and is a valid user ID
+        if (!empty($expert_row['user']) && is_numeric($expert_row['user'])) {
+            $expert_ids[] = (int) $expert_row['user'];
+        } else {
+            // Log an error if an expert entry is malformed
+            error_log("⚠️ Invalid or missing 'user' field in expert entry for post ID: {$post_id}");
+        }
+    }
+
+    // Store the array of expert IDs as a single meta value (serialized by WordPress)
+    update_post_meta($post_id, 'all_expert_ids', $expert_ids);
+}
+add_action('acf/save_post', 'update_flat_expert_ids_meta', 20);
