@@ -258,6 +258,10 @@ add_filter('render_block', function ($block_content, $block) {
             // Apply all existing query filters to get the exact query vars that would be used
             $query_args = apply_filters('query_loop_block_query_vars', $query_args, (object)['parsed_block' => $block]);
 
+            if (isset($block['attrs']['query']['postType'])) {
+                $query_args['post_type'] = $block['attrs']['query']['postType'];
+            }
+
             // Ensure 'paged' is set correctly for the internal check, respecting pagination
             $paged = get_query_var('paged') ?: (get_query_var('page') ?: 1);
             $query_args['paged'] = $paged;
