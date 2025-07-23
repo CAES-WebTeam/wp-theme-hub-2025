@@ -341,24 +341,3 @@ function hide_specific_acf_fields_from_non_admins($field)
 	return $field;
 }
 add_filter( 'acf/prepare_field', 'hide_specific_acf_fields_from_non_admins' );
-
-function register_event_submitter_role()
-{
-	if (! get_role('event_submitter')) {
-		add_role(
-			'event_submitter',
-			__('Event Submitter', 'your-text-domain'),
-			array(
-				'read'                 => true,
-				'edit_event'           => true,
-				'read_event'           => true,
-				'delete_event'         => true,
-				'edit_events'          => true,
-				// DO NOT add 'edit_others_events' or 'delete_others_events'
-				// 'publish_events'    => true, // Only if they can publish immediately
-				'upload_files'         => true,
-			)
-		);
-	}
-}
-add_action('init', 'register_event_submitter_role');

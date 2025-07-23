@@ -187,7 +187,104 @@ add_action('init', function () {
 	));
 });
 
-// Register the 'Topics' taxonomy
+// Register 'CAES Departments' taxonomy for Events
+add_action('init', function () {
+    register_taxonomy('event_caes_departments', array('events'), array(
+        'labels' => array(
+            'name' => 'CAES Departments',
+            'singular_name' => 'CAES Department',
+            'menu_name' => 'CAES Departments',
+            'all_items' => 'All CAES Departments',
+            'edit_item' => 'Edit CAES Department',
+            'view_item' => 'View CAES Department',
+            'update_item' => 'Update CAES Department',
+            'add_new_item' => 'Add New CAES Department',
+            'new_item_name' => 'New CAES Department Name',
+            'search_items' => 'Search CAES Departments',
+            'not_found' => 'No CAES departments found',
+            'no_terms' => 'No CAES departments',
+            'back_to_items' => '← Go to CAES departments',
+            'item_link' => 'CAES Department Link',
+            'item_link_description' => 'A link to a CAES department',
+        ),
+        'public' => true,
+        'show_in_rest' => true,
+        'query_var' => true,
+        'hierarchical' => false,
+        'show_admin_column' => false, // Hidden since we're using ACF
+        'rewrite' => array(
+            'slug' => 'events/caes-departments',
+            'with_front' => false
+        )
+    ));
+});
+
+// Hide default taxonomy metaboxes for events since we're using ACF
+function hide_event_taxonomy_metaboxes() {
+    remove_meta_box('tagsdiv-event_series', 'events', 'side');
+    remove_meta_box('tagsdiv-event_caes_departments', 'events', 'side');
+}
+add_action('admin_menu', 'hide_event_taxonomy_metaboxes');
+
+// Register role for Event Submitters
+function register_event_submitter_role()
+{
+	if (! get_role('event_submitter')) {
+		add_role(
+			'event_submitter',
+			__('Event Submitter', 'caes-hub'),
+			array(
+				'read'                 => true,
+				'edit_event'           => true,
+				'read_event'           => true,
+				'delete_event'         => true,
+				'edit_events'          => true,
+				'read_events'          => true,  // ADDED: Needed to query events
+				'read_private_events'  => true,  // ADDED: Needed to see draft events
+				// DO NOT add 'edit_others_events' or 'delete_others_events'
+				// 'publish_events'    => true, // Only if they can publish immediately
+				'upload_files'         => true,
+			)
+		);
+	}
+}
+add_action('init', 'register_event_submitter_role');
+
+// Grant Event Capabilities to Higher Roles
+function grant_event_capabilities_to_higher_roles() {
+    // Define which roles should have full event management access
+    $roles_with_full_access = array('editor', 'administrator');
+    
+    // All event capabilities that should be granted to editors and admins
+    $event_capabilities = array(
+        'edit_event',
+        'read_event',
+        'delete_event',
+        'edit_events',
+        'edit_others_events',
+        'publish_events',
+        'read_private_events',
+        'delete_events',
+        'delete_private_events',
+        'delete_published_events',
+        'delete_others_events',
+        'edit_private_events',
+        'edit_published_events',
+    );
+    
+    // Grant capabilities to each specified role
+    foreach ($roles_with_full_access as $role_name) {
+        $role = get_role($role_name);
+        if ($role) {
+            foreach ($event_capabilities as $capability) {
+                $role->add_cap($capability);
+            }
+        }
+    }
+}
+add_action('init', 'grant_event_capabilities_to_higher_roles');
+
+// Register the shared 'Topics' taxonomy for posts, publications, and shorthand stories
 function register_topics_taxonomy()
 {
     $labels = array(
@@ -219,7 +316,8 @@ function register_topics_taxonomy()
 }
 add_action('init', 'register_topics_taxonomy'); // Changed function name in action hook
 
-// Primary Topics ACF Field
+// Primary Topics ACF Field - specifies the primary topic for posts,
+// publications, and shorthand stories, pulling from the 'topics' taxonomy.
 function create_primary_topics_field() {
     if( function_exists('acf_add_local_field_group') ):
         acf_add_local_field_group(array(
@@ -270,7 +368,7 @@ function create_primary_topics_field() {
 add_action('acf/init', 'create_primary_topics_field'); // Changed function name in action hook
 
 
-// External Publisher Taxonomy
+// External Publisher Taxonomy for posts
 function create_external_publisher_taxonomy_and_field() {
     // Register the taxonomy first
     $labels = array(
@@ -322,25 +420,6 @@ function fix_external_publisher_rest_query($args, $request) {
     return $args;
 }
 add_filter('rest_post_query', 'fix_external_publisher_rest_query', 10, 2);
-
-// Debug: Log REST API requests for posts
-function debug_rest_post_requests($args, $request) {
-
-    // Your existing filter logic
-    if (isset($request['external_publisher'])) {
-        // error_log('External Publisher filter detected: ' . print_r($request['external_publisher'], true));
-        $args['tax_query'] = array(
-            array(
-                'taxonomy' => 'external_publisher',
-                'field'    => 'term_id',
-                'terms'    => $request['external_publisher'],
-            ),
-        );
-    }
-    
-    return $args;
-}
-add_filter('rest_post_query', 'debug_rest_post_requests', 10, 2);
 
 // Add a random placeholder image if no featured image is set
 add_filter( 'post_thumbnail_html', 'caes_ordered_placeholder_if_no_thumbnail', 10, 5 );
