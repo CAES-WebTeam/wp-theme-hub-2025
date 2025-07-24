@@ -94,6 +94,21 @@ if (!empty($google_map) && is_array($google_map)) {
     $state = $google_map['state_short'] ?? '';
     $postal = $google_map['post_code'] ?? '';
     
+    // If city/state fields are empty, try to parse from full address
+    if (empty($city) || empty($state)) {
+        error_log('DEBUG: Parsing city/state from full address');
+        // Parse: "Hoke Smith Building, Smith Street, Athens, GA, USA"
+        $address_parts = explode(',', $full_address);
+        if (count($address_parts) >= 4) {
+            $city = trim($address_parts[2]); // "Athens"
+            $state_part = trim($address_parts[3]); // "GA USA"
+            $state = explode(' ', $state_part)[0]; // "GA"
+        }
+    }
+    
+    error_log('DEBUG: Parsed city: ' . $city);
+    error_log('DEBUG: Parsed state: ' . $state);
+    
     $line2_parts = [];
     if ($city) $line2_parts[] = $city;
     if ($state) $line2_parts[] = $state;
