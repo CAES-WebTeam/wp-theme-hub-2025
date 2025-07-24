@@ -41,87 +41,68 @@ $location_custom = get_field('location_custom', $post_id);
 $event_type = get_field('event_type', $post_id);
 $event_location_type = get_field('event_location_type', $post_id);
 
-error_log('DEBUG: location_custom: ' . print_r($location_custom, true));
-error_log('DEBUG: event_type: ' . print_r($event_type, true));
-error_log('DEBUG: event_location_type: ' . print_r($event_location_type, true));
+// DEBUG: List ALL ACF fields to see what location fields exist
+$all_fields = get_fields($post_id);
+error_log('DEBUG: All fields: ' . print_r($all_fields, true));
 
 // Initialize location variable
 $location = '';
 $directions_link = '';
 
-// Is this a custom location?
-if ($location_custom) {
-    error_log('DEBUG: Using custom location');
-    $google_map = get_field('location_google_map', $post_id);
-    error_log('DEBUG: google_map: ' . print_r($google_map, true));
+// Check for Google map data (regardless of location_custom setting)
+$google_map = get_field('location_google_map', $post_id);
+error_log('DEBUG: google_map: ' . print_r($google_map, true));
 
-    if (!empty($google_map) && is_array($google_map)) {
-        // Retrieve the full address and build the default street address
-        $full_address   = $google_map['address'] ?? '';
-        $street_number  = $google_map['street_number'] ?? '';
-        $street_name    = $google_map['street_name'] ?? '';
-        $street_address = trim($street_number . ' ' . $street_name);
+if (!empty($google_map) && is_array($google_map)) {
+    error_log('DEBUG: Using Google map location');
+    
+    // Retrieve the full address and build the default street address
+    $full_address   = $google_map['address'] ?? '';
+    $street_number  = $google_map['street_number'] ?? '';
+    $street_name    = $google_map['street_name'] ?? '';
+    $street_address = trim($street_number . ' ' . $street_name);
 
-        // Attempt to extract a potential building name from the full address
-        $address_parts          = explode(',', $full_address);
-        $possible_building_name = trim($address_parts[0]);
+    // Attempt to extract a potential building name from the full address
+    $address_parts          = explode(',', $full_address);
+    $possible_building_name = trim($address_parts[0]);
 
-        // Normalize both values to check for duplicates
-        $norm_building = normalize_address($possible_building_name);
-        $norm_street   = normalize_address($street_address);
+    // Normalize both values to check for duplicates
+    $norm_building = normalize_address($possible_building_name);
+    $norm_street   = normalize_address($street_address);
 
-        // Determine snippet and full line display
-        if ($possible_building_name && strcasecmp($norm_building, $norm_street) !== 0) {
-            // Building name exists and is not just a duplicate of the street address
-            $line1_snippet = $possible_building_name;
-            $line1_full    = $possible_building_name . '<br>' . $street_address;
-        } else {
-            // No unique building name provided; use street address only
-            $line1_snippet = $street_address;
-            $line1_full    = $street_address;
+    // Determine snippet and full line display
+    if ($possible_building_name && strcasecmp($norm_building, $norm_street) !== 0) {
+        // Building name exists and is not just a duplicate of the street address
+        $line1_snippet = $possible_building_name;
+        $line1_full    = $possible_building_name . '<br>' . $street_address;
+    } else {
+        // No unique building name provided; use street address only
+        $line1_snippet = $street_address;
+        $line1_full    = $street_address;
+    }
+
+    // Build the second line (city, state, post code)
+    $line2   = trim(($google_map['city'] ?? '') . ', ' . ($google_map['state_short'] ?? '') . ' ' . ($google_map['post_code'] ?? ''));
+    $country = $google_map['country_short'] ?? '';
+
+    // Create location output based on snippet vs. full display
+    if ($locationAsSnippet) {
+        $location = $line1_snippet;
+    } else {
+        $location = $line1_full . '<br>' . $line2;
+        if ($country && $country !== 'US') {
+            $location .= '<br>' . $country;
         }
+    }
 
-        // Build the second line (city, state, post code)
-        $line2   = trim(($google_map['city'] ?? '') . ', ' . ($google_map['state_short'] ?? '') . ' ' . ($google_map['post_code'] ?? ''));
-        $country = $google_map['country_short'] ?? '';
-
-        // Create location output based on snippet vs. full display
-        if ($locationAsSnippet) {
-            $location = $line1_snippet;
-        } else {
-            $location = $line1_full . '<br>' . $line2;
-            if ($country && $country !== 'US') {
-                $location .= '<br>' . $country;
-            }
-        }
-
-        // Create Google Maps link
-        if (!empty($google_map['address'])) {
-            $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($google_map['address']);
-        } elseif (!empty($google_map['lat']) && !empty($google_map['lng'])) {
-            $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . $google_map['lat'] . ',' . $google_map['lng'];
-        }
+    // Create Google Maps link
+    if (!empty($google_map['address'])) {
+        $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($google_map['address']);
+    } elseif (!empty($google_map['lat']) && !empty($google_map['lng'])) {
+        $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . $google_map['lat'] . ',' . $google_map['lng'];
     }
 } else {
-    error_log('DEBUG: Not using custom location, checking CAES/Extension');
-    
-    // If CAES
-    $caes_room = get_field('location_caes_room', $post_id);
-    $county_office = get_field('location_county_office', $post_id);
-    
-    error_log('DEBUG: location_caes_room: ' . print_r($caes_room, true));
-    error_log('DEBUG: location_county_office: ' . print_r($county_office, true));
-    
-    if (!empty($caes_room) && $event_type == 'CAES') {
-        $location = $caes_room;
-        error_log('DEBUG: Using CAES room: ' . $location);
-    }
-
-    // Or Extension
-    if (!empty($county_office) && $event_type == 'Extension') {
-        $location = $county_office;
-        error_log('DEBUG: Using Extension county office: ' . $location);
-    }
+    error_log('DEBUG: No Google map data found');
 }
 
 // Check and set location details
