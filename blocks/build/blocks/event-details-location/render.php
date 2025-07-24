@@ -1,6 +1,6 @@
 <?php
 // SIMPLE TEST - this should always show up if the block runs
-error_log('LOCATION BLOCK: Block is running!');
+// error_log('LOCATION BLOCK: Block is running!');
 
 if ( ! function_exists( 'normalize_address' ) ) {
     function normalize_address($address) {
@@ -43,7 +43,7 @@ $event_location_type = get_field('event_location_type', $post_id);
 
 // DEBUG: List ALL ACF fields to see what location fields exist
 $all_fields = get_fields($post_id);
-error_log('DEBUG: All fields: ' . print_r($all_fields, true));
+// error_log('DEBUG: All fields: ' . print_r($all_fields, true));
 
 // Initialize location variable
 $location = '';
@@ -51,10 +51,10 @@ $directions_link = '';
 
 // Check for Google map data (regardless of location_custom setting)
 $google_map = get_field('location_google_map', $post_id);
-error_log('DEBUG: google_map: ' . print_r($google_map, true));
+// error_log('DEBUG: google_map: ' . print_r($google_map, true));
 
 if (!empty($google_map) && is_array($google_map)) {
-    error_log('DEBUG: Using Google map location');
+    // error_log('DEBUG: Using Google map location');
     
     // Retrieve the full address and build the default street address
     $full_address   = $google_map['address'] ?? '';
@@ -63,12 +63,12 @@ if (!empty($google_map) && is_array($google_map)) {
     $street_address = trim($street_number . ' ' . $street_name);
 
     // DEBUG: Show individual components
-    error_log('DEBUG: full_address: ' . $full_address);
-    error_log('DEBUG: street_number: ' . $street_number);
-    error_log('DEBUG: street_name: ' . $street_name);
-    error_log('DEBUG: city: ' . ($google_map['city'] ?? 'EMPTY'));
-    error_log('DEBUG: state_short: ' . ($google_map['state_short'] ?? 'EMPTY'));
-    error_log('DEBUG: post_code: ' . ($google_map['post_code'] ?? 'EMPTY'));
+    // error_log('DEBUG: full_address: ' . $full_address);
+    // error_log('DEBUG: street_number: ' . $street_number);
+    // error_log('DEBUG: street_name: ' . $street_name);
+    // error_log('DEBUG: city: ' . ($google_map['city'] ?? 'EMPTY'));
+    // error_log('DEBUG: state_short: ' . ($google_map['state_short'] ?? 'EMPTY'));
+    // error_log('DEBUG: post_code: ' . ($google_map['post_code'] ?? 'EMPTY'));
 
     // Attempt to extract a potential building name from the full address
     $address_parts          = explode(',', $full_address);
@@ -96,7 +96,7 @@ if (!empty($google_map) && is_array($google_map)) {
     
     // If city/state fields are empty, try to parse from full address
     if (empty($city) || empty($state)) {
-        error_log('DEBUG: Parsing city/state from full address');
+        // error_log('DEBUG: Parsing city/state from full address');
         // Parse: "Hoke Smith Building, Smith Street, Athens, GA, USA"
         $address_parts = explode(',', $full_address);
         if (count($address_parts) >= 4) {
@@ -106,8 +106,8 @@ if (!empty($google_map) && is_array($google_map)) {
         }
     }
     
-    error_log('DEBUG: Parsed city: ' . $city);
-    error_log('DEBUG: Parsed state: ' . $state);
+    // error_log('DEBUG: Parsed city: ' . $city);
+    // error_log('DEBUG: Parsed state: ' . $state);
     
     $line2_parts = [];
     if ($city) $line2_parts[] = $city;
@@ -116,7 +116,7 @@ if (!empty($google_map) && is_array($google_map)) {
     
     $line2 = implode(', ', array_filter($line2_parts));
     
-    error_log('DEBUG: line2: ' . $line2);
+    // error_log('DEBUG: line2: ' . $line2);
     
     $country = $google_map['country_short'] ?? '';
 
@@ -139,8 +139,6 @@ if (!empty($google_map) && is_array($google_map)) {
     } elseif (!empty($google_map['lat']) && !empty($google_map['lng'])) {
         $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . $google_map['lat'] . ',' . $google_map['lng'];
     }
-} else {
-    error_log('DEBUG: No Google map data found');
 }
 
 // Check and set location details
@@ -149,13 +147,13 @@ if (!empty(get_field('location_details', $post_id))) {
     $details = get_field('location_details', $post_id);
 }
 
-error_log('DEBUG: Final location: ' . print_r($location, true));
-error_log('DEBUG: locationAsSnippet: ' . print_r($locationAsSnippet, true));
+// error_log('DEBUG: Final location: ' . print_r($location, true));
+// error_log('DEBUG: locationAsSnippet: ' . print_r($locationAsSnippet, true));
 ?>
 
 <?php
 if (!empty($location)) {
-    error_log('DEBUG: Displaying location block');
+    // error_log('DEBUG: Displaying location block');
     echo '<div ' . $attrs . '>';
 
     if ($locationAsSnippet) {
@@ -176,7 +174,5 @@ if (!empty($location)) {
     }
 
     echo '</div>'; // Close wrapper
-} else {
-    error_log('DEBUG: Location is empty, not displaying block');
 }
 ?>
