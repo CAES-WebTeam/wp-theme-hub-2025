@@ -9,6 +9,7 @@
     margin-block-end: var(--wp--preset--spacing--30);
     display: flex;
     align-items: flex-start;
+    line-height: 1;
 
     &::before {
         content: "";
@@ -20,7 +21,6 @@
         mask-size: contain;
         mask-repeat: no-repeat;
         mask-position: 50%;
-        margin-top: 5px;
     }
 }
 
