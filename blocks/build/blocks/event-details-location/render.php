@@ -1,4 +1,7 @@
 <?php
+// SIMPLE TEST - this should always show up if the block runs
+error_log('LOCATION BLOCK: Block is running!');
+
 if ( ! function_exists( 'normalize_address' ) ) {
     function normalize_address($address) {
         $replacements = [
