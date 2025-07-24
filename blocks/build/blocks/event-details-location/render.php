@@ -33,11 +33,24 @@ $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit'
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
-// Is this a custom location?
+// DEBUG: Check what location fields exist
 $location_custom = get_field('location_custom', $post_id);
+$event_type = get_field('event_type', $post_id);
+$event_location_type = get_field('event_location_type', $post_id);
 
+error_log('DEBUG: location_custom: ' . print_r($location_custom, true));
+error_log('DEBUG: event_type: ' . print_r($event_type, true));
+error_log('DEBUG: event_location_type: ' . print_r($event_location_type, true));
+
+// Initialize location variable
+$location = '';
+$directions_link = '';
+
+// Is this a custom location?
 if ($location_custom) {
+    error_log('DEBUG: Using custom location');
     $google_map = get_field('location_google_map', $post_id);
+    error_log('DEBUG: google_map: ' . print_r($google_map, true));
 
     if (!empty($google_map) && is_array($google_map)) {
         // Retrieve the full address and build the default street address
@@ -87,25 +100,40 @@ if ($location_custom) {
         }
     }
 } else {
+    error_log('DEBUG: Not using custom location, checking CAES/Extension');
+    
     // If CAES
-    if (!empty(get_field('location_caes_room', $post_id)) && get_field('event_type', $post_id) == 'CAES') {
-        $location = get_field('location_caes_room', $post_id);
+    $caes_room = get_field('location_caes_room', $post_id);
+    $county_office = get_field('location_county_office', $post_id);
+    
+    error_log('DEBUG: location_caes_room: ' . print_r($caes_room, true));
+    error_log('DEBUG: location_county_office: ' . print_r($county_office, true));
+    
+    if (!empty($caes_room) && $event_type == 'CAES') {
+        $location = $caes_room;
+        error_log('DEBUG: Using CAES room: ' . $location);
     }
 
     // Or Extension
-    if (!empty(get_field('location_county_office', $post_id)) && get_field('event_type', $post_id) == 'Extension') {
-        $location = get_field('location_county_office', $post_id);
+    if (!empty($county_office) && $event_type == 'Extension') {
+        $location = $county_office;
+        error_log('DEBUG: Using Extension county office: ' . $location);
     }
 }
 
 // Check and set location details
+$details = '';
 if (!empty(get_field('location_details', $post_id))) {
     $details = get_field('location_details', $post_id);
 }
+
+error_log('DEBUG: Final location: ' . print_r($location, true));
+error_log('DEBUG: locationAsSnippet: ' . print_r($locationAsSnippet, true));
 ?>
 
 <?php
 if (!empty($location)) {
+    error_log('DEBUG: Displaying location block');
     echo '<div ' . $attrs . '>';
 
     if ($locationAsSnippet) {
@@ -126,5 +154,7 @@ if (!empty($location)) {
     }
 
     echo '</div>'; // Close wrapper
+} else {
+    error_log('DEBUG: Location is empty, not displaying block');
 }
 ?>
