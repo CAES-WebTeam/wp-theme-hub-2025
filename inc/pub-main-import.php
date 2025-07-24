@@ -1,9 +1,5 @@
 <?php
 
-// Remove the enqueue script action if it was previously hooked.
-// This ensures no conflicts if you were testing with a similar setup.
-remove_action('admin_enqueue_scripts', 'story_meta_association_tools_enqueue_scripts');
-
 // Add admin menu page
 add_action('admin_menu', 'publication_api_tool_menu_page');
 
@@ -12,8 +8,8 @@ add_action('admin_menu', 'publication_api_tool_menu_page');
  */
 function publication_api_tool_menu_page() {
     add_management_page(
-        'Publication API Tool', // Page title
-        'Publication API',      // Menu title
+        'Publication Import Tool', // Page title
+        'Import Publications',      // Menu title
         'manage_options',       // Capability required to access
         'publication-api-tool', // Menu slug
         'publication_api_tool_render_page' // Function to render the page content
