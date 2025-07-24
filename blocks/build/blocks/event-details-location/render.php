@@ -62,6 +62,14 @@ if (!empty($google_map) && is_array($google_map)) {
     $street_name    = $google_map['street_name'] ?? '';
     $street_address = trim($street_number . ' ' . $street_name);
 
+    // DEBUG: Show individual components
+    error_log('DEBUG: full_address: ' . $full_address);
+    error_log('DEBUG: street_number: ' . $street_number);
+    error_log('DEBUG: street_name: ' . $street_name);
+    error_log('DEBUG: city: ' . ($google_map['city'] ?? 'EMPTY'));
+    error_log('DEBUG: state_short: ' . ($google_map['state_short'] ?? 'EMPTY'));
+    error_log('DEBUG: post_code: ' . ($google_map['post_code'] ?? 'EMPTY'));
+
     // Attempt to extract a potential building name from the full address
     $address_parts          = explode(',', $full_address);
     $possible_building_name = trim($address_parts[0]);
@@ -82,14 +90,29 @@ if (!empty($google_map) && is_array($google_map)) {
     }
 
     // Build the second line (city, state, post code)
-    $line2   = trim(($google_map['city'] ?? '') . ', ' . ($google_map['state_short'] ?? '') . ' ' . ($google_map['post_code'] ?? ''));
+    $city = $google_map['city'] ?? '';
+    $state = $google_map['state_short'] ?? '';
+    $postal = $google_map['post_code'] ?? '';
+    
+    $line2_parts = [];
+    if ($city) $line2_parts[] = $city;
+    if ($state) $line2_parts[] = $state;
+    if ($postal) $line2_parts[] = $postal;
+    
+    $line2 = implode(', ', array_filter($line2_parts));
+    
+    error_log('DEBUG: line2: ' . $line2);
+    
     $country = $google_map['country_short'] ?? '';
 
     // Create location output based on snippet vs. full display
     if ($locationAsSnippet) {
         $location = $line1_snippet;
     } else {
-        $location = $line1_full . '<br>' . $line2;
+        $location = $line1_full;
+        if ($line2) {
+            $location .= '<br>' . $line2;
+        }
         if ($country && $country !== 'US') {
             $location .= '<br>' . $country;
         }
