@@ -8,7 +8,7 @@
     margin-block-start: 0;
     margin-block-end: var(--wp--preset--spacing--30);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
 
     &::before {
         content: "";
@@ -20,6 +20,7 @@
         mask-size: contain;
         mask-repeat: no-repeat;
         mask-position: 50%;
+        margin-top: 5px;
     }
 }
 

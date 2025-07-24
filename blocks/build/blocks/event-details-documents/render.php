@@ -10,21 +10,31 @@ $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit'
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
+// DEBUG: Check the documents field structure
+$documents = get_field('documents', $post_id);
+// error_log('DEBUG: Documents field structure: ' . print_r($documents, true));
+
 ?>
 
 <?php 
-if (!empty(get_field('documents', $post_id))) {
+if (!empty($documents)) {
     echo '<div ' . $attrs . '>';
     echo '<h3 class="event-details-title"' . $style . '>Additional Documents</h3>';
     echo '<div class="event-details-content">';
 
-    foreach (get_field('documents', $post_id) as $item) {
+    foreach ($documents as $index => $item) {
+        // error_log('DEBUG: Item ' . $index . ': ' . print_r($item, true));
+        
         if ($item['document_type'] == 'link') {
-            echo '<a href="' . esc_url($item['link']) . '">' . esc_html($item['link']) . '</a><br />';
+            $link_url = $item['lin']; // Note: field is 'lin' not 'link'
+            $link_text = !empty($item['link_label_text']) ? $item['link_label_text'] : $link_url;
+            echo '<a href="' . esc_url($link_url) . '">' . esc_html($link_text) . '</a><br />';
         }
 
         if ($item['document_type'] == 'file') {
-            echo '<a href="' . esc_url($item['file']['url']) . '">' . esc_html($item['file']['title']) . '</a><br />';
+            $file_url = $item['file']['url'];
+            $file_text = !empty($item['file_label_text']) ? $item['file_label_text'] : $item['file']['title'];
+            echo '<a href="' . esc_url($file_url) . '">' . esc_html($file_text) . '</a><br />';
         }
     }
 

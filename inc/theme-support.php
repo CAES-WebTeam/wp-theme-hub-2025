@@ -252,37 +252,38 @@ function wpfieldwork_rest_upcoming_events($args, $request)
 // add_filter('query_loop_block_query_vars', 'query_for_related_pubs', 10, 2);
 
 // Register pattern categories
-
-if (function_exists('register_block_pattern_category')) {
-	register_block_pattern_category(
-		'pub_feeds',
-		array(
-			'label' => __('Publication Feeds', 'field-report'),
-			'description' => __('Publication feeds', 'field-report'),
-		)
-	);
-	register_block_pattern_category(
-		'story_feeds',
-		array(
-			'label' => __('Story Feeds', 'field-report'),
-			'description' => __('Story feeds', 'field-report'),
-		)
-	);
-	register_block_pattern_category(
-		'event_feeds',
-		array(
-			'label' => __('Event Feeds', 'field-report'),
-			'description' => __('Event feeds', 'field-report'),
-		)
-	);
-	register_block_pattern_category(
-		'content_patterns',
-		array(
-			'label' => __('Content', 'field-report'),
-			'description' => __('Design patterns that can be used in article and publication content', 'field-report'),
-		)
-	);
-}
+add_action('init', function() {
+	if (function_exists('register_block_pattern_category')) {
+		register_block_pattern_category(
+			'pub_feeds',
+			array(
+				'label' => __('Publication Feeds', 'field-report'),
+				'description' => __('Publication feeds', 'field-report'),
+			)
+		);
+		register_block_pattern_category(
+			'story_feeds',
+			array(
+				'label' => __('Story Feeds', 'field-report'),
+				'description' => __('Story feeds', 'field-report'),
+			)
+		);
+		register_block_pattern_category(
+			'event_feeds',
+			array(
+				'label' => __('Event Feeds', 'field-report'),
+				'description' => __('Event feeds', 'field-report'),
+			)
+		);
+		register_block_pattern_category(
+			'content_patterns',
+			array(
+				'label' => __('Content', 'field-report'),
+				'description' => __('Design patterns that can be used in article and publication content', 'field-report'),
+			)
+		);
+	}
+});
 
 /* Filter for search form */
 add_filter('get_search_form', function($form) {
