@@ -7,17 +7,13 @@ $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit'
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
-// Attributes for wrapper
-// $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
-
 echo '<div ' . get_block_wrapper_attributes() . '>';
 echo '<h3 class="event-details-title"' . $style . '>Contact</h3>';
 
-// Check if 'Display Contact Information' is enabled
-if ( get_field( 'display_contact_information', $post_id ) ) {
+// Check if contact_type exists
+$contact_type = get_field( 'contact_type', $post_id );
 
-    // Get the 'Contact Type' field
-    $contact_type = get_field( 'contact_type', $post_id );
+if ( $contact_type ) {
 
     // Check if contact type is 'default' or 'custom'
     if ( $contact_type === 'default' ) {

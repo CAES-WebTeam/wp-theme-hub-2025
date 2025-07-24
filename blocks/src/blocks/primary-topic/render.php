@@ -18,8 +18,9 @@ $primary_topics = get_field('primary_topics', $post_id);
 $icon_svg = '';
 $icon_is_png = false;
 $icon_url = '';
+$post_type = get_post_type($post_id); // Define post_type here for broader scope
+
 if ($show_category_icon) {
-    $post_type = get_post_type($post_id);
     
     // Check if post type is publications first
     if ($post_type === 'publications') {
@@ -51,10 +52,9 @@ if ($show_category_icon) {
     }
 }
 
-// Only render if we have topics OR if we should show an icon
-// Changed variable name from $primary_keywords to $primary_topics
-if ((!$primary_topics || empty($primary_topics)) && empty($icon_svg) && !$icon_is_png) {
-    return;
+// Only render if we have topics OR if we should show an icon OR if it's a publication with no primary topics
+if ((!$primary_topics || empty($primary_topics)) && empty($icon_svg) && !$icon_is_png && !($post_type === 'publications')) {
+    return; // Original return for non-publication types without content
 }
 
 // Get block wrapper attributes
@@ -95,6 +95,10 @@ $wrapper_attributes = get_block_wrapper_attributes([
                     <?php endif; ?>
                 </span>
             <?php endforeach; ?>
+        <?php elseif ($post_type === 'publications'): ?>
+            <span class="primary-topic-text">
+                Expert Resource
+            </span>
         <?php endif; ?>
     </div>
 </div>

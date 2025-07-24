@@ -32,4 +32,4 @@ require get_template_directory() . '/inc/pub-history-update.php';
 require get_template_directory() . '/inc/story-association-meta-tools.php';
 
 // Plugin overrides
-require get_template_directory() . '/inc/plugin-overrides/relevanssi-live-search.php';
+require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';

@@ -10,13 +10,15 @@ $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit'
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
-if (!empty(get_field('location_virtual', $post_id))):
-    $virtual = get_field('location_virtual', $post_id);
-endif;
+// Use the correct field name - online_location instead of location_virtual
+$virtual = get_field('online_location', $post_id);
+$online_web_address = get_field('online_location_web_address', $post_id);
+$online_web_label = get_field('online_location_web_address_label', $post_id);
+
 ?>
 
 <?php
-if (!empty($virtual)) {
+if (!empty($virtual) || !empty($online_web_address)) {
     if ($onlineAsSnippet) {
         echo '<div ' . $attrs . '>';
         echo '<h3 class="event-details-title"' . $style . '>Virtual Event</h3>';
@@ -26,7 +28,16 @@ if (!empty($virtual)) {
         echo '<div ' . $attrs . '>';
         echo '<h3 class="event-details-title"' . $style . '>Online Location</h3>';
         echo '<div class="event-details-content">';
-        echo $virtual;
+        
+        if (!empty($virtual)) {
+            echo $virtual;
+        }
+        
+        if (!empty($online_web_address)) {
+            $link_text = !empty($online_web_label) ? $online_web_label : $online_web_address;
+            echo '<p><a href="' . esc_url($online_web_address) . '">' . esc_html($link_text) . '</a></p>';
+        }
+        
         echo '</div>'; // Close event-details-content
         echo '</div>'; // Close wrapper   
         return;

@@ -1,0 +1,721 @@
+/**
+ * The following styles apply to the block in both the editor and on the front end.
+ *
+ * @see https://developer.wordpress.org/block-editor/how-to-guides/block-tutorial/applying-styles/
+ */
+
+.wp-block-caes-hub-relevanssi-search {
+
+    .relevanssi-search-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wp--preset--spacing--30);
+
+        @media (min-width: 782px) {
+            flex-direction: row;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+    }
+
+    .search-input-group {
+        display: flex;
+        flex-grow: 1;
+        // max-width: 50%;
+        border-radius: 50px;
+        box-shadow: var(--wp--preset--shadow--small);
+
+        .search-field {
+            flex-grow: 1;
+            border: 1px solid var(--wp--preset--color--contrast-two);
+            border-radius: 50px 0 0 50px;
+            line-height: 1.5;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.07);
+            font-size: 1.1rem;
+            border-right: 0;
+            padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--50);
+            font-family: var(--wp--preset--font-family--georgia);
+        }
+
+        .search-submit {
+            background-color: var(--wp--preset--color--bulldog-red);
+            color: var(--wp--preset--color--base);
+            border: 2px solid var(--wp--preset--color--bulldog-red);
+            border-radius: 0 50px 50px 0;
+            padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+
+            &:hover {
+                background-color: #003845;
+                border-color: #003845;
+            }
+
+            svg {
+                margin-right: 5px;
+            }
+        }
+    }
+
+    .search-results-heading {
+        font-size: var(--wp--preset--font-size--medium);
+    }
+
+    .search-filters-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--wp--preset--spacing--20);
+        margin-top: var(--wp--preset--spacing--20);
+
+        @media (min-width: 782px) {
+            margin-top: 0;
+            // margin-left: var(--wp--preset--spacing--20);
+        }
+
+        .filter-item {
+            flex-grow: 1;
+            min-width: 250px;
+
+            select {
+                width: 100%;
+                padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--50);
+                border: 1px solid var(--wp--preset--color--contrast-two);
+                border-radius: 50px;
+                background-color: var(--wp--preset--color--base);
+                line-height: 1.5;
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='#BA0C2F'%3E%3Cpolygon points='2,1 8,5 2,9' /%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right var(--wp--preset--spacing--40) top 50%;
+                background-size: 0.8rem auto;
+                font-size: 1.1rem;
+                font-family: var(--wp--preset--font-family--georgia);
+                box-shadow: var(--wp--preset--shadow--small);
+            }
+        }
+
+        // Styles for the new topic filter button
+        .open-topics-modal,
+        .open-authors-modal {
+            align-items: center;
+            background-color: var(--wp--preset--color--base);
+            border: 1px solid var(--wp--preset--color--contrast-two);
+            border-radius: 50px;
+            color: var(--wp--preset--color--contrast);
+            cursor: pointer;
+            display: flex;
+            flex-grow: 1;
+            font-size: 1.1rem;
+            font-family: var(--wp--preset--font-family--georgia);
+            gap: var(--wp--preset--spacing--20);
+            line-height: 1.5;
+            padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--50);
+            transition: background-color .2s ease-in-out, border-color .2s ease-in-out;
+            width: 100%;
+            box-shadow: var(--wp--preset--shadow--small);
+            justify-content: space-between;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' fill='#BA0C2F'%3E%3Cpolygon points='2,1 8,5 2,9' /%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right var(--wp--preset--spacing--40) top 50%;
+            background-size: 0.8rem auto;
+
+            svg {
+                margin-left: 5px;
+            }
+        }
+    }
+
+    // --- Modal Styles ---
+    .topics-modal-overlay,
+    .authors-modal-overlay {
+        align-items: center;
+        background-color: rgba(0, 0, 0, .5);
+        display: none;
+        height: 100%;
+        justify-content: center;
+        overflow: auto;
+        position: fixed;
+        top: 0;
+        width: calc(100% - 222px);
+        z-index: 1000;
+        right: 0;
+    }
+
+    @media screen and (max-width: 782px) {
+
+        .topics-modal-overlay,
+        .authors-modal-overlay {
+            width: 100%;
+        }
+    }
+
+    .topics-modal-content,
+    .authors-modal-content {
+        background-color: var(--wp--preset--color--base);
+        border-radius: 0.5rem;
+        box-shadow: var(--wp--preset--shadow--small-dark);
+        display: flex;
+        flex-direction: column;
+        margin: auto;
+        max-height: 500px;
+        width: 500px;
+        padding: 20px;
+        max-width: 90%;
+    }
+
+    .topics-modal-header,
+    .authors-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--wp--preset--color--base-two);
+        margin-bottom: var(--wp--preset--spacing--40);
+
+        h2 {
+            margin: 0;
+            font-size: var(--wp--preset--font-size--medium);
+            color: #333;
+        }
+
+        .topics-modal-close,
+        .authors-modal-close {
+            background: none;
+            border: none;
+            font-size: var(--wp--preset--font-size--medium);
+            cursor: pointer;
+            color: var(--wp--preset--color--contrast-two);
+            padding: var(--wp--preset--spacing--20);
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+
+            &:hover {
+                color: var(--wp--preset--color--contrast);
+            }
+        }
+    }
+
+    .topics-modal-body,
+    .authors-modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex-grow: 1;
+        /* Allows body to take available space */
+        min-height: 0;
+        /* Important for flex children with overflow */
+
+        .topics-modal-search-input,
+        .authors-modal-search-input {
+            width: 100%;
+            padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--50);
+            border: 1px solid var(--wp--preset--color--contrast-two);
+            border-radius: 50px;
+            line-height: 1.5;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.07);
+            font-size: var(--wp--preset--font-size--normal);
+            font-family: var(--wp--preset--font-family--georgia);
+        }
+
+        .topics-modal-checkboxes,
+        .authors-modal-checkboxes {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            /* Make checkboxes scrollable */
+            padding-right: 5px;
+            /* Space for scrollbar */
+            flex-grow: 1;
+            /* Allow checkboxes container to fill available height */
+
+            label {
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                font-weight: normal;
+
+                input[type="checkbox"] {
+                    margin-right: var(--wp--preset--spacing--30);
+                    // min-width: 18px;
+                    // min-height: 18px;
+                    cursor: pointer;
+                }
+            }
+        }
+    }
+
+    .selected-topic-filters,
+    .selected-author-filters {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 1em;
+        gap: 0.5em;
+
+        .topic-pill,
+        .author-pill {
+            background: var(--wp--preset--color--olympic);
+            color: var(--wp--preset--color--base);
+            padding: 0.3em 0.8em;
+            border-radius: 999px;
+            font-size: 0.875em;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+
+            button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-weight: bold;
+                color: var(--wp--preset--color--base);
+                padding: 0;
+                font-size: 1em;
+            }
+        }
+
+        .clear-all {
+            margin-left: auto;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 0.875em;
+            color: var(--wp--preset--color--olympic);
+            text-decoration: underline;
+        }
+
+        .filters-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--wp--preset--spacing--30);
+        }
+
+    }
+
+    .search-results-count {
+        margin-top: var(--wp--preset--spacing--50);
+    }
+
+    // .search-button-container {
+    //     margin-top: var(--wp--style--block-gap);
+    // }
+
+    .search-custom-button {
+        padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
+        display: inline-block;
+        color: inherit;
+        line-height: 1;
+    }
+
+    &.search-only-with-button {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+
+        &.search-only-with-button {
+            .relevanssi-search-form {
+                flex: 1;
+            }
+
+            .search-button-container {
+                flex-shrink: 0;
+            }
+        }
+    }
+
+    // Pagination
+    .relevanssi-search-results .navigation {
+        margin-top: var(--wp--preset--spacing--60);
+
+        .nav-links {
+            display: flex;
+            gap: var(--wp--preset--spacing--20);
+            justify-content: center;
+
+            .page-numbers {
+                padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
+                background: var(--wp--preset--color--base);
+                line-height: 1;
+                border-radius: var(--wp--preset--spacing--20);
+                border: 1px solid var(--wp--preset--color--bulldog-red);
+                color: inherit;
+                text-decoration: none;
+                transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+
+                // hover when not current
+                &:not(.current):not(.dots):hover {
+                    background: var(--wp--preset--color--bulldog-red);
+                    color: var(--wp--preset--color--base);
+                }
+
+                &.dots {
+                    border: none;
+                    background-color: transparent;
+                }
+
+                &.current {
+                    border: none;
+                    background-color: transparent;
+                    font-weight: bold;
+                }
+            }
+        }
+    }
+
+    // Plant loading animation
+    .plant-loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--wp--preset--spacing--60);
+        min-height: 200px;
+        border-radius: 8px;
+        margin: var(--wp--preset--spacing--40) 0;
+        position: relative;
+
+        .plant-garden {
+            position: relative;
+            height: 160px;
+            width: 200px;
+            margin-bottom: var(--wp--preset--spacing--40);
+        }
+
+        .plant {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 0;
+            background: #228B22;
+            animation: grow 0.3s ease-out forwards;
+            /* Much faster growth */
+            bottom: 0;
+        }
+
+        .loading-text {
+            color: var(--wp--preset--color--contrast);
+            font-family: var(--wp--preset--font-family--georgia);
+            font-size: var(--wp--preset--font-size--normal);
+            text-align: center;
+            font-weight: 500;
+            margin-top: var(--wp--preset--spacing--30);
+        }
+
+        .plant-2 {
+            position: absolute;
+            bottom: 50px;
+            left: 30%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 0;
+            background: #228B22;
+            animation: grow2 0.35s ease-out 0.05s forwards;
+            /* Slightly longer, slight delay */
+            bottom: 0;
+        }
+
+        .plant-3 {
+            position: absolute;
+            bottom: 50px;
+            left: 70%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 0;
+            background: #228B22;
+            animation: grow3 0.3s ease-out 0.1s forwards;
+            /* Same as first, more delay */
+            bottom: 0;
+        }
+
+        .leaf {
+            position: absolute;
+            background: #32CD32;
+            border-radius: 0 100% 0 100%;
+            transform: scale(0);
+            animation-fill-mode: forwards;
+        }
+
+        .leaf.dark {
+            background: #228B22;
+        }
+
+        .leaf.darker {
+            background: #006400;
+        }
+
+        .leaf-left {
+            left: -26px;
+            top: 140px;
+            width: 34px;
+            height: 24px;
+            animation: leafGrow 0.15s ease-out 0.4s forwards, wiggle 2s ease-in-out 0.55s infinite;
+        }
+
+        .leaf-right {
+            right: -26px;
+            top: 125px;
+            width: 34px;
+            height: 24px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.45s forwards, wiggleRight 2s ease-in-out 0.6s infinite;
+        }
+
+        .leaf-left-2 {
+            left: -24px;
+            top: 110px;
+            width: 30px;
+            height: 20px;
+            animation: leafGrow 0.15s ease-out 0.5s forwards, wiggle 2s ease-in-out 0.65s infinite;
+        }
+
+        .leaf-right-2 {
+            right: -24px;
+            top: 95px;
+            width: 30px;
+            height: 20px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.55s forwards, wiggleRight 2s ease-in-out 0.7s infinite;
+        }
+
+        .leaf-left-3 {
+            left: -22px;
+            top: 80px;
+            width: 26px;
+            height: 17px;
+            animation: leafGrow 0.15s ease-out 0.6s forwards, wiggle 2s ease-in-out 0.75s infinite;
+        }
+
+        .leaf-right-3 {
+            right: -22px;
+            top: 65px;
+            width: 26px;
+            height: 17px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.65s forwards, wiggleRight 2s ease-in-out 0.8s infinite;
+        }
+
+        .leaf-left-4 {
+            left: -20px;
+            top: 50px;
+            width: 22px;
+            height: 14px;
+            animation: leafGrow 0.15s ease-out 0.7s forwards, wiggle 2s ease-in-out 0.85s infinite;
+        }
+
+        .leaf-right-4 {
+            right: -20px;
+            top: 35px;
+            width: 22px;
+            height: 14px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.75s forwards, wiggleRight 2s ease-in-out 0.9s infinite;
+        }
+
+        .leaf-left-5 {
+            left: -17px;
+            top: 20px;
+            width: 18px;
+            height: 11px;
+            animation: leafGrow 0.15s ease-out 0.8s forwards, wiggle 2s ease-in-out 0.95s infinite;
+        }
+
+        .leaf-right-5 {
+            right: -17px;
+            top: 5px;
+            width: 18px;
+            height: 11px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.85s forwards, wiggleRight 2s ease-in-out 1s infinite;
+        }
+
+        @keyframes grow {
+            to {
+                height: 160px;
+            }
+        }
+
+        @keyframes grow2 {
+            to {
+                height: 120px;
+            }
+        }
+
+        @keyframes grow3 {
+            to {
+                height: 140px;
+            }
+        }
+
+        @keyframes leafGrow {
+            to {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes leafGrowRight {
+            to {
+                transform: scale(1) scaleX(-1);
+            }
+        }
+
+        @keyframes wiggle {
+
+            0%,
+            100% {
+                transform: scale(1) rotate(0deg);
+            }
+
+            25% {
+                transform: scale(1) rotate(3deg);
+            }
+
+            75% {
+                transform: scale(1) rotate(-3deg);
+            }
+        }
+
+        @keyframes wiggleRight {
+
+            0%,
+            100% {
+                transform: scale(1) scaleX(-1) rotate(0deg);
+            }
+
+            25% {
+                transform: scale(1) scaleX(-1) rotate(-3deg);
+            }
+
+            75% {
+                transform: scale(1) scaleX(-1) rotate(3deg);
+            }
+        }
+
+        /* Plant 2 leaves */
+        .p2-leaf-left {
+            left: -22px;
+            top: 90px;
+            width: 28px;
+            height: 18px;
+            animation: leafGrow 0.15s ease-out 0.5s forwards, wiggle 2s ease-in-out 0.65s infinite;
+        }
+
+        .p2-leaf-right {
+            right: -22px;
+            top: 75px;
+            width: 28px;
+            height: 18px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.55s forwards, wiggleRight 2s ease-in-out 0.7s infinite;
+        }
+
+        .p2-leaf-left-2 {
+            left: -20px;
+            top: 60px;
+            width: 24px;
+            height: 15px;
+            animation: leafGrow 0.15s ease-out 0.6s forwards, wiggle 2s ease-in-out 0.75s infinite;
+        }
+
+        .p2-leaf-right-2 {
+            right: -20px;
+            top: 45px;
+            width: 24px;
+            height: 15px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.65s forwards, wiggleRight 2s ease-in-out 0.8s infinite;
+        }
+
+        .p2-leaf-left-3 {
+            left: -17px;
+            top: 30px;
+            width: 20px;
+            height: 12px;
+            animation: leafGrow 0.15s ease-out 0.7s forwards, wiggle 2s ease-in-out 0.85s infinite;
+        }
+
+        .p2-leaf-right-3 {
+            right: -17px;
+            top: 15px;
+            width: 20px;
+            height: 12px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.75s forwards, wiggleRight 2s ease-in-out 0.9s infinite;
+        }
+
+        /* Plant 3 leaves */
+        .p3-leaf-left {
+            left: -24px;
+            top: 110px;
+            width: 32px;
+            height: 22px;
+            animation: leafGrow 0.15s ease-out 0.55s forwards, wiggle 2s ease-in-out 0.7s infinite;
+        }
+
+        .p3-leaf-right {
+            right: -24px;
+            top: 95px;
+            width: 32px;
+            height: 22px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.6s forwards, wiggleRight 2s ease-in-out 0.75s infinite;
+        }
+
+        .p3-leaf-left-2 {
+            left: -22px;
+            top: 80px;
+            width: 28px;
+            height: 18px;
+            animation: leafGrow 0.15s ease-out 0.65s forwards, wiggle 2s ease-in-out 0.8s infinite;
+        }
+
+        .p3-leaf-right-2 {
+            right: -22px;
+            top: 65px;
+            width: 28px;
+            height: 18px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.7s forwards, wiggleRight 2s ease-in-out 0.85s infinite;
+        }
+
+        .p3-leaf-left-3 {
+            left: -20px;
+            top: 50px;
+            width: 24px;
+            height: 15px;
+            animation: leafGrow 0.15s ease-out 0.75s forwards, wiggle 2s ease-in-out 0.9s infinite;
+        }
+
+        .p3-leaf-right-3 {
+            right: -20px;
+            top: 35px;
+            width: 24px;
+            height: 15px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.8s forwards, wiggleRight 2s ease-in-out 0.95s infinite;
+        }
+
+        .p3-leaf-left-4 {
+            left: -18px;
+            top: 20px;
+            width: 20px;
+            height: 12px;
+            animation: leafGrow 0.15s ease-out 0.85s forwards, wiggle 2s ease-in-out 1s infinite;
+        }
+
+        .p3-leaf-right-4 {
+            right: -18px;
+            top: 5px;
+            width: 20px;
+            height: 12px;
+            transform: scale(0) scaleX(-1);
+            animation: leafGrowRight 0.15s ease-out 0.9s forwards, wiggleRight 2s ease-in-out 1.05s infinite;
+        }
+    }
+
+}

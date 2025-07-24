@@ -46,7 +46,7 @@ add_filter('rest_events_query', 'rest_event_type', 10, 2);
 
 /*** END EVENTS */
 
-/*** START PUBLICATONS */
+/*** START PUBLICATIONS */
 // Backend
 function rest_pub_language_orderby($args, $request)
 {
@@ -61,28 +61,7 @@ function rest_pub_language_orderby($args, $request)
     return $args;
 }
 add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
-/*** END PUBLICATONS */
-
-/*** START POSTS */
-// Backend
-// function rest_posts_external_publishers($args, $request)
-// {
-//     $hasExternalPublishers = $request->get_param('hasExternalPublishers');
-
-//     // Handle both boolean true and string 'true'
-//     if ($hasExternalPublishers === true || $hasExternalPublishers === 'true') {
-//         $args['tax_query'] = array(
-//             array(
-//                 'taxonomy' => 'external_publisher',
-//                 'operator' => 'EXISTS'
-//             )
-//         );
-//     }
-
-//     return $args;
-// }
-// add_filter('rest_post_query', 'rest_posts_external_publishers', 10, 2);
-/*** END POSTS */
+/*** END PUBLICATIONS */
 
 /*** FRONT END */
 
@@ -164,38 +143,21 @@ function variations_query_filter($query, $block)
                 );
             }
         }
+
+        // For stories-feed blocks using custom author field
+        if ('stories-feed' === $namespace) {
+            // Filter by author (expert) if on author archive
+            if (is_author()) {
+                $author_id = get_queried_object_id();
+                $meta_query[] = array(
+                    'key' => 'all_expert_ids', // *** This is the key you'll use ***
+                    'value' => 'i:' . $author_id . ';',
+                    'compare' => 'LIKE'
+                );
+            }
+        }
+
     }
-
-    // Handle posts query blocks (external publishers) - FIXED VERSION
-    // if (
-    //     isset($parsed_block['attrs']['query']['postType']) &&
-    //     $parsed_block['attrs']['query']['postType'] === 'post'
-    // ) {
-    //     // More robust checking for hasExternalPublishers
-    //     $hasExternalPublishers = false;
-        
-    //     // Check different possible locations for the parameter
-    //     if (isset($parsed_block['attrs']['query']['hasExternalPublishers'])) {
-    //         $hasExternalPublishers = $parsed_block['attrs']['query']['hasExternalPublishers'];
-    //     } elseif (isset($parsed_block['attrs']['hasExternalPublishers'])) {
-    //         $hasExternalPublishers = $parsed_block['attrs']['hasExternalPublishers'];
-    //     }
-
-    //     // Convert various formats to boolean
-    //     if ($hasExternalPublishers === 1 || 
-    //         $hasExternalPublishers === '1' || 
-    //         $hasExternalPublishers === true || 
-    //         $hasExternalPublishers === 'true') {
-            
-    //         $tax_query[] = array(
-    //             'taxonomy' => 'external_publisher',
-    //             'operator' => 'EXISTS'
-    //         );
-            
-    //         // Debug output - remove after testing
-    //         error_log('External publishers filter applied for post query');
-    //     }
-    // }
 
     // Apply meta query if we have conditions
     if (!empty($meta_query)) {
@@ -253,61 +215,78 @@ add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
 add_filter('query_loop_block_query_vars', 'variations_query_filter', 10, 2);
 
 add_filter('render_block', function ($block_content, $block) {
-    // Only apply to pubs-feed query loop on author archive pages
+    // Only apply to core/query blocks on author archive pages that use our variations
     if (
         is_author() &&
         $block['blockName'] === 'core/query' &&
-        isset($block['attrs']['namespace']) &&
-        $block['attrs']['namespace'] === 'pubs-feed'
+        isset($block['attrs']['namespace'])
     ) {
-        // Step 1: Add anchor to pagination links like ?query-1-page=2
-        $block_content = preg_replace_callback(
-            '/<a\s([^>]*href="[^"]*\?[^"]*query-[0-9]+-page=\d+[^"]*")([^>]*)>/i',
-            function ($matches) {
-                $href = $matches[1];
-                // Append #expert-advice just before the final quote
-                $updated_href = preg_replace('/(")$/', '#expert-advice$1', $href);
-                return '<a ' . $updated_href . $matches[2] . '>';
-            },
-            $block_content
-        );
+        $namespace = $block['attrs']['namespace'];
+        $heading = '';
+        $anchor_id = ''; // Anchor ID for pagination
 
-        // Step 2: Wrap the entire rendered query block in an anchor target
-        $block_content = '<div id="expert-advice">' . $block_content . '</div>';
-
-        // Step 3: Conditionally prepend heading if there are results
-        $query_args = isset($block['attrs']['query']) ? $block['attrs']['query'] : [];
-        $query_args = apply_filters('query_loop_block_query_vars', $query_args, $block);
-        $paged = get_query_var('paged') ?: (get_query_var('page') ?: 1);
-        $query_args['paged'] = $paged;
-
-        $query = new WP_Query($query_args);
-
-        if ($query->have_posts()) {
-            $heading = '<h2 class="expert-advice-heading is-style-caes-hub-section-heading">Expert Advice</h2>';
-            $block_content = $heading . $block_content;
+        // Determine heading and anchor based on namespace
+        if ($namespace === 'pubs-feed') {
+            $heading = '<h2 class="expert-advice-heading is-style-caes-hub-section-heading">Expert Resources</h2>'; // Changed heading
+            $anchor_id = 'expert-resources'; // Changed anchor ID
+        } elseif ($namespace === 'stories-feed') {
+            $heading = '<h2 class="stories-heading is-style-caes-hub-section-heading">Stories</h2>';
+            $anchor_id = 'stories';
         }
-        wp_reset_postdata();
 
-        return $block_content;
+        // Only proceed if we have a valid namespace for our logic
+        if (!empty($heading)) {
+            // Step 1: Add anchor to pagination links if the block has a queryId
+            if (isset($block['attrs']['queryId'])) {
+                $query_id_pattern = 'query-' . $block['attrs']['queryId'] . '-page=';
+                $block_content = preg_replace_callback(
+                    '/<a\s([^>]*href="[^"]*\?' . preg_quote($query_id_pattern, '/') . '\d+[^"]*")([^>]*)>/i',
+                    function ($matches) use ($anchor_id) {
+                        $href = $matches[1];
+                        // Append #anchor-id just before the final quote if it's not already there
+                        $updated_href = preg_replace('/(")$/', '#' . $anchor_id . '$1', $href);
+                        return '<a ' . $updated_href . $matches[2] . '>';
+                    },
+                    $block_content
+                );
+            }
+
+
+            // Step 2: Conditionally prepend heading if there are results
+            // We need to re-run the query with the current filters to check for posts
+            $query_args = isset($block['attrs']['query']) ? $block['attrs']['query'] : [];
+            // Apply all existing query filters to get the exact query vars that would be used
+            $query_args = apply_filters('query_loop_block_query_vars', $query_args, (object)['parsed_block' => $block]);
+
+            if (isset($block['attrs']['query']['postType'])) {
+                $query_args['post_type'] = $block['attrs']['query']['postType'];
+            }
+
+            // Ensure 'paged' is set correctly for the internal check, respecting pagination
+            $paged = get_query_var('paged') ?: (get_query_var('page') ?: 1);
+            $query_args['paged'] = $paged;
+
+            // Important: Do not limit posts_per_page here for the count, or if it's already set by the block, use it.
+            // If the block itself sets perPage, this will be in $query_args.
+            // If we're just checking existence, ensure it gets a result if there are any.
+            // For a simple have_posts check, you often don't need to explicitly set posts_per_page to -1
+            // if the block's query already has a reasonable limit, but for total count, you might.
+            // For this specific case of checking if 'have_posts()', the existing 'perPage' from the block is fine.
+
+            $query = new WP_Query($query_args);
+
+            if ($query->have_posts()) {
+                // Step 3: Wrap the entire rendered query block in an anchor target, AFTER the heading
+                $block_content = $heading . '<div id="' . esc_attr($anchor_id) . '">' . $block_content . '</div>';
+            }
+            wp_reset_postdata(); // Always reset post data after a custom WP_Query
+
+            return $block_content;
+        }
     }
 
     return $block_content;
-}, 10, 2);
-
-// Register the custom REST parameter for posts
-// function register_posts_rest_fields()
-// {
-//     register_rest_field('post', 'hasExternalPublishers', array(
-//         'get_callback' => null, // We don't need to return this field
-//         'update_callback' => null,
-//         'schema' => array(
-//             'description' => 'Filter posts by external publishers',
-//             'type' => 'boolean',
-//         ),
-//     ));
-// }
-// add_action('rest_api_init', 'register_posts_rest_fields');
+}, 10, 2); // Priority 10, 2 arguments (block_content, block)
 
 // Add the parameter to the posts collection endpoint
 function add_custom_query_vars($valid_vars)

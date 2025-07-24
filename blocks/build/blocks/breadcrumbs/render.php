@@ -368,7 +368,7 @@ function caes_hub_get_author_breadcrumbs($start_position) {
     
     return array(
         array(
-            'title' => sprintf(__('Author: %s', 'your-textdomain'), $author->display_name),
+            'title' => $author->display_name,
             'url' => null,
             'position' => $start_position
         )

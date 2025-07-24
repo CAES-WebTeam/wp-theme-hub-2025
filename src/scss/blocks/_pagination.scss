@@ -1,0 +1,27 @@
+.page-numbers, .wp-block-query-pagination-next, .wp-block-query-pagination-previous {
+    padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
+    background: var(--wp--preset--color--base);
+    line-height: 1;
+    border-radius: var(--wp--preset--spacing--20);
+    border: 1px solid var(--wp--preset--color--bulldog-red);
+    color: inherit;
+    text-decoration: none;
+    transition: background 0.2s ease-in-out, color 0.2s ease-in-out;
+
+    // hover when not current
+    &:not(.current):not(.dots):hover {
+        background: var(--wp--preset--color--bulldog-red);
+        color: var(--wp--preset--color--base);
+    }
+
+    &.dots {
+        border: none;
+        background-color: transparent;
+    }
+
+    &.current {
+        border: none;
+        background-color: transparent;
+        font-weight: bold;
+    }
+}

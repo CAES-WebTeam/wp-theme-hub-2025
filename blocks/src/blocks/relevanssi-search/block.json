@@ -1,0 +1,91 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/relevanssi-search",
+	"version": "1.0.0",
+	"title": "CAES Hub Relevanssi Search",
+	"category": "widgets",
+	"icon": "search",
+	"description": "A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.",
+	"supports": {
+		"html": false,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"attributes": {
+		"showDateSort": {
+			"type": "boolean",
+			"default": true
+		},
+		"showPostTypeFilter": {
+			"type": "boolean",
+			"default": true
+		},
+		"showTopicFilter": {
+			"type": "boolean",
+			"default": true
+		},
+		"showAuthorFilter": {
+			"type": "boolean",
+			"default": true
+		},
+		"showLanguageFilter": {
+			"type": "boolean",
+			"default": false
+		},
+		"showHeading": {
+			"type": "boolean",
+			"default": true
+		},
+		"showButton": {
+			"type": "boolean",
+			"default": false
+		},
+		"buttonText": {
+			"type": "string",
+			"default": ""
+		},
+		"buttonUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"postTypes": {
+			"type": "array",
+			"default": [
+				"post",
+				"page"
+			],
+			"items": {
+				"type": "string"
+			}
+		},
+		"taxonomySlug": {
+			"type": "string",
+			"default": "category"
+		},
+		"headingColor": {
+			"type": "string",
+			"default": ""
+		},
+		"headingAlignment": {
+			"type": "string",
+			"default": "left"
+		},
+		"customHeading": {
+			"type": "string",
+			"default": ""
+		},
+		"resultsPageUrl": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"textdomain": "caes-hub",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"render": "file:./render.php"
+}

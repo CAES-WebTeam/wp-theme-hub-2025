@@ -1,4 +1,7 @@
 <?php
+// SIMPLE TEST - this should always show up if the block runs
+// error_log('LOCATION BLOCK: Block is running!');
+
 if ( ! function_exists( 'normalize_address' ) ) {
     function normalize_address($address) {
         $replacements = [
@@ -33,79 +36,124 @@ $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit'
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
-// Is this a custom location?
+// DEBUG: Check what location fields exist
 $location_custom = get_field('location_custom', $post_id);
+$event_type = get_field('event_type', $post_id);
+$event_location_type = get_field('event_location_type', $post_id);
 
-if ($location_custom) {
-    $google_map = get_field('location_google_map', $post_id);
+// DEBUG: List ALL ACF fields to see what location fields exist
+$all_fields = get_fields($post_id);
+// error_log('DEBUG: All fields: ' . print_r($all_fields, true));
 
-    if (!empty($google_map) && is_array($google_map)) {
-        // Retrieve the full address and build the default street address
-        $full_address   = $google_map['address'] ?? '';
-        $street_number  = $google_map['street_number'] ?? '';
-        $street_name    = $google_map['street_name'] ?? '';
-        $street_address = trim($street_number . ' ' . $street_name);
+// Initialize location variable
+$location = '';
+$directions_link = '';
 
-        // Attempt to extract a potential building name from the full address
-        $address_parts          = explode(',', $full_address);
-        $possible_building_name = trim($address_parts[0]);
+// Check for Google map data (regardless of location_custom setting)
+$google_map = get_field('location_google_map', $post_id);
+// error_log('DEBUG: google_map: ' . print_r($google_map, true));
 
-        // Normalize both values to check for duplicates
-        $norm_building = normalize_address($possible_building_name);
-        $norm_street   = normalize_address($street_address);
+if (!empty($google_map) && is_array($google_map)) {
+    // error_log('DEBUG: Using Google map location');
+    
+    // Retrieve the full address and build the default street address
+    $full_address   = $google_map['address'] ?? '';
+    $street_number  = $google_map['street_number'] ?? '';
+    $street_name    = $google_map['street_name'] ?? '';
+    $street_address = trim($street_number . ' ' . $street_name);
 
-        // Determine snippet and full line display
-        if ($possible_building_name && strcasecmp($norm_building, $norm_street) !== 0) {
-            // Building name exists and is not just a duplicate of the street address
-            $line1_snippet = $possible_building_name;
-            $line1_full    = $possible_building_name . '<br>' . $street_address;
-        } else {
-            // No unique building name provided; use street address only
-            $line1_snippet = $street_address;
-            $line1_full    = $street_address;
-        }
+    // DEBUG: Show individual components
+    // error_log('DEBUG: full_address: ' . $full_address);
+    // error_log('DEBUG: street_number: ' . $street_number);
+    // error_log('DEBUG: street_name: ' . $street_name);
+    // error_log('DEBUG: city: ' . ($google_map['city'] ?? 'EMPTY'));
+    // error_log('DEBUG: state_short: ' . ($google_map['state_short'] ?? 'EMPTY'));
+    // error_log('DEBUG: post_code: ' . ($google_map['post_code'] ?? 'EMPTY'));
 
-        // Build the second line (city, state, post code)
-        $line2   = trim(($google_map['city'] ?? '') . ', ' . ($google_map['state_short'] ?? '') . ' ' . ($google_map['post_code'] ?? ''));
-        $country = $google_map['country_short'] ?? '';
+    // Attempt to extract a potential building name from the full address
+    $address_parts          = explode(',', $full_address);
+    $possible_building_name = trim($address_parts[0]);
 
-        // Create location output based on snippet vs. full display
-        if ($locationAsSnippet) {
-            $location = $line1_snippet;
-        } else {
-            $location = $line1_full . '<br>' . $line2;
-            if ($country && $country !== 'US') {
-                $location .= '<br>' . $country;
-            }
-        }
+    // Normalize both values to check for duplicates
+    $norm_building = normalize_address($possible_building_name);
+    $norm_street   = normalize_address($street_address);
 
-        // Create Google Maps link
-        if (!empty($google_map['address'])) {
-            $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($google_map['address']);
-        } elseif (!empty($google_map['lat']) && !empty($google_map['lng'])) {
-            $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . $google_map['lat'] . ',' . $google_map['lng'];
-        }
-    }
-} else {
-    // If CAES
-    if (!empty(get_field('location_caes_room', $post_id)) && get_field('event_type', $post_id) == 'CAES') {
-        $location = get_field('location_caes_room', $post_id);
+    // Determine snippet and full line display
+    if ($possible_building_name && strcasecmp($norm_building, $norm_street) !== 0) {
+        // Building name exists and is not just a duplicate of the street address
+        $line1_snippet = $possible_building_name;
+        $line1_full    = $possible_building_name . '<br>' . $street_address;
+    } else {
+        // No unique building name provided; use street address only
+        $line1_snippet = $street_address;
+        $line1_full    = $street_address;
     }
 
-    // Or Extension
-    if (!empty(get_field('location_county_office', $post_id)) && get_field('event_type', $post_id) == 'Extension') {
-        $location = get_field('location_county_office', $post_id);
+    // Build the second line (city, state, post code)
+    $city = $google_map['city'] ?? '';
+    $state = $google_map['state_short'] ?? '';
+    $postal = $google_map['post_code'] ?? '';
+    
+    // If city/state fields are empty, try to parse from full address
+    if (empty($city) || empty($state)) {
+        // error_log('DEBUG: Parsing city/state from full address');
+        // Parse: "Hoke Smith Building, Smith Street, Athens, GA, USA"
+        $address_parts = explode(',', $full_address);
+        if (count($address_parts) >= 4) {
+            $city = trim($address_parts[2]); // "Athens"
+            $state_part = trim($address_parts[3]); // "GA USA"
+            $state = explode(' ', $state_part)[0]; // "GA"
+        }
+    }
+    
+    // error_log('DEBUG: Parsed city: ' . $city);
+    // error_log('DEBUG: Parsed state: ' . $state);
+    
+    $line2_parts = [];
+    if ($city) $line2_parts[] = $city;
+    if ($state) $line2_parts[] = $state;
+    if ($postal) $line2_parts[] = $postal;
+    
+    $line2 = implode(', ', array_filter($line2_parts));
+    
+    // error_log('DEBUG: line2: ' . $line2);
+    
+    $country = $google_map['country_short'] ?? '';
+
+    // Create location output based on snippet vs. full display
+    if ($locationAsSnippet) {
+        $location = $line1_snippet;
+    } else {
+        $location = $line1_full;
+        if ($line2) {
+            $location .= '<br>' . $line2;
+        }
+        if ($country && $country !== 'US') {
+            $location .= '<br>' . $country;
+        }
+    }
+
+    // Create Google Maps link
+    if (!empty($google_map['address'])) {
+        $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . urlencode($google_map['address']);
+    } elseif (!empty($google_map['lat']) && !empty($google_map['lng'])) {
+        $directions_link = 'https://www.google.com/maps/dir/?api=1&destination=' . $google_map['lat'] . ',' . $google_map['lng'];
     }
 }
 
 // Check and set location details
+$details = '';
 if (!empty(get_field('location_details', $post_id))) {
     $details = get_field('location_details', $post_id);
 }
+
+// error_log('DEBUG: Final location: ' . print_r($location, true));
+// error_log('DEBUG: locationAsSnippet: ' . print_r($locationAsSnippet, true));
 ?>
 
 <?php
 if (!empty($location)) {
+    // error_log('DEBUG: Displaying location block');
     echo '<div ' . $attrs . '>';
 
     if ($locationAsSnippet) {
