@@ -278,9 +278,13 @@ add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_pu
  */
 function publication_api_tool_compare_publications() {
     // Verify the nonce for security.
+<<<<<<< HEAD
     if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) { // 'false' prevents automatic die()
         wp_send_json_error('Security check failed: Invalid nonce.', 403); // Use HTTP status code 403 for Forbidden
     }
+=======
+    check_ajax_referer('publication_api_tool_nonce', 'nonce');
+>>>>>>> parent of e7dec9f (Removing nonce inspection)
 
     // Check if the current user has the 'manage_options' capability.
     if (!current_user_can('manage_options')) {
