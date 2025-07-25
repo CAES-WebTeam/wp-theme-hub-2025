@@ -308,21 +308,39 @@ function publication_api_tool_compare_publications() {
 
         // --- Fetch WordPress Data ---
         $args = array(
-            'post_type'      => 'publications', // Assuming 'publication' is the correct post type
+            'post_type'      => 'publication', // Assuming 'publication' is the correct post type
             'posts_per_page' => -1,          // Get all publications
             'post_status'    => 'publish',   // Only published ones
-            // 'fields'         => 'titles',    // This only returns an array of WP_Post objects with only title property.
-                                             // It's generally safer to get the full post object and then extract the title.
+            // Removed 'meta_query' as we want to fetch all posts and their fields
         );
         $wordpress_publications = get_posts($args);
 
         foreach ($wordpress_publications as $post) {
+            // Fetch all standard post fields
+            $post_details = $post->to_array(); // Converts WP_Post object to an array for easier viewing
+
+            // Fetch all custom fields for the current post
+            $custom_fields = get_post_meta($post->ID);
+            // Reformat custom fields to be more readable (get_post_meta returns arrays for each key)
+            $formatted_custom_fields = [];
+            foreach ($custom_fields as $key => $value) {
+                $formatted_custom_fields[$key] = maybe_unserialize($value[0]); // Get the first value and unserialize if needed
+            }
+
+            // Add custom fields to the post details
+            $post_details['custom_fields'] = $formatted_custom_fields;
+
+            // Store the full details for console display
+            $all_wordpress_post_details[] = $post_details;
+
+            // Continue populating $wordpress_publication_data IF PUBLICATION_ID is still needed for comparison later
             $publication_id = get_post_meta($post->ID, 'PUBLICATION_ID', true);
             if (!empty($publication_id)) {
                 $wordpress_publication_data[$publication_id] = $post->post_title;
             }
         }
-        $log[] = "Fetched " . count($wordpress_publication_data) . " publications from WordPress database with PUBLICATION_ID.";
+        $log[] = "Fetched " . count($wordpress_publications) . " publications from WordPress database (including all fields).";
+        $log[] = "Fetched " . count($wordpress_publication_data) . " publications from WordPress database with PUBLICATION_ID (for comparison).";
 
         // --- Compare Data ---
         $discrepancies_found = false;
