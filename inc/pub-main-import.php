@@ -278,13 +278,10 @@ add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_pu
  */
 function publication_api_tool_compare_publications() {
     // Verify the nonce for security.
-<<<<<<< HEAD
     if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) { // 'false' prevents automatic die()
         wp_send_json_error('Security check failed: Invalid nonce.', 403); // Use HTTP status code 403 for Forbidden
     }
-=======
     check_ajax_referer('publication_api_tool_nonce', 'nonce');
->>>>>>> parent of e7dec9f (Removing nonce inspection)
 
     // Check if the current user has the 'manage_options' capability.
     if (!current_user_can('manage_options')) {
@@ -313,15 +310,12 @@ function publication_api_tool_compare_publications() {
 
             $decoded_API_response = json_decode($raw_JSON, true);
 
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('JSON decode error from API: ' . json_last_error_msg() . ' Raw JSON: ' . substr($raw_JSON, 0, 500) . '...'); // Log partial raw JSON
-            }
-            if (!is_array($decoded_API_response)) {
-                throw new Exception('Invalid API response format: Expected an array, got ' . gettype($decoded_API_response) . '.');
-            }
-            if (empty($decoded_API_response)) {
-                 $log[] = "API returned an empty array of publications.";
-            }
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
 
             foreach ($decoded_API_response as $publication) {
                 if (isset($publication['ID']) && isset($publication['TITLE'])) {
@@ -337,14 +331,18 @@ function publication_api_tool_compare_publications() {
         }
 
         // --- Fetch WordPress Data ---
-        $args = array(
-            'post_type'      => 'publications', // Assuming 'publication' is the correct post type
-            'posts_per_page' => -1,          // Get all publications
-            'post_status'    => 'published',   // Only published ones
-            // 'fields'         => 'titles',    // This only returns an array of WP_Post objects with only title property.
-                                             // It's generally safer to get the full post object and then extract the title.
-        );
-        $wordpress_publications = get_posts($args);
+        $log[] = "Attempting to fetch data from WordPress database...";
+        try { // <--- THIS WAS MISSING
+            $args = array(
+                'post_type'      => 'publication', // Corrected 'publications' to 'publication' based on previous context
+                'posts_per_page' => -1,          // Get all publications
+                'post_status'    => 'publish',   // Only published ones
+            );
+            $wordpress_publications = get_posts($args);
+
+            if (empty($wordpress_publications)) {
+                $log[] = "No published 'publication' posts found in WordPress.";
+            }
 
             foreach ($wordpress_publications as $post) {
                 // Fetch all standard post fields
@@ -413,11 +411,7 @@ function publication_api_tool_compare_publications() {
         ]);
 
     } catch (Exception $e) {
-        // Catch any uncaught exceptions from the main flow or re-thrown exceptions
-        $error_message = 'Fatal Comparison Error: ' . $e->getMessage();
-        error_log('Publication API Comparison Tool Error: ' . $error_message . "\n" . $e->getTraceAsString()); // Log full trace for debugging
-        wp_send_json_error($error_message); // Send specific error message to client
+        error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
+        wp_send_json_error('Comparison Error: ' . $e->getMessage());
     }
-
-    wp_die(); // Always die at the end of an AJAX function
 }
