@@ -1,5 +1,4 @@
 <?php
-
 // Load ACF Field Groups
 //include_once( get_template_directory() . '/inc/acf-fields/events-field-group.php' );
 
@@ -267,21 +266,59 @@ add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
 // Custom rewrite rules for the event series taxonomy
 function custom_events_rewrite_rules()
 {
-	// Add rules to handle the event series taxonomy URLs
-	add_rewrite_rule(
-		'^events/series/([^/]+)/?$',
-		'index.php?event_series=$matches[1]',
-		'top'
-	);
+    // Single events rule (corrected)
+    add_rewrite_rule(
+        '^events/([^/]+)/?$',
+        'index.php?events=$matches[1]',
+        'top'
+    );
 
-	// Add a rule for pagination in taxonomy archives
-	add_rewrite_rule(
-		'^events/series/([^/]+)/page/([0-9]+)/?$',
-		'index.php?event_series=$matches[1]&paged=$matches[2]',
-		'top'
-	);
+    // Event series rules
+    add_rewrite_rule(
+        '^events/series/([^/]+)/?$',
+        'index.php?event_series=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^events/series/([^/]+)/page/([0-9]+)/?$',
+        'index.php?event_series=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+
+    // CAES departments rules
+    add_rewrite_rule(
+        '^events/departments/([^/]+)/?$',
+        'index.php?event_caes_departments=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^events/departments/([^/]+)/page/([0-9]+)/?$',
+        'index.php?event_caes_departments=$matches[1]&paged=$matches[2]',
+        'top'
+    );
 }
-add_action('init', 'custom_events_rewrite_rules');
+
+// Redirect old caes-departments URLs to new departments URLs
+function redirect_old_department_urls() {
+    // Only run on frontend
+    if (is_admin()) return;
+    
+    // Check if we're on the old department taxonomy URL
+    if (is_tax('event_caes_departments')) {
+        $current_url = $_SERVER['REQUEST_URI'];
+        
+        // Check if URL contains the old format
+        if (strpos($current_url, '/events/caes-departments/') !== false) {
+            // Replace old path with new path
+            $new_url = str_replace('/events/caes-departments/', '/events/departments/', $current_url);
+            
+            // Perform 301 redirect
+            wp_redirect(home_url($new_url), 301);
+            exit;
+        }
+    }
+}
+add_action('template_redirect', 'redirect_old_department_urls');
 
 /**
  * Hide specific ACF fields and a tab from non-admin users.
@@ -333,11 +370,11 @@ function hide_specific_acf_fields_from_non_admins($field)
 		) {
 
 			// Return false to completely hide the field from the admin UI.
-            // This hook is designed to control field rendering directly.
-            return false;
+			// This hook is designed to control field rendering directly.
+			return false;
 		}
 	}
 
 	return $field;
 }
-add_filter( 'acf/prepare_field', 'hide_specific_acf_fields_from_non_admins' );
+add_filter('acf/prepare_field', 'hide_specific_acf_fields_from_non_admins');

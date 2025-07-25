@@ -18,6 +18,7 @@ require get_template_directory() . '/inc/publications-support.php';
 require get_template_directory() . '/inc/user-support.php';
 require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
+require get_template_directory() . '/inc/custom-rewrites.php';
 
 
 // Temp include

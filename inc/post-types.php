@@ -36,6 +36,7 @@ add_action('init', function () {
         'public' => true,
         'show_in_rest' => true,
         'menu_icon' => 'dashicons-admin-post',
+        'rewrite' => array('slug' => 'events', 'with_front' => false),
         'supports' => array(
             0 => 'title',
             1 => 'author',
@@ -61,6 +62,22 @@ add_action('init', function () {
         ),
     ));
 });
+
+// Add this temporarily to see all post types
+add_action('init', function() {
+    if (isset($_GET['debug_pt'])) {
+        $post_types = get_post_types(['public' => true], 'objects');
+        echo '<pre>';
+        foreach ($post_types as $pt) {
+            if ($pt->name == 'events') {
+                echo "Post Type: " . $pt->name . "\n";
+                echo "Rewrite slug: " . print_r($pt->rewrite, true) . "\n\n";
+            }
+        }
+        echo '</pre>';
+        exit;
+    }
+}, 99);
 
 // Register 'Publications' Custom Post Type
 add_action('init', function () {
@@ -99,6 +116,7 @@ add_action('init', function () {
 		'public' => true,
 		'show_in_rest' => true,
 		'menu_icon' => 'dashicons-admin-post',
+        'rewrite'     => array('slug' => 'publications', 'with_front' => false),
 		'supports' => array(
 			0 => 'title',
 			1 => 'author',
@@ -308,7 +326,7 @@ function register_topics_taxonomy()
         'show_admin_column' => true,
         'query_var'         => true,
         'show_in_rest'      => true,
-        'rewrite'           => array('slug' => 'topic'), // Changed slug to 'topic'
+        'rewrite'           => array('slug' => 'topic','with_front' => false), // Changed slug to 'topic'
     );
 
     // Register the taxonomy and associate it with the same post types
