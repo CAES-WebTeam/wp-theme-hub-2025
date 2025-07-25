@@ -270,102 +270,130 @@ add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_pu
  */
 function publication_api_tool_compare_publications() {
     // Verify the nonce for security.
-    // check_ajax_referer('publication_api_tool_nonce', 'nonce');
+    if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) { // 'false' prevents automatic die()
+        wp_send_json_error('Security check failed: Invalid nonce.', 403); // Use HTTP status code 403 for Forbidden
+    }
 
     // Check if the current user has the 'manage_options' capability.
     if (!current_user_can('manage_options')) {
-        wp_send_json_error('You do not have sufficient permissions.');
+        wp_send_json_error('Permission denied: You do not have sufficient permissions.', 403);
     }
 
     $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
     $log = []; // Array to store log messages
     $api_publication_data = []; // Store ID and Title for API publications
-    $wordpress_publication_titles = [];
+    $wordpress_publication_data = []; // Store custom field PUBLICATION_ID and Title for WordPress publications
+    $all_wordpress_post_details = []; // New array to store all fetched WordPress post details
 
     try {
         // --- Fetch API Data ---
-        $response = wp_remote_get($api_url);
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
-        }
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
-        }
-
-        foreach ($decoded_API_response as $publication) {
-            if (isset($publication['ID']) && isset($publication['TITLE'])) { // Use 'TITLE' as per your sample data
-                // Store both ID and Title for comparison if needed, or just the title for title-based comparison
-                $api_publication_data[$publication['ID']] = $publication['TITLE'];
+        $log[] = "Attempting to fetch data from API...";
+        try {
+            $response = wp_remote_get($api_url, array('timeout' => 30)); // Added timeout for robustness
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
             }
+
+            $raw_JSON = wp_remote_retrieve_body($response);
+            if (empty($raw_JSON)) {
+                throw new Exception('API returned empty response body.');
+            }
+
+            $decoded_API_response = json_decode($raw_JSON, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg() . ' Raw JSON: ' . substr($raw_JSON, 0, 500) . '...'); // Log partial raw JSON
+            }
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array, got ' . gettype($decoded_API_response) . '.');
+            }
+            if (empty($decoded_API_response)) {
+                 $log[] = "API returned an empty array of publications.";
+            }
+
+            foreach ($decoded_API_response as $publication) {
+                if (isset($publication['ID']) && isset($publication['TITLE'])) {
+                    $api_publication_data[$publication['ID']] = $publication['TITLE'];
+                } else {
+                    $log[] = "Warning: API publication missing 'ID' or 'TITLE' field. Data: " . json_encode($publication);
+                }
+            }
+            $log[] = "Successfully fetched " . count($api_publication_data) . " publications from API.";
+
+        } catch (Exception $e) {
+            throw new Exception('API Fetch Error: ' . $e->getMessage()); // Re-throw with context
         }
-        $log[] = "Fetched " . count($api_publication_data) . " publications from API.";
 
         // --- Fetch WordPress Data ---
-        $args = array(
-            'post_type'      => 'publication', // Assuming 'publication' is the correct post type
-            'posts_per_page' => -1,          // Get all publications
-            'post_status'    => 'publish',   // Only published ones
-            // Removed 'meta_query' as we want to fetch all posts and their fields
-        );
-        $wordpress_publications = get_posts($args);
+        $log[] = "Attempting to fetch data from WordPress database...";
+        try {
+            $args = array(
+                'post_type'      => 'publications',
+                'posts_per_page' => -1,
+                'post_status'    => 'publish',
+            );
+            $wordpress_publications = get_posts($args);
 
-        foreach ($wordpress_publications as $post) {
-            // Fetch all standard post fields
-            $post_details = $post->to_array(); // Converts WP_Post object to an array for easier viewing
-
-            // Fetch all custom fields for the current post
-            $custom_fields = get_post_meta($post->ID);
-            // Reformat custom fields to be more readable (get_post_meta returns arrays for each key)
-            $formatted_custom_fields = [];
-            foreach ($custom_fields as $key => $value) {
-                $formatted_custom_fields[$key] = maybe_unserialize($value[0]); // Get the first value and unserialize if needed
+            if (empty($wordpress_publications)) {
+                $log[] = "No published 'publication' posts found in WordPress.";
             }
 
-            // Add custom fields to the post details
-            $post_details['custom_fields'] = $formatted_custom_fields;
+            foreach ($wordpress_publications as $post) {
+                // Fetch all standard post fields
+                $post_details = $post->to_array();
 
-            // Store the full details for console display
-            $all_wordpress_post_details[] = $post_details;
+                // Fetch all custom fields for the current post
+                $custom_fields = get_post_meta($post->ID);
+                $formatted_custom_fields = [];
+                foreach ($custom_fields as $key => $value) {
+                    $formatted_custom_fields[$key] = maybe_unserialize($value[0]);
+                }
+                $post_details['custom_fields'] = $formatted_custom_fields;
+                $all_wordpress_post_details[] = $post_details;
 
-            // Continue populating $wordpress_publication_data IF PUBLICATION_ID is still needed for comparison later
-            $publication_id = get_post_meta($post->ID, 'PUBLICATION_ID', true);
-            if (!empty($publication_id)) {
-                $wordpress_publication_data[$publication_id] = $post->post_title;
+                // Continue populating $wordpress_publication_data IF PUBLICATION_ID is still needed for comparison later
+                $publication_id = get_post_meta($post->ID, 'PUBLICATION_ID', true);
+                if (!empty($publication_id)) {
+                    $wordpress_publication_data[$publication_id] = $post->post_title;
+                }
             }
+            $log[] = "Successfully fetched " . count($wordpress_publications) . " publications from WordPress database (including all fields).";
+            $log[] = "Populated " . count($wordpress_publication_data) . " publications from WordPress database with PUBLICATION_ID (for comparison).";
+
+        } catch (Exception $e) {
+            throw new Exception('WordPress Data Fetch Error: ' . $e->getMessage()); // Re-throw with context
         }
-        $log[] = "Fetched " . count($wordpress_publications) . " publications from WordPress database (including all fields).";
-        $log[] = "Fetched " . count($wordpress_publication_data) . " publications from WordPress database with PUBLICATION_ID (for comparison).";
 
         // --- Compare Data ---
+        $log[] = "Initiating comparison of API and WordPress data...";
         $discrepancies_found = false;
 
-        // Check for publications in API but not in WordPress (based on PUBLICATION_ID)
-        foreach ($api_publication_data as $api_id => $api_title) {
-            if (!array_key_exists($api_id, $wordpress_publication_data)) {
-                $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress by PUBLICATION_ID.";
-                $discrepancies_found = true;
-            } else {
-                // Optional: You could also compare titles if you want to ensure they match for existing IDs
-                if ($api_title !== $wordpress_publication_data[$api_id]) {
-                    $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') has a differing title in WordPress ('{$wordpress_publication_data[$api_id]}').";
+        try {
+            // Check for publications in API but not in WordPress (based on PUBLICATION_ID)
+            foreach ($api_publication_data as $api_id => $api_title) {
+                if (!array_key_exists($api_id, $wordpress_publication_data)) {
+                    $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress by PUBLICATION_ID.";
+                    $discrepancies_found = true;
+                } else {
+                    if ($api_title !== $wordpress_publication_data[$api_id]) {
+                        $log[] = "Discrepancy: API publication (ID: {$api_id}, API Title: '{$api_title}', WP Title: '{$wordpress_publication_data[$api_id]}') has a differing title in WordPress.";
+                        $discrepancies_found = true;
+                    }
+                }
+            }
+
+            // Check for publications in WordPress but not in API (based on PUBLICATION_ID)
+            $api_ids_flat = array_keys($api_publication_data);
+            foreach ($wordpress_publication_data as $wp_publication_id => $wp_title) {
+                if (!in_array($wp_publication_id, $api_ids_flat)) {
+                    $log[] = "Discrepancy: WordPress publication (PUBLICATION_ID: {$wp_publication_id}, Title: '{$wp_title}') is NOT found in API data.";
                     $discrepancies_found = true;
                 }
             }
-        }
+            $log[] = "Comparison complete.";
 
-        // Check for publications in WordPress but not in API (based on PUBLICATION_ID)
-        $api_ids_flat = array_keys($api_publication_data);
-        foreach ($wordpress_publication_data as $wp_publication_id => $wp_title) {
-            if (!in_array($wp_publication_id, $api_ids_flat)) {
-                $log[] = "Discrepancy: WordPress publication (PUBLICATION_ID: {$wp_publication_id}, Title: '{$wp_title}') is NOT found in API data.";
-                $discrepancies_found = true;
-            }
+        } catch (Exception $e) {
+            throw new Exception('Comparison Logic Error: ' . $e->getMessage()); // Re-throw with context
         }
 
         $message = "Comparison complete. " . ( $discrepancies_found ? "Discrepancies found. See log for details." : "No discrepancies found." );
@@ -373,10 +401,15 @@ function publication_api_tool_compare_publications() {
         wp_send_json_success([
             'message' => $message,
             'log' => $log,
+            'wordpress_post_details' => $all_wordpress_post_details,
         ]);
 
     } catch (Exception $e) {
-        error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
-        wp_send_json_error('Comparison Error: ' . $e->getMessage());
+        // Catch any uncaught exceptions from the main flow or re-thrown exceptions
+        $error_message = 'Fatal Comparison Error: ' . $e->getMessage();
+        error_log('Publication API Comparison Tool Error: ' . $error_message . "\n" . $e->getTraceAsString()); // Log full trace for debugging
+        wp_send_json_error($error_message); // Send specific error message to client
     }
+
+    wp_die(); // Always die at the end of an AJAX function
 }
