@@ -333,18 +333,14 @@ function publication_api_tool_compare_publications() {
         }
 
         // --- Fetch WordPress Data ---
-        $log[] = "Attempting to fetch data from WordPress database...";
-        try {
-            $args = array(
-                'post_type'      => 'publications',
-                'posts_per_page' => -1,
-                'post_status'    => 'publish',
-            );
-            $wordpress_publications = get_posts($args);
-
-            if (empty($wordpress_publications)) {
-                $log[] = "No published 'publication' posts found in WordPress.";
-            }
+        $args = array(
+            'post_type'      => 'publications', // Assuming 'publication' is the correct post type
+            'posts_per_page' => -1,          // Get all publications
+            'post_status'    => 'published',   // Only published ones
+            // 'fields'         => 'titles',    // This only returns an array of WP_Post objects with only title property.
+                                             // It's generally safer to get the full post object and then extract the title.
+        );
+        $wordpress_publications = get_posts($args);
 
             foreach ($wordpress_publications as $post) {
                 // Fetch all standard post fields
