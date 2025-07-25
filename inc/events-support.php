@@ -470,8 +470,7 @@ function redirect_expired_events_to_404() {
             global $wp_query;
             $wp_query->set_404();
             status_header(404);
-            get_template_part(404);
-            exit();
+            return;
         }
         
         // If still published but actually expired, 404 and mark for cron update
@@ -479,8 +478,7 @@ function redirect_expired_events_to_404() {
             global $wp_query;
             $wp_query->set_404();
             status_header(404);
-            get_template_part(404);
-            exit();
+            return;
         }
     }
 }
