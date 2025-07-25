@@ -33,8 +33,15 @@ function publication_api_tool_render_page() {
 
         <h2>Access Publication Data</h2>
         <p>This will fetch publication data from the API and display the count.</p>
-        <button class="button button-primary" id="fetch-publications-btn">Fetch Publications</button>
+        <button class="button button-primary" id="fetch-publications-btn">Validate API</button>
         <div id="fetch-publications-log" class="log-area"></div>
+
+        <hr>
+
+        <h2>Compare Publication Data</h2>
+        <p>This will fetch publication data from the API and compare it against publications in your WordPress database (post type "Publication").</p>
+        <button class="button button-secondary" id="compare-publications-btn">Compare Publications</button>
+        <div id="compare-publications-log" class="log-area"></div>
 
     </div>
     <style>
@@ -70,6 +77,10 @@ function publication_api_tool_render_page() {
         }
         .log-area .log-info {
             color: #000080;
+        }
+        .log-area .log-discrepancy {
+            color: #FF8C00; /* Orange for discrepancies */
+            font-weight: bold;
         }
     </style>
     <script type="text/javascript">
@@ -118,13 +129,57 @@ function publication_api_tool_render_page() {
                             appendLog($logArea, `Error: ${response.data}`, 'error');
                             setLogAreaClass($logArea, 'error');
                         }
-                        $button.prop('disabled', false).text('Fetch Publications'); // Re-enable button
+                        $button.prop('disabled', false).text('Validate API'); // Re-enable button
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
                         // Handle network or server errors for the AJAX request
                         appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
                         setLogAreaClass($logArea, 'error');
-                        $button.prop('disabled', false).text('Fetch Publications'); // Re-enable button
+                        $button.prop('disabled', false).text('Validate API'); // Re-enable button
+                    }
+                });
+            });
+
+            // Event listener for the "Compare Publications" button
+            $('#compare-publications-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#compare-publications-log');
+
+                $logArea.empty();
+                $button.prop('disabled', true).text('Comparing...');
+                setLogAreaClass($logArea, 'info');
+                appendLog($logArea, 'Initiating comparison...');
+
+                $.ajax({
+                    url: '<?php echo esc_js($ajax_url); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'compare_publications_data',
+                        nonce: '<?php echo esc_js($nonce); ?>',
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            appendLog($logArea, response.data.message, 'success');
+                            if (response.data.log && response.data.log.length > 0) {
+                                response.data.log.forEach(msg => {
+                                    if (msg.startsWith('Discrepancy:')) {
+                                        appendLog($logArea, msg, 'discrepancy');
+                                    } else {
+                                        appendLog($logArea, msg, 'detail');
+                                    }
+                                });
+                            }
+                            setLogAreaClass($logArea, 'success');
+                        } else {
+                            appendLog($logArea, `Error: ${response.data}`, 'error');
+                            setLogAreaClass($logArea, 'error');
+                        }
+                        $button.prop('disabled', false).text('Compare Publications');
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
+                        setLogAreaClass($logArea, 'error');
+                        $button.prop('disabled', false).text('Compare Publications');
                     }
                 });
             });
@@ -203,5 +258,102 @@ function publication_api_tool_fetch_publications() {
         error_log('Publication API Tool Error: ' . $e->getMessage());
         // Send an error response back to the JavaScript.
         wp_send_json_error('API Error: ' . $e->getMessage());
+    }
+}
+
+
+// Register the AJAX handler for logged-in users for comparing data
+add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_publications');
+
+/**
+ * Handles the AJAX request to compare API publication data with WordPress data.
+ */
+function publication_api_tool_compare_publications() {
+    // Verify the nonce for security.
+    check_ajax_referer('publication_api_tool_nonce', 'nonce');
+
+    // Check if the current user has the 'manage_options' capability.
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('You do not have sufficient permissions.');
+    }
+
+    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
+    $log = []; // Array to store log messages
+    $api_publication_ids = [];
+    $wordpress_publication_titles = [];
+
+    try {
+        // --- Fetch API Data ---
+        $response = wp_remote_get($api_url);
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        foreach ($decoded_API_response as $publication) {
+            if (isset($publication['ID']) && isset($publication['title'])) {
+                $api_publication_ids[$publication['ID']] = $publication['title'];
+            }
+        }
+        $log[] = "Fetched " . count($api_publication_ids) . " publications from API.";
+
+        // --- Fetch WordPress Data ---
+        $args = array(
+            'post_type'      => 'publication', // Assuming 'publication' is the correct post type
+            'posts_per_page' => -1,          // Get all publications
+            'post_status'    => 'publish',   // Only published ones
+            'fields'         => 'titles',    // Only get post titles
+        );
+        $wordpress_publications = get_posts($args);
+
+        foreach ($wordpress_publications as $post) {
+            $wordpress_publication_titles[] = $post->post_title;
+        }
+        $log[] = "Fetched " . count($wordpress_publication_titles) . " publications from WordPress database.";
+
+        // --- Compare Data ---
+        $discrepancies_found = false;
+
+        // Check for publications in API but not in WordPress
+        foreach ($api_publication_ids as $api_id => $api_title) {
+            if (!in_array($api_title, $wordpress_publication_titles)) {
+                $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress.";
+                $discrepancies_found = true;
+            }
+        }
+
+        // Check for publications in WordPress but not in API
+        foreach ($wordpress_publication_titles as $wp_title) {
+            $found_in_api = false;
+            foreach ($api_publication_ids as $api_id => $api_title) {
+                if ($wp_title === $api_title) {
+                    $found_in_api = true;
+                    break;
+                }
+            }
+            if (!$found_in_api) {
+                $log[] = "Discrepancy: WordPress publication (Title: '{$wp_title}') is NOT found in API data.";
+                $discrepancies_found = true;
+            }
+        }
+
+        $message = "Comparison complete. " . ( $discrepancies_found ? "Discrepancies found. See log for details." : "No discrepancies found." );
+
+        wp_send_json_success([
+            'message' => $message,
+            'log' => $log,
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
+        wp_send_json_error('Comparison Error: ' . $e->getMessage());
     }
 }
