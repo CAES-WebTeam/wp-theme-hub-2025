@@ -410,9 +410,9 @@ function story_meta_association_link_story_images() {
 
     // Checks for JSON decoding errors.
     // If an error occurred during decoding, it sends a JSON error response with the error message.
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_send_json_error('JSON decode error: ' . json_last_error_msg());
-    }
+    // if (json_last_error() !== JSON_ERROR_NONE) {
+    //     wp_send_json_error('JSON decode error: ' . json_last_error_msg());
+    // }
 
     // Retrieves the 'start' index from the POST request, or defaults to 0.
     // This parameter is used for batch processing to determine which record to start from.
