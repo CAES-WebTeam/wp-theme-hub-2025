@@ -263,66 +263,6 @@ function my_acf_google_map_api($api)
 }
 add_filter('acf/fields/google_map/api', 'my_acf_google_map_api');
 
-// Custom rewrite rules for the event series taxonomy
-function custom_events_rewrite_rules()
-{
-    // Single events rule (corrected)
-    add_rewrite_rule(
-        '^events/([^/]+)/?$',
-        'index.php?events=$matches[1]',
-        'top'
-    );
-
-    // Event series rules
-    add_rewrite_rule(
-        '^events/series/([^/]+)/?$',
-        'index.php?event_series=$matches[1]',
-        'top'
-    );
-    add_rewrite_rule(
-        '^events/series/([^/]+)/page/([0-9]+)/?$',
-        'index.php?event_series=$matches[1]&paged=$matches[2]',
-        'top'
-    );
-
-    // CAES departments rules
-    add_rewrite_rule(
-        '^events/departments/([^/]+)/?$',
-        'index.php?event_caes_departments=$matches[1]',
-        'top'
-    );
-    add_rewrite_rule(
-        '^events/departments/([^/]+)/page/([0-9]+)/?$',
-        'index.php?event_caes_departments=$matches[1]&paged=$matches[2]',
-        'top'
-    );
-}
-
-// Redirect old caes-departments URLs to new departments URLs
-function redirect_old_department_urls() {
-    // Only run on frontend
-    if (is_admin()) return;
-    
-    // Check if we're on the old department taxonomy URL
-    if (is_tax('event_caes_departments')) {
-        $current_url = $_SERVER['REQUEST_URI'];
-        
-        // Check if URL contains the old format
-        if (strpos($current_url, '/events/caes-departments/') !== false) {
-            // Replace old path with new path
-            $new_url = str_replace('/events/caes-departments/', '/events/departments/', $current_url);
-            
-            // Perform 301 redirect
-            wp_redirect(home_url($new_url), 301);
-            exit;
-        }
-    }
-}
-add_action('template_redirect', 'redirect_old_department_urls');
-
-/**
- * Hide specific ACF fields and a tab from non-admin users.
- */
 /**
  * Hide specific ACF fields and a tab from non-admin users.
  */
@@ -378,3 +318,342 @@ function hide_specific_acf_fields_from_non_admins($field)
 	return $field;
 }
 add_filter('acf/prepare_field', 'hide_specific_acf_fields_from_non_admins');
+
+/**
+ * Event Expiry Functions with Custom Post Status
+ */
+
+/**
+ * Register custom "expired" post status for events
+ */
+function register_expired_post_status() {
+    register_post_status('expired', array(
+        'label'                     => _x('Expired', 'post status', 'caes-hub'),
+        'public'                    => false,
+        'exclude_from_search'       => true,
+        'show_in_admin_all_list'    => true,
+        'show_in_admin_status_list' => true,
+        'label_count'               => _n_noop(
+            'Expired <span class="count">(%s)</span>',
+            'Expired <span class="count">(%s)</span>',
+            'caes-hub'
+        ),
+    ));
+}
+add_action('init', 'register_expired_post_status');
+
+/**
+ * Add "Expired" to the post status dropdown in admin
+ */
+function add_expired_to_post_status_dropdown() {
+    global $post;
+    
+    if (get_post_type($post) === 'events') {
+        echo '<script>
+        jQuery(document).ready(function($) {
+            $("select#post_status").append("<option value=\"expired\" ' . selected(get_post_status($post->ID), 'expired', false) . '>Expired</option>");
+            
+            if ($("#post_status").val() == "expired") {
+                $("#post-status-display").text("Expired");
+            }
+            
+            $("#post-status-select").on("change", "#post_status", function() {
+                if ($(this).val() == "expired") {
+                    $("#post-status-display").text("Expired");
+                } else if ($(this).val() == "publish") {
+                    $("#post-status-display").text("Published");
+                } else if ($(this).val() == "draft") {
+                    $("#post-status-display").text("Draft");
+                }
+            });
+        });
+        </script>';
+    }
+}
+add_action('admin_footer-post.php', 'add_expired_to_post_status_dropdown');
+
+/**
+ * Helper function to check if an event has expired
+ * Returns true if the event has passed (day after the last event date)
+ */
+function is_event_expired($post_id) {
+    $date_type = get_field('event_date_type', $post_id);
+    $last_event_date = null;
+    
+    if ($date_type === 'single') {
+        // For single events, check end_date first, then start_date
+        $end_date = get_field('end_date', $post_id);
+        $start_date = get_field('start_date', $post_id);
+        
+        if (!empty($end_date)) {
+            $last_event_date = $end_date;
+        } elseif (!empty($start_date)) {
+            $last_event_date = $start_date;
+        }
+        
+    } elseif ($date_type === 'multi') {
+        // For multi events, find the latest date
+        $multi_dates = get_field('date_and_time', $post_id);
+        
+        if (!empty($multi_dates) && is_array($multi_dates)) {
+            $latest_date = null;
+            
+            foreach ($multi_dates as $date_entry) {
+                if (!empty($date_entry['start_date_copy'])) {
+                    if ($latest_date === null || $date_entry['start_date_copy'] > $latest_date) {
+                        $latest_date = $date_entry['start_date_copy'];
+                    }
+                }
+            }
+            
+            $last_event_date = $latest_date;
+        }
+    }
+    
+    // If no date found, don't expire
+    if (empty($last_event_date)) {
+        return false;
+    }
+    
+    // Convert ACF date format (Ymd) to DateTime and add 1 day
+    $date_object = DateTime::createFromFormat('Ymd', $last_event_date);
+    if (!$date_object) {
+        return false;
+    }
+    
+    // Add one day to get expiry date
+    $date_object->add(new DateInterval('P1D'));
+    $expiry_date = $date_object->format('Y-m-d');
+    
+    // Compare with today's date
+    $today = date('Y-m-d');
+    
+    return $today >= $expiry_date;
+}
+
+/**
+ * Exclude expired events from all frontend queries
+ * This is now much simpler since expired events have a different post status
+ */
+function exclude_expired_events_from_queries($query) {
+    // Only run on frontend
+    if (is_admin() || !$query->is_main_query()) {
+        return;
+    }
+    
+    // Check if this query includes events
+    $post_type = $query->get('post_type');
+    
+    if ($post_type === 'events' || 
+        (is_array($post_type) && in_array('events', $post_type))) {
+        
+        // Ensure we only get published events (excludes expired automatically)
+        $post_status = $query->get('post_status');
+        if (empty($post_status)) {
+            $query->set('post_status', 'publish');
+        }
+    }
+}
+add_action('pre_get_posts', 'exclude_expired_events_from_queries');
+
+/**
+ * Make expired events return 404 on single event pages
+ * This handles edge cases where cron hasn't run yet
+ */
+function redirect_expired_events_to_404() {
+    if (is_singular('events')) {
+        $post_id = get_queried_object_id();
+        $post_status = get_post_status($post_id);
+        
+        // If already marked as expired, 404
+        if ($post_status === 'expired') {
+            global $wp_query;
+            $wp_query->set_404();
+            status_header(404);
+            get_template_part(404);
+            exit();
+        }
+        
+        // If still published but actually expired, 404 and mark for cron update
+        if ($post_status === 'publish' && is_event_expired($post_id)) {
+            global $wp_query;
+            $wp_query->set_404();
+            status_header(404);
+            get_template_part(404);
+            exit();
+        }
+    }
+}
+add_action('template_redirect', 'redirect_expired_events_to_404');
+
+/**
+ * Daily cron job to move expired events to "expired" status
+ */
+function schedule_expire_events_cron() {
+    if (!wp_next_scheduled('expire_old_events')) {
+        wp_schedule_event(time(), 'daily', 'expire_old_events');
+    }
+}
+add_action('init', 'schedule_expire_events_cron');
+
+/**
+ * Function that runs daily to expire old events
+ */
+function expire_old_events() {
+    // Get all published events
+    $events = get_posts(array(
+        'post_type' => 'events',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'fields' => 'ids'
+    ));
+    
+    $expired_count = 0;
+    
+    foreach ($events as $event_id) {
+        if (is_event_expired($event_id)) {
+            // Change status to expired
+            wp_update_post(array(
+                'ID' => $event_id,
+                'post_status' => 'expired'
+            ));
+            $expired_count++;
+        }
+    }
+    
+    // Log the results
+    if ($expired_count > 0) {
+        error_log("Expired {$expired_count} events on " . date('Y-m-d H:i:s'));
+    }
+}
+add_action('expire_old_events', 'expire_old_events');
+
+/**
+ * Add bulk action to manually expire events
+ */
+function add_expire_events_bulk_action($bulk_actions) {
+    $bulk_actions['expire_events'] = __('Mark as Expired', 'caes-hub');
+    return $bulk_actions;
+}
+add_filter('bulk_actions-edit-events', 'add_expire_events_bulk_action');
+
+/**
+ * Handle the bulk expire action
+ */
+function handle_expire_events_bulk_action($redirect_to, $doaction, $post_ids) {
+    if ($doaction !== 'expire_events') {
+        return $redirect_to;
+    }
+
+    foreach ($post_ids as $post_id) {
+        wp_update_post(array(
+            'ID' => $post_id,
+            'post_status' => 'expired'
+        ));
+    }
+
+    $redirect_to = add_query_arg('bulk_expired_events', count($post_ids), $redirect_to);
+    return $redirect_to;
+}
+add_filter('handle_bulk_actions-edit-events', 'handle_expire_events_bulk_action', 10, 3);
+
+/**
+ * Show admin notice for bulk expire action
+ */
+function expired_events_bulk_action_admin_notice() {
+    if (!empty($_REQUEST['bulk_expired_events'])) {
+        $count = intval($_REQUEST['bulk_expired_events']);
+        printf('<div id="message" class="updated fade"><p>' .
+            _n('Marked %s event as expired.',
+                'Marked %s events as expired.',
+                $count,
+                'caes-hub'
+            ) . '</p></div>', $count);
+    }
+}
+add_action('admin_notices', 'expired_events_bulk_action_admin_notice');
+
+/**
+ * Add bulk action to restore expired events to published
+ */
+function add_restore_events_bulk_action($bulk_actions) {
+    global $typenow;
+    if ($typenow === 'events') {
+        $bulk_actions['restore_events'] = __('Restore to Published', 'caes-hub');
+    }
+    return $bulk_actions;
+}
+add_filter('bulk_actions-edit-events', 'add_restore_events_bulk_action');
+
+/**
+ * Handle the bulk restore action
+ */
+function handle_restore_events_bulk_action($redirect_to, $doaction, $post_ids) {
+    if ($doaction !== 'restore_events') {
+        return $redirect_to;
+    }
+
+    foreach ($post_ids as $post_id) {
+        wp_update_post(array(
+            'ID' => $post_id,
+            'post_status' => 'publish'
+        ));
+    }
+
+    $redirect_to = add_query_arg('bulk_restored_events', count($post_ids), $redirect_to);
+    return $redirect_to;
+}
+add_filter('handle_bulk_actions-edit-events', 'handle_restore_events_bulk_action', 10, 3);
+
+/**
+ * Show admin notice for bulk restore action
+ */
+function restored_events_bulk_action_admin_notice() {
+    if (!empty($_REQUEST['bulk_restored_events'])) {
+        $count = intval($_REQUEST['bulk_restored_events']);
+        printf('<div id="message" class="updated fade"><p>' .
+            _n('Restored %s event to published.',
+                'Restored %s events to published.',
+                $count,
+                'caes-hub'
+            ) . '</p></div>', $count);
+    }
+}
+add_action('admin_notices', 'restored_events_bulk_action_admin_notice');
+
+/**
+ * Add filter links to show expired events in admin
+ */
+function add_expired_events_filter_link($views) {
+    global $typenow;
+    
+    if ($typenow === 'events') {
+        $expired_count = wp_count_posts('events')->expired ?? 0;
+        
+        if ($expired_count > 0) {
+            $class = (isset($_GET['post_status']) && $_GET['post_status'] === 'expired') ? 'current' : '';
+            $views['expired'] = sprintf(
+                '<a href="%s" class="%s">%s <span class="count">(%d)</span></a>',
+                admin_url('edit.php?post_type=events&post_status=expired'),
+                $class,
+                __('Expired', 'caes-hub'),
+                $expired_count
+            );
+        }
+    }
+    
+    return $views;
+}
+add_filter('views_edit-events', 'add_expired_events_filter_link');
+
+/**
+ * Manual trigger for testing (remove in production or protect with capability check)
+ */
+function add_expire_events_admin_action() {
+    if (current_user_can('manage_options') && isset($_GET['expire_events_now'])) {
+        expire_old_events();
+        wp_redirect(admin_url('edit.php?post_type=events&expired_now=1'));
+        exit;
+    }
+}
+add_action('admin_init', 'add_expire_events_admin_action');

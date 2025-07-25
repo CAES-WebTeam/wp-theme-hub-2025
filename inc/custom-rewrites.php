@@ -23,6 +23,42 @@ function custom_news_single_rewrite_rule() {
 }
 add_action('init', 'custom_news_single_rewrite_rule');
 
+// Custom rewrite rules for the event series taxonomy
+function custom_events_rewrite_rules()
+{
+    // Single events rule (corrected)
+    add_rewrite_rule(
+        '^events/([^/]+)/?$',
+        'index.php?events=$matches[1]',
+        'top'
+    );
+
+    // Event series rules
+    add_rewrite_rule(
+        '^events/series/([^/]+)/?$',
+        'index.php?event_series=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^events/series/([^/]+)/page/([0-9]+)/?$',
+        'index.php?event_series=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+
+    // CAES departments rules
+    add_rewrite_rule(
+        '^events/departments/([^/]+)/?$',
+        'index.php?event_caes_departments=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^events/departments/([^/]+)/page/([0-9]+)/?$',
+        'index.php?event_caes_departments=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+}
+add_action('init', 'custom_events_rewrite_rules');
+
 /**
  * Custom rewrite rule for 'events' post type.
  * This ensures URLs like /events/slug-of-event/ are correctly routed.
@@ -249,3 +285,26 @@ function redirect_publications_to_canonical_url()
     }
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
+
+
+// Redirect old caes-departments URLs to new departments URLs
+function redirect_old_department_urls() {
+    // Only run on frontend
+    if (is_admin()) return;
+    
+    // Check if we're on the old department taxonomy URL
+    if (is_tax('event_caes_departments')) {
+        $current_url = $_SERVER['REQUEST_URI'];
+        
+        // Check if URL contains the old format
+        if (strpos($current_url, '/events/caes-departments/') !== false) {
+            // Replace old path with new path
+            $new_url = str_replace('/events/caes-departments/', '/events/departments/', $current_url);
+            
+            // Perform 301 redirect
+            wp_redirect(home_url($new_url), 301);
+            exit;
+        }
+    }
+}
+add_action('template_redirect', 'redirect_old_department_urls');
