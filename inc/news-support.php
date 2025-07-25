@@ -227,6 +227,18 @@
 //     wp_die("Processed posts {$start} to " . ($start + $limit - 1) . ". Featured images assigned: {$updated}");
 // });
 
+// Make regular posts show as /news/post-name/
+add_filter('post_type_link', function($link, $post) {
+    if ($post->post_type === 'post') {
+        return home_url('/news/' . $post->post_name . '/');
+    }
+    return $link;
+}, 10, 2);
+
+// Add rewrite rule for /news/ posts
+add_action('init', function() {
+    add_rewrite_rule('^news/([^/]+)/?$', 'index.php?name=$matches[1]', 'top');
+});
 
 // Replace permalink with ACF external URL if set and valid
 function custom_external_story_url($url, $post = null)
@@ -251,10 +263,10 @@ function custom_external_story_url($url, $post = null)
 }
 
 // Apply to standard permalink filters
-add_filter('post_link', 'custom_external_story_url', 10, 2);
-add_filter('post_type_link', 'custom_external_story_url', 10, 2);
-add_filter('page_link', 'custom_external_story_url', 10, 2);
-add_filter('post_type_archive_link', 'custom_external_story_url', 10, 2);
+add_filter('post_link', 'custom_external_story_url', 15, 2);
+add_filter('post_type_link', 'custom_external_story_url', 15, 2);
+add_filter('page_link', 'custom_external_story_url', 15, 2);
+add_filter('post_type_archive_link', 'custom_external_story_url', 15, 2);
 
 // Apply to REST API responses (used in block editor, feeds, etc.)
 add_filter('rest_prepare_post', function ($response, $post, $request) {
