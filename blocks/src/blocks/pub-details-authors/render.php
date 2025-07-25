@@ -17,7 +17,6 @@ if (! $is_compact) {
     $headingStyles = 'pub-authors-heading';
 }
 
-
 // Get the block attributes
 $displayVersion = $block['displayVersion'] ?? 'names-only';
 $showHeading = $block['showHeading'] ?? false;
@@ -77,28 +76,25 @@ if (!function_exists('process_people')) {
 
         if ($people) {
             foreach ($people as $item) {
-                // Determine the correct user ID from the item
-                $user_id_candidate = null;
-
-                // First, try the 'user' key (how ACF usually returns it)
+                // Get user ID from the ACF structure
+                $user_id = null;
+                
+                // First check for 'user' key (standard ACF format)
                 if (isset($item['user']) && !empty($item['user'])) {
-                    $user_id_candidate = $item['user'];
+                    $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
                 }
-
-                // If 'user' key is empty, check for known ACF internal field keys
-                // These keys come from your debug logs: field_680a5264b5ab0 for authors, field_67e174198d9a2 for experts
-                if (empty($user_id_candidate)) {
-                    if (isset($item['field_680a5264b5ab0']) && is_numeric($item['field_680a5264b5ab0'])) {
-                        $user_id_candidate = $item['field_680a5264b5ab0'];
-                    } elseif (isset($item['field_67e174198d9a2']) && is_numeric($item['field_67e174198d9a2'])) {
-                        $user_id_candidate = $item['field_67e174198d9a2'];
+                
+                // Fallback: check for numeric values in any field (ACF internal field keys)
+                if (empty($user_id) && is_array($item)) {
+                    foreach ($item as $key => $value) {
+                        if (is_numeric($value) && $value > 0) {
+                            $user_id = $value;
+                            break;
+                        }
                     }
                 }
 
-                // Ensure the extracted user_id is a simple ID, not an array if ACF passes it that way
-                $user_id = is_array($user_id_candidate) ? ($user_id_candidate['ID'] ?? null) : $user_id_candidate;
-
-                if ($user_id) {
+                if ($user_id && is_numeric($user_id)) {
                     $first_name = get_the_author_meta('first_name', $user_id);
                     $last_name = get_the_author_meta('last_name', $user_id);
                     $profile_url = get_author_posts_url($user_id);

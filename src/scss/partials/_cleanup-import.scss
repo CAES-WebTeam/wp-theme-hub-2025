@@ -540,6 +540,11 @@ figure.image:not(.wp-block-image) {
 // Publications
 
 .single-publications {
+
+    p.authors {
+        display: none;
+    }
+
     .entry-content {
         clear: both;
         figure:not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
