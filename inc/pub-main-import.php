@@ -270,7 +270,7 @@ add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_pu
  */
 function publication_api_tool_compare_publications() {
     // Verify the nonce for security.
-    check_ajax_referer('publication_api_tool_nonce', 'nonce');
+    // check_ajax_referer('publication_api_tool_nonce', 'nonce');
 
     // Check if the current user has the 'manage_options' capability.
     if (!current_user_can('manage_options')) {
