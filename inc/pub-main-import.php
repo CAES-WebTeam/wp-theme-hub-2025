@@ -19,6 +19,7 @@ function publication_api_tool_menu_page() {
 /**
  * Renders the content of the admin page, including the button and log area.
  */
+
 function publication_api_tool_render_page() {
     // Generate a nonce for security. This is crucial for AJAX requests.
     $nonce = wp_create_nonce('publication_api_tool_nonce');
@@ -98,67 +99,23 @@ function publication_api_tool_render_page() {
                 logElement.removeClass('info success error').addClass(type);
             }
 
-            // Event listener for the "Fetch Publications" button
-            $('#fetch-publications-btn').on('click', function() {
-                const $button = $(this); // The clicked button element
-                const $logArea = $('#fetch-publications-log'); // The log display area
-
+            // Centralized AJAX handler function for reusability and error handling
+            function performAjaxCall(action, nonce, $button, $logArea, buttonText) {
                 $logArea.empty(); // Clear previous logs
-                $button.prop('disabled', true).text('Fetching...'); // Disable button and change text
+                $button.prop('disabled', true).text(buttonText + 'ing...'); // Disable button and change text
                 setLogAreaClass($logArea, 'info'); // Set log area to 'info' state
-                appendLog($logArea, 'Initiating API request...');
+                appendLog($logArea, 'Initiating AJAX request for ' + action + '...');
 
-                // Perform AJAX request to the WordPress backend
                 $.ajax({
                     url: '<?php echo esc_js($ajax_url); ?>', // WordPress AJAX handler URL
                     type: 'POST',
                     data: {
-                        action: 'fetch_publications_data', // The AJAX action to trigger in PHP
-                        nonce: '<?php echo esc_js($nonce); ?>', // Security nonce
+                        action: action, // The AJAX action to trigger in PHP
+                        nonce: nonce,   // Security nonce
                     },
                     success: function(response) {
                         if (response.success) {
-                            // If the AJAX call was successful (PHP returned wp_send_json_success)
-                            appendLog($logArea, response.data.message, 'success');
-                            if (response.data.log && response.data.log.length > 0) {
-                                response.data.log.forEach(msg => appendLog($logArea, msg, 'detail'));
-                            }
-                            setLogAreaClass($logArea, 'success');
-                        } else {
-                            // If the AJAX call failed (PHP returned wp_send_json_error)
-                            appendLog($logArea, `Error: ${response.data}`, 'error');
-                            setLogAreaClass($logArea, 'error');
-                        }
-                        $button.prop('disabled', false).text('Validate API'); // Re-enable button
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        // Handle network or server errors for the AJAX request
-                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
-                        setLogAreaClass($logArea, 'error');
-                        $button.prop('disabled', false).text('Validate API'); // Re-enable button
-                    }
-                });
-            });
-
-            // Event listener for the "Compare Publications" button
-            $('#compare-publications-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#compare-publications-log');
-
-                $logArea.empty();
-                $button.prop('disabled', true).text('Comparing...');
-                setLogAreaClass($logArea, 'info');
-                appendLog($logArea, 'Initiating comparison...');
-
-                $.ajax({
-                    url: '<?php echo esc_js($ajax_url); ?>',
-                    type: 'POST',
-                    data: {
-                        action: 'compare_publications_data',
-                        nonce: '<?php echo esc_js($nonce); ?>',
-                    },
-                    success: function(response) {
-                        if (response.success) {
+                            // PHP returned wp_send_json_success
                             appendLog($logArea, response.data.message, 'success');
                             if (response.data.log && response.data.log.length > 0) {
                                 response.data.log.forEach(msg => {
@@ -170,19 +127,70 @@ function publication_api_tool_render_page() {
                                 });
                             }
                             setLogAreaClass($logArea, 'success');
+
+                            // Log WordPress post details if available (for 'Compare' action)
+                            if (response.data.wordpress_post_details) {
+                                console.log('All WordPress Post Details:', response.data.wordpress_post_details);
+                                appendLog($logArea, 'WordPress Post Details logged to console.', 'info');
+                            }
+
                         } else {
-                            appendLog($logArea, `Error: ${response.data}`, 'error');
+                            // PHP returned wp_send_json_error
+                            let errorMessage = 'An unknown error occurred.';
+                            if (response.data) {
+                                // response.data from wp_send_json_error is typically a string
+                                // or an object if you passed an array to wp_send_json_error.
+                                // In our PHP, we ensure it's a string, so check for string.
+                                errorMessage = response.data;
+                            }
+                            appendLog($logArea, `Server Error: ${errorMessage}`, 'error');
                             setLogAreaClass($logArea, 'error');
+                            console.error('AJAX Server Error Response:', response); // Log the full response object for deeper inspection
                         }
-                        $button.prop('disabled', false).text('Compare Publications');
+                        $button.prop('disabled', false).text(buttonText); // Re-enable button
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
+                        // This fires for HTTP errors (e.g., 404, 500, no response)
+                        let detailedError = `HTTP Status: ${jqXHR.status} (${textStatus}) - ${errorThrown}`;
+                        let responseText = jqXHR.responseText ? `Response: ${jqXHR.responseText.substring(0, 500)}...` : 'No response text.';
+
+                        // Try to parse JSON if responseText looks like JSON and status isn't 200
+                        if (jqXHR.responseText && jqXHR.responseText.trim().startsWith('{')) {
+                            try {
+                                const errorResponse = JSON.parse(jqXHR.responseText);
+                                if (errorResponse.data) {
+                                    detailedError += ` | Server Message: ${errorResponse.data}`;
+                                } else if (errorResponse.message) { // Sometimes a different structure
+                                    detailedError += ` | Server Message: ${errorResponse.message}`;
+                                }
+                            } catch (e) {
+                                // Not valid JSON, keep as is
+                            }
+                        }
+
+                        appendLog($logArea, `AJAX Request Failed: ${detailedError}`, 'error');
+                        appendLog($logArea, responseText, 'error'); // Show raw response if available
                         setLogAreaClass($logArea, 'error');
-                        $button.prop('disabled', false).text('Compare Publications');
+                        console.error('Full jQuery AJAX Error Object:', jqXHR); // Crucial for debugging
+                        $button.prop('disabled', false).text(buttonText); // Re-enable button
                     }
                 });
+            }
+
+            // Event listener for the "Fetch Publications" button
+            $('#fetch-publications-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#fetch-publications-log');
+                performAjaxCall('fetch_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Validate API');
             });
+
+            // Event listener for the "Compare Publications" button
+            $('#compare-publications-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#compare-publications-log');
+                performAjaxCall('publication_api_tool_compare_publications', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
+            });
+
         });
     </script>
     <?php
