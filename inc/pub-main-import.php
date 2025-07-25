@@ -308,36 +308,48 @@ function publication_api_tool_compare_publications() {
 
         // --- Fetch WordPress Data ---
         $args = array(
-            'post_type'      => 'publications', // Assuming 'publication' is the correct post type
+            'post_type'      => 'publication', // Assuming 'publication' is the correct post type
             'posts_per_page' => -1,          // Get all publications
             'post_status'    => 'publish',   // Only published ones
-            // 'fields'         => 'titles',    // This only returns an array of WP_Post objects with only title property.
-                                             // It's generally safer to get the full post object and then extract the title.
+            'meta_query'     => array(
+                array(
+                    'key'     => 'PUBLICATION_ID', // Ensure this custom field exists and holds the API ID
+                    'compare' => 'EXISTS',         // Only fetch posts that have this custom field
+                ),
+            ),
         );
         $wordpress_publications = get_posts($args);
 
         foreach ($wordpress_publications as $post) {
-            $wordpress_publication_titles[] = $post->post_title;
+            $publication_id = get_post_meta($post->ID, 'PUBLICATION_ID', true);
+            if (!empty($publication_id)) {
+                $wordpress_publication_data[$publication_id] = $post->post_title;
+            }
         }
-        $log[] = "Fetched " . count($wordpress_publication_titles) . " publications from WordPress database.";
+        $log[] = "Fetched " . count($wordpress_publication_data) . " publications from WordPress database with PUBLICATION_ID.";
 
         // --- Compare Data ---
         $discrepancies_found = false;
 
-        // Check for publications in API but not in WordPress
+        // Check for publications in API but not in WordPress (based on PUBLICATION_ID)
         foreach ($api_publication_data as $api_id => $api_title) {
-            if (!in_array($api_title, $wordpress_publication_titles)) {
-                $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress.";
+            if (!array_key_exists($api_id, $wordpress_publication_data)) {
+                $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress by PUBLICATION_ID.";
                 $discrepancies_found = true;
+            } else {
+                // Optional: You could also compare titles if you want to ensure they match for existing IDs
+                if ($api_title !== $wordpress_publication_data[$api_id]) {
+                    $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') has a differing title in WordPress ('{$wordpress_publication_data[$api_id]}').";
+                    $discrepancies_found = true;
+                }
             }
         }
 
-        // Check for publications in WordPress but not in API
-        // We'll create a flat array of API titles for efficient lookup here
-        $api_titles_flat = array_values($api_publication_data);
-        foreach ($wordpress_publication_titles as $wp_title) {
-            if (!in_array($wp_title, $api_titles_flat)) {
-                $log[] = "Discrepancy: WordPress publication (Title: '{$wp_title}') is NOT found in API data.";
+        // Check for publications in WordPress but not in API (based on PUBLICATION_ID)
+        $api_ids_flat = array_keys($api_publication_data);
+        foreach ($wordpress_publication_data as $wp_publication_id => $wp_title) {
+            if (!in_array($wp_publication_id, $api_ids_flat)) {
+                $log[] = "Discrepancy: WordPress publication (PUBLICATION_ID: {$wp_publication_id}, Title: '{$wp_title}') is NOT found in API data.";
                 $discrepancies_found = true;
             }
         }
