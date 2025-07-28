@@ -50,9 +50,6 @@ if ($handSelectPosts) {
 
 <div class="wp-block-caes-hub-carousel-2" <?php echo \get_block_wrapper_attributes(); ?>>
     <?php if (!empty($selectedPosts) && is_array($selectedPosts)) { ?>
-        <div class="caes-hub-carousel__header">
-            <h1 class="caes-hub-carousel__title">Top Stories</h1>
-        </div>
         <section class="wp-block-caes-hub-carousel__inner-wrapper" aria-labelledby="carouselTitle">
             <div class="sr-only" id="carouselTitle">
                 <h2>Featured</h2>
