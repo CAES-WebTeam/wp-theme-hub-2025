@@ -19,7 +19,6 @@ function publication_api_tool_menu_page() {
 /**
  * Renders the content of the admin page, including the button and log area.
  */
-
 function publication_api_tool_render_page() {
     // Generate a nonce for security. This is crucial for AJAX requests.
     $nonce = wp_create_nonce('publication_api_tool_nonce');
@@ -99,23 +98,67 @@ function publication_api_tool_render_page() {
                 logElement.removeClass('info success error').addClass(type);
             }
 
-            // Centralized AJAX handler function for reusability and error handling
-            function performAjaxCall(action, nonce, $button, $logArea, buttonText) {
-                $logArea.empty(); // Clear previous logs
-                $button.prop('disabled', true).text(buttonText + 'ing...'); // Disable button and change text
-                setLogAreaClass($logArea, 'info'); // Set log area to 'info' state
-                appendLog($logArea, 'Initiating AJAX request for ' + action + '...');
+            // Event listener for the "Fetch Publications" button
+            $('#fetch-publications-btn').on('click', function() {
+                const $button = $(this); // The clicked button element
+                const $logArea = $('#fetch-publications-log'); // The log display area
 
+                $logArea.empty(); // Clear previous logs
+                $button.prop('disabled', true).text('Fetching...'); // Disable button and change text
+                setLogAreaClass($logArea, 'info'); // Set log area to 'info' state
+                appendLog($logArea, 'Initiating API request...');
+
+                // Perform AJAX request to the WordPress backend
                 $.ajax({
                     url: '<?php echo esc_js($ajax_url); ?>', // WordPress AJAX handler URL
                     type: 'POST',
                     data: {
-                        action: action, // The AJAX action to trigger in PHP
-                        nonce: nonce,   // Security nonce
+                        action: 'fetch_publications_data', // The AJAX action to trigger in PHP
+                        nonce: '<?php echo esc_js($nonce); ?>', // Security nonce
                     },
                     success: function(response) {
                         if (response.success) {
-                            // PHP returned wp_send_json_success
+                            // If the AJAX call was successful (PHP returned wp_send_json_success)
+                            appendLog($logArea, response.data.message, 'success');
+                            if (response.data.log && response.data.log.length > 0) {
+                                response.data.log.forEach(msg => appendLog($logArea, msg, 'detail'));
+                            }
+                            setLogAreaClass($logArea, 'success');
+                        } else {
+                            // If the AJAX call failed (PHP returned wp_send_json_error)
+                            appendLog($logArea, `Error: ${response.data}`, 'error');
+                            setLogAreaClass($logArea, 'error');
+                        }
+                        $button.prop('disabled', false).text('Validate API'); // Re-enable button
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        // Handle network or server errors for the AJAX request
+                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
+                        setLogAreaClass($logArea, 'error');
+                        $button.prop('disabled', false).text('Validate API'); // Re-enable button
+                    }
+                });
+            });
+
+            // Event listener for the "Compare Publications" button
+            $('#compare-publications-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#compare-publications-log');
+
+                $logArea.empty();
+                $button.prop('disabled', true).text('Comparing...');
+                setLogAreaClass($logArea, 'info');
+                appendLog($logArea, 'Initiating comparison...');
+
+                $.ajax({
+                    url: '<?php echo esc_js($ajax_url); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'compare_publications_data',
+                        nonce: '<?php echo esc_js($nonce); ?>',
+                    },
+                    success: function(response) {
+                        if (response.success) {
                             appendLog($logArea, response.data.message, 'success');
                             if (response.data.log && response.data.log.length > 0) {
                                 response.data.log.forEach(msg => {
@@ -127,70 +170,19 @@ function publication_api_tool_render_page() {
                                 });
                             }
                             setLogAreaClass($logArea, 'success');
-
-                            // Log WordPress post details if available (for 'Compare' action)
-                            if (response.data.wordpress_post_details) {
-                                console.log('All WordPress Post Details:', response.data.wordpress_post_details);
-                                appendLog($logArea, 'WordPress Post Details logged to console.', 'info');
-                            }
-
                         } else {
-                            // PHP returned wp_send_json_error
-                            let errorMessage = 'An unknown error occurred.';
-                            if (response.data) {
-                                // response.data from wp_send_json_error is typically a string
-                                // or an object if you passed an array to wp_send_json_error.
-                                // In our PHP, we ensure it's a string, so check for string.
-                                errorMessage = response.data;
-                            }
-                            appendLog($logArea, `Server Error: ${errorMessage}`, 'error');
+                            appendLog($logArea, `Error: ${response.data}`, 'error');
                             setLogAreaClass($logArea, 'error');
-                            console.error('AJAX Server Error Response:', response); // Log the full response object for deeper inspection
                         }
-                        $button.prop('disabled', false).text(buttonText); // Re-enable button
+                        $button.prop('disabled', false).text('Compare Publications');
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
-                        // This fires for HTTP errors (e.g., 404, 500, no response)
-                        let detailedError = `HTTP Status: ${jqXHR.status} (${textStatus}) - ${errorThrown}`;
-                        let responseText = jqXHR.responseText ? `Response: ${jqXHR.responseText.substring(0, 500)}...` : 'No response text.';
-
-                        // Try to parse JSON if responseText looks like JSON and status isn't 200
-                        if (jqXHR.responseText && jqXHR.responseText.trim().startsWith('{')) {
-                            try {
-                                const errorResponse = JSON.parse(jqXHR.responseText);
-                                if (errorResponse.data) {
-                                    detailedError += ` | Server Message: ${errorResponse.data}`;
-                                } else if (errorResponse.message) { // Sometimes a different structure
-                                    detailedError += ` | Server Message: ${errorResponse.message}`;
-                                }
-                            } catch (e) {
-                                // Not valid JSON, keep as is
-                            }
-                        }
-
-                        appendLog($logArea, `AJAX Request Failed: ${detailedError}`, 'error');
-                        appendLog($logArea, responseText, 'error'); // Show raw response if available
+                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
                         setLogAreaClass($logArea, 'error');
-                        console.error('Full jQuery AJAX Error Object:', jqXHR); // Crucial for debugging
-                        $button.prop('disabled', false).text(buttonText); // Re-enable button
+                        $button.prop('disabled', false).text('Compare Publications');
                     }
                 });
-            }
-
-            // Event listener for the "Fetch Publications" button
-            $('#fetch-publications-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#fetch-publications-log');
-                performAjaxCall('fetch_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Validate API');
             });
-
-            // Event listener for the "Compare Publications" button
-            $('#compare-publications-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#compare-publications-log');
-                performAjaxCall('publication_api_tool_compare_publications', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
-            });
-
         });
     </script>
     <?php
@@ -278,37 +270,26 @@ add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_pu
  */
 function publication_api_tool_compare_publications() {
     // Verify the nonce for security.
-    if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) { // 'false' prevents automatic die()
-        wp_send_json_error('Security check failed: Invalid nonce.', 403); // Use HTTP status code 403 for Forbidden
-    }
-    check_ajax_referer('publication_api_tool_nonce', 'nonce');
+    // check_ajax_referer('publication_api_tool_nonce', 'nonce');
 
     // Check if the current user has the 'manage_options' capability.
     if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied: You do not have sufficient permissions.', 403);
+        wp_send_json_error('You do not have sufficient permissions.');
     }
 
     $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
     $log = []; // Array to store log messages
     $api_publication_data = []; // Store ID and Title for API publications
-    $wordpress_publication_data = []; // Store custom field PUBLICATION_ID and Title for WordPress publications
-    $all_wordpress_post_details = []; // New array to store all fetched WordPress post details
+    $wordpress_publication_titles = [];
 
     try {
         // --- Fetch API Data ---
-        $log[] = "Attempting to fetch data from API...";
-        try {
-            $response = wp_remote_get($api_url, array('timeout' => 30)); // Added timeout for robustness
-            if (is_wp_error($response)) {
-                throw new Exception('API Request Failed: ' . $response->get_error_message());
-            }
-
-            $raw_JSON = wp_remote_retrieve_body($response);
-            if (empty($raw_JSON)) {
-                throw new Exception('API returned empty response body.');
-            }
-
-            $decoded_API_response = json_decode($raw_JSON, true);
+        $response = wp_remote_get($api_url);
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new Exception('JSON decode error from API: ' . json_last_error_msg());
@@ -317,89 +298,48 @@ function publication_api_tool_compare_publications() {
             throw new Exception('Invalid API response format: Expected an array.');
         }
 
-            foreach ($decoded_API_response as $publication) {
-                if (isset($publication['ID']) && isset($publication['TITLE'])) {
-                    $api_publication_data[$publication['ID']] = $publication['TITLE'];
-                } else {
-                    $log[] = "Warning: API publication missing 'ID' or 'TITLE' field. Data: " . json_encode($publication);
-                }
+        foreach ($decoded_API_response as $publication) {
+            if (isset($publication['ID']) && isset($publication['TITLE'])) { // Use 'TITLE' as per your sample data
+                // Store both ID and Title for comparison if needed, or just the title for title-based comparison
+                $api_publication_data[$publication['ID']] = $publication['TITLE'];
             }
-            $log[] = "Successfully fetched " . count($api_publication_data) . " publications from API.";
-
-        } catch (Exception $e) {
-            throw new Exception('API Fetch Error: ' . $e->getMessage()); // Re-throw with context
         }
+        $log[] = "Fetched " . count($api_publication_data) . " publications from API.";
 
         // --- Fetch WordPress Data ---
-        $log[] = "Attempting to fetch data from WordPress database...";
-        try { // <--- THIS WAS MISSING
-            $args = array(
-                'post_type'      => 'publication', // Corrected 'publications' to 'publication' based on previous context
-                'posts_per_page' => -1,          // Get all publications
-                'post_status'    => 'publish',   // Only published ones
-            );
-            $wordpress_publications = get_posts($args);
+        $args = array(
+            'post_type'      => 'publications', // Assuming 'publications' is the correct post type
+            'posts_per_page' => -1,          // Get all publications
+            'post_status'    => 'publish',   // Only published ones
+            // 'fields'         => 'titles',    // This only returns an array of WP_Post objects with only title property.
+                                             // It's generally safer to get the full post object and then extract the title.
+        );
+        $wordpress_publications = get_posts($args);
 
-            if (empty($wordpress_publications)) {
-                $log[] = "No published 'publication' posts found in WordPress.";
-            }
-
-            foreach ($wordpress_publications as $post) {
-                // Fetch all standard post fields
-                $post_details = $post->to_array();
-
-                // Fetch all custom fields for the current post
-                $custom_fields = get_post_meta($post->ID);
-                $formatted_custom_fields = [];
-                foreach ($custom_fields as $key => $value) {
-                    $formatted_custom_fields[$key] = maybe_unserialize($value[0]);
-                }
-                $post_details['custom_fields'] = $formatted_custom_fields;
-                $all_wordpress_post_details[] = $post_details;
-
-                // Continue populating $wordpress_publication_data IF PUBLICATION_ID is still needed for comparison later
-                $publication_id = get_post_meta($post->ID, 'PUBLICATION_ID', true);
-                if (!empty($publication_id)) {
-                    $wordpress_publication_data[$publication_id] = $post->post_title;
-                }
-            }
-            $log[] = "Successfully fetched " . count($wordpress_publications) . " publications from WordPress database (including all fields).";
-            $log[] = "Populated " . count($wordpress_publication_data) . " publications from WordPress database with PUBLICATION_ID (for comparison).";
-
-        } catch (Exception $e) {
-            throw new Exception('WordPress Data Fetch Error: ' . $e->getMessage()); // Re-throw with context
+        foreach ($wordpress_publications as $post) {
+            $wordpress_publication_titles[] = $post->post_title;
         }
+        $log[] = "Fetched " . count($wordpress_publication_titles) . " publications from WordPress database.";
 
         // --- Compare Data ---
-        $log[] = "Initiating comparison of API and WordPress data...";
         $discrepancies_found = false;
 
-        try {
-            // Check for publications in API but not in WordPress (based on PUBLICATION_ID)
-            foreach ($api_publication_data as $api_id => $api_title) {
-                if (!array_key_exists($api_id, $wordpress_publication_data)) {
-                    $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress by PUBLICATION_ID.";
-                    $discrepancies_found = true;
-                } else {
-                    if ($api_title !== $wordpress_publication_data[$api_id]) {
-                        $log[] = "Discrepancy: API publication (ID: {$api_id}, API Title: '{$api_title}', WP Title: '{$wordpress_publication_data[$api_id]}') has a differing title in WordPress.";
-                        $discrepancies_found = true;
-                    }
-                }
+        // Check for publications in API but not in WordPress
+        foreach ($api_publication_data as $api_id => $api_title) {
+            if (!in_array($api_title, $wordpress_publication_titles)) {
+                $log[] = "Discrepancy: API publication (ID: {$api_id}, Title: '{$api_title}') is NOT found in WordPress.";
+                $discrepancies_found = true;
             }
+        }
 
-            // Check for publications in WordPress but not in API (based on PUBLICATION_ID)
-            $api_ids_flat = array_keys($api_publication_data);
-            foreach ($wordpress_publication_data as $wp_publication_id => $wp_title) {
-                if (!in_array($wp_publication_id, $api_ids_flat)) {
-                    $log[] = "Discrepancy: WordPress publication (PUBLICATION_ID: {$wp_publication_id}, Title: '{$wp_title}') is NOT found in API data.";
-                    $discrepancies_found = true;
-                }
+        // Check for publications in WordPress but not in API
+        // We'll create a flat array of API titles for efficient lookup here
+        $api_titles_flat = array_values($api_publication_data);
+        foreach ($wordpress_publication_titles as $wp_title) {
+            if (!in_array($wp_title, $api_titles_flat)) {
+                $log[] = "Discrepancy: WordPress publication (Title: '{$wp_title}') is NOT found in API data.";
+                $discrepancies_found = true;
             }
-            $log[] = "Comparison complete.";
-
-        } catch (Exception $e) {
-            throw new Exception('Comparison Logic Error: ' . $e->getMessage()); // Re-throw with context
         }
 
         $message = "Comparison complete. " . ( $discrepancies_found ? "Discrepancies found. See log for details." : "No discrepancies found." );
@@ -407,11 +347,9 @@ function publication_api_tool_compare_publications() {
         wp_send_json_success([
             'message' => $message,
             'log' => $log,
-            'wordpress_post_details' => $all_wordpress_post_details,
         ]);
 
     } catch (Exception $e) {
         error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
         wp_send_json_error('Comparison Error: ' . $e->getMessage());
     }
-}
