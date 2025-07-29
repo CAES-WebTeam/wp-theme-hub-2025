@@ -288,48 +288,94 @@ function publication_api_tool_compare_publications() {
     }
 
     $log = []; // Array to store log messages
-
-    // $message = "Terminating script early before records fetched.";
-    // wp_send_json_success([
-    //     'message' => $message,
-    //     'log'     => $log,
-    // ]);
+    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
+    $api_publication_ids = [];
+    $wordpress_publication_ids = [];
 
     try {
+        // --- Fetch API Data (similar to publication_api_tool_fetch_publications) ---
+        $log[] = "Attempting to fetch publication data from the API...";
+        $response = wp_remote_get($api_url);
+
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        foreach ($decoded_API_response as $publication) {
+            if (isset($publication['ID'])) {
+                $api_publication_ids[] = (string) $publication['ID']; // Ensure string for consistent comparison
+            }
+        }
+        $log[] = "Successfully fetched " . count($api_publication_ids) . " publication IDs from the API.";
+
         // --- Fetch WordPress Data ---
         $log[] = "Attempting to access publications in the WordPress database...";
         $args = array(
             'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
             'post_status'    => 'publish', // Only published ones
-            'field'         => 'ids', // Only fetch IDs for efficiency, as we just need a count
+            'fields'         => 'ids', // Only fetch IDs for efficiency
         );
         $wordpress_publication_ids = get_posts($args);
 
-        $count = count($wordpress_publication_ids);
+        // Convert WordPress IDs to strings for consistent comparison with API IDs
+        $wordpress_publication_ids = array_map('strval', $wordpress_publication_ids);
 
-        if ($count > 0) {
-            $message = "Successfully located {$count} published 'publication' records in the WordPress database.";
-            wp_send_json_success([
-                'message' => $message,
-                'log'     => $log,
-            ]);
+        $log[] = "Successfully located " . count($wordpress_publication_ids) . " published 'publication' records in the WordPress database.";
+
+        // --- Compare IDs ---
+        $message = "Comparison Results:";
+        $discrepancies_found = false;
+
+        // IDs present in API but not in WordPress
+        $api_only_ids = array_diff($api_publication_ids, $wordpress_publication_ids);
+        if (!empty($api_only_ids)) {
+            $discrepancies_found = true;
+            $log[] = "Discrepancy: " . count($api_only_ids) . " publications found in API but not in WordPress.";
+            foreach ($api_only_ids as $id) {
+                $log[] = "Discrepancy: API ID '{$id}' is missing in WordPress.";
+            }
         } else {
-            $message = "No published 'publication' records found in the WordPress database.";
-            wp_send_json_success([ // Still a "success" in terms of request completion, but with no records found
-                'message' => $message,
-                'log'     => $log,
-            ]);
+            $log[] = "No API publications missing from WordPress.";
         }
 
-    } catch (Exception $e) {
-        // error_log('WordPress Publication Check Tool Error: ' . $e->getMessage());
-        // wp_send_json_error('Error accessing WordPress publications: ' . $e->getMessage());
+        // IDs present in WordPress but not in API
+        $wordpress_only_ids = array_diff($wordpress_publication_ids, $api_publication_ids);
+        if (!empty($wordpress_only_ids)) {
+            $discrepancies_found = true;
+            $log[] = "Discrepancy: " . count($wordpress_only_ids) . " publications found in WordPress but not in API.";
+            foreach ($wordpress_only_ids as $id) {
+                $log[] = "Discrepancy: WordPress ID '{$id}' is missing from API.";
+            }
+        } else {
+            $log[] = "No WordPress publications missing from API.";
+        }
 
-        $message = "Had an error fetching the records.";
-            wp_send_json_success([ // Still a "success" in terms of request completion, but with no records found
-                'message' => $message,
-                'log'     => $log,
-            ]);
+        if (!$discrepancies_found) {
+            $log[] = "All API publication IDs match WordPress publication IDs. No discrepancies found.";
+            $message = "Comparison complete: All IDs match.";
+        } else {
+            $message = "Comparison complete: Discrepancies found.";
+        }
+
+        wp_send_json_success([
+            'message' => $message,
+            'log'     => $log,
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
+        wp_send_json_error('Error during comparison: ' . $e->getMessage());
     }
 }
