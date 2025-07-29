@@ -296,7 +296,7 @@ function publication_api_tool_compare_publications() {
             'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
             'post_status'    => 'publish', // Only published ones
-            'fields'         => 'ids', // Only fetch IDs for efficiency, as we just need a count
+            // 'field'         => 'ids', // Only fetch IDs for efficiency, as we just need a count
         );
         $wordpress_publication_ids = get_posts($args);
 
