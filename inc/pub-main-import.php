@@ -293,7 +293,7 @@ function publication_api_tool_compare_publications() {
         // --- Fetch WordPress Data ---
         $log[] = "Attempting to access publications in the WordPress database...";
         $args = array(
-            'post_type'      => 'publication',
+            'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
             'post_status'    => 'publish', // Only published ones
             'fields'         => 'ids', // Only fetch IDs for efficiency, as we just need a count
