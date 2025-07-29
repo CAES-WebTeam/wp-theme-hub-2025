@@ -317,7 +317,13 @@ function publication_api_tool_compare_publications() {
         }
 
     } catch (Exception $e) {
-        error_log('WordPress Publication Check Tool Error: ' . $e->getMessage());
-        wp_send_json_error('Error accessing WordPress publications: ' . $e->getMessage());
+        // error_log('WordPress Publication Check Tool Error: ' . $e->getMessage());
+        // wp_send_json_error('Error accessing WordPress publications: ' . $e->getMessage());
+
+        $message = "Had an error fetching the records.";
+            wp_send_json_success([ // Still a "success" in terms of request completion, but with no records found
+                'message' => $message,
+                'log'     => $log,
+            ]);
     }
 }
