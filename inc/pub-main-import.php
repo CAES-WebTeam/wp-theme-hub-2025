@@ -289,6 +289,12 @@ function publication_api_tool_compare_publications() {
 
     $log = []; // Array to store log messages
 
+    $message = "Terminating script early before records fetched.";
+    wp_send_json_success([
+        'message' => $message,
+        'log'     => $log,
+    ]);
+
     try {
         // --- Fetch WordPress Data ---
         $log[] = "Attempting to access publications in the WordPress database...";
