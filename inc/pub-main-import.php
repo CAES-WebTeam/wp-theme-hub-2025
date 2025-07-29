@@ -188,7 +188,7 @@ function publication_api_tool_render_page() {
             $('#compare-publications-btn').on('click', function() {
                 const $button = $(this);
                 const $logArea = $('#compare-publications-log');
-                performAjaxCall('publication_api_tool_compare_publications', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
+                performAjaxCall('compare_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
             });
 
         });
