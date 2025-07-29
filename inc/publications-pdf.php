@@ -126,8 +126,26 @@ class MYPDF extends TCPDF
 
             // Publication number (left) and publish history (right)
             $formatted_pub_number_string = format_publication_number_for_display($this->publication_number_for_footer);
-            $latest_published_date = get_latest_published_date($this->post_id);
-            $publish_history_text = !empty($latest_published_date) ? 'Published with reviews on ' . date('F j, Y', strtotime($latest_published_date)) : '';
+            $latest_published_info = get_latest_published_date($this->post_id);
+            
+            // Status labels for publication history
+            $status_labels = [
+                1 => 'Unpublished/Removed',
+                2 => 'Published',
+                4 => 'Published with Minor Revisions',
+                5 => 'Published with Major Revisions',
+                6 => 'Published with Full Review',
+                7 => 'Historic/Archived',
+                8 => 'In Review for Minor Revisions',
+                9 => 'In Review for Major Revisions',
+                10 => 'In Review'
+            ];
+            
+            $publish_history_text = '';
+            if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
+                $status_label = isset($status_labels[$latest_published_info['status']]) ? $status_labels[$latest_published_info['status']] : 'Published';
+                $publish_history_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
+            }
 
             $this->SetFont('georgia', 'B', 8);
             $this->writeHTMLCell($content_width / 2, 5, $margins['left'], $y_position, $formatted_pub_number_string, 0, 0, false, true, 'L');
@@ -191,10 +209,10 @@ class MYPDF extends TCPDF
 }
 
 /**
- * Get the latest published date from the publication history
+ * Get the latest published date and status from the publication history
  *
  * @param int $post_id The post ID
- * @return string The latest published date or empty string if none found
+ * @return array Array with 'date' and 'status' keys, or empty array if none found
  */
 function get_latest_published_date($post_id)
 {
@@ -205,6 +223,7 @@ function get_latest_published_date($post_id)
     $published_statuses = [2, 4, 5, 6];
 
     $latest_date = '';
+    $latest_status = 0;
     $latest_timestamp = 0;
 
     if ($history && is_array($history)) {
@@ -221,12 +240,16 @@ function get_latest_published_date($post_id)
                 if ($timestamp > $latest_timestamp) {
                     $latest_timestamp = $timestamp;
                     $latest_date = $date;
+                    $latest_status = $status;
                 }
             }
         }
     }
 
-    return $latest_date;
+    return [
+        'date' => $latest_date,
+        'status' => $latest_status
+    ];
 }
 
 /**
@@ -655,7 +678,8 @@ function generate_pdf()
         }
 
         // Get the latest published date from history
-        $latest_published_date = get_latest_published_date($post_id);
+        $latest_published_info = get_latest_published_date($post_id);
+        $latest_published_date = $latest_published_info['date'];
 
         // --- End: Dynamic Metadata and Data for PDF Content ---
 
