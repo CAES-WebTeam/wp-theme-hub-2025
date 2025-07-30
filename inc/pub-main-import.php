@@ -27,12 +27,12 @@ function publication_api_tool_render_page() {
     $ajax_url = admin_url('admin-ajax.php');
     ?>
     <div class="wrap">
-        <h1>Publication API Tool</h1>
-        <p>Click the button below to access the Publications API, validate its JSON response, and count the number of publications fetched.</p>
+        <h1>Publication Import Tools</h1>
+        <p>Useful tools for pulling in publications data from the CAES API</p>
 
         <hr>
 
-        <h2>Access Publication Data</h2>
+        <h2>Verify API</h2>
         <p>This will fetch publication data from the API and display the count.</p>
         <button class="button button-primary" id="fetch-publications-btn">Validate API</button>
         <div id="fetch-publications-log" class="log-area"></div>
@@ -289,8 +289,8 @@ function publication_api_tool_compare_publications() {
 
     $log = []; // Array to store log messages
     $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
-    $api_publication_numbers = [];
-    $wordpress_publication_numbers = []; // Changed to store publication numbers
+    $api_publication_ids = [];
+    $wordpress_publication_ids = []; // Changed to store publication ids
 
     try {
         // --- Fetch API Data (similar to publication_api_tool_fetch_publications) ---
@@ -313,14 +313,14 @@ function publication_api_tool_compare_publications() {
         }
 
         foreach ($decoded_API_response as $publication) {
-            if (isset($publication['PUBLICATION_NUMBER'])) {
-                $api_publication_numbers[] = (string) $publication['PUBLICATION_NUMBER']; // Ensure string for consistent comparison
+            if (isset($publication['PUBLICATION_ID'])) {
+                $api_publication_ids[] = (string) $publication['PUBLICATION_ID']; // Ensure string for consistent comparison
             }
         }
-        $log[] = "Successfully fetched " . count($api_publication_numbers) . " publication IDs from the API.";
+        $log[] = "Successfully fetched " . count($api_publication_ids) . " publication IDs from the API.";
 
         // --- Fetch WordPress Data and ACF field ---
-        $log[] = "Attempting to access publications and their 'publication_number' field in the WordPress database...";
+        $log[] = "Attempting to access publications and their 'publication_id' field in the WordPress database...";
         $args = array(
             'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
@@ -330,48 +330,48 @@ function publication_api_tool_compare_publications() {
 
         if (!empty($wordpress_posts)) {
             foreach ($wordpress_posts as $post) {
-                // Get the ACF field 'publication_number' for each post
-                $publication_number = get_field('publication_number', $post->ID);
-                if ($publication_number) {
-                    $wordpress_publication_numbers[] = (string) $publication_number; // Ensure string for consistent comparison
+                // Get the ACF field 'publication_id' for each post
+                $publication_id = get_field('publication_id', $post->ID);
+                if ($publication_id) {
+                    $wordpress_publication_ids[] = (string) $publication_id; // Ensure string for consistent comparison
                 } else {
-                    $log[] = "Warning: WordPress post ID '{$post->ID}' is missing the 'publication_number' ACF field.";
+                    $log[] = "Warning: WordPress post ID '{$post->ID}' is missing the 'publication_id' ACF field.";
                 }
             }
         }
 
-        $log[] = "Successfully located " . count($wordpress_publication_numbers) . " 'publication_number' records from published 'publication' posts in the WordPress database.";
+        $log[] = "Successfully located " . count($wordpress_publication_ids) . " 'publication_id' records from published 'publication' posts in the WordPress database.";
 
-        // --- Compare IDs (now comparing API IDs with WordPress publication numbers) ---
+        // --- Compare IDs (now comparing API IDs with WordPress publication ids) ---
         $message = "Comparison Results:";
         $discrepancies_found = false;
 
-        // IDs present in API but not in WordPress (using publication_number)
-        $api_only_ids = array_diff($api_publication_numbers, $wordpress_publication_numbers);
+        // IDs present in API but not in WordPress (using publication_id)
+        $api_only_ids = array_diff($api_publication_ids, $wordpress_publication_ids);
         if (!empty($api_only_ids)) {
             $discrepancies_found = true;
-            $log[] = "Discrepancy: " . count($api_only_ids) . " publications found in API but no matching 'publication_number' in WordPress.";
+            $log[] = "Discrepancy: " . count($api_only_ids) . " publications found in API but no matching 'publication_id' in WordPress.";
             foreach ($api_only_ids as $id) {
-                $log[] = "Discrepancy: API ID '{$id}' is missing in WordPress (by 'publication_number').";
+                $log[] = "Discrepancy: API ID '{$id}' is missing in WordPress (by 'publication_id').";
             }
         } else {
-            $log[] = "No API publications missing from WordPress (by 'publication_number').";
+            $log[] = "No API publications missing from WordPress (by 'publication_id').";
         }
 
-        // IDs (publication_numbers) present in WordPress but not in API
-        $wordpress_only_numbers = array_diff($wordpress_publication_numbers, $api_publication_numbers);
-        if (!empty($wordpress_only_numbers)) {
+        // IDs (publication_ids) present in WordPress but not in API
+        $wordpress_only_ids = array_diff($wordpress_publication_ids, $api_publication_ids);
+        if (!empty($wordpress_only_ids)) {
             $discrepancies_found = true;
-            $log[] = "Discrepancy: " . count($wordpress_only_numbers) . " 'publication_number' fields found in WordPress but not in API.";
-            foreach ($wordpress_only_numbers as $number) {
-                $log[] = "Discrepancy: WordPress 'publication_number' '{$number}' is missing from API.";
+            $log[] = "Discrepancy: " . count($wordpress_only_ids) . " 'publication_id' fields found in WordPress but not in API.";
+            foreach ($wordpress_only_ids as $id) {
+                $log[] = "Discrepancy: WordPress 'publication_id' '{$id}' is missing from API.";
             }
         } else {
-            $log[] = "No WordPress 'publication_number' fields missing from API.";
+            $log[] = "No WordPress 'publication_id' fields missing from API.";
         }
 
         if (!$discrepancies_found) {
-            $log[] = "All API publication IDs match WordPress 'publication_number' fields. No discrepancies found.";
+            $log[] = "All API publication IDs match WordPress 'publication_id' fields. No discrepancies found.";
             $message = "Comparison complete: All IDs match.";
         } else {
             $message = "Comparison complete: Discrepancies found.";
