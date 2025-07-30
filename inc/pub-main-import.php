@@ -349,6 +349,8 @@ function publication_api_tool_compare_publications() {
 
         $log[] = "Successfully located " . count($wordpress_publication_numbers) . " 'publication_number' records from published 'publication' posts in the WordPress database.";
 
+
+        $log[] = wordpress_posts_details;
         wp_send_json_success([
             'message' => $message,
             'log'     => $wordpress_posts_details,
