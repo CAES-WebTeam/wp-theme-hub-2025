@@ -131,7 +131,10 @@ function publication_api_tool_render_page() {
                             // Log WordPress post details if available (for 'Compare' action)
                             if (response.data.wordpress_post_details) {
                                 console.log('All WordPress Post Details:', response.data.wordpress_post_details);
-                                appendLog($logArea, 'WordPress Post Details logged to console.', 'info');
+                                appendLog($logArea, 'WordPress Post Details logged to console. Check browser console for full list.', 'info');
+                                
+                                // Also display summary in the log area
+                                appendLog($logArea, `Found ${response.data.wordpress_post_details.length} WordPress posts with publication numbers.`, 'info');
                             }
 
                         } else {
@@ -339,22 +342,25 @@ function publication_api_tool_compare_publications() {
                     // Store the post ID and its publication number
                     $wordpress_posts_details[] = [
                         'ID' => $post->ID,
+                        'post_title' => $post->post_title,
+                        'post_status' => $post->post_status,
                         'PUBLICATION_NUMBER' => (string) $publication_number
                     ];
                 } else {
-                    $log[] = "Warning: WordPress post ID '{$post->ID}' is missing the 'publication_number' ACF field.";
+                    $log[] = "Warning: WordPress post ID '{$post->ID}' ('{$post->post_title}') is missing the 'publication_number' ACF field.";
+                    // Still add to details for complete record
+                    $wordpress_posts_details[] = [
+                        'ID' => $post->ID,
+                        'post_title' => $post->post_title,
+                        'post_status' => $post->post_status,
+                        'PUBLICATION_NUMBER' => null
+                    ];
                 }
             }
         }
 
-        $log[] = "Successfully located " . count($wordpress_publication_numbers) . " 'publication_number' records from published 'publication' posts in the WordPress database.";
-
-
-        $log[] = wordpress_posts_details;
-        wp_send_json_success([
-            'message' => $message,
-            'log'     => $wordpress_posts_details,
-        ]); // Ends process early. Deliberate for debugging.
+        $log[] = "Successfully located " . count($wordpress_publication_numbers) . " 'publication_number' records from 'publications' posts in the WordPress database.";
+        $log[] = "Total WordPress posts found: " . count($wordpress_posts_details);
 
         // --- Compare IDs (now comparing API IDs with WordPress publication numbers) ---
         $message = "Comparison Results:";
@@ -390,6 +396,16 @@ function publication_api_tool_compare_publications() {
         } else {
             $message = "Comparison complete: Discrepancies found.";
         }
+
+        // Send success response with all the data including WordPress post details
+        wp_send_json_success([
+            'message' => $message,
+            'log' => $log,
+            'wordpress_post_details' => $wordpress_posts_details, // This will be logged to console
+            'api_count' => count($api_publication_numbers),
+            'wordpress_count' => count($wordpress_publication_numbers),
+            'total_wordpress_posts' => count($wordpress_posts_details)
+        ]);
 
     } catch (Exception $e) {
         error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
