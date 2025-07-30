@@ -44,6 +44,25 @@ function publication_api_tool_render_page() {
         <button class="button button-secondary" id="compare-publications-btn">Compare Publications</button>
         <div id="compare-publications-log" class="log-area"></div>
 
+        <hr>
+
+        <h2>Search Individual Publications</h2>
+        <p>Search for specific publications by Post ID or Publication Number. Fill in one or both fields and click Search.</p>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><label for="search-post-id">Post ID:</label></th>
+                <td><input type="number" id="search-post-id" class="regular-text" placeholder="Enter WordPress Post ID" /></td>
+            </tr>
+            <tr>
+                <th scope="row"><label for="search-publication-number">Publication Number:</label></th>
+                <td><input type="text" id="search-publication-number" class="regular-text" placeholder="Enter Publication Number" /></td>
+            </tr>
+        </table>
+        <p class="submit">
+            <button class="button button-secondary" id="search-publications-btn">Search Publications</button>
+        </p>
+        <div id="search-publications-log" class="log-area"></div>
+
     </div>
     <style>
         /* Styling similar to your example for log readability */
@@ -194,6 +213,78 @@ function publication_api_tool_render_page() {
                 performAjaxCall('compare_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
             });
 
+            // Event listener for the "Search Publications" button
+            $('#search-publications-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#search-publications-log');
+                const postId = $('#search-post-id').val().trim();
+                const publicationNumber = $('#search-publication-number').val().trim();
+
+                // Validate that at least one field is filled
+                if (!postId && !publicationNumber) {
+                    $logArea.empty();
+                    setLogAreaClass($logArea, 'error');
+                    appendLog($logArea, 'Please enter either a Post ID or Publication Number to search.', 'error');
+                    return;
+                }
+
+                $logArea.empty(); // Clear previous logs
+                $button.prop('disabled', true).text('Searching...'); // Disable button and change text
+                setLogAreaClass($logArea, 'info'); // Set log area to 'info' state
+                appendLog($logArea, 'Initiating search for publications...');
+
+                $.ajax({
+                    url: '<?php echo esc_js($ajax_url); ?>', // WordPress AJAX handler URL
+                    type: 'POST',
+                    data: {
+                        action: 'search_publications_data', // The AJAX action to trigger in PHP
+                        nonce: '<?php echo esc_js($nonce); ?>',   // Security nonce
+                        post_id: postId,
+                        publication_number: publicationNumber
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // PHP returned wp_send_json_success
+                            appendLog($logArea, response.data.message, 'success');
+                            if (response.data.log && response.data.log.length > 0) {
+                                response.data.log.forEach(msg => {
+                                    appendLog($logArea, msg, 'detail');
+                                });
+                            }
+                            setLogAreaClass($logArea, 'success');
+
+                            // Log found publications to console
+                            if (response.data.found_publications) {
+                                console.log('Found Publications:', response.data.found_publications);
+                                appendLog($logArea, 'Publication details logged to console. Check browser console for full details.', 'info');
+                                
+                                // Also display summary in the log area
+                                appendLog($logArea, `Found ${response.data.found_publications.length} matching publication(s).`, 'info');
+                            }
+
+                        } else {
+                            // PHP returned wp_send_json_error
+                            let errorMessage = response.data || 'An unknown error occurred.';
+                            appendLog($logArea, `Server Error: ${errorMessage}`, 'error');
+                            setLogAreaClass($logArea, 'error');
+                            console.error('AJAX Server Error Response:', response);
+                        }
+                        $button.prop('disabled', false).text('Search Publications'); // Re-enable button
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        // This fires for HTTP errors (e.g., 404, 500, no response)
+                        let detailedError = `HTTP Status: ${jqXHR.status} (${textStatus}) - ${errorThrown}`;
+                        let responseText = jqXHR.responseText ? `Response: ${jqXHR.responseText.substring(0, 500)}...` : 'No response text.';
+
+                        appendLog($logArea, `AJAX Request Failed: ${detailedError}`, 'error');
+                        appendLog($logArea, responseText, 'error');
+                        setLogAreaClass($logArea, 'error');
+                        console.error('Full jQuery AJAX Error Object:', jqXHR);
+                        $button.prop('disabled', false).text('Search Publications'); // Re-enable button
+                    }
+                });
+            });
+
         });
     </script>
     <?php
@@ -276,6 +367,9 @@ function publication_api_tool_fetch_publications() {
 // Register the AJAX handler for logged-in users for comparing data
 add_action('wp_ajax_compare_publications_data', 'publication_api_tool_compare_publications');
 
+// Register the AJAX handler for searching individual publications
+add_action('wp_ajax_search_publications_data', 'publication_api_tool_search_publications');
+
 /**
  * Handles the AJAX request to compare API publication data with WordPress data.
  */
@@ -328,8 +422,6 @@ function publication_api_tool_compare_publications() {
         $args = array(
             'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
-            // 'post_status'    => 'publish', // Only published ones
-            // 'fields' is removed as we need the full post object to get ACF fields
         );
         $wordpress_posts = get_posts($args);
 
@@ -410,5 +502,156 @@ function publication_api_tool_compare_publications() {
     } catch (Exception $e) {
         error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
         wp_send_json_error('Error during comparison: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Handles the AJAX request to search for specific publications by ID or Publication Number.
+ */
+function publication_api_tool_search_publications() {
+    // Verify the nonce for security.
+    if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) {
+        wp_send_json_error('Security check failed: Invalid nonce.', 403);
+    }
+
+    // Check if the current user has the 'manage_options' capability.
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied: You do not have sufficient permissions.', 403);
+    }
+
+    $log = []; // Array to store log messages
+    $found_publications = []; // Array to store found publications
+    $post_id = isset($_POST['post_id']) ? sanitize_text_field($_POST['post_id']) : '';
+    $publication_number = isset($_POST['publication_number']) ? sanitize_text_field($_POST['publication_number']) : '';
+
+    try {
+        // Validate input - at least one field must be provided
+        if (empty($post_id) && empty($publication_number)) {
+            wp_send_json_error('Please provide either a Post ID or Publication Number to search.');
+        }
+
+        $log[] = "Starting search with Post ID: '{$post_id}' and Publication Number: '{$publication_number}'";
+
+        // Search by Post ID if provided
+        if (!empty($post_id)) {
+            $log[] = "Searching by Post ID: {$post_id}";
+            
+            $post = get_post($post_id);
+            if ($post && $post->post_type === 'publications') {
+                $publication_number_field = get_field('publication_number', $post->ID);
+                
+                $publication_details = [
+                    'search_method' => 'post_id',
+                    'ID' => $post->ID,
+                    'post_title' => $post->post_title,
+                    'post_status' => $post->post_status,
+                    'post_date' => $post->post_date,
+                    'post_modified' => $post->post_modified,
+                    'post_content' => $post->post_content,
+                    'post_excerpt' => $post->post_excerpt,
+                    'PUBLICATION_NUMBER' => $publication_number_field,
+                    'all_meta' => get_post_meta($post->ID), // Get all custom fields
+                    'all_acf_fields' => function_exists('get_fields') ? get_fields($post->ID) : 'ACF not available'
+                ];
+                
+                $found_publications[] = $publication_details;
+                $log[] = "Found publication by Post ID: '{$post->post_title}' (ID: {$post->ID})";
+                
+                if ($publication_number_field) {
+                    $log[] = "Publication Number from ACF: {$publication_number_field}";
+                } else {
+                    $log[] = "Warning: No 'publication_number' ACF field found for this post";
+                }
+            } else {
+                $log[] = "No publication post found with ID: {$post_id}";
+            }
+        }
+
+        // Search by Publication Number if provided
+        if (!empty($publication_number)) {
+            $log[] = "Searching by Publication Number: {$publication_number}";
+            
+            // Use WP_Query to search for posts with the specific ACF field value
+            $args = array(
+                'post_type' => 'publications',
+                'posts_per_page' => -1,
+                'post_status' => array('publish', 'draft', 'private'),
+                'meta_query' => array(
+                    array(
+                        'key' => 'publication_number',
+                        'value' => $publication_number,
+                        'compare' => '='
+                    )
+                )
+            );
+            
+            $query = new WP_Query($args);
+            
+            if ($query->have_posts()) {
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    $post = get_post();
+                    
+                    // Check if we already found this post by ID to avoid duplicates
+                    $already_found = false;
+                    foreach ($found_publications as $found_pub) {
+                        if ($found_pub['ID'] === $post->ID) {
+                            $already_found = true;
+                            // Update search method to indicate it was found by both methods
+                            $found_pub['search_method'] = 'both_post_id_and_publication_number';
+                            break;
+                        }
+                    }
+                    
+                    if (!$already_found) {
+                        $publication_details = [
+                            'search_method' => 'publication_number',
+                            'ID' => $post->ID,
+                            'post_title' => $post->post_title,
+                            'post_status' => $post->post_status,
+                            'post_date' => $post->post_date,
+                            'post_modified' => $post->post_modified,
+                            'post_content' => $post->post_content,
+                            'post_excerpt' => $post->post_excerpt,
+                            'PUBLICATION_NUMBER' => get_field('publication_number', $post->ID),
+                            'all_meta' => get_post_meta($post->ID), // Get all custom fields
+                            'all_acf_fields' => function_exists('get_fields') ? get_fields($post->ID) : 'ACF not available'
+                        ];
+                        
+                        $found_publications[] = $publication_details;
+                        $log[] = "Found publication by Publication Number: '{$post->post_title}' (ID: {$post->ID})";
+                    } else {
+                        $log[] = "Publication '{$post->post_title}' (ID: {$post->ID}) matches both search criteria";
+                    }
+                }
+                wp_reset_postdata();
+            } else {
+                $log[] = "No publications found with Publication Number: {$publication_number}";
+            }
+        }
+
+        // Prepare response message
+        $total_found = count($found_publications);
+        if ($total_found > 0) {
+            $message = "Search completed: Found {$total_found} matching publication(s).";
+        } else {
+            $message = "Search completed: No matching publications found.";
+        }
+
+        // Send success response
+        wp_send_json_success([
+            'message' => $message,
+            'log' => $log,
+            'found_publications' => $found_publications,
+            'search_criteria' => [
+                'post_id' => $post_id,
+                'publication_number' => $publication_number
+            ],
+            'total_found' => $total_found
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Publication Search Tool Error: ' . $e->getMessage());
+        wp_send_json_error('Error during search: ' . $e->getMessage());
     }
 }
