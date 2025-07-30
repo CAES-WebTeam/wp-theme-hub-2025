@@ -26,6 +26,13 @@ add_action('init', 'custom_news_single_rewrite_rule');
 // Custom rewrite rules for the event series taxonomy
 function custom_events_rewrite_rules()
 {
+    // Rewrite rule for the event submission page
+    add_rewrite_rule(
+        '^events/submit-an-event/?$',
+        'index.php?pagename=events/submit-an-event',
+        'top'
+    );
+
     // Single events rule (corrected)
     add_rewrite_rule(
         '^events/([^/]+)/?$',
