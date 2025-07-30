@@ -351,8 +351,7 @@ function publication_api_tool_compare_publications() {
 
         wp_send_json_success([
             'message' => $message,
-            'log'     => $log,
-            'wordpress_posts_details' => $wordpress_posts_details, // Include the new list here
+            'log'     => $wordpress_posts_details,
         ]); // Ends process early. Deliberate for debugging.
 
         // --- Compare IDs (now comparing API IDs with WordPress publication numbers) ---
