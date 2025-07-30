@@ -324,7 +324,7 @@ function publication_api_tool_compare_publications() {
         $args = array(
             'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
-            'post_status'    => 'publish', // Only published ones
+            // 'post_status'    => 'publish', // Only published ones
             // 'fields' is removed as we need the full post object to get ACF fields
         );
         $wordpress_posts = get_posts($args);
