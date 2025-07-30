@@ -349,6 +349,12 @@ function publication_api_tool_compare_publications() {
 
         $log[] = "Successfully located " . count($wordpress_publication_numbers) . " 'publication_number' records from published 'publication' posts in the WordPress database.";
 
+        wp_send_json_success([
+            'message' => $message,
+            'log'     => $log,
+            'wordpress_posts_details' => $wordpress_posts_details, // Include the new list here
+        ]); // Ends process early. Deliberate for debugging.
+
         // --- Compare IDs (now comparing API IDs with WordPress publication numbers) ---
         $message = "Comparison Results:";
         $discrepancies_found = false;
@@ -383,12 +389,6 @@ function publication_api_tool_compare_publications() {
         } else {
             $message = "Comparison complete: Discrepancies found.";
         }
-
-        wp_send_json_success([
-            'message' => $message,
-            'log'     => $log,
-            'wordpress_posts_details' => $wordpress_posts_details, // Include the new list here
-        ]);
 
     } catch (Exception $e) {
         error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
