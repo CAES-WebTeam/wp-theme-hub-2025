@@ -1,17 +1,14 @@
 <?php
 // ===================
-// PUBLICATION DYNAMIC PDF GENERATION WITH TABLE STYLING
+// PUBLICATION DYNAMIC PDF GENERATION UTILITY
+// This file contains the logic for generating a PDF and saving it to a file.
+// It does NOT handle HTTP requests or queuing directly.
 // ===================
 
 // Load TCPDF library FIRST, as MYPDF extends TCPDF.
 require_once get_template_directory() . '/inc/tcpdf/tcpdf.php';
 
-/**
- * Format publication number for display
- *
- * @param string $publication_number The original publication number
- * @return string The formatted publication number string
- */
+// Function to format the publication number for display
 function format_publication_number_for_display($publication_number)
 {
     $originalPubNumber = $publication_number;
@@ -188,8 +185,6 @@ class MYPDF extends TCPDF
 
     /**
      * Check if there's enough space on the current page, add page break if needed
-     *
-     * @param int $height_needed Height needed in user units (mm)
      */
     public function checkSpaceAndBreak($height_needed = 50)
     {
@@ -208,12 +203,7 @@ class MYPDF extends TCPDF
     }
 }
 
-/**
- * Get the latest published date and status from the publication history
- *
- * @param int $post_id The post ID
- * @return array Array with 'date' and 'status' keys, or empty array if none found
- */
+// Function to get the latest published date from the publication history
 function get_latest_published_date($post_id)
 {
     // Get the history field from ACF
@@ -252,12 +242,7 @@ function get_latest_published_date($post_id)
     ];
 }
 
-/**
- * Add CSS styling for tables to ensure proper formatting in PDF
- *
- * @param string $content The HTML content to style
- * @return string The content with CSS styling added
- */
+// Function to add table and image styling for PDF generation
 function add_table_styling_for_pdf($content)
 {
     // Define CSS styles for tables and images - TCPDF compatible
@@ -383,14 +368,7 @@ function add_table_styling_for_pdf($content)
     return $styled_content;
 }
 
-/**
- * Process HTML content for better PDF rendering with page break handling
- * Uses regex instead of DOMDocument to avoid HTML5 tag warnings
- *
- * @param string $content The HTML content to process
- * @param MYPDF $pdf The PDF object for calculating dimensions
- * @return string The processed content
- */
+// Function to process content for PDF generation
 function process_content_for_pdf($content, $pdf)
 {
     // Calculate image dimensions once for reuse
@@ -567,23 +545,20 @@ function process_content_for_pdf($content, $pdf)
     return $content;
 }
 
-/****** Publication Dynamic PDF ******/
 /**
- * Generates a PDF version of a publication post type.
+ * Generates a PDF version of a publication post type and saves it to a file.
+ *
+ * @param int $post_id The ID of the post to generate PDF for.
+ * @return string|false The URL of the generated PDF on success, false on failure.
  */
-function generate_pdf()
+function generate_publication_pdf_file($post_id)
 {
     try {
-        // Get post ID from GET request, validate it.
-        $post_id = isset($_GET['post_id']) ? intval($_GET['post_id']) : 0;
-        if (!$post_id) {
-            wp_die('Invalid post ID.');
-        }
-
         // Retrieve post data and validate post type.
         $post = get_post($post_id);
         if (!$post || $post->post_type !== 'publications') {
-            wp_die('Invalid publication.');
+            error_log('PDF Generation: Invalid post or post type for ID: ' . $post_id);
+            return false;
         }
 
         // Get custom fields using ACF.
@@ -591,23 +566,17 @@ function generate_pdf()
 
         // --- Dynamic Metadata and Data for PDF Content ---
 
-        // Retrieve the publication title.
         $publication_title = $post->post_title;
 
-        // Retrieve authors from ACF and prepare for PDF metadata and cover page display.
         $authors_data = get_field('authors', $post_id, false);
-        $author_names = []; // For PDF metadata.
-        $author_lines = []; // For individual author lines in cover display
-
+        $author_names = [];
+        $author_lines = [];
         if ($authors_data) {
             foreach ($authors_data as $item) {
                 $user_id = null;
-                // Check for 'user' key (standard ACF user field format).
                 if (isset($item['user']) && !empty($item['user'])) {
                     $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
                 }
-
-                // Fallback: Check for numeric values in any field (ACF internal field keys).
                 if (empty($user_id) && is_array($item)) {
                     foreach ($item as $key => $value) {
                         if (is_numeric($value) && $value > 0) {
@@ -620,13 +589,11 @@ function generate_pdf()
                 if ($user_id && is_numeric($user_id)) {
                     $first_name = get_the_author_meta('first_name', $user_id);
                     $last_name = get_the_author_meta('last_name', $user_id);
-                    $author_title = get_the_author_meta('title', $user_id); // Assumes a 'title' user meta field.
+                    $author_title = get_the_author_meta('title', $user_id);
 
                     if ($first_name || $last_name) {
                         $full_name = trim("$first_name $last_name");
                         $author_names[] = $full_name;
-
-                        // Build individual author line for cover display
                         $author_line = '<strong>' . esc_html($full_name) . '</strong>';
                         if (!empty($author_title)) {
                             $author_line .= ', ' . esc_html($author_title);
@@ -636,56 +603,61 @@ function generate_pdf()
                 }
             }
         }
-
-        // Create single paragraph with all authors separated by <br> tags
         $cover_authors_html = '';
         if (!empty($author_lines)) {
             $cover_authors_html = '<p style="text-align: left; margin-bottom: 0px; line-height: 1.3;">' . implode('<br>', $author_lines) . '</p>';
         }
         $formatted_authors = implode(', ', $author_names);
 
-        // Retrieve 'topics' taxonomy terms and format for PDF keywords.
         $topics_terms = get_the_terms($post_id, 'topics');
         $keyword_terms = [];
-
         if ($topics_terms && !is_wp_error($topics_terms)) {
             foreach ($topics_terms as $term) {
                 $keyword_terms[] = $term->name;
             }
         }
         $formatted_keywords = implode(', ', $keyword_terms);
-        // Provide fallback keywords if no topics are assigned to the post.
         if (empty($formatted_keywords)) {
             $formatted_keywords = 'Expert Resource';
         }
 
-        // Retrieve 'publication_number' ACF field.
+        // Retrieve 'publication_number' ACF field for filename and footer.
         $publication_number = get_field('publication_number', $post_id);
-        // Ensure publication number is an empty string if not set, for cleaner footer output.
         if (empty($publication_number)) {
-            $publication_number = '';
+            error_log('PDF Generation: No publication number found for post ID: ' . $post_id);
+            // Fallback: If no publication number, use post ID for filename to ensure uniqueness.
+            $publication_number = 'publication-' . $post_id;
         }
 
-        // Retrieve featured image URL for the cover page.
         $featured_image_url = '';
         if (has_post_thumbnail($post_id)) {
             $featured_image_id = get_post_thumbnail_id($post_id);
-            // Get the URL for the 'large' image size.
             $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
             if ($featured_image_array) {
                 $featured_image_url = $featured_image_array[0];
             }
         }
 
-        // Get the latest published date from history
         $latest_published_info = get_latest_published_date($post_id);
         $latest_published_date = $latest_published_info['date'];
 
         // --- End: Dynamic Metadata and Data for PDF Content ---
 
-        // Initialize MYPDF object (our extended TCPDF class).
+        // Determine file path and URL based on publication number
+        $upload_dir = wp_upload_dir();
+        $cache_subdir = '/generated-pub-pdfs/'; // Store PDFs in a dedicated subdirectory within uploads
+        $cache_dir_path = $upload_dir['basedir'] . $cache_subdir;
+        if (!file_exists($cache_dir_path)) {
+            wp_mkdir_p($cache_dir_path); // Create directory if it doesn't exist
+        }
+
+        // Sanitize publication number for use as a filename
+        $filename = sanitize_file_name($publication_number . '.pdf');
+        $file_path = $cache_dir_path . $filename;
+        $file_url = $upload_dir['baseurl'] . $cache_subdir . $filename;
+
+        // Initialize MYPDF object.
         $pdf = new MYPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-        // Pass dynamic data to the custom footer method.
         $pdf->setPublicationTitleForFooter($publication_title);
         $pdf->setPublicationNumberForFooter($publication_number);
         $pdf->setPostId($post_id);
@@ -702,157 +674,101 @@ function generate_pdf()
         TCPDF_FONTS::addTTFfont($fontpath, 'TrueTypeUnicode', '', 32);
 
         // Load bold Georgia for <strong> tags to work
-        $fontpath_bold = get_template_directory() . '/assets/fonts/Georgia-Bold.ttf'; // or GeorgiaBold.ttf
+        $fontpath_bold = get_template_directory() . '/assets/fonts/Georgia-Bold.ttf';
         TCPDF_FONTS::addTTFfont($fontpath_bold, 'TrueTypeUnicode', '', 32);
 
         // Load italic Georgia for <em> tags to work
-        $fontpath_italic = get_template_directory() . '/assets/fonts/Georgia-Italic.ttf'; // or GeorgiaItalic.ttf
+        $fontpath_italic = get_template_directory() . '/assets/fonts/Georgia-Italic.ttf';
         TCPDF_FONTS::addTTFfont($fontpath_italic, 'TrueTypeUnicode', '', 32);
 
         // Load Georgia bold italic for <strong><em> tags to work
-        $fontpath_bold_italic = get_template_directory() . '/assets/fonts/Georgia-Bold-Italic.ttf'; // or GeorgiaBoldItalic.ttf
+        $fontpath_bold_italic = get_template_directory() . '/assets/fonts/Georgia-Bold-Italic.ttf';
         TCPDF_FONTS::addTTFfont($fontpath_bold_italic, 'TrueTypeUnicode', '', 32);
 
         // Set default page margins.
         $pdf->SetMargins(15, 15, 15);
-        // Set the default font for the entire document.
         $pdf->SetFont('georgia', '', 12);
 
         // Disable header and footer for the cover page only.
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
-        // Add the first page, which serves as the cover.
         $pdf->AddPage();
 
         // --- Cover Page Content ---
-
-        // Track the current Y position to ensure proper spacing
-        $current_y = 0; // Start from very top
-
-        // Embed featured image at top edge-to-edge if available
+        $current_y = 0;
         if (!empty($featured_image_url)) {
-            // Get original image dimensions
             list($width, $height) = getimagesize($featured_image_url);
-
-            // Always scale to full page width (edge-to-edge)
             $img_width_mm = $pdf->getPageWidth();
             $img_height_mm = ($height / $width) * $img_width_mm;
-
-            // Position image at top-left corner for true edge-to-edge
             $pdf->Image($featured_image_url, 0, 0, $img_width_mm, $img_height_mm, '', '', '', false, 300, '', false, false, 0, false, false, false);
-
-            // Update current Y position to be below the image with spacing
             $current_y = $img_height_mm + 20;
         } else {
-            // Add some spacing if no featured image is present
             $current_y = 30;
         }
 
-        // Add Extension logo in the white space below image - LEFT ALIGNED
         $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
         if (file_exists($extension_logo_path)) {
-            // Calculate logo dimensions - 30% of page width
             $logo_width_mm = ($pdf->getPageWidth() - 30) * 0.3;
-
-            // Get original logo dimensions to maintain aspect ratio
             list($logo_orig_width, $logo_orig_height) = getimagesize($extension_logo_path);
             $logo_height_mm = ($logo_orig_height / $logo_orig_width) * $logo_width_mm;
-
-            // Left align the logo (with margin)
-            $logo_x = 15; // Standard left margin
-
-            // Add the logo
+            $logo_x = 15;
             $pdf->Image($extension_logo_path, $logo_x, $current_y, $logo_width_mm, $logo_height_mm, '', '', '', false, 300, '', false, false, 0, false, false, false);
-
-            // Update current Y position with tighter spacing
             $current_y += $logo_height_mm + 10;
         }
 
-        // Set Y position for title
         $pdf->SetY($current_y);
-
-        // Display publication title - LEFT ALIGNED
         $pdf->SetFont('georgia', 'B', 24);
         $pdf->MultiCell(0, 10, $post->post_title, 0, 'L', 0, 1, '', '', true, 0, true);
-
-        // Add spacing after title and update position
-        $pdf->Ln(10); // Reduced spacing
+        $pdf->Ln(10);
         $current_y = $pdf->GetY();
 
-        // Display authors - LEFT ALIGNED with tight line spacing
         $pdf->SetFont('georgia', '', 12);
         $pdf->SetY($current_y);
-
-        // Output the authors HTML (already formatted with single <p> tag and <br> separators)
         $pdf->writeHTML($cover_authors_html, true, false, true, false, '');
 
-        // Add published date with publication number if available
         if (!empty($latest_published_date)) {
-            $pdf->Ln(8); // Small space after authors
+            $pdf->Ln(8);
             $pdf->SetFont('georgia', '', 11);
-
-            // Format the publication number for display
             $formatted_pub_number = format_publication_number_for_display($publication_number);
-
-            // Create the publication date text with publication number
             $date_text = '';
             if (!empty($formatted_pub_number)) {
                 $date_text = $formatted_pub_number . ' published on ' . esc_html($latest_published_date);
             } else {
                 $date_text = 'Published on ' . esc_html($latest_published_date);
             }
-
             $date_html = '<p style="text-align: left; margin-bottom: 0px; line-height: 1.3;">' . $date_text . '</p>';
             $pdf->writeHTML($date_html, true, false, true, false, '');
         }
-
         // --- End Cover Page Content ---
 
-        // Add a new page to begin the main content of the publication.
         $pdf->AddPage();
-        // Enable footer for all subsequent content pages, but keep header disabled to avoid top border.
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(true);
-
-        // Add the main post content to the PDF with table styling.
         $pdf->SetFont('georgia', '', 12);
-
-        // *** Configure page break settings for better content flow ***
-        // Enable automatic page breaks - use larger bottom margin to account for potential last page footer
-        $pdf->SetAutoPageBreak(true, 50); // 50mm bottom margin to accommodate special footer
-
-        // Set image scale factor for consistent rendering
+        $pdf->SetAutoPageBreak(true, 50);
         $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 
-        // Handle various potential formats for WordPress post content.
-        if (is_array($post->post_content)) {
-            $post_content = implode('', $post->post_content);
-        } elseif (is_object($post->post_content)) {
-            $post_content = json_encode($post->post_content);
-        } else {
-            $post_content = $post->post_content;
+        $post_content = $post->post_content;
+        // Ensure post content is a string
+        if (is_array($post_content)) {
+            $post_content = implode('', $post_content);
+        } elseif (is_object($post_content)) {
+            $post_content = json_encode($post_content);
         }
 
-        // *** NEW: Process the content to add table styling and page break handling ***
         $post_content = process_content_for_pdf($post_content, $pdf);
         $post_content = add_table_styling_for_pdf($post_content);
 
         $pdf->writeHTML($post_content, true, false, true, false, '');
 
-        // Output the generated PDF file, forcing download.
-        $file_name = sanitize_title($post->post_title) . '.pdf';
-        $pdf->Output($file_name, 'D');
+        // Output the generated PDF file to the specified path ('F' mode).
+        $pdf->Output($file_path, 'F');
 
-        exit;
+        // Return the URL of the generated file
+        return $file_url;
+
     } catch (Exception $e) {
-        // Log any exceptions that occur during PDF generation for debugging.
-        error_log('PDF Generation Error: ' . $e->getMessage());
-        // Display a user-friendly error message to the user.
-        wp_die('An error occurred while generating the PDF. Please try again later.');
+        error_log('PDF Generation Error for Post ID ' . $post_id . ': ' . $e->getMessage());
+        return false; // Indicate failure
     }
 }
-
-// Register the action hook for generating the PDF for authenticated users.
-add_action('admin_post_generate_pdf', 'generate_pdf');
-// Register the action hook for generating the PDF for non-authenticated users.
-add_action('admin_post_nopriv_generate_pdf', 'generate_pdf');

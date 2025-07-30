@@ -15,11 +15,16 @@ require get_template_directory() . '/inc/blocks.php';
 require get_template_directory() . '/inc/acf.php';
 require get_template_directory() . '/inc/events-support.php';
 require get_template_directory() . '/inc/publications-support.php';
-require get_template_directory() . '/inc/publications-pdf.php';
 require get_template_directory() . '/inc/user-support.php';
 require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
 require get_template_directory() . '/inc/custom-rewrites.php';
+
+// Publications PDF generation
+require get_template_directory() . '/inc/publications-pdf/publications-pdf.php';
+require get_template_directory() . '/inc/publications-pdf/pdf-queue.php';
+require get_template_directory() . '/inc/publications-pdf/pdf-cron.php';
+require get_template_directory() . '/inc/publications-pdf/pdf-admin.php';
 
 
 // Temp include
