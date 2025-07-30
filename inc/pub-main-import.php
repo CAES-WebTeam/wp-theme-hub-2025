@@ -324,7 +324,7 @@ function publication_api_tool_compare_publications() {
         $args = array(
             'post_type'      => 'publications',
             'posts_per_page' => -1, // Get all publications
-            'post_status' => array('publish', 'draft', 'trash')
+            'post_status' => array('publish', 'draft')
         );
         $wordpress_posts = get_posts($args);
 
