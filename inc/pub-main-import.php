@@ -313,8 +313,8 @@ function publication_api_tool_compare_publications() {
         }
 
         foreach ($decoded_API_response as $publication) {
-            if (isset($publication['PUBLICATION_ID'])) {
-                $api_publication_ids[] = (string) $publication['PUBLICATION_ID']; // Ensure string for consistent comparison
+            if (isset($publication['ID'])) {
+                $api_publication_ids[] = (string) $publication['ID']; // Ensure string for consistent comparison
             }
         }
         $log[] = "Successfully fetched " . count($api_publication_ids) . " publication IDs from the API.";
