@@ -291,6 +291,7 @@ function publication_api_tool_compare_publications() {
     $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
     $api_publication_numbers = [];
     $wordpress_publication_numbers = []; // Changed to store publication numbers
+    $wordpress_posts_details = []; // New array to store WordPress post IDs and their publication numbers
 
     try {
         // --- Fetch API Data (similar to publication_api_tool_fetch_publications) ---
@@ -335,6 +336,11 @@ function publication_api_tool_compare_publications() {
                 $publication_number = get_field('publication_number', $post->ID);
                 if ($publication_number) {
                     $wordpress_publication_numbers[] = (string) $publication_number; // Ensure string for consistent comparison
+                    // Store the post ID and its publication number
+                    $wordpress_posts_details[] = [
+                        'ID' => $post->ID,
+                        'PUBLICATION_NUMBER' => (string) $publication_number
+                    ];
                 } else {
                     $log[] = "Warning: WordPress post ID '{$post->ID}' is missing the 'publication_number' ACF field.";
                 }
@@ -381,6 +387,7 @@ function publication_api_tool_compare_publications() {
         wp_send_json_success([
             'message' => $message,
             'log'     => $log,
+            'wordpress_posts_details' => $wordpress_posts_details, // Include the new list here
         ]);
 
     } catch (Exception $e) {
