@@ -102,7 +102,7 @@ function publication_api_tool_render_page() {
             // Centralized AJAX handler function for reusability and error handling
             function performAjaxCall(action, nonce, $button, $logArea, buttonText) {
                 $logArea.empty(); // Clear previous logs
-                $button.prop('disabled', true).text(buttonText + 'ing...'); // Disable button and change text
+                $button.prop('disabled', true).text('Comparing publications...'); // Disable button and change text
                 setLogAreaClass($logArea, 'info'); // Set log area to 'info' state
                 appendLog($logArea, 'Initiating AJAX request for ' + action + '...');
 
