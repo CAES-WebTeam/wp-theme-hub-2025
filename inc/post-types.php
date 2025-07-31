@@ -122,7 +122,8 @@ add_action('init', function () {
 			1 => 'author',
 			2 => 'editor',
 			3 => 'tags',
-			4 => 'thumbnail'
+			4 => 'thumbnail',
+            5 => 'revisions'
 		),
 		'delete_with_user' => false
 	));

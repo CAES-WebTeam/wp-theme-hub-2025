@@ -20,6 +20,15 @@ function queue_pdf_generation_on_save($post_id, $post) {
         return;
     }
 
+    // NEW CONDITION 1: Only generate if the post is published
+    if ($post->post_status !== 'publish') {
+        set_transient('pdf_generation_notice_' . $post_id, array(
+            'type' => 'info',
+            'message' => sprintf('PDF generation for "%s" was not queued because the post is not yet published.', get_the_title($post_id))
+        ), 60);
+        return;
+    }
+
     // Get the publication number (assuming it's a critical field for filename)
     $publication_number = get_field('publication_number', $post_id);
 
@@ -30,6 +39,23 @@ function queue_pdf_generation_on_save($post_id, $post) {
             'message' => sprintf('PDF generation for "%s" was *not* queued because the Publication Number is missing. Please add a Publication Number and save again.', get_the_title($post_id))
         ), 60); // Show for 60 seconds
         return; // Stop execution here, do not proceed to queue
+    }
+
+    // NEW CONDITION 2: Only generate if a manual PDF does NOT exist
+    $manual_pdf_attachment = get_field('pdf', $post_id);
+    $manual_pdf_exists = false;
+    if (is_array($manual_pdf_attachment) && !empty($manual_pdf_attachment['url'])) {
+        $manual_pdf_exists = true;
+    } elseif (is_string($manual_pdf_attachment) && filter_var($manual_pdf_attachment, FILTER_VALIDATE_URL)) {
+        $manual_pdf_exists = true;
+    }
+
+    if ($manual_pdf_exists) {
+        set_transient('pdf_generation_notice_' . $post_id, array(
+            'type' => 'info',
+            'message' => sprintf('PDF generation for "%s" was *not* queued because a manual PDF already exists.', get_the_title($post_id))
+        ), 60);
+        return; // Stop execution, a manual PDF is present
     }
 
     // Queue the PDF generation task
@@ -452,6 +478,21 @@ function fr2025_ajax_queue_missing_pdfs() {
                 $messages[] = sprintf("Skipped post ID %d ('%s'): Missing Publication Number.", $post_id, $post_title);
                 continue;
             }
+
+            // Check if manual PDF exists before queuing from the tool
+            $manual_pdf_attachment = get_field('pdf', $post_id);
+            $manual_pdf_exists_for_queueing = false;
+            if (is_array($manual_pdf_attachment) && !empty($manual_pdf_attachment['url'])) {
+                $manual_pdf_exists_for_queueing = true;
+            } elseif (is_string($manual_pdf_attachment) && filter_var($manual_pdf_attachment, FILTER_VALIDATE_URL)) {
+                $manual_pdf_exists_for_queueing = true;
+            }
+
+            if ($manual_pdf_exists_for_queueing) {
+                $messages[] = sprintf("Skipped post ID %d ('%s'): Manual PDF already exists.", $post_id, $post_title);
+                continue; // Skip queuing if manual PDF is present
+            }
+
 
             // Insert or update in queue (function from pdf-queue.php)
             if (insert_or_update_pdf_queue($post_id, 'pending')) {
