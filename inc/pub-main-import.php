@@ -44,6 +44,13 @@ function publication_api_tool_render_page() {
         <button class="button button-secondary" id="compare-publications-btn">Compare Publications</button>
         <div id="compare-publications-log" class="log-area"></div>
 
+        <hr>
+
+        <h2>Dry Run Migration</h2>
+        <p>This will simulate the data migration process, showing what posts would be created and what data would be updated without actually making any changes.</p>
+        <button class="button button-secondary" id="dry-run-migration-btn">Run Dry Run Migration</button>
+        <div id="dry-run-migration-log" class="log-area"></div>
+
     </div>
     <style>
         /* Styling similar to your example for log readability */
@@ -83,6 +90,17 @@ function publication_api_tool_render_page() {
             color: #FF8C00; /* Orange for discrepancies */
             font-weight: bold;
         }
+        .log-area .log-create {
+            color: #228B22; /* Forest Green for new posts */
+            font-weight: bold;
+        }
+        .log-area .log-update {
+            color: #4169E1; /* Royal Blue for updates */
+            font-weight: bold;
+        }
+        .log-area .log-skip {
+            color: #696969; /* Dim Gray for skipped items */
+        }
     </style>
     <script type="text/javascript">
         jQuery(document).ready(function($) {
@@ -102,7 +120,7 @@ function publication_api_tool_render_page() {
             // Centralized AJAX handler function for reusability and error handling
             function performAjaxCall(action, nonce, $button, $logArea, buttonText) {
                 $logArea.empty(); // Clear previous logs
-                $button.prop('disabled', true).text('Comparing publications...'); // Disable button and change text
+                $button.prop('disabled', true).text('Processing...'); // Disable button and change text
                 setLogAreaClass($logArea, 'info'); // Set log area to 'info' state
                 appendLog($logArea, 'Initiating AJAX request for ' + action + '...');
 
@@ -119,11 +137,17 @@ function publication_api_tool_render_page() {
                             appendLog($logArea, response.data.message, 'success');
                             if (response.data.log && response.data.log.length > 0) {
                                 response.data.log.forEach(msg => {
+                                    let logType = 'detail';
                                     if (msg.startsWith('Discrepancy:')) {
-                                        appendLog($logArea, msg, 'discrepancy');
-                                    } else {
-                                        appendLog($logArea, msg, 'detail');
+                                        logType = 'discrepancy';
+                                    } else if (msg.startsWith('CREATE:')) {
+                                        logType = 'create';
+                                    } else if (msg.startsWith('UPDATE:')) {
+                                        logType = 'update';
+                                    } else if (msg.startsWith('SKIP:')) {
+                                        logType = 'skip';
                                     }
+                                    appendLog($logArea, msg, logType);
                                 });
                             }
                             setLogAreaClass($logArea, 'success');
@@ -189,6 +213,13 @@ function publication_api_tool_render_page() {
                 const $button = $(this);
                 const $logArea = $('#compare-publications-log');
                 performAjaxCall('compare_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
+            });
+
+            // Event listener for the "Dry Run Migration" button
+            $('#dry-run-migration-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#dry-run-migration-log');
+                performAjaxCall('dry_run_migration', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Run Dry Run Migration');
             });
 
         });
@@ -385,5 +416,210 @@ function publication_api_tool_compare_publications() {
     } catch (Exception $e) {
         error_log('Publication API Comparison Tool Error: ' . $e->getMessage());
         wp_send_json_error('Error during comparison: ' . $e->getMessage());
+    }
+}
+
+// Register the AJAX handler for dry run migration
+add_action('wp_ajax_dry_run_migration', 'publication_api_tool_dry_run_migration');
+
+/**
+ * Handles the AJAX request to perform a dry run migration simulation.
+ */
+function publication_api_tool_dry_run_migration() {
+    // Verify the nonce for security.
+    if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) {
+        wp_send_json_error('Security check failed: Invalid nonce.', 403);
+    }
+
+    // Check if the current user has the 'manage_options' capability.
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied: You do not have sufficient permissions.', 403);
+    }
+
+    $log = []; // Array to store log messages
+    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=false&bypassReturnLimit=true';
+    
+    // Field mapping array based on your table
+    $field_mapping = [
+        'ID' => 'publication_id',
+        'SERIES_ID' => 'series_id',
+        'CATEGORY_ID' => 'category_id', 
+        'UPDATER_ID' => 'updater_id',
+        'CAES_TRANSLATOR_ID' => 'translator',
+        'PUBLICATION_NUMBER' => 'publication_number',
+        'TITLE' => 'title', // WordPress post_title
+        'SHORT_SUMMARY' => 'short_summary',
+        'ABSTRACT' => 'summary',
+        'NOTES' => 'notes',
+        'DATE_CREATED' => 'post_date', // WordPress post_date
+        'DATE_LAST_UPDATED' => 'post_modified', // WordPress post_modified
+        'AUTOMATIC_SUNSET_DATE' => 'sunset_date',
+        'VERSION' => 'version',
+        'PUBLICATION_TEXT' => 'post_content', // WordPress post_content
+        'PRIMARY_IMAGE_PATH' => 'primary_image_path',
+        'THUMBNAIL_IMAGE_PATH' => 'thumbnail_image_path',
+        'IS_COMMERCIAL_PUBLICATION' => 'is_commercial',
+        'IS_FEATURED_PUBLICATION' => 'is_featured'
+    ];
+
+    $stats = [
+        'posts_to_create' => 0,
+        'posts_to_update' => 0,
+        'posts_up_to_date' => 0,
+        'posts_with_errors' => 0
+    ];
+
+    try {
+        // --- Fetch API Data ---
+        $log[] = "Fetching publication data from API (including full content for dry run)...";
+        $response = wp_remote_get($api_url);
+
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        $log[] = "Successfully fetched " . count($decoded_API_response) . " publications from API.";
+
+        // --- Get existing WordPress publications ---
+        $log[] = "Fetching existing WordPress publications...";
+        $args = array(
+            'post_type'      => 'publications',
+            'posts_per_page' => -1,
+            'post_status'    => array('publish', 'draft', 'private')
+        );
+        $wordpress_posts = get_posts($args);
+
+        // Create lookup array by publication_id
+        $wordpress_lookup = [];
+        foreach ($wordpress_posts as $post) {
+            $publication_id = get_field('publication_id', $post->ID);
+            if ($publication_id) {
+                $wordpress_lookup[$publication_id] = $post;
+            }
+        }
+
+        $log[] = "Found " . count($wordpress_posts) . " existing WordPress publications.";
+        $log[] = "Starting dry run migration simulation...";
+        $log[] = ""; // Empty line for readability
+
+        // --- Process each API publication ---
+        foreach ($decoded_API_response as $index => $api_publication) {
+            if (!isset($api_publication['ID'])) {
+                $log[] = "SKIP: API publication at index {$index} missing ID field.";
+                $stats['posts_with_errors']++;
+                continue;
+            }
+
+            $api_id = (string) $api_publication['ID'];
+            $api_title = isset($api_publication['TITLE']) ? $api_publication['TITLE'] : 'Untitled Publication';
+
+            // Check if post exists in WordPress
+            if (isset($wordpress_lookup[$api_id])) {
+                // Post exists - check if update needed
+                $existing_post = $wordpress_lookup[$api_id];
+                $needs_update = false;
+                $updates_needed = [];
+
+                // Check each field for differences
+                foreach ($field_mapping as $api_field => $wp_field) {
+                    $api_value = isset($api_publication[$api_field]) ? $api_publication[$api_field] : '';
+                    
+                    if (in_array($wp_field, ['title', 'post_content', 'post_date', 'post_modified'])) {
+                        // WordPress core fields
+                        $wp_value = '';
+                        switch ($wp_field) {
+                            case 'title':
+                                $wp_value = $existing_post->post_title;
+                                break;
+                            case 'post_content':
+                                $wp_value = $existing_post->post_content;
+                                break;
+                            case 'post_date':
+                                $wp_value = $existing_post->post_date;
+                                break;
+                            case 'post_modified':
+                                $wp_value = $existing_post->post_modified;
+                                break;
+                        }
+                    } else {
+                        // ACF fields
+                        $wp_value = get_field($wp_field, $existing_post->ID);
+                        if (is_null($wp_value)) $wp_value = '';
+                    }
+
+                    // Simple comparison (you might want to make this more sophisticated)
+                    if (trim($api_value) !== trim($wp_value)) {
+                        $needs_update = true;
+                        $updates_needed[] = $wp_field;
+                    }
+                }
+
+                if ($needs_update) {
+                    $log[] = "UPDATE: Post '{$api_title}' (ID: {$api_id}) needs updates in fields: " . implode(', ', $updates_needed);
+                    $stats['posts_to_update']++;
+                } else {
+                    $log[] = "SKIP: Post '{$api_title}' (ID: {$api_id}) is up to date.";
+                    $stats['posts_up_to_date']++;
+                }
+
+            } else {
+                // Post doesn't exist - would create new post
+                $log[] = "CREATE: New post would be created for '{$api_title}' (ID: {$api_id})";
+                
+                // Show what data would be populated
+                $create_details = [];
+                foreach ($field_mapping as $api_field => $wp_field) {
+                    if (isset($api_publication[$api_field]) && !empty($api_publication[$api_field])) {
+                        $value = $api_publication[$api_field];
+                        // Truncate long values for display
+                        if (strlen($value) > 100) {
+                            $value = substr($value, 0, 100) . '...';
+                        }
+                        $create_details[] = "{$wp_field}: {$value}";
+                    }
+                }
+                
+                if (!empty($create_details)) {
+                    $log[] = "  Data to populate: " . implode(' | ', array_slice($create_details, 0, 3));
+                    if (count($create_details) > 3) {
+                        $log[] = "  (" . (count($create_details) - 3) . " more fields would be populated)";
+                    }
+                }
+                
+                $stats['posts_to_create']++;
+            }
+        }
+
+        // --- Summary Statistics ---
+        $log[] = ""; // Empty line for readability
+        $log[] = "=== DRY RUN MIGRATION SUMMARY ===";
+        $log[] = "Posts to CREATE: " . $stats['posts_to_create'];
+        $log[] = "Posts to UPDATE: " . $stats['posts_to_update'];
+        $log[] = "Posts UP TO DATE: " . $stats['posts_up_to_date'];
+        $log[] = "Posts with ERRORS: " . $stats['posts_with_errors'];
+        $log[] = "Total API publications processed: " . count($decoded_API_response);
+
+        $message = "Dry run complete. Would create {$stats['posts_to_create']} new posts and update {$stats['posts_to_update']} existing posts.";
+
+        wp_send_json_success([
+            'message' => $message,
+            'log'     => $log,
+            'stats'   => $stats
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Publication API Dry Run Migration Error: ' . $e->getMessage());
+        wp_send_json_error('Error during dry run migration: ' . $e->getMessage());
     }
 }
