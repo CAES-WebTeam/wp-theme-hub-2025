@@ -51,6 +51,24 @@ function publication_api_tool_render_page() {
         <button class="button button-secondary" id="dry-run-migration-btn">Run Dry Run Migration</button>
         <div id="dry-run-migration-log" class="log-area"></div>
 
+        <hr>
+
+        <h2>Execute Migration</h2>
+        <p><strong>WARNING:</strong> This will create and update posts in your WordPress database. Make sure you have a backup before proceeding.</p>
+        <p>Publications will be processed in batches of 50. The process will continue automatically until all publications are processed.</p>
+        <button class="button button-primary" id="execute-migration-btn">Execute Migration</button>
+        <div id="execute-migration-log" class="log-area"></div>
+        <div id="migration-progress" class="migration-progress" style="display: none;">
+            <h4>Migration Progress</h4>
+            <div class="progress-stats">
+                <span id="total-created">Created: 0</span> |
+                <span id="total-updated">Updated: 0</span> |
+                <span id="total-skipped">Skipped: 0</span> |
+                <span id="total-errors">Errors: 0</span> |
+                <span id="total-processed">Processed: 0 of 0</span>
+            </div>
+        </div>
+
     </div>
     <style>
         /* Styling similar to your example for log readability */
@@ -100,6 +118,21 @@ function publication_api_tool_render_page() {
         }
         .log-area .log-skip {
             color: #696969; /* Dim Gray for skipped items */
+        }
+        .migration-progress {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .progress-stats {
+            font-family: monospace;
+            font-size: 1em;
+            font-weight: bold;
+        }
+        .progress-stats span {
+            margin-right: 15px;
         }
     </style>
     <script type="text/javascript">
@@ -221,6 +254,120 @@ function publication_api_tool_render_page() {
                 const $logArea = $('#dry-run-migration-log');
                 performAjaxCall('dry_run_migration', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Run Dry Run Migration');
             });
+
+            // Global variables to track running totals
+            let runningTotals = {
+                created: 0,
+                updated: 0,
+                skipped: 0,
+                errors: 0,
+                processed: 0,
+                total: 0
+            };
+
+            // Event listener for the "Execute Migration" button
+            $('#execute-migration-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#execute-migration-log');
+                
+                 // Reset running totals
+                runningTotals = { created: 0, updated: 0, skipped: 0, errors: 0, processed: 0, total: 0 };
+                
+                // Show progress area
+                $('#migration-progress').show();
+                updateProgressDisplay();
+
+                // Start with batch 1
+                executeMigrationBatch(1, $button, $logArea);
+            });
+
+            // Function to update the progress display
+            function updateProgressDisplay() {
+                $('#total-created').text(`Created: ${runningTotals.created}`);
+                $('#total-updated').text(`Updated: ${runningTotals.updated}`);
+                $('#total-skipped').text(`Skipped: ${runningTotals.skipped}`);
+                $('#total-errors').text(`Errors: ${runningTotals.errors}`);
+                $('#total-processed').text(`Processed: ${runningTotals.processed} of ${runningTotals.total}`);
+            }
+
+            // Function to handle batch processing
+            function executeMigrationBatch(batchNumber, $button, $logArea) {
+                if (batchNumber === 1) {
+                    $logArea.empty(); // Clear logs only on first batch
+                    setLogAreaClass($logArea, 'info');
+                }
+                
+                $button.prop('disabled', true).text(`Processing batch ${batchNumber}...`);
+                appendLog($logArea, `Starting batch ${batchNumber}...`);
+
+                $.ajax({
+                    url: '<?php echo esc_js($ajax_url); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'execute_migration',
+                        nonce: '<?php echo esc_js($nonce); ?>',
+                        batch: batchNumber
+                    },
+                    success: function(response) {
+                        if (response.success) {
+
+                            // Update running totals
+                            runningTotals.created += response.data.stats.posts_created;
+                            runningTotals.updated += response.data.stats.posts_updated;
+                            runningTotals.skipped += response.data.stats.posts_skipped;
+                            runningTotals.errors += response.data.stats.posts_with_errors;
+                            runningTotals.processed = response.data.processed_so_far;
+                            runningTotals.total = response.data.total_publications;
+                            
+                            // Update the progress display
+                            updateProgressDisplay();
+
+                            appendLog($logArea, response.data.message, 'success');
+                            
+                            // Log all the batch details
+                            if (response.data.log && response.data.log.length > 0) {
+                                response.data.log.forEach(msg => {
+                                    let logType = 'detail';
+                                    if (msg.startsWith('CREATE:')) logType = 'create';
+                                    else if (msg.startsWith('UPDATE:')) logType = 'update';
+                                    else if (msg.startsWith('SKIP:')) logType = 'skip';
+                                    else if (msg.startsWith('ERROR:')) logType = 'error';
+                                    else if (msg.startsWith('SUCCESS:')) logType = 'success';
+                                    else if (msg.startsWith('Warning:')) logType = 'discrepancy';
+                                    appendLog($logArea, msg, logType);
+                                });
+                            }
+                            
+                            // Check if there are more batches to process
+                            if (response.data.has_more_batches) {
+                                appendLog($logArea, `Batch ${batchNumber} complete. Starting next batch in 1 second...`, 'info');
+                                // Automatically continue to next batch after a short delay
+                                setTimeout(() => {
+                                    executeMigrationBatch(batchNumber + 1, $button, $logArea);
+                                }, 1000); // 1 second delay between batches
+                            } else {
+                                // All batches complete
+                                appendLog($logArea, '', 'info'); // Empty line
+                                appendLog($logArea, '=== MIGRATION COMPLETE ===', 'success');
+                                appendLog($logArea, `Final totals: Created ${runningTotals.created}, Updated ${runningTotals.updated}, Skipped ${runningTotals.skipped}, Errors ${runningTotals.errors}`, 'success');
+                                setLogAreaClass($logArea, 'success');
+                                $button.prop('disabled', false).text('Execute Migration');
+                            }
+                            
+                        } else {
+                            // Handle error
+                            appendLog($logArea, `Batch ${batchNumber} failed: ${response.data}`, 'error');
+                            setLogAreaClass($logArea, 'error');
+                            $button.prop('disabled', false).text('Execute Migration');
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        appendLog($logArea, `Batch ${batchNumber} AJAX failed: ${textStatus}`, 'error');
+                        setLogAreaClass($logArea, 'error');
+                        $button.prop('disabled', false).text('Execute Migration');
+                    }
+                });
+            }
 
         });
     </script>
@@ -621,5 +768,350 @@ function publication_api_tool_dry_run_migration() {
     } catch (Exception $e) {
         error_log('Publication API Dry Run Migration Error: ' . $e->getMessage());
         wp_send_json_error('Error during dry run migration: ' . $e->getMessage());
+    }
+}
+
+// Register the AJAX handler for actual migration
+add_action('wp_ajax_execute_migration', 'publication_api_tool_execute_migration');
+
+/**
+ * Handles the AJAX request to perform the actual data migration.
+ */
+function publication_api_tool_execute_migration() {
+    // Verify the nonce for security.
+    if (!check_ajax_referer('publication_api_tool_nonce', 'nonce', false)) {
+        wp_send_json_error('Security check failed: Invalid nonce.', 403);
+    }
+
+    // Check if the current user has the 'manage_options' capability.
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied: You do not have sufficient permissions.', 403);
+    }
+
+    $log = []; // Array to store log messages
+    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=false&bypassReturnLimit=true';
+    
+    // Same field mapping as dry run
+    $field_mapping = [
+        'ID' => 'publication_id',
+        'SERIES_ID' => 'series_id',
+        'CATEGORY_ID' => 'category_id', 
+        'UPDATER_ID' => 'updater_id',
+        'CAES_TRANSLATOR_ID' => 'translator',
+        'PUBLICATION_NUMBER' => 'publication_number',
+        'TITLE' => 'title',
+        'SHORT_SUMMARY' => 'short_summary',
+        'ABSTRACT' => 'summary',
+        'NOTES' => 'notes',
+        'DATE_CREATED' => 'post_date',
+        'DATE_LAST_UPDATED' => 'post_modified',
+        'AUTOMATIC_SUNSET_DATE' => 'sunset_date',
+        'VERSION' => 'version',
+        'PUBLICATION_TEXT' => 'post_content',
+        'PRIMARY_IMAGE_PATH' => 'primary_image_path',
+        'THUMBNAIL_IMAGE_PATH' => 'thumbnail_image_path',
+        'IS_COMMERCIAL_PUBLICATION' => 'is_commercial',
+        'IS_FEATURED_PUBLICATION' => 'is_featured'
+    ];
+
+    $stats = [
+        'posts_created' => 0,
+        'posts_updated' => 0,
+        'posts_skipped' => 0,
+        'posts_with_errors' => 0
+    ];
+
+    // Batch processing parameters
+    $batch_size = 50;
+    $current_batch_number = isset($_POST['batch']) ? intval($_POST['batch']) : 1;
+    $start_index = ($current_batch_number - 1) * $batch_size;
+    
+    try {
+        // --- Fetch API Data ---
+        $log[] = "Fetching publication data from API (batch {$current_batch_number})...";
+        $response = wp_remote_get($api_url);
+
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        $total_publications = count($decoded_API_response);
+        $log[] = "Successfully fetched {$total_publications} total publications from API.";
+        
+        // Extract batch
+        $batch_of_publications = array_slice($decoded_API_response, $start_index, $batch_size);
+        $actual_batch_size = count($batch_of_publications);
+        
+        $log[] = "Processing batch {$current_batch_number}: publications " . ($start_index + 1) . " to " . ($start_index + $actual_batch_size) . " of {$total_publications}";
+
+        // --- Get existing WordPress publications for comparison ---
+        $log[] = "Fetching existing WordPress publications...";
+        $args = array(
+            'post_type'      => 'publications',
+            'posts_per_page' => -1,
+            'post_status'    => array('publish', 'draft', 'private')
+        );
+        $wordpress_posts = get_posts($args);
+
+        // Create lookup array by publication_id
+        $wordpress_lookup = [];
+        foreach ($wordpress_posts as $post) {
+            $publication_id = get_field('publication_id', $post->ID);
+            if ($publication_id) {
+                $wordpress_lookup[$publication_id] = $post;
+            }
+        }
+
+        $log[] = "Found " . count($wordpress_posts) . " existing WordPress publications for comparison.";
+
+        // We'll continue with Step 4: Processing each publication...
+
+        // --- Process each publication in the batch ---
+        $log[] = "Starting to process individual publications...";
+        
+        foreach ($batch_of_publications as $batch_index => $one_api_publication) {
+            if (!isset($one_api_publication['ID'])) {
+                $log[] = "SKIP: API publication at batch index {$batch_index} missing ID field.";
+                $stats['posts_with_errors']++;
+                continue;
+            }
+
+            $api_id = (string) $one_api_publication['ID'];
+
+            if (!isset($one_api_publication['TITLE'])) {
+                $log[] = "SKIP: API publication number {$api_id} missing TITLE field.";
+                $stats['posts_with_errors']++;
+                continue;
+            }
+
+            $api_title = (string) $one_api_publication['TITLE'];
+
+            // Check if post exists in WordPress
+            if (isset($wordpress_lookup[$api_id])) {
+                // POST EXISTS - UPDATE LOGIC
+                $existing_post = $wordpress_lookup[$api_id];
+                $log[] = "Processing existing post: '{$api_title}' (ID: {$api_id})";
+                
+                                try {
+                    // Prepare post data for WordPress update
+                    $post_data = array(
+                        'ID'          => $existing_post->ID, // CRITICAL: WordPress needs this to know which post to update
+                        'post_type'   => 'publications',
+                        'post_status' => 'publish'
+                    );
+                    
+                    // Process each field according to our mapping
+                    foreach ($field_mapping as $api_field => $wp_field) {
+                        if (!isset($one_api_publication[$api_field])) {
+                            continue; // Skip if API field doesn't exist
+                        }
+                        
+                        $api_value = $one_api_publication[$api_field];
+                        
+                        // Handle WordPress core fields
+                        if ($wp_field === 'title') {
+                            $post_data['post_title'] = $api_value;
+                        } 
+                        elseif ($wp_field === 'post_content') {
+                            $post_data['post_content'] = $api_value;
+                        }
+                        elseif ($wp_field === 'post_date') {
+                            $converted_date = convert_api_date_to_wordpress($api_value);
+                            if ($converted_date !== null) {
+                                $post_data['post_date'] = $converted_date;
+                            } else {
+                                $log[] = "  Warning: Failed to convert date field '{$api_field}' with value '{$api_value}' - skipping field";
+                            }
+                        }
+                        elseif ($wp_field === 'post_modified') {
+                            $converted_date = convert_api_date_to_wordpress($api_value);
+                            if ($converted_date !== null) {
+                                $post_data['post_modified'] = $converted_date;
+                            } else {
+                                $log[] = "  Warning: Failed to convert date field '{$api_field}' with value '{$api_value}' - skipping field";
+                            }
+                        }
+                    }
+                    
+                    // Update the WordPress core fields
+                    $updated_post_id = wp_update_post($post_data);
+                    
+                    if (is_wp_error($updated_post_id)) {
+                        throw new Exception('Failed to update post core fields: ' . $updated_post_id->get_error_message());
+                    }
+                    
+                    // Now update all ACF fields
+                    foreach ($field_mapping as $api_field => $wp_field) {
+                        if (!isset($one_api_publication[$api_field])) {
+                            continue;
+                        }
+                        
+                        // Skip WordPress core fields (already handled above)
+                        if (in_array($wp_field, ['title', 'post_content', 'post_date', 'post_modified'])) {
+                            continue;
+                        }
+                        
+                        $api_value = $one_api_publication[$api_field];
+                        
+                        // Update ACF field
+                        $acf_updated = update_field($wp_field, $api_value, $existing_post->ID);
+                        
+                        if (!$acf_updated) {
+                            $log[] = "  Warning: Failed to update ACF field '{$wp_field}' for post ID {$existing_post->ID}";
+                        }
+                    }
+                    
+                    $log[] = "  SUCCESS: Updated post with WordPress ID {$existing_post->ID}";
+                    $stats['posts_updated']++;
+                    
+                } catch (Exception $e) {
+                    $log[] = "  ERROR: Failed to update post '{$api_title}': " . $e->getMessage();
+                    $stats['posts_with_errors']++;
+                }
+                
+            } else {
+                // POST DOESN'T EXIST - CREATE LOGIC
+                $log[] = "Creating new post: '{$api_title}' (ID: {$api_id})";
+                
+                try {
+                    // Prepare post data for WordPress
+                    $post_data = array(
+                        'post_type'   => 'publications',
+                        'post_status' => 'publish',
+                        'meta_input'  => array() // We'll populate this with ACF fields
+                    );
+                    
+                    // Process each field according to our mapping
+                    foreach ($field_mapping as $api_field => $wp_field) {
+                        if (!isset($one_api_publication[$api_field])) {
+                            continue; // Skip if API field doesn't exist
+                        }
+                        
+                        $api_value = $one_api_publication[$api_field];
+                        
+                        // Handle WordPress core fields
+                        if ($wp_field === 'title') {
+                            $post_data['post_title'] = $api_value;
+                        } 
+                        elseif ($wp_field === 'post_content') {
+                            $post_data['post_content'] = $api_value;
+                        }
+                        elseif ($wp_field === 'post_date') {
+                            $converted_date = convert_api_date_to_wordpress($api_value);
+                            if ($converted_date !== null) {
+                                $post_data['post_date'] = $converted_date;
+                            } else {
+                                $log[] = "  Warning: Failed to convert date field '{$api_field}' with value '{$api_value}' - skipping field";
+                            }
+                        }
+                        elseif ($wp_field === 'post_modified') {
+                            $converted_date = convert_api_date_to_wordpress($api_value);
+                            if ($converted_date !== null) {
+                                $post_data['post_modified'] = $converted_date;
+                            } else {
+                                $log[] = "  Warning: Failed to convert date field '{$api_field}' with value '{$api_value}' - skipping field";
+                            }
+                        }
+                        else {
+                            // Handle ACF fields
+                            $post_data['meta_input'][$wp_field] = $api_value;
+                        }
+                    }
+                    
+                    // Create the post
+                    $new_post_id = wp_insert_post($post_data);
+                    
+                    if (is_wp_error($new_post_id)) {
+                        throw new Exception('Failed to create post: ' . $new_post_id->get_error_message());
+                    }
+                    
+                    $log[] = "  SUCCESS: Created post with WordPress ID {$new_post_id}";
+                    $stats['posts_created']++;
+                    
+                } catch (Exception $e) {
+                    $log[] = "  ERROR: Failed to create post '{$api_title}': " . $e->getMessage();
+                    $stats['posts_with_errors']++;
+                }
+            }
+        }
+
+        // --- End of processing loop ---
+        
+        // Calculate if there are more batches
+        $total_remaining = $total_publications - ($start_index + $actual_batch_size);
+        $has_more_batches = $total_remaining > 0;
+        
+        // --- Final Summary for this batch ---
+        $log[] = ""; // Empty line for readability
+        $log[] = "=== BATCH {$current_batch_number} COMPLETE ===";
+        $log[] = "Posts CREATED in this batch: " . $stats['posts_created'];
+        $log[] = "Posts UPDATED in this batch: " . $stats['posts_updated'];
+        $log[] = "Posts SKIPPED in this batch: " . $stats['posts_skipped'];
+        $log[] = "Posts with ERRORS in this batch: " . $stats['posts_with_errors'];
+        
+        if ($has_more_batches) {
+            $log[] = "Remaining publications to process: {$total_remaining}";
+        } else {
+            $log[] = "All publications have been processed!";
+        }
+
+        $message = "Batch {$current_batch_number} complete. Created {$stats['posts_created']}, updated {$stats['posts_updated']}, skipped {$stats['posts_skipped']}, errors {$stats['posts_with_errors']}.";
+
+        wp_send_json_success([
+            'message' => $message,
+            'log' => $log,
+            'stats' => $stats,
+            'batch_number' => $current_batch_number,
+            'has_more_batches' => $has_more_batches,
+            'total_publications' => $total_publications,
+            'processed_so_far' => $start_index + $actual_batch_size
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Publication API Migration Error: ' . $e->getMessage());
+        wp_send_json_error('Error during migration batch ' . $current_batch_number . ': ' . $e->getMessage());
+    }
+}
+
+/**
+ * Helper function to convert API date format to WordPress format
+ * API format: "June, 02 2006 14:26:07"
+ * WordPress format: "2006-06-02 14:26:07"
+ */
+function convert_api_date_to_wordpress($api_date) {
+    if (empty($api_date)) {
+        return null;
+    }
+    
+    try {
+        // Create DateTime object from API format
+        $date = DateTime::createFromFormat('F, d Y H:i:s', $api_date);
+        
+        if ($date === false) {
+            // If that fails, try without the comma
+            $date = DateTime::createFromFormat('F d Y H:i:s', str_replace(',', '', $api_date));
+        }
+        
+        if ($date === false) {
+            throw new Exception("Unable to parse date: " . $api_date);
+        }
+        
+        // Return in WordPress format
+        return $date->format('Y-m-d H:i:s');
+        
+    } catch (Exception $e) {
+        error_log('Date conversion error: ' . $e->getMessage());
+        return null;
     }
 }
