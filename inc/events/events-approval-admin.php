@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Calendar Management Admin Page - Simplified Version
  * Only uses user permission system (no ACF dropdowns)
@@ -7,7 +8,8 @@
 // Add admin menu item
 add_action('admin_menu', 'add_calendar_management_page');
 
-function add_calendar_management_page() {
+function add_calendar_management_page()
+{
     add_submenu_page(
         'edit.php?post_type=events',
         'Calendar Management',
@@ -19,7 +21,8 @@ function add_calendar_management_page() {
 }
 
 // Render the admin page
-function render_calendar_management_page() {
+function render_calendar_management_page()
+{
     // Get all calendars
     $calendars = get_terms(array(
         'taxonomy' => 'event_caes_departments',
@@ -27,18 +30,39 @@ function render_calendar_management_page() {
         'orderby' => 'name',
         'order' => 'ASC'
     ));
-    
-    ?>
+
+    // Add this temporarily to your admin page function, right after getting $calendars:
+
+    echo '<div style="background: #f0f0f0; padding: 15px; margin: 15px 0; border: 1px solid #ccc;">';
+    echo '<h3>Debug: Calendar Term IDs</h3>';
+    foreach ($calendars as $calendar) {
+        echo '<p><strong>' . esc_html($calendar->name) . '</strong> - Term ID: ' . $calendar->term_id . '</p>';
+    }
+
+    // Also debug ashleywilliams specifically
+    $ashley = get_user_by('login', 'ashleywilliams');
+    if ($ashley) {
+        echo '<h3>Debug: ashleywilliams Permissions</h3>';
+        $submit_perms = get_user_meta($ashley->ID, 'calendar_submit_permissions', true);
+        $approve_perms = get_user_meta($ashley->ID, 'calendar_approve_permissions', true);
+        echo '<p><strong>Submit Permissions:</strong> ' . print_r($submit_perms, true) . '</p>';
+        echo '<p><strong>Approve Permissions:</strong> ' . print_r($approve_perms, true) . '</p>';
+    } else {
+        echo '<p>User ashleywilliams not found!</p>';
+    }
+    echo '</div>';
+
+?>
     <div class="wrap">
         <h1>Calendar Management</h1>
         <p>View calendar permissions and event counts. To modify permissions, edit individual user profiles.</p>
-        
+
         <?php if (is_wp_error($calendars) || empty($calendars)): ?>
             <div class="notice notice-warning">
                 <p>No calendars found. Please create some calendars in the Event Departments taxonomy first.</p>
             </div>
         <?php else: ?>
-            
+
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -52,7 +76,7 @@ function render_calendar_management_page() {
                     <?php foreach ($calendars as $calendar): ?>
                         <?php
                         $term_id = $calendar->term_id;
-                        
+
                         // Get users who can submit to this calendar
                         $submitters = get_users(array(
                             'meta_query' => array(
@@ -65,7 +89,7 @@ function render_calendar_management_page() {
                             'fields' => array('ID', 'display_name'),
                             'orderby' => 'display_name'
                         ));
-                        
+
                         // Get users who can approve this calendar
                         $permission_approvers = get_users(array(
                             'meta_query' => array(
@@ -78,7 +102,7 @@ function render_calendar_management_page() {
                             'fields' => array('ID', 'display_name'),
                             'orderby' => 'display_name'
                         ));
-                        
+
                         // Count events in this calendar
                         $event_count = get_posts(array(
                             'post_type' => 'events',
@@ -93,7 +117,7 @@ function render_calendar_management_page() {
                                 )
                             )
                         ));
-                        
+
                         $event_count = count($event_count);
                         ?>
                         <tr>
@@ -104,7 +128,7 @@ function render_calendar_management_page() {
                                     <br><small><?php echo esc_html($calendar->description); ?></small>
                                 <?php endif; ?>
                             </td>
-                            
+
                             <td>
                                 <?php if (!empty($submitters)): ?>
                                     <ul style="margin: 0; padding-left: 15px; max-height: 120px; overflow-y: auto;">
@@ -120,7 +144,7 @@ function render_calendar_management_page() {
                                     <em style="color: #666;">Only Admins & Editors</em>
                                 <?php endif; ?>
                             </td>
-                            
+
                             <td>
                                 <?php if (!empty($permission_approvers)): ?>
                                     <ul style="margin: 0; padding-left: 15px; max-height: 120px; overflow-y: auto;">
@@ -136,19 +160,19 @@ function render_calendar_management_page() {
                                     <em style="color: #d63638;">⚠️ Only Admins & Editors (no specific approvers)</em>
                                 <?php endif; ?>
                             </td>
-                            
+
                             <td style="text-align: center;">
                                 <strong><?php echo $event_count; ?></strong>
                                 <?php if ($event_count > 0): ?>
-                                    <br><a href="<?php echo admin_url('edit.php?post_type=events&event_caes_departments=' . $term_id); ?>" 
-                                           style="font-size: 12px;">View</a>
+                                    <br><a href="<?php echo admin_url('edit.php?post_type=events&event_caes_departments=' . $term_id); ?>"
+                                        style="font-size: 12px;">View</a>
                                 <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            
+
             <div style="margin-top: 30px; padding: 15px; background: #f0f6fc; border-left: 4px solid #0073aa;">
                 <h3>How to Manage Permissions:</h3>
                 <ul>
@@ -156,25 +180,28 @@ function render_calendar_management_page() {
                     <li><strong>Approve Permissions:</strong> Go to Users → Edit User → "Event Calendar Permissions"</li>
                     <li><strong>Admin/Editor:</strong> Automatically have access to all calendars</li>
                 </ul>
-                
+
                 <p><strong>⚠️ Note:</strong> Calendars with no specific approvers will only notify Admins & Editors.</p>
             </div>
-            
+
         <?php endif; ?>
     </div>
-    
+
     <style>
-    .wp-list-table th, .wp-list-table td {
-        vertical-align: top;
-        padding: 12px 8px;
-    }
-    .wp-list-table ul {
-        max-height: 120px;
-        overflow-y: auto;
-    }
-    .wp-list-table small {
-        color: #666;
-    }
+        .wp-list-table th,
+        .wp-list-table td {
+            vertical-align: top;
+            padding: 12px 8px;
+        }
+
+        .wp-list-table ul {
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .wp-list-table small {
+            color: #666;
+        }
     </style>
-    <?php
+<?php
 }
