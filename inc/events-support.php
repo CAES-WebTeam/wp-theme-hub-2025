@@ -423,13 +423,13 @@ function filter_calendar_choices_by_permissions($field) {
     }
     
     // Debug logging for troubleshooting
-    if (defined('WP_DEBUG') && WP_DEBUG) {
-        error_log('ACF Calendar Filter Debug:');
-        error_log('User ID: ' . $current_user_id);
-        error_log('User Roles: ' . implode(', ', $user_roles));
-        error_log('Allowed Calendar IDs: ' . implode(', ', $allowed_calendar_ids));
-        error_log('Final Choices: ' . implode(', ', array_keys($field['choices'])));
-    }
+    // if (defined('WP_DEBUG') && WP_DEBUG) {
+    //     error_log('ACF Calendar Filter Debug:');
+    //     error_log('User ID: ' . $current_user_id);
+    //     error_log('User Roles: ' . implode(', ', $user_roles));
+    //     error_log('Allowed Calendar IDs: ' . implode(', ', $allowed_calendar_ids));
+    //     error_log('Final Choices: ' . implode(', ', array_keys($field['choices'])));
+    // }
     
     return $field;
 }
@@ -1394,7 +1394,7 @@ function restore_calendar_values_after_acf($post_id) {
     $preserved_calendars = get_transient('calendar_backup_' . $post_id . '_' . $current_user_id);
     
     if ($preserved_calendars !== false) {
-        error_log("RESTORING calendars for post {$post_id}: " . print_r($preserved_calendars, true));
+        // error_log("RESTORING calendars for post {$post_id}: " . print_r($preserved_calendars, true));
         
         // Restore both ACF field and taxonomy
         update_field('caes_department', $preserved_calendars, $post_id);
@@ -1422,7 +1422,7 @@ function preserve_calendars_before_save() {
                 $existing_calendars = get_field('caes_department', $post_id);
                 if (!empty($existing_calendars)) {
                     set_transient('calendar_backup_' . $post_id . '_' . $current_user_id, $existing_calendars, 300);
-                    error_log("PRESERVING calendars before save: " . print_r($existing_calendars, true));
+                    // error_log("PRESERVING calendars before save: " . print_r($existing_calendars, true));
                 }
             }
         }
