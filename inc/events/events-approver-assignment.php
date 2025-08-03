@@ -102,7 +102,7 @@ function get_event_approvers_for_post( $post_id ) {
             'meta_query' => array(
                 array(
                     'key' => 'calendar_approve_permissions',
-                    'value' => '"' . $term->term_id . '"',
+                    'value' => $term->term_id,
                     'compare' => 'LIKE'
                 )
             ),

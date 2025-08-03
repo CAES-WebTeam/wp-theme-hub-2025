@@ -82,7 +82,7 @@ function render_calendar_management_page()
                             'meta_query' => array(
                                 array(
                                     'key' => 'calendar_submit_permissions',
-                                    'value' => '"' . $term_id . '"',
+                                    'value' => $term_id,
                                     'compare' => 'LIKE'
                                 )
                             ),
@@ -95,7 +95,7 @@ function render_calendar_management_page()
                             'meta_query' => array(
                                 array(
                                     'key' => 'calendar_approve_permissions',
-                                    'value' => '"' . $term_id . '"',
+                                    'value' => $term_id,
                                     'compare' => 'LIKE'
                                 )
                             ),
