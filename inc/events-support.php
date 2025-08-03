@@ -527,62 +527,81 @@ function filter_calendar_checkboxes_js() {
                 $calendarField.find('.acf-input').prepend(noticeText);
             }
             
-            // Process each checkbox
-            $calendarField.find('input[type="checkbox"]').each(function() {
-                var $checkbox = $(this);
-                var $label = $checkbox.closest('label');
-                var value = $checkbox.val();
-                var numericValue = parseInt(value, 10);
-                
-                if (isNaN(numericValue)) {
-                    return; // Skip non-numeric values
-                }
-                
-                var canInteract = false;
-                var reasonDisabled = '';
-                
-                if (isOriginalAuthor) {
-                    // Original author can only interact with calendars they can submit to
-                    canInteract = allowedSubmitCalendars.indexOf(numericValue) !== -1;
-                    reasonDisabled = canInteract ? '' : 'No submit permission';
-                } else {
-                    // Approvers cannot modify calendar selection at all
-                    canInteract = false;
-                    reasonDisabled = 'Approvers cannot modify calendar selection';
-                }
-                
-                if (!canInteract) {
-                    // Disable the checkbox and style it
+            // For non-authors, completely disable all interaction
+            if (!isOriginalAuthor) {
+                // Disable ALL calendar checkboxes for non-authors
+                $calendarField.find('input[type="checkbox"]').each(function() {
+                    var $checkbox = $(this);
+                    var $label = $checkbox.closest('label');
+                    
+                    // Disable completely
                     $checkbox.prop('disabled', true);
                     $label.css({
-                        'opacity': '0.6',
-                        'cursor': 'not-allowed'
+                        'opacity': '0.7',
+                        'cursor': 'not-allowed',
+                        'pointer-events': 'none'
                     });
                     
                     // Add visual indicator
                     if (!$label.find('.permission-indicator').length) {
-                        $label.append(' <span class="permission-indicator" style="color: #999; font-size: 11px;">(' + reasonDisabled + ')</span>');
+                        $label.append(' <span class="permission-indicator" style="color: #999; font-size: 11px;">(View only)</span>');
+                    }
+                });
+                
+                // Remove the field from form submission entirely
+                $calendarField.find('input[type="checkbox"]').attr('name', '');
+                
+                // Prevent any form interaction
+                $calendarField.on('click change', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+                
+                console.log('Completely disabled calendar field for non-author');
+            } else {
+                // For original authors, handle permission-based disabling
+                $calendarField.find('input[type="checkbox"]').each(function() {
+                    var $checkbox = $(this);
+                    var $label = $checkbox.closest('label');
+                    var value = $checkbox.val();
+                    var numericValue = parseInt(value, 10);
+                    
+                    if (isNaN(numericValue)) {
+                        return; // Skip non-numeric values
                     }
                     
-                    console.log('Disabled calendar option:', value, reasonDisabled);
-                } else {
-                    // Make sure it's enabled and styled normally
-                    $checkbox.prop('disabled', false);
-                    $label.css({
-                        'opacity': '1',
-                        'cursor': 'pointer'
-                    });
+                    var canSubmit = allowedSubmitCalendars.indexOf(numericValue) !== -1;
                     
-                    console.log('Enabled calendar option:', value);
-                }
-            });
-            
-            // For non-authors, add additional protection against form submission
-            if (!isOriginalAuthor) {
-                $calendarField.find('input[type="checkbox"]').on('change', function() {
-                    // Prevent any changes by non-authors
-                    console.log('Preventing calendar change by non-author');
-                    return false;
+                    if (!canSubmit) {
+                        // Disable checkboxes they can't submit to
+                        $checkbox.prop('disabled', true);
+                        $label.css({
+                            'opacity': '0.6',
+                            'cursor': 'not-allowed'
+                        });
+                        
+                        // Add visual indicator and uncheck if checked
+                        if (!$label.find('.permission-indicator').length) {
+                            $label.append(' <span class="permission-indicator" style="color: #999; font-size: 11px;">(No permission)</span>');
+                        }
+                        
+                        // Uncheck if it was checked
+                        if ($checkbox.is(':checked')) {
+                            $checkbox.prop('checked', false);
+                        }
+                        
+                        console.log('Disabled calendar option for author:', value);
+                    } else {
+                        // Make sure it's enabled and styled normally
+                        $checkbox.prop('disabled', false);
+                        $label.css({
+                            'opacity': '1',
+                            'cursor': 'pointer'
+                        });
+                        
+                        console.log('Enabled calendar option for author:', value);
+                    }
                 });
             }
         }
