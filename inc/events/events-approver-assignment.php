@@ -87,6 +87,7 @@ if ( function_exists('acf_add_local_field_group') ) {
  * @param int $post_id The ID of the event post.
  * @return array An array of unique user IDs of all designated approvers.
  */
+
 function get_event_approvers_for_post( $post_id ) {
     $approvers = array();
 
@@ -107,7 +108,7 @@ function get_event_approvers_for_post( $post_id ) {
             // If an approver is assigned, add their ID to our list.
             $approvers[] = $assigned_approver;
         } else {
-            // Check for users with permission to approve this calendar
+            // Check for users with permission to approve this calendar (new system)
             $users_with_approve_permission = get_users(array(
                 'meta_query' => array(
                     array(
@@ -121,16 +122,8 @@ function get_event_approvers_for_post( $post_id ) {
             
             if (!empty($users_with_approve_permission)) {
                 $approvers = array_merge($approvers, $users_with_approve_permission);
-            } else {
-                // Fallback: If no approver is assigned and no permission-based approvers, use all Editors and Administrators.
-                // Get all users with the 'editor' role.
-                $editors = get_users( array( 'role' => 'editor', 'fields' => 'ID' ) );
-                $approvers = array_merge( $approvers, $editors );
-
-                // Get all users with the 'administrator' role.
-                $admins = get_users( array( 'role' => 'administrator', 'fields' => 'ID' ) );
-                $approvers = array_merge( $approvers, $admins );
             }
+            // REMOVED: No more fallback to all admins/editors
         }
     }
 

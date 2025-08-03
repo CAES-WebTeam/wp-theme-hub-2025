@@ -34,3 +34,7 @@ if ( file_exists( $events_dir . 'events-approval-workflow.php' ) ) {
 if ( file_exists( $events_dir . 'events-approval-metabox.php' ) ) {
     require_once( $events_dir . 'events-approval-metabox.php' );
 }
+
+if ( file_exists( $events_dir . 'events-approval-admin.php' ) ) {
+    require_once( $events_dir . 'events-approval-admin.php' );
+}
