@@ -789,6 +789,211 @@ function filter_calendar_choices_by_permissions($field) {
         return $field;
     }
     
+    // Get user and roles
+    $user = get_userdata($current_user_id);
+    if (!$user) {
+        return $field;
+    }
+    
+    $user_roles = (array) $user->roles;
+    
+    // Admins and editors can see all calendars - skip filtering
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return $field;
+    }
+    
+    // Get all calendars first
+    $all_calendars = get_terms(array(
+        'taxonomy' => 'event_caes_departments',
+        'hide_empty' => false,
+    ));
+    
+    if (is_wp_error($all_calendars) || empty($all_calendars)) {
+        return $field;
+    }
+    
+    // For non-admin users, filter by permissions
+    $allowed_calendar_ids = get_user_submit_calendars($current_user_id);
+    
+    // Build filtered choices
+    $field['choices'] = array();
+    
+    if (!empty($allowed_calendar_ids)) {
+        foreach ($all_calendars as $calendar) {
+            if (in_array($calendar->term_id, $allowed_calendar_ids)) {
+                $field['choices'][$calendar->term_id] = $calendar->name;
+            }
+        }
+    }
+    
+    // If no calendars available, show helpful message
+    if (empty($field['choices'])) {
+        $field['choices'] = array('' => 'No calendars available - contact administrator');
+        $field['disabled'] = 1;
+        $field['allow_null'] = 1;
+    }
+    
+    // Debug logging for troubleshooting
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('ACF Calendar Filter Debug:');
+        error_log('User ID: ' . $current_user_id);
+        error_log('User Roles: ' . implode(', ', $user_roles));
+        error_log('Allowed Calendar IDs: ' . implode(', ', $allowed_calendar_ids));
+        error_log('Final Choices: ' . implode(', ', array_keys($field['choices'])));
+    }
+    
+    return $field;
+}
+
+// Alternative approach - use ACF prepare_field for additional filtering
+add_filter('acf/prepare_field/name=caes_department', 'prepare_calendar_field_permissions');
+
+function prepare_calendar_field_permissions($field) {
+    // Only in admin
+    if (!is_admin()) {
+        return $field;
+    }
+    
+    $current_user_id = get_current_user_id();
+    if (!$current_user_id) {
+        return $field;
+    }
+    
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Skip for admins/editors
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return $field;
+    }
+    
+    // Get allowed calendars
+    $allowed_calendar_ids = get_user_submit_calendars($current_user_id);
+    
+    // If no permissions, disable the field
+    if (empty($allowed_calendar_ids)) {
+        $field['disabled'] = 1;
+        $field['message'] = 'You do not have permission to submit to any calendars. Contact your administrator.';
+    }
+    
+    return $field;
+}
+
+// JavaScript approach as backup - filter checkboxes after load
+add_action('admin_footer', 'filter_calendar_checkboxes_js');
+
+function filter_calendar_checkboxes_js() {
+    global $typenow, $pagenow;
+    
+    // Only on events edit pages
+    if ($typenow !== 'events' || !in_array($pagenow, ['post.php', 'post-new.php'])) {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Skip for admins/editors
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return;
+    }
+    
+    // Get allowed calendar IDs
+    $allowed_calendar_ids = get_user_submit_calendars($current_user_id);
+    
+    ?>
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        var allowedCalendars = <?php echo json_encode($allowed_calendar_ids); ?>;
+        
+        console.log('Filtering calendars for user - Allowed:', allowedCalendars);
+        
+        // Function to filter calendar checkboxes
+        function filterCalendarCheckboxes() {
+            // Find the calendar field - try multiple selectors
+            var $calendarField = $('.acf-field[data-name="caes_department"]');
+            
+            if ($calendarField.length === 0) {
+                // Try alternative selectors
+                $calendarField = $('[data-name="caes_department"]').closest('.acf-field');
+            }
+            
+            if ($calendarField.length === 0) {
+                console.log('Calendar field not found');
+                return;
+            }
+            
+            console.log('Found calendar field:', $calendarField);
+            
+            // Find all checkbox inputs in this field
+            $calendarField.find('input[type="checkbox"]').each(function() {
+                var $checkbox = $(this);
+                var value = $checkbox.val();
+                var numericValue = parseInt(value, 10);
+                
+                if (!isNaN(numericValue) && allowedCalendars.indexOf(numericValue) === -1) {
+                    // This calendar is not allowed - hide the entire row
+                    var $row = $checkbox.closest('label, .acf-checkbox-list li, tr');
+                    $row.hide();
+                    
+                    // Also uncheck it if it was previously checked
+                    if ($checkbox.is(':checked')) {
+                        $checkbox.prop('checked', false);
+                    }
+                    
+                    console.log('Hiding calendar option:', value, $row);
+                }
+            });
+            
+            // If no calendars are available, show message
+            var visibleCheckboxes = $calendarField.find('input[type="checkbox"]:visible');
+            if (visibleCheckboxes.length === 0) {
+                $calendarField.append('<div class="calendar-permission-notice" style="color: #d63638; font-weight: bold; margin-top: 10px;">You do not have permission to submit to any calendars. Please contact your administrator.</div>');
+            }
+        }
+        
+        // Run immediately
+        filterCalendarCheckboxes();
+        
+        // Run after ACF is ready
+        if (typeof acf !== 'undefined') {
+            acf.addAction('ready', function() {
+                setTimeout(filterCalendarCheckboxes, 100);
+            });
+            
+            acf.addAction('append', function() {
+                setTimeout(filterCalendarCheckboxes, 100);
+            });
+        }
+        
+        // Run on DOM changes as fallback
+        setTimeout(filterCalendarCheckboxes, 1000);
+        setTimeout(filterCalendarCheckboxes, 3000);
+    });
+    </script>
+    <?php
+}<?php
+/**
+ * Filter ACF calendar field to show only allowed calendars
+ * Add this to events-support.php
+ */
+
+// Filter the caes_department field choices based on user permissions
+add_filter('acf/load_field/name=caes_department', 'filter_calendar_choices_by_permissions');
+
+function filter_calendar_choices_by_permissions($field) {
+    // Only filter in admin
+    if (!is_admin()) {
+        return $field;
+    }
+    
+    // Get current user
+    $current_user_id = get_current_user_id();
+    if (!$current_user_id) {
+        return $field;
+    }
+    
     // Get the post being edited
     global $post;
     $post_id = 0;
@@ -958,5 +1163,212 @@ function show_calendar_permission_warning() {
         echo '<p><strong>Warning:</strong> ' . esc_html($warning) . '</p>';
         echo '</div>';
         delete_transient('calendar_permission_warning_' . $user_id);
+    }
+}
+
+// Add a notice if user has no calendar permissions
+add_action('admin_notices', 'show_calendar_permission_notice');
+
+function show_calendar_permission_notice() {
+    global $typenow, $pagenow;
+    
+    // Only show on events pages
+    if ($typenow !== 'events' || !in_array($pagenow, ['post.php', 'post-new.php', 'edit.php'])) {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Don't show for admins/editors
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return;
+    }
+    
+    // Check if user has any calendar permissions
+    $allowed_calendars = get_user_submit_calendars($current_user_id);
+    
+    if (empty($allowed_calendars)) {
+        echo '<div class="notice notice-warning">';
+        echo '<p><strong>No Calendar Access:</strong> You don\'t have permission to submit events to any calendars. Please contact an administrator to assign calendar permissions to your account.</p>';
+        echo '</div>';
+    }
+}
+
+// Validate that user can only submit to calendars they have access to
+add_action('save_post', 'validate_calendar_permissions_on_save', 5, 3);
+
+function validate_calendar_permissions_on_save($post_id, $post, $update) {
+    // Only for events
+    if ($post->post_type !== 'events') {
+        return;
+    }
+    
+    // Skip for autosaves, revisions, etc.
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    
+    if (wp_is_post_revision($post_id)) {
+        return;
+    }
+    
+    // Skip during AJAX approval actions
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && $_POST['action'] === 'approve_event_calendar') {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Admins and editors can do anything
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return;
+    }
+    
+    // Get selected calendars
+    $selected_calendars = get_field('caes_department', $post_id);
+    if (!is_array($selected_calendars)) {
+        $selected_calendars = array();
+    }
+    
+    // Get user's allowed calendars
+    $allowed_calendars = get_user_submit_calendars($current_user_id);
+    
+    // Check if any selected calendars are not allowed
+    $unauthorized_calendars = array_diff($selected_calendars, $allowed_calendars);
+    
+    if (!empty($unauthorized_calendars)) {
+        // Remove unauthorized calendars
+        $authorized_calendars = array_intersect($selected_calendars, $allowed_calendars);
+        
+        // Update the field with only authorized calendars
+        update_field('caes_department', $authorized_calendars, $post_id);
+        
+        // Set a warning message
+        set_transient('calendar_permission_warning_' . $current_user_id, 
+            'Some calendars were removed because you don\'t have permission to submit to them.', 30);
+    }
+}
+
+// Show calendar permission warning
+add_action('admin_notices', 'show_calendar_permission_warning');
+
+function show_calendar_permission_warning() {
+    $user_id = get_current_user_id();
+    $warning = get_transient('calendar_permission_warning_' . $user_id);
+    
+    if ($warning) {
+        echo '<div class="notice notice-warning is-dismissible">';
+        echo '<p><strong>Warning:</strong> ' . esc_html($warning) . '</p>';
+        echo '</div>';
+        delete_transient('calendar_permission_warning_' . $user_id);
+    }
+}
+
+
+/**
+ * Temporary debugging functions - Add to events-support.php
+ * Remove after testing
+ */
+
+// Debug function to check what permissions a user has
+function debug_user_calendar_permissions() {
+    if (!current_user_can('administrator')) {
+        return; // Only admins can see this debug info
+    }
+    
+    if (isset($_GET['debug_user_permissions']) && is_numeric($_GET['debug_user_permissions'])) {
+        $user_id = intval($_GET['debug_user_permissions']);
+        $user = get_userdata($user_id);
+        
+        if ($user) {
+            echo '<div style="background: #f0f0f0; padding: 20px; margin: 20px; border: 1px solid #ccc;">';
+            echo '<h3>Debug: User Calendar Permissions for ' . esc_html($user->display_name) . '</h3>';
+            
+            $submit_permissions = get_user_meta($user_id, 'calendar_submit_permissions', true);
+            $approve_permissions = get_user_meta($user_id, 'calendar_approve_permissions', true);
+            
+            echo '<p><strong>Submit Permissions:</strong> ';
+            if (is_array($submit_permissions) && !empty($submit_permissions)) {
+                foreach ($submit_permissions as $term_id) {
+                    $term = get_term($term_id);
+                    echo $term ? $term->name . ' (' . $term_id . '), ' : 'Unknown (' . $term_id . '), ';
+                }
+            } else {
+                echo 'None';
+            }
+            echo '</p>';
+            
+            echo '<p><strong>Approve Permissions:</strong> ';
+            if (is_array($approve_permissions) && !empty($approve_permissions)) {
+                foreach ($approve_permissions as $term_id) {
+                    $term = get_term($term_id);
+                    echo $term ? $term->name . ' (' . $term_id . '), ' : 'Unknown (' . $term_id . '), ';
+                }
+            } else {
+                echo 'None';
+            }
+            echo '</p>';
+            
+            $allowed_submit_calendars = get_user_submit_calendars($user_id);
+            echo '<p><strong>get_user_submit_calendars() result:</strong> ';
+            if (!empty($allowed_submit_calendars)) {
+                foreach ($allowed_submit_calendars as $term_id) {
+                    $term = get_term($term_id);
+                    echo $term ? $term->name . ' (' . $term_id . '), ' : 'Unknown (' . $term_id . '), ';
+                }
+            } else {
+                echo 'None';
+            }
+            echo '</p>';
+            
+            echo '<p><strong>User Roles:</strong> ' . implode(', ', $user->roles) . '</p>';
+            echo '</div>';
+        }
+    }
+}
+add_action('admin_notices', 'debug_user_calendar_permissions');
+
+// Add debug link to user list
+add_filter('user_row_actions', 'add_debug_permission_link', 10, 2);
+function add_debug_permission_link($actions, $user_object) {
+    if (current_user_can('administrator')) {
+        $actions['debug_permissions'] = '<a href="' . admin_url('users.php?debug_user_permissions=' . $user_object->ID) . '">Debug Permissions</a>';
+    }
+    return $actions;
+}
+
+// Debug the ACF field filtering
+add_action('admin_footer', 'debug_acf_field_filtering');
+function debug_acf_field_filtering() {
+    global $typenow, $pagenow;
+    
+    if ($typenow === 'events' && in_array($pagenow, ['post.php', 'post-new.php']) && current_user_can('administrator')) {
+        ?>
+        <script>
+        console.log('ACF Field Debug - Current User ID:', <?php echo get_current_user_id(); ?>);
+        console.log('ACF Field Debug - User Roles:', <?php echo json_encode(wp_get_current_user()->roles); ?>);
+        
+        // Log when ACF field loads
+        if (typeof acf !== 'undefined') {
+            acf.addAction('ready', function() {
+                var field = acf.getField('field_caes_department'); // Replace with your actual field key
+                if (field) {
+                    console.log('ACF Field found:', field);
+                    console.log('ACF Field choices:', field.get('choices'));
+                } else {
+                    console.log('ACF Field not found - trying alternative selectors');
+                    // Try to find by name
+                    jQuery('[data-name="caes_department"]').each(function() {
+                        console.log('Found ACF field element:', this);
+                    });
+                }
+            });
+        }
+        </script>
+        <?php
     }
 }
