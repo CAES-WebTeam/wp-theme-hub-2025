@@ -86,7 +86,7 @@ function render_calendar_management_page()
                                     'compare' => 'LIKE'
                                 )
                             ),
-                            'fields' => array('ID', 'display_name'),
+                            'fields' => array('ID', 'display_name', 'user_email'),  // ADDED user_email
                             'orderby' => 'display_name'
                         ));
 
@@ -99,7 +99,7 @@ function render_calendar_management_page()
                                     'compare' => 'LIKE'
                                 )
                             ),
-                            'fields' => array('ID', 'display_name'),
+                            'fields' => array('ID', 'display_name', 'user_email'),  // ADDED user_email
                             'orderby' => 'display_name'
                         ));
 
@@ -135,7 +135,7 @@ function render_calendar_management_page()
                                         <?php foreach ($submitters as $submitter): ?>
                                             <li style="font-size: 13px;">
                                                 <?php echo esc_html($submitter->display_name); ?>
-                                                <small>(<?php echo esc_html($submitter->user_login); ?>)</small>
+                                                <small>(<?php echo esc_html($submitter->user_email); ?>)</small>
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>
@@ -151,7 +151,7 @@ function render_calendar_management_page()
                                         <?php foreach ($permission_approvers as $approver): ?>
                                             <li style="font-size: 13px;">
                                                 <?php echo esc_html($approver->display_name); ?>
-                                                <small>(<?php echo esc_html($approver->user_login); ?>)</small>
+                                                <small>(<?php echo esc_html($approver->user_email); ?>)</small>
                                             </li>
                                         <?php endforeach; ?>
                                     </ul>
