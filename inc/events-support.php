@@ -581,26 +581,28 @@ function validate_calendar_permissions_on_save($post_id, $post, $update) {
         return;
     }
     
-    // Get selected calendars
+    // **NEW: Only validate for the original author, not for approvers**
+    $post_author_id = get_post_field('post_author', $post_id);
+    if ((int) $current_user_id !== (int) $post_author_id) {
+        // This is not the original submitter, so don't validate calendar permissions
+        // Approvers should not be changing calendar selections
+        return;
+    }
+    
+    // Rest of the validation only runs for the original submitter...
     $selected_calendars = get_field('caes_department', $post_id);
     if (!is_array($selected_calendars)) {
         $selected_calendars = array();
     }
     
-    // Get user's allowed calendars
     $allowed_calendars = get_user_submit_calendars($current_user_id);
     
-    // Check if any selected calendars are not allowed
     $unauthorized_calendars = array_diff($selected_calendars, $allowed_calendars);
     
     if (!empty($unauthorized_calendars)) {
-        // Remove unauthorized calendars
         $authorized_calendars = array_intersect($selected_calendars, $allowed_calendars);
-        
-        // Update the field with only authorized calendars
         update_field('caes_department', $authorized_calendars, $post_id);
         
-        // Set a warning message
         set_transient('calendar_permission_warning_' . $current_user_id, 
             'Some calendars were removed because you don\'t have permission to submit to them.', 30);
     }
