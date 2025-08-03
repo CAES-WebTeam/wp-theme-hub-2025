@@ -747,66 +747,6 @@ function show_calendar_permission_warning() {
 }
 
 /**
- * BULLETPROOF PROTECTION: Prevent ACF from saving calendar changes by non-authors
- * This runs BEFORE any ACF processing and preserves the original values
- */
-add_filter('acf/pre_update_value/name=caes_department', 'prevent_calendar_changes_by_non_authors', 10, 3);
-
-function prevent_calendar_changes_by_non_authors($value, $post_id, $field) {
-    // Skip if not a valid post ID
-    if (!$post_id || !is_numeric($post_id)) {
-        return $value;
-    }
-    
-    // Skip during AJAX approval actions
-    if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && $_POST['action'] === 'approve_event_calendar') {
-        return $value;
-    }
-    
-    $current_user_id = get_current_user_id();
-    $user = get_userdata($current_user_id);
-    $user_roles = (array) $user->roles;
-    
-    // Admins and editors can modify anything
-    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
-        return $value;
-    }
-    
-    // Get the post
-    $post = get_post($post_id);
-    if (!$post || $post->post_type !== 'events') {
-        return $value;
-    }
-    
-    // Check if current user is the original author
-    $post_author_id = get_post_field('post_author', $post_id);
-    if ((int) $current_user_id !== (int) $post_author_id) {
-        // This is NOT the original submitter - preserve existing calendar selection
-        $existing_value = get_field('caes_department', $post_id);
-        
-        // Log the prevention for debugging
-        error_log("PREVENTED calendar modification: User {$current_user_id} tried to modify calendars for post {$post_id} (author: {$post_author_id})");
-        error_log("Attempted value: " . print_r($value, true));
-        error_log("Preserved value: " . print_r($existing_value, true));
-        
-        // Return the existing value to prevent ANY changes
-        return $existing_value;
-    }
-    
-    // Original author - but also check if this is after submission
-    $has_been_submitted = get_post_meta($post_id, '_submitted_for_approval', true);
-    if ($has_been_submitted && get_post_status($post_id) === 'pending') {
-        // Event has been submitted for approval - even original author shouldn't modify calendars
-        $existing_value = get_field('caes_department', $post_id);
-        error_log("PREVENTED calendar modification: Event {$post_id} already submitted for approval");
-        return $existing_value;
-    }
-    
-    // Original author during initial creation/editing - allow the change
-    return $value;
-}
-
-/**
  * Additional protection: Make ACF field readonly for non-authors
  */
 add_filter('acf/prepare_field/name=caes_department', 'make_calendar_field_readonly_for_non_authors');
@@ -1414,5 +1354,77 @@ function debug_acf_field_filtering() {
         }
         </script>
         <?php
+    }
+}
+
+/**
+ * PROPER FIX: Restore calendar values AFTER ACF finishes processing
+ * Priority 20 ensures this runs AFTER all ACF internal processing
+ */
+add_action('acf/save_post', 'restore_calendar_values_after_acf', 20);
+
+function restore_calendar_values_after_acf($post_id) {
+    // Only for events
+    $post = get_post($post_id);
+    if (!$post || $post->post_type !== 'events') {
+        return;
+    }
+    
+    // Skip during AJAX approval actions
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && $_POST['action'] === 'approve_event_calendar') {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Admins and editors can modify anything
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return;
+    }
+    
+    // Check if current user is the original author
+    $post_author_id = get_post_field('post_author', $post_id);
+    if ((int) $current_user_id === (int) $post_author_id) {
+        return; // Original author can modify
+    }
+    
+    // Non-author tried to save - restore original calendar values
+    $preserved_calendars = get_transient('calendar_backup_' . $post_id . '_' . $current_user_id);
+    
+    if ($preserved_calendars !== false) {
+        error_log("RESTORING calendars for post {$post_id}: " . print_r($preserved_calendars, true));
+        
+        // Restore both ACF field and taxonomy
+        update_field('caes_department', $preserved_calendars, $post_id);
+        wp_set_post_terms($post_id, $preserved_calendars, 'event_caes_departments');
+        
+        // Clean up
+        delete_transient('calendar_backup_' . $post_id . '_' . $current_user_id);
+    }
+}
+
+// Store calendar values BEFORE WordPress processes the form
+add_action('init', 'preserve_calendars_before_save');
+
+function preserve_calendars_before_save() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_ID'])) {
+        $post_id = intval($_POST['post_ID']);
+        $post = get_post($post_id);
+        
+        if ($post && $post->post_type === 'events') {
+            $current_user_id = get_current_user_id();
+            $post_author_id = get_post_field('post_author', $post_id);
+            
+            // If non-author is saving, preserve calendar values
+            if ((int) $current_user_id !== (int) $post_author_id) {
+                $existing_calendars = get_field('caes_department', $post_id);
+                if (!empty($existing_calendars)) {
+                    set_transient('calendar_backup_' . $post_id . '_' . $current_user_id, $existing_calendars, 300);
+                    error_log("PRESERVING calendars before save: " . print_r($existing_calendars, true));
+                }
+            }
+        }
     }
 }
