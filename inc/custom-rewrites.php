@@ -27,18 +27,18 @@ add_action('init', 'custom_news_single_rewrite_rule');
 function custom_events_rewrite_rules()
 {
     // Rewrite rule for the event submission page
-    add_rewrite_rule(
-        '^events/submit-an-event/?$',
-        'index.php?pagename=events/submit-an-event',
-        'top'
-    );
+    // add_rewrite_rule(
+    //     '^events/submit-an-event/?$',
+    //     'index.php?pagename=events/submit-an-event',
+    //     'top'
+    // );
 
     // Single events rule (corrected)
-    add_rewrite_rule(
-        '^events/([^/]+)/?$',
-        'index.php?events=$matches[1]',
-        'top'
-    );
+    // add_rewrite_rule(
+    //     '^events/([^/]+)/?$',
+    //     'index.php?events=$matches[1]',
+    //     'top'
+    // );
 
     // Event series rules
     add_rewrite_rule(
@@ -65,20 +65,6 @@ function custom_events_rewrite_rules()
     );
 }
 add_action('init', 'custom_events_rewrite_rules');
-
-/**
- * Custom rewrite rule for 'events' post type.
- * This ensures URLs like /events/slug-of-event/ are correctly routed.
- * Although user stated it's working, this adds explicit rule.
- */
-function custom_events_single_rewrite_rule() {
-    add_rewrite_rule(
-        '^events/([^/]+)/?$',
-        'index.php?post_type=events&name=$matches[1]',
-        'top'
-    );
-}
-add_action('init', 'custom_events_single_rewrite_rule');
 
 /**
  * Add topic rewrite rules for each post type (news, publications, shorthand-story).
@@ -166,17 +152,6 @@ function custom_news_permalink($post_link, $post) {
     return $post_link;
 }
 add_filter('post_link', 'custom_news_permalink', 99, 2);
-
-/**
- * Modify the permalink structure for 'events' post type to include '/events/'.
- */
-function custom_events_permalink($post_link, $post) {
-    if ('events' === $post->post_type) {
-        return home_url('events/' . $post->post_name . '/');
-    }
-    return $post_link;
-}
-add_filter('post_type_link', 'custom_events_permalink', 10, 2);
 
 /**
  * Modify the permalink structure for publication posts so that the URL includes the publication number.

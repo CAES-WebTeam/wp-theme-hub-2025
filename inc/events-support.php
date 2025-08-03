@@ -28,14 +28,50 @@ function update_series_taxonomy_from_acf($post_id)
 }
 add_action('save_post', 'update_series_taxonomy_from_acf', 20);
 
-
-// Function to remove the series taxonomy meta box from the events post type
-function remove_series_taxonomy_metabox()
+/**
+ * Hook into the save_post action to update the event_caes_departments taxonomy
+ * when the ACF field is updated.
+ */
+function update_departments_taxonomy_from_acf($post_id)
 {
+    // Check if this is an autosave or a revision, and bail if so
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
 
-	remove_meta_box('tagsdiv-series', 'events', 'side');
+    // Check if the current user can edit the post
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    // Get the ACF departments field
+    $acf_department_terms = get_field('caes_department', $post_id);
+
+    // If the ACF departments field is empty, empty out the array
+    if (!is_array($acf_department_terms)) {
+        $acf_department_terms = array();
+    }
+
+    // Update the post's event_caes_departments taxonomy with the selected term IDs
+    wp_set_post_terms($post_id, $acf_department_terms, 'event_caes_departments');
 }
-add_action('admin_menu', 'remove_series_taxonomy_metabox');
+add_action('save_post', 'update_departments_taxonomy_from_acf', 20);
+
+// Function to remove the series taxonomy meta box and featured image from the events post type
+function remove_events_metaboxes()
+{
+	// Remove series taxonomy metabox
+	remove_meta_box('tagsdiv-series', 'events', 'side');
+	
+	// Remove featured image metabox - try both contexts
+	remove_meta_box('postimagediv', 'events', 'side');
+	remove_meta_box('postimagediv', 'events', 'normal');
+}
+
+// Use different hooks for better compatibility
+add_action('admin_menu', 'remove_events_metaboxes');
+add_action('do_meta_boxes', 'remove_events_metaboxes');
+
 
 // Set ACF field 'location_caes_room' with options from json
 function populate_acf_location_caes_room_field($field)
@@ -244,12 +280,88 @@ function send_events_publish_emails($post_id)
 }
 add_action('acf/save_post', 'send_events_publish_emails', 20);
 
-// Restrict Users to only see events they've created
+// Restrict Users to only see events they've created OR events they can approve
 function restrict_events_to_author($query)
 {
 	if (is_admin() && $query->is_main_query() && $query->get('post_type') === 'events') {
-		if (!current_user_can('administrator')) {
-			$query->set('author', get_current_user_id());
+		$current_user_id = get_current_user_id();
+		$current_user = wp_get_current_user();
+		$user_roles = (array) $current_user->roles;
+		
+		// Admins and editors can see all events
+		if (current_user_can('administrator') || current_user_can('editor')) {
+			return;
+		}
+		
+		// For event approvers, show their own events plus events for their assigned calendars
+		if (in_array('event_approver', $user_roles)) {
+			// Get calendars assigned to this user
+			$all_calendars = get_terms(array(
+				'taxonomy' => 'event_caes_departments',
+				'hide_empty' => false,
+			));
+			
+			$assigned_calendar_ids = array();
+			
+			if (!is_wp_error($all_calendars) && !empty($all_calendars)) {
+				foreach ($all_calendars as $calendar) {
+					$assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $calendar->term_id);
+					
+					if ($assigned_approver && (int) $assigned_approver === (int) $current_user_id) {
+						$assigned_calendar_ids[] = $calendar->term_id;
+					}
+				}
+			}
+			
+			$visible_post_ids = array();
+			
+			// Get authored events
+			$authored_events = get_posts(array(
+				'post_type' => 'events',
+				'author' => $current_user_id,
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'post_status' => array('publish', 'pending', 'draft')
+			));
+			
+			if (!empty($authored_events)) {
+				$visible_post_ids = array_merge($visible_post_ids, $authored_events);
+			}
+			
+			// Get events for assigned calendars
+			if (!empty($assigned_calendar_ids)) {
+				$assigned_calendar_events = get_posts(array(
+					'post_type' => 'events',
+					'post_status' => array('pending', 'publish'),
+					'posts_per_page' => -1,
+					'fields' => 'ids',
+					'tax_query' => array(
+						array(
+							'taxonomy' => 'event_caes_departments',
+							'field' => 'term_id',
+							'terms' => $assigned_calendar_ids,
+							'operator' => 'IN'
+						)
+					)
+				));
+				
+				if (!empty($assigned_calendar_events)) {
+					$visible_post_ids = array_merge($visible_post_ids, $assigned_calendar_events);
+				}
+			}
+			
+			$visible_post_ids = array_unique($visible_post_ids);
+			
+			if (!empty($visible_post_ids)) {
+				$query->set('post__in', $visible_post_ids);
+			} else {
+				$query->set('post__in', array(0));
+			}
+			
+			$query->set('author', '');
+		} else {
+			// For other users (event submitters), only show their own events
+			$query->set('author', $current_user_id);
 		}
 	}
 }
@@ -436,8 +548,8 @@ function is_event_expired($post_id) {
  * This is now much simpler since expired events have a different post status
  */
 function exclude_expired_events_from_queries($query) {
-    // Only run on frontend
-    if (is_admin() || !$query->is_main_query()) {
+    // Only run on frontend, but skip if it's a preview
+    if (is_admin() || !$query->is_main_query() || is_preview()) {
         return;
     }
     

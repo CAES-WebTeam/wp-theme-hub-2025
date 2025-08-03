@@ -40,7 +40,8 @@ add_action('init', function () {
         'supports' => array(
             0 => 'title',
             1 => 'author',
-            2 => 'thumbnail'
+            2 => 'thumbnail',
+            3 => 'revisions'
         ),
         'delete_with_user' => false,
         'capability_type'    => 'event',
@@ -244,64 +245,6 @@ function hide_event_taxonomy_metaboxes() {
     remove_meta_box('tagsdiv-event_caes_departments', 'events', 'side');
 }
 add_action('admin_menu', 'hide_event_taxonomy_metaboxes');
-
-// Register role for Event Submitters
-function register_event_submitter_role()
-{
-	if (! get_role('event_submitter')) {
-		add_role(
-			'event_submitter',
-			__('Event Submitter', 'caes-hub'),
-			array(
-				'read'                 => true,
-				'edit_event'           => true,
-				'read_event'           => true,
-				'delete_event'         => true,
-				'edit_events'          => true,
-				'read_events'          => true,  // ADDED: Needed to query events
-				'read_private_events'  => true,  // ADDED: Needed to see draft events
-				// DO NOT add 'edit_others_events' or 'delete_others_events'
-				// 'publish_events'    => true, // Only if they can publish immediately
-				'upload_files'         => true,
-			)
-		);
-	}
-}
-add_action('init', 'register_event_submitter_role');
-
-// Grant Event Capabilities to Higher Roles
-function grant_event_capabilities_to_higher_roles() {
-    // Define which roles should have full event management access
-    $roles_with_full_access = array('editor', 'administrator');
-    
-    // All event capabilities that should be granted to editors and admins
-    $event_capabilities = array(
-        'edit_event',
-        'read_event',
-        'delete_event',
-        'edit_events',
-        'edit_others_events',
-        'publish_events',
-        'read_private_events',
-        'delete_events',
-        'delete_private_events',
-        'delete_published_events',
-        'delete_others_events',
-        'edit_private_events',
-        'edit_published_events',
-    );
-    
-    // Grant capabilities to each specified role
-    foreach ($roles_with_full_access as $role_name) {
-        $role = get_role($role_name);
-        if ($role) {
-            foreach ($event_capabilities as $capability) {
-                $role->add_cap($capability);
-            }
-        }
-    }
-}
-add_action('init', 'grant_event_capabilities_to_higher_roles');
 
 // Register the shared 'Topics' taxonomy for posts, publications, and shorthand stories
 function register_topics_taxonomy()
