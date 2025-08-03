@@ -165,7 +165,7 @@ function set_acf_post_title_and_notify($post_id)
 			$headers = array('Content-Type: text/html; charset=UTF-8');
 
 			// Send the email notification
-			wp_mail($admin_user_email, $subject, $message, $headers);
+			// wp_mail($admin_user_email, $subject, $message, $headers);
 		} else {
 			error_log("No valid approving admin email for post ID: $post_id");
 		}
@@ -268,7 +268,7 @@ function send_events_publish_emails($post_id)
 			$headers = array('Content-Type: text/plain; charset=UTF-8');
 
 			// Send the email
-			wp_mail($to, $subject, $message, $headers);
+			// wp_mail($to, $subject, $message, $headers);
 
 			// Update the 'activate' field back to 0
 			update_field('activate', 0, $post_id);
