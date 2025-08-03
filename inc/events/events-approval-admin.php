@@ -31,27 +31,6 @@ function render_calendar_management_page()
         'order' => 'ASC'
     ));
 
-    // Add this temporarily to your admin page function, right after getting $calendars:
-
-    echo '<div style="background: #f0f0f0; padding: 15px; margin: 15px 0; border: 1px solid #ccc;">';
-    echo '<h3>Debug: Calendar Term IDs</h3>';
-    foreach ($calendars as $calendar) {
-        echo '<p><strong>' . esc_html($calendar->name) . '</strong> - Term ID: ' . $calendar->term_id . '</p>';
-    }
-
-    // Also debug ashleywilliams specifically
-    $ashley = get_user_by('login', 'ashleywilliams');
-    if ($ashley) {
-        echo '<h3>Debug: ashleywilliams Permissions</h3>';
-        $submit_perms = get_user_meta($ashley->ID, 'calendar_submit_permissions', true);
-        $approve_perms = get_user_meta($ashley->ID, 'calendar_approve_permissions', true);
-        echo '<p><strong>Submit Permissions:</strong> ' . print_r($submit_perms, true) . '</p>';
-        echo '<p><strong>Approve Permissions:</strong> ' . print_r($approve_perms, true) . '</p>';
-    } else {
-        echo '<p>User ashleywilliams not found!</p>';
-    }
-    echo '</div>';
-
 ?>
     <div class="wrap">
         <h1>Calendar Management</h1>
