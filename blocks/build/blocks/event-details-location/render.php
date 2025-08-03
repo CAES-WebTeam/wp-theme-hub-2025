@@ -1,6 +1,6 @@
 <?php
 // SIMPLE TEST - this should always show up if the block runs
-// error_log('LOCATION BLOCK: Block is running!');
+// error_log('COMBINED LOCATION BLOCK: Block is running!');
 
 if ( ! function_exists( 'normalize_address' ) ) {
     function normalize_address($address) {
@@ -29,46 +29,30 @@ $post_id = get_the_ID();
 
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
-$locationAsSnippet = $block['locationAsSnippet'];
+$displayMode = $block['displayMode'] ?? 'auto';
+$asSnippet = $block['asSnippet'] ?? false;
 $fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
 $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
 
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
-// DEBUG: Check what location fields exist
-$location_custom = get_field('location_custom', $post_id);
-$event_type = get_field('event_type', $post_id);
-$event_location_type = get_field('event_location_type', $post_id);
-
-// DEBUG: List ALL ACF fields to see what location fields exist
-$all_fields = get_fields($post_id);
-// error_log('DEBUG: All fields: ' . print_r($all_fields, true));
-
-// Initialize location variable
-$location = '';
+// ===================
+// GET PHYSICAL LOCATION DATA
+// ===================
+$physical_location = '';
 $directions_link = '';
+$location_details = '';
 
-// Check for Google map data (regardless of location_custom setting)
+// Check for Google map data
 $google_map = get_field('location_google_map', $post_id);
-// error_log('DEBUG: google_map: ' . print_r($google_map, true));
 
 if (!empty($google_map) && is_array($google_map)) {
-    // error_log('DEBUG: Using Google map location');
-    
     // Retrieve the full address and build the default street address
     $full_address   = $google_map['address'] ?? '';
     $street_number  = $google_map['street_number'] ?? '';
     $street_name    = $google_map['street_name'] ?? '';
     $street_address = trim($street_number . ' ' . $street_name);
-
-    // DEBUG: Show individual components
-    // error_log('DEBUG: full_address: ' . $full_address);
-    // error_log('DEBUG: street_number: ' . $street_number);
-    // error_log('DEBUG: street_name: ' . $street_name);
-    // error_log('DEBUG: city: ' . ($google_map['city'] ?? 'EMPTY'));
-    // error_log('DEBUG: state_short: ' . ($google_map['state_short'] ?? 'EMPTY'));
-    // error_log('DEBUG: post_code: ' . ($google_map['post_code'] ?? 'EMPTY'));
 
     // Attempt to extract a potential building name from the full address
     $address_parts          = explode(',', $full_address);
@@ -96,7 +80,6 @@ if (!empty($google_map) && is_array($google_map)) {
     
     // If city/state fields are empty, try to parse from full address
     if (empty($city) || empty($state)) {
-        // error_log('DEBUG: Parsing city/state from full address');
         // Parse: "Hoke Smith Building, Smith Street, Athens, GA, USA"
         $address_parts = explode(',', $full_address);
         if (count($address_parts) >= 4) {
@@ -106,31 +89,22 @@ if (!empty($google_map) && is_array($google_map)) {
         }
     }
     
-    // error_log('DEBUG: Parsed city: ' . $city);
-    // error_log('DEBUG: Parsed state: ' . $state);
-    
     $line2_parts = [];
     if ($city) $line2_parts[] = $city;
     if ($state) $line2_parts[] = $state;
     if ($postal) $line2_parts[] = $postal;
     
     $line2 = implode(', ', array_filter($line2_parts));
-    
-    // error_log('DEBUG: line2: ' . $line2);
-    
     $country = $google_map['country_short'] ?? '';
 
-    // Create location output based on snippet vs. full display
-    if ($locationAsSnippet) {
-        $location = $line1_snippet;
-    } else {
-        $location = $line1_full;
-        if ($line2) {
-            $location .= '<br>' . $line2;
-        }
-        if ($country && $country !== 'US') {
-            $location .= '<br>' . $country;
-        }
+    // Create physical location output
+    $physical_location_snippet = $line1_snippet;
+    $physical_location_full = $line1_full;
+    if ($line2) {
+        $physical_location_full .= '<br>' . $line2;
+    }
+    if ($country && $country !== 'US') {
+        $physical_location_full .= '<br>' . $country;
     }
 
     // Create Google Maps link
@@ -141,36 +115,119 @@ if (!empty($google_map) && is_array($google_map)) {
     }
 }
 
-// Check and set location details
-$details = '';
+// Get location details
 if (!empty(get_field('location_details', $post_id))) {
-    $details = get_field('location_details', $post_id);
+    $location_details = get_field('location_details', $post_id);
 }
 
-// error_log('DEBUG: Final location: ' . print_r($location, true));
-// error_log('DEBUG: locationAsSnippet: ' . print_r($locationAsSnippet, true));
-?>
+// ===================
+// GET ONLINE LOCATION DATA
+// ===================
+$online_location = '';
+$virtual = get_field('online_location', $post_id);
+$online_web_address = get_field('online_location_web_address', $post_id);
+$online_web_label = get_field('online_location_web_address_label', $post_id);
 
-<?php
-if (!empty($location)) {
-    // error_log('DEBUG: Displaying location block');
+$has_online = !empty($virtual) || !empty($online_web_address);
+$has_physical = !empty($physical_location_snippet) || !empty($physical_location_full);
+
+// ===================
+// DETERMINE WHAT TO DISPLAY
+// ===================
+$show_physical = false;
+$show_online = false;
+
+switch ($displayMode) {
+    case 'physical':
+        $show_physical = $has_physical;
+        break;
+    case 'online':
+        $show_online = $has_online;
+        break;
+    case 'both':
+        $show_physical = $has_physical;
+        $show_online = $has_online;
+        break;
+    case 'auto':
+    default:
+        $show_physical = $has_physical;
+        $show_online = $has_online;
+        break;
+}
+
+// ===================
+// OUTPUT THE BLOCK
+// ===================
+if ($show_physical || $show_online) {
     echo '<div ' . $attrs . '>';
 
-    if ($locationAsSnippet) {
-        // For snippet mode, show the single line
-        echo '<h3 class="event-details-title"' . $style . '>' . wp_kses_post($location) . '</h3>';
+    if ($asSnippet) {
+        // SNIPPET MODE
+        if ($show_physical && $show_online) {
+            echo '<h3 class="event-details-title"' . $style . '>' . wp_kses_post($physical_location_snippet) . ' & Online</h3>';
+        } elseif ($show_physical) {
+            echo '<h3 class="event-details-title"' . $style . '>' . wp_kses_post($physical_location_snippet) . '</h3>';
+        } elseif ($show_online) {
+            echo '<h3 class="event-details-title"' . $style . '>Virtual Event</h3>';
+        }
     } else {
-        // For full display, output the title and content area
-        echo '<h3 class="event-details-title"' . $style . '>Location</h3>';
-        echo '<div class="event-details-content">';
-        echo wp_kses_post($location);
-        if (!empty($directions_link)) {
-            echo '<br /><a href="' . esc_url($directions_link) . '" target="_blank" rel="noopener noreferrer">Get Directions</a>';
+        // FULL DISPLAY MODE
+        if ($show_physical && $show_online) {
+            // BOTH LOCATIONS
+            echo '<h3 class="event-details-title"' . $style . '>Location</h3>';
+            echo '<div class="event-details-content">';
+            echo '<p><em>This event is in-person and online.</em></p>';
+            
+            // Physical location
+            echo '<strong>Physical Location:</strong><br>';
+            echo wp_kses_post($physical_location_full);
+            if (!empty($directions_link)) {
+                echo '<br><a href="' . esc_url($directions_link) . '" target="_blank" rel="noopener noreferrer">Get Directions</a>';
+            }
+            if (!empty($location_details)) {
+                echo '<br>' . wp_kses_post($location_details);
+            }
+            
+            echo '<br><br>';
+            
+            // Online location
+            echo '<strong>Online Location:</strong><br>';
+            if (!empty($virtual)) {
+                echo wp_kses_post($virtual) . '<br>';
+            }
+            if (!empty($online_web_address)) {
+                $link_text = !empty($online_web_label) ? $online_web_label : $online_web_address;
+                echo '<a href="' . esc_url($online_web_address) . '">' . esc_html($link_text) . '</a>';
+            }
+            
+            echo '</div>'; // Close event-details-content
+            
+        } elseif ($show_physical) {
+            // PHYSICAL LOCATION ONLY
+            echo '<h3 class="event-details-title"' . $style . '>Location</h3>';
+            echo '<div class="event-details-content">';
+            echo wp_kses_post($physical_location_full);
+            if (!empty($directions_link)) {
+                echo '<br><a href="' . esc_url($directions_link) . '" target="_blank" rel="noopener noreferrer">Get Directions</a>';
+            }
+            if (!empty($location_details)) {
+                echo '<br>' . wp_kses_post($location_details);
+            }
+            echo '</div>'; // Close event-details-content
+            
+        } elseif ($show_online) {
+            // ONLINE LOCATION ONLY
+            echo '<h3 class="event-details-title"' . $style . '>Online Location</h3>';
+            echo '<div class="event-details-content">';
+            if (!empty($virtual)) {
+                echo wp_kses_post($virtual) . '<br>';
+            }
+            if (!empty($online_web_address)) {
+                $link_text = !empty($online_web_label) ? $online_web_label : $online_web_address;
+                echo '<a href="' . esc_url($online_web_address) . '">' . esc_html($link_text) . '</a>';
+            }
+            echo '</div>'; // Close event-details-content
         }
-        if (!empty($details)) {
-            echo '<br /> ' . $details;
-        }
-        echo '</div>'; // Close event-details-content
     }
 
     echo '</div>'; // Close wrapper
