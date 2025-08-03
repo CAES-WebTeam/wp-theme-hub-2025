@@ -42,3 +42,38 @@ require get_template_directory() . '/inc/pub-main-import.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+
+// Add this to events-support.php temporarily for debugging
+add_action('save_post', 'debug_calendar_save_process', 1, 3);
+function debug_calendar_save_process($post_id, $post, $update) {
+    if ($post->post_type !== 'events') {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $post_author_id = get_post_field('post_author', $post_id);
+    
+    error_log("=== SAVE POST DEBUG ===");
+    error_log("Post ID: {$post_id}");
+    error_log("Current User: {$current_user_id}");
+    error_log("Post Author: {$post_author_id}");
+    error_log("Post Status: " . $post->post_status);
+    error_log("Is AJAX: " . (defined('DOING_AJAX') && DOING_AJAX ? 'Yes' : 'No'));
+    
+    // Check what's in POST data for the calendar field
+    if (isset($_POST['acf'])) {
+        error_log("ACF POST data exists");
+        foreach ($_POST['acf'] as $key => $value) {
+            $field_object = get_field_object($key);
+            if ($field_object && $field_object['name'] === 'caes_department') {
+                error_log("Calendar field in POST: " . print_r($value, true));
+            }
+        }
+    } else {
+        error_log("No ACF POST data found");
+    }
+    
+    // Check existing value
+    $existing_calendars = get_field('caes_department', $post_id);
+    error_log("Existing calendars before save: " . print_r($existing_calendars, true));
+}

@@ -31,6 +31,7 @@ add_action('save_post', 'update_series_taxonomy_from_acf', 20);
 /**
  * Hook into the save_post action to update the event_caes_departments taxonomy
  * when the ACF field is updated.
+ * UPDATED: Prevent clearing calendars when non-authors save the post
  */
 function update_departments_taxonomy_from_acf($post_id)
 {
@@ -42,6 +43,22 @@ function update_departments_taxonomy_from_acf($post_id)
     // Check if the current user can edit the post
     if (!current_user_can('edit_post', $post_id)) {
         return;
+    }
+
+    // **NEW: Only sync for original authors, not approvers**
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Admins and editors can sync
+    if (!in_array('administrator', $user_roles) && !in_array('editor', $user_roles)) {
+        // For non-admin users, only sync if they're the original author
+        $post_author_id = get_post_field('post_author', $post_id);
+        if ((int) $current_user_id !== (int) $post_author_id) {
+            // This is NOT the original submitter - don't sync taxonomy
+            // This prevents approvers from accidentally clearing the calendar selection
+            return;
+        }
     }
 
     // Get the ACF departments field
@@ -165,7 +182,7 @@ function set_acf_post_title_and_notify($post_id)
 			$headers = array('Content-Type: text/html; charset=UTF-8');
 
 			// Send the email notification
-			// wp_mail($admin_user_email, $subject, $message, $headers);
+			wp_mail($admin_user_email, $subject, $message, $headers);
 		} else {
 			error_log("No valid approving admin email for post ID: $post_id");
 		}
@@ -268,7 +285,7 @@ function send_events_publish_emails($post_id)
 			$headers = array('Content-Type: text/plain; charset=UTF-8');
 
 			// Send the email
-			// wp_mail($to, $subject, $message, $headers);
+			wp_mail($to, $subject, $message, $headers);
 
 			// Update the 'activate' field back to 0
 			update_field('activate', 0, $post_id);
@@ -712,6 +729,7 @@ function show_calendar_permission_warning() {
 
 /**
  * BULLETPROOF PROTECTION: Prevent ACF from saving calendar changes by non-authors
+ * This runs BEFORE any ACF processing and preserves the original values
  */
 add_filter('acf/pre_update_value/name=caes_department', 'prevent_calendar_changes_by_non_authors', 10, 3);
 
@@ -744,18 +762,85 @@ function prevent_calendar_changes_by_non_authors($value, $post_id, $field) {
     // Check if current user is the original author
     $post_author_id = get_post_field('post_author', $post_id);
     if ((int) $current_user_id !== (int) $post_author_id) {
-        // This is NOT the original submitter - don't allow calendar changes
+        // This is NOT the original submitter - preserve existing calendar selection
         $existing_value = get_field('caes_department', $post_id);
         
-        // Log the attempt for debugging
-        error_log("Calendar modification prevented: User {$current_user_id} tried to modify calendars for post {$post_id} (author: {$post_author_id})");
+        // Log the prevention for debugging
+        error_log("PREVENTED calendar modification: User {$current_user_id} tried to modify calendars for post {$post_id} (author: {$post_author_id})");
+        error_log("Attempted value: " . print_r($value, true));
+        error_log("Preserved value: " . print_r($existing_value, true));
         
-        // Return the existing value to prevent changes
+        // Return the existing value to prevent ANY changes
         return $existing_value;
     }
     
-    // Original author - allow the change
+    // Original author - but also check if this is after submission
+    $has_been_submitted = get_post_meta($post_id, '_submitted_for_approval', true);
+    if ($has_been_submitted && get_post_status($post_id) === 'pending') {
+        // Event has been submitted for approval - even original author shouldn't modify calendars
+        $existing_value = get_field('caes_department', $post_id);
+        error_log("PREVENTED calendar modification: Event {$post_id} already submitted for approval");
+        return $existing_value;
+    }
+    
+    // Original author during initial creation/editing - allow the change
     return $value;
+}
+
+/**
+ * Additional protection: Make ACF field readonly for non-authors
+ */
+add_filter('acf/prepare_field/name=caes_department', 'make_calendar_field_readonly_for_non_authors');
+
+function make_calendar_field_readonly_for_non_authors($field) {
+    // Only in admin
+    if (!is_admin()) {
+        return $field;
+    }
+    
+    $current_user_id = get_current_user_id();
+    if (!$current_user_id) {
+        return $field;
+    }
+    
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Skip for admins/editors
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return $field;
+    }
+    
+    // Get post ID
+    $post_id = 0;
+    if (isset($_GET['post']) && is_numeric($_GET['post'])) {
+        $post_id = intval($_GET['post']);
+    } elseif (isset($_POST['post_ID']) && is_numeric($_POST['post_ID'])) {
+        $post_id = intval($_POST['post_ID']);
+    }
+    
+    if ($post_id) {
+        $post_author_id = get_post_field('post_author', $post_id);
+        
+        // If current user is NOT the original author, make field readonly
+        if ((int) $current_user_id !== (int) $post_author_id) {
+            $field['readonly'] = 1;
+            $field['disabled'] = 1;
+            
+            // Add instruction explaining why it's disabled
+            $field['instructions'] = 'Calendar selection is locked. Only the original submitter can modify which calendars this event is submitted to. Use the approval buttons in the sidebar to approve calendars you have permission for.';
+        }
+        
+        // Also check if already submitted - even author can't modify after submission
+        $has_been_submitted = get_post_meta($post_id, '_submitted_for_approval', true);
+        if ($has_been_submitted && get_post_status($post_id) === 'pending') {
+            $field['readonly'] = 1;
+            $field['disabled'] = 1;
+            $field['instructions'] = 'Calendar selection is locked because this event has been submitted for approval. Use the approval buttons in the sidebar to approve specific calendars.';
+        }
+    }
+    
+    return $field;
 }
 
 /*===========================================================================
