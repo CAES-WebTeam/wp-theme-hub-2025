@@ -418,7 +418,7 @@ function filter_calendar_choices_by_permissions($field) {
 }
 
 /**
- * JavaScript approach as backup - filter checkboxes after load
+ * JavaScript approach - disable checkboxes instead of hiding them
  */
 add_action('admin_footer', 'filter_calendar_checkboxes_js');
 
@@ -439,23 +439,55 @@ function filter_calendar_checkboxes_js() {
         return;
     }
     
-    // Get allowed calendar IDs
-    $allowed_calendar_ids = get_user_submit_calendars($current_user_id);
+    // Get user permissions
+    $allowed_submit_calendars = get_user_submit_calendars($current_user_id);
+    $allowed_approve_calendars = array();
+    
+    // Get calendars user can approve
+    $all_calendars = get_terms(array(
+        'taxonomy' => 'event_caes_departments',
+        'hide_empty' => false,
+    ));
+    
+    if (!is_wp_error($all_calendars)) {
+        foreach ($all_calendars as $calendar) {
+            if (user_can_approve_calendar($current_user_id, $calendar->term_id)) {
+                $allowed_approve_calendars[] = $calendar->term_id;
+            }
+        }
+    }
+    
+    // Check if user is the original author
+    $post_id = isset($_GET['post']) ? intval($_GET['post']) : 0;
+    $is_original_author = false;
+    
+    if ($post_id) {
+        $post_author_id = get_post_field('post_author', $post_id);
+        $is_original_author = ((int) $current_user_id === (int) $post_author_id);
+    } else {
+        // New post - assume they're the author
+        $is_original_author = true;
+    }
     
     ?>
     <script type="text/javascript">
     jQuery(document).ready(function($) {
-        var allowedCalendars = <?php echo json_encode($allowed_calendar_ids); ?>;
+        var allowedSubmitCalendars = <?php echo json_encode($allowed_submit_calendars); ?>;
+        var allowedApproveCalendars = <?php echo json_encode($allowed_approve_calendars); ?>;
+        var isOriginalAuthor = <?php echo json_encode($is_original_author); ?>;
+        var currentUserId = <?php echo $current_user_id; ?>;
         
-        console.log('Filtering calendars for user - Allowed:', allowedCalendars);
+        console.log('Calendar permissions for user ' + currentUserId + ':');
+        console.log('- Can submit to:', allowedSubmitCalendars);
+        console.log('- Can approve:', allowedApproveCalendars);
+        console.log('- Is original author:', isOriginalAuthor);
         
-        // Function to filter calendar checkboxes
-        function filterCalendarCheckboxes() {
-            // Find the calendar field - try multiple selectors
+        // Function to disable/enable calendar checkboxes based on permissions
+        function setupCalendarPermissions() {
+            // Find the calendar field
             var $calendarField = $('.acf-field[data-name="caes_department"]');
             
             if ($calendarField.length === 0) {
-                // Try alternative selectors
                 $calendarField = $('[data-name="caes_department"]').closest('.acf-field');
             }
             
@@ -466,50 +498,95 @@ function filter_calendar_checkboxes_js() {
             
             console.log('Found calendar field:', $calendarField);
             
-            // Find all checkbox inputs in this field
+            // Add explanatory text
+            var $existingNotice = $calendarField.find('.calendar-permission-notice');
+            if ($existingNotice.length === 0) {
+                var noticeText = '';
+                if (isOriginalAuthor) {
+                    noticeText = '<div class="calendar-permission-notice" style="background: #e7f3ff; border: 1px solid #0073aa; padding: 8px; margin: 5px 0; font-size: 12px;"><strong>Note:</strong> You can only select calendars you have permission to submit to. Disabled calendars are not available to you.</div>';
+                } else {
+                    noticeText = '<div class="calendar-permission-notice" style="background: #fff3cd; border: 1px solid #ffc107; padding: 8px; margin: 5px 0; font-size: 12px;"><strong>Approver View:</strong> You can see all calendars this event was submitted to, but you can only approve calendars you have permission for using the approval buttons in the sidebar.</div>';
+                }
+                $calendarField.find('.acf-input').prepend(noticeText);
+            }
+            
+            // Process each checkbox
             $calendarField.find('input[type="checkbox"]').each(function() {
                 var $checkbox = $(this);
+                var $label = $checkbox.closest('label');
                 var value = $checkbox.val();
                 var numericValue = parseInt(value, 10);
                 
-                if (!isNaN(numericValue) && allowedCalendars.indexOf(numericValue) === -1) {
-                    // This calendar is not allowed - hide the entire row
-                    var $row = $checkbox.closest('label, .acf-checkbox-list li, tr');
-                    $row.hide();
+                if (isNaN(numericValue)) {
+                    return; // Skip non-numeric values
+                }
+                
+                var canInteract = false;
+                var reasonDisabled = '';
+                
+                if (isOriginalAuthor) {
+                    // Original author can only interact with calendars they can submit to
+                    canInteract = allowedSubmitCalendars.indexOf(numericValue) !== -1;
+                    reasonDisabled = canInteract ? '' : 'No submit permission';
+                } else {
+                    // Approvers cannot modify calendar selection at all
+                    canInteract = false;
+                    reasonDisabled = 'Approvers cannot modify calendar selection';
+                }
+                
+                if (!canInteract) {
+                    // Disable the checkbox and style it
+                    $checkbox.prop('disabled', true);
+                    $label.css({
+                        'opacity': '0.6',
+                        'cursor': 'not-allowed'
+                    });
                     
-                    // Also uncheck it if it was previously checked
-                    if ($checkbox.is(':checked')) {
-                        $checkbox.prop('checked', false);
+                    // Add visual indicator
+                    if (!$label.find('.permission-indicator').length) {
+                        $label.append(' <span class="permission-indicator" style="color: #999; font-size: 11px;">(' + reasonDisabled + ')</span>');
                     }
                     
-                    console.log('Hiding calendar option:', value, $row);
+                    console.log('Disabled calendar option:', value, reasonDisabled);
+                } else {
+                    // Make sure it's enabled and styled normally
+                    $checkbox.prop('disabled', false);
+                    $label.css({
+                        'opacity': '1',
+                        'cursor': 'pointer'
+                    });
+                    
+                    console.log('Enabled calendar option:', value);
                 }
             });
             
-            // If no calendars are available, show message
-            var visibleCheckboxes = $calendarField.find('input[type="checkbox"]:visible');
-            if (visibleCheckboxes.length === 0) {
-                $calendarField.append('<div class="calendar-permission-notice" style="color: #d63638; font-weight: bold; margin-top: 10px;">You do not have permission to submit to any calendars. Please contact your administrator.</div>');
+            // For non-authors, add additional protection against form submission
+            if (!isOriginalAuthor) {
+                $calendarField.find('input[type="checkbox"]').on('change', function() {
+                    // Prevent any changes by non-authors
+                    console.log('Preventing calendar change by non-author');
+                    return false;
+                });
             }
         }
         
         // Run immediately
-        filterCalendarCheckboxes();
+        setupCalendarPermissions();
         
         // Run after ACF is ready
         if (typeof acf !== 'undefined') {
             acf.addAction('ready', function() {
-                setTimeout(filterCalendarCheckboxes, 100);
+                setTimeout(setupCalendarPermissions, 100);
             });
             
             acf.addAction('append', function() {
-                setTimeout(filterCalendarCheckboxes, 100);
+                setTimeout(setupCalendarPermissions, 100);
             });
         }
         
         // Run on DOM changes as fallback
-        setTimeout(filterCalendarCheckboxes, 1000);
-        setTimeout(filterCalendarCheckboxes, 3000);
+        setTimeout(setupCalendarPermissions, 1000);
+        setTimeout(setupCalendarPermissions, 3000);
     });
     </script>
     <?php
@@ -549,6 +626,7 @@ function show_calendar_permission_notice() {
 
 /**
  * Validate that user can only submit to calendars they have access to
+ * ONLY runs for original submitters, NEVER for approvers
  */
 add_action('save_post', 'validate_calendar_permissions_on_save', 5, 3);
 
@@ -581,15 +659,22 @@ function validate_calendar_permissions_on_save($post_id, $post, $update) {
         return;
     }
     
-    // **NEW: Only validate for the original author, not for approvers**
+    // **CRITICAL: Only validate for the original author, NEVER for approvers**
     $post_author_id = get_post_field('post_author', $post_id);
     if ((int) $current_user_id !== (int) $post_author_id) {
-        // This is not the original submitter, so don't validate calendar permissions
-        // Approvers should not be changing calendar selections
+        // This is NOT the original submitter - don't validate calendar permissions
+        // Approvers should NEVER modify calendar selections
         return;
     }
     
-    // Rest of the validation only runs for the original submitter...
+    // **ADDITIONAL CHECK: Only run on initial submission, not later edits**
+    $has_been_submitted = get_post_meta($post_id, '_submitted_for_approval', true);
+    if ($has_been_submitted && $post->post_status === 'pending') {
+        // Event has already been submitted - don't modify calendar selection
+        return;
+    }
+    
+    // Only run validation for original submitter during initial submission
     $selected_calendars = get_field('caes_department', $post_id);
     if (!is_array($selected_calendars)) {
         $selected_calendars = array();
@@ -623,6 +708,54 @@ function show_calendar_permission_warning() {
         echo '</div>';
         delete_transient('calendar_permission_warning_' . $user_id);
     }
+}
+
+/**
+ * BULLETPROOF PROTECTION: Prevent ACF from saving calendar changes by non-authors
+ */
+add_filter('acf/pre_update_value/name=caes_department', 'prevent_calendar_changes_by_non_authors', 10, 3);
+
+function prevent_calendar_changes_by_non_authors($value, $post_id, $field) {
+    // Skip if not a valid post ID
+    if (!$post_id || !is_numeric($post_id)) {
+        return $value;
+    }
+    
+    // Skip during AJAX approval actions
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && $_POST['action'] === 'approve_event_calendar') {
+        return $value;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Admins and editors can modify anything
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return $value;
+    }
+    
+    // Get the post
+    $post = get_post($post_id);
+    if (!$post || $post->post_type !== 'events') {
+        return $value;
+    }
+    
+    // Check if current user is the original author
+    $post_author_id = get_post_field('post_author', $post_id);
+    if ((int) $current_user_id !== (int) $post_author_id) {
+        // This is NOT the original submitter - don't allow calendar changes
+        $existing_value = get_field('caes_department', $post_id);
+        
+        // Log the attempt for debugging
+        error_log("Calendar modification prevented: User {$current_user_id} tried to modify calendars for post {$post_id} (author: {$post_author_id})");
+        
+        // Return the existing value to prevent changes
+        return $existing_value;
+    }
+    
+    // Original author - allow the change
+    return $value;
 }
 
 /*===========================================================================
