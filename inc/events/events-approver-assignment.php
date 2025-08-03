@@ -100,21 +100,37 @@ function get_event_approvers_for_post( $post_id ) {
 
     // Loop through each selected calendar.
     foreach ( $event_calendars as $term ) {
-        // Get the assigned approver for the current calendar term using the ACF field.
+        // First check for assigned approver (existing ACF system)
         $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term->term_id);
 
         if ( $assigned_approver ) {
             // If an approver is assigned, add their ID to our list.
             $approvers[] = $assigned_approver;
         } else {
-            // Fallback: If no approver is assigned, use all Editors and Administrators.
-            // Get all users with the 'editor' role.
-            $editors = get_users( array( 'role' => 'editor', 'fields' => 'ID' ) );
-            $approvers = array_merge( $approvers, $editors );
+            // Check for users with permission to approve this calendar
+            $users_with_approve_permission = get_users(array(
+                'meta_query' => array(
+                    array(
+                        'key' => 'calendar_approve_permissions',
+                        'value' => '"' . $term->term_id . '"',
+                        'compare' => 'LIKE'
+                    )
+                ),
+                'fields' => 'ID'
+            ));
+            
+            if (!empty($users_with_approve_permission)) {
+                $approvers = array_merge($approvers, $users_with_approve_permission);
+            } else {
+                // Fallback: If no approver is assigned and no permission-based approvers, use all Editors and Administrators.
+                // Get all users with the 'editor' role.
+                $editors = get_users( array( 'role' => 'editor', 'fields' => 'ID' ) );
+                $approvers = array_merge( $approvers, $editors );
 
-            // Get all users with the 'administrator' role.
-            $admins = get_users( array( 'role' => 'administrator', 'fields' => 'ID' ) );
-            $approvers = array_merge( $approvers, $admins );
+                // Get all users with the 'administrator' role.
+                $admins = get_users( array( 'role' => 'administrator', 'fields' => 'ID' ) );
+                $approvers = array_merge( $approvers, $admins );
+            }
         }
     }
 

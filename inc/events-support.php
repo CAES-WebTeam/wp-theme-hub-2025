@@ -559,9 +559,15 @@ function exclude_expired_events_from_queries($query) {
     if ($post_type === 'events' || 
         (is_array($post_type) && in_array('events', $post_type))) {
         
-        // Ensure we only get published events (excludes expired automatically)
+        // Ensure we only get published events (excludes expired and pending automatically)
         $post_status = $query->get('post_status');
         if (empty($post_status)) {
+            $query->set('post_status', 'publish');
+        } elseif (is_array($post_status)) {
+            // If post_status is an array, make sure only 'publish' is included for events
+            $query->set('post_status', array('publish'));
+        } elseif ($post_status !== 'publish') {
+            // If a specific non-publish status is set, override it to publish
             $query->set('post_status', 'publish');
         }
     }
@@ -767,3 +773,190 @@ function add_expire_events_admin_action() {
     }
 }
 add_action('admin_init', 'add_expire_events_admin_action');
+
+// Filter the caes_department field choices based on user permissions
+add_filter('acf/load_field/name=caes_department', 'filter_calendar_choices_by_permissions');
+
+function filter_calendar_choices_by_permissions($field) {
+    // Only filter in admin
+    if (!is_admin()) {
+        return $field;
+    }
+    
+    // Get current user
+    $current_user_id = get_current_user_id();
+    if (!$current_user_id) {
+        return $field;
+    }
+    
+    // Get the post being edited
+    global $post;
+    $post_id = 0;
+    
+    // Try to get post ID from various sources
+    if (isset($_GET['post']) && is_numeric($_GET['post'])) {
+        $post_id = intval($_GET['post']);
+    } elseif (isset($_POST['post_ID']) && is_numeric($_POST['post_ID'])) {
+        $post_id = intval($_POST['post_ID']);
+    } elseif ($post && isset($post->ID)) {
+        $post_id = $post->ID;
+    }
+    
+    // Get post object
+    $current_post = $post_id ? get_post($post_id) : null;
+    
+    // Only apply to events post type
+    if ($current_post && $current_post->post_type !== 'events') {
+        return $field;
+    }
+    
+    // If this is a new post, check the post_type parameter
+    if (!$current_post && isset($_GET['post_type']) && $_GET['post_type'] !== 'events') {
+        return $field;
+    }
+    
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Get all calendars first
+    $all_calendars = get_terms(array(
+        'taxonomy' => 'event_caes_departments',
+        'hide_empty' => false,
+    ));
+    
+    if (is_wp_error($all_calendars)) {
+        return $field;
+    }
+    
+    // Admins and editors can see all calendars
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        // Just populate with all calendars
+        $field['choices'] = array();
+        foreach ($all_calendars as $calendar) {
+            $field['choices'][$calendar->term_id] = $calendar->name;
+        }
+        return $field;
+    }
+    
+    // For other users, filter by permissions
+    $allowed_calendar_ids = get_user_submit_calendars($current_user_id);
+    
+    // Build filtered choices
+    $field['choices'] = array();
+    
+    foreach ($all_calendars as $calendar) {
+        if (in_array($calendar->term_id, $allowed_calendar_ids)) {
+            $field['choices'][$calendar->term_id] = $calendar->name;
+        }
+    }
+    
+    // If no calendars available, show helpful message
+    if (empty($field['choices'])) {
+        $field['choices'] = array('' => 'No calendars available - contact administrator');
+        $field['disabled'] = 1;
+    }
+    
+    return $field;
+}
+
+// Add a notice if user has no calendar permissions
+add_action('admin_notices', 'show_calendar_permission_notice');
+
+function show_calendar_permission_notice() {
+    global $typenow, $pagenow;
+    
+    // Only show on events pages
+    if ($typenow !== 'events' || !in_array($pagenow, ['post.php', 'post-new.php', 'edit.php'])) {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Don't show for admins/editors
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return;
+    }
+    
+    // Check if user has any calendar permissions
+    $allowed_calendars = get_user_submit_calendars($current_user_id);
+    
+    if (empty($allowed_calendars)) {
+        echo '<div class="notice notice-warning">';
+        echo '<p><strong>No Calendar Access:</strong> You don\'t have permission to submit events to any calendars. Please contact an administrator to assign calendar permissions to your account.</p>';
+        echo '</div>';
+    }
+}
+
+// Validate that user can only submit to calendars they have access to
+add_action('save_post', 'validate_calendar_permissions_on_save', 5, 3);
+
+function validate_calendar_permissions_on_save($post_id, $post, $update) {
+    // Only for events
+    if ($post->post_type !== 'events') {
+        return;
+    }
+    
+    // Skip for autosaves, revisions, etc.
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    
+    if (wp_is_post_revision($post_id)) {
+        return;
+    }
+    
+    // Skip during AJAX approval actions
+    if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && $_POST['action'] === 'approve_event_calendar') {
+        return;
+    }
+    
+    $current_user_id = get_current_user_id();
+    $user = get_userdata($current_user_id);
+    $user_roles = (array) $user->roles;
+    
+    // Admins and editors can do anything
+    if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
+        return;
+    }
+    
+    // Get selected calendars
+    $selected_calendars = get_field('caes_department', $post_id);
+    if (!is_array($selected_calendars)) {
+        $selected_calendars = array();
+    }
+    
+    // Get user's allowed calendars
+    $allowed_calendars = get_user_submit_calendars($current_user_id);
+    
+    // Check if any selected calendars are not allowed
+    $unauthorized_calendars = array_diff($selected_calendars, $allowed_calendars);
+    
+    if (!empty($unauthorized_calendars)) {
+        // Remove unauthorized calendars
+        $authorized_calendars = array_intersect($selected_calendars, $allowed_calendars);
+        
+        // Update the field with only authorized calendars
+        update_field('caes_department', $authorized_calendars, $post_id);
+        
+        // Set a warning message
+        set_transient('calendar_permission_warning_' . $current_user_id, 
+            'Some calendars were removed because you don\'t have permission to submit to them.', 30);
+    }
+}
+
+// Show calendar permission warning
+add_action('admin_notices', 'show_calendar_permission_warning');
+
+function show_calendar_permission_warning() {
+    $user_id = get_current_user_id();
+    $warning = get_transient('calendar_permission_warning_' . $user_id);
+    
+    if ($warning) {
+        echo '<div class="notice notice-warning is-dismissible">';
+        echo '<p><strong>Warning:</strong> ' . esc_html($warning) . '</p>';
+        echo '</div>';
+        delete_transient('calendar_permission_warning_' . $user_id);
+    }
+}

@@ -344,7 +344,7 @@ function send_approval_notification_email($post_id, $approver_ids) {
               "----------------------------");
 
     // To use wp_mail, uncomment the following line and comment out the error_log above.
-    // wp_mail($to_emails, $subject, $message);
+    wp_mail($to_emails, $subject, $message);
 }
 
 /**
@@ -375,7 +375,7 @@ function send_submitter_notification_email($post_id, $submitter_id) {
               "----------------------");
 
     // To use wp_mail, uncomment the following line and comment out the error_log above.
-    // wp_mail($to, $subject, $message);
+    wp_mail($to, $subject, $message);
 }
 
 // Add admin notice for approval requirement
