@@ -90,43 +90,29 @@ if ( function_exists('acf_add_local_field_group') ) {
 
 function get_event_approvers_for_post( $post_id ) {
     $approvers = array();
-
-    // Get the terms (calendars) selected for the event.
     $event_calendars = get_the_terms( $post_id, 'event_caes_departments' );
 
-    // If there are no calendars selected, we can't determine approvers.
     if ( ! $event_calendars || is_wp_error( $event_calendars ) ) {
         return array();
     }
 
-    // Loop through each selected calendar.
     foreach ( $event_calendars as $term ) {
-        // First check for assigned approver (existing ACF system)
-        $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term->term_id);
-
-        if ( $assigned_approver ) {
-            // If an approver is assigned, add their ID to our list.
-            $approvers[] = $assigned_approver;
-        } else {
-            // Check for users with permission to approve this calendar (new system)
-            $users_with_approve_permission = get_users(array(
-                'meta_query' => array(
-                    array(
-                        'key' => 'calendar_approve_permissions',
-                        'value' => '"' . $term->term_id . '"',
-                        'compare' => 'LIKE'
-                    )
-                ),
-                'fields' => 'ID'
-            ));
-            
-            if (!empty($users_with_approve_permission)) {
-                $approvers = array_merge($approvers, $users_with_approve_permission);
-            }
-            // REMOVED: No more fallback to all admins/editors
+        // ONLY check user permissions (remove ACF field check)
+        $users_with_approve_permission = get_users(array(
+            'meta_query' => array(
+                array(
+                    'key' => 'calendar_approve_permissions',
+                    'value' => '"' . $term->term_id . '"',
+                    'compare' => 'LIKE'
+                )
+            ),
+            'fields' => 'ID'
+        ));
+        
+        if (!empty($users_with_approve_permission)) {
+            $approvers = array_merge($approvers, $users_with_approve_permission);
         }
     }
 
-    // Return only unique user IDs to avoid sending multiple notifications to the same person.
     return array_unique( $approvers );
 }
