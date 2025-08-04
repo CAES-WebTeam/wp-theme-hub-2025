@@ -118,8 +118,19 @@ if (isset($_GET['download_ics']) && $_GET['download_ics'] == $post_id) {
 
 // Create download URL instead of file
 $download_url = add_query_arg(['download_ics' => $post_id], get_permalink($post_id));
+
+// Get event data for tracking
+$event_title = get_the_title($post_id);
+$event_date = get_field('start_date', $post_id);
+$current_url = get_permalink($post_id);
 ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
-    <button class="caes-hub-action-ics__button" data-ics-url="<?php echo esc_url($download_url); ?>"><span class="label">Add to Calendar</span></button>
+    <button class="caes-hub-action-ics__button"
+            data-event-title="<?php echo esc_attr($event_title); ?>"
+            data-event-date="<?php echo esc_attr($event_date); ?>"
+            data-event-url="<?php echo esc_attr($current_url); ?>"
+            data-action-type="calendar_download">
+        <span class="label">Add to Calendar</span>
+    </button>
 </div>
