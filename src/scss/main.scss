@@ -187,8 +187,10 @@ figcaption a {
     // width: 100%;
     overflow: hidden;
 
-    left: calc(var(--wp--preset--spacing--50) * -1);
-    width: calc(100% + (var(--wp--preset--spacing--50) * 2));
+    // left: calc(var(--wp--preset--spacing--50) * -1);
+    // width: calc(100% + (var(--wp--preset--spacing--50) * 2));
+    width: calc(100% - 222px);
+    right: 0;
 
     .caes-hub-main-bg-f-img {
         height: 100%;
@@ -248,6 +250,10 @@ figcaption a {
 
 @media screen and (max-width: 781px) {
 
+    .caes-hub-left {
+        z-index: 9999;
+    }
+
     .caes-hub-content-actions {
         flex-direction: row;
         justify-content: center;
@@ -280,6 +286,10 @@ figcaption a {
 
     .caes-hub-sidebar-group {
         padding: 0 !important;
+    }
+
+    .caes-hub-main-bg {
+        width: 100%;
     }
 
 }
