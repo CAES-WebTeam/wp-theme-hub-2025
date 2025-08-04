@@ -32,6 +32,14 @@
     "wordLimit": {
       "type": "number",
       "default": 0
+    },
+    "showFeaturedImage": {
+      "type": "boolean",
+      "default": false
+    },
+    "conditionalDisplay": {
+      "type": "boolean",
+      "default": false
     }
   },
   "editorScript": "file:./index.js",

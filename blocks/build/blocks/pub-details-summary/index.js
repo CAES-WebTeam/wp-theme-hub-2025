@@ -31,7 +31,9 @@ function Edit({
   setAttributes
 }) {
   const {
-    wordLimit
+    wordLimit,
+    showFeaturedImage,
+    conditionalDisplay
   } = attributes;
   const loremIpsum = `
         Summary preview. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. 
@@ -49,10 +51,10 @@ function Edit({
   const previewText = wordLimit > 0 ? words.slice(0, wordLimit).join(' ') + (isTruncated ? '…' : '') : loremIpsum;
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display Settings', 'text-domain'),
         initialOpen: true,
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Word Limit', 'text-domain'),
           value: wordLimit,
           onChange: value => setAttributes({
@@ -63,13 +65,51 @@ function Edit({
           allowReset: true,
           initialPosition: 0,
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set to 0 for no limit', 'text-domain')
-        })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Featured Image', 'text-domain'),
+          checked: showFeaturedImage,
+          onChange: value => setAttributes({
+            showFeaturedImage: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Display the featured image above the summary at full width', 'text-domain')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Conditional Display', 'text-domain'),
+          checked: conditionalDisplay,
+          onChange: value => setAttributes({
+            conditionalDisplay: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Only show this block if the main content is empty', 'text-domain')
+        })]
       })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+      children: [conditionalDisplay && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+        style: {
+          padding: '8px',
+          backgroundColor: '#f0f0f0',
+          border: '1px dashed #ccc',
+          marginBottom: '12px',
+          fontSize: '12px',
+          color: '#666'
+        },
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Conditional Display: Will only show if main content is empty', 'text-domain')
+      }), showFeaturedImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+        style: {
+          width: '100%',
+          height: '200px',
+          backgroundColor: '#f9f9f9',
+          border: '2px dashed #ddd',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '16px',
+          color: '#666',
+          fontSize: '14px'
+        },
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Featured Image Preview', 'text-domain')
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
         children: previewText
-      })
+      })]
     })]
   });
 }
@@ -204,7 +244,7 @@ module.exports = window["wp"]["i18n"];
   \***************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/pub-details-summary","version":"0.1.0","title":"Publication Summary","category":"theme","icon":"text-page","description":"Displays the publication summary.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"align":true,"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"typography":{"lineHeight":true,"fontSize":true,"textAlign":true}},"attributes":{"wordLimit":{"type":"number","default":0}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/pub-details-summary","version":"0.1.0","title":"Publication Summary","category":"theme","icon":"text-page","description":"Displays the publication summary.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"align":true,"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true},"typography":{"lineHeight":true,"fontSize":true,"textAlign":true}},"attributes":{"wordLimit":{"type":"number","default":0},"showFeaturedImage":{"type":"boolean","default":false},"conditionalDisplay":{"type":"boolean","default":false}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

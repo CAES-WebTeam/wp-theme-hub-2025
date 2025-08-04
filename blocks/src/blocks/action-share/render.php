@@ -18,12 +18,12 @@ $unique_id = 'caes-hub-copy-url-' . uniqid();
         <div class="caes-hub-modal__content">
             <h2>Share</h2>
             <ul class="caes-hub-action-share__list">
-                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-fb__button" data-wp-on-async--click="actions.shareOnFacebook"><span class="sr-only">Share on Facebook</span></button></li>
-                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-x__button" data-wp-on-async--click="actions.shareOnX"><span class="sr-only">Share on X</span></button></li>
-                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-pinterest__button" data-wp-on-async--click="actions.shareOnPinterest"><span class="sr-only">Share on Pinterest</span></button></li>
-                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-linkedin__button" data-wp-on-async--click="actions.shareOnLinkedIn"><span class="sr-only">Share on LinkedIn</span></button></li>
-                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-reddit__button" data-wp-on-async--click="actions.shareOnReddit"><span class="sr-only">Share on Reddit</span></button></li>
-                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-email__button" data-wp-on-async--click="actions.shareByEmail"><span class="sr-only">Share via Email</span></button></li>
+                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-fb__button" data-wp-on-async--click="actions.shareOnFacebook" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="facebook"><span class="sr-only">Share on Facebook</span></button></li>
+                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-x__button" data-wp-on-async--click="actions.shareOnX" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="x"><span class="sr-only">Share on X</span></button></li>
+                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-pinterest__button" data-wp-on-async--click="actions.shareOnPinterest" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="pinterest"><span class="sr-only">Share on Pinterest</span></button></li>
+                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-linkedin__button" data-wp-on-async--click="actions.shareOnLinkedIn" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="linkedin"><span class="sr-only">Share on LinkedIn</span></button></li>
+                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-reddit__button" data-wp-on-async--click="actions.shareOnReddit" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="reddit"><span class="sr-only">Share on Reddit</span></button></li>
+                <li><button class="caes-hub-action-share-social__button caes-hub-action-share-email__button" data-wp-on-async--click="actions.shareByEmail" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="email"><span class="sr-only">Share via Email</span></button></li>
             </ul>
             <div class="caes-hub-copy-url">
                 <div class="caes-hub-form__input-button-container caes-hub-copy-url__container">
@@ -34,7 +34,7 @@ $unique_id = 'caes-hub-copy-url-' . uniqid();
                         class="caes-hub-form__input caes-hub-copy-url__field"
                         value="<?php echo esc_url(get_permalink()); ?>"
                         readonly>
-                    <button class="caes-hub-form__button caes-hub-copy-url__button" data-wp-on-async--click="actions.copyUrl">Copy</button>
+                    <button class="caes-hub-form__button caes-hub-copy-url__button" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="copy_url" data-wp-on-async--click="actions.copyUrl">Copy</button>
                     <span class="caes-hub-copy-url__tooltip" style="display: none;">Copied!</span>
                 </div>
             </div>

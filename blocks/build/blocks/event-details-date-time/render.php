@@ -15,88 +15,66 @@ $fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit'
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 
-// Get date type
-$date_type = get_field('event_date_type', $post_id);
+// Get date fields
+$start_date = get_field('start_date', $post_id);
+$end_date = get_field('end_date', $post_id);
+$start_time = get_field('start_time', $post_id);
+$end_time = get_field('end_time', $post_id);
+$publish_display_date = get_field('publish_display_date', $post_id);
 
 // Initialize variables
 $date_output = '';
+$date = '';
+$time = '';
 
-if ($date_type === 'single') {
-    // Handle single event
-    $date = '';
-    $time = '';
+// Format start date
+if (!empty($start_date)) {
+    $start_date_object = DateTime::createFromFormat('Ymd', $start_date);
+    $formatted_start_date = $start_date_object ? $start_date_object->format('F j, Y') : 'Invalid date format';
+    $date = $formatted_start_date;
     
-    // Set Start Date
-    if (!empty(get_field('start_date', $post_id))) :
-        $date_object = DateTime::createFromFormat('Ymd', get_field('start_date', $post_id));
-        $formatted_date = $date_object ? $date_object->format('F j, Y') : 'Invalid date format';
-        $date = $formatted_date;
-    endif;
-
-    // Set End Date
-    if (!empty(get_field('end_date', $post_id))) :
-        $date_object = DateTime::createFromFormat('Ymd', get_field('end_date', $post_id));
-        $formatted_date = $date_object ? $date_object->format('F j, Y') : 'Invalid date format';
-        $date = $date . '-' . $formatted_date;
-    endif;
-
-    // Set Start Time
-    if (!empty(get_field('start_time', $post_id))) :
-        $time = get_field('start_time', $post_id);
-    endif;
-
-    // Set End Time
-    if (!empty(get_field('end_time', $post_id))) :
-        $time = $time . '-' . get_field('end_time', $post_id);
-    endif;
-    
-    // Build single date output
-    if ($showDate && !empty($date)) {
-        $date_output .= $date;
-    }
-    if ($showTime && !empty($time)) {
-        if ($showDate) $date_output .= '<br />';
-        $date_output .= $time;
-    }
-    
-} elseif ($date_type === 'multi') {
-    // Handle multiday event
-    $multi_dates = get_field('date_and_time', $post_id);
-    
-    if (!empty($multi_dates) && is_array($multi_dates)) {
-        foreach ($multi_dates as $date_entry) {
-            $session_date = '';
-            $session_time = '';
-            
-            // Format date
-            if (!empty($date_entry['start_date_copy'])) {
-                $date_object = DateTime::createFromFormat('Ymd', $date_entry['start_date_copy']);
-                $session_date = $date_object ? $date_object->format('F j, Y') : 'Invalid date';
-            }
-            
-            // Format time
-            if (!empty($date_entry['start_time_copy'])) {
-                $session_time = $date_entry['start_time_copy'];
-                if (!empty($date_entry['end_time_copy'])) {
-                    $session_time .= '-' . $date_entry['end_time_copy'];
+    // Check if we have an end date and if it's different from start date
+    if (!empty($end_date)) {
+        $end_date_object = DateTime::createFromFormat('Ymd', $end_date);
+        if ($end_date_object && $start_date_object) {
+            // Compare dates to see if it's a range (end date is after start date)
+            if ($end_date_object > $start_date_object) {
+                // Smart date range formatting
+                $start_month = $start_date_object->format('n');
+                $start_year = $start_date_object->format('Y');
+                $end_month = $end_date_object->format('n');
+                $end_year = $end_date_object->format('Y');
+                
+                if ($start_year == $end_year && $start_month == $end_month) {
+                    // Same month and year: "August 21 – 22, 2025"
+                    $date = $start_date_object->format('F j') . ' – ' . $end_date_object->format('j, Y');
+                } elseif ($start_year == $end_year) {
+                    // Same year, different month: "August 21 – September 5, 2025"
+                    $date = $start_date_object->format('F j') . ' – ' . $end_date_object->format('F j, Y');
+                } else {
+                    // Different year: "December 30, 2024 – January 2, 2025"
+                    $date = $formatted_start_date . ' – ' . $end_date_object->format('F j, Y');
                 }
-            }
-            
-            // Build this session's output
-            $session_output = '';
-            if ($showDate && !empty($session_date)) {
-                $session_output .= $session_date;
-            }
-            if ($showTime && !empty($session_time)) {
-                if ($showDate) $session_output .= '<br />';
-                $session_output .= $session_time;
-            }
-            
-            if (!empty($session_output)) {
-                $date_output .= '<p>' . $session_output . '</p>';
             }
         }
     }
+}
+
+// Format time
+if (!empty($start_time)) {
+    $time = $start_time;
+    if (!empty($end_time)) {
+        $time .= ' - ' . $end_time;
+    }
+}
+
+// Build date output
+if ($showDate && !empty($date)) {
+    $date_output .= $date;
+}
+if ($showTime && !empty($time)) {
+    if ($showDate) $date_output .= '<br />';
+    $date_output .= $time;
 }
 ?>
 
@@ -108,24 +86,11 @@ if ($date_type === 'single') {
             </p>
         <?php elseif ($dateAsSnippet): ?>
             <h3 class="event-details-title"<?php echo $style; ?>>
-                <?php 
-                // For snippet mode, show "Multiple dates" for multi events
-                if ($date_type === 'multi') {
-                    echo esc_html__('Multiple dates', 'caes-hub');
-                } else {
-                    echo !empty($date) ? esc_html($date) : esc_html__('No date available', 'caes-hub');
-                }
-                ?>
+                <?php echo !empty($date) ? esc_html($date) : esc_html__('No date available', 'caes-hub'); ?>
             </h3>
         <?php else: ?>
             <h3 class="event-details-title"<?php echo $style; ?>>
-                <?php 
-                if ($date_type === 'multi') {
-                    echo esc_html__('Dates', 'caes-hub');
-                } else {
-                    echo esc_html__('Date', 'caes-hub') . ($showTime ? esc_html__(' & Time', 'caes-hub') : '');
-                }
-                ?>
+                <?php echo esc_html__('Date', 'caes-hub') . ($showTime ? esc_html__(' & Time', 'caes-hub') : ''); ?>
             </h3>
         <?php endif; ?>
     <?php endif; ?>

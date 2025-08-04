@@ -189,68 +189,6 @@ function wpfieldwork_rest_upcoming_events($args, $request)
 	return $args;
 }
 
-// If a query block has a class name of caes-hub-related-news, 
-// the query will be modified to show related news
-
-// function query_for_related_news($query, $block)
-// {
-// 	global $post;
-
-// 	$block = $block->parsed_block;
-
-// 	if (
-// 		isset($block['attrs']['className'])
-// 		&& false !== strpos($block['attrs']['className'], 'caes-hub-related-news')
-// 	) {
-// 		if (isset($post->ID)) {
-// 			$related_posts = get_field('related_news', $post->ID);
-
-// 			if (! empty($related_posts) && is_array($related_posts)) {
-// 				$query['post__in'] = wp_list_pluck($related_posts, 'ID');
-// 				$query['orderby'] = 'post__in'; // Preserve the selected order
-// 			} else {
-// 				// Show latest 3 posts if no related posts are selected
-// 				$query['posts_per_page'] = 3;
-// 				$query['orderby'] = 'date';
-// 				$query['order'] = 'DESC';
-// 			}
-// 		}
-// 	}
-
-// 	return $query;
-// }
-
-// add_filter('query_loop_block_query_vars', 'query_for_related_news', 10, 2);
-
-// If a query block has a class name of caes-hub-related-news or caes-hub-related-pubs,
-// the query will be modified to show related news or pubs selected for that post
-
-// function query_for_related_pubs($query, $block)
-// {
-// 	global $post;
-// 	$block = $block->parsed_block;
-// 	if (
-// 		isset($block['attrs']['className'])
-// 		&& false !== strpos($block['attrs']['className'], 'caes-hub-related-pubs')
-// 	) {
-// 		if (isset($post->ID)) {
-// 			$related_pubs = get_field('related_publications', $post->ID);
-
-// 			if (! empty($related_pubs) && is_array($related_pubs)) {
-// 				$query['post__in'] = wp_list_pluck($related_pubs, 'ID');
-// 				$query['orderby'] = 'post__in'; // Preserve the selected order
-// 			} else {
-// 				// Show latest 3 posts if no related posts are selected
-// 				$query['posts_per_page'] = 3;
-// 				$query['orderby'] = 'date';
-// 				$query['order'] = 'DESC';
-// 			}
-// 		}
-// 	}
-// 	return $query;
-// }
-// add_filter('query_loop_block_query_vars', 'query_for_related_pubs', 10, 2);
-
 // Register pattern categories
 add_action('init', function() {
 	if (function_exists('register_block_pattern_category')) {
@@ -451,6 +389,7 @@ add_action('wp_enqueue_scripts', function() {
 add_action('wp_ajax_nopriv_get_saved_posts', 'get_saved_posts_callback');
 add_action('wp_ajax_get_saved_posts', 'get_saved_posts_callback');
 
+// Callback function to handle AJAX request for saved posts
 function get_saved_posts_callback() {
     if (empty($_GET['ids'])) {
         echo '<p>No saved posts.</p>';
@@ -483,8 +422,7 @@ function get_saved_posts_callback() {
     wp_die();
 }
 
-//
-
+// Add random placeholder image if no featured image is set
 add_filter( 'post_thumbnail_html', 'caes_random_placeholder_if_no_thumbnail', 10, 5 );
 function caes_random_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbnail_id, $size, $attr ) {
     // Skip only if we're rendering the main post on a single view
@@ -520,11 +458,29 @@ function caes_random_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbna
     );
 }
 
-// converting the post date to a timestamp
-// function fix_datetime_custom($iso) {
-//     $timestamp = strtotime($iso);
-//     if ($timestamp === false) {
-//         return '';
-//     }
-//     return date('Y-m-d H:i:s', $timestamp);
-// }
+// Add Google Tag Manager code to the head
+function add_gtm_head_block_theme() {
+    ?>
+    <!-- Google Tag Manager -->
+    <script>
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MTZTHHB7');
+    </script>
+    <!-- End Google Tag Manager -->
+    <?php
+}
+add_action('wp_head', 'add_gtm_head_block_theme', 0); // Priority 0 = very top of <head>
+
+// Add Google Tag Manager code to the body
+function add_gtm_noscript_block_theme() {
+    ?>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MTZTHHB7"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <?php
+}
+add_action('wp_body_open', 'add_gtm_noscript_block_theme');

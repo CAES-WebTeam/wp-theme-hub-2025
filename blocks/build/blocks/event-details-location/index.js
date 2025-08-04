@@ -58,28 +58,170 @@ const Edit = ({
   attributes,
   setAttributes
 }) => {
+  const {
+    displayMode,
+    asSnippet,
+    headingFontSize,
+    headingFontUnit
+  } = attributes;
+
+  // Generate inline style for preview
+  const titleStyle = {
+    fontSize: headingFontSize ? `${headingFontSize}${headingFontUnit}` : undefined
+  };
+
+  // Helper function to get preview content based on display mode
+  const getPreviewContent = () => {
+    if (asSnippet) {
+      switch (displayMode) {
+        case 'physical':
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+            className: "event-details-title",
+            style: titleStyle,
+            children: "Room 101"
+          });
+        case 'online':
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+            className: "event-details-title",
+            style: titleStyle,
+            children: "Virtual Event"
+          });
+        case 'both':
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+            className: "event-details-title",
+            style: titleStyle,
+            children: "Room 101 & Online"
+          });
+        default:
+          // auto
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+            className: "event-details-title",
+            style: titleStyle,
+            children: "Room 101 & Online"
+          });
+      }
+    } else {
+      // Full display mode
+      switch (displayMode) {
+        case 'physical':
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+              className: "event-details-title",
+              style: titleStyle,
+              children: "Location"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+              className: "event-details-content",
+              children: ["Room 101 ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), "Located on the second floor, near the elevator."]
+            })]
+          });
+        case 'online':
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+              className: "event-details-title",
+              style: titleStyle,
+              children: "Online Location"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+              className: "event-details-content",
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+                  href: "https://youtube.com",
+                  children: "https://youtube.com"
+                })
+              })
+            })]
+          });
+        case 'both':
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+              className: "event-details-title",
+              style: titleStyle,
+              children: "Location"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+              className: "event-details-content",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("em", {
+                  children: "This event is in-person and online."
+                })
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("strong", {
+                children: "Physical Location:"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), "Room 101 ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), "Located on the second floor, near the elevator.", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("strong", {
+                children: "Online Location:"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+                href: "https://youtube.com",
+                children: "https://youtube.com"
+              })]
+            })]
+          });
+        default:
+          // auto
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+              className: "event-details-title",
+              style: titleStyle,
+              children: "Location"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+              className: "event-details-content",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("em", {
+                  children: "This event is in-person and online."
+                })
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("strong", {
+                children: "Physical Location:"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), "Room 101 ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), "Located on the second floor, near the elevator.", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("strong", {
+                children: "Online Location:"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("a", {
+                href: "https://youtube.com",
+                children: "https://youtube.com"
+              })]
+            })]
+          });
+      }
+    }
+  };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display locaton as snippet", "caes-hub"),
-          checked: attributes.locationAsSnippet,
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display Settings", "caes-hub"),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RadioControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Location Display Mode", "caes-hub"),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Choose what location information to display", "caes-hub"),
+          selected: displayMode,
+          options: [{
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Auto (show available data)", "caes-hub"),
+            value: "auto"
+          }, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Physical location only", "caes-hub"),
+            value: "physical"
+          }, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Online location only", "caes-hub"),
+            value: "online"
+          }, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Both physical and online", "caes-hub"),
+            value: "both"
+          }],
           onChange: val => setAttributes({
-            locationAsSnippet: val
+            displayMode: val
           })
-        })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display as snippet", "caes-hub"),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Show condensed version without details", "caes-hub"),
+          checked: asSnippet,
+          onChange: val => setAttributes({
+            asSnippet: val
+          })
+        })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Heading Font Size", "caes-hub"),
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Font Size", "caes-hub"),
           type: "number",
-          value: attributes.headingFontSize || "",
+          value: headingFontSize || "",
           onChange: val => setAttributes({
             headingFontSize: val
           })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Unit", "caes-hub"),
-          value: attributes.headingFontUnit,
+          value: headingFontUnit,
           options: [{
             label: "px",
             value: "px"
@@ -98,24 +240,9 @@ const Edit = ({
           })
         })]
       })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
       ...(0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)(),
-      children: [attributes.locationAsSnippet ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
-        className: "event-details-title",
-        style: {
-          fontSize: attributes.headingFontSize ? `${attributes.headingFontSize}${attributes.headingFontUnit}` : undefined
-        },
-        children: "Room 101"
-      }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
-        className: "event-details-title",
-        style: {
-          fontSize: attributes.headingFontSize ? `${attributes.headingFontSize}${attributes.headingFontUnit}` : undefined
-        },
-        children: "Location"
-      }), !attributes.locationAsSnippet && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        className: "event-details-content",
-        children: ["Room 101 ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), "Located on the second floor, near the elevator."]
-      })]
+      children: getPreviewContent()
     })]
   });
 };
@@ -251,7 +378,7 @@ module.exports = window["wp"]["i18n"];
   \******************************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/event-details-location","version":"0.1.0","title":"Event Location","category":"theme","icon":"calendar-alt","description":"Event Location for the CAES Field Report 2025 theme.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"locationAsSnippet":{"type":"boolean","default":false},"headingFontSize":{"type":"string","default":"1.5"},"headingFontUnit":{"type":"string","default":"rem"}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/event-details-location","version":"0.2.0","title":"Event Location","category":"theme","icon":"calendar-alt","description":"Event Location for physical, online, or hybrid events in the CAES Field Report 2025 theme.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"color":{"background":true,"text":true},"spacing":{"padding":true,"margin":true}},"attributes":{"displayMode":{"type":"string","default":"auto"},"asSnippet":{"type":"boolean","default":false},"headingFontSize":{"type":"string","default":"1.5"},"headingFontUnit":{"type":"string","default":"rem"}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 
