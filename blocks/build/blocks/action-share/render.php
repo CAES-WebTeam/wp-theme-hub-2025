@@ -35,7 +35,7 @@ $unique_id = 'caes-hub-copy-url-' . uniqid();
                         class="caes-hub-form__input caes-hub-copy-url__field"
                         value="<?php echo esc_url(get_permalink()); ?>"
                         readonly>
-                    <button class="caes-hub-form__button caes-hub-copy-url__button" data-share-url="<?php echo esc_attr($post_url); ?>" data-share-platform="copy_url" data-wp-on-async--click="actions.copyUrl">Copy</button>
+                    <button class="caes-hub-form__button caes-hub-copy-url__button" data-share-url="<?php echo esc_attr($path_url); ?>" data-share-platform="copy_url" data-wp-on-async--click="actions.copyUrl">Copy</button>
                     <span class="caes-hub-copy-url__tooltip" style="display: none;">Copied!</span>
                 </div>
             </div>
