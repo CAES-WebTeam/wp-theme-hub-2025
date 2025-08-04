@@ -822,7 +822,7 @@ function publication_api_tool_execute_migration() {
     ];
 
     // Batch processing parameters
-    $batch_size = 50;
+    $batch_size = 10;
     $current_batch_number = isset($_POST['batch']) ? intval($_POST['batch']) : 1;
     $start_index = ($current_batch_number - 1) * $batch_size;
     
