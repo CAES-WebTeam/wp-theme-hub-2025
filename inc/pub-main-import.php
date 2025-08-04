@@ -964,11 +964,19 @@ function publication_api_tool_execute_migration() {
                         
                         $api_value = $one_api_publication[$api_field];
                         
-                        // Update ACF field
-                        $acf_updated = update_field($wp_field, $api_value, $existing_post->ID);
-                        
-                        if (!$acf_updated) {
-                            $log[] = "  Warning: Failed to update ACF field '{$wp_field}' for post ID {$existing_post->ID}";
+                        // Compare ACF field to see if update is needed
+
+                        $acf_field_identical = ($api_field === $existing_post->{$wp_field});
+
+                        if ($acf_field_identical) {
+                            $log[] = "  No update needed for ACF field '{$wp_field}' for post ID {$existing_post->ID}";
+                        } else {
+                            // Update ACF field
+                            $acf_updated = update_field($wp_field, $api_value, $existing_post->ID);
+                            
+                            if (!$acf_updated) {
+                                $log[] = "  Warning: Failed to update ACF field '{$wp_field}' for post ID {$existing_post->ID}";
+                            }
                         }
                     }
                     
