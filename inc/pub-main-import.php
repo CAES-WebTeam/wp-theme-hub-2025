@@ -55,7 +55,7 @@ function publication_api_tool_render_page() {
 
         <h2>Execute Migration</h2>
         <p><strong>WARNING:</strong> This will create and update posts in your WordPress database. Make sure you have a backup before proceeding.</p>
-        <p>Publications will be processed in batches of 50. The process will continue automatically until all publications are processed.</p>
+        <p>Publications will be processed in batches of 10. The process will continue automatically until all publications are processed.</p>
         <button class="button button-primary" id="execute-migration-btn">Execute Migration</button>
         <div id="execute-migration-log" class="log-area"></div>
         <div id="migration-progress" class="migration-progress" style="display: none;">
@@ -967,6 +967,9 @@ function publication_api_tool_execute_migration() {
                         // Compare ACF field to see if update is needed
 
                         $acf_field_identical = ($api_field === $existing_post->{$wp_field});
+                        $log[] = "Now comparing field {$wp_field} data.";
+                        $log[] = "API data: {$api_value}";
+                        $log[] = "WordPress data: {$existing_post->$wp_field}";
 
                         if ($acf_field_identical) {
                             $log[] = "  No update needed for ACF field '{$wp_field}' for post ID {$existing_post->ID}";
