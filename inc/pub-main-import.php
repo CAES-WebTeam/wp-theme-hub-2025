@@ -966,7 +966,7 @@ function publication_api_tool_execute_migration() {
                         
                         // Compare ACF field to see if update is needed
 
-                        $acf_field_identical = (trim($api_field) == trim($existing_post->$wp_field));
+                        $acf_field_identical = (trim($api_value) == trim($existing_post->$wp_field)) || (is_null(api_value) && is_null($existing_post->$wp_field));
                         $log[] = "Now comparing field {$wp_field} data.";
                         $log[] = "API data: {$api_value}";
                         $log[] = "WordPress data: {$existing_post->$wp_field}";
