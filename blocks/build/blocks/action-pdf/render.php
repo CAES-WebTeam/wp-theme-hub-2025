@@ -36,6 +36,7 @@ if (!is_null($final_pdf_url)) {
     $publication_number = get_field('publication_number', $post_id); // Get the ACF publication number
     $current_url = get_permalink($post_id);
     $pdf_filename = basename(parse_url($final_pdf_url, PHP_URL_PATH));
+    $path_url = wp_make_link_relative(get_permalink($post_id));
 ?>
     <div <?php echo get_block_wrapper_attributes(); ?>>
         <a class="button-link" 
@@ -43,7 +44,7 @@ if (!is_null($final_pdf_url)) {
            data-pdf-url="<?php echo esc_attr($final_pdf_url); ?>"
            data-publication-number="<?php echo esc_attr($publication_number); ?>"
            data-publication-title="<?php echo esc_attr($publication_title); ?>"
-           data-publication-url="<?php echo esc_attr($current_url); ?>"
+           data-publication-url="<?php echo esc_attr($path_url); ?>"
            data-pdf-filename="<?php echo esc_attr($pdf_filename); ?>"
            data-pdf-source="<?php echo esc_attr($pdf_source_type); ?>"
            data-action-type="pdf_download">

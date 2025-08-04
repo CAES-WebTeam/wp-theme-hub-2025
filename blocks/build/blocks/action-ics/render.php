@@ -123,13 +123,14 @@ $download_url = add_query_arg(['download_ics' => $post_id], get_permalink($post_
 $event_title = get_the_title($post_id);
 $event_date = get_field('start_date', $post_id);
 $current_url = get_permalink($post_id);
+$path_url = wp_make_link_relative(get_permalink($post_id));
 ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
     <button class="caes-hub-action-ics__button"
             data-event-title="<?php echo esc_attr($event_title); ?>"
             data-event-date="<?php echo esc_attr($event_date); ?>"
-            data-event-url="<?php echo esc_attr($current_url); ?>"
+            data-event-url="<?php echo esc_attr($path_url); ?>"
             data-action-type="calendar_download">
         <span class="label">Add to Calendar</span>
     </button>
