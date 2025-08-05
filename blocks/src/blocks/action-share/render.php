@@ -1,6 +1,6 @@
 <?php
 $post_url = esc_url(get_permalink());
-$path_url = wp_make_link_relative(get_permalink($post_id));
+$path_url = wp_make_link_relative(get_permalink());
 $post_title = esc_js(get_the_title());
 $post_image = esc_url(get_the_post_thumbnail_url());
 $unique_id = 'caes-hub-copy-url-' . uniqid();
