@@ -458,10 +458,13 @@ function caes_random_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbna
     );
 }
 
-// Add Google Tag Manager code to the head (only for non-logged-in users)
+// Add Google Tag Manager code to the head (only for non-logged-in users and non-local domains)
 function add_gtm_head_block_theme() {
-    // Only load GTM if user is NOT logged in to WordPress dashboard
-    if (!is_user_logged_in()) {
+    // Get current domain
+    $current_domain = $_SERVER['HTTP_HOST'];
+    
+    // Only load GTM if user is NOT logged in AND domain doesn't contain ".local"
+    if (!is_user_logged_in() && strpos($current_domain, '.local') === false) {
         ?>
         <!-- Google Tag Manager -->
         <script>
@@ -477,10 +480,13 @@ function add_gtm_head_block_theme() {
 }
 add_action('wp_head', 'add_gtm_head_block_theme', 0); // Priority 0 = very top of <head>
 
-// Add Google Tag Manager code to the body (only for non-logged-in users)
+// Add Google Tag Manager code to the body (only for non-logged-in users and non-local domains)
 function add_gtm_noscript_block_theme() {
-    // Only load GTM if user is NOT logged in to WordPress dashboard
-    if (!is_user_logged_in()) {
+    // Get current domain
+    $current_domain = $_SERVER['HTTP_HOST'];
+    
+    // Only load GTM if user is NOT logged in AND domain doesn't contain ".local"
+    if (!is_user_logged_in() && strpos($current_domain, '.local') === false) {
         ?>
         <!-- Google Tag Manager (noscript) -->
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MTZTHHB7"
