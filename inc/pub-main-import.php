@@ -830,6 +830,9 @@ function publication_api_tool_execute_migration() {
     $api_data_transient_key = 'publication_api_migration_data';
     $api_timestamp_transient_key = 'publication_api_migration_timestamp';
     
+    // Turn off KSES filters so <style> and other tags import correctly
+    kses_remove_filters();
+
     try {
         // --- Fetch or Retrieve Cached API Data ---
         $decoded_API_response = get_transient($api_data_transient_key);
