@@ -458,29 +458,41 @@ function caes_random_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbna
     );
 }
 
-// Add Google Tag Manager code to the head
+// Add Google Tag Manager code to the head (only for non-logged-in users and non-local domains)
 function add_gtm_head_block_theme() {
-    ?>
-    <!-- Google Tag Manager -->
-    <script>
-    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-MTZTHHB7');
-    </script>
-    <!-- End Google Tag Manager -->
-    <?php
+    // Get current domain
+    $current_domain = $_SERVER['HTTP_HOST'];
+    
+    // Only load GTM if user is NOT logged in AND domain doesn't contain ".local"
+    if (!is_user_logged_in() && strpos($current_domain, '.local') === false) {
+        ?>
+        <!-- Google Tag Manager -->
+        <script>
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-MTZTHHB7');
+        </script>
+        <!-- End Google Tag Manager -->
+        <?php
+    }
 }
 add_action('wp_head', 'add_gtm_head_block_theme', 0); // Priority 0 = very top of <head>
 
-// Add Google Tag Manager code to the body
+// Add Google Tag Manager code to the body (only for non-logged-in users and non-local domains)
 function add_gtm_noscript_block_theme() {
-    ?>
-    <!-- Google Tag Manager (noscript) -->
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MTZTHHB7"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
-    <?php
+    // Get current domain
+    $current_domain = $_SERVER['HTTP_HOST'];
+    
+    // Only load GTM if user is NOT logged in AND domain doesn't contain ".local"
+    if (!is_user_logged_in() && strpos($current_domain, '.local') === false) {
+        ?>
+        <!-- Google Tag Manager (noscript) -->
+        <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MTZTHHB7"
+        height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+        <!-- End Google Tag Manager (noscript) -->
+        <?php
+    }
 }
 add_action('wp_body_open', 'add_gtm_noscript_block_theme');
