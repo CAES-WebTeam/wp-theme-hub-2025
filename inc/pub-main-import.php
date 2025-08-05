@@ -826,28 +826,49 @@ function publication_api_tool_execute_migration() {
     $current_batch_number = isset($_POST['batch']) ? intval($_POST['batch']) : 1;
     $start_index = ($current_batch_number - 1) * $batch_size;
     
+    // Transient key for storing API data
+    $api_data_transient_key = 'publication_api_migration_data';
+    $api_timestamp_transient_key = 'publication_api_migration_timestamp';
+    
     try {
-        // --- Fetch API Data ---
-        $log[] = "Fetching publication data from API (batch {$current_batch_number})...";
-        $response = wp_remote_get($api_url);
+        // --- Fetch or Retrieve Cached API Data ---
+        $decoded_API_response = get_transient($api_data_transient_key);
+        $api_fetch_timestamp = get_transient($api_timestamp_transient_key);
+        
+        if ($decoded_API_response === false || $current_batch_number === 1) {
+            // Either no cached data exists, or this is batch 1 (fresh start)
+            $log[] = "Fetching fresh publication data from API...";
+            
+            $response = wp_remote_get($api_url, array(
+                'timeout' => 60 // Increase timeout for large responses
+            ));
 
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
-        }
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
 
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $decoded_API_response = json_decode($raw_JSON, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
 
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            // Store the API data in transient (expires in 1 hour)
+            set_transient($api_data_transient_key, $decoded_API_response, HOUR_IN_SECONDS);
+            set_transient($api_timestamp_transient_key, current_time('mysql'), HOUR_IN_SECONDS);
+            
+            $log[] = "Successfully fetched and cached " . count($decoded_API_response) . " publications from API.";
+        } else {
+            // Use cached data
+            $log[] = "Using cached API data from " . $api_fetch_timestamp . " (" . count($decoded_API_response) . " publications).";
         }
 
         $total_publications = count($decoded_API_response);
-        $log[] = "Successfully fetched {$total_publications} total publications from API.";
         
         // Extract batch
         $batch_of_publications = array_slice($decoded_API_response, $start_index, $batch_size);
@@ -901,9 +922,9 @@ function publication_api_tool_execute_migration() {
             if (isset($wordpress_lookup[$api_id])) {
                 // POST EXISTS - UPDATE LOGIC
                 $existing_post = $wordpress_lookup[$api_id];
-                $log[] = "Processing existing post: '{$api_title}' (ID: {$api_id})";
+                $log[] = "Processing existing post: '{$api_title}' (Publication ID: {$api_id})";
                 
-                                try {
+                try {
                     // Prepare post data for WordPress update
                     $post_data = array(
                         'ID'          => $existing_post->ID, // CRITICAL: WordPress needs this to know which post to update
@@ -965,8 +986,7 @@ function publication_api_tool_execute_migration() {
                         $api_value = $one_api_publication[$api_field];
                         
                         // Compare ACF field to see if update is needed
-
-                        $acf_field_identical = (trim($api_value) == trim($existing_post->$wp_field)) || (is_null(api_value) && is_null($existing_post->$wp_field));
+                        $acf_field_identical = (trim($api_value) == trim($existing_post->$wp_field)) || (is_null($api_value) && is_null($existing_post->$wp_field));
                         // $log[] = "Now comparing field {$wp_field} data.";
                         // $log[] = "API data: {$api_value}";
                         // $log[] = "WordPress data: {$existing_post->$wp_field}";
@@ -1063,6 +1083,13 @@ function publication_api_tool_execute_migration() {
         $total_remaining = $total_publications - ($start_index + $actual_batch_size);
         $has_more_batches = $total_remaining > 0;
         
+        // Clean up transients if this is the last batch
+        if (!$has_more_batches) {
+            delete_transient($api_data_transient_key);
+            delete_transient($api_timestamp_transient_key);
+            $log[] = "Migration complete - cleared cached API data.";
+        }
+        
         // --- Final Summary for this batch ---
         $log[] = ""; // Empty line for readability
         $log[] = "=== BATCH {$current_batch_number} COMPLETE ===";
@@ -1093,6 +1120,13 @@ function publication_api_tool_execute_migration() {
         error_log('Publication API Migration Error: ' . $e->getMessage());
         wp_send_json_error('Error during migration batch ' . $current_batch_number . ': ' . $e->getMessage());
     }
+}
+
+// Optional helper function to manually clear the cached data if needed
+function publication_api_tool_clear_cache() {
+    delete_transient('publication_api_migration_data');
+    delete_transient('publication_api_migration_timestamp');
+    return 'API cache cleared successfully.';
 }
 
 /**
