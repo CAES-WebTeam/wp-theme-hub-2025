@@ -36,11 +36,21 @@ function render_calendar_management_page()
         <h1>Calendar Management</h1>
         <p>View calendar permissions and event counts. To modify permissions, edit individual user profiles.</p>
 
+        <div style="margin-top: 30px; padding: 15px; background: #f0f6fc; border-left: 4px solid #0073aa;">
+            <h3>How to Manage Permissions:</h3>
+            <ul>
+                <li><strong>Submit Permissions:</strong> Go to Users → Edit User → "Event Calendar Permissions"</li>
+                <li><strong>Approve Permissions:</strong> Go to Users → Edit User → "Event Calendar Permissions"</li>
+                <li><strong>Admin/Editor:</strong> Automatically have access to all calendars</li>
+            </ul>
+        </div>
+
         <?php if (is_wp_error($calendars) || empty($calendars)): ?>
             <div class="notice notice-warning">
                 <p>No calendars found. Please create some calendars in the Event Departments taxonomy first.</p>
             </div>
         <?php else: ?>
+
 
             <table class="wp-list-table widefat fixed striped">
                 <thead>
@@ -151,15 +161,6 @@ function render_calendar_management_page()
                     <?php endforeach; ?>
                 </tbody>
             </table>
-
-            <div style="margin-top: 30px; padding: 15px; background: #f0f6fc; border-left: 4px solid #0073aa;">
-                <h3>How to Manage Permissions:</h3>
-                <ul>
-                    <li><strong>Submit Permissions:</strong> Go to Users → Edit User → "Event Calendar Permissions"</li>
-                    <li><strong>Approve Permissions:</strong> Go to Users → Edit User → "Event Calendar Permissions"</li>
-                    <li><strong>Admin/Editor:</strong> Automatically have access to all calendars</li>
-                </ul>
-            </div>
 
         <?php endif; ?>
     </div>
