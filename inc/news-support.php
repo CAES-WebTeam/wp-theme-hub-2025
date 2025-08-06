@@ -289,26 +289,46 @@ function story_default_content($content, $post)
         return $content;
     }
 
-    // Featured image block
+    // Featured image block (keeping the texture.jpg placeholder)
     $image_url = get_template_directory_uri() . '/assets/images/texture.jpg';
 
-    $image_block = '<!-- wp:image {"sizeSlug":"full","linkDestination":"none"} --><figure class="wp-block-image size-full"><img src="' . esc_url($image_url) . '" alt="" /><figcaption class="wp-element-caption">Replace this image and caption. Don\'t forget to write alt text in the image block settings!</figcaption></figure><!-- /wp:image -->';
-    // Sources (authors) block
-    $sources_block = '<!-- wp:caes-hub/pub-details-authors {"displayVersion":"names-and-titles","type":"sources","grid":false,"className":"is-style-caes-hub-compact","style":{"typography":{"lineHeight":"1.3"}}} /-->';
-    // Text block
-    $paragraph = '<!-- wp:paragraph --><p>Add your article text here.</p><!-- /wp:paragraph -->';
-    // Related content block
-    $related_content =  '<!-- wp:group {"metadata":{"name":"Related Content"},"className":"is-style-caes-hub-align-left-40","style":{"spacing":{"padding":{"top":"var:preset|spacing|40","bottom":"var:preset|spacing|40","left":"var:preset|spacing|50","right":"var:preset|spacing|50"},"blockGap":"var:preset|spacing|30","margin":{"bottom":"0"}},"border":{"left":{"color":"var:preset|color|hedges","width":"5px"},"top":[],"right":[],"bottom":[]}},"layout":{"type":"default"}} -->
-    <div class="wp-block-group is-style-caes-hub-align-left-40" style="border-left-color:var(--wp--preset--color--hedges);border-left-width:5px;margin-bottom:0;padding-top:var(--wp--preset--spacing--40);padding-right:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--40);padding-left:var(--wp--preset--spacing--50)"><!-- wp:heading {"style":{"typography":{"textTransform":"uppercase"}},"fontSize":"regular","fontFamily":"oswald"} -->
-    <h2 class="wp-block-heading has-oswald-font-family has-regular-font-size" style="text-transform:uppercase">Related Content</h2>
-    <!-- /wp:heading -->
-    <!-- wp:caes-hub/hand-picked-post {"postType":["post","publications","shorthand_story"],"style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-    <!-- wp:post-title {"level":3,"isLink":true,"style":{"elements":{"link":{"color":{"text":"var:preset|color|contrast"}}},"typography":{"textDecoration":"underline"},"spacing":{"margin":{"top":"var:preset|spacing|30","bottom":"0"}}},"fontSize":"regular"} /-->
-    <!-- /wp:caes-hub/hand-picked-post --></div>
-    <!-- /wp:group -->';
+    $default_content = '<!-- wp:image {"sizeSlug":"full","linkDestination":"none","align":"wide"} -->
+<figure class="wp-block-image alignwide size-full"><img src="' . esc_url($image_url) . '" alt=""/><figcaption class="wp-element-caption">Replace this image and caption. Don\'t forget to write alt text in the image block settings!</figcaption></figure>
+<!-- /wp:image -->
 
+<!-- wp:group {"metadata":{"categories":["content_patterns"],"patternName":"caes-hub/takeaways-1","name":"Takeaways"},"className":"caes-hub-takeaways","style":{"shadow":"var:preset|shadow|small","spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60","left":"var:preset|spacing|60","right":"var:preset|spacing|60"},"blockGap":"var:preset|spacing|60"},"border":{"left":{"color":"var:preset|color|hedges","width":"5px"}}},"backgroundColor":"base","layout":{"type":"default"}} -->
+<div class="wp-block-group caes-hub-takeaways has-base-background-color has-background" style="border-left-color:var(--wp--preset--color--hedges);border-left-width:5px;padding-top:var(--wp--preset--spacing--60);padding-right:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60);padding-left:var(--wp--preset--spacing--60);box-shadow:var(--wp--preset--shadow--small)"><!-- wp:group {"metadata":{"name":"caes-hub-takeaways__header"},"className":"caes-hub-takeaways__header","style":{"spacing":{"blockGap":"var:preset|spacing|30"}},"layout":{"type":"flex","flexWrap":"nowrap"}} -->
+<div class="wp-block-group caes-hub-takeaways__header"><!-- wp:heading {"style":{"typography":{"textTransform":"uppercase"}},"fontSize":"large","fontFamily":"oswald"} -->
+<h2 class="wp-block-heading has-oswald-font-family has-large-font-size" style="text-transform:uppercase">Takeaways</h2>
+<!-- /wp:heading --></div>
+<!-- /wp:group -->
 
-    return $image_block . "\n\n" . $sources_block . "\n\n" . $paragraph . "\n\n" . $related_content . "\n\n" . $content;
+<!-- wp:list {"className":"is-style-default"} -->
+<ul class="wp-block-list is-style-default"><!-- wp:list-item {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|60"}}}} -->
+<li style="margin-bottom:var(--wp--preset--spacing--60)"><strong>Takeaway:</strong> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris ut turpis neque. Duis a nisi placerat, scelerisque sapien eu, sollicitudin enim. Maecenas egestas quam et est venenatis, ut congue sapien porttitor.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|60"}}}} -->
+<li style="margin-bottom:var(--wp--preset--spacing--60)"><strong>Takeaway:</strong> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris ut turpis neque. Duis a nisi placerat, scelerisque sapien eu, sollicitudin enim. Maecenas egestas quam et est venenatis, ut congue sapien porttitor.</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item {"style":{"spacing":{"margin":{"bottom":"0"}}}} -->
+<li style="margin-bottom:0"><strong>Takeaway:</strong> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris ut turpis neque. Duis a nisi placerat, scelerisque sapien eu, sollicitudin enim. Maecenas egestas quam et est venenatis, ut congue sapien porttitor.</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list --></div>
+<!-- /wp:group -->
+
+<!-- wp:paragraph -->
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam faucibus nibh ex, eu cursus orci faucibus quis. Nunc ut feugiat dui. Praesent congue sit amet felis in blandit. In tristique odio ut nisi auctor consectetur. Nunc nunc sapien, luctus et orci a, imperdiet aliquam nisi. Integer efficitur lacus at purus molestie, in auctor nunc fermentum. Nulla pharetra felis sed tincidunt pharetra.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:caes-hub/pub-details-authors {"displayVersion":"names-and-titles","type":"sources","grid":false,"className":"is-style-caes-hub-compact","style":{"typography":{"lineHeight":"1.3"}}} /-->
+
+<!-- wp:paragraph -->
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam faucibus nibh ex, eu cursus orci faucibus quis. Nunc ut feugiat dui. Praesent congue sit amet felis in blandit. In tristique odio ut nisi auctor consectetur. Nunc nunc sapien, luctus et orci a, imperdiet aliquam nisi. Integer efficitur lacus at purus molestie, in auctor nunc fermentum. Nulla pharetra felis sed tincidunt pharetra.</p>
+<!-- /wp:paragraph -->';
+
+    return $default_content . "\n\n" . $content;
 }
 
 add_filter( 'render_block', function( $block_content, $block ) {
