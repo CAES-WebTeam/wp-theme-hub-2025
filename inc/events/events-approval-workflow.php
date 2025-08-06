@@ -46,6 +46,7 @@ function handle_event_submission_and_approval($post_id, $post, $update) {
     // Skip calendar validation if this is triggered by an AJAX approval action
     if (defined('DOING_AJAX') && DOING_AJAX && isset($_POST['action']) && $_POST['action'] === 'approve_event_calendar') {
         // Continue with the rest of the workflow logic without calendar validation
+        error_log("=== WORKFLOW DEBUG: AJAX Approval detected, skipping calendar validation ===");
     } else {
         // CALENDAR VALIDATION LOGIC - Only for regular form submissions
         

@@ -312,32 +312,70 @@ function handle_ajax_event_approval() {
         return;
     }
 
+    // DEBUG: Log what's happening
+    error_log("=== AJAX APPROVAL DEBUG ===");
+    error_log("Post ID: $post_id, Term ID: $term_id");
+    error_log("Current approval status: " . print_r($calendar_approval_status, true));
+
     // Check if ANY calendar is now approved for auto-publishing
     $event_calendars = get_the_terms($post_id, 'event_caes_departments');
     $any_approved = false;
     
+    error_log("Event calendars: " . print_r($event_calendars, true));
+    
     if ($event_calendars && !is_wp_error($event_calendars)) {
         foreach ($event_calendars as $calendar_term) {
-            if (isset($calendar_approval_status[$calendar_term->term_id]) && 
-                $calendar_approval_status[$calendar_term->term_id] === 'approved') {
+            $is_this_calendar_approved = isset($calendar_approval_status[$calendar_term->term_id]) && 
+                                        $calendar_approval_status[$calendar_term->term_id] === 'approved';
+            error_log("Calendar {$calendar_term->term_id} ({$calendar_term->name}) approved: " . ($is_this_calendar_approved ? 'YES' : 'NO'));
+            
+            if ($is_this_calendar_approved) {
                 $any_approved = true;
                 break; // Found at least one approved calendar
             }
         }
     }
     
+    error_log("Any calendar approved: " . ($any_approved ? 'YES' : 'NO'));
+    
     // Auto-publish if any calendar is approved and post is still pending
     $current_status = get_post_status($post_id);
+    error_log("Current post status: $current_status");
+    
     if ($any_approved && $current_status === 'pending') {
-        wp_update_post(array(
+        error_log("CONDITIONS MET - Publishing post...");
+        
+        $update_post_result = wp_update_post(array(
             'ID' => $post_id,
             'post_status' => 'publish'
         ));
         
+        error_log("wp_update_post result: " . print_r($update_post_result, true));
+        
+        // Check if status actually changed
+        $new_status = get_post_status($post_id);
+        error_log("New post status after update: $new_status");
+        
         // Send notification to original submitter (only on first approval/publishing)
         $event_submitter = get_post_field('post_author', $post_id);
-        send_submitter_notification_email($post_id, $event_submitter);
+        $current_user_id = get_current_user_id();
+        
+        error_log("Event submitter ID: $event_submitter, Current user ID: $current_user_id");
+        
+        // Only send email if submitter is different from current user (don't email yourself)
+        if ($event_submitter != $current_user_id) {
+            error_log("Sending notification to submitter...");
+            send_submitter_notification_email($post_id, $event_submitter);
+        } else {
+            error_log("Skipping email - user approved their own event");
+        }
+    } else {
+        error_log("CONDITIONS NOT MET - Not publishing");
+        error_log("- Any approved: " . ($any_approved ? 'YES' : 'NO'));
+        error_log("- Current status is pending: " . ($current_status === 'pending' ? 'YES' : 'NO'));
     }
+    
+    error_log("=== END AJAX APPROVAL DEBUG ===");
 
     wp_send_json_success('Calendar approved successfully.');
 }

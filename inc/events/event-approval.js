@@ -104,7 +104,9 @@
                     if ($calendarParagraph && $calendarParagraph.length > 0) {
                         var $statusSpan = $calendarParagraph.find('span').filter(function() {
                             var text = $(this).text();
-                            return text.indexOf('Pending') !== -1 || text.indexOf('Not Submitted') !== -1;
+                            return text.indexOf('Pending') !== -1 || 
+                                   text.indexOf('Not Submitted') !== -1 ||
+                                   text.indexOf('Ready to Publish') !== -1;
                         });
                         
                         if ($statusSpan.length > 0) {
@@ -117,7 +119,9 @@
                         if ($calendarParagraph.length > 0) {
                             var $statusSpan = $calendarParagraph.find('span').filter(function() {
                                 var text = $(this).text();
-                                return text.indexOf('Pending') !== -1 || text.indexOf('Not Submitted') !== -1;
+                                return text.indexOf('Pending') !== -1 || 
+                                       text.indexOf('Not Submitted') !== -1 ||
+                                       text.indexOf('Ready to Publish') !== -1;
                             });
                             
                             if ($statusSpan.length > 0) {
@@ -129,15 +133,18 @@
                     // Remove the approval button
                     $button.remove();
                     
-                    // Show success message
+                    // Show success message with auto-refresh notice
                     if (!$('#approval-success-message').length) {
                         $('#event-approval-status-container').prepend(
-                            '<div id="approval-success-message" style="background: #d4edda; color: #155724; padding: 10px; margin-bottom: 10px; border: 1px solid #c3e6cb; border-radius: 4px;">Calendar approved successfully!</div>'
+                            '<div id="approval-success-message" style="background: #d4edda; color: #155724; padding: 10px; margin-bottom: 10px; border: 1px solid #c3e6cb; border-radius: 4px;">' +
+                            'Calendar approved successfully! The page will refresh in 3 seconds to show updated status.' +
+                            '</div>'
                         );
                         
+                        // Refresh the page after 3 seconds to show updated post status
                         setTimeout(function() {
-                            $('#approval-success-message').fadeOut();
-                        }, 5000);
+                            window.location.reload();
+                        }, 3000);
                     }
 
                 } else {
