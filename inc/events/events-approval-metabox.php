@@ -65,13 +65,25 @@ function render_event_approval_metabox($post) {
         foreach ($event_calendars as $term) {
             $is_approved = isset($calendar_approval_status[$term->term_id]) && $calendar_approval_status[$term->term_id] === 'approved';
             
-            // Determine status text based on submission state
+            // Determine status text based on submission state and user permissions
             if ($is_approved) {
                 $status_text = '<span style="color: green;">' . __('Approved', 'caes-hub') . '</span>';
             } elseif ($has_been_submitted || $post_status === 'pending') {
                 $status_text = '<span style="color: orange;">' . __('Pending Approval', 'caes-hub') . '</span>';
             } else {
-                $status_text = '<span style="color: gray;">' . __('Not Submitted', 'caes-hub') . '</span>';
+                // Check if current user can approve this calendar
+                $current_user_can_approve = false;
+                if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
+                    $current_user_can_approve = true;
+                } else {
+                    $current_user_can_approve = user_can_approve_calendar($current_user_id, $term->term_id);
+                }
+                
+                if ($current_user_can_approve) {
+                    $status_text = '<span style="color: blue;">' . __('Ready to Publish', 'caes-hub') . '</span>';
+                } else {
+                    $status_text = '<span style="color: gray;">' . __('Not Submitted', 'caes-hub') . '</span>';
+                }
             }
             
             echo '<p><strong>' . esc_html($term->name) . ':</strong> ' . $status_text;
