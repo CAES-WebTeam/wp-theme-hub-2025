@@ -79,10 +79,20 @@ function render_event_approval_metabox($post) {
                     $current_user_can_approve = user_can_approve_calendar($current_user_id, $term->term_id);
                 }
                 
+                // DEBUG OUTPUT
+                echo '<!-- DEBUG: Calendar ' . $term->name . ' (ID: ' . $term->term_id . ') -->';
+                echo '<!-- Current User ID: ' . $current_user_id . ' -->';
+                echo '<!-- Current User Roles: ' . implode(', ', $current_user_roles) . ' -->';
+                echo '<!-- Can Approve This Calendar: ' . ($current_user_can_approve ? 'YES' : 'NO') . ' -->';
+                echo '<!-- Has Been Submitted: ' . ($has_been_submitted ? 'YES' : 'NO') . ' -->';
+                echo '<!-- Post Status: ' . $post_status . ' -->';
+                
                 if ($current_user_can_approve) {
                     $status_text = '<span style="color: blue;">' . __('Ready to Publish', 'caes-hub') . '</span>';
+                    echo '<!-- STATUS SET TO: Ready to Publish -->';
                 } else {
                     $status_text = '<span style="color: gray;">' . __('Not Submitted', 'caes-hub') . '</span>';
+                    echo '<!-- STATUS SET TO: Not Submitted -->';
                 }
             }
             
@@ -302,28 +312,29 @@ function handle_ajax_event_approval() {
         return;
     }
 
-    // Check if all calendars are now approved for auto-publishing
+    // Check if ANY calendar is now approved for auto-publishing
     $event_calendars = get_the_terms($post_id, 'event_caes_departments');
-    $all_approved = true;
+    $any_approved = false;
     
     if ($event_calendars && !is_wp_error($event_calendars)) {
         foreach ($event_calendars as $calendar_term) {
-            if (!isset($calendar_approval_status[$calendar_term->term_id]) || 
-                $calendar_approval_status[$calendar_term->term_id] !== 'approved') {
-                $all_approved = false;
-                break;
+            if (isset($calendar_approval_status[$calendar_term->term_id]) && 
+                $calendar_approval_status[$calendar_term->term_id] === 'approved') {
+                $any_approved = true;
+                break; // Found at least one approved calendar
             }
         }
     }
     
-    // Auto-publish if all calendars are approved and post is pending
-    if ($all_approved && get_post_status($post_id) === 'pending') {
+    // Auto-publish if any calendar is approved and post is still pending
+    $current_status = get_post_status($post_id);
+    if ($any_approved && $current_status === 'pending') {
         wp_update_post(array(
             'ID' => $post_id,
             'post_status' => 'publish'
         ));
         
-        // Send notification to original submitter
+        // Send notification to original submitter (only on first approval/publishing)
         $event_submitter = get_post_field('post_author', $post_id);
         send_submitter_notification_email($post_id, $event_submitter);
     }
