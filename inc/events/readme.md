@@ -75,8 +75,8 @@ Visit **Events → Calendar Management** to see:
 **Multi-Calendar Events:**
 If an event is submitted to 3 different calendars, it needs approval from all 3 calendar approvers before going live.
 
-**No Assigned Approver:**
-If a calendar doesn't have a specific approver assigned, only Administrators and Editors can approve events for that calendar.
+**No Calendar Approvers:**
+If a calendar doesn't have any users with approval permissions assigned, only Administrators and Editors can approve events for that calendar.
 
 **Emergency Publishing:**
 Administrators and Editors can always publish events immediately, bypassing the approval process when needed.
