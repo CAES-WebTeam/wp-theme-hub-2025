@@ -1019,8 +1019,8 @@ function publication_api_tool_execute_migration() {
                         } 
                         elseif ($wp_field === 'post_content') {
                             // Clean and process the content
-                            $cleaned_api_content = clean_wysiwyg_content($api_value);
-                            $cleaned_api_content = strip_line_breaks_preserve_html($cleaned_api_content);
+                            $cleaned_api_content = clean_wysiwyg_content_pubs_version($api_value);
+                            $cleaned_api_content = strip_line_breaks_preserve_html_pubs_version($cleaned_api_content);
                             
                             if (trim($cleaned_api_content) != trim($existing_post->post_content)) {
                             	$post_data['post_content'] = $api_value;
@@ -1078,8 +1078,8 @@ function publication_api_tool_execute_migration() {
                         
                         // Clean content fields if they contain HTML/text content
                         if (in_array($wp_field, ['short_summary', 'summary', 'notes'])) {
-                            $api_value = clean_wysiwyg_content($api_value);
-                            $api_value = strip_line_breaks_preserve_html($api_value);
+                            $api_value = clean_wysiwyg_content_pubs_version($api_value);
+                            $api_value = strip_line_breaks_preserve_html_pubs_version($api_value);
                         }
                         
                         // Get existing ACF field value
@@ -1141,8 +1141,8 @@ function publication_api_tool_execute_migration() {
                         } 
                         elseif ($wp_field === 'post_content') {
                             // Clean and process the content
-                            $cleaned_api_content = clean_wysiwyg_content($api_value);
-                            $cleaned_api_content = strip_line_breaks_preserve_html($cleaned_api_content);
+                            $cleaned_api_content = clean_wysiwyg_content_pubs_version($api_value);
+                            $cleaned_api_content = strip_line_breaks_preserve_html_pubs_version($cleaned_api_content);
                             $post_data['post_content'] = $cleaned_api_content;
                         }
                         elseif ($wp_field === 'post_date') {
@@ -1164,8 +1164,8 @@ function publication_api_tool_execute_migration() {
                         else {
                             // Handle ACF fields - clean content fields
                             if (in_array($wp_field, ['short_summary', 'summary', 'notes'])) {
-                                $api_value = clean_wysiwyg_content($api_value);
-                                $api_value = strip_line_breaks_preserve_html($api_value);
+                                $api_value = clean_wysiwyg_content_pubs_version($api_value);
+                                $api_value = strip_line_breaks_preserve_html_pubs_version($api_value);
                             }
                             $post_data['meta_input'][$wp_field] = $api_value;
                         }
@@ -1291,7 +1291,7 @@ function convert_api_date_to_wordpress($api_date) {
 }
 
 // Helper function to clean up artifacts from the rich text editor
-function clean_wysiwyg_content($content)
+function clean_wysiwyg_content_pubs_version($content)
 {
     if (empty($content)) {
         return $content;
@@ -1316,7 +1316,7 @@ function clean_wysiwyg_content($content)
 }
 
 // Helper function to strip line breaks, again from the rich text editor
-function strip_line_breaks_preserve_html($content) {
+function strip_line_breaks_preserve_html_pubs_version($content) {
     if (empty($content)) {
         return $content;
     }
