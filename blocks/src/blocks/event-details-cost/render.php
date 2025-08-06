@@ -10,8 +10,12 @@ $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
-if( !empty(get_field('cost', $post_id)) ):
-	$cost = '$'.number_format(get_field('cost', $post_id), 2);
+// Get the cost field and validate it
+$cost_field = get_field('cost', $post_id);
+$cost = '';
+
+if( !empty($cost_field) && is_numeric($cost_field) ):
+	$cost = number_format(floatval($cost_field), 2);
 endif; 
 ?>
 

@@ -7,8 +7,7 @@
  * for each selected calendar and allows designated approvers to approve
  * events for their specific calendars.
  *
- * This file should be included in your main functions.php file or a main
- * events handler file within your theme's 'events' directory.
+ * This version ONLY uses the user permission system - no ACF dependencies.
  *
  * @package YourThemeName/Events
  */
@@ -66,27 +65,56 @@ function render_event_approval_metabox($post) {
         foreach ($event_calendars as $term) {
             $is_approved = isset($calendar_approval_status[$term->term_id]) && $calendar_approval_status[$term->term_id] === 'approved';
             
-            // Determine status text based on submission state
+            // Determine status text based on submission state and user permissions
             if ($is_approved) {
                 $status_text = '<span style="color: green;">' . __('Approved', 'caes-hub') . '</span>';
             } elseif ($has_been_submitted || $post_status === 'pending') {
                 $status_text = '<span style="color: orange;">' . __('Pending Approval', 'caes-hub') . '</span>';
             } else {
-                $status_text = '<span style="color: gray;">' . __('Not Submitted', 'caes-hub') . '</span>';
+                // Check if current user can approve this calendar
+                $current_user_can_approve = false;
+                if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
+                    $current_user_can_approve = true;
+                } else {
+                    $current_user_can_approve = user_can_approve_calendar($current_user_id, $term->term_id);
+                }
+                
+                // DEBUG OUTPUT
+                echo '<!-- DEBUG: Calendar ' . $term->name . ' (ID: ' . $term->term_id . ') -->';
+                echo '<!-- Current User ID: ' . $current_user_id . ' -->';
+                echo '<!-- Current User Roles: ' . implode(', ', $current_user_roles) . ' -->';
+                echo '<!-- Can Approve This Calendar: ' . ($current_user_can_approve ? 'YES' : 'NO') . ' -->';
+                echo '<!-- Has Been Submitted: ' . ($has_been_submitted ? 'YES' : 'NO') . ' -->';
+                echo '<!-- Post Status: ' . $post_status . ' -->';
+                
+                if ($current_user_can_approve) {
+                    $status_text = '<span style="color: blue;">' . __('Ready to Publish', 'caes-hub') . '</span>';
+                    echo '<!-- STATUS SET TO: Ready to Publish -->';
+                } else {
+                    $status_text = '<span style="color: gray;">' . __('Not Submitted', 'caes-hub') . '</span>';
+                    echo '<!-- STATUS SET TO: Not Submitted -->';
+                }
             }
             
-            $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term->term_id);
-
             echo '<p><strong>' . esc_html($term->name) . ':</strong> ' . $status_text;
             
-            // Show approver info if there is one
-            if ($assigned_approver) {
-                $approver_user = get_userdata($assigned_approver);
-                if ($approver_user) {
-                    echo '<br><small>Approver: ' . esc_html($approver_user->display_name) . '</small>';
-                }
+            // Show who can approve this calendar
+            $approvers = get_users(array(
+                'meta_query' => array(
+                    array(
+                        'key' => 'calendar_approve_permissions',
+                        'value' => $term->term_id,
+                        'compare' => 'LIKE'
+                    )
+                ),
+                'fields' => array('display_name')
+            ));
+            
+            if (!empty($approvers)) {
+                $approver_names = wp_list_pluck($approvers, 'display_name');
+                echo '<br><small>Approvers: ' . implode(', ', $approver_names) . ', Site Administrators/Editors</small>';
             } else {
-                echo '<br><small>Approver: Site Administrators/Editors</small>';
+                echo '<br><small>Approvers: Site Administrators/Editors only</small>';
             }
             echo '</p>';
 
@@ -95,10 +123,9 @@ function render_event_approval_metabox($post) {
             // Admins and Editors can approve everything.
             if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
                 $can_approve = true;
-            }
-            // A designated approver can approve their own calendar.
-            if ($assigned_approver && (int) $assigned_approver === (int) $current_user_id) {
-                $can_approve = true;
+            } else {
+                // Check if user has approval permission for this calendar
+                $can_approve = user_can_approve_calendar($current_user_id, $term->term_id);
             }
 
             // Display the approval button only if not yet approved, user has permission, and event has been submitted
@@ -250,13 +277,13 @@ function handle_ajax_event_approval() {
     $current_user_roles = (array) $current_user->roles;
     
     // Check if the current user can approve this specific calendar
-    $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term_id);
     $can_approve = false;
     
     if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
         $can_approve = true;
-    } elseif ($assigned_approver && (int) $assigned_approver === (int) $current_user_id) {
-        $can_approve = true;
+    } else {
+        // Check user's approval permissions for this calendar
+        $can_approve = user_can_approve_calendar($current_user_id, $term_id);
     }
 
     if (!$can_approve) {
@@ -285,31 +312,70 @@ function handle_ajax_event_approval() {
         return;
     }
 
-    // Check if all calendars are now approved for auto-publishing
+    // DEBUG: Log what's happening
+    error_log("=== AJAX APPROVAL DEBUG ===");
+    error_log("Post ID: $post_id, Term ID: $term_id");
+    error_log("Current approval status: " . print_r($calendar_approval_status, true));
+
+    // Check if ANY calendar is now approved for auto-publishing
     $event_calendars = get_the_terms($post_id, 'event_caes_departments');
-    $all_approved = true;
+    $any_approved = false;
+    
+    error_log("Event calendars: " . print_r($event_calendars, true));
     
     if ($event_calendars && !is_wp_error($event_calendars)) {
         foreach ($event_calendars as $calendar_term) {
-            if (!isset($calendar_approval_status[$calendar_term->term_id]) || 
-                $calendar_approval_status[$calendar_term->term_id] !== 'approved') {
-                $all_approved = false;
-                break;
+            $is_this_calendar_approved = isset($calendar_approval_status[$calendar_term->term_id]) && 
+                                        $calendar_approval_status[$calendar_term->term_id] === 'approved';
+            error_log("Calendar {$calendar_term->term_id} ({$calendar_term->name}) approved: " . ($is_this_calendar_approved ? 'YES' : 'NO'));
+            
+            if ($is_this_calendar_approved) {
+                $any_approved = true;
+                break; // Found at least one approved calendar
             }
         }
     }
     
-    // Auto-publish if all calendars are approved and post is pending
-    if ($all_approved && get_post_status($post_id) === 'pending') {
-        wp_update_post(array(
+    error_log("Any calendar approved: " . ($any_approved ? 'YES' : 'NO'));
+    
+    // Auto-publish if any calendar is approved and post is still pending
+    $current_status = get_post_status($post_id);
+    error_log("Current post status: $current_status");
+    
+    if ($any_approved && $current_status === 'pending') {
+        error_log("CONDITIONS MET - Publishing post...");
+        
+        $update_post_result = wp_update_post(array(
             'ID' => $post_id,
             'post_status' => 'publish'
         ));
         
-        // Send notification to original submitter
+        error_log("wp_update_post result: " . print_r($update_post_result, true));
+        
+        // Check if status actually changed
+        $new_status = get_post_status($post_id);
+        error_log("New post status after update: $new_status");
+        
+        // Send notification to original submitter (only on first approval/publishing)
         $event_submitter = get_post_field('post_author', $post_id);
-        send_submitter_notification_email($post_id, $event_submitter);
+        $current_user_id = get_current_user_id();
+        
+        error_log("Event submitter ID: $event_submitter, Current user ID: $current_user_id");
+        
+        // Only send email if submitter is different from current user (don't email yourself)
+        if ($event_submitter != $current_user_id) {
+            error_log("Sending notification to submitter...");
+            send_submitter_notification_email($post_id, $event_submitter);
+        } else {
+            error_log("Skipping email - user approved their own event");
+        }
+    } else {
+        error_log("CONDITIONS NOT MET - Not publishing");
+        error_log("- Any approved: " . ($any_approved ? 'YES' : 'NO'));
+        error_log("- Current status is pending: " . ($current_status === 'pending' ? 'YES' : 'NO'));
     }
+    
+    error_log("=== END AJAX APPROVAL DEBUG ===");
 
     wp_send_json_success('Calendar approved successfully.');
 }

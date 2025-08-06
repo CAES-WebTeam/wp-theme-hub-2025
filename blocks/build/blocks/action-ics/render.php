@@ -13,19 +13,73 @@ function generate_ics($post_id)
     // Check if it's an all-day event (no start or end time)
     $is_all_day = empty($event_start_time) && empty($event_end_time);
 
-    if ($is_all_day) {
-        // All-day event: Use only dates, omit times
-        $dtstart = date('Ymd', strtotime($event_start));
-        $dtend = $event_end ? date('Ymd', strtotime($event_end . ' +1 day')) : date('Ymd', strtotime($event_start . ' +1 day'));
-    } else {
-        // Timed event: Include local time without 'Z'
-        $start_datetime = $event_start . ' ' . ($event_start_time ?: '00:00');
-        $end_datetime = ($event_end ?: $event_start) . ' ' . ($event_end_time ?: '23:59');
-        $dtstart = date('Ymd\THis', strtotime($start_datetime));
-        $dtend = date('Ymd\THis', strtotime($end_datetime));
+    // Apply the same date logic as the display component
+    $start_date_object = null;
+    $end_date_object = null;
+    $is_date_range = false;
+
+    // Parse start date
+    if (!empty($event_start)) {
+        $start_date_object = DateTime::createFromFormat('Ymd', $event_start);
+        
+        // Check if we have an end date and if it's different from start date
+        if (!empty($event_end)) {
+            $end_date_object = DateTime::createFromFormat('Ymd', $event_end);
+            if ($end_date_object && $start_date_object) {
+                // Compare dates to see if it's a range (end date is after start date)
+                if ($end_date_object > $start_date_object) {
+                    $is_date_range = true;
+                }
+            }
+        }
     }
 
-    // Get location from Google Maps field (updated logic)
+    // Generate ICS dates based on the simplified logic
+    if ($is_all_day) {
+        // All-day event: Use only dates, omit times
+        if ($start_date_object) {
+            $dtstart = $start_date_object->format('Ymd');
+            
+            if ($is_date_range && $end_date_object) {
+                // For all-day events, end date should be the day after the actual end date
+                $end_date_plus_one = clone $end_date_object;
+                $end_date_plus_one->modify('+1 day');
+                $dtend = $end_date_plus_one->format('Ymd');
+            } else {
+                // Single day all-day event
+                $single_day_plus_one = clone $start_date_object;
+                $single_day_plus_one->modify('+1 day');
+                $dtend = $single_day_plus_one->format('Ymd');
+            }
+        } else {
+            // Fallback if date parsing fails
+            $dtstart = date('Ymd', strtotime($event_start));
+            $dtend = date('Ymd', strtotime($event_start . ' +1 day'));
+        }
+    } else {
+        // Timed event: Include local time without 'Z'
+        if ($start_date_object) {
+            $start_datetime = $start_date_object->format('Y-m-d') . ' ' . ($event_start_time ?: '00:00');
+            
+            if ($is_date_range && $end_date_object) {
+                $end_datetime = $end_date_object->format('Y-m-d') . ' ' . ($event_end_time ?: '23:59');
+            } else {
+                // Same day event
+                $end_datetime = $start_date_object->format('Y-m-d') . ' ' . ($event_end_time ?: '23:59');
+            }
+            
+            $dtstart = date('Ymd\THis', strtotime($start_datetime));
+            $dtend = date('Ymd\THis', strtotime($end_datetime));
+        } else {
+            // Fallback if date parsing fails
+            $start_datetime = $event_start . ' ' . ($event_start_time ?: '00:00');
+            $end_datetime = ($event_end ?: $event_start) . ' ' . ($event_end_time ?: '23:59');
+            $dtstart = date('Ymd\THis', strtotime($start_datetime));
+            $dtend = date('Ymd\THis', strtotime($end_datetime));
+        }
+    }
+
+    // Get location from Google Maps field
     $location = '';
     $event_location_type = get_field('event_location_type', $post_id);
     
@@ -48,15 +102,10 @@ function generate_ics($post_id)
     // Combine locations based on event type
     if ($event_location_type === 'Both' && $physical_location && $online_location) {
         $location = $physical_location . ' / Online: ' . $online_location;
-        error_log('ICS DEBUG: Using both locations: ' . $location);
     } elseif ($physical_location) {
         $location = $physical_location;
-        error_log('ICS DEBUG: Using physical location: ' . $location);
     } elseif ($online_location) {
         $location = $online_location;
-        error_log('ICS DEBUG: Using online location: ' . $location);
-    } else {
-        error_log('ICS DEBUG: No location data found');
     }
 
     // Get and process the description
@@ -128,6 +177,7 @@ $path_url = wp_make_link_relative(get_permalink($post_id));
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
     <button class="caes-hub-action-ics__button"
+            data-ics-url="<?php echo esc_attr($download_url); ?>"
             data-event-title="<?php echo esc_attr($event_title); ?>"
             data-event-date="<?php echo esc_attr($event_date); ?>"
             data-event-url="<?php echo esc_attr($path_url); ?>"

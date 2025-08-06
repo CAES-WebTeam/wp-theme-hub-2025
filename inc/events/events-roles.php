@@ -284,19 +284,16 @@ function user_can_submit_to_calendar($user_id, $calendar_term_id) {
 function user_can_approve_calendar($user_id, $calendar_term_id) {
     $user = get_userdata($user_id);
     if (!$user) {
+        // error_log("DEBUG user_can_approve_calendar: User ID $user_id not found");
         return false;
     }
     
     $user_roles = (array) $user->roles;
+    // error_log("DEBUG user_can_approve_calendar: User $user_id roles: " . implode(', ', $user_roles));
     
     // Admins and editors can approve all calendars
     if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
-        return true;
-    }
-    
-    // Check if they're the assigned approver for this calendar (existing system)
-    $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $calendar_term_id);
-    if ($assigned_approver && (int) $assigned_approver === (int) $user_id) {
+        // error_log("DEBUG user_can_approve_calendar: User $user_id is admin/editor - APPROVED");
         return true;
     }
     
@@ -306,7 +303,13 @@ function user_can_approve_calendar($user_id, $calendar_term_id) {
         $approve_permissions = array();
     }
     
-    return in_array($calendar_term_id, $approve_permissions);
+    // error_log("DEBUG user_can_approve_calendar: User $user_id approve permissions: " . print_r($approve_permissions, true));
+    // error_log("DEBUG user_can_approve_calendar: Checking calendar term ID: $calendar_term_id");
+    
+    $can_approve = in_array($calendar_term_id, $approve_permissions);
+    // error_log("DEBUG user_can_approve_calendar: Can approve result: " . ($can_approve ? 'YES' : 'NO'));
+    
+    return $can_approve;
 }
 
 /**

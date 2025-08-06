@@ -38,3 +38,7 @@ if ( file_exists( $events_dir . 'events-approval-metabox.php' ) ) {
 if ( file_exists( $events_dir . 'events-approval-admin.php' ) ) {
     require_once( $events_dir . 'events-approval-admin.php' );
 }
+
+if ( file_exists( $events_dir . 'events-frontend-queries.php' ) ) {
+    require_once( $events_dir . 'events-frontend-queries.php' );
+}
