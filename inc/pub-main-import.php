@@ -56,6 +56,28 @@ function publication_api_tool_render_page() {
         <h2>Execute Migration</h2>
         <p><strong>WARNING:</strong> This will create and update posts in your WordPress database. Make sure you have a backup before proceeding.</p>
         <p>Publications will be processed in batches of 10. The process will continue automatically until all publications are processed.</p>
+        
+        <!-- Migration Options -->
+        <div class="migration-options">
+            <h4>Migration Options</h4>
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="specific-publication-id">Specific Publication ID</label></th>
+                    <td>
+                        <input type="text" id="specific-publication-id" class="regular-text" placeholder="e.g., 12345" />
+                        <p class="description">Leave empty to import all publications, or enter a specific Publication ID to import only that publication.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="starting-batch">Starting Batch Number</label></th>
+                    <td>
+                        <input type="number" id="starting-batch" class="small-text" value="1" min="1" />
+                        <p class="description">Specify which batch to start from. Useful for resuming interrupted migrations.</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
         <button class="button button-primary" id="execute-migration-btn">Execute Migration</button>
         <div id="execute-migration-log" class="log-area"></div>
         <div id="migration-progress" class="migration-progress" style="display: none;">
@@ -134,6 +156,16 @@ function publication_api_tool_render_page() {
         .progress-stats span {
             margin-right: 15px;
         }
+        .migration-options {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .migration-options h4 {
+            margin-top: 0;
+        }
     </style>
     <script type="text/javascript">
         jQuery(document).ready(function($) {
@@ -142,7 +174,7 @@ function publication_api_tool_render_page() {
             function appendLog(logElement, message, type = 'info') {
                 const timestamp = new Date().toLocaleTimeString();
                 logElement.append(`<div class="log-${type}">[${timestamp}] ${message}</div>`);
-                logElement.scrollTop(logElement[0].scrollHeight); // Scroll to bottom
+                logElement.scrollTop(logElement[0].scrollLength); // Scroll to bottom
             }
 
             // Helper function to set the class of the log area (for visual feedback)
@@ -277,8 +309,11 @@ function publication_api_tool_render_page() {
                 $('#migration-progress').show();
                 updateProgressDisplay();
 
-                // Start with batch 1
-                executeMigrationBatch(1, $button, $logArea);
+                // Get starting batch number
+                const startingBatch = parseInt($('#starting-batch').val()) || 1;
+                
+                // Start with specified batch
+                executeMigrationBatch(startingBatch, $button, $logArea);
             });
 
             // Function to update the progress display
@@ -292,13 +327,16 @@ function publication_api_tool_render_page() {
 
             // Function to handle batch processing
             function executeMigrationBatch(batchNumber, $button, $logArea) {
-                if (batchNumber === 1) {
-                    $logArea.empty(); // Clear logs only on first batch
+                if (batchNumber === 1 || batchNumber === parseInt($('#starting-batch').val())) {
+                    $logArea.empty(); // Clear logs only on first batch or starting batch
                     setLogAreaClass($logArea, 'info');
                 }
                 
                 $button.prop('disabled', true).text(`Processing batch ${batchNumber}...`);
                 appendLog($logArea, `Starting batch ${batchNumber}...`);
+
+                // Get specific publication ID if provided
+                const specificPublicationId = $('#specific-publication-id').val().trim();
 
                 $.ajax({
                     url: '<?php echo esc_js($ajax_url); ?>',
@@ -306,7 +344,8 @@ function publication_api_tool_render_page() {
                     data: {
                         action: 'execute_migration',
                         nonce: '<?php echo esc_js($nonce); ?>',
-                        batch: batchNumber
+                        batch: batchNumber,
+                        specific_publication_id: specificPublicationId
                     },
                     success: function(response) {
                         if (response.success) {
@@ -334,21 +373,26 @@ function publication_api_tool_render_page() {
                                     else if (msg.startsWith('ERROR:')) logType = 'error';
                                     else if (msg.startsWith('SUCCESS:')) logType = 'success';
                                     else if (msg.startsWith('Warning:')) logType = 'discrepancy';
+                                    else if (msg.includes('No updates needed')) logType = 'info';
                                     appendLog($logArea, msg, logType);
                                 });
                             }
                             
                             // Check if there are more batches to process
-                            if (response.data.has_more_batches) {
+                            if (response.data.has_more_batches && !specificPublicationId) {
                                 appendLog($logArea, `Batch ${batchNumber} complete. Starting next batch in 1 second...`, 'info');
                                 // Automatically continue to next batch after a short delay
                                 setTimeout(() => {
                                     executeMigrationBatch(batchNumber + 1, $button, $logArea);
                                 }, 1000); // 1 second delay between batches
                             } else {
-                                // All batches complete
+                                // All batches complete or specific publication processed
                                 appendLog($logArea, '', 'info'); // Empty line
-                                appendLog($logArea, '=== MIGRATION COMPLETE ===', 'success');
+                                if (specificPublicationId) {
+                                    appendLog($logArea, '=== SPECIFIC PUBLICATION MIGRATION COMPLETE ===', 'success');
+                                } else {
+                                    appendLog($logArea, '=== MIGRATION COMPLETE ===', 'success');
+                                }
                                 appendLog($logArea, `Final totals: Created ${runningTotals.created}, Updated ${runningTotals.updated}, Skipped ${runningTotals.skipped}, Errors ${runningTotals.errors}`, 'success');
                                 setLogAreaClass($logArea, 'success');
                                 $button.prop('disabled', false).text('Execute Migration');
@@ -826,10 +870,16 @@ function publication_api_tool_execute_migration() {
     $current_batch_number = isset($_POST['batch']) ? intval($_POST['batch']) : 1;
     $start_index = ($current_batch_number - 1) * $batch_size;
     
+    // Check for specific publication ID
+    $specific_publication_id = isset($_POST['specific_publication_id']) ? trim($_POST['specific_publication_id']) : '';
+    
     // Transient key for storing API data
     $api_data_transient_key = 'publication_api_migration_data';
     $api_timestamp_transient_key = 'publication_api_migration_timestamp';
     
+    // Turn off KSES filters so <style> and other tags import correctly
+    kses_remove_filters();
+
     try {
         // --- Fetch or Retrieve Cached API Data ---
         $decoded_API_response = get_transient($api_data_transient_key);
@@ -868,13 +918,31 @@ function publication_api_tool_execute_migration() {
             $log[] = "Using cached API data from " . $api_fetch_timestamp . " (" . count($decoded_API_response) . " publications).";
         }
 
-        $total_publications = count($decoded_API_response);
-        
-        // Extract batch
-        $batch_of_publications = array_slice($decoded_API_response, $start_index, $batch_size);
-        $actual_batch_size = count($batch_of_publications);
-        
-        $log[] = "Processing batch {$current_batch_number}: publications " . ($start_index + 1) . " to " . ($start_index + $actual_batch_size) . " of {$total_publications}";
+        // Handle specific publication ID filtering
+        if (!empty($specific_publication_id)) {
+            $filtered_publications = array_filter($decoded_API_response, function($pub) use ($specific_publication_id) {
+                return isset($pub['ID']) && (string)$pub['ID'] === $specific_publication_id;
+            });
+            
+            if (empty($filtered_publications)) {
+                throw new Exception("Publication with ID '{$specific_publication_id}' not found in API data.");
+            }
+            
+            $decoded_API_response = array_values($filtered_publications); // Re-index array
+            $log[] = "Filtered to specific publication ID: {$specific_publication_id}";
+            
+            // For specific publication, process all in one batch
+            $batch_of_publications = $decoded_API_response;
+            $actual_batch_size = count($batch_of_publications);
+        } else {
+            $total_publications = count($decoded_API_response);
+            
+            // Extract batch
+            $batch_of_publications = array_slice($decoded_API_response, $start_index, $batch_size);
+            $actual_batch_size = count($batch_of_publications);
+            
+            $log[] = "Processing batch {$current_batch_number}: publications " . ($start_index + 1) . " to " . ($start_index + $actual_batch_size) . " of {$total_publications}";
+        }
 
         // --- Get existing WordPress publications for comparison ---
         $log[] = "Fetching existing WordPress publications...";
@@ -895,8 +963,6 @@ function publication_api_tool_execute_migration() {
         }
 
         $log[] = "Found " . count($wordpress_posts) . " existing WordPress publications for comparison.";
-
-        // We'll continue with Step 4: Processing each publication...
 
         // --- Process each publication in the batch ---
         $log[] = "Starting to process individual publications...";
@@ -925,6 +991,9 @@ function publication_api_tool_execute_migration() {
                 $log[] = "Processing existing post: '{$api_title}' (Publication ID: {$api_id})";
                 
                 try {
+                    $fields_updated = 0;
+                    $post_data_changed = false;
+                    
                     // Prepare post data for WordPress update
                     $post_data = array(
                         'ID'          => $existing_post->ID, // CRITICAL: WordPress needs this to know which post to update
@@ -942,15 +1011,33 @@ function publication_api_tool_execute_migration() {
                         
                         // Handle WordPress core fields
                         if ($wp_field === 'title') {
-                            $post_data['post_title'] = $api_value;
+                            if (trim($api_value) != trim($existing_post->post_title)) {
+                                $post_data['post_title'] = $api_value;
+                                $post_data_changed = true;
+                                $fields_updated++;
+                            }
                         } 
                         elseif ($wp_field === 'post_content') {
-                            $post_data['post_content'] = $api_value;
+                            // Clean and process the content
+                            $cleaned_api_content = clean_wysiwyg_content_pubs_version($api_value);
+                            $cleaned_api_content = strip_line_breaks_preserve_html_pubs_version($cleaned_api_content);
+                            
+                            if (trim($cleaned_api_content) != trim($existing_post->post_content)) {
+                            	$post_data['post_content'] = $cleaned_api_content;
+                                $post_data_changed = true;
+                                $fields_updated++;
+                            } else {
+
+                            }
                         }
                         elseif ($wp_field === 'post_date') {
                             $converted_date = convert_api_date_to_wordpress($api_value);
                             if ($converted_date !== null) {
-                                $post_data['post_date'] = $converted_date;
+                                if ($converted_date != $existing_post->post_date) {
+                                    $post_data['post_date'] = $converted_date;
+                                    $post_data_changed = true;
+                                    $fields_updated++;
+                                }
                             } else {
                                 $log[] = "  Warning: Failed to convert date field '{$api_field}' with value '{$api_value}' - skipping field";
                             }
@@ -958,18 +1045,24 @@ function publication_api_tool_execute_migration() {
                         elseif ($wp_field === 'post_modified') {
                             $converted_date = convert_api_date_to_wordpress($api_value);
                             if ($converted_date !== null) {
-                                $post_data['post_modified'] = $converted_date;
+                                if ($converted_date != $existing_post->post_modified) {
+                                    $post_data['post_modified'] = $converted_date;
+                                    $post_data_changed = true;
+                                    $fields_updated++;
+                                }
                             } else {
                                 $log[] = "  Warning: Failed to convert date field '{$api_field}' with value '{$api_value}' - skipping field";
                             }
                         }
                     }
                     
-                    // Update the WordPress core fields
-                    $updated_post_id = wp_update_post($post_data);
-                    
-                    if (is_wp_error($updated_post_id)) {
-                        throw new Exception('Failed to update post core fields: ' . $updated_post_id->get_error_message());
+                    // Update the WordPress core fields only if there were changes
+                    if ($post_data_changed) {
+                        $updated_post_id = wp_update_post($post_data);
+                        
+                        if (is_wp_error($updated_post_id)) {
+                            throw new Exception('Failed to update post core fields: ' . $updated_post_id->get_error_message());
+                        }
                     }
                     
                     // Now update all ACF fields
@@ -985,26 +1078,39 @@ function publication_api_tool_execute_migration() {
                         
                         $api_value = $one_api_publication[$api_field];
                         
+                        // Clean content fields if they contain HTML/text content
+                        if (in_array($wp_field, ['short_summary', 'summary', 'notes'])) {
+                            $api_value = clean_wysiwyg_content_pubs_version($api_value);
+                            $api_value = strip_line_breaks_preserve_html_pubs_version($api_value);
+                        }
+                        
+                        // Get existing ACF field value
+                        $existing_acf_value = get_field($wp_field, $existing_post->ID);
+                        
                         // Compare ACF field to see if update is needed
-                        $acf_field_identical = (trim($api_value) == trim($existing_post->$wp_field)) || (is_null($api_value) && is_null($existing_post->$wp_field));
-                        // $log[] = "Now comparing field {$wp_field} data.";
-                        // $log[] = "API data: {$api_value}";
-                        // $log[] = "WordPress data: {$existing_post->$wp_field}";
+                        $acf_field_identical = (trim($api_value) == trim($existing_acf_value)) || 
+                                             (is_null($api_value) && is_null($existing_acf_value)) ||
+                                             (empty($api_value) && empty($existing_acf_value));
 
-                        if ($acf_field_identical) {
-                            $log[] = "  No update needed for ACF field '{$wp_field}' for post ID {$existing_post->ID}";
-                        } else {
+                        if (!$acf_field_identical) {
                             // Update ACF field
                             $acf_updated = update_field($wp_field, $api_value, $existing_post->ID);
                             
-                            if (!$acf_updated) {
+                            if ($acf_updated) {
+                                $fields_updated++;
+                            } else {
                                 $log[] = "  Warning: Failed to update ACF field '{$wp_field}' for post ID {$existing_post->ID}";
                             }
                         }
                     }
                     
-                    $log[] = "  SUCCESS: Updated post with WordPress ID {$existing_post->ID}";
-                    $stats['posts_updated']++;
+                    if ($fields_updated > 0) {
+                        $log[] = "  SUCCESS: Updated post with WordPress ID {$existing_post->ID} ({$fields_updated} fields updated)";
+                        $stats['posts_updated']++;
+                    } else {
+                        $log[] = "  No updates needed for publication '{$api_title}' (WordPress ID: {$existing_post->ID})";
+                        $stats['posts_skipped']++;
+                    }
                     
                 } catch (Exception $e) {
                     $log[] = "  ERROR: Failed to update post '{$api_title}': " . $e->getMessage();
@@ -1036,7 +1142,10 @@ function publication_api_tool_execute_migration() {
                             $post_data['post_title'] = $api_value;
                         } 
                         elseif ($wp_field === 'post_content') {
-                            $post_data['post_content'] = $api_value;
+                            // Clean and process the content
+                            $cleaned_api_content = clean_wysiwyg_content_pubs_version($api_value);
+                            $cleaned_api_content = strip_line_breaks_preserve_html_pubs_version($cleaned_api_content);
+                            $post_data['post_content'] = $cleaned_api_content;
                         }
                         elseif ($wp_field === 'post_date') {
                             $converted_date = convert_api_date_to_wordpress($api_value);
@@ -1055,7 +1164,11 @@ function publication_api_tool_execute_migration() {
                             }
                         }
                         else {
-                            // Handle ACF fields
+                            // Handle ACF fields - clean content fields
+                            if (in_array($wp_field, ['short_summary', 'summary', 'notes'])) {
+                                $api_value = clean_wysiwyg_content_pubs_version($api_value);
+                                $api_value = strip_line_breaks_preserve_html_pubs_version($api_value);
+                            }
                             $post_data['meta_input'][$wp_field] = $api_value;
                         }
                     }
@@ -1079,9 +1192,18 @@ function publication_api_tool_execute_migration() {
 
         // --- End of processing loop ---
         
-        // Calculate if there are more batches
-        $total_remaining = $total_publications - ($start_index + $actual_batch_size);
-        $has_more_batches = $total_remaining > 0;
+        if (!empty($specific_publication_id)) {
+            // For specific publication, we're done
+            $has_more_batches = false;
+            $total_publications = count($decoded_API_response);
+            $processed_so_far = $total_publications;
+        } else {
+            // Calculate if there are more batches
+            $total_publications = count($decoded_API_response);
+            $total_remaining = $total_publications - ($start_index + $actual_batch_size);
+            $has_more_batches = $total_remaining > 0;
+            $processed_so_far = $start_index + $actual_batch_size;
+        }
         
         // Clean up transients if this is the last batch
         if (!$has_more_batches) {
@@ -1092,19 +1214,28 @@ function publication_api_tool_execute_migration() {
         
         // --- Final Summary for this batch ---
         $log[] = ""; // Empty line for readability
-        $log[] = "=== BATCH {$current_batch_number} COMPLETE ===";
+        if (!empty($specific_publication_id)) {
+            $log[] = "=== SPECIFIC PUBLICATION PROCESSING COMPLETE ===";
+        } else {
+            $log[] = "=== BATCH {$current_batch_number} COMPLETE ===";
+        }
         $log[] = "Posts CREATED in this batch: " . $stats['posts_created'];
         $log[] = "Posts UPDATED in this batch: " . $stats['posts_updated'];
         $log[] = "Posts SKIPPED in this batch: " . $stats['posts_skipped'];
         $log[] = "Posts with ERRORS in this batch: " . $stats['posts_with_errors'];
         
-        if ($has_more_batches) {
-            $log[] = "Remaining publications to process: {$total_remaining}";
+        if (!empty($specific_publication_id)) {
+            $log[] = "Specific publication processing complete.";
         } else {
-            $log[] = "All publications have been processed!";
+            if ($has_more_batches) {
+                $log[] = "Remaining publications to process: " . ($total_publications - $processed_so_far);
+            } else {
+                $log[] = "All publications have been processed!";
+            }
         }
 
-        $message = "Batch {$current_batch_number} complete. Created {$stats['posts_created']}, updated {$stats['posts_updated']}, skipped {$stats['posts_skipped']}, errors {$stats['posts_with_errors']}.";
+        $message_suffix = !empty($specific_publication_id) ? " for publication ID {$specific_publication_id}" : " {$current_batch_number}";
+        $message = "Batch{$message_suffix} complete. Created {$stats['posts_created']}, updated {$stats['posts_updated']}, skipped {$stats['posts_skipped']}, errors {$stats['posts_with_errors']}.";
 
         wp_send_json_success([
             'message' => $message,
@@ -1112,8 +1243,8 @@ function publication_api_tool_execute_migration() {
             'stats' => $stats,
             'batch_number' => $current_batch_number,
             'has_more_batches' => $has_more_batches,
-            'total_publications' => $total_publications,
-            'processed_so_far' => $start_index + $actual_batch_size
+            'total_publications' => !empty($specific_publication_id) ? count($decoded_API_response) : $total_publications,
+            'processed_so_far' => $processed_so_far
         ]);
 
     } catch (Exception $e) {
@@ -1159,4 +1290,41 @@ function convert_api_date_to_wordpress($api_date) {
         error_log('Date conversion error: ' . $e->getMessage());
         return null;
     }
+}
+
+// Helper function to clean up artifacts from the rich text editor
+function clean_wysiwyg_content_pubs_version($content)
+{
+    if (empty($content)) {
+        return $content;
+    }
+
+    // Clean unwanted characters
+    $content = str_replace(["\r\n", "\r", '&#13;', '&#013;', '&amp;#13;', '&#x0D;', '&#x0d;'], '', $content);
+
+    // Fix escaped forward slashes from JSON
+    $content = str_replace(['<\/'], ['</'], $content);
+
+    // Convert HTML entities
+    $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // Remove empty paragraphs
+    $content = preg_replace('/<p>\s*<\/p>/', '', $content);
+
+    // Trim whitespace
+    $content = trim($content);
+
+    return $content;
+}
+
+// Helper function to strip line breaks, again from the rich text editor
+function strip_line_breaks_preserve_html_pubs_version($content) {
+    if (empty($content)) {
+        return $content;
+    }
+    
+    // Remove all line break characters but preserve HTML <br> tags
+    $content = str_replace(["\r\n", "\r", "\n"], '', $content);
+    
+    return $content;
 }
