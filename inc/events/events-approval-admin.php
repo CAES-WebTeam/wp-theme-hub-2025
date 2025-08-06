@@ -159,8 +159,6 @@ function render_calendar_management_page()
                     <li><strong>Approve Permissions:</strong> Go to Users → Edit User → "Event Calendar Permissions"</li>
                     <li><strong>Admin/Editor:</strong> Automatically have access to all calendars</li>
                 </ul>
-
-                <p><strong>⚠️ Note:</strong> Calendars with no specific approvers will only notify Admins & Editors.</p>
             </div>
 
         <?php endif; ?>
