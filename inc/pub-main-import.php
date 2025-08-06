@@ -1023,9 +1023,11 @@ function publication_api_tool_execute_migration() {
                             $cleaned_api_content = strip_line_breaks_preserve_html_pubs_version($cleaned_api_content);
                             
                             if (trim($cleaned_api_content) != trim($existing_post->post_content)) {
-                            	$post_data['post_content'] = $api_value;
+                            	$post_data['post_content'] = $cleaned_api_content;
                                 $post_data_changed = true;
                                 $fields_updated++;
+                            } else {
+
                             }
                         }
                         elseif ($wp_field === 'post_date') {
