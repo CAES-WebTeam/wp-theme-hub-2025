@@ -6,8 +6,7 @@
  * It hooks into the 'save_post' action to handle submissions from 'Event Submitters'
  * and to manage the approval status of events submitted to multiple calendars.
  *
- * This file should be included in your main functions.php file or a main
- * events handler file within your theme's 'events' directory.
+ * This version ONLY uses the user permission system - no ACF dependencies.
  *
  * @package YourThemeName/Events
  */
@@ -266,15 +265,13 @@ function allow_event_approver_edit_permissions($caps, $cap, $user_id, $args) {
         return $caps;
     }
     
-    // Check if this Event Approver is assigned to any of the event's calendars
+    // Check if this Event Approver has approval permissions for any of the event's calendars
     $event_calendars = get_the_terms($post_id, 'event_caes_departments');
     
     if ($event_calendars && !is_wp_error($event_calendars)) {
         foreach ($event_calendars as $calendar) {
-            $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $calendar->term_id);
-            
-            // If this user is the assigned approver for this calendar, grant edit permission
-            if ($assigned_approver && (int) $assigned_approver === (int) $user_id) {
+            // Check if this user has approval permission for this calendar
+            if (user_can_approve_calendar($user_id, $calendar->term_id)) {
                 // Return empty array to grant permission
                 return array();
             }
@@ -298,15 +295,8 @@ function user_can_approve_all_event_calendars($user_id, $post_id) {
     
     // Check each calendar
     foreach ($event_calendars as $term) {
-        $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term->term_id);
-        
-        // If there's an assigned approver and it's not this user, they can't publish
-        if ($assigned_approver && (int) $assigned_approver !== (int) $user_id) {
-            return false;
-        }
-        
-        // If no assigned approver, only admins/editors can approve (handled above)
-        if (!$assigned_approver) {
+        // Check if this user can approve this calendar
+        if (!user_can_approve_calendar($user_id, $term->term_id)) {
             return false;
         }
     }

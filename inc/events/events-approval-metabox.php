@@ -7,8 +7,7 @@
  * for each selected calendar and allows designated approvers to approve
  * events for their specific calendars.
  *
- * This file should be included in your main functions.php file or a main
- * events handler file within your theme's 'events' directory.
+ * This version ONLY uses the user permission system - no ACF dependencies.
  *
  * @package YourThemeName/Events
  */
@@ -75,18 +74,25 @@ function render_event_approval_metabox($post) {
                 $status_text = '<span style="color: gray;">' . __('Not Submitted', 'caes-hub') . '</span>';
             }
             
-            $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term->term_id);
-
             echo '<p><strong>' . esc_html($term->name) . ':</strong> ' . $status_text;
             
-            // Show approver info if there is one
-            if ($assigned_approver) {
-                $approver_user = get_userdata($assigned_approver);
-                if ($approver_user) {
-                    echo '<br><small>Approver: ' . esc_html($approver_user->display_name) . '</small>';
-                }
+            // Show who can approve this calendar
+            $approvers = get_users(array(
+                'meta_query' => array(
+                    array(
+                        'key' => 'calendar_approve_permissions',
+                        'value' => $term->term_id,
+                        'compare' => 'LIKE'
+                    )
+                ),
+                'fields' => array('display_name')
+            ));
+            
+            if (!empty($approvers)) {
+                $approver_names = wp_list_pluck($approvers, 'display_name');
+                echo '<br><small>Approvers: ' . implode(', ', $approver_names) . ', Site Administrators/Editors</small>';
             } else {
-                echo '<br><small>Approver: Site Administrators/Editors</small>';
+                echo '<br><small>Approvers: Site Administrators/Editors only</small>';
             }
             echo '</p>';
 
@@ -95,10 +101,9 @@ function render_event_approval_metabox($post) {
             // Admins and Editors can approve everything.
             if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
                 $can_approve = true;
-            }
-            // A designated approver can approve their own calendar.
-            if ($assigned_approver && (int) $assigned_approver === (int) $current_user_id) {
-                $can_approve = true;
+            } else {
+                // Check if user has approval permission for this calendar
+                $can_approve = user_can_approve_calendar($current_user_id, $term->term_id);
             }
 
             // Display the approval button only if not yet approved, user has permission, and event has been submitted
@@ -250,13 +255,13 @@ function handle_ajax_event_approval() {
     $current_user_roles = (array) $current_user->roles;
     
     // Check if the current user can approve this specific calendar
-    $assigned_approver = get_field('calendar_approver', 'event_caes_departments_' . $term_id);
     $can_approve = false;
     
     if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
         $can_approve = true;
-    } elseif ($assigned_approver && (int) $assigned_approver === (int) $current_user_id) {
-        $can_approve = true;
+    } else {
+        // Check user's approval permissions for this calendar
+        $can_approve = user_can_approve_calendar($current_user_id, $term_id);
     }
 
     if (!$can_approve) {
