@@ -177,6 +177,7 @@ $path_url = wp_make_link_relative(get_permalink($post_id));
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
     <button class="caes-hub-action-ics__button"
+            data-ics-url="<?php echo esc_attr($download_url); ?>"
             data-event-title="<?php echo esc_attr($event_title); ?>"
             data-event-date="<?php echo esc_attr($event_date); ?>"
             data-event-url="<?php echo esc_attr($path_url); ?>"
