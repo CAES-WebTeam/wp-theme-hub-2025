@@ -134,8 +134,8 @@ function handle_event_submission_and_approval($post_id, $post, $update) {
     if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
         $user_can_publish = true;
     } else {
-        // For other users, check if they can approve all selected calendars
-        $user_can_publish = user_can_approve_all_event_calendars($current_user_id, $post_id);
+        // For other users, check if they can approve AT LEAST ONE selected calendar
+        $user_can_publish = user_can_approve_any_event_calendars($current_user_id, $post_id);
     }
 
     // SCENARIO 1: User trying to publish but can't - force to pending and notify
@@ -178,47 +178,70 @@ function handle_event_submission_and_approval($post_id, $post, $update) {
 
     // SCENARIO 3: User can publish and is publishing
     if ($user_can_publish && $post->post_status === 'publish') {
-        // Check if all calendars are approved for admins/editors
-        if (in_array('administrator', $current_user_roles) || in_array('editor', $current_user_roles)) {
-            // Require at least one calendar to be approved before publishing
-            $calendar_approval_status = get_post_meta($post_id, '_calendar_approval_status', true);
-            $event_calendars = get_the_terms($post_id, 'event_caes_departments');
-            
-            if ($event_calendars && !is_wp_error($event_calendars) && !empty($event_calendars)) {
-                $at_least_one_approved = false;
-                
-                foreach ($event_calendars as $term) {
-                    if (isset($calendar_approval_status[$term->term_id]) && 
-                        $calendar_approval_status[$term->term_id] === 'approved') {
-                        $at_least_one_approved = true;
-                        break;
-                    }
-                }
-                
-                // If no calendars are approved, require approval first
-                if (!$at_least_one_approved && $was_submitted) {
-                    // Remove this hook temporarily to avoid infinite loop
-                    remove_action('save_post', 'handle_event_submission_and_approval', 10);
-                    
-                    wp_update_post(array(
-                        'ID' => $post_id,
-                        'post_status' => 'pending',
-                    ));
-                    
-                    // Re-add the hook
-                    add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
-                    
-                    // Add admin notice
-                    set_transient('event_approval_notice_' . $current_user_id, 'At least one calendar must be approved before publishing.', 30);
-                    
-                    update_post_meta($post_id, '_previous_status', 'pending');
-                    return;
+        // Auto-approve calendars the user has permission for
+        $event_calendars = get_the_terms($post_id, 'event_caes_departments');
+        $calendar_approval_status = get_post_meta($post_id, '_calendar_approval_status', true);
+        if (!is_array($calendar_approval_status)) {
+            $calendar_approval_status = array();
+        }
+        
+        $calendars_needing_approval = array();
+        $any_auto_approved = false;
+        
+        if ($event_calendars && !is_wp_error($event_calendars)) {
+            foreach ($event_calendars as $term) {
+                // If user can approve this calendar, auto-approve it
+                if (user_can_approve_calendar($current_user_id, $term->term_id)) {
+                    $calendar_approval_status[$term->term_id] = 'approved';
+                    $any_auto_approved = true;
+                    error_log("Auto-approved calendar {$term->term_id} ({$term->name}) for user {$current_user_id}");
+                } else {
+                    // Calendar needs approval from someone else
+                    $calendars_needing_approval[] = $term->term_id;
+                    error_log("Calendar {$term->term_id} ({$term->name}) needs approval from others");
                 }
             }
         }
         
-        // Send notification to original submitter if status changed from pending
-        if ($previous_status === 'pending') {
+        // Update approval status if any calendars were auto-approved
+        if ($any_auto_approved) {
+            update_post_meta($post_id, '_calendar_approval_status', $calendar_approval_status);
+        }
+        
+        // Send notifications for calendars that need approval from others
+        if (!empty($calendars_needing_approval)) {
+            // Mark as submitted for approval
+            update_post_meta($post_id, '_submitted_for_approval', true);
+            
+            // Get approvers for the calendars that need approval
+            $calendar_approvers = array();
+            foreach ($calendars_needing_approval as $calendar_term_id) {
+                $users_with_approve_permission = get_users(array(
+                    'meta_query' => array(
+                        array(
+                            'key' => 'calendar_approve_permissions',
+                            'value' => $calendar_term_id,
+                            'compare' => 'LIKE'
+                        )
+                    ),
+                    'fields' => 'ID'
+                ));
+                
+                if (!empty($users_with_approve_permission)) {
+                    $calendar_approvers = array_merge($calendar_approvers, $users_with_approve_permission);
+                }
+            }
+            
+            // Send notifications to approvers for remaining calendars
+            if (!empty($calendar_approvers)) {
+                $unique_approvers = array_unique($calendar_approvers);
+                send_approval_notification_email($post_id, $unique_approvers);
+                error_log("Sent approval notifications to: " . implode(', ', $unique_approvers));
+            }
+        }
+        
+        // Send notification to original submitter if status changed from pending (and submitter is different from publisher)
+        if ($previous_status === 'pending' && $current_user_id != get_post_field('post_author', $post_id)) {
             $event_submitter = get_post_field('post_author', $post_id);
             send_submitter_notification_email($post_id, $event_submitter);
         }
@@ -303,6 +326,27 @@ function user_can_approve_all_event_calendars($user_id, $post_id) {
     }
     
     return true;
+}
+
+/**
+ * Check if a user can approve at least one calendar selected for an event
+ */
+function user_can_approve_any_event_calendars($user_id, $post_id) {
+    $event_calendars = get_the_terms($post_id, 'event_caes_departments');
+    
+    // If no calendars selected, only admins/editors can publish
+    if (!$event_calendars || is_wp_error($event_calendars)) {
+        return false;
+    }
+    
+    // Check each calendar - return true if user can approve any of them
+    foreach ($event_calendars as $term) {
+        if (user_can_approve_calendar($user_id, $term->term_id)) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 /**
