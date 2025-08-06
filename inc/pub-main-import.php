@@ -846,7 +846,7 @@ function publication_api_tool_execute_migration() {
         'TITLE' => 'title',
         'SHORT_SUMMARY' => 'short_summary',
         // 'ABSTRACT' => 'summary',
-        'ABSTRACT' => 'field_673f519ce6a8e',
+        'ABSTRACT' => 'summary',
         'NOTES' => 'notes',
         'DATE_CREATED' => 'post_date',
         'DATE_LAST_UPDATED' => 'post_modified',
