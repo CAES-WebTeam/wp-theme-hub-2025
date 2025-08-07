@@ -153,7 +153,7 @@ function publication_api_tool_render_page() {
             function appendLog(logElement, message, type = 'info') {
                 const timestamp = new Date().toLocaleTimeString();
                 logElement.append(`<div class="log-${type}">[${timestamp}] ${message}</div>`);
-                logElement.scrollTop(logElement[0].scrollLength); // Scroll to bottom
+                logElement.scrollTop(logElement[0].scrollHeight); // Scroll to bottom
             }
 
             // Helper function to set the class of the log area (for visual feedback)
