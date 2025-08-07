@@ -818,8 +818,8 @@ function publication_api_tool_execute_migration() {
     $field_mapping = [
         'ID' => 'publication_id',
         'SERIES_ID' => 'series_id',
-        'TYPE_ID' => 'publication_type',
-        // 'DIVISION_ID' => 'division',
+        // 'TYPE_ID' => 'publication_type',
+        'DIVISION_ID' => 'division',
         // 'LANGUAGE_ID' => 'language',
         // 'STATE_ISSUE_ID' => 'state_issue',
         'CATEGORY_ID' => 'category_id', 
