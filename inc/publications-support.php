@@ -274,7 +274,6 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
             }
         }
 
-
     }
 
     $pub_id = get_field('publication_id', $post_id);
