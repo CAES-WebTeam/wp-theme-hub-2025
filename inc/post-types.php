@@ -329,6 +329,10 @@ function create_primary_topics_field() {
 }
 add_action('acf/init', 'create_primary_topics_field'); // Changed function name in action hook
 
+// Disable Yoast SEO Primary Term metabox
+add_filter( 'wpseo_primary_term_taxonomies', '__return_empty_array' );
+
+
 
 // External Publisher Taxonomy for posts
 function create_external_publisher_taxonomy_and_field() {
