@@ -228,16 +228,41 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
         update_field('experts', $experts, $post_id);
     }
 
-    //  Assign Keywords from JSON 
+    //  Assign Keywords from API 
     static $keyword_map = null;
     if ($keyword_map === null) {
-        $json_path = get_stylesheet_directory() . '/json/pub-keywords.json';
+
+        // $json_path = get_stylesheet_directory() . '/json/pub-keywords.json';
+
+        // if (file_exists($json_path)) {
+        //     $json_data = file_get_contents($json_path);
+        //     $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+        //     $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+        //     $pairs = json_decode($json_data, true);
+        //     if (is_array($pairs)) {
+        //         foreach ($pairs as $pair) {
+        //             $pub_id = $pair['PUBLICATION_ID'] ?? null;
+        //             $kw_id  = $pair['KEYWORD_ID'] ?? null;
+        //             if ($pub_id && $kw_id) {
+        //                 $keyword_map[$pub_id][] = $kw_id;
+        //             }
+        //         }
+        //     }
+        // }
+
+        $api_url = 'https://secure.caes.uga.edu/rest/publications/getKeywords';
+        $json_data = null; // Initialize to null
+
+        $response = wp_remote_get($api_url);
         $keyword_map = [];
-        if (file_exists($json_path)) {
-            $json_data = file_get_contents($json_path);
+
+        if (!is_wp_error($response)) {
+
+            $json_data = wp_remote_retrieve_body($response);
             $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
             $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
             $pairs = json_decode($json_data, true);
+
             if (is_array($pairs)) {
                 foreach ($pairs as $pair) {
                     $pub_id = $pair['PUBLICATION_ID'] ?? null;
@@ -248,6 +273,8 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
                 }
             }
         }
+
+
     }
 
     $pub_id = get_field('publication_id', $post_id);
