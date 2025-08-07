@@ -815,14 +815,9 @@ function publication_api_tool_execute_migration() {
     $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=false&bypassReturnLimit=true';
     
     // Same field mapping as dry run
-    // Field mappings
     $field_mapping = [
         'ID' => 'publication_id',
         'SERIES_ID' => 'series_id',
-        'TYPE_ID' => 'publication_type',
-        'DIVISION_ID' => 'division',
-        'LANGUAGE_ID' => 'language',
-        'STATE_ISSUE_ID' => 'state_issue',
         'CATEGORY_ID' => 'category_id', 
         'UPDATER_ID' => 'updater_id',
         'CAES_TRANSLATOR_ID' => 'translator',
@@ -836,7 +831,6 @@ function publication_api_tool_execute_migration() {
         'AUTOMATIC_SUNSET_DATE' => 'sunset_date',
         'VERSION' => 'version',
         'PUBLICATION_TEXT' => 'post_content',
-        'AUTHOR_TEXT' => 'author_text',
         'PRIMARY_IMAGE_PATH' => 'primary_image_path',
         'THUMBNAIL_IMAGE_PATH' => 'thumbnail_image_path',
         'IS_COMMERCIAL_PUBLICATION' => 'is_commercial',
