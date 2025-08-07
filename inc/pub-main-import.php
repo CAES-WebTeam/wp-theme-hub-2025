@@ -245,27 +245,6 @@ function publication_api_tool_render_page() {
                 });
             }
 
-            // Event listener for the "Fetch Publications" button
-            $('#fetch-publications-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#fetch-publications-log');
-                performAjaxCall('fetch_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Validate API');
-            });
-
-            // Event listener for the "Compare Publications" button
-            $('#compare-publications-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#compare-publications-log');
-                performAjaxCall('compare_publications_data', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Compare Publications');
-            });
-
-            // Event listener for the "Dry Run Migration" button
-            $('#dry-run-migration-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#dry-run-migration-log');
-                performAjaxCall('dry_run_migration', '<?php echo esc_js($nonce); ?>', $button, $logArea, 'Run Dry Run Migration');
-            });
-
             // Global variables to track running totals
             let runningTotals = {
                 created: 0,
