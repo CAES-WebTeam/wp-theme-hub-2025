@@ -11,17 +11,43 @@
 // ===================================
 
 /**
- * Custom rewrite rule for 'post' post type (referred to as 'news').
- * This ensures URLs like /news/slug-of-post/ are correctly routed.
+ * Custom rewrite rules for news (post type) including categories, tags, and single posts.
+ * Order matters - more specific rules should come first.
  */
-function custom_news_single_rewrite_rule() {
+function custom_news_rewrite_rules() {
+    // Category archives under /news/
+    add_rewrite_rule(
+        '^news/category/([^/]+)/?$',
+        'index.php?category_name=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^news/category/([^/]+)/page/([0-9]+)/?$',
+        'index.php?category_name=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+    
+    // Tag archives under /news/
+    add_rewrite_rule(
+        '^news/tag/([^/]+)/?$',
+        'index.php?tag=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^news/tag/([^/]+)/page/([0-9]+)/?$',
+        'index.php?tag=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+    
+    // Single news posts - now more specific to avoid conflicts
+    // This should come after category/tag rules
     add_rewrite_rule(
         '^news/([^/]+)/?$',
         'index.php?post_type=post&name=$matches[1]',
         'top'
     );
 }
-add_action('init', 'custom_news_single_rewrite_rule');
+add_action('init', 'custom_news_rewrite_rules');
 
 // Custom rewrite rules for the event series taxonomy
 function custom_events_rewrite_rules()
@@ -168,6 +194,19 @@ function custom_news_permalink($post_link, $post) {
     return $post_link;
 }
 add_filter('post_link', 'custom_news_permalink', 99, 2);
+
+/**
+ * Modify category and tag links to include '/news/' prefix for post categories/tags.
+ */
+function custom_news_category_tag_links($termlink, $term, $taxonomy) {
+    // Only modify category and post_tag taxonomies
+    if (in_array($taxonomy, ['category', 'post_tag'])) {
+        $prefix = ($taxonomy === 'category') ? 'news/category' : 'news/tag';
+        return home_url("/{$prefix}/{$term->slug}/");
+    }
+    return $termlink;
+}
+add_filter('term_link', 'custom_news_category_tag_links', 10, 3);
 
 /**
  * Modify the permalink structure for publication posts so that the URL includes the publication number.
