@@ -368,6 +368,7 @@
                 order: 2;
                 position: relative;
                 height: 100px;
+                max-width: 876px;
 
                 h2 {
                     font-size: var(--wp--preset--font-size--large);
@@ -387,6 +388,27 @@
         .caes-hub-carousel-controls-wrapper {
             justify-content: center;
             width: 100%;
+        }
+    }
+}
+
+// Add this new media query for screens wider than 1555px
+@media (min-width: 2300px) {
+    .wp-block-caes-hub-carousel-2 {
+        .caes-hub-carousel-slide {
+            &__image {
+                flex: 3;
+                max-width: none;
+            }
+            
+            &__content-wrapper {
+                flex: 0 0 876px;
+                max-width: 876px;
+            }
+            
+            &__content {
+                right: -3rem;
+            }
         }
     }
 }
