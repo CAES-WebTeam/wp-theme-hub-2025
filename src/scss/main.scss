@@ -132,6 +132,7 @@ figcaption a {
         margin: 0 auto !important;
         margin-top: var(--wp--style--block-gap) !important;
         margin-bottom: var(--wp--style--block-gap) !important;
+        float: none !important;
 
         img {
             width: 100% !important;
