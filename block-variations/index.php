@@ -146,13 +146,23 @@ function variations_query_filter($query, $block)
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
-            // Filter by author (expert) if on author archive
+            // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
+                
+                // Create an OR condition to check both expert and author fields
                 $meta_query[] = array(
-                    'key' => 'all_expert_ids', // *** This is the key you'll use ***
-                    'value' => 'i:' . $author_id . ';',
-                    'compare' => 'LIKE'
+                    'relation' => 'OR',
+                    array(
+                        'key' => 'all_expert_ids',
+                        'value' => 'i:' . $author_id . ';',
+                        'compare' => 'LIKE'
+                    ),
+                    array(
+                        'key' => 'all_author_ids',
+                        'value' => 'i:' . $author_id . ';',
+                        'compare' => 'LIKE'
+                    )
                 );
             }
         }
