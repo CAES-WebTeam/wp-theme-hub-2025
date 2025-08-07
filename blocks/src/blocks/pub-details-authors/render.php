@@ -78,12 +78,12 @@ if (!function_exists('process_people')) {
             foreach ($people as $item) {
                 // Get user ID from the ACF structure
                 $user_id = null;
-                
+
                 // First check for 'user' key (standard ACF format)
                 if (isset($item['user']) && !empty($item['user'])) {
                     $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
                 }
-                
+
                 // Fallback: check for numeric values in any field (ACF internal field keys)
                 if (empty($user_id) && is_array($item)) {
                     foreach ($item as $key => $value) {
@@ -98,7 +98,9 @@ if (!function_exists('process_people')) {
                     $first_name = get_the_author_meta('first_name', $user_id);
                     $last_name = get_the_author_meta('last_name', $user_id);
                     $profile_url = get_author_posts_url($user_id);
-                    $title = get_the_author_meta('title', $user_id);
+                    $public_title = get_field('public_friendly_title', 'user_' . $user_id);
+                    $regular_title = get_the_author_meta('title', $user_id);
+                    $title = !empty($public_title) ? $public_title : $regular_title;
 
                     if ($asSnippet) {
                         $names[] = trim("$first_name $last_name");
@@ -171,4 +173,3 @@ if ($data) {
 
     echo '</div>';
 }
-?>
