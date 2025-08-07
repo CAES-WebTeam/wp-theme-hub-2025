@@ -20,7 +20,7 @@ import {
     __experimentalToggleGroupControlOption as ToggleGroupControlOption,
     SelectControl
 } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef, useMemo } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 
 // Import editor CSS
@@ -48,6 +48,25 @@ const SPACING_LABELS = [
     'X-Large',
     '2X-Large',
 ];
+
+// Custom debounce hook - no external dependencies needed
+function useDebounceCallback(callback, delay) {
+    const timeoutRef = useRef(null);
+
+    return useMemo(() => {
+        return (...args) => {
+            // Clear the previous timeout
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+
+            // Set a new timeout
+            timeoutRef.current = setTimeout(() => {
+                callback(...args);
+            }, delay);
+        };
+    }, [callback, delay]);
+}
 
 export default function Edit({ attributes, setAttributes }) {
     const {
@@ -81,8 +100,12 @@ export default function Edit({ attributes, setAttributes }) {
     ];
 
     const [availablePosts, setAvailablePosts] = useState([]);
+    const [selectedPosts, setSelectedPosts] = useState([]); // Store selected posts separately
     const [isLoading, setIsLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
 
+    // Initial load of recent posts (your existing functionality)
     useEffect(() => {
         if (!selectedPostTypes.length) return;
 
@@ -112,15 +135,143 @@ export default function Edit({ attributes, setAttributes }) {
             });
     }, [selectedPostTypes.sort().join(',')]); // Watch for exact changes
 
-    const selectedPostLabels = postIds.reduce((labels, id) => {
-        const match = availablePosts.find((p) => p.id === id);
-        if (match) {
-            labels.push(match.label);
+    // Load selected posts data when postIds change
+    useEffect(() => {
+        if (!postIds.length) {
+            setSelectedPosts([]);
+            return;
         }
-        return labels;
-    }, []);
 
-    const postSuggestions = availablePosts.map((p) => p.label);
+        // Find selected posts that we don't already have data for
+        const missingIds = postIds.filter(id =>
+            !selectedPosts.find(post => post.id === id) &&
+            !availablePosts.find(post => post.id === id)
+        );
+
+        if (missingIds.length === 0) {
+            // We already have all the data we need
+            const currentSelectedPosts = postIds.map(id => {
+                return selectedPosts.find(post => post.id === id) ||
+                    availablePosts.find(post => post.id === id);
+            }).filter(Boolean);
+
+            setSelectedPosts(currentSelectedPosts);
+            return;
+        }
+
+        // Load data for missing posts
+        const loadMissingPosts = async () => {
+            const results = await Promise.all(
+                selectedPostTypes.map(async (type) => {
+                    const restBase = postTypeOptions.find((opt) => opt.value === type)?.restBase || type;
+                    const typeSpecificIds = missingIds; // You could filter by type if you stored postType with each ID
+
+                    if (typeSpecificIds.length === 0) return [];
+
+                    try {
+                        const posts = await apiFetch({
+                            path: `/wp/v2/${restBase}?include=${typeSpecificIds.join(',')}&_fields=id,title,slug`
+                        });
+                        return posts.map((post) => ({
+                            id: post.id,
+                            label: post.title.rendered || `(${type} #${post.id})`,
+                            postType: type,
+                        }));
+                    } catch (error) {
+                        return [];
+                    }
+                })
+            );
+
+            const newSelectedPosts = results.flat();
+
+            // Combine with existing selectedPosts and update
+            const allSelectedPosts = postIds.map(id => {
+                return selectedPosts.find(post => post.id === id) ||
+                    availablePosts.find(post => post.id === id) ||
+                    newSelectedPosts.find(post => post.id === id);
+            }).filter(Boolean);
+
+            setSelectedPosts(allSelectedPosts);
+        };
+
+        loadMissingPosts();
+    }, [postIds, selectedPostTypes]);
+
+    // Search functionality - simplified, no fallback reloading
+    const searchPosts = async (term) => {
+        if (!term || term.length < 3) {
+            // Don't do anything - just let them keep typing
+            return;
+        }
+
+        setIsSearching(true);
+
+        try {
+            const results = await Promise.all(
+                selectedPostTypes.map((type) => {
+                    const restBase = postTypeOptions.find((opt) => opt.value === type)?.restBase || type;
+                    return apiFetch({
+                        path: `/wp/v2/${restBase}?search=${encodeURIComponent(term)}&per_page=50&orderby=relevance&_fields=id,title,slug`
+                    })
+                        .then((posts) =>
+                            posts.map((post) => ({
+                                id: post.id,
+                                label: post.title.rendered || `(${type} #${post.id})`,
+                                postType: type,
+                            }))
+                        )
+                        .catch(() => []); // Return empty array on error
+                })
+            );
+
+            setAvailablePosts(results.flat());
+        } catch (error) {
+            console.error('Search error:', error);
+            setAvailablePosts([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Create debounced search function
+    const debouncedSearch = useDebounceCallback(searchPosts, 300);
+
+    // Clean up on unmount
+    useEffect(() => {
+        return () => {
+            if (debouncedSearch.cancel) {
+                debouncedSearch.cancel();
+            }
+        };
+    }, [debouncedSearch]);
+
+    // Handle search input changes
+    const handleSearchInputChange = (value) => {
+        setSearchTerm(value);
+        debouncedSearch(value);
+    };
+
+    // Combine selected posts with available posts for suggestions, avoiding duplicates
+    const allPosts = useMemo(() => {
+        const combined = [...selectedPosts];
+
+        availablePosts.forEach(post => {
+            if (!combined.find(p => p.id === post.id)) {
+                combined.push(post);
+            }
+        });
+
+        return combined;
+    }, [selectedPosts, availablePosts]);
+
+    // Get labels for selected post IDs
+    const selectedPostLabels = postIds.map(id => {
+        const post = allPosts.find(p => p.id === id);
+        return post ? post.label : `Post #${id}`;
+    });
+
+    const postSuggestions = allPosts.map((p) => p.label);
 
     const DEFAULT_TEMPLATE = [
         ['core/post-title', {}],
@@ -139,7 +290,6 @@ export default function Edit({ attributes, setAttributes }) {
     const combinedClassName = `${baseClass} ${spacingClass}`.trim();
 
     const blockProps = useBlockProps();
-
 
     return (
         <>
@@ -168,21 +318,24 @@ export default function Edit({ attributes, setAttributes }) {
 
                     {feedType === 'hand-picked' && selectedPostTypes.length > 0 && (
                         <>
-                            {isLoading && <Spinner />}
+                            {(isLoading || isSearching) && <Spinner />}
                             {!isLoading && (
                                 <FormTokenField
                                     label={__('Select Posts', 'hand-picked-post')}
                                     value={selectedPostLabels}
                                     suggestions={postSuggestions}
+                                    onInputChange={handleSearchInputChange}
                                     onChange={(selectedLabels) => {
                                         const selectedIds = selectedLabels
                                             .map((label) => {
-                                                const match = availablePosts.find((p) => p.label === label);
+                                                const match = allPosts.find((p) => p.label === label);
                                                 return match ? match.id : null;
                                             })
                                             .filter((id) => id !== null);
                                         setAttributes({ postIds: selectedIds });
                                     }}
+                                    placeholder={__('Type at least 3 characters to search all posts...', 'hand-picked-post')}
+                                    disabled={isLoading}
                                 />
                             )}
                         </>
@@ -228,7 +381,7 @@ export default function Edit({ attributes, setAttributes }) {
                                     { value: 'rem', label: 'rem' },
                                     { value: 'px', label: 'px' },
                                     { value: '%', label: '%' },
-                                ]} 
+                                ]}
                             />
                         </>
                     )}

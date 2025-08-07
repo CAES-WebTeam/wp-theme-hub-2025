@@ -144,7 +144,23 @@ function custom_news_permalink($post_link, $post) {
         return $post_link;
     }
 
-    if ('post' === $post->post_type) {
+    // Don't modify permalink for drafts, previews, or admin contexts
+    if ($post->post_type === 'post') {
+        // Skip if it's a draft or auto-draft
+        if (in_array($post->post_status, ['draft', 'auto-draft', 'pending'])) {
+            return $post_link;
+        }
+        
+        // Skip if we're in admin or this is a preview
+        if (is_admin() || isset($_GET['preview'])) {
+            return $post_link;
+        }
+        
+        // Skip if post_name is empty (common for drafts)
+        if (empty($post->post_name)) {
+            return $post_link;
+        }
+
         $new_link = home_url('news/' . $post->post_name . '/');
         return $new_link;
     }

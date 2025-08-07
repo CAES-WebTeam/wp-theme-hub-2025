@@ -41,6 +41,24 @@ const SPACING_CLASSES = ['',
 // None (no gap)
 '--wp--preset--spacing--20', '--wp--preset--spacing--30', '--wp--preset--spacing--40', '--wp--preset--spacing--50', '--wp--preset--spacing--60', '--wp--preset--spacing--70', '--wp--preset--spacing--80'];
 const SPACING_LABELS = ['None (no gap)', '2X-Small', 'X-Small', 'Small', 'Medium', 'Large', 'X-Large', '2X-Large'];
+
+// Custom debounce hook - no external dependencies needed
+function useDebounceCallback(callback, delay) {
+  const timeoutRef = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useRef)(null);
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useMemo)(() => {
+    return (...args) => {
+      // Clear the previous timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set a new timeout
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    };
+  }, [callback, delay]);
+}
 function Edit({
   attributes,
   setAttributes
@@ -85,7 +103,12 @@ function Edit({
     restBase: 'publications'
   }];
   const [availablePosts, setAvailablePosts] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)([]);
+  const [selectedPosts, setSelectedPosts] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)([]); // Store selected posts separately
   const [isLoading, setIsLoading] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+  const [searchTerm, setSearchTerm] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)('');
+  const [isSearching, setIsSearching] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+
+  // Initial load of recent posts (your existing functionality)
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
     if (!selectedPostTypes.length) return;
     setIsLoading(true);
@@ -107,14 +130,117 @@ function Edit({
     });
   }, [selectedPostTypes.sort().join(',')]); // Watch for exact changes
 
-  const selectedPostLabels = postIds.reduce((labels, id) => {
-    const match = availablePosts.find(p => p.id === id);
-    if (match) {
-      labels.push(match.label);
+  // Load selected posts data when postIds change
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (!postIds.length) {
+      setSelectedPosts([]);
+      return;
     }
-    return labels;
-  }, []);
-  const postSuggestions = availablePosts.map(p => p.label);
+
+    // Find selected posts that we don't already have data for
+    const missingIds = postIds.filter(id => !selectedPosts.find(post => post.id === id) && !availablePosts.find(post => post.id === id));
+    if (missingIds.length === 0) {
+      // We already have all the data we need
+      const currentSelectedPosts = postIds.map(id => {
+        return selectedPosts.find(post => post.id === id) || availablePosts.find(post => post.id === id);
+      }).filter(Boolean);
+      setSelectedPosts(currentSelectedPosts);
+      return;
+    }
+
+    // Load data for missing posts
+    const loadMissingPosts = async () => {
+      const results = await Promise.all(selectedPostTypes.map(async type => {
+        const restBase = postTypeOptions.find(opt => opt.value === type)?.restBase || type;
+        const typeSpecificIds = missingIds; // You could filter by type if you stored postType with each ID
+
+        if (typeSpecificIds.length === 0) return [];
+        try {
+          const posts = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default()({
+            path: `/wp/v2/${restBase}?include=${typeSpecificIds.join(',')}&_fields=id,title,slug`
+          });
+          return posts.map(post => ({
+            id: post.id,
+            label: post.title.rendered || `(${type} #${post.id})`,
+            postType: type
+          }));
+        } catch (error) {
+          return [];
+        }
+      }));
+      const newSelectedPosts = results.flat();
+
+      // Combine with existing selectedPosts and update
+      const allSelectedPosts = postIds.map(id => {
+        return selectedPosts.find(post => post.id === id) || availablePosts.find(post => post.id === id) || newSelectedPosts.find(post => post.id === id);
+      }).filter(Boolean);
+      setSelectedPosts(allSelectedPosts);
+    };
+    loadMissingPosts();
+  }, [postIds, selectedPostTypes]);
+
+  // Search functionality - simplified, no fallback reloading
+  const searchPosts = async term => {
+    if (!term || term.length < 3) {
+      // Don't do anything - just let them keep typing
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await Promise.all(selectedPostTypes.map(type => {
+        const restBase = postTypeOptions.find(opt => opt.value === type)?.restBase || type;
+        return _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default()({
+          path: `/wp/v2/${restBase}?search=${encodeURIComponent(term)}&per_page=50&orderby=relevance&_fields=id,title,slug`
+        }).then(posts => posts.map(post => ({
+          id: post.id,
+          label: post.title.rendered || `(${type} #${post.id})`,
+          postType: type
+        }))).catch(() => []); // Return empty array on error
+      }));
+      setAvailablePosts(results.flat());
+    } catch (error) {
+      console.error('Search error:', error);
+      setAvailablePosts([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Create debounced search function
+  const debouncedSearch = useDebounceCallback(searchPosts, 300);
+
+  // Clean up on unmount
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    return () => {
+      if (debouncedSearch.cancel) {
+        debouncedSearch.cancel();
+      }
+    };
+  }, [debouncedSearch]);
+
+  // Handle search input changes
+  const handleSearchInputChange = value => {
+    setSearchTerm(value);
+    debouncedSearch(value);
+  };
+
+  // Combine selected posts with available posts for suggestions, avoiding duplicates
+  const allPosts = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useMemo)(() => {
+    const combined = [...selectedPosts];
+    availablePosts.forEach(post => {
+      if (!combined.find(p => p.id === post.id)) {
+        combined.push(post);
+      }
+    });
+    return combined;
+  }, [selectedPosts, availablePosts]);
+
+  // Get labels for selected post IDs
+  const selectedPostLabels = postIds.map(id => {
+    const post = allPosts.find(p => p.id === id);
+    return post ? post.label : `Post #${id}`;
+  });
+  const postSuggestions = allPosts.map(p => p.label);
   const DEFAULT_TEMPLATE = [['core/post-title', {}], ['core/post-excerpt', {}]];
 
   // Generate class names based on attributes
@@ -152,19 +278,22 @@ function Edit({
             onChange: () => handlePostTypeToggle(value)
           }, value))
         }), feedType === 'hand-picked' && selectedPostTypes.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
-          children: [isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Spinner, {}), !isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FormTokenField, {
+          children: [(isLoading || isSearching) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Spinner, {}), !isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FormTokenField, {
             label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Posts', 'hand-picked-post'),
             value: selectedPostLabels,
             suggestions: postSuggestions,
+            onInputChange: handleSearchInputChange,
             onChange: selectedLabels => {
               const selectedIds = selectedLabels.map(label => {
-                const match = availablePosts.find(p => p.label === label);
+                const match = allPosts.find(p => p.label === label);
                 return match ? match.id : null;
               }).filter(id => id !== null);
               setAttributes({
                 postIds: selectedIds
               });
-            }
+            },
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Type at least 3 characters to search all posts...', 'hand-picked-post'),
+            disabled: isLoading
           })]
         }), feedType === 'related-topics' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number of Items', 'hand-picked-post'),
