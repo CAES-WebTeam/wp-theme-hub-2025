@@ -35,7 +35,6 @@ require get_template_directory() . '/inc/release-date-migration.php';
 require get_template_directory() . '/inc/release-date-clear.php';
 require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/link-users.php';
-require get_template_directory() . '/inc/bulk-topic-moverr.php';
 require get_template_directory() . '/inc/pub-history-update.php';
 require get_template_directory() . '/inc/story-association-meta-tools.php';
 require get_template_directory() . '/inc/pub-main-import.php';

@@ -909,7 +909,7 @@ add_action('acf/save_post', 'update_flat_author_ids_meta', 20);
 function update_flat_author_ids_meta($post_id)
 {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-    if (get_post_type($post_id) !== 'publications') return;
+    if (!in_array(get_post_type($post_id), ['publications', 'post'])) return;
 
     // Get ACF repeater field called 'authors'
     $authors = get_field('authors', $post_id);
