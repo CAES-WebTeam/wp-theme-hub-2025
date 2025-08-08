@@ -477,6 +477,7 @@ function sync_personnel_users2()
                 'user_email' => $email,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
+                'display_name' => $display_name
             ]);
 
             // Update ACF fields for the existing user.
@@ -510,6 +511,7 @@ function sync_personnel_users2()
                     'user_email' => $email,
                     'first_name' => $first_name,
                     'last_name' => $last_name,
+                    'display_name' => $display_name,
                     'user_pass' => wp_generate_password(),
                     'role' => 'personnel_user'
                 ]);
