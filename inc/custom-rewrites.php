@@ -345,3 +345,28 @@ function redirect_old_department_urls() {
     }
 }
 add_action('template_redirect', 'redirect_old_department_urls');
+
+// Redirect /blog/features/ URLs to /features/
+function redirect_blog_features_to_features() {
+    // Only run on frontend
+    if (is_admin()) return;
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    // Check if URL starts with '/blog/features/'
+    if (strpos($requested_path, '/blog/features/') === 0) {
+        // Extract everything after '/blog/features/'
+        $remaining_path = substr($requested_path, strlen('/blog/features'));
+        
+        // Build new URL with /features/ prefix
+        $new_url = '/features' . $remaining_path;
+        
+        // Ensure trailing slash consistency
+        if (substr($_SERVER['REQUEST_URI'], -1) === '/' && substr($new_url, -1) !== '/') {
+            $new_url .= '/';
+        }
+        
+        // Perform 301 redirect
+        wp_redirect(home_url($new_url), 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_blog_features_to_features');
