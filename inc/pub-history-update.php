@@ -459,20 +459,56 @@ add_action('wp_ajax_pub_history_process_batch', function() {
     // Load and parse JSON (cache it in a static variable)
     static $grouped_history = null;
     if ($grouped_history === null) {
-        $json_path = get_template_directory() . '/json/pubs-history.json';
-        if (!file_exists($json_path)) {
-            wp_send_json_error('JSON file not found');
+
+        // Static JSON file deprecated -- now uses API
+
+        // $json_path = get_template_directory() . '/json/pubs-history.json';
+        // if (!file_exists($json_path)) {
+        //     wp_send_json_error('JSON file not found');
+        // }
+        
+        // $json_data = file_get_contents($json_path);
+        // $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Strip BOM
+        // $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+        // $entries = json_decode($json_data, true);
+        
+        // if (!is_array($entries)) {
+        //     wp_send_json_error('Invalid JSON structure');
+        // }
+        
+        //New method: Hit API
+        $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsHistory';
+        $decoded_API_response = null; // Initialize to null
+
+        try {
+            // Fetch data from the API.
+            $response = wp_remote_get($api_url);
+
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
+
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $raw_JSON); // Strip BOM
+            $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+            $decoded_API_response = json_decode($json_data, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
+
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            $entries = $decoded_API_response;
+
+        } catch (Exception $e) {
+            error_log('Publications History API Error: ' . $e->getMessage());
+            wp_send_json_error('API Error for Publications History: ' . $e->getMessage());
         }
-        
-        $json_data = file_get_contents($json_path);
-        $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Strip BOM
-        $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-        $entries = json_decode($json_data, true);
-        
-        if (!is_array($entries)) {
-            wp_send_json_error('Invalid JSON structure');
-        }
-        
+        // End API call 
+
         // Group entries by publication ID
         $grouped_history = array();
         foreach ($entries as $entry) {
