@@ -575,6 +575,10 @@ function process_content_linking_batch_callback() {
             foreach ($batch_records as $pair) {
                 $publication_id = intval($pair['PUBLICATION_ID']);
                 $college_id = intval($pair['COLLEGE_ID']);
+                
+                // Get boolean values from API
+                $is_lead_author = isset($pair['IS_LEAD_AUTHOR']) ? (bool)$pair['IS_LEAD_AUTHOR'] : false;
+                $is_co_author = isset($pair['IS_CO_AUTHOR']) ? (bool)$pair['IS_CO_AUTHOR'] : false;
 
                 // Find publication with matching ACF 'publication_id' - OPTIMIZED QUERY
                 $posts = get_posts([
@@ -618,8 +622,15 @@ function process_content_linking_batch_callback() {
                 $user_id = $users[0];
                 $user_info = get_userdata($user_id);
                 $display_name = $user_info ? $user_info->display_name : "Author ID {$user_id}";
+                
+                // Create role description for logging
+                $roles = [];
+                if ($is_lead_author) $roles[] = 'Lead Author';
+                if ($is_co_author) $roles[] = 'Co-Author';
+                $role_text = !empty($roles) ? ' (' . implode(', ', $roles) . ')' : '';
+                
                 $stats['success_details'][] = [
-                    'message' => "Found author: \"{$display_name}\" (College ID: {$college_id})",
+                    'message' => "Found author: \"{$display_name}\" (College ID: {$college_id}){$role_text}",
                     'type' => 'found'
                 ];
 
@@ -627,8 +638,11 @@ function process_content_linking_batch_callback() {
                 $existing_linked_users = get_field('authors', $post_id);
                 if (!is_array($existing_linked_users)) $existing_linked_users = [];
 
-                $already_added = false;
-                foreach ($existing_linked_users as $row) {
+                $user_found_index = -1;
+                $needs_update = false;
+                
+                // Check if user already exists and if boolean fields need updating
+                foreach ($existing_linked_users as $index => $row) {
                     $existing_user_in_repeater = $row['user'];
 
                     // Normalize to user ID (handles ACF returning object or array for user field)
@@ -639,14 +653,26 @@ function process_content_linking_batch_callback() {
                     }
 
                     if (intval($existing_user_in_repeater) === intval($user_id)) {
-                        $already_added = true;
+                        $user_found_index = $index;
+                        
+                        // Check if boolean fields need updating
+                        $current_lead = isset($row['lead_author']) ? (bool)$row['lead_author'] : false;
+                        $current_co = isset($row['co_author']) ? (bool)$row['co_author'] : false;
+                        
+                        if ($current_lead !== $is_lead_author || $current_co !== $is_co_author) {
+                            $needs_update = true;
+                        }
                         break;
                     }
                 }
 
-                // Add user if not already in the repeater
-                if (!$already_added) {
-                    $existing_linked_users[] = ['user' => $user_id];
+                if ($user_found_index === -1) {
+                    // Add new user with boolean fields
+                    $existing_linked_users[] = [
+                        'user' => $user_id,
+                        'lead_author' => $is_lead_author,
+                        'co_author' => $is_co_author
+                    ];
                     update_field('authors', $existing_linked_users, $post_id);
                     do_action('acf/save_post', $post_id);
                     clean_post_cache($post_id);
@@ -654,13 +680,27 @@ function process_content_linking_batch_callback() {
 
                     $stats['linked']++;
                     $stats['success_details'][] = [
-                        'message' => "✓ LINKED author: \"{$display_name}\" → \"{$post_title}\"",
+                        'message' => "✓ LINKED author: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
+                        'type' => 'link'
+                    ];
+                } elseif ($needs_update) {
+                    // Update existing user's boolean fields
+                    $existing_linked_users[$user_found_index]['lead_author'] = $is_lead_author;
+                    $existing_linked_users[$user_found_index]['co_author'] = $is_co_author;
+                    update_field('authors', $existing_linked_users, $post_id);
+                    do_action('acf/save_post', $post_id);
+                    clean_post_cache($post_id);
+                    wp_cache_delete( $post_id, 'post_meta' );
+
+                    $stats['linked']++; // Count updates as links
+                    $stats['success_details'][] = [
+                        'message' => "✓ UPDATED author roles: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
                         'type' => 'link'
                     ];
                 } else {
                     $stats['already_linked']++;
                     $stats['success_details'][] = [
-                        'message' => "Already linked: \"{$display_name}\" → \"{$post_title}\"",
+                        'message' => "Already linked (no changes): \"{$display_name}\" → \"{$post_title}\"{$role_text}",
                         'type' => 'info'
                     ];
                 }
