@@ -1,11 +1,11 @@
 <?php
-/*** Admin Page for Writer/Expert Linking and Clearing ***/
+/*** Admin Page for Writer/Expert/Publication Author Linking and Clearing ***/
 
 // Add admin menu
 add_action('admin_menu', function() {
     add_management_page(
-        'Link Writers and Experts to Stories', // Updated page title for clarity
-        'Link Writers and Experts to Stories',           // Updated menu title
+        'Link Writers, Experts, and Publication Authors', // Updated page title
+        'Link Writers, Experts, and Publication Authors',           // Updated menu title
         'manage_options',
         'link-content-admin',             // Generic slug
         'render_content_linking_admin_page' // Generic render function
@@ -16,19 +16,22 @@ add_action('admin_menu', function() {
 function render_content_linking_admin_page() {
     ?>
     <div class="wrap">
-        <h1>Link Writers and Experts to Stories</h1>
-        <p>This tool allows you to sync news stories with writers or experts based on JSON data files, or clear all existing links for a selected type. It uses batch processing to handle large datasets.</p>
+        <h1>Link Writers, Experts, and Publication Authors</h1>
+        <p>This tool allows you to sync content with users based on JSON data files or API data, or clear all existing links for a selected type. It uses batch processing to handle large datasets.</p>
 
         <div id="linking-type-selection" style="background: #fff; border: 1px solid #ddd; padding: 15px; margin: 20px 0; border-radius: 8px;">
             <h3>Select Content Type</h3>
             <label style="margin-right: 20px;">
-                <input type="radio" name="linking_type" value="writers" checked> Writers
+                <input type="radio" name="linking_type" value="writers" checked> Writers (News Stories)
+            </label>
+            <label style="margin-right: 20px;">
+                <input type="radio" name="linking_type" value="experts"> Experts (News Stories)
             </label>
             <label>
-                <input type="radio" name="linking_type" value="experts"> Experts
+                <input type="radio" name="linking_type" value="publications"> Publication Authors
             </label>
             <p style="color: #666; font-style: italic; margin-top: 10px;">
-                Choose whether to operate on story writers or story experts/sources.
+                Choose whether to operate on story writers, story experts/sources, or publication authors.
             </p>
         </div>
         
@@ -87,7 +90,7 @@ function render_content_linking_admin_page() {
         let processedRecords = 0;
         let cumulativeStats = {
             linked: 0,
-            cleared: 0, // New stat for clearing
+            cleared: 0,
             stories_found: 0,
             users_found: 0,
             already_linked: 0,
@@ -99,12 +102,20 @@ function render_content_linking_admin_page() {
         // Update linkingType and button label when radio button changes
         $('input[name="linking_type"]').change(function() {
             linkingType = $(this).val();
-            $('#clear-type-label').text(linkingType === 'writers' ? 'Writers' : 'Experts');
+            updateClearButtonLabel();
             resetUI(); // Reset UI and stats when type changes
         });
 
+        function updateClearButtonLabel() {
+            let label = '';
+            if (linkingType === 'writers') label = 'Writers';
+            else if (linkingType === 'experts') label = 'Experts';
+            else if (linkingType === 'publications') label = 'Publication Authors';
+            $('#clear-type-label').text(label);
+        }
+
         // Initialize clear button label
-        $('#clear-type-label').text(linkingType === 'writers' ? 'Writers' : 'Experts');
+        updateClearButtonLabel();
 
         $('#start-linking').click(function() {
             if (isProcessing) return;
@@ -125,8 +136,12 @@ function render_content_linking_admin_page() {
         $('#clear-all').click(function() {
             if (isProcessing) return;
             currentOperation = 'clearing';
-            const typeLabel = linkingType === 'writers' ? 'Writers' : 'Experts';
-            $('#confirm-message').html(`Are you sure you want to <strong>clear ALL linked ${typeLabel}</strong> from ALL stories? This action cannot be undone.`);
+            let typeLabel = '';
+            if (linkingType === 'writers') typeLabel = 'Writers';
+            else if (linkingType === 'experts') typeLabel = 'Experts';
+            else if (linkingType === 'publications') typeLabel = 'Publication Authors';
+            
+            $('#confirm-message').html(`Are you sure you want to <strong>clear ALL linked ${typeLabel}</strong> from ALL content? This action cannot be undone.`);
             $('#confirm-modal').fadeIn();
 
             // Store the function to call if confirmed
@@ -255,7 +270,7 @@ function render_content_linking_admin_page() {
                             cumulativeStats.already_linked += data.already_linked;
                         } else { // clearing
                             cumulativeStats.cleared += data.cleared;
-                            cumulativeStats.stories_found += data.processed_count; // For clearing, processed_count is stories found
+                            cumulativeStats.stories_found += data.processed_count; // For clearing, processed_count is content found
                         }
                         cumulativeStats.errors = cumulativeStats.errors.concat(data.errors);
                         
@@ -381,20 +396,24 @@ function render_content_linking_admin_page() {
 
         function showFinalResults() {
             $('#results-container').show();
-            const typeLabel = linkingType === 'writers' ? 'Writers' : 'Experts';
+            let typeLabel = '';
+            if (linkingType === 'writers') typeLabel = 'Writers';
+            else if (linkingType === 'experts') typeLabel = 'Experts';
+            else if (linkingType === 'publications') typeLabel = 'Publication Authors';
+            
             const operationLabel = currentOperation === 'linking' ? 'Linking' : 'Clearing';
             let html = '<div style="padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">';
             html += `<h4 style="margin-top: 0; color: #155724;">✅ ${operationLabel} Process Completed for ${typeLabel}</h4>`;
             html += '<p><strong>Total records processed:</strong> ' + processedRecords + ' of ' + totalRecords + '</p>';
             
             if (currentOperation === 'linking') {
-                html += '<p><strong>' + typeLabel + ' linked to posts:</strong> ' + cumulativeStats.linked + '</p>';
-                html += '<p><strong>Stories found:</strong> ' + cumulativeStats.stories_found + '</p>';
+                html += '<p><strong>' + typeLabel + ' linked to content:</strong> ' + cumulativeStats.linked + '</p>';
+                html += '<p><strong>Content found:</strong> ' + cumulativeStats.stories_found + '</p>';
                 html += '<p><strong>' + typeLabel + ' found:</strong> ' + cumulativeStats.users_found + '</p>';
-                html += '<p><strong>Already linked (skipped):</b> ' + cumulativeStats.already_linked + '</p>';
+                html += '<p><strong>Already linked (skipped):</strong> ' + cumulativeStats.already_linked + '</p>';
             } else { // clearing
-                html += '<p><strong>Total posts cleared:</strong> ' + cumulativeStats.cleared + '</p>';
-                html += '<p><strong>Posts processed:</strong> ' + cumulativeStats.stories_found + '</p>'; // Renamed for clarity in clearing
+                html += '<p><strong>Total content cleared:</strong> ' + cumulativeStats.cleared + '</p>';
+                html += '<p><strong>Content processed:</strong> ' + cumulativeStats.stories_found + '</p>'; // Renamed for clarity in clearing
             }
             
             if (cumulativeStats.errors && cumulativeStats.errors.length > 0) {
@@ -451,33 +470,62 @@ function initialize_content_linking_callback() {
 
     $linking_type = isset($_POST['linking_type']) ? sanitize_text_field($_POST['linking_type']) : 'writers';
 
-    $json_file_path = '';
-    if ($linking_type === 'writers') {
-        $json_file_path = get_template_directory() . '/json/news-writers-association.json';
-    } elseif ($linking_type === 'experts') {
-        $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+    if ($linking_type === 'publications') {
+        // Handle API data for publications
+        try {
+            $api_url = 'https://secure.caes.uga.edu/rest/publications/getAuthorAssociations';
+            $response = wp_remote_get($api_url, ['timeout' => 30]);
+            
+            if (is_wp_error($response)) {
+                wp_send_json_error(['message' => 'API request failed: ' . $response->get_error_message()]);
+            }
+            
+            $body = wp_remote_retrieve_body($response);
+            $records = json_decode($body, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                wp_send_json_error(['message' => 'API JSON decode error: ' . json_last_error_msg()]);
+            }
+            
+            if (!is_array($records)) {
+                wp_send_json_error(['message' => 'API returned invalid data format']);
+            }
+            
+            wp_send_json_success(['total_records' => count($records)]);
+            
+        } catch (Exception $e) {
+            wp_send_json_error(['message' => 'API Exception: ' . $e->getMessage()]);
+        }
     } else {
-        wp_send_json_error(['message' => 'Invalid linking type specified.']);
-    }
-
-    if (!file_exists($json_file_path)) {
-        wp_send_json_error(['message' => 'Data file not found for ' . $linking_type . ': ' . $json_file_path]);
-    }
-
-    try {
-        $json_data = file_get_contents($json_file_path);
-        $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-        $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-        $records = json_decode($json_data, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            wp_send_json_error(['message' => 'JSON decode error: ' . json_last_error_msg()]);
+        // Handle JSON file data for writers/experts
+        $json_file_path = '';
+        if ($linking_type === 'writers') {
+            $json_file_path = get_template_directory() . '/json/news-writers-association.json';
+        } elseif ($linking_type === 'experts') {
+            $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+        } else {
+            wp_send_json_error(['message' => 'Invalid linking type specified.']);
         }
 
-        wp_send_json_success(['total_records' => count($records)]);
+        if (!file_exists($json_file_path)) {
+            wp_send_json_error(['message' => 'Data file not found for ' . $linking_type . ': ' . $json_file_path]);
+        }
 
-    } catch (Exception $e) {
-        wp_send_json_error(['message' => 'Exception: ' . $e->getMessage()]);
+        try {
+            $json_data = file_get_contents($json_file_path);
+            $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+            $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+            $records = json_decode($json_data, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                wp_send_json_error(['message' => 'JSON decode error: ' . json_last_error_msg()]);
+            }
+
+            wp_send_json_success(['total_records' => count($records)]);
+
+        } catch (Exception $e) {
+            wp_send_json_error(['message' => 'Exception: ' . $e->getMessage()]);
+        }
     }
 }
 
@@ -494,155 +542,326 @@ function process_content_linking_batch_callback() {
     $batch_size = intval($_POST['batch_size']);
     $linking_type = isset($_POST['linking_type']) ? sanitize_text_field($_POST['linking_type']) : 'writers';
 
-    $json_file_path = '';
-    $user_meta_key = '';
-    $story_user_field = ''; // The ACF repeater field name on the post
-    $user_type_label = '';
-    $json_id_key = '';
+    if ($linking_type === 'publications') {
+        // Handle publications API data
+        try {
+            $api_url = 'https://secure.caes.uga.edu/rest/publications/getAuthorAssociations';
+            $response = wp_remote_get($api_url, ['timeout' => 30]);
+            
+            if (is_wp_error($response)) {
+                wp_send_json_error(['message' => 'API request failed: ' . $response->get_error_message()]);
+            }
+            
+            $body = wp_remote_retrieve_body($response);
+            $records = json_decode($body, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                wp_send_json_error(['message' => 'API JSON decode error: ' . json_last_error_msg()]);
+            }
+            
+            // Get the batch slice
+            $batch_records = array_slice($records, $offset, $batch_size);
+            
+            $stats = [
+                'linked' => 0,
+                'processed_count' => count($batch_records),
+                'stories_found' => 0,
+                'users_found' => 0,
+                'already_linked' => 0,
+                'errors' => [],
+                'success_details' => []
+            ];
 
-    if ($linking_type === 'writers') {
-        $json_file_path = get_template_directory() . '/json/news-writers-association.json';
-        $user_meta_key = 'writer_id';
-        $story_user_field = 'authors';
-        $user_type_label = 'writer';
-        $json_id_key = 'WRITER_ID';
-    } elseif ($linking_type === 'experts') {
-        $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
-        $user_meta_key = 'source_expert_id';
-        $story_user_field = 'experts';
-        $user_type_label = 'expert';
-        $json_id_key = 'SOURCE_EXPERT_ID';
+            foreach ($batch_records as $pair) {
+                $publication_id = intval($pair['PUBLICATION_ID']);
+                $college_id = intval($pair['COLLEGE_ID']);
+                
+                // Get boolean values from API
+                $is_lead_author = isset($pair['IS_LEAD_AUTHOR']) ? (bool)$pair['IS_LEAD_AUTHOR'] : false;
+                $is_co_author = isset($pair['IS_CO_AUTHOR']) ? (bool)$pair['IS_CO_AUTHOR'] : false;
+
+                // Find publication with matching ACF 'publication_id' - OPTIMIZED QUERY
+                $posts = get_posts([
+                    'post_type' => 'publications',
+                    'meta_key' => 'publication_id',
+                    'meta_value' => $publication_id,
+                    'numberposts' => 1,
+                    'fields' => 'ids',
+                    'no_found_rows' => true,
+                    'update_post_term_cache' => false,
+                    'update_post_meta_cache' => false,
+                ]);
+
+                if (empty($posts)) {
+                    continue;
+                }
+                
+                $stats['stories_found']++;
+                $post_id = $posts[0];
+                $post_title = get_the_title($post_id);
+                $stats['success_details'][] = [
+                    'message' => "Found publication: \"{$post_title}\" (Publication ID: {$publication_id})",
+                    'type' => 'found'
+                ];
+
+                // Find user with matching ACF 'college_id' - OPTIMIZED QUERY
+                $users = get_users([
+                    'meta_key' => 'college_id',
+                    'meta_value' => $college_id,
+                    'number' => 1,
+                    'fields' => 'ID',
+                    'count_total' => false,
+                ]);
+
+                if (empty($users)) {
+                    $stats['errors'][] = "Author not found for College ID: {$college_id} (Linked to Publication ID: {$publication_id})";
+                    continue;
+                }
+                
+                $stats['users_found']++;
+                $user_id = $users[0];
+                $user_info = get_userdata($user_id);
+                $display_name = $user_info ? $user_info->display_name : "Author ID {$user_id}";
+                
+                // Create role description for logging
+                $roles = [];
+                if ($is_lead_author) $roles[] = 'Lead Author';
+                if ($is_co_author) $roles[] = 'Co-Author';
+                $role_text = !empty($roles) ? ' (' . implode(', ', $roles) . ')' : '';
+                
+                $stats['success_details'][] = [
+                    'message' => "Found author: \"{$display_name}\" (College ID: {$college_id}){$role_text}",
+                    'type' => 'found'
+                ];
+
+                // Load existing linked users (authors)
+                $existing_linked_users = get_field('authors', $post_id);
+                if (!is_array($existing_linked_users)) $existing_linked_users = [];
+
+                $user_found_index = -1;
+                $needs_update = false;
+                
+                // Check if user already exists and if boolean fields need updating
+                foreach ($existing_linked_users as $index => $row) {
+                    $existing_user_in_repeater = $row['user'];
+
+                    // Normalize to user ID (handles ACF returning object or array for user field)
+                    if (is_object($existing_user_in_repeater) && isset($existing_user_in_repeater->ID)) {
+                        $existing_user_in_repeater = $existing_user_in_repeater->ID;
+                    } elseif (is_array($existing_user_in_repeater) && isset($existing_user_in_repeater['ID'])) {
+                        $existing_user_in_repeater = $existing_user_in_repeater['ID'];
+                    }
+
+                    if (intval($existing_user_in_repeater) === intval($user_id)) {
+                        $user_found_index = $index;
+                        
+                        // Check if boolean fields need updating
+                        $current_lead = isset($row['lead_author']) ? (bool)$row['lead_author'] : false;
+                        $current_co = isset($row['co_author']) ? (bool)$row['co_author'] : false;
+                        
+                        if ($current_lead !== $is_lead_author || $current_co !== $is_co_author) {
+                            $needs_update = true;
+                        }
+                        break;
+                    }
+                }
+
+                if ($user_found_index === -1) {
+                    // Add new user with boolean fields
+                    $existing_linked_users[] = [
+                        'user' => $user_id,
+                        'lead_author' => $is_lead_author,
+                        'co_author' => $is_co_author
+                    ];
+                    update_field('authors', $existing_linked_users, $post_id);
+                    do_action('acf/save_post', $post_id);
+                    clean_post_cache($post_id);
+                    wp_cache_delete( $post_id, 'post_meta' );
+
+                    $stats['linked']++;
+                    $stats['success_details'][] = [
+                        'message' => "✓ LINKED author: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
+                        'type' => 'link'
+                    ];
+                } elseif ($needs_update) {
+                    // Update existing user's boolean fields
+                    $existing_linked_users[$user_found_index]['lead_author'] = $is_lead_author;
+                    $existing_linked_users[$user_found_index]['co_author'] = $is_co_author;
+                    update_field('authors', $existing_linked_users, $post_id);
+                    do_action('acf/save_post', $post_id);
+                    clean_post_cache($post_id);
+                    wp_cache_delete( $post_id, 'post_meta' );
+
+                    $stats['linked']++; // Count updates as links
+                    $stats['success_details'][] = [
+                        'message' => "✓ UPDATED author roles: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
+                        'type' => 'link'
+                    ];
+                } else {
+                    $stats['already_linked']++;
+                    $stats['success_details'][] = [
+                        'message' => "Already linked (no changes): \"{$display_name}\" → \"{$post_title}\"{$role_text}",
+                        'type' => 'info'
+                    ];
+                }
+            }
+
+            wp_send_json_success($stats);
+
+        } catch (Exception $e) {
+            wp_send_json_error(['message' => 'Exception: ' . $e->getMessage()]);
+        }
     } else {
-        wp_send_json_error(['message' => 'Invalid linking type specified.']);
-    }
+        // Handle JSON file data for writers/experts (existing functionality)
+        $json_file_path = '';
+        $user_meta_key = '';
+        $story_user_field = '';
+        $user_type_label = '';
+        $json_id_key = '';
 
-    if (!file_exists($json_file_path)) {
-        wp_send_json_error(['message' => 'Data file not found for ' . $linking_type]);
-    }
-
-    try {
-        // Read and parse JSON
-        $json_data = file_get_contents($json_file_path);
-        $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-        $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-        $records = json_decode($json_data, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            wp_send_json_error(['message' => 'JSON decode error: ' . json_last_error_msg()]);
+        if ($linking_type === 'writers') {
+            $json_file_path = get_template_directory() . '/json/news-writers-association.json';
+            $user_meta_key = 'writer_id';
+            $story_user_field = 'authors';
+            $user_type_label = 'writer';
+            $json_id_key = 'WRITER_ID';
+        } elseif ($linking_type === 'experts') {
+            $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+            $user_meta_key = 'source_expert_id';
+            $story_user_field = 'experts';
+            $user_type_label = 'expert';
+            $json_id_key = 'SOURCE_EXPERT_ID';
+        } else {
+            wp_send_json_error(['message' => 'Invalid linking type specified.']);
         }
 
-        // Get the batch slice
-        $batch_records = array_slice($records, $offset, $batch_size);
-        
-        $stats = [
-            'linked' => 0,
-            'processed_count' => count($batch_records),
-            'stories_found' => 0,
-            'users_found' => 0, // Generic for writers/experts
-            'already_linked' => 0,
-            'errors' => [],
-            'success_details' => []
-        ];
-
-        foreach ($batch_records as $pair) {
-            $story_id = intval($pair['STORY_ID']);
-            $user_content_id = intval($pair[$json_id_key]); // Use dynamic key
-
-            // Find post with matching ACF 'id' - OPTIMIZED QUERY
-            $posts = get_posts([
-                'post_type' => 'post',
-                'meta_key' => 'id',
-                'meta_value' => $story_id,
-                'numberposts' => 1,
-                'fields' => 'ids',
-                'no_found_rows' => true, // Skip counting
-                'update_post_term_cache' => false, // Skip term cache
-                'update_post_meta_cache' => false, // Skip meta cache for other fields
-            ]);
-
-            if (empty($posts)) {
-                // $stats['errors'][] = "Story not found for ID: {$story_id}"; // Too noisy for console, better to omit if success_details are detailed
-                continue;
-            }
-            
-            $stats['stories_found']++;
-            $post_id = $posts[0];
-            $post_title = get_the_title($post_id);
-            $stats['success_details'][] = [
-                'message' => "Found story: \"{$post_title}\" (Story ID: {$story_id})",
-                'type' => 'found'
-            ];
-
-            // Find user with matching ACF 'writer_id' or 'source_expert_id' - OPTIMIZED QUERY
-            $users = get_users([
-                'meta_key' => $user_meta_key,
-                'meta_value' => $user_content_id,
-                'number' => 1,
-                'fields' => 'ID',
-                'count_total' => false, // Skip counting
-            ]);
-
-            if (empty($users)) {
-                $stats['errors'][] = ucfirst($user_type_label) . " not found for ID: {$user_content_id} (Linked to Story ID: {$story_id})";
-                continue;
-            }
-            
-            $stats['users_found']++;
-            $user_id = $users[0];
-            $user_info = get_userdata($user_id);
-            $display_name = $user_info ? $user_info->display_name : ucfirst($user_type_label) . " ID {$user_id}";
-            $stats['success_details'][] = [
-                'message' => "Found {$user_type_label}: \"{$display_name}\" ({$user_type_label} ID: {$user_content_id})",
-                'type' => 'found'
-            ];
-
-            // Load existing linked users (authors or experts)
-            $existing_linked_users = get_field($story_user_field, $post_id);
-            if (!is_array($existing_linked_users)) $existing_linked_users = [];
-
-            $already_added = false;
-            foreach ($existing_linked_users as $row) {
-                $existing_user_in_repeater = $row['user'];
-
-                // Normalize to user ID (handles ACF returning object or array for user field)
-                if (is_object($existing_user_in_repeater) && isset($existing_user_in_repeater->ID)) {
-                    $existing_user_in_repeater = $existing_user_in_repeater->ID;
-                } elseif (is_array($existing_user_in_repeater) && isset($existing_user_in_repeater['ID'])) {
-                    $existing_user_in_repeater = $existing_user_in_repeater['ID'];
-                }
-
-                if (intval($existing_user_in_repeater) === intval($user_id)) {
-                    $already_added = true;
-                    break;
-                }
-            }
-
-            // Add user if not already in the repeater
-            if (!$already_added) {
-                $existing_linked_users[] = ['user' => $user_id];
-                update_field($story_user_field, $existing_linked_users, $post_id);
-                do_action('acf/save_post', $post_id);
-                clean_post_cache($post_id);
-                wp_cache_delete( $post_id, 'post_meta' );
-
-                $stats['linked']++;
-                $stats['success_details'][] = [
-                    'message' => "✓ LINKED {$user_type_label}: \"{$display_name}\" → \"{$post_title}\"",
-                    'type' => 'link'
-                ];
-            } else {
-                $stats['already_linked']++;
-                $stats['success_details'][] = [
-                    'message' => "Already linked: \"{$display_name}\" → \"{$post_title}\"",
-                    'type' => 'info'
-                ];
-            }
+        if (!file_exists($json_file_path)) {
+            wp_send_json_error(['message' => 'Data file not found for ' . $linking_type]);
         }
 
-        wp_send_json_success($stats);
+        try {
+            // Read and parse JSON
+            $json_data = file_get_contents($json_file_path);
+            $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
+            $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
+            $records = json_decode($json_data, true);
 
-    } catch (Exception $e) {
-        wp_send_json_error(['message' => 'Exception: ' . $e->getMessage()]);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                wp_send_json_error(['message' => 'JSON decode error: ' . json_last_error_msg()]);
+            }
+
+            // Get the batch slice
+            $batch_records = array_slice($records, $offset, $batch_size);
+            
+            $stats = [
+                'linked' => 0,
+                'processed_count' => count($batch_records),
+                'stories_found' => 0,
+                'users_found' => 0,
+                'already_linked' => 0,
+                'errors' => [],
+                'success_details' => []
+            ];
+
+            foreach ($batch_records as $pair) {
+                $story_id = intval($pair['STORY_ID']);
+                $user_content_id = intval($pair[$json_id_key]);
+
+                // Find post with matching ACF 'id' - OPTIMIZED QUERY
+                $posts = get_posts([
+                    'post_type' => 'post',
+                    'meta_key' => 'id',
+                    'meta_value' => $story_id,
+                    'numberposts' => 1,
+                    'fields' => 'ids',
+                    'no_found_rows' => true,
+                    'update_post_term_cache' => false,
+                    'update_post_meta_cache' => false,
+                ]);
+
+                if (empty($posts)) {
+                    continue;
+                }
+                
+                $stats['stories_found']++;
+                $post_id = $posts[0];
+                $post_title = get_the_title($post_id);
+                $stats['success_details'][] = [
+                    'message' => "Found story: \"{$post_title}\" (Story ID: {$story_id})",
+                    'type' => 'found'
+                ];
+
+                // Find user with matching ACF 'writer_id' or 'source_expert_id' - OPTIMIZED QUERY
+                $users = get_users([
+                    'meta_key' => $user_meta_key,
+                    'meta_value' => $user_content_id,
+                    'number' => 1,
+                    'fields' => 'ID',
+                    'count_total' => false,
+                ]);
+
+                if (empty($users)) {
+                    $stats['errors'][] = ucfirst($user_type_label) . " not found for ID: {$user_content_id} (Linked to Story ID: {$story_id})";
+                    continue;
+                }
+                
+                $stats['users_found']++;
+                $user_id = $users[0];
+                $user_info = get_userdata($user_id);
+                $display_name = $user_info ? $user_info->display_name : ucfirst($user_type_label) . " ID {$user_id}";
+                $stats['success_details'][] = [
+                    'message' => "Found {$user_type_label}: \"{$display_name}\" ({$user_type_label} ID: {$user_content_id})",
+                    'type' => 'found'
+                ];
+
+                // Load existing linked users (authors or experts)
+                $existing_linked_users = get_field($story_user_field, $post_id);
+                if (!is_array($existing_linked_users)) $existing_linked_users = [];
+
+                $already_added = false;
+                foreach ($existing_linked_users as $row) {
+                    $existing_user_in_repeater = $row['user'];
+
+                    // Normalize to user ID (handles ACF returning object or array for user field)
+                    if (is_object($existing_user_in_repeater) && isset($existing_user_in_repeater->ID)) {
+                        $existing_user_in_repeater = $existing_user_in_repeater->ID;
+                    } elseif (is_array($existing_user_in_repeater) && isset($existing_user_in_repeater['ID'])) {
+                        $existing_user_in_repeater = $existing_user_in_repeater['ID'];
+                    }
+
+                    if (intval($existing_user_in_repeater) === intval($user_id)) {
+                        $already_added = true;
+                        break;
+                    }
+                }
+
+                // Add user if not already in the repeater
+                if (!$already_added) {
+                    $existing_linked_users[] = ['user' => $user_id];
+                    update_field($story_user_field, $existing_linked_users, $post_id);
+                    do_action('acf/save_post', $post_id);
+                    clean_post_cache($post_id);
+                    wp_cache_delete( $post_id, 'post_meta' );
+
+                    $stats['linked']++;
+                    $stats['success_details'][] = [
+                        'message' => "✓ LINKED {$user_type_label}: \"{$display_name}\" → \"{$post_title}\"",
+                        'type' => 'link'
+                    ];
+                } else {
+                    $stats['already_linked']++;
+                    $stats['success_details'][] = [
+                        'message' => "Already linked: \"{$display_name}\" → \"{$post_title}\"",
+                        'type' => 'info'
+                    ];
+                }
+            }
+
+            wp_send_json_success($stats);
+
+        } catch (Exception $e) {
+            wp_send_json_error(['message' => 'Exception: ' . $e->getMessage()]);
+        }
     }
 }
 
@@ -656,18 +875,27 @@ function initialize_content_clearing_callback() {
     }
 
     $linking_type = isset($_POST['linking_type']) ? sanitize_text_field($_POST['linking_type']) : 'writers';
-    $story_user_field = ($linking_type === 'writers') ? 'authors' : 'experts';
+    
+    // Determine post type and field based on linking type
+    $post_type = 'post'; // default for writers/experts
+    $story_user_field = 'authors'; // default for writers
+    
+    if ($linking_type === 'publications') {
+        $post_type = 'publications';
+        $story_user_field = 'authors';
+    } elseif ($linking_type === 'experts') {
+        $story_user_field = 'experts';
+    }
 
     try {
         // Count all posts that might have the relevant ACF field
-        // This is a rough count; actual processing will only affect posts with the field
         $posts_query = new WP_Query([
-            'post_type'      => 'post',
-            'post_status'    => 'publish', // Only published posts, adjust if needed
+            'post_type'      => $post_type,
+            'post_status'    => 'publish',
             'posts_per_page' => -1,
             'fields'         => 'ids',
             'no_found_rows'  => true,
-            'meta_query'     => [ // Only count posts that actually have this ACF field
+            'meta_query'     => [
                 [
                     'key'     => $story_user_field,
                     'compare' => 'EXISTS',
@@ -696,12 +924,23 @@ function process_content_clearing_batch_callback() {
     $batch_size = intval($_POST['batch_size']);
     $linking_type = isset($_POST['linking_type']) ? sanitize_text_field($_POST['linking_type']) : 'writers';
 
-    $story_user_field = ($linking_type === 'writers') ? 'authors' : 'experts';
-    $user_type_label = ($linking_type === 'writers') ? 'writer' : 'expert';
+    // Determine post type and field based on linking type
+    $post_type = 'post'; // default for writers/experts
+    $story_user_field = 'authors'; // default for writers
+    $user_type_label = 'writer'; // default
+    
+    if ($linking_type === 'publications') {
+        $post_type = 'publications';
+        $story_user_field = 'authors';
+        $user_type_label = 'author';
+    } elseif ($linking_type === 'experts') {
+        $story_user_field = 'experts';
+        $user_type_label = 'expert';
+    }
 
     $stats = [
         'cleared' => 0,
-        'processed_count' => 0, // Number of posts processed in this batch
+        'processed_count' => 0,
         'errors' => [],
         'success_details' => []
     ];
@@ -709,13 +948,13 @@ function process_content_clearing_batch_callback() {
     try {
         // Get posts that have the relevant ACF field, in batches
         $posts_query = new WP_Query([
-            'post_type'      => 'post',
-            'post_status'    => 'publish', // Only published posts, adjust if needed
+            'post_type'      => $post_type,
+            'post_status'    => 'publish',
             'posts_per_page' => $batch_size,
             'offset'         => $offset,
             'fields'         => 'ids',
             'no_found_rows'  => true,
-            'meta_query'     => [ // Only get posts that actually have this ACF field
+            'meta_query'     => [
                 [
                     'key'     => $story_user_field,
                     'compare' => 'EXISTS',
@@ -738,13 +977,15 @@ function process_content_clearing_batch_callback() {
                 wp_cache_delete( $post_id, 'post_meta' );
 
                 $stats['cleared']++;
+                $content_type = ($post_type === 'publications') ? 'publication' : 'story';
                 $stats['success_details'][] = [
-                    'message' => "🗑️ CLEARED: All {$user_type_label}s from \"{$post_title}\" (Post ID: {$post_id})",
+                    'message' => "🗑️ CLEARED: All {$user_type_label}s from \"{$post_title}\" ({$content_type} ID: {$post_id})",
                     'type' => 'cleared'
                 ];
             } else {
+                $content_type = ($post_type === 'publications') ? 'publication' : 'story';
                 $stats['success_details'][] = [
-                    'message' => "No {$user_type_label}s to clear for \"{$post_title}\" (Post ID: {$post_id})",
+                    'message' => "No {$user_type_label}s to clear for \"{$post_title}\" ({$content_type} ID: {$post_id})",
                     'type' => 'info'
                 ];
             }
@@ -757,7 +998,6 @@ function process_content_clearing_batch_callback() {
     }
 }
 
-
 // AJAX handler for status check (generic)
 add_action('wp_ajax_check_content_linking_status', 'check_content_linking_status_callback');
 function check_content_linking_status_callback() {
@@ -769,29 +1009,54 @@ function check_content_linking_status_callback() {
 
     $linking_type = isset($_POST['linking_type']) ? sanitize_text_field($_POST['linking_type']) : 'writers';
 
-    $json_file_path = '';
-    if ($linking_type === 'writers') {
-        $json_file_path = get_template_directory() . '/json/news-writers-association.json';
-    } elseif ($linking_type === 'experts') {
-        $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+    if ($linking_type === 'publications') {
+        // Check API status for publications
+        try {
+            $api_url = 'https://secure.caes.uga.edu/rest/publications/getAuthorAssociations';
+            $response = wp_remote_get($api_url, ['timeout' => 10]);
+            
+            if (is_wp_error($response)) {
+                wp_send_json_success(['message' => 'API endpoint not accessible: ' . $response->get_error_message()]);
+                return;
+            }
+            
+            $body = wp_remote_retrieve_body($response);
+            $records = json_decode($body, true);
+            $record_count = is_array($records) ? count($records) : 0;
+            
+            wp_send_json_success([
+                'message' => "API endpoint accessible for publications. Records available: {$record_count}"
+            ]);
+            
+        } catch (Exception $e) {
+            wp_send_json_success(['message' => 'API check error: ' . $e->getMessage()]);
+        }
     } else {
-        wp_send_json_error(['message' => 'Invalid linking type specified.']);
-    }
-    
-    if (!file_exists($json_file_path)) {
-        wp_send_json_success(['message' => 'JSON file not found for ' . $linking_type]);
-        return;
-    }
+        // Check JSON file status for writers/experts
+        $json_file_path = '';
+        if ($linking_type === 'writers') {
+            $json_file_path = get_template_directory() . '/json/news-writers-association.json';
+        } elseif ($linking_type === 'experts') {
+            $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+        } else {
+            wp_send_json_error(['message' => 'Invalid linking type specified.']);
+        }
+        
+        if (!file_exists($json_file_path)) {
+            wp_send_json_success(['message' => 'JSON file not found for ' . $linking_type]);
+            return;
+        }
 
-    $file_size = filesize($json_file_path);
-    $file_modified = date('Y-m-d H:i:s', filemtime($json_file_path));
-    
-    // Quick count of records
-    $json_data = file_get_contents($json_file_path);
-    $records = json_decode($json_data, true);
-    $record_count = is_array($records) ? count($records) : 0;
-    
-    wp_send_json_success([
-        'message' => "JSON file for " . $linking_type . " exists. Size: {$file_size} bytes. Modified: {$file_modified}. Records: {$record_count}"
-    ]);
+        $file_size = filesize($json_file_path);
+        $file_modified = date('Y-m-d H:i:s', filemtime($json_file_path));
+        
+        // Quick count of records
+        $json_data = file_get_contents($json_file_path);
+        $records = json_decode($json_data, true);
+        $record_count = is_array($records) ? count($records) : 0;
+        
+        wp_send_json_success([
+            'message' => "JSON file for " . $linking_type . " exists. Size: {$file_size} bytes. Modified: {$file_modified}. Records: {$record_count}"
+        ]);
+    }
 }
