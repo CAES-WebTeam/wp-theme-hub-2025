@@ -222,6 +222,7 @@ function sync_personnel_users()
         $email = sanitize_email($user['EMAIL']);
         $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
         $nickname = sanitize_text_field($user['NAME']);
+        $display_name = sanitize_text_field($user['NAME']);
         $first_name = sanitize_text_field($user['FNAME']);
         $last_name = sanitize_text_field($user['LNAME']);
         $title = sanitize_text_field($user['TITLE']);
@@ -264,12 +265,17 @@ function sync_personnel_users()
             // Update Existing User
             $updated_count++;
 
+            // Don't use the first name and last name taken from the API.
+            // Instead, dice up the 'NAME' API field and find the first and last names from it.
+            // Then use those in the first_name and last_name WordPress fields.
+
             // Update core WordPress user fields.
             wp_update_user([
                 'ID' => $user_id,
                 'user_email' => $email,
                 'first_name' => $first_name,
-                'last_name' => $last_name
+                'last_name' => $last_name,
+                'display_name' => $display_name
             ]);
 
             // Update ACF fields for the existing user.
@@ -302,6 +308,7 @@ function sync_personnel_users()
                 'user_email' => $email,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
+                'display_name' => $display_name,
                 'user_pass' => wp_generate_password(),
                 'role' => 'personnel_user'
             ]);
@@ -421,6 +428,7 @@ function sync_personnel_users2()
         $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
         $first_name = sanitize_text_field($user['FNAME']);
         $last_name = sanitize_text_field($user['LNAME']);
+        $display_name = sanitize_text_field($user['NAME']);
         $title = sanitize_text_field($user['TITLE']);
         $department = sanitize_text_field($user['DEPARTMENT']);
         $program_area = sanitize_text_field($user['PROGRAMAREALIST']);
