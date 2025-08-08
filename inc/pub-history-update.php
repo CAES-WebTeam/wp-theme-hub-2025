@@ -514,8 +514,11 @@ add_action('wp_ajax_pub_history_process_batch', function() {
         foreach ($entries as $entry) {
             $pub_id = $entry['PUBLICATION_ID'] ?? null;
             $state = $entry['STATE_ID'] ?? null;
-            $date = $entry['DATE_OF_CHANGE'] ?? null;
-            
+
+            $date_string = $entry['DATE_OF_CHANGE'] ?? null;
+            $datetime_object = DateTime::createFromFormat('F, d Y H:i:s', $date_string);
+            $date = $datetime_object->format('Y-m-d H:i:s');
+
             if ($pub_id && $state && $date) {
                 $grouped_history[$pub_id][] = array(
                     'status' => $state,
