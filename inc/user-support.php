@@ -385,7 +385,7 @@ add_action('daily_personnel_sync', 'sync_personnel_users');
 function sync_personnel_users2()
 {
     // API endpoint specifically for inactive news authors/experts with contact info.
-    $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?returnOnlyNewsAuthorsAndExperts=true&isActive=false&returnContactInfoColumns=true';
+    $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?returnOnlyNewsAuthorsAndExpertsAndPubAuthors=true&isActive=false&returnContactInfoColumns=true';
 
     // Fetch API Data.
     $response = wp_remote_get($api_url);
