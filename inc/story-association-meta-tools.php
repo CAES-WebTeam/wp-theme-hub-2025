@@ -9,9 +9,10 @@ remove_action('admin_enqueue_scripts', 'story_meta_association_tools_enqueue_scr
 // Add admin menu page
 add_action('admin_menu', 'story_meta_association_tools_menu_page');
 function story_meta_association_tools_menu_page() {
-    add_management_page(
-        'Story Meta Association Tools',
-        'Story Meta Tools',
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Story Meta Association Tools',   // Page title
+        'Story Meta Tools',              // Menu title
         'manage_options',
         'story-meta-association-tools',
         'story_meta_association_tools_render_page'

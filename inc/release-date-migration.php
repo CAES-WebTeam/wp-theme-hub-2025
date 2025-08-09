@@ -9,11 +9,12 @@
  */
 
 add_action('admin_menu', function () {
-    add_management_page(
-        'Release Date Migration',    // Page title
-        'Release Date Migration',    // Menu title under Tools
-        'manage_options',            // Capability
-        'release-date-migration',    // Menu slug
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Story Release Date Migration',   // Page title
+        'Story Release Date Migration',   // Menu title
+        'manage_options',
+        'release-date-migration',
         'render_release_date_migration_page'
     );
 });

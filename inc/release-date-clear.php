@@ -4,9 +4,10 @@
  */
 
 add_action('admin_menu', function () {
-    add_management_page(
-        'Clear Release Date Field',
-        'Clear Release Date Field',
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Story Clear Release Date Field', // Page title
+        'Story Clear Release Date Field', // Menu title
         'manage_options',
         'clear-release-date',
         'render_clear_release_date_page'

@@ -13,9 +13,10 @@
  */
 
 add_action('admin_menu', function () {
-    add_management_page(
-        'Duplicate Post Checker',
-        'Duplicate Post Checker',
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Story Duplicate Checker',        // Page title
+        'Story Duplicate Checker',        // Menu title
         'manage_options',
         'duplicate-post-checker',
         'render_duplicate_post_checker'

@@ -6,9 +6,10 @@
 
 // Add admin menu item under Tools
 add_action('admin_menu', function() {
-    add_management_page(
-        'Update Publication History',
-        'Update Pub History',
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Update Publication History',     // Page title
+        'Update Pub History',            // Menu title
         'manage_options',
         'update-publication-history',
         'render_publication_history_admin_page'

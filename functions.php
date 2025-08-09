@@ -13,6 +13,7 @@ require get_template_directory() . '/inc/theme-support.php';
 require get_template_directory() . '/inc/post-types.php';
 require get_template_directory() . '/inc/blocks.php';
 require get_template_directory() . '/inc/acf.php';
+require get_template_directory() . '/inc/caes-tools.php';
 require get_template_directory() . '/inc/publications-support.php';
 require get_template_directory() . '/inc/user-support.php';
 require get_template_directory() . '/inc/news-support.php';
