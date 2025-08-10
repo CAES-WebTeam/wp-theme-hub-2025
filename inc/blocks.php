@@ -42,6 +42,9 @@ function caes_hub_block_init()
 	// Register Flip Card
 	register_block_type(get_template_directory() . '/blocks/build/blocks/flip-card' );
 
+	// Lightbox Gallery
+	register_block_type(get_template_directory() . '/blocks/build/blocks/lightbox-gallery' );
+
 	// Legacy Gallery
 	register_block_type(get_template_directory() . '/blocks/build/blocks/legacy-gallery' );
 
