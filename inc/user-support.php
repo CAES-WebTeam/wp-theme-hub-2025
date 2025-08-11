@@ -395,7 +395,6 @@ function sync_personnel_users2()
         if (is_wp_error($response)) {
             $error_msg = 'API Request Failed for Inactive Personnel: ' . $response->get_error_message();
             error_log($error_msg);
-            echo '<script>console.error("' . esc_js($error_msg) . '");</script>';
             return new WP_Error('api_error', $error_msg);
         }
 
@@ -405,7 +404,6 @@ function sync_personnel_users2()
         if (empty($data)) {
             $error_msg = 'Empty response from API';
             error_log($error_msg);
-            echo '<script>console.error("' . esc_js($error_msg) . '");</script>';
             return new WP_Error('empty_response', $error_msg);
         }
         
@@ -415,20 +413,17 @@ function sync_personnel_users2()
         if (json_last_error() !== JSON_ERROR_NONE) {
             $error_msg = 'JSON decode error: ' . json_last_error_msg();
             error_log($error_msg);
-            echo '<script>console.error("' . esc_js($error_msg) . '");</script>';
             return new WP_Error('json_error', $error_msg);
         }
 
         if (!is_array($users)) {
             $error_msg = 'Invalid API response for Inactive Personnel - not an array';
             error_log($error_msg);
-            echo '<script>console.error("' . esc_js($error_msg) . '");</script>';
             return new WP_Error('invalid_response', $error_msg);
         }
 
         $total_users = count($users);
         error_log("Successfully retrieved {$total_users} users from API");
-        echo '<script>console.log("Retrieved ' . $total_users . ' users from API");</script>';
 
         // Prepare a map of existing personnel_id to WordPress user ID for efficient lookup.
         try {
@@ -448,12 +443,10 @@ function sync_personnel_users2()
             
             $existing_count = count($existing_user_ids);
             error_log("Found {$existing_count} existing personnel users");
-            echo '<script>console.log("Found ' . $existing_count . ' existing personnel users");</script>';
             
         } catch (Exception $e) {
             $error_msg = 'Error fetching existing users: ' . $e->getMessage();
             error_log($error_msg);
-            echo '<script>console.error("' . esc_js($error_msg) . '");</script>';
             return new WP_Error('db_error', $error_msg);
         }
 
@@ -470,7 +463,6 @@ function sync_personnel_users2()
                 if (!isset($user['PERSONNEL_ID']) || !isset($user['EMAIL']) || !isset($user['NAME'])) {
                     $error_msg = "User at index {$index} missing required fields (PERSONNEL_ID, EMAIL, or NAME)";
                     error_log($error_msg);
-                    echo '<script>console.warn("' . esc_js($error_msg) . '");</script>';
                     $skipped_count++;
                     continue;
                 }
