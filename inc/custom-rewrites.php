@@ -370,3 +370,57 @@ function redirect_blog_features_to_features() {
     }
 }
 add_action('template_redirect', 'redirect_blog_features_to_features');
+
+// Redirect /news/features/ URLs to /features/
+function redirect_news_features_to_features() {
+    // Only run on frontend and skip previews
+    if (is_admin() || isset($_GET['preview'])) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // Check if URL starts with '/news/features/'
+    if (strpos($requested_path, '/news/features/') === 0) {
+        // Extract everything after '/news/features/'
+        $remaining_path = substr($requested_path, strlen('/news/features'));
+        
+        // Build new URL with /features/ prefix
+        $new_url = '/features' . $remaining_path;
+        
+        // Ensure trailing slash consistency
+        if (substr($_SERVER['REQUEST_URI'], -1) === '/' && substr($new_url, -1) !== '/') {
+            $new_url .= '/';
+        }
+        
+        // Perform 301 redirect
+        wp_redirect(home_url($new_url), 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_news_features_to_features');
+
+// Redirect /feature/ URLs to /features/ (singular to plural)
+function redirect_feature_to_features() {
+    // Only run on frontend and skip previews
+    if (is_admin() || isset($_GET['preview'])) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // Check if URL starts with '/feature/'
+    if (strpos($requested_path, '/feature/') === 0) {
+        // Extract everything after '/feature/'
+        $remaining_path = substr($requested_path, strlen('/feature'));
+        
+        // Build new URL with /features/ prefix
+        $new_url = '/features' . $remaining_path;
+        
+        // Ensure trailing slash consistency
+        if (substr($_SERVER['REQUEST_URI'], -1) === '/' && substr($new_url, -1) !== '/') {
+            $new_url .= '/';
+        }
+        
+        // Perform 301 redirect
+        wp_redirect(home_url($new_url), 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_feature_to_features');
