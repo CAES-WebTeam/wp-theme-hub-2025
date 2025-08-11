@@ -372,13 +372,13 @@ class CAES_Topics_Import_Tool {
                 $parent_term = $parent_terms[0];
                 $parent_term_id = $parent_term->term_id;
                 
-                // Check if child term already exists with this type_id (unique identifier)
+                // Check if child term already exists with this topic_id (unique identifier)
                 $existing_child_terms = get_terms(array(
                     'taxonomy' => 'topics',
                     'hide_empty' => false,
                     'meta_query' => array(
                         array(
-                            'key' => 'type_id',
+                            'key' => 'topic_id',
                             'value' => $child_id,
                             'compare' => '='
                         )
@@ -386,7 +386,7 @@ class CAES_Topics_Import_Tool {
                 ));
                 
                 if (!empty($existing_child_terms)) {
-                    // Update existing child term (identified by unique type_id)
+                    // Update existing child term (identified by unique topic_id)
                     $existing_child = $existing_child_terms[0];
                     $term_updated = false;
                     
@@ -399,6 +399,13 @@ class CAES_Topics_Import_Tool {
                             $updated_count++;
                             $term_updated = true;
                         }
+                    }
+                    
+                    // Update type_id if needed (should match parent's topic_id)
+                    $current_type_id = get_term_meta($existing_child->term_id, 'type_id', true);
+                    if ($current_type_id != $parent_type_id) {
+                        update_term_meta($existing_child->term_id, 'type_id', $parent_type_id);
+                        $term_updated = true;
                     }
                     
                     // Rearrange under correct parent if needed
@@ -421,22 +428,24 @@ class CAES_Topics_Import_Tool {
                     ));
                     
                     if (!is_wp_error($created)) {
-                        // Set the unique type_id custom field
-                        update_term_meta($created['term_id'], 'type_id', $child_id);
+                        // Set both custom fields for child terms
+                        update_term_meta($created['term_id'], 'topic_id', $child_id); // Child's unique ID
+                        update_term_meta($created['term_id'], 'type_id', $parent_type_id); // Parent's topic_id
                         $created_count++;
                         $details[] = "Created: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
                     } else {
                         // Handle the case where term might exist with same name under same parent
                         if ($created->get_error_code() === 'term_exists') {
-                            // Get the existing term and set its type_id if it doesn't have one
+                            // Get the existing term and set its topic_id if it doesn't have one
                             $existing_term_id = $created->get_error_data();
-                            $existing_type_id = get_term_meta($existing_term_id, 'type_id', true);
+                            $existing_topic_id = get_term_meta($existing_term_id, 'topic_id', true);
                             
-                            if (empty($existing_type_id)) {
-                                // This term exists but doesn't have a type_id, so assign it
-                                update_term_meta($existing_term_id, 'type_id', $child_id);
+                            if (empty($existing_topic_id)) {
+                                // This term exists but doesn't have proper IDs, so assign them
+                                update_term_meta($existing_term_id, 'topic_id', $child_id);
+                                update_term_meta($existing_term_id, 'type_id', $parent_type_id);
                                 $updated_count++;
-                                $details[] = "Assigned ID to existing: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
+                                $details[] = "Assigned IDs to existing: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
                             } else {
                                 $details[] = "Conflict: {$child_label} already exists under {$parent_term->name} with different ID";
                             }
