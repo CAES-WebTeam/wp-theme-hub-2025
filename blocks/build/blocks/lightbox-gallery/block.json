@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/legacy-gallery",
+  "version": "0.1.0",
+  "title": "Lightbox Gallery",
+  "category": "media",
+  "icon": "format-gallery",
+  "description": "Accessible lightbox gallery that displays selected images in a popup slideshow with optional film strip navigation.",
+  "keywords": [
+    "gallery",
+    "lightbox",
+    "images",
+    "slideshow",
+    "accessible"
+  ],
+  "textdomain": "lightbox-gallery",
+  "attributes": {
+    "images": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object"
+      }
+    },
+    "showFilmStrip": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "supports": {
+    "align": true,
+    "html": false,
+    "spacing": {
+      "margin": true,
+      "padding": true
+    }
+  },
+  "example": {
+    "attributes": {
+      "images": [
+        {
+          "id": 1,
+          "url": "https://example.com/image1.jpg",
+          "alt": "Sample image 1",
+          "caption": "Beautiful landscape"
+        },
+        {
+          "id": 2,
+          "url": "https://example.com/image2.jpg",
+          "alt": "Sample image 2",
+          "caption": "Stunning sunset"
+        }
+      ],
+      "showFilmStrip": true
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php",
+  "viewScript": "file:./view.js"
+}

@@ -7,12 +7,13 @@ add_action('admin_menu', 'publication_api_tool_menu_page');
  * Registers the admin menu page for the Publication API Tool.
  */
 function publication_api_tool_menu_page() {
-    add_management_page(
-        'Publication Import Tool', // Page title
-        'Import Publications',      // Menu title
-        'manage_options',       // Capability required to access
-        'publication-api-tool', // Menu slug
-        'publication_api_tool_render_page' // Function to render the page content
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Publication Import Tool',        // Page title
+        'Import Publications',            // Menu title
+        'manage_options',
+        'publication-api-tool',
+        'publication_api_tool_render_page'
     );
 }
 

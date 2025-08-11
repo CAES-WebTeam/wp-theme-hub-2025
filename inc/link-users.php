@@ -3,12 +3,13 @@
 
 // Add admin menu
 add_action('admin_menu', function() {
-    add_management_page(
-        'Link Writers, Experts, and Publication Authors', // Updated page title
-        'Link Writers, Experts, and Publication Authors',           // Updated menu title
+    add_submenu_page(
+        'caes-tools',                     // Parent slug - points to CAES Tools
+        'Link Writers, Experts, and Publication Authors', // Page title
+        'Link Writers, Experts, and Publication Authors', // Menu title
         'manage_options',
-        'link-content-admin',             // Generic slug
-        'render_content_linking_admin_page' // Generic render function
+        'link-content-admin',             // Slug remains the same
+        'render_content_linking_admin_page' // Callback function remains the same
     );
 });
 

@@ -1014,7 +1014,7 @@ add_action('admin_menu', 'add_user_data_management_page');
 function add_user_data_management_page()
 {
     add_submenu_page(
-        'tools.php', // Parent slug for the 'Tools' menu.
+        'caes-tools',
         'User Data Management', // Page title.
         'User Data Management', // Menu title.
         'manage_options', // Capability required to access this page.
