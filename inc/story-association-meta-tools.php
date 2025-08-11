@@ -27,35 +27,46 @@ function story_meta_association_tools_render_page() {
     ?>
     <div class="wrap">
         <h1>Story Meta Association Tools</h1>
-        <p>Use the buttons below to run various meta-data association processes for your news stories.</p>
+        <p>Use the buttons below to run various meta-data association processes for your news stories and publications.</p>
 
         <hr>
 
-        <h2>1. Sync Keywords to News Stories</h2>
+        <h2>News Stories</h2>
+
+        <h3>1. Sync Keywords to News Stories</h3>
         <p>Accesses an API and associates keywords (topics) with posts based on story and keyword IDs.</p>
         <button class="button button-primary" id="sync-keywords-btn">Run Keyword Sync</button>
         <div id="sync-keywords-log" class="log-area"></div>
 
         <hr>
 
-        <h2>2. Link Story Images</h2>
+        <h3>2. Link Story Images</h3>
         <p>Accesses an API and links images to posts via the 'image_id' ACF field. This process runs in batches of 500 records.</p>
         <button class="button button-primary" id="link-story-images-btn">Run Image Linking</button>
         <div id="link-story-images-log" class="log-area"></div>
 
         <hr>
 
-        <h2>3. Assign Web Image Filenames</h2>
+        <h3>3. Assign Web Image Filenames</h3>
         <p>Reads `news-image.json` and assigns web version filenames to posts that have a matching 'image_id' ACF field. This process runs in batches of 500 records.</p>
         <button class="button button-primary" id="assign-filenames-btn">Run Filename Assignment</button>
         <div id="assign-filenames-log" class="log-area"></div>
 
         <hr>
 
-        <h2>4. Import Featured Images</h2>
+        <h3>4. Import Featured Images</h3>
         <p>Downloads and sets featured images for posts based on 'image_id' and 'web_version_file_name' ACF fields. This process runs in batches of 100 posts.</p>
         <button class="button button-primary" id="import-featured-images-btn">Run Featured Image Import</button>
         <div id="import-featured-images-log" class="log-area"></div>
+
+        <hr>
+
+        <h2>Publications</h2>
+
+        <h3>5. Sync Keywords to Publications</h3>
+        <p>Accesses an API and associates keywords (topics) with publication posts based on publication and keyword IDs.</p>
+        <button class="button button-primary" id="sync-pub-keywords-btn">Run Publication Keyword Sync</button>
+        <div id="sync-pub-keywords-log" class="log-area"></div>
 
     </div>
     <style>
@@ -199,6 +210,43 @@ function story_meta_association_tools_render_page() {
                 });
             });
 
+            // Sync Keywords to Publications
+            $('#sync-pub-keywords-btn').on('click', function() {
+                const $button = $(this);
+                const $logArea = $('#sync-pub-keywords-log');
+                $logArea.empty(); // Clear previous logs
+                $button.prop('disabled', true).text('Processing...');
+                setLogAreaClass($logArea, 'info');
+                appendLog($logArea, 'Starting Publication Keyword Sync...');
+
+                $.ajax({
+                    url: '<?php echo esc_js($ajax_url); ?>',
+                    type: 'POST',
+                    data: {
+                        action: 'sync_publication_keywords',
+                        nonce: '<?php echo esc_js($nonce); ?>',
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            appendLog($logArea, response.data.message, 'success');
+                            if (response.data.log && response.data.log.length > 0) {
+                                response.data.log.forEach(msg => appendLog($logArea, msg, 'detail'));
+                            }
+                            setLogAreaClass($logArea, 'success');
+                        } else {
+                            appendLog($logArea, `Error: ${response.data}`, 'error');
+                            setLogAreaClass($logArea, 'error');
+                        }
+                        $button.prop('disabled', false).text('Run Publication Keyword Sync');
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
+                        setLogAreaClass($logArea, 'error');
+                        $button.prop('disabled', false).text('Run Publication Keyword Sync');
+                    }
+                });
+            });
+
             // Link Story Images (Batched)
             $('#link-story-images-btn').on('click', function() {
                 $('#link-story-images-log').empty(); // Clear previous logs
@@ -230,26 +278,7 @@ function story_meta_association_sync_keywords() {
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
-    // Begin JSON ingestion
-
-    // $json_file = get_template_directory() . '/json/NEWS_ASSOCIATION_STORY_KEYWORD.json';
-
-    // if (!file_exists($json_file)) {
-    //     wp_send_json_error('Data file not found: ' . $json_file);
-    // }
-
-    // $json_data = file_get_contents($json_file);
-    // $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    // $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-    // $records = json_decode($json_data, true);
-
-    // if (json_last_error() !== JSON_ERROR_NONE) {
-    //     wp_send_json_error('JSON decode error: ' . json_last_error_msg());
-    // }
-
-    // End JSON ingestion
-
-    // Begin API call (replaces JSON ingestion)
+    // Begin API call
     $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryKeyword';
     $decoded_API_response = null; // Initialize to null
 
@@ -275,8 +304,8 @@ function story_meta_association_sync_keywords() {
         $records = $decoded_API_response;
 
     } catch (Exception $e) {
-        error_log('News Association Story Image API Error: ' . $e->getMessage());
-        wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
+        error_log('News Association Story Keyword API Error: ' . $e->getMessage());
+        wp_send_json_error('API Error for News Association Story Keyword: ' . $e->getMessage());
     }
     // End API call
 
@@ -336,6 +365,103 @@ function story_meta_association_sync_keywords() {
     ]);
 }
 
+// AJAX handler for Sync Publication Keywords
+add_action('wp_ajax_sync_publication_keywords', 'story_meta_association_sync_publication_keywords');
+function story_meta_association_sync_publication_keywords() {
+    check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('You do not have sufficient permissions.');
+    }
+
+    // Begin API call
+    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsKeywordAssociations';
+    $decoded_API_response = null; // Initialize to null
+
+    try {
+        // Fetch data from the API.
+        $response = wp_remote_get($api_url);
+
+        if (is_wp_error($response)) {
+            throw new Exception('API Request Failed: ' . $response->get_error_message());
+        }
+
+        $raw_JSON = wp_remote_retrieve_body($response);
+        $decoded_API_response = json_decode($raw_JSON, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+        }
+
+        if (!is_array($decoded_API_response)) {
+            throw new Exception('Invalid API response format: Expected an array.');
+        }
+
+        $records = $decoded_API_response;
+
+    } catch (Exception $e) {
+        error_log('Publications Keyword Association API Error: ' . $e->getMessage());
+        wp_send_json_error('API Error for Publications Keyword Association: ' . $e->getMessage());
+    }
+    // End API call
+
+    $linked = 0;
+    $total_records = count($records);
+    $log = [];
+
+    foreach ($records as $index => $pair) {
+        $publication_id = intval($pair['PUBLICATION_ID']);
+        $keyword_id = intval($pair['KEYWORD_ID']);
+        $keyword_label = trim($pair['KEYWORD_LABEL'] ?? '');
+
+        $posts = get_posts([
+            'post_type' => 'publications',
+            'meta_key' => 'id',
+            'meta_value' => $publication_id,
+            'numberposts' => 1,
+            'fields' => 'ids',
+        ]);
+
+        if (empty($posts)) {
+            $log[] = "Record " . ($index + 1) . "/{$total_records}: Publication ID {$publication_id} not found.";
+            continue;
+        }
+        $post_id = $posts[0];
+
+        $terms = get_terms([
+            'taxonomy' => 'topics',
+            'hide_empty' => false,
+            'meta_query' => [[
+                'key' => 'topic_id',
+                'value' => $keyword_id,
+                'compare' => '='
+            ]]
+        ]);
+
+        if (empty($terms) || is_wp_error($terms)) {
+            $log[] = "Record " . ($index + 1) . "/{$total_records}: Topic ID {$keyword_id} ('{$keyword_label}') not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
+            continue;
+        }
+        $term_id = $terms[0]->term_id;
+
+        $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']);
+
+        if (!in_array($term_id, $existing_terms)) {
+            $existing_terms[] = $term_id;
+            wp_set_object_terms($post_id, $existing_terms, 'topics');
+            $linked++;
+            $log[] = "Record " . ($index + 1) . "/{$total_records}: Linked Publication ID {$publication_id} to Topic '{$keyword_label}' (ID: {$keyword_id}) - Post ID: {$post_id}, Term ID: {$term_id}.";
+        } else {
+            $log[] = "Record " . ($index + 1) . "/{$total_records}: Publication ID {$publication_id} already linked to Topic '{$keyword_label}' (ID: {$keyword_id}).";
+        }
+    }
+
+    wp_send_json_success([
+        'message' => "Publication topic linking complete. Topics linked to publications: {$linked}",
+        'log'     => $log,
+    ]);
+}
+
 // AJAX handler for Link Story Images
 add_action('wp_ajax_link_story_images', 'story_meta_association_link_story_images');
 // Registers the AJAX action 'link_story_images' to call the 'story_meta_association_link_story_images' function.
@@ -362,15 +488,6 @@ function story_meta_association_link_story_images() {
     if (!file_exists($json_file)) {
         wp_send_json_error('JSON file not found: ' . $json_file);
     }
-
-    // // Reads the entire content of the JSON file into a string.
-    // $json_data = file_get_contents($json_file);
-    // // Removes a UTF-8 Byte Order Mark (BOM) if present at the beginning of the string.
-    // // BOMs can interfere with json_decode().
-    // $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    // // Ensures the data is correctly UTF-8 encoded. While the previous line handles BOM,
-    // // this provides a robust conversion, though it might be redundant if the file is already UTF-8.
-    // $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
 
      // Begin API call
     $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
@@ -403,17 +520,6 @@ function story_meta_association_link_story_images() {
     }
 
     // End API call
-
-
-    // Decodes the JSON string into a PHP associative array.
-    // 'true' ensures objects are returned as associative arrays.
-    // $records = json_decode($json_data, true);
-
-    // Checks for JSON decoding errors.
-    // If an error occurred during decoding, it sends a JSON error response with the error message.
-    // if (json_last_error() !== JSON_ERROR_NONE) {
-    //     wp_send_json_error('JSON decode error: ' . json_last_error_msg());
-    // }
 
     // Retrieves the 'start' index from the POST request, or defaults to 0.
     // This parameter is used for batch processing to determine which record to start from.
@@ -501,25 +607,6 @@ function story_meta_association_assign_web_image_filenames() {
     if (!current_user_can('manage_options')) {
         wp_send_json_error('You do not have sufficient permissions.');
     }
-
-    // Begin JSON ingestion
-
-    $json_file = get_template_directory() . '/json/news-image.json';
-
-    if (!file_exists($json_file)) {
-        wp_send_json_error('JSON file not found: ' . $json_file);
-    }
-
-    $json_data = file_get_contents($json_file);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-    $records = json_decode($json_data, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        wp_send_json_error('JSON decode error: ' . json_last_error_msg());
-    }
-
-    // End JSON ingestion
 
     // Begin API call (replaces JSON ingestion)
 
