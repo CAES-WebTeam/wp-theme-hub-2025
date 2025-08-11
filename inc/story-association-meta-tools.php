@@ -64,7 +64,7 @@ function story_meta_association_tools_render_page() {
         <h2>Publications</h2>
 
         <h3>5. Sync Keywords to Publications</h3>
-        <p>Accesses an API and associates keywords (topics) with publication posts based on publication and keyword IDs.</p>
+        <p>Accesses an API and associates keywords (topics) with publication posts based on publication and keyword IDs. This process runs in batches of 500 records.</p>
         <button class="button button-primary" id="sync-pub-keywords-btn">Run Publication Keyword Sync</button>
         <div id="sync-pub-keywords-log" class="log-area"></div>
 
@@ -210,41 +210,10 @@ function story_meta_association_tools_render_page() {
                 });
             });
 
-            // Sync Keywords to Publications
+            // Sync Keywords to Publications (Batched)
             $('#sync-pub-keywords-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#sync-pub-keywords-log');
-                $logArea.empty(); // Clear previous logs
-                $button.prop('disabled', true).text('Processing...');
-                setLogAreaClass($logArea, 'info');
-                appendLog($logArea, 'Starting Publication Keyword Sync...');
-
-                $.ajax({
-                    url: '<?php echo esc_js($ajax_url); ?>',
-                    type: 'POST',
-                    data: {
-                        action: 'sync_publication_keywords',
-                        nonce: '<?php echo esc_js($nonce); ?>',
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            appendLog($logArea, response.data.message, 'success');
-                            if (response.data.log && response.data.log.length > 0) {
-                                response.data.log.forEach(msg => appendLog($logArea, msg, 'detail'));
-                            }
-                            setLogAreaClass($logArea, 'success');
-                        } else {
-                            appendLog($logArea, `Error: ${response.data}`, 'error');
-                            setLogAreaClass($logArea, 'error');
-                        }
-                        $button.prop('disabled', false).text('Run Publication Keyword Sync');
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
-                        setLogAreaClass($logArea, 'error');
-                        $button.prop('disabled', false).text('Run Publication Keyword Sync');
-                    }
-                });
+                $('#sync-pub-keywords-log').empty(); // Clear previous logs
+                runBatchedProcess('sync-pub-keywords-btn', 'sync-pub-keywords-log', 'sync_publication_keywords');
             });
 
             // Link Story Images (Batched)
@@ -374,45 +343,68 @@ function story_meta_association_sync_publication_keywords() {
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
-    // Begin API call
-    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsKeywordAssociations';
-    $decoded_API_response = null; // Initialize to null
+    // Get cached API data or fetch it
+    $transient_key = 'pub_keywords_api_data';
+    $records = get_transient($transient_key);
+    
+    if (false === $records) {
+        // Begin API call
+        $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsKeywordAssociations';
+        
+        try {
+            // Fetch data from the API.
+            $response = wp_remote_get($api_url);
 
-    try {
-        // Fetch data from the API.
-        $response = wp_remote_get($api_url);
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
 
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $decoded_API_response = json_decode($raw_JSON, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
+
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            $records = $decoded_API_response;
+            
+            // Cache for 1 hour
+            set_transient($transient_key, $records, HOUR_IN_SECONDS);
+
+        } catch (Exception $e) {
+            error_log('Publications Keyword Association API Error: ' . $e->getMessage());
+            wp_send_json_error('API Error for Publications Keyword Association: ' . $e->getMessage());
         }
-
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
-
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
-        }
-
-        $records = $decoded_API_response;
-
-    } catch (Exception $e) {
-        error_log('Publications Keyword Association API Error: ' . $e->getMessage());
-        wp_send_json_error('API Error for Publications Keyword Association: ' . $e->getMessage());
     }
-    // End API call
+
+    $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
+    $limit = 500; // Batch limit
+
+    $total_records = count($records);
+    $batch_records = array_slice($records, $start, $limit);
 
     $linked = 0;
-    $total_records = count($records);
     $log = [];
 
-    foreach ($records as $index => $pair) {
+    if (empty($batch_records)) {
+        // Clear the cached API data when done
+        delete_transient($transient_key);
+        wp_send_json_success([
+            'message' => "Publication keyword linking complete. No more records to process.",
+            'finished' => true,
+            'log' => $log,
+        ]);
+    }
+
+    foreach ($batch_records as $index => $pair) {
         $publication_id = intval($pair['PUBLICATION_ID']);
         $keyword_id = intval($pair['KEYWORD_ID']);
         $keyword_label = trim($pair['KEYWORD_LABEL'] ?? '');
+        $current_index = $start + $index;
 
         $posts = get_posts([
             'post_type' => 'publications',
@@ -423,7 +415,7 @@ function story_meta_association_sync_publication_keywords() {
         ]);
 
         if (empty($posts)) {
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Publication ID {$publication_id} not found.";
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Publication ID {$publication_id} not found.";
             continue;
         }
         $post_id = $posts[0];
@@ -439,7 +431,7 @@ function story_meta_association_sync_publication_keywords() {
         ]);
 
         if (empty($terms) || is_wp_error($terms)) {
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Topic ID {$keyword_id} ('{$keyword_label}') not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Topic ID {$keyword_id} ('{$keyword_label}') not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
             continue;
         }
         $term_id = $terms[0]->term_id;
@@ -450,15 +442,20 @@ function story_meta_association_sync_publication_keywords() {
             $existing_terms[] = $term_id;
             wp_set_object_terms($post_id, $existing_terms, 'topics');
             $linked++;
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Linked Publication ID {$publication_id} to Topic '{$keyword_label}' (ID: {$keyword_id}) - Post ID: {$post_id}, Term ID: {$term_id}.";
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Linked Publication ID {$publication_id} to Topic '{$keyword_label}' (ID: {$keyword_id}) - Post ID: {$post_id}, Term ID: {$term_id}.";
         } else {
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Publication ID {$publication_id} already linked to Topic '{$keyword_label}' (ID: {$keyword_id}).";
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Publication ID {$publication_id} already linked to Topic '{$keyword_label}' (ID: {$keyword_id}).";
         }
     }
 
+    $next_start = $start + count($batch_records);
+    $finished = ($next_start >= $total_records);
+
     wp_send_json_success([
-        'message' => "Publication topic linking complete. Topics linked to publications: {$linked}",
-        'log'     => $log,
+        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Topics linked in this batch: {$linked}. Total records: {$total_records}",
+        'start'    => $next_start,
+        'finished' => $finished,
+        'log'      => $log,
     ]);
 }
 
