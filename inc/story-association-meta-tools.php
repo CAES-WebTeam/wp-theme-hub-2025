@@ -382,7 +382,7 @@ function story_meta_association_sync_publication_keywords() {
     }
 
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 500; // Batch limit
+    $limit = 10; // Batch limit
 
     $total_records = count($records);
     $batch_records = array_slice($records, $start, $limit);
@@ -408,7 +408,7 @@ function story_meta_association_sync_publication_keywords() {
 
         $posts = get_posts([
             'post_type' => 'publications',
-            'meta_key' => 'id',
+            'meta_key' => 'publication_id',
             'meta_value' => $publication_id,
             'numberposts' => 1,
             'fields' => 'ids',
