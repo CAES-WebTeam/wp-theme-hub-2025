@@ -64,7 +64,7 @@ function story_meta_association_tools_render_page() {
         <h2>Publications</h2>
 
         <h3>5. Sync Keywords to Publications</h3>
-        <p>Accesses an API and associates keywords (topics) with publication posts based on publication and keyword IDs. This process runs in batches of 500 records.</p>
+        <p>Accesses an API and associates keywords (topics) with publication posts based on publication and keyword IDs. This process runs in batches of 10 records.</p>
         <button class="button button-primary" id="sync-pub-keywords-btn">Run Publication Keyword Sync</button>
         <div id="sync-pub-keywords-log" class="log-area"></div>
 
@@ -287,11 +287,12 @@ function story_meta_association_sync_keywords() {
         $topic_id = intval($pair['KEYWORD_ID']);
 
         $posts = get_posts([
-            'post_type' => 'any',
+            'post_type' => 'post',
             'meta_key' => 'id',
             'meta_value' => $story_id,
             'numberposts' => 1,
             'fields' => 'ids',
+            'post_status' => 'any'
         ]);
 
         if (empty($posts)) {
@@ -412,6 +413,7 @@ function story_meta_association_sync_publication_keywords() {
             'meta_value' => $publication_id,
             'numberposts' => 1,
             'fields' => 'ids',
+            'post_status' => 'any'
         ]);
 
         if (empty($posts)) {
