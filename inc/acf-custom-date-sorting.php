@@ -261,45 +261,116 @@ function add_acf_date_sorting_admin_tool() {
 add_action('admin_menu', 'add_acf_date_sorting_admin_tool');
 
 function render_acf_date_sorting_preview_page() {
-    // Get sample posts and publications
+    // Get pagination parameters
+    $posts_page = isset($_GET['posts_page']) ? max(1, intval($_GET['posts_page'])) : 1;
+    $pubs_page = isset($_GET['pubs_page']) ? max(1, intval($_GET['pubs_page'])) : 1;
+    $per_page = 15; // Show more per page
+    
+    // Calculate offsets
+    $posts_offset = ($posts_page - 1) * $per_page;
+    $pubs_offset = ($pubs_page - 1) * $per_page;
+    
+    // Get total counts for pagination
+    $total_posts = wp_count_posts('post')->publish;
+    $total_publications = wp_count_posts('publications')->publish;
+    
+    // Calculate total pages
+    $total_posts_pages = ceil($total_posts / $per_page);
+    $total_pubs_pages = ceil($total_publications / $per_page);
+    
+    // Get sample posts and publications with pagination
     $posts = get_posts([
         'post_type' => 'post',
-        'posts_per_page' => 10,
-        'post_status' => 'publish'
+        'posts_per_page' => $per_page,
+        'offset' => $posts_offset,
+        'post_status' => 'publish',
+        'orderby' => 'date',
+        'order' => 'DESC'
     ]);
     
     $publications = get_posts([
         'post_type' => 'publications', 
-        'posts_per_page' => 10,
-        'post_status' => 'publish'
+        'posts_per_page' => $per_page,
+        'offset' => $pubs_offset,
+        'post_status' => 'publish',
+        'orderby' => 'date',
+        'order' => 'DESC'
     ]);
+    
+    // Helper function to build pagination URL
+    function build_pagination_url($posts_page_num = null, $pubs_page_num = null) {
+        $current_posts_page = isset($_GET['posts_page']) ? intval($_GET['posts_page']) : 1;
+        $current_pubs_page = isset($_GET['pubs_page']) ? intval($_GET['pubs_page']) : 1;
+        
+        $posts_page_final = $posts_page_num !== null ? $posts_page_num : $current_posts_page;
+        $pubs_page_final = $pubs_page_num !== null ? $pubs_page_num : $current_pubs_page;
+        
+        return admin_url('admin.php?page=acf-date-sorting-preview&posts_page=' . $posts_page_final . '&pubs_page=' . $pubs_page_final);
+    }
     
     ?>
     <div class="wrap">
         <h1>ACF Date Sorting Preview</h1>
         <p><strong>This is a dry run preview.</strong> No data will be saved. This shows what computed dates would be created.</p>
         
+        <div style="background: #fff; padding: 15px; border: 1px solid #ccd0d4; margin-bottom: 20px;">
+            <h3>Summary</h3>
+            <p><strong>Total Posts:</strong> <?php echo number_format($total_posts); ?> | <strong>Total Publications:</strong> <?php echo number_format($total_publications); ?></p>
+            <p>Showing <?php echo $per_page; ?> items per page. Use pagination below to browse through older content to find examples with custom dates.</p>
+        </div>
+        
         <?php if (!empty($posts)): ?>
         <h2>Posts (using release_date_new field)</h2>
+        <div style="margin-bottom: 10px;">
+            <strong>Page <?php echo $posts_page; ?> of <?php echo $total_posts_pages; ?></strong> | 
+            Showing posts <?php echo ($posts_offset + 1); ?>-<?php echo min($posts_offset + $per_page, $total_posts); ?> of <?php echo number_format($total_posts); ?>
+        </div>
+        
+        <!-- Posts Pagination -->
+        <div class="tablenav" style="margin-bottom: 10px;">
+            <div class="tablenav-pages">
+                <?php if ($posts_page > 1): ?>
+                    <a class="button" href="<?php echo build_pagination_url(1); ?>">&laquo; First</a>
+                    <a class="button" href="<?php echo build_pagination_url($posts_page - 1); ?>">&lsaquo; Previous</a>
+                <?php endif; ?>
+                
+                <span class="paging-input">
+                    Page <input type="number" min="1" max="<?php echo $total_posts_pages; ?>" value="<?php echo $posts_page; ?>" 
+                           onchange="window.location.href='<?php echo build_pagination_url(); ?>'.replace('posts_page=<?php echo $posts_page; ?>', 'posts_page=' + this.value)" 
+                           style="width: 60px;"> 
+                    of <?php echo number_format($total_posts_pages); ?>
+                </span>
+                
+                <?php if ($posts_page < $total_posts_pages): ?>
+                    <a class="button" href="<?php echo build_pagination_url($posts_page + 1); ?>">Next &rsaquo;</a>
+                    <a class="button" href="<?php echo build_pagination_url($total_posts_pages); ?>">Last &raquo;</a>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th>Post Title</th>
-                    <th>WordPress Publish Date</th>
-                    <th>ACF release_date_new</th>
-                    <th>Computed Date (What would be saved)</th>
-                    <th>Status</th>
+                    <th style="width: 25%;">Post Title</th>
+                    <th style="width: 15%;">WordPress Publish Date</th>
+                    <th style="width: 15%;">ACF release_date_new</th>
+                    <th style="width: 20%;">Computed Date (What would be saved)</th>
+                    <th style="width: 25%;">Status</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($posts as $post): ?>
-                <tr>
+                <?php 
+                $posts_with_custom_dates = 0;
+                foreach ($posts as $post): 
+                    $release_date = get_field('release_date_new', $post->ID);
+                    if ($release_date) $posts_with_custom_dates++;
+                ?>
+                <tr <?php echo $release_date ? 'style="background-color: #f0f8ff;"' : ''; ?>>
                     <td><strong><?php echo esc_html($post->post_title); ?></strong></td>
                     <td><?php echo get_post_field('post_date', $post->ID); ?></td>
                     <td>
                         <?php 
-                        $release_date = get_field('release_date_new', $post->ID);
-                        echo $release_date ? esc_html($release_date) : '<em>No release_date_new field</em>';
+                        echo $release_date ? '<strong style="color: green;">' . esc_html($release_date) . '</strong>' : '<em>No release_date_new field</em>';
                         ?>
                     </td>
                     <td>
@@ -330,34 +401,90 @@ function render_acf_date_sorting_preview_page() {
                 <?php endforeach; ?>
             </tbody>
         </table>
+        
+        <div style="margin: 10px 0; padding: 10px; background: #e7f3ff; border-left: 4px solid #0073aa;">
+            <strong>Posts Summary:</strong> <?php echo $posts_with_custom_dates; ?> of <?php echo count($posts); ?> posts on this page have custom release dates.
+            <?php if ($posts_with_custom_dates === 0): ?>
+                <em>Try going to later pages to find posts with custom dates.</em>
+            <?php endif; ?>
+        </div>
+        
         <?php else: ?>
         <p><em>No posts found.</em></p>
         <?php endif; ?>
         
         <?php if (!empty($publications)): ?>
         <h2>Publications (using latest publish date from history repeater)</h2>
+        <div style="margin-bottom: 10px; margin-top: 30px;">
+            <strong>Page <?php echo $pubs_page; ?> of <?php echo $total_pubs_pages; ?></strong> | 
+            Showing publications <?php echo ($pubs_offset + 1); ?>-<?php echo min($pubs_offset + $per_page, $total_publications); ?> of <?php echo number_format($total_publications); ?>
+        </div>
+        
+        <!-- Publications Pagination -->
+        <div class="tablenav" style="margin-bottom: 10px;">
+            <div class="tablenav-pages">
+                <?php if ($pubs_page > 1): ?>
+                    <a class="button" href="<?php echo build_pagination_url(null, 1); ?>">&laquo; First</a>
+                    <a class="button" href="<?php echo build_pagination_url(null, $pubs_page - 1); ?>">&lsaquo; Previous</a>
+                <?php endif; ?>
+                
+                <span class="paging-input">
+                    Page <input type="number" min="1" max="<?php echo $total_pubs_pages; ?>" value="<?php echo $pubs_page; ?>" 
+                           onchange="window.location.href='<?php echo build_pagination_url(); ?>'.replace('pubs_page=<?php echo $pubs_page; ?>', 'pubs_page=' + this.value)" 
+                           style="width: 60px;"> 
+                    of <?php echo number_format($total_pubs_pages); ?>
+                </span>
+                
+                <?php if ($pubs_page < $total_pubs_pages): ?>
+                    <a class="button" href="<?php echo build_pagination_url(null, $pubs_page + 1); ?>">Next &rsaquo;</a>
+                    <a class="button" href="<?php echo build_pagination_url(null, $total_pubs_pages); ?>">Last &raquo;</a>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th>Publication Title</th>
-                    <th>WordPress Publish Date</th>
-                    <th>History Field Data</th>
-                    <th>Latest Publish Date Found</th>
-                    <th>Computed Date (What would be saved)</th>
-                    <th>Status</th>
+                    <th style="width: 20%;">Publication Title</th>
+                    <th style="width: 12%;">WordPress Publish Date</th>
+                    <th style="width: 25%;">History Field Data</th>
+                    <th style="width: 15%;">Latest Publish Date Found</th>
+                    <th style="width: 15%;">Computed Date</th>
+                    <th style="width: 13%;">Status</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($publications as $publication): ?>
-                <tr>
+                <?php 
+                $pubs_with_publish_dates = 0;
+                foreach ($publications as $publication): 
+                    $history = get_field('history', $publication->ID);
+                    $has_publish_status = false;
+                    
+                    if ($history && is_array($history)) {
+                        foreach ($history as $entry) {
+                            $status = $entry['status'] ?? '';
+                            if (stripos($status, 'publish') !== false) {
+                                $has_publish_status = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if ($has_publish_status) $pubs_with_publish_dates++;
+                ?>
+                <tr <?php echo $has_publish_status ? 'style="background-color: #f0f8ff;"' : ''; ?>>
                     <td><strong><?php echo esc_html($publication->post_title); ?></strong></td>
                     <td><?php echo get_post_field('post_date', $publication->ID); ?></td>
                     <td>
                         <?php 
-                        $history = get_field('history', $publication->ID);
                         if ($history && is_array($history)) {
-                            echo '<ul style="margin: 0; padding-left: 20px;">';
+                            echo '<ul style="margin: 0; padding-left: 20px; font-size: 11px;">';
+                            $count = 0;
                             foreach ($history as $entry) {
+                                if ($count >= 3) {
+                                    echo '<li><em>... and ' . (count($history) - 3) . ' more entries</em></li>';
+                                    break;
+                                }
                                 $status = $entry['status'] ?? 'No status';
                                 $date = $entry['date'] ?? 'No date';
                                 $is_publish = stripos($status, 'publish') !== false;
@@ -370,6 +497,7 @@ function render_acf_date_sorting_preview_page() {
                                 }
                                 echo ': ' . esc_html($date);
                                 echo '</li>';
+                                $count++;
                             }
                             echo '</ul>';
                         } else {
@@ -384,7 +512,7 @@ function render_acf_date_sorting_preview_page() {
                         $is_fallback = ($latest_publish_date === date('Y-m-d', strtotime($wp_publish_date)));
                         
                         if ($is_fallback) {
-                            echo '<em style="color: red;">No publish dates found - using fallback</em>';
+                            echo '<em style="color: red;">No publish dates found</em>';
                         } else {
                             echo '<strong style="color: green;">' . esc_html($latest_publish_date) . '</strong>';
                         }
@@ -399,16 +527,16 @@ function render_acf_date_sorting_preview_page() {
                     <td>
                         <?php 
                         if ($is_fallback) {
-                            echo '<span style="color: red;">Using WordPress publish date (no publish status found)</span>';
+                            echo '<span style="color: red;">Using WP date</span>';
                         } else {
                             $wp_publish_date = get_post_field('post_date', $publication->ID);
                             $publish_timestamp = strtotime($wp_publish_date);
                             $latest_timestamp = strtotime($latest_publish_date);
                             
                             if ($latest_timestamp > $publish_timestamp) {
-                                echo '<span style="color: orange;">Latest publish date is AFTER WordPress publish date</span>';
+                                echo '<span style="color: orange;">After WP date</span>';
                             } elseif ($latest_timestamp < $publish_timestamp) {
-                                echo '<span style="color: blue;">Latest publish date is BEFORE WordPress publish date</span>';
+                                echo '<span style="color: blue;">Before WP date</span>';
                             } else {
                                 echo '<span style="color: green;">Dates match</span>';
                             }
@@ -419,6 +547,14 @@ function render_acf_date_sorting_preview_page() {
                 <?php endforeach; ?>
             </tbody>
         </table>
+        
+        <div style="margin: 10px 0; padding: 10px; background: #e7f3ff; border-left: 4px solid #0073aa;">
+            <strong>Publications Summary:</strong> <?php echo $pubs_with_publish_dates; ?> of <?php echo count($publications); ?> publications on this page have publish status dates.
+            <?php if ($pubs_with_publish_dates === 0): ?>
+                <em>Try going to later pages to find publications with publish status entries.</em>
+            <?php endif; ?>
+        </div>
+        
         <?php else: ?>
         <p><em>No publications found.</em></p>
         <?php endif; ?>
@@ -431,7 +567,7 @@ function render_acf_date_sorting_preview_page() {
                 <li>Calling that function once (you can add a temporary admin page or run it via WP-CLI)</li>
                 <li>Removing this preview tool once you're done</li>
             </ol>
-            <p><strong>Note:</strong> This preview shows a maximum of 10 posts and 10 publications. The actual populate function will process all published posts.</p>
+            <p><strong>Note:</strong> Rows with light blue backgrounds have custom dates. Browse through pages to find examples.</p>
         </div>
         
         <div style="margin-top: 20px;">
@@ -441,6 +577,7 @@ function render_acf_date_sorting_preview_page() {
                 <li><span style="color: orange;">●</span> <strong>Orange:</strong> Custom date is after WordPress publish date</li>
                 <li><span style="color: blue;">●</span> <strong>Blue:</strong> Custom date is before WordPress publish date</li>
                 <li><span style="color: red;">●</span> <strong>Red:</strong> No custom date found, using fallback</li>
+                <li><span style="background-color: #f0f8ff; padding: 2px 4px;">Light blue background:</span> Items with custom dates</li>
             </ul>
         </div>
     </div>
@@ -448,9 +585,19 @@ function render_acf_date_sorting_preview_page() {
     <style>
     .wp-list-table td {
         vertical-align: top;
+        font-size: 12px;
+    }
+    .wp-list-table th {
+        font-size: 13px;
     }
     .wp-list-table ul {
-        font-size: 12px;
+        font-size: 11px;
+    }
+    .tablenav-pages .button {
+        margin: 0 2px;
+    }
+    .paging-input {
+        margin: 0 8px;
     }
     </style>
     <?php
