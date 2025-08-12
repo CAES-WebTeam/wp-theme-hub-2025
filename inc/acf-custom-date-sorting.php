@@ -280,19 +280,18 @@ function filter_displayed_time($time, $format, $post) {
 add_filter('get_the_time', 'filter_displayed_time', 10, 3);
 */
 
-// 9. Populate computed dates for existing posts (run once)
-function populate_existing_computed_dates() {
-    // Add this action temporarily to run the population
-    // Visit: yoursite.com/wp-admin/admin.php?page=acf-date-sorting-preview&run_population=1
-    
+// 9. Populate computed dates for existing posts (run once) - BATCHED VERSION
+function populate_existing_computed_dates($batch_size = 25, $offset = 0) {
     $posts = get_posts([
         'post_type' => ['post', 'publications'],
-        'posts_per_page' => -1,
-        'post_status' => 'publish'
+        'posts_per_page' => $batch_size,
+        'offset' => $offset,
+        'post_status' => 'publish',
+        'orderby' => 'ID',
+        'order' => 'ASC'
     ]);
     
     $updated_count = 0;
-    $total_count = count($posts);
     
     foreach ($posts as $post) {
         if ($post->post_type === 'publications') {
@@ -302,31 +301,44 @@ function populate_existing_computed_dates() {
             update_post_computed_date($post->ID);
             $updated_count++;
         }
-        
-        // Prevent timeout on large sites
-        if ($updated_count % 50 === 0) {
-            sleep(1); // Brief pause every 50 posts
-        }
     }
     
-    return ['updated' => $updated_count, 'total' => $total_count];
+    // Get total count for progress tracking
+    $total_posts = wp_count_posts('post')->publish;
+    $total_publications = wp_count_posts('publications')->publish;
+    $total_count = $total_posts + $total_publications;
+    
+    return [
+        'updated' => $updated_count, 
+        'total_processed' => $offset + count($posts),
+        'total_count' => $total_count,
+        'has_more' => count($posts) === $batch_size,
+        'next_offset' => $offset + $batch_size
+    ];
 }
 
-// Add population trigger to the admin tool
+// Add population trigger with AJAX batching
 function run_population_if_requested() {
-    if (isset($_GET['run_population']) && $_GET['run_population'] === '1' && current_user_can('manage_options')) {
-        // Add a nonce check for security
-        if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'run_population')) {
-            $result = populate_existing_computed_dates();
-            
-            // Redirect to avoid re-running on refresh
-            $redirect_url = admin_url('admin.php?page=acf-date-sorting-preview&populated=1&updated=' . $result['updated'] . '&total=' . $result['total']);
-            wp_redirect($redirect_url);
-            exit;
+    // Handle AJAX batch requests
+    if (isset($_POST['action']) && $_POST['action'] === 'populate_batch' && current_user_can('manage_options')) {
+        if (wp_verify_nonce($_POST['_wpnonce'], 'run_population')) {
+            $offset = intval($_POST['offset'] ?? 0);
+            $result = populate_existing_computed_dates(25, $offset);
+            wp_send_json_success($result);
         }
+        wp_send_json_error(['message' => 'Invalid nonce']);
+    }
+    
+    // Legacy single-run approach (now disabled to prevent timeouts)
+    if (isset($_GET['run_population']) && $_GET['run_population'] === '1' && current_user_can('manage_options')) {
+        // Redirect to batched version instead
+        $redirect_url = admin_url('admin.php?page=acf-date-sorting-preview&start_batched=1');
+        wp_redirect($redirect_url);
+        exit;
     }
 }
 add_action('admin_init', 'run_population_if_requested');
+add_action('wp_ajax_populate_batch', 'run_population_if_requested');
 
 // 10. TEMPORARY ADMIN TOOL - Date Sorting Preview
 function add_acf_date_sorting_admin_tool() {
@@ -411,17 +423,26 @@ function render_acf_date_sorting_preview_page() {
             <p><strong>Total Posts:</strong> <?php echo number_format($total_posts); ?> | <strong>Total Publications:</strong> <?php echo number_format($total_publications); ?></p>
             <p>Showing <?php echo $per_page; ?> items per page. Use pagination below to browse through older content to find examples with custom dates.</p>
             
-            <?php if (!isset($_GET['populated'])): ?>
+            <?php if (!isset($_GET['populated']) && !isset($_GET['start_batched'])): ?>
             <div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-left: 4px solid #0073aa;">
                 <h4>🚀 Ready to Populate Computed Dates?</h4>
                 <p>If the preview looks correct, you can populate the computed date meta fields for all posts:</p>
-                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=acf-date-sorting-preview&run_population=1'), 'run_population'); ?>" 
-                   class="button button-primary button-large"
-                   onclick="return confirm('This will update ALL published posts and publications with computed dates. This may take a few minutes. Continue?')">
-                   🔄 Populate All Computed Dates
-                </a>
-                <p><small><strong>⚠️ This will process <?php echo number_format($total_posts + $total_publications); ?> total items.</strong> Large sites may take several minutes.</small></p>
+                <button id="start-population" class="button button-primary button-large">
+                   🔄 Populate All Computed Dates (Batched)
+                </button>
+                <p><small><strong>⚠️ This will process <?php echo number_format($total_posts + $total_publications); ?> total items</strong> in small batches to prevent timeouts.</small></p>
             </div>
+            
+            <?php elseif (isset($_GET['start_batched'])): ?>
+            <div id="population-progress" style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107;">
+                <h4>🔄 Processing Computed Dates...</h4>
+                <div id="progress-bar" style="width: 100%; background-color: #f0f0f0; border-radius: 4px; overflow: hidden; margin: 10px 0;">
+                    <div id="progress-fill" style="width: 0%; height: 20px; background-color: #0073aa; transition: width 0.3s;"></div>
+                </div>
+                <p id="progress-text">Initializing...</p>
+                <p><small>Processing in batches of 25 items. Please don't close this page.</small></p>
+            </div>
+            
             <?php else: ?>
             <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-left: 4px solid #28a745;">
                 <h4>✅ Population Complete!</h4>
@@ -433,6 +454,71 @@ function render_acf_date_sorting_preview_page() {
                 </ul>
             </div>
             <?php endif; ?>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            var isProcessing = false;
+            var totalCount = <?php echo $total_posts + $total_publications; ?>;
+            
+            $('#start-population').on('click', function() {
+                if (isProcessing) return;
+                
+                if (!confirm('This will update ALL published posts and publications with computed dates in small batches. Continue?')) {
+                    return;
+                }
+                
+                isProcessing = true;
+                $(this).prop('disabled', true).text('🔄 Processing...');
+                
+                // Show progress section
+                window.location.href = '<?php echo admin_url('admin.php?page=acf-date-sorting-preview&start_batched=1'); ?>';
+            });
+            
+            <?php if (isset($_GET['start_batched'])): ?>
+            // Start the batched processing
+            processBatch(0, 0);
+            
+            function processBatch(offset, totalProcessed) {
+                $.post(ajaxurl, {
+                    action: 'populate_batch',
+                    offset: offset,
+                    _wpnonce: '<?php echo wp_create_nonce('run_population'); ?>'
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        var data = response.data;
+                        var newTotal = totalProcessed + data.updated;
+                        var percentage = Math.round((newTotal / totalCount) * 100);
+                        
+                        $('#progress-fill').css('width', percentage + '%');
+                        $('#progress-text').text('Processed ' + newTotal.toLocaleString() + ' of ' + totalCount.toLocaleString() + ' items (' + percentage + '%)');
+                        
+                        if (data.has_more) {
+                            // Continue with next batch
+                            setTimeout(function() {
+                                processBatch(data.next_offset, newTotal);
+                            }, 500); // Small delay between batches
+                        } else {
+                            // All done!
+                            $('#progress-fill').css('width', '100%');
+                            $('#progress-text').html('<strong>✅ Complete!</strong> Updated ' + newTotal.toLocaleString() + ' items.');
+                            
+                            setTimeout(function() {
+                                window.location.href = '<?php echo admin_url('admin.php?page=acf-date-sorting-preview&populated=1&updated=' . ($total_posts + $total_publications) . '&total=' . ($total_posts + $total_publications)); ?>';
+                            }, 2000);
+                        }
+                    } else {
+                        $('#progress-text').html('<strong style="color: red;">❌ Error:</strong> ' + (response.data.message || 'Unknown error'));
+                    }
+                })
+                .fail(function() {
+                    $('#progress-text').html('<strong style="color: red;">❌ Network Error:</strong> Please refresh and try again.');
+                });
+            }
+            <?php endif; ?>
+        });
+        </script>
         </div>
         
         <?php if (!empty($posts)): ?>
