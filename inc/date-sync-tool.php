@@ -24,14 +24,89 @@ function add_date_sync_admin_tool() {
 }
 add_action('admin_menu', 'add_date_sync_admin_tool');
 
-// Handle form submissions
-function handle_date_sync_submissions() {
-    if (isset($_POST['sync_dates']) && wp_verify_nonce($_POST['_wpnonce'], 'sync_dates')) {
-        $selected_posts = $_POST['selected_posts'] ?? [];
+// Handle AJAX requests
+function handle_date_sync_ajax() {
+    // Handle data loading
+    if (isset($_POST['action']) && $_POST['action'] === 'load_date_sync_data') {
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'date_sync_nonce')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+        }
+        
+        $offset = intval($_POST['offset'] ?? 0);
+        $batch_size = 100; // Load 100 items per batch
+        $post_type_filter = $_POST['post_type'] ?? 'all';
+        
+        // Build query args
+        $query_args = [
+            'post_type' => ['post', 'publications'],
+            'post_status' => ['publish', 'future'],
+            'posts_per_page' => $batch_size,
+            'offset' => $offset,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        ];
+        
+        if ($post_type_filter !== 'all') {
+            $query_args['post_type'] = [$post_type_filter];
+        }
+        
+        $posts = get_posts($query_args);
+        $processed_data = [];
+        
+        foreach ($posts as $post) {
+            $custom_date = get_custom_date_for_post($post->ID);
+            if (!$custom_date) continue;
+            
+            $wp_date = $post->post_date;
+            $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_date));
+            $is_out_of_sync = ($wp_date !== $custom_formatted);
+            $custom_timestamp = strtotime($custom_date);
+            $now = current_time('timestamp');
+            $will_be_scheduled = $custom_timestamp > $now;
+            
+            $processed_data[] = [
+                'id' => $post->ID,
+                'title' => $post->post_title,
+                'post_type' => $post->post_type,
+                'wp_date' => $post->post_date,
+                'custom_date' => $custom_date,
+                'custom_formatted' => $custom_formatted,
+                'is_out_of_sync' => $is_out_of_sync,
+                'will_be_scheduled' => $will_be_scheduled,
+                'edit_link' => get_edit_post_link($post->ID),
+                'view_link' => get_permalink($post->ID)
+            ];
+        }
+        
+        // Get total count for progress
+        $total_query = [
+            'post_type' => $query_args['post_type'],
+            'post_status' => ['publish', 'future'],
+            'posts_per_page' => -1,
+            'fields' => 'ids'
+        ];
+        $total_count = count(get_posts($total_query));
+        
+        wp_send_json_success([
+            'data' => $processed_data,
+            'has_more' => count($posts) === $batch_size,
+            'next_offset' => $offset + $batch_size,
+            'total_count' => $total_count,
+            'current_loaded' => $offset + count($posts)
+        ]);
+    }
+    
+    // Handle batch sync
+    if (isset($_POST['action']) && $_POST['action'] === 'sync_batch_dates') {
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'date_sync_nonce')) {
+            wp_send_json_error(['message' => 'Invalid nonce']);
+        }
+        
+        $post_ids = $_POST['post_ids'] ?? [];
         $updated_count = 0;
         $scheduled_count = 0;
         
-        foreach ($selected_posts as $post_id) {
+        foreach ($post_ids as $post_id) {
             $post_id = intval($post_id);
             $post = get_post($post_id);
             
@@ -43,14 +118,12 @@ function handle_date_sync_submissions() {
             $custom_timestamp = strtotime($custom_date);
             $now = current_time('timestamp');
             
-            // Prepare post data
             $post_data = [
                 'ID' => $post_id,
                 'post_date' => date('Y-m-d H:i:s', $custom_timestamp),
                 'post_date_gmt' => gmdate('Y-m-d H:i:s', $custom_timestamp)
             ];
             
-            // Set status based on date
             if ($custom_timestamp > $now) {
                 $post_data['post_status'] = 'future';
                 $scheduled_count++;
@@ -62,12 +135,14 @@ function handle_date_sync_submissions() {
             wp_update_post($post_data);
         }
         
-        $redirect_url = admin_url('admin.php?page=date-sync-tool&updated=' . $updated_count . '&scheduled=' . $scheduled_count);
-        wp_redirect($redirect_url);
-        exit;
+        wp_send_json_success([
+            'updated' => $updated_count,
+            'scheduled' => $scheduled_count
+        ]);
     }
 }
-add_action('admin_init', 'handle_date_sync_submissions');
+add_action('wp_ajax_load_date_sync_data', 'handle_date_sync_ajax');
+add_action('wp_ajax_sync_batch_dates', 'handle_date_sync_ajax');
 
 // Get custom date for a post
 function get_custom_date_for_post($post_id) {
@@ -124,236 +199,328 @@ function get_latest_publish_date_from_history($post_id) {
 
 // Render the admin page
 function render_date_sync_tool_page() {
-    // Get filter parameters
-    $show_out_of_sync_only = isset($_GET['out_of_sync_only']) && $_GET['out_of_sync_only'] === '1';
     $post_type_filter = $_GET['post_type'] ?? 'all';
-    $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-    $per_page = 500;
-    $offset = ($page - 1) * $per_page;
-    
-    // Build query args
-    $query_args = [
-        'post_type' => ['post', 'publications'],
-        'post_status' => ['publish', 'future'],
-        'posts_per_page' => -1, // Get all first, then filter
-        'orderby' => 'date',
-        'order' => 'DESC'
-    ];
-    
-    if ($post_type_filter !== 'all') {
-        $query_args['post_type'] = [$post_type_filter];
-    }
-    
-    $all_posts = get_posts($query_args);
-    
-    // Filter and prepare data
-    $filtered_posts = [];
-    foreach ($all_posts as $post) {
-        $custom_date = get_custom_date_for_post($post->ID);
-        if (!$custom_date) continue;
-        
-        $wp_date = $post->post_date;
-        $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_date));
-        $is_out_of_sync = ($wp_date !== $custom_formatted);
-        
-        if ($show_out_of_sync_only && !$is_out_of_sync) {
-            continue;
-        }
-        
-        $filtered_posts[] = [
-            'post' => $post,
-            'custom_date' => $custom_date,
-            'custom_formatted' => $custom_formatted,
-            'is_out_of_sync' => $is_out_of_sync
-        ];
-    }
-    
-    // Pagination
-    $total_items = count($filtered_posts);
-    $total_pages = ceil($total_items / $per_page);
-    $paged_posts = array_slice($filtered_posts, $offset, $per_page);
-    
-    // Count out of sync items
-    $out_of_sync_count = count(array_filter($filtered_posts, function($item) {
-        return $item['is_out_of_sync'];
-    }));
+    $show_out_of_sync_only = isset($_GET['out_of_sync_only']) && $_GET['out_of_sync_only'] === '1';
     
     ?>
     <div class="wrap">
         <h1>Date Sync Tool</h1>
         
-        <?php if (isset($_GET['updated']) || isset($_GET['scheduled'])): ?>
-            <div class="notice notice-success is-dismissible">
-                <p>
-                    <strong>Sync Complete!</strong>
-                    <?php if (isset($_GET['updated']) && $_GET['updated'] > 0): ?>
-                        Updated <?php echo intval($_GET['updated']); ?> posts.
-                    <?php endif; ?>
-                    <?php if (isset($_GET['scheduled']) && $_GET['scheduled'] > 0): ?>
-                        Scheduled <?php echo intval($_GET['scheduled']); ?> future posts.
-                    <?php endif; ?>
-                </p>
-            </div>
-        <?php endif; ?>
+        <div id="sync-results" style="display: none;" class="notice notice-success is-dismissible">
+            <p id="sync-results-text"></p>
+        </div>
         
-        <!-- Filters -->
-        <div class="tablenav top">
-            <div class="alignleft actions">
-                <form method="get" style="display: inline;">
-                    <input type="hidden" name="page" value="date-sync-tool">
-                    
-                    <select name="post_type">
+        <!-- Loading Progress -->
+        <div id="loading-progress" style="margin: 20px 0;">
+            <h3>Loading Posts...</h3>
+            <div style="width: 100%; background-color: #f0f0f0; border-radius: 4px; overflow: hidden; margin: 10px 0;">
+                <div id="loading-progress-bar" style="width: 0%; height: 20px; background-color: #0073aa; transition: width 0.3s;"></div>
+            </div>
+            <p id="loading-progress-text">Initializing...</p>
+        </div>
+        
+        <!-- Filters (initially hidden) -->
+        <div id="filters-section" style="display: none;">
+            <div class="tablenav top">
+                <div class="alignleft actions">
+                    <select id="post-type-filter">
                         <option value="all" <?php selected($post_type_filter, 'all'); ?>>All Post Types</option>
                         <option value="post" <?php selected($post_type_filter, 'post'); ?>>Posts Only</option>
                         <option value="publications" <?php selected($post_type_filter, 'publications'); ?>>Publications Only</option>
                     </select>
                     
                     <label>
-                        <input type="checkbox" name="out_of_sync_only" value="1" <?php checked($show_out_of_sync_only); ?>>
-                        Show out of sync only (<?php echo $out_of_sync_count; ?> items)
+                        <input type="checkbox" id="out-of-sync-filter" <?php checked($show_out_of_sync_only); ?>>
+                        Show out of sync only (<span id="out-of-sync-count">0</span> items)
                     </label>
                     
-                    <input type="submit" class="button" value="Filter">
-                </form>
-            </div>
-            
-            <div class="alignright">
-                <span class="displaying-num">
-                    <?php echo number_format($total_items); ?> items
-                    <?php if ($show_out_of_sync_only): ?>
-                        (out of sync)
-                    <?php endif; ?>
-                </span>
-            </div>
-        </div>
-        
-        <?php if (empty($paged_posts)): ?>
-            <p>No items found matching your criteria.</p>
-        <?php else: ?>
-        
-        <form method="post">
-            <?php wp_nonce_field('sync_dates'); ?>
-            
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                    <tr>
-                        <td id="cb" class="manage-column column-cb check-column">
-                            <input type="checkbox" id="select-all-posts">
-                        </td>
-                        <th style="width: 25%;">Title</th>
-                        <th style="width: 10%;">Type</th>
-                        <th style="width: 15%;">WordPress Date</th>
-                        <th style="width: 15%;">Custom Date</th>
-                        <th style="width: 20%;">Custom Date Source</th>
-                        <th style="width: 15%;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($paged_posts as $item): 
-                        $post = $item['post'];
-                        $custom_date = $item['custom_date'];
-                        $is_out_of_sync = $item['is_out_of_sync'];
-                        $now = current_time('timestamp');
-                        $custom_timestamp = strtotime($custom_date);
-                        $will_be_scheduled = $custom_timestamp > $now;
-                    ?>
-                    <tr <?php if ($is_out_of_sync) echo 'style="background-color: #fff3cd;"'; ?>>
-                        <th scope="row" class="check-column">
-                            <?php if ($is_out_of_sync): ?>
-                                <input type="checkbox" name="selected_posts[]" value="<?php echo $post->ID; ?>">
-                            <?php endif; ?>
-                        </th>
-                        <td>
-                            <strong>
-                                <a href="<?php echo get_edit_post_link($post->ID); ?>" target="_blank">
-                                    <?php echo esc_html($post->post_title); ?>
-                                </a>
-                            </strong>
-                            <div class="row-actions">
-                                <span class="edit">
-                                    <a href="<?php echo get_edit_post_link($post->ID); ?>" target="_blank">Edit</a> |
-                                </span>
-                                <span class="view">
-                                    <a href="<?php echo get_permalink($post->ID); ?>" target="_blank">View</a>
-                                </span>
-                            </div>
-                        </td>
-                        <td><?php echo ucfirst($post->post_type); ?></td>
-                        <td>
-                            <strong><?php echo date('M j, Y', strtotime($post->post_date)); ?></strong>
-                            <br><small><?php echo date('g:i a', strtotime($post->post_date)); ?></small>
-                        </td>
-                        <td>
-                            <strong><?php echo date('M j, Y', $custom_timestamp); ?></strong>
-                            <br><small><?php echo date('g:i a', $custom_timestamp); ?></small>
-                        </td>
-                        <td>
-                            <?php if ($post->post_type === 'post'): ?>
-                                <small>ACF: release_date_new</small>
-                            <?php else: ?>
-                                <small>History: Latest publish date</small>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?php if (!$is_out_of_sync): ?>
-                                <span style="color: #46b450;">In Sync</span>
-                            <?php elseif ($will_be_scheduled): ?>
-                                <span style="color: #d63638;">Out of sync - Will schedule</span>
-                            <?php else: ?>
-                                <span style="color: #d63638;">Out of sync - Will publish</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            
-            <?php if ($out_of_sync_count > 0): ?>
-            <div class="tablenav bottom">
-                <div class="alignleft actions">
-                    <input type="submit" name="sync_dates" class="button button-primary" 
-                           value="Sync Selected Dates" 
-                           onclick="return confirm('This will update the WordPress publish date for selected items. Continue?')">
+                    <button type="button" id="apply-filters" class="button">Apply Filters</button>
+                    <button type="button" id="reload-data" class="button">Reload Data</button>
+                </div>
+                
+                <div class="alignright">
+                    <span id="items-count" class="displaying-num">0 items</span>
                 </div>
             </div>
-            <?php endif; ?>
-        </form>
+        </div>
         
-        <!-- Pagination -->
-        <?php if ($total_pages > 1): ?>
-        <div class="tablenav bottom">
-            <div class="tablenav-pages">
-                <?php
-                $base_url = admin_url('admin.php?page=date-sync-tool');
-                if ($post_type_filter !== 'all') {
-                    $base_url .= '&post_type=' . $post_type_filter;
-                }
-                if ($show_out_of_sync_only) {
-                    $base_url .= '&out_of_sync_only=1';
-                }
-                
-                if ($page > 1): ?>
-                    <a class="button" href="<?php echo $base_url . '&paged=' . ($page - 1); ?>">Previous</a>
-                <?php endif; ?>
-                
-                <span class="paging-input">
-                    Page <?php echo $page; ?> of <?php echo $total_pages; ?>
-                </span>
-                
-                <?php if ($page < $total_pages): ?>
-                    <a class="button" href="<?php echo $base_url . '&paged=' . ($page + 1); ?>">Next</a>
-                <?php endif; ?>
+        <!-- Sync Controls (initially hidden) -->
+        <div id="sync-controls" style="display: none; margin: 10px 0;">
+            <div class="tablenav">
+                <div class="alignleft actions">
+                    <button type="button" id="select-all-visible" class="button">Select All Visible</button>
+                    <button type="button" id="select-out-of-sync" class="button">Select All Out of Sync</button>
+                    <button type="button" id="sync-selected" class="button button-primary" disabled>
+                        Sync Selected (<span id="selected-count">0</span>)
+                    </button>
+                </div>
             </div>
         </div>
-        <?php endif; ?>
         
-        <?php endif; ?>
+        <!-- Data Table -->
+        <div id="data-table-container" style="display: none;">
+            <table class="wp-list-table widefat fixed striped" id="date-sync-table">
+                <thead>
+                    <tr>
+                        <td class="manage-column column-cb check-column">
+                            <input type="checkbox" id="select-all-checkbox">
+                        </td>
+                        <th style="width: 25%;">Title</th>
+                        <th style="width: 8%;">Type</th>
+                        <th style="width: 15%;">WordPress Date</th>
+                        <th style="width: 15%;">Custom Date</th>
+                        <th style="width: 17%;">Custom Date Source</th>
+                        <th style="width: 20%;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    <!-- Data will be loaded via AJAX -->
+                </tbody>
+            </table>
+        </div>
     </div>
     
     <script>
     jQuery(document).ready(function($) {
-        $('#select-all-posts').on('change', function() {
-            $('input[name="selected_posts[]"]').prop('checked', this.checked);
+        var allData = [];
+        var filteredData = [];
+        var selectedItems = new Set();
+        
+        // Start loading data
+        loadAllData();
+        
+        function loadAllData() {
+            allData = [];
+            var totalLoaded = 0;
+            var totalCount = 0;
+            
+            loadBatch(0);
+            
+            function loadBatch(offset) {
+                $.post(ajaxurl, {
+                    action: 'load_date_sync_data',
+                    offset: offset,
+                    post_type: $('#post-type-filter').val() || 'all',
+                    _wpnonce: '<?php echo wp_create_nonce('date_sync_nonce'); ?>'
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        var data = response.data;
+                        allData = allData.concat(data.data);
+                        totalLoaded = data.current_loaded;
+                        totalCount = data.total_count;
+                        
+                        var percentage = Math.round((totalLoaded / totalCount) * 100);
+                        $('#loading-progress-bar').css('width', percentage + '%');
+                        $('#loading-progress-text').text('Loaded ' + totalLoaded.toLocaleString() + ' of ' + totalCount.toLocaleString() + ' posts (' + percentage + '%)');
+                        
+                        if (data.has_more) {
+                            setTimeout(function() {
+                                loadBatch(data.next_offset);
+                            }, 100);
+                        } else {
+                            // Loading complete
+                            $('#loading-progress').hide();
+                            $('#filters-section, #sync-controls, #data-table-container').show();
+                            applyFilters();
+                        }
+                    } else {
+                        $('#loading-progress-text').html('<strong style="color: red;">Error:</strong> ' + (response.data.message || 'Unknown error'));
+                    }
+                })
+                .fail(function() {
+                    $('#loading-progress-text').html('<strong style="color: red;">Network Error:</strong> Please refresh and try again.');
+                });
+            }
+        }
+        
+        function applyFilters() {
+            var showOutOfSyncOnly = $('#out-of-sync-filter').is(':checked');
+            var postTypeFilter = $('#post-type-filter').val();
+            
+            filteredData = allData.filter(function(item) {
+                if (showOutOfSyncOnly && !item.is_out_of_sync) {
+                    return false;
+                }
+                if (postTypeFilter !== 'all' && item.post_type !== postTypeFilter) {
+                    return false;
+                }
+                return true;
+            });
+            
+            var outOfSyncCount = allData.filter(function(item) {
+                return item.is_out_of_sync;
+            }).length;
+            
+            $('#out-of-sync-count').text(outOfSyncCount);
+            $('#items-count').text(filteredData.length.toLocaleString() + ' items');
+            
+            renderTable();
+            updateSelectedCount();
+        }
+        
+        function renderTable() {
+            var tbody = $('#data-table-body');
+            tbody.empty();
+            
+            filteredData.forEach(function(item) {
+                var isSelected = selectedItems.has(item.id);
+                var rowClass = item.is_out_of_sync ? 'style="background-color: #fff3cd;"' : '';
+                
+                var row = $('<tr ' + rowClass + '>' +
+                    '<th scope="row" class="check-column">' +
+                        (item.is_out_of_sync ? '<input type="checkbox" class="item-checkbox" data-id="' + item.id + '"' + (isSelected ? ' checked' : '') + '>' : '') +
+                    '</th>' +
+                    '<td>' +
+                        '<strong><a href="' + item.edit_link + '" target="_blank">' + $('<div>').text(item.title).html() + '</a></strong>' +
+                        '<div class="row-actions">' +
+                            '<span class="edit"><a href="' + item.edit_link + '" target="_blank">Edit</a> | </span>' +
+                            '<span class="view"><a href="' + item.view_link + '" target="_blank">View</a></span>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td>' + (item.post_type.charAt(0).toUpperCase() + item.post_type.slice(1)) + '</td>' +
+                    '<td>' +
+                        '<strong>' + formatDate(item.wp_date) + '</strong><br>' +
+                        '<small>' + formatTime(item.wp_date) + '</small>' +
+                    '</td>' +
+                    '<td>' +
+                        '<strong>' + formatDate(item.custom_date) + '</strong><br>' +
+                        '<small>' + formatTime(item.custom_date) + '</small>' +
+                    '</td>' +
+                    '<td>' +
+                        '<small>' + (item.post_type === 'post' ? 'ACF: release_date_new' : 'History: Latest publish date') + '</small>' +
+                    '</td>' +
+                    '<td>' + getStatusText(item) + '</td>' +
+                '</tr>');
+                
+                tbody.append(row);
+            });
+        }
+        
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        function formatTime(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        
+        function getStatusText(item) {
+            if (!item.is_out_of_sync) {
+                return '<span style="color: #46b450;">In Sync</span>';
+            } else if (item.will_be_scheduled) {
+                return '<span style="color: #d63638;">Out of sync - Will schedule</span>';
+            } else {
+                return '<span style="color: #d63638;">Out of sync - Will publish</span>';
+            }
+        }
+        
+        function updateSelectedCount() {
+            var count = selectedItems.size;
+            $('#selected-count').text(count);
+            $('#sync-selected').prop('disabled', count === 0);
+        }
+        
+        // Event handlers
+        $('#apply-filters').on('click', applyFilters);
+        $('#reload-data').on('click', function() {
+            $('#loading-progress').show();
+            $('#filters-section, #sync-controls, #data-table-container').hide();
+            selectedItems.clear();
+            loadAllData();
+        });
+        
+        $(document).on('change', '.item-checkbox', function() {
+            var id = parseInt($(this).data('id'));
+            if ($(this).is(':checked')) {
+                selectedItems.add(id);
+            } else {
+                selectedItems.delete(id);
+            }
+            updateSelectedCount();
+        });
+        
+        $('#select-all-checkbox').on('change', function() {
+            var isChecked = $(this).is(':checked');
+            $('.item-checkbox').prop('checked', isChecked);
+            
+            selectedItems.clear();
+            if (isChecked) {
+                filteredData.forEach(function(item) {
+                    if (item.is_out_of_sync) {
+                        selectedItems.add(item.id);
+                    }
+                });
+            }
+            updateSelectedCount();
+        });
+        
+        $('#select-all-visible').on('click', function() {
+            $('.item-checkbox').prop('checked', true);
+            selectedItems.clear();
+            filteredData.forEach(function(item) {
+                if (item.is_out_of_sync) {
+                    selectedItems.add(item.id);
+                }
+            });
+            updateSelectedCount();
+        });
+        
+        $('#select-out-of-sync').on('click', function() {
+            $('.item-checkbox').prop('checked', false);
+            selectedItems.clear();
+            allData.forEach(function(item) {
+                if (item.is_out_of_sync) {
+                    selectedItems.add(item.id);
+                    $('.item-checkbox[data-id="' + item.id + '"]').prop('checked', true);
+                }
+            });
+            updateSelectedCount();
+        });
+        
+        $('#sync-selected').on('click', function() {
+            if (selectedItems.size === 0) return;
+            
+            if (!confirm('This will update the WordPress publish date for ' + selectedItems.size + ' selected items. Continue?')) {
+                return;
+            }
+            
+            var selectedArray = Array.from(selectedItems);
+            $(this).prop('disabled', true).text('Syncing...');
+            
+            $.post(ajaxurl, {
+                action: 'sync_batch_dates',
+                post_ids: selectedArray,
+                _wpnonce: '<?php echo wp_create_nonce('date_sync_nonce'); ?>'
+            })
+            .done(function(response) {
+                if (response.success) {
+                    var data = response.data;
+                    var message = 'Sync Complete! ';
+                    if (data.updated > 0) {
+                        message += 'Updated ' + data.updated + ' posts. ';
+                    }
+                    if (data.scheduled > 0) {
+                        message += 'Scheduled ' + data.scheduled + ' future posts.';
+                    }
+                    
+                    $('#sync-results-text').text(message);
+                    $('#sync-results').show();
+                    
+                    // Reload data to reflect changes
+                    $('#reload-data').click();
+                } else {
+                    alert('Error: ' + (response.data.message || 'Unknown error'));
+                }
+            })
+            .fail(function() {
+                alert('Network error occurred. Please try again.');
+            })
+            .always(function() {
+                $('#sync-selected').prop('disabled', false).text('Sync Selected (0)');
+            });
         });
     });
     </script>
@@ -364,6 +531,11 @@ function render_date_sync_tool_page() {
     }
     .wp-list-table .row-actions {
         visibility: visible;
+    }
+    #loading-progress {
+        border: 1px solid #c3c4c7;
+        padding: 15px;
+        background: #fff;
     }
     </style>
     <?php
