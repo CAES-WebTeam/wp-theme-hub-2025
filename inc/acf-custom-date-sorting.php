@@ -351,7 +351,7 @@ function render_acf_date_sorting_preview_page() {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 25%;">Post Title</th>
+                    <th style="width: 25%;">Post Title (Click to Edit)</th>
                     <th style="width: 15%;">WordPress Publish Date</th>
                     <th style="width: 15%;">ACF release_date_new</th>
                     <th style="width: 20%;">Computed Date (What would be saved)</th>
@@ -366,7 +366,17 @@ function render_acf_date_sorting_preview_page() {
                     if ($release_date) $posts_with_custom_dates++;
                 ?>
                 <tr <?php echo $release_date ? 'style="background-color: #f0f8ff;"' : ''; ?>>
-                    <td><strong><?php echo esc_html($post->post_title); ?></strong></td>
+                    <td>
+                        <strong>
+                            <a href="<?php echo get_edit_post_link($post->ID); ?>" target="_blank" title="Edit this post">
+                                <?php echo esc_html($post->post_title); ?>
+                            </a>
+                        </strong>
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                            ID: <?php echo $post->ID; ?> | 
+                            <a href="<?php echo get_permalink($post->ID); ?>" target="_blank" style="text-decoration: none;">View →</a>
+                        </div>
+                    </td>
                     <td><?php echo get_post_field('post_date', $post->ID); ?></td>
                     <td>
                         <?php 
@@ -445,7 +455,7 @@ function render_acf_date_sorting_preview_page() {
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 20%;">Publication Title</th>
+                    <th style="width: 20%;">Publication Title (Click to Edit)</th>
                     <th style="width: 12%;">WordPress Publish Date</th>
                     <th style="width: 25%;">History Field Data</th>
                     <th style="width: 15%;">Latest Publish Date Found</th>
@@ -473,7 +483,17 @@ function render_acf_date_sorting_preview_page() {
                     if ($has_publish_status) $pubs_with_publish_dates++;
                 ?>
                 <tr <?php echo $has_publish_status ? 'style="background-color: #f0f8ff;"' : ''; ?>>
-                    <td><strong><?php echo esc_html($publication->post_title); ?></strong></td>
+                    <td>
+                        <strong>
+                            <a href="<?php echo get_edit_post_link($publication->ID); ?>" target="_blank" title="Edit this publication">
+                                <?php echo esc_html($publication->post_title); ?>
+                            </a>
+                        </strong>
+                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                            ID: <?php echo $publication->ID; ?> | 
+                            <a href="<?php echo get_permalink($publication->ID); ?>" target="_blank" style="text-decoration: none;">View →</a>
+                        </div>
+                    </td>
                     <td><?php echo get_post_field('post_date', $publication->ID); ?></td>
                     <td>
                         <?php 
@@ -571,13 +591,15 @@ function render_acf_date_sorting_preview_page() {
         </div>
         
         <div style="margin-top: 20px;">
-            <h3>Legend:</h3>
+            <h3>Legend & Instructions:</h3>
             <ul>
                 <li><span style="color: green;">●</span> <strong>Green:</strong> Dates match or publish status found</li>
                 <li><span style="color: orange;">●</span> <strong>Orange:</strong> Custom date is after WordPress publish date</li>
                 <li><span style="color: blue;">●</span> <strong>Blue:</strong> Custom date is before WordPress publish date</li>
                 <li><span style="color: red;">●</span> <strong>Red:</strong> No custom date found, using fallback</li>
                 <li><span style="background-color: #f0f8ff; padding: 2px 4px;">Light blue background:</span> Items with custom dates</li>
+                <li><strong>📝 Click post/publication titles</strong> to open the edit page and inspect ACF fields</li>
+                <li><strong>👁️ "View →" links</strong> open the front-end page in a new tab</li>
             </ul>
         </div>
     </div>
@@ -598,6 +620,17 @@ function render_acf_date_sorting_preview_page() {
     }
     .paging-input {
         margin: 0 8px;
+    }
+    .wp-list-table td a {
+        text-decoration: none;
+        color: #0073aa;
+    }
+    .wp-list-table td a:hover {
+        color: #005177;
+        text-decoration: underline;
+    }
+    .wp-list-table td strong a {
+        font-weight: bold;
     }
     </style>
     <?php
