@@ -50,15 +50,33 @@ function get_publications_latest_publish_date($post_id, $format = 'Y-m-d H:i:s')
         return $post ? date($format, strtotime($post->post_date)) : date($format);
     }
     
+    // Status mapping
+    $status_labels = [
+        1 => 'Unpublished/Removed',
+        2 => 'Published',
+        4 => 'Published with Minor Revisions',
+        5 => 'Published with Major Revisions',
+        6 => 'Published with Full Review',
+        7 => 'Historic/Archived',
+        8 => 'In Review for Minor Revisions',
+        9 => 'In Review for Major Revisions',
+        10 => 'In Review'
+    ];
+    
+    // Published status IDs
+    $published_statuses = [2, 4, 5, 6];
+    
     $latest_publish_date = null;
     $latest_timestamp = 0;
     
     foreach ($history as $entry) {
-        $status = $entry['status'] ?? '';
+        $status_raw = $entry['status'] ?? '';
         $date = $entry['date'] ?? '';
         
-        // Check if status contains "publish" (case insensitive)
-        if (stripos($status, 'publish') !== false && !empty($date)) {
+        // Check if status is one of the published statuses
+        $is_publish = in_array((int)$status_raw, $published_statuses);
+        
+        if ($is_publish && !empty($date)) {
             $timestamp = strtotime($date);
             if ($timestamp > $latest_timestamp) {
                 $latest_timestamp = $timestamp;
@@ -466,14 +484,16 @@ function render_acf_date_sorting_preview_page() {
             <tbody>
                 <?php 
                 $pubs_with_publish_dates = 0;
+                $published_statuses = [2, 4, 5, 6];
+                
                 foreach ($publications as $publication): 
                     $history = get_field('history', $publication->ID);
                     $has_publish_status = false;
                     
                     if ($history && is_array($history)) {
                         foreach ($history as $entry) {
-                            $status = $entry['status'] ?? '';
-                            if (stripos($status, 'publish') !== false) {
+                            $status_raw = $entry['status'] ?? '';
+                            if (in_array((int)$status_raw, $published_statuses)) {
                                 $has_publish_status = true;
                                 break;
                             }
@@ -497,6 +517,20 @@ function render_acf_date_sorting_preview_page() {
                     <td><?php echo get_post_field('post_date', $publication->ID); ?></td>
                     <td>
                         <?php 
+                        // Status mapping
+                        $status_labels = [
+                            1 => 'Unpublished/Removed',
+                            2 => 'Published',
+                            4 => 'Published with Minor Revisions',
+                            5 => 'Published with Major Revisions',
+                            6 => 'Published with Full Review',
+                            7 => 'Historic/Archived',
+                            8 => 'In Review for Minor Revisions',
+                            9 => 'In Review for Major Revisions',
+                            10 => 'In Review'
+                        ];
+                        $published_statuses = [2, 4, 5, 6];
+                        
                         if ($history && is_array($history)) {
                             echo '<ul style="margin: 0; padding-left: 20px; font-size: 11px;">';
                             $count = 0;
@@ -505,15 +539,18 @@ function render_acf_date_sorting_preview_page() {
                                     echo '<li><em>... and ' . (count($history) - 3) . ' more entries</em></li>';
                                     break;
                                 }
-                                $status = $entry['status'] ?? 'No status';
+                                $status_raw = $entry['status'] ?? 'No status';
                                 $date = $entry['date'] ?? 'No date';
-                                $is_publish = stripos($status, 'publish') !== false;
+                                
+                                // Get formatted status
+                                $status_formatted = isset($status_labels[(int)$status_raw]) ? $status_labels[(int)$status_raw] : $status_raw;
+                                $is_publish = in_array((int)$status_raw, $published_statuses);
                                 
                                 echo '<li>';
                                 if ($is_publish) {
-                                    echo '<strong style="color: green;">' . esc_html($status) . '</strong>';
+                                    echo '<strong style="color: green;">' . esc_html($status_formatted) . '</strong>';
                                 } else {
-                                    echo esc_html($status);
+                                    echo esc_html($status_formatted);
                                 }
                                 echo ': ' . esc_html($date);
                                 echo '</li>';
@@ -593,13 +630,14 @@ function render_acf_date_sorting_preview_page() {
         <div style="margin-top: 20px;">
             <h3>Legend & Instructions:</h3>
             <ul>
-                <li><span style="color: green;">●</span> <strong>Green:</strong> Dates match or publish status found</li>
+                <li><span style="color: green;">●</span> <strong>Green:</strong> Dates match or publish status found (IDs: 2, 4, 5, 6)</li>
                 <li><span style="color: orange;">●</span> <strong>Orange:</strong> Custom date is after WordPress publish date</li>
                 <li><span style="color: blue;">●</span> <strong>Blue:</strong> Custom date is before WordPress publish date</li>
                 <li><span style="color: red;">●</span> <strong>Red:</strong> No custom date found, using fallback</li>
                 <li><span style="background-color: #f0f8ff; padding: 2px 4px;">Light blue background:</span> Items with custom dates</li>
                 <li><strong>📝 Click post/publication titles</strong> to open the edit page and inspect ACF fields</li>
                 <li><strong>👁️ "View →" links</strong> open the front-end page in a new tab</li>
+                <li><strong>📊 Published Statuses:</strong> Published, Published with Minor/Major Revisions, Published with Full Review</li>
             </ul>
         </div>
     </div>
