@@ -319,6 +319,16 @@ function populate_existing_computed_dates($batch_size = 25, $offset = 0) {
 
 // Add population trigger with AJAX batching
 function run_population_if_requested() {
+    // Handle cleanup request
+    if (isset($_GET['cleanup']) && $_GET['cleanup'] === '1' && current_user_can('manage_options')) {
+        if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'cleanup_fields')) {
+            $result = cleanup_custom_meta_fields();
+            $redirect_url = admin_url('admin.php?page=acf-date-sorting-preview&cleanup=done&deleted=' . $result['deleted']);
+            wp_redirect($redirect_url);
+            exit;
+        }
+    }
+    
     // Handle AJAX batch requests
     if (isset($_POST['action']) && $_POST['action'] === 'populate_batch' && current_user_can('manage_options')) {
         if (wp_verify_nonce($_POST['_wpnonce'], 'run_population')) {
@@ -336,6 +346,19 @@ function run_population_if_requested() {
         wp_redirect($redirect_url);
         exit;
     }
+}
+
+// Cleanup function to remove all custom meta fields
+function cleanup_custom_meta_fields() {
+    global $wpdb;
+    
+    // Delete both custom meta fields
+    $deleted = $wpdb->query($wpdb->prepare("
+        DELETE FROM {$wpdb->postmeta} 
+        WHERE meta_key IN (%s, %s)
+    ", '_computed_date_for_sorting', '_computed_publish_date'));
+    
+    return ['deleted' => $deleted];
 }
 add_action('admin_init', 'run_population_if_requested');
 add_action('wp_ajax_populate_batch', 'run_population_if_requested');
@@ -416,6 +439,16 @@ function render_acf_date_sorting_preview_page() {
             </div>
         <?php endif; ?>
         
+        <?php 
+        // Show cleanup success message
+        if (isset($_GET['cleanup']) && $_GET['cleanup'] === 'done'): 
+            $deleted = intval($_GET['deleted'] ?? 0);
+        ?>
+            <div class="notice notice-success is-dismissible">
+                <p><strong>🧹 Cleanup Complete!</strong> Deleted <?php echo number_format($deleted); ?> custom meta field entries. Your posts are back to using WordPress dates.</p>
+            </div>
+        <?php endif; ?>
+        
         <p><strong>This is a dry run preview.</strong> No data will be saved. This shows what computed dates would be created.</p>
         
         <div style="background: #fff; padding: 15px; border: 1px solid #ccd0d4; margin-bottom: 20px;">
@@ -423,7 +456,7 @@ function render_acf_date_sorting_preview_page() {
             <p><strong>Total Posts:</strong> <?php echo number_format($total_posts); ?> | <strong>Total Publications:</strong> <?php echo number_format($total_publications); ?></p>
             <p>Showing <?php echo $per_page; ?> items per page. Use pagination below to browse through older content to find examples with custom dates.</p>
             
-            <?php if (!isset($_GET['populated']) && !isset($_GET['start_batched'])): ?>
+            <?php if (!isset($_GET['populated']) && !isset($_GET['start_batched']) && !isset($_GET['cleanup'])): ?>
             <div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-left: 4px solid #0073aa;">
                 <h4>🚀 Ready to Populate Computed Dates?</h4>
                 <p>If the preview looks correct, you can populate the computed date meta fields for all posts:</p>
@@ -431,6 +464,29 @@ function render_acf_date_sorting_preview_page() {
                    🔄 Populate All Computed Dates (Batched)
                 </button>
                 <p><small><strong>⚠️ This will process <?php echo number_format($total_posts + $total_publications); ?> total items</strong> in small batches to prevent timeouts.</small></p>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107;">
+                <h4>🧹 Or Clean Up Custom Fields</h4>
+                <p>If you want to remove all custom computed date fields and start fresh:</p>
+                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=acf-date-sorting-preview&cleanup=1'), 'cleanup_fields'); ?>" 
+                   class="button button-secondary"
+                   onclick="return confirm('This will DELETE all _computed_date_for_sorting and _computed_publish_date meta fields. Continue?')">
+                   🗑️ Delete All Custom Meta Fields
+                </a>
+                <p><small>This will remove the custom fields but keep your original ACF data intact.</small></p>
+            </div>
+            
+            <?php elseif (isset($_GET['cleanup']) && $_GET['cleanup'] === 'done'): ?>
+            <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-left: 4px solid #28a745;">
+                <h4>🧹 Cleanup Complete!</h4>
+                <p>All custom meta fields have been removed. Your posts are now back to using WordPress publish dates for sorting.</p>
+                <p><strong>Next steps:</strong></p>
+                <ul>
+                    <li>Remove or comment out the ACF custom date sorting code from your functions.php</li>
+                    <li>Query Loop blocks will now sort by regular WordPress publish dates</li>
+                    <li>You can delete this admin tool</li>
+                </ul>
             </div>
             
             <?php elseif (isset($_GET['start_batched'])): ?>
@@ -808,25 +864,23 @@ function render_acf_date_sorting_preview_page() {
         <?php endif; ?>
         
         <div style="margin-top: 30px; padding: 20px; background: #f0f8ff; border-left: 4px solid #0073aa;">
-            <h3>About Automatic Updates:</h3>
-            <p><strong>✅ All Save Methods Covered:</strong> The computed date fields will automatically update when posts/publications are saved via:</p>
-            <ul>
-                <li>📝 <strong>ACF Field Updates</strong> - When custom fields are modified</li>
-                <li>⚡ <strong>Quick Edit</strong> - WordPress admin quick edit</li>
-                <li>📊 <strong>Bulk Edit</strong> - Bulk operations in admin</li>
-                <li>🖊️ <strong>Regular Editor Saves</strong> - Classic/Block editor saves</li>
-                <li>🔧 <strong>Programmatic Updates</strong> - Plugin/import updates</li>
-                <li>📥 <strong>Import Operations</strong> - CSV/XML imports</li>
-            </ul>
-            
-            <h4>Next Steps After Population:</h4>
+            <h3>🔄 Going Back to WordPress Default Dating:</h3>
+            <p>If you want to use WordPress's standard publish date system instead of the custom ACF approach:</p>
             <ol>
-                <li><strong>Test Query Loop sorting:</strong> Create test Query Loop blocks sorted by date to verify custom date sorting works</li>
-                <li><strong>Verify meta fields:</strong> Check that posts have <code>_computed_date_for_sorting</code> and publications have <code>_computed_publish_date</code> meta fields</li>
-                <li><strong>Test automatic updates:</strong> Edit a post's release_date_new or publication's history to verify meta fields update automatically</li>
-                <li><strong>Optional:</strong> Re-enable date display filters if you want automatic date override in templates</li>
-                <li><strong>Clean up:</strong> Remove this admin tool once everything works correctly</li>
+                <li><strong>🧹 Use the cleanup tool above</strong> to remove any custom meta fields</li>
+                <li><strong>🗑️ Remove this file:</strong> <code>/inc/acf-custom-date-sorting.php</code></li>
+                <li><strong>✂️ Remove the require line</strong> from your <code>functions.php</code>:
+                    <br><code>require_once get_template_directory() . '/inc/acf-custom-date-sorting.php';</code></li>
+                <li><strong>✅ Query Loops will use standard WordPress publish dates</strong></li>
             </ol>
+            
+            <h4>Alternative Simpler Approach:</h4>
+            <p>If you still want custom date sorting but with less complexity, you could:</p>
+            <ul>
+                <li><strong>For Posts:</strong> Just update the WordPress publish date to match your <code>release_date_new</code> field when saving</li>
+                <li><strong>For Publications:</strong> Update the WordPress publish date to match the latest publish date from history</li>
+                <li><strong>Result:</strong> All Query Loop blocks automatically sort correctly without custom meta fields</li>
+            </ul>
         </div>
         
         <div style="margin-top: 20px;">
