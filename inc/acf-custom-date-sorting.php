@@ -488,21 +488,31 @@ function render_acf_date_sorting_preview_page() {
                 
                 foreach ($publications as $publication): 
                     $history = get_field('history', $publication->ID);
-                    $has_publish_status = false;
+                    
+                    // Calculate published status info once per row
+                    $has_published_entries = false;
+                    $latest_publish_date = null;
                     
                     if ($history && is_array($history)) {
+                        $latest_timestamp = 0;
                         foreach ($history as $entry) {
                             $status_raw = $entry['status'] ?? '';
-                            if (in_array((int)$status_raw, $published_statuses)) {
-                                $has_publish_status = true;
-                                break;
+                            $date = $entry['date'] ?? '';
+                            
+                            if (in_array((int)$status_raw, $published_statuses) && !empty($date)) {
+                                $has_published_entries = true;
+                                $timestamp = strtotime($date);
+                                if ($timestamp > $latest_timestamp) {
+                                    $latest_timestamp = $timestamp;
+                                    $latest_publish_date = $date;
+                                }
                             }
                         }
                     }
                     
-                    if ($has_publish_status) $pubs_with_publish_dates++;
+                    if ($has_published_entries) $pubs_with_publish_dates++;
                 ?>
-                <tr <?php echo $has_publish_status ? 'style="background-color: #f0f8ff;"' : ''; ?>>
+                <tr <?php echo $has_published_entries ? 'style="background-color: #f0f8ff;"' : ''; ?>>
                     <td>
                         <strong>
                             <a href="<?php echo get_edit_post_link($publication->ID); ?>" target="_blank" title="Edit this publication">
@@ -564,14 +574,10 @@ function render_acf_date_sorting_preview_page() {
                     </td>
                     <td>
                         <?php 
-                        $latest_publish_date = get_publications_latest_publish_date($publication->ID, 'Y-m-d');
-                        $wp_publish_date = get_post_field('post_date', $publication->ID);
-                        $is_fallback = ($latest_publish_date === date('Y-m-d', strtotime($wp_publish_date)));
-                        
-                        if ($is_fallback) {
-                            echo '<em style="color: red;">No publish dates found</em>';
+                        if ($has_published_entries && $latest_publish_date) {
+                            echo '<strong style="color: green;">' . esc_html(date('Y-m-d', strtotime($latest_publish_date))) . '</strong>';
                         } else {
-                            echo '<strong style="color: green;">' . esc_html($latest_publish_date) . '</strong>';
+                            echo '<em style="color: red;">No publish dates found</em>';
                         }
                         ?>
                     </td>
@@ -583,20 +589,21 @@ function render_acf_date_sorting_preview_page() {
                     </td>
                     <td>
                         <?php 
-                        if ($is_fallback) {
-                            echo '<span style="color: red;">Using WP date</span>';
-                        } else {
+                        // Use the same logic as the previous column
+                        if ($has_published_entries && $latest_publish_date) {
                             $wp_publish_date = get_post_field('post_date', $publication->ID);
                             $publish_timestamp = strtotime($wp_publish_date);
                             $latest_timestamp = strtotime($latest_publish_date);
                             
                             if ($latest_timestamp > $publish_timestamp) {
-                                echo '<span style="color: orange;">After WP date</span>';
+                                echo '<span style="color: orange;">History date AFTER WP date</span>';
                             } elseif ($latest_timestamp < $publish_timestamp) {
-                                echo '<span style="color: blue;">Before WP date</span>';
+                                echo '<span style="color: blue;">History date BEFORE WP date</span>';
                             } else {
-                                echo '<span style="color: green;">Dates match</span>';
+                                echo '<span style="color: green;">Using history date (same as WP)</span>';
                             }
+                        } else {
+                            echo '<span style="color: red;">Using WP date (no published status)</span>';
                         }
                         ?>
                     </td>
@@ -630,14 +637,14 @@ function render_acf_date_sorting_preview_page() {
         <div style="margin-top: 20px;">
             <h3>Legend & Instructions:</h3>
             <ul>
-                <li><span style="color: green;">●</span> <strong>Green:</strong> Dates match or publish status found (IDs: 2, 4, 5, 6)</li>
-                <li><span style="color: orange;">●</span> <strong>Orange:</strong> Custom date is after WordPress publish date</li>
-                <li><span style="color: blue;">●</span> <strong>Blue:</strong> Custom date is before WordPress publish date</li>
-                <li><span style="color: red;">●</span> <strong>Red:</strong> No custom date found, using fallback</li>
-                <li><span style="background-color: #f0f8ff; padding: 2px 4px;">Light blue background:</span> Items with custom dates</li>
+                <li><span style="color: green;">●</span> <strong>Green:</strong> Using history publish date (or dates match)</li>
+                <li><span style="color: orange;">●</span> <strong>Orange:</strong> History publish date is after WordPress publish date</li>
+                <li><span style="color: blue;">●</span> <strong>Blue:</strong> History publish date is before WordPress publish date</li>
+                <li><span style="color: red;">●</span> <strong>Red:</strong> No published status found, using WordPress date fallback</li>
+                <li><span style="background-color: #f0f8ff; padding: 2px 4px;">Light blue background:</span> Publications with published status entries</li>
                 <li><strong>📝 Click post/publication titles</strong> to open the edit page and inspect ACF fields</li>
                 <li><strong>👁️ "View →" links</strong> open the front-end page in a new tab</li>
-                <li><strong>📊 Published Statuses:</strong> Published, Published with Minor/Major Revisions, Published with Full Review</li>
+                <li><strong>📊 Published Statuses:</strong> Published (2), Published with Minor Revisions (4), Published with Major Revisions (5), Published with Full Review (6)</li>
             </ul>
         </div>
     </div>
