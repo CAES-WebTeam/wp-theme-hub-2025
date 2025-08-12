@@ -145,7 +145,7 @@ function render_date_sync_tool_page() {
     $show_out_of_sync_only = isset($_GET['out_of_sync_only']) && $_GET['out_of_sync_only'] === '1';
     $post_type_filter = $_GET['post_type'] ?? 'all';
     $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-    $per_page = 500;
+    $per_page = 100;
     $offset = ($page - 1) * $per_page;
     
     // Build query args
