@@ -102,10 +102,39 @@ function update_publications_computed_date($post_id) {
     
     $custom_date = get_publications_latest_publish_date($post_id, 'Y-m-d H:i:s');
     update_post_meta($post_id, '_computed_publish_date', $custom_date);
+    
+    // Also update the unified sorting field for mixed queries
+    update_post_meta($post_id, '_computed_date_for_sorting', $custom_date);
 }
 
 // Hook to update computed date when publication is saved
 add_action('acf/save_post', 'update_publications_computed_date', 20);
+
+// Also hook into regular WordPress saves to catch all save scenarios
+add_action('save_post', 'update_computed_dates_on_wp_save', 20, 2);
+
+function update_computed_dates_on_wp_save($post_id, $post) {
+    // Skip autosaves and revisions
+    if (wp_is_post_autosave($post_id) || wp_is_post_revision($post_id)) {
+        return;
+    }
+    
+    // Only process published posts
+    if ($post->post_status !== 'publish') {
+        return;
+    }
+    
+    // Only process our target post types
+    if (!in_array($post->post_type, ['post', 'publications'])) {
+        return;
+    }
+    
+    if ($post->post_type === 'publications') {
+        update_publications_computed_date($post_id);
+    } elseif ($post->post_type === 'post') {
+        update_post_computed_date($post_id);
+    }
+}
 
 // 4. Modify queries to sort by custom dates
 function modify_query_for_custom_dates($query) {
@@ -185,13 +214,19 @@ function modify_query_loop_for_custom_dates($query_vars, $block, $page) {
 }
 add_filter('query_loop_block_query_vars', 'modify_query_loop_for_custom_dates', 10, 3);
 
-// 6. Update computed date for posts when saved
+// 6. Update computed date for posts when saved (via ACF or regular WordPress save)
 function update_post_computed_date($post_id) {
     if (get_post_type($post_id) === 'post') {
         $release_date = get_field('release_date_new', $post_id);
         if ($release_date) {
             $formatted_date = date('Y-m-d H:i:s', strtotime($release_date));
             update_post_meta($post_id, '_computed_date_for_sorting', $formatted_date);
+        } else {
+            // If no custom date, use WordPress publish date
+            $post = get_post($post_id);
+            if ($post) {
+                update_post_meta($post_id, '_computed_date_for_sorting', $post->post_date);
+            }
         }
     }
 }
@@ -247,23 +282,51 @@ add_filter('get_the_time', 'filter_displayed_time', 10, 3);
 
 // 9. Populate computed dates for existing posts (run once)
 function populate_existing_computed_dates() {
-    // Uncomment and run this once to populate existing posts
-    /*
+    // Add this action temporarily to run the population
+    // Visit: yoursite.com/wp-admin/admin.php?page=acf-date-sorting-preview&run_population=1
+    
     $posts = get_posts([
         'post_type' => ['post', 'publications'],
         'posts_per_page' => -1,
         'post_status' => 'publish'
     ]);
     
+    $updated_count = 0;
+    $total_count = count($posts);
+    
     foreach ($posts as $post) {
         if ($post->post_type === 'publications') {
             update_publications_computed_date($post->ID);
+            $updated_count++;
         } elseif ($post->post_type === 'post') {
             update_post_computed_date($post->ID);
+            $updated_count++;
+        }
+        
+        // Prevent timeout on large sites
+        if ($updated_count % 50 === 0) {
+            sleep(1); // Brief pause every 50 posts
         }
     }
-    */
+    
+    return ['updated' => $updated_count, 'total' => $total_count];
 }
+
+// Add population trigger to the admin tool
+function run_population_if_requested() {
+    if (isset($_GET['run_population']) && $_GET['run_population'] === '1' && current_user_can('manage_options')) {
+        // Add a nonce check for security
+        if (isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'run_population')) {
+            $result = populate_existing_computed_dates();
+            
+            // Redirect to avoid re-running on refresh
+            $redirect_url = admin_url('admin.php?page=acf-date-sorting-preview&populated=1&updated=' . $result['updated'] . '&total=' . $result['total']);
+            wp_redirect($redirect_url);
+            exit;
+        }
+    }
+}
+add_action('admin_init', 'run_population_if_requested');
 
 // 10. TEMPORARY ADMIN TOOL - Date Sorting Preview
 function add_acf_date_sorting_admin_tool() {
@@ -329,12 +392,47 @@ function render_acf_date_sorting_preview_page() {
     ?>
     <div class="wrap">
         <h1>ACF Date Sorting Preview</h1>
+        
+        <?php 
+        // Show success message if population was run
+        if (isset($_GET['populated']) && $_GET['populated'] === '1'): 
+            $updated = intval($_GET['updated'] ?? 0);
+            $total = intval($_GET['total'] ?? 0);
+        ?>
+            <div class="notice notice-success is-dismissible">
+                <p><strong>✅ Population Complete!</strong> Updated <?php echo number_format($updated); ?> of <?php echo number_format($total); ?> posts/publications with computed dates.</p>
+            </div>
+        <?php endif; ?>
+        
         <p><strong>This is a dry run preview.</strong> No data will be saved. This shows what computed dates would be created.</p>
         
         <div style="background: #fff; padding: 15px; border: 1px solid #ccd0d4; margin-bottom: 20px;">
-            <h3>Summary</h3>
+            <h3>Summary & Actions</h3>
             <p><strong>Total Posts:</strong> <?php echo number_format($total_posts); ?> | <strong>Total Publications:</strong> <?php echo number_format($total_publications); ?></p>
             <p>Showing <?php echo $per_page; ?> items per page. Use pagination below to browse through older content to find examples with custom dates.</p>
+            
+            <?php if (!isset($_GET['populated'])): ?>
+            <div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-left: 4px solid #0073aa;">
+                <h4>🚀 Ready to Populate Computed Dates?</h4>
+                <p>If the preview looks correct, you can populate the computed date meta fields for all posts:</p>
+                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=acf-date-sorting-preview&run_population=1'), 'run_population'); ?>" 
+                   class="button button-primary button-large"
+                   onclick="return confirm('This will update ALL published posts and publications with computed dates. This may take a few minutes. Continue?')">
+                   🔄 Populate All Computed Dates
+                </a>
+                <p><small><strong>⚠️ This will process <?php echo number_format($total_posts + $total_publications); ?> total items.</strong> Large sites may take several minutes.</small></p>
+            </div>
+            <?php else: ?>
+            <div style="margin-top: 15px; padding: 15px; background: #d4edda; border-left: 4px solid #28a745;">
+                <h4>✅ Population Complete!</h4>
+                <p>All posts and publications now have computed date meta fields. You can:</p>
+                <ul>
+                    <li>Test your Query Loop blocks to verify custom date sorting</li>
+                    <li>Re-enable the date display filters if needed</li>
+                    <li>Remove this admin tool once everything is working</li>
+                </ul>
+            </div>
+            <?php endif; ?>
         </div>
         
         <?php if (!empty($posts)): ?>
@@ -624,14 +722,25 @@ function render_acf_date_sorting_preview_page() {
         <?php endif; ?>
         
         <div style="margin-top: 30px; padding: 20px; background: #f0f8ff; border-left: 4px solid #0073aa;">
-            <h3>Next Steps:</h3>
-            <p>If the computed dates look correct above, you can run the actual population by:</p>
+            <h3>About Automatic Updates:</h3>
+            <p><strong>✅ All Save Methods Covered:</strong> The computed date fields will automatically update when posts/publications are saved via:</p>
+            <ul>
+                <li>📝 <strong>ACF Field Updates</strong> - When custom fields are modified</li>
+                <li>⚡ <strong>Quick Edit</strong> - WordPress admin quick edit</li>
+                <li>📊 <strong>Bulk Edit</strong> - Bulk operations in admin</li>
+                <li>🖊️ <strong>Regular Editor Saves</strong> - Classic/Block editor saves</li>
+                <li>🔧 <strong>Programmatic Updates</strong> - Plugin/import updates</li>
+                <li>📥 <strong>Import Operations</strong> - CSV/XML imports</li>
+            </ul>
+            
+            <h4>Next Steps After Population:</h4>
             <ol>
-                <li>Uncommenting the code in the <code>populate_existing_computed_dates()</code> function</li>
-                <li>Calling that function once (you can add a temporary admin page or run it via WP-CLI)</li>
-                <li>Removing this preview tool once you're done</li>
+                <li><strong>Test Query Loop sorting:</strong> Create test Query Loop blocks sorted by date to verify custom date sorting works</li>
+                <li><strong>Verify meta fields:</strong> Check that posts have <code>_computed_date_for_sorting</code> and publications have <code>_computed_publish_date</code> meta fields</li>
+                <li><strong>Test automatic updates:</strong> Edit a post's release_date_new or publication's history to verify meta fields update automatically</li>
+                <li><strong>Optional:</strong> Re-enable date display filters if you want automatic date override in templates</li>
+                <li><strong>Clean up:</strong> Remove this admin tool once everything works correctly</li>
             </ol>
-            <p><strong>Note:</strong> Rows with light blue backgrounds have custom dates. Browse through pages to find examples.</p>
         </div>
         
         <div style="margin-top: 20px;">
