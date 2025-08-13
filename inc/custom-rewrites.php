@@ -342,6 +342,26 @@ function redirect_news_id_to_canonical_url() {
         $post_slug = wp_cache_get($cache_key);
         
         if ($post_slug === false) {
+            // First, let's see what we're actually finding in the database
+            // Temporary debugging - remove after testing
+            global $wpdb;
+            $debug_results = $wpdb->get_results($wpdb->prepare("
+                SELECT p.ID, p.post_name, pm.meta_value 
+                FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+                WHERE p.post_type = 'post' 
+                AND p.post_status = 'publish'
+                AND pm.meta_key = 'id' 
+                AND pm.meta_value = %s
+                ORDER BY p.ID ASC
+            ", $story_id));
+            
+            // Log what we found (check your debug.log)
+            error_log("Debug: Looking for ID {$story_id}, found " . count($debug_results) . " results:");
+            foreach ($debug_results as $result) {
+                error_log("Debug: Post ID {$result->ID}, slug: {$result->post_name}, meta_value: '{$result->meta_value}'");
+            }
+            
             // Use get_posts() with optimized parameters and exact matching
             $posts = get_posts([
                 'post_type'      => 'post',
