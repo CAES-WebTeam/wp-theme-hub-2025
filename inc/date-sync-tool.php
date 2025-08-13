@@ -206,7 +206,12 @@ function render_date_sync_tool_page() {
         
         $wp_date = $post->post_date;
         $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_data['date']));
-        $is_out_of_sync = ($wp_date !== $custom_formatted) || ($post->post_status === 'publish' && !$custom_data['should_publish']);
+        
+        // Compare dates at day level only - same day = "in sync enough"
+        $wp_date_only = date('Y-m-d', strtotime($post->post_date));
+        $custom_date_only = date('Y-m-d', strtotime($custom_data['date']));
+        
+        $is_out_of_sync = ($wp_date_only !== $custom_date_only) || ($post->post_status === 'publish' && !$custom_data['should_publish']);
         
         if ($show_out_of_sync_only && !$is_out_of_sync) {
             continue;
@@ -245,7 +250,12 @@ function render_date_sync_tool_page() {
             
             $wp_date = $post->post_date;
             $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_data['date']));
-            $is_out_of_sync = ($wp_date !== $custom_formatted) || ($post->post_status === 'publish' && !$custom_data['should_publish']);
+            
+            // Compare dates at day level only - same day = "in sync enough"
+            $wp_date_only = date('Y-m-d', strtotime($post->post_date));
+            $custom_date_only = date('Y-m-d', strtotime($custom_data['date']));
+            
+            $is_out_of_sync = ($wp_date_only !== $custom_date_only) || ($post->post_status === 'publish' && !$custom_data['should_publish']);
             
             if ($is_out_of_sync) {
                 $out_of_sync_count++;
