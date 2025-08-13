@@ -337,10 +337,6 @@ function redirect_news_id_to_canonical_url() {
     if (preg_match('#^/news/(\d+)/?$#', $requested_path, $matches)) {
         $story_id = $matches[1];
         
-        // Check cache first
-        $cache_key = "news_id_redirect_{$story_id}";
-        $post_slug = wp_cache_get($cache_key);
-        
         // Query to find post with matching ACF 'id' field
         $args = [
             'post_type'      => 'post',
@@ -356,13 +352,13 @@ function redirect_news_id_to_canonical_url() {
         $query = new WP_Query($args);
         
         if ($query->have_posts()) {
-            $post_slug = $query->posts[0]->post_name;
+            $found_post = $query->posts[0];
+            $post_slug = $found_post->post_name;
             
-            // Cache result for 1 hour
-            wp_cache_set($cache_key, $post_slug, '', 3600);
-        }
-        
-        if ($post_slug && $post_slug !== 'not_found') {
+            // Temporary debug - remove after testing
+            $stored_id = get_field('id', $found_post->ID);
+            error_log("Looking for ID: {$story_id}, Found post: {$found_post->ID}, Stored ACF id: {$stored_id}, Slug: {$post_slug}");
+            
             $canonical_url = "/news/{$post_slug}/";
             
             // Perform 301 redirect
