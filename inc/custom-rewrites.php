@@ -38,6 +38,13 @@ function custom_news_rewrite_rules() {
         'index.php?tag=$matches[1]&paged=$matches[2]',
         'top'
     );
+
+    // Latest page
+    add_rewrite_rule(
+        '^news/latest/?$',
+        'index.php?pagename=news/latest', // Adjust this based on your page structure
+        'top'
+    );
     
     // Single news posts - now more specific to avoid conflicts
     // This should come after category/tag rules
