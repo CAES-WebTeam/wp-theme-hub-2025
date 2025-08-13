@@ -8,7 +8,8 @@ remove_action('admin_enqueue_scripts', 'story_meta_association_tools_enqueue_scr
 
 // Add admin menu page
 add_action('admin_menu', 'story_meta_association_tools_menu_page');
-function story_meta_association_tools_menu_page() {
+function story_meta_association_tools_menu_page()
+{
     add_submenu_page(
         'caes-tools',                     // Parent slug - points to CAES Tools
         'Story Meta Association Tools',   // Page title
@@ -20,11 +21,12 @@ function story_meta_association_tools_menu_page() {
 }
 
 // Render the admin page content with inline JavaScript
-function story_meta_association_tools_render_page() {
+function story_meta_association_tools_render_page()
+{
     // Generate nonce here for use in JS
     $nonce = wp_create_nonce('story_meta_association_tools_nonce');
     $ajax_url = admin_url('admin-ajax.php');
-    ?>
+?>
     <div class="wrap">
         <h1>Story Meta Association Tools</h1>
         <p>Use the buttons below to run various meta-data association processes for your news stories and publications.</p>
@@ -34,7 +36,7 @@ function story_meta_association_tools_render_page() {
         <h2>News Stories</h2>
 
         <h3>1. Sync Keywords to News Stories</h3>
-        <p>Accesses an API and associates keywords (topics) with posts based on story and keyword IDs.</p>
+        <p>Accesses an API and associates keywords (topics) with posts based on story and keyword IDs. This process runs in batches of 10 records.</p>
         <button class="button button-primary" id="sync-keywords-btn">Run Keyword Sync</button>
         <div id="sync-keywords-log" class="log-area"></div>
 
@@ -81,24 +83,41 @@ function story_meta_association_tools_render_page() {
             font-family: monospace;
             font-size: 0.9em;
         }
-        .log-area.success { background-color: #e6ffe6; border-color: #00cc00; }
-        .log-area.error { background-color: #ffe6e6; border-color: #cc0000; }
-        .log-area.info { background-color: #e6f7ff; border-color: #0099ff; }
+
+        .log-area.success {
+            background-color: #e6ffe6;
+            border-color: #00cc00;
+        }
+
+        .log-area.error {
+            background-color: #ffe6e6;
+            border-color: #cc0000;
+        }
+
+        .log-area.info {
+            background-color: #e6f7ff;
+            border-color: #0099ff;
+        }
+
         .log-area div {
             padding: 2px 0;
         }
+
         .log-area .log-detail {
             color: #555;
             font-size: 0.85em;
         }
+
         .log-area .log-error {
             color: #cc0000;
             font-weight: bold;
         }
+
         .log-area .log-success {
             color: #008000;
             font-weight: bold;
         }
+
         .log-area .log-info {
             color: #000080;
         }
@@ -174,40 +193,10 @@ function story_meta_association_tools_render_page() {
             // --- Button Event Listeners ---
 
             // Sync Keywords to News Stories
+            // Updated event listener for Sync Keywords to News Stories (replace the existing one)
             $('#sync-keywords-btn').on('click', function() {
-                const $button = $(this);
-                const $logArea = $('#sync-keywords-log');
-                $logArea.empty(); // Clear previous logs
-                $button.prop('disabled', true).text('Processing...');
-                setLogAreaClass($logArea, 'info');
-                appendLog($logArea, 'Starting Keyword Sync...');
-
-                $.ajax({
-                    url: '<?php echo esc_js($ajax_url); ?>',
-                    type: 'POST',
-                    data: {
-                        action: 'sync_keywords',
-                        nonce: '<?php echo esc_js($nonce); ?>',
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            appendLog($logArea, response.data.message, 'success');
-                            if (response.data.log && response.data.log.length > 0) {
-                                response.data.log.forEach(msg => appendLog($logArea, msg, 'detail'));
-                            }
-                            setLogAreaClass($logArea, 'success');
-                        } else {
-                            appendLog($logArea, `Error: ${response.data}`, 'error');
-                            setLogAreaClass($logArea, 'error');
-                        }
-                        $button.prop('disabled', false).text('Run Keyword Sync');
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        appendLog($logArea, `AJAX Error: ${textStatus} - ${errorThrown}`, 'error');
-                        setLogAreaClass($logArea, 'error');
-                        $button.prop('disabled', false).text('Run Keyword Sync');
-                    }
-                });
+                $('#sync-keywords-log').empty(); // Clear previous logs
+                runBatchedProcess('sync-keywords-btn', 'sync-keywords-log', 'sync_keywords');
             });
 
             // Sync Keywords to Publications (Batched)
@@ -235,109 +224,13 @@ function story_meta_association_tools_render_page() {
             });
         });
     </script>
-    <?php
+<?php
 }
 
 // AJAX handler for Sync Keywords
 add_action('wp_ajax_sync_keywords', 'story_meta_association_sync_keywords');
-function story_meta_association_sync_keywords() {
-    check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
-
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('You do not have sufficient permissions.');
-    }
-
-    // Begin API call
-    $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryKeyword';
-    $decoded_API_response = null; // Initialize to null
-
-    try {
-        // Fetch data from the API.
-        $response = wp_remote_get($api_url);
-
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
-        }
-
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
-
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
-        }
-
-        $records = $decoded_API_response;
-
-    } catch (Exception $e) {
-        error_log('News Association Story Keyword API Error: ' . $e->getMessage());
-        wp_send_json_error('API Error for News Association Story Keyword: ' . $e->getMessage());
-    }
-    // End API call
-
-    $linked = 0;
-    $total_records = count($records);
-    $log = [];
-
-    foreach ($records as $index => $pair) {
-        $story_id = intval($pair['STORY_ID']);
-        $topic_id = intval($pair['KEYWORD_ID']);
-
-        $posts = get_posts([
-            'post_type' => 'post',
-            'meta_key' => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields' => 'ids',
-            'post_status' => 'any'
-        ]);
-
-        if (empty($posts)) {
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Story ID {$story_id} not found.";
-            continue;
-        }
-        $post_id = $posts[0];
-
-        $terms = get_terms([
-            'taxonomy' => 'topics',
-            'hide_empty' => false,
-            'meta_query' => [[
-                'key' => 'topic_id',
-                'value' => $topic_id,
-                'compare' => '='
-            ]]
-        ]);
-
-        if (empty($terms) || is_wp_error($terms)) {
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Topic ID {$topic_id} not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
-            continue;
-        }
-        $term_id = $terms[0]->term_id;
-
-        $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']);
-
-        if (!in_array($term_id, $existing_terms)) {
-            $existing_terms[] = $term_id;
-            wp_set_object_terms($post_id, $existing_terms, 'topics');
-            $linked++;
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Linked Story ID {$story_id} to Topic ID {$topic_id} (Post ID: {$post_id}, Term ID: {$term_id}).";
-        } else {
-            $log[] = "Record " . ($index + 1) . "/{$total_records}: Story ID {$story_id} already linked to Topic ID {$topic_id}.";
-        }
-    }
-
-    wp_send_json_success([
-        'message' => "Topic linking complete. Topics linked to posts: {$linked}",
-        'log'     => $log,
-    ]);
-}
-
-// AJAX handler for Sync Publication Keywords
-add_action('wp_ajax_sync_publication_keywords', 'story_meta_association_sync_publication_keywords');
-function story_meta_association_sync_publication_keywords() {
+function story_meta_association_sync_keywords()
+{
     check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
 
     if (!current_user_can('manage_options')) {
@@ -345,13 +238,14 @@ function story_meta_association_sync_publication_keywords() {
     }
 
     // Get cached API data or fetch it
-    $transient_key = 'pub_keywords_api_data';
+    $transient_key = 'story_keywords_api_data';
     $records = get_transient($transient_key);
-    
+
     if (false === $records) {
         // Begin API call
-        $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsKeywordAssociations';
-        
+        $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryKeyword';
+        $decoded_API_response = null; // Initialize to null
+
         try {
             // Fetch data from the API.
             $response = wp_remote_get($api_url);
@@ -372,10 +266,135 @@ function story_meta_association_sync_publication_keywords() {
             }
 
             $records = $decoded_API_response;
-            
+
             // Cache for 1 hour
             set_transient($transient_key, $records, HOUR_IN_SECONDS);
+        } catch (Exception $e) {
+            error_log('News Association Story Keyword API Error: ' . $e->getMessage());
+            wp_send_json_error('API Error for News Association Story Keyword: ' . $e->getMessage());
+        }
+        // End API call
+    }
 
+    $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
+    $limit = 10; // Batch limit
+
+    $total_records = count($records);
+    $batch_records = array_slice($records, $start, $limit);
+
+    $linked = 0;
+    $log = [];
+
+    if (empty($batch_records)) {
+        // Clear the cached API data when done
+        delete_transient($transient_key);
+        wp_send_json_success([
+            'message' => "Keyword linking complete. No more records to process.",
+            'finished' => true,
+            'log' => $log,
+        ]);
+    }
+
+    foreach ($batch_records as $index => $pair) {
+        $story_id = intval($pair['STORY_ID']);
+        $topic_id = intval($pair['KEYWORD_ID']);
+        $current_index = $start + $index;
+
+        $posts = get_posts([
+            'post_type' => 'post',
+            'meta_key' => 'id',
+            'meta_value' => $story_id,
+            'numberposts' => 1,
+            'fields' => 'ids',
+            'post_status' => 'any'
+        ]);
+
+        if (empty($posts)) {
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Story ID {$story_id} not found.";
+            continue;
+        }
+        $post_id = $posts[0];
+
+        $terms = get_terms([
+            'taxonomy' => 'topics',
+            'hide_empty' => false,
+            'meta_query' => [[
+                'key' => 'topic_id',
+                'value' => $topic_id,
+                'compare' => '='
+            ]]
+        ]);
+
+        if (empty($terms) || is_wp_error($terms)) {
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Topic ID {$topic_id} not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
+            continue;
+        }
+        $term_id = $terms[0]->term_id;
+
+        $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']);
+
+        if (!in_array($term_id, $existing_terms)) {
+            $existing_terms[] = $term_id;
+            wp_set_object_terms($post_id, $existing_terms, 'topics');
+            $linked++;
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Linked Story ID {$story_id} to Topic ID {$topic_id} (Post ID: {$post_id}, Term ID: {$term_id}).";
+        } else {
+            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Story ID {$story_id} already linked to Topic ID {$topic_id}.";
+        }
+    }
+
+    $next_start = $start + count($batch_records);
+    $finished = ($next_start >= $total_records);
+
+    wp_send_json_success([
+        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Topics linked in this batch: {$linked}. Total records: {$total_records}",
+        'start'    => $next_start,
+        'finished' => $finished,
+        'log'      => $log,
+    ]);
+}
+
+// AJAX handler for Sync Publication Keywords
+add_action('wp_ajax_sync_publication_keywords', 'story_meta_association_sync_publication_keywords');
+function story_meta_association_sync_publication_keywords()
+{
+    check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('You do not have sufficient permissions.');
+    }
+
+    // Get cached API data or fetch it
+    $transient_key = 'pub_keywords_api_data';
+    $records = get_transient($transient_key);
+
+    if (false === $records) {
+        // Begin API call
+        $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsKeywordAssociations';
+
+        try {
+            // Fetch data from the API.
+            $response = wp_remote_get($api_url);
+
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
+
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $decoded_API_response = json_decode($raw_JSON, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
+
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            $records = $decoded_API_response;
+
+            // Cache for 1 hour
+            set_transient($transient_key, $records, HOUR_IN_SECONDS);
         } catch (Exception $e) {
             error_log('Publications Keyword Association API Error: ' . $e->getMessage());
             wp_send_json_error('API Error for Publications Keyword Association: ' . $e->getMessage());
@@ -466,7 +485,8 @@ add_action('wp_ajax_link_story_images', 'story_meta_association_link_story_image
 // Registers the AJAX action 'link_story_images' to call the 'story_meta_association_link_story_images' function.
 // This allows JavaScript on the frontend (or an admin script) to trigger this PHP function.
 
-function story_meta_association_link_story_images() {
+function story_meta_association_link_story_images()
+{
     // Verifies the nonce to protect against CSRF attacks.
     // 'story_meta_association_tools_nonce' is the action name used when creating the nonce,
     // and 'nonce' is the name of the POST variable where the nonce is expected.
@@ -488,7 +508,7 @@ function story_meta_association_link_story_images() {
         wp_send_json_error('JSON file not found: ' . $json_file);
     }
 
-     // Begin API call
+    // Begin API call
     $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
     $decoded_API_response = null; // Initialize to null
 
@@ -512,7 +532,6 @@ function story_meta_association_link_story_images() {
         }
 
         $records = $decoded_API_response;
-
     } catch (Exception $e) {
         error_log('News Association Story Image API Error: ' . $e->getMessage());
         wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
@@ -600,7 +619,8 @@ function story_meta_association_link_story_images() {
 
 // AJAX handler for Assign Web Image Filenames
 add_action('wp_ajax_assign_web_image_filenames', 'story_meta_association_assign_web_image_filenames');
-function story_meta_association_assign_web_image_filenames() {
+function story_meta_association_assign_web_image_filenames()
+{
     check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
 
     if (!current_user_can('manage_options')) {
@@ -632,7 +652,6 @@ function story_meta_association_assign_web_image_filenames() {
         }
 
         $records = $decoded_API_response;
-
     } catch (Exception $e) {
         error_log('News Image API Error: ' . $e->getMessage());
         wp_send_json_error('API Error for News Image: ' . $e->getMessage());
@@ -700,7 +719,8 @@ function story_meta_association_assign_web_image_filenames() {
 
 // AJAX handler for Import Featured Images
 add_action('wp_ajax_import_featured_images', 'story_meta_association_import_featured_images');
-function story_meta_association_import_featured_images() {
+function story_meta_association_import_featured_images()
+{
     check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
 
     if (!current_user_can('manage_options')) {

@@ -19,6 +19,7 @@ require get_template_directory() . '/inc/user-support.php';
 require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
 require get_template_directory() . '/inc/custom-rewrites.php';
+require get_template_directory() . '/inc/date-sync-tool.php';
 
 // Publications PDF generation
 require get_template_directory() . '/inc/publications-pdf/publications-pdf.php';

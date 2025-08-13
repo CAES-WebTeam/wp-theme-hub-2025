@@ -323,6 +323,47 @@ function redirect_publications_to_canonical_url()
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
+/**
+ * If a user visits a URL like /news/10345/, redirect to /news/post-slug/
+ * by looking up the ACF 'id' field and obtaining the canonical slug.
+ */
+function redirect_news_id_to_canonical_url() {
+    // Only run on frontend
+    if (is_admin()) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // Check if URL matches /news/{number}/ pattern
+    if (preg_match('#^/news/(\d+)/?$#', $requested_path, $matches)) {
+        $story_id = $matches[1];
+        
+        // Query to find post with matching ACF 'id' field
+        $args = [
+            'post_type'      => 'post',
+            'posts_per_page' => 1,
+            'meta_query'     => [
+                [
+                    'key'   => 'id',
+                    'value' => $story_id,
+                ],
+            ],
+        ];
+        
+        $query = new WP_Query($args);
+        
+        if ($query->have_posts()) {
+            $found_post = $query->posts[0];
+            $post_slug = $found_post->post_name;
+            $canonical_url = "/news/{$post_slug}/";
+            
+            // Perform 301 redirect
+            wp_redirect(home_url($canonical_url), 301);
+            exit;
+        }
+    }
+}
+add_action('init', 'redirect_news_id_to_canonical_url');
+
 
 // Redirect old caes-departments URLs to new departments URLs
 function redirect_old_department_urls() {
