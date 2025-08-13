@@ -148,25 +148,31 @@ function render_date_sync_tool_page() {
     $per_page = 100;
     $offset = ($page - 1) * $per_page;
     
-    // Build query args
+    // Build efficient query args - only get what we need for this page
     $query_args = [
         'post_type' => ['post', 'publications'],
         'post_status' => ['publish', 'future'],
-        'posts_per_page' => -1, // Get all first, then filter
+        'posts_per_page' => $per_page,
+        'offset' => $offset,
         'orderby' => 'date',
-        'order' => 'DESC'
+        'order' => 'DESC',
+        'fields' => 'ids' // Only get IDs first for efficiency
     ];
     
     if ($post_type_filter !== 'all') {
         $query_args['post_type'] = [$post_type_filter];
     }
     
-    $all_posts = get_posts($query_args);
+    // Get post IDs for this page
+    $post_ids = get_posts($query_args);
     
-    // Filter and prepare data
-    $filtered_posts = [];
-    foreach ($all_posts as $post) {
-        $custom_date = get_custom_date_for_post($post->ID);
+    // Prepare data only for posts on this page
+    $paged_posts = [];
+    foreach ($post_ids as $post_id) {
+        $post = get_post($post_id);
+        if (!$post) continue;
+        
+        $custom_date = get_custom_date_for_post($post_id);
         if (!$custom_date) continue;
         
         $wp_date = $post->post_date;
@@ -177,7 +183,7 @@ function render_date_sync_tool_page() {
             continue;
         }
         
-        $filtered_posts[] = [
+        $paged_posts[] = [
             'post' => $post,
             'custom_date' => $custom_date,
             'custom_formatted' => $custom_formatted,
@@ -185,15 +191,39 @@ function render_date_sync_tool_page() {
         ];
     }
     
-    // Pagination
-    $total_items = count($filtered_posts);
-    $total_pages = ceil($total_items / $per_page);
-    $paged_posts = array_slice($filtered_posts, $offset, $per_page);
+    // Get total counts efficiently
+    $total_query = [
+        'post_type' => $query_args['post_type'],
+        'post_status' => ['publish', 'future'],
+        'posts_per_page' => -1,
+        'fields' => 'ids'
+    ];
     
-    // Count out of sync items
-    $out_of_sync_count = count(array_filter($filtered_posts, function($item) {
-        return $item['is_out_of_sync'];
-    }));
+    $all_post_ids = get_posts($total_query);
+    $total_items = count($all_post_ids);
+    $total_pages = ceil($total_items / $per_page);
+    
+    // Count out of sync items (do this efficiently in smaller batches if needed)
+    $out_of_sync_count = 0;
+    if ($total_items < 1000) {
+        // If manageable size, count out of sync items
+        foreach ($all_post_ids as $post_id) {
+            $custom_date = get_custom_date_for_post($post_id);
+            if (!$custom_date) continue;
+            
+            $post = get_post($post_id);
+            if (!$post) continue;
+            
+            $wp_date = $post->post_date;
+            $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_date));
+            if ($wp_date !== $custom_formatted) {
+                $out_of_sync_count++;
+            }
+        }
+    } else {
+        // For very large sites, approximate or skip the count
+        $out_of_sync_count = '?';
+    }
     
     ?>
     <div class="wrap">
@@ -211,6 +241,13 @@ function render_date_sync_tool_page() {
             <p id="sync-results-text"></p>
         </div>
         
+        <!-- Performance Notice for Large Sites -->
+        <?php if ($total_items > 1000): ?>
+        <div class="notice notice-info">
+            <p><strong>Large Dataset Notice:</strong> You have <?php echo number_format($total_items); ?> posts. Out-of-sync counting is disabled for performance. Use filters to focus on specific content.</p>
+        </div>
+        <?php endif; ?>
+        
         <!-- Filters -->
         <div class="tablenav top">
             <div class="alignleft actions">
@@ -225,7 +262,7 @@ function render_date_sync_tool_page() {
                     
                     <label>
                         <input type="checkbox" name="out_of_sync_only" value="1" <?php checked($show_out_of_sync_only); ?>>
-                        Show out of sync only (<?php echo $out_of_sync_count; ?> items)
+                        Show out of sync only <?php if ($out_of_sync_count !== '?'): ?>(<?php echo $out_of_sync_count; ?> items)<?php endif; ?>
                     </label>
                     
                     <input type="submit" class="button" value="Filter">
@@ -234,16 +271,16 @@ function render_date_sync_tool_page() {
             
             <div class="alignright">
                 <span class="displaying-num">
-                    <?php echo number_format($total_items); ?> items
+                    <?php echo number_format(count($paged_posts)); ?> of <?php echo number_format($total_items); ?> items
                     <?php if ($show_out_of_sync_only): ?>
-                        (out of sync)
+                        (filtered)
                     <?php endif; ?>
                 </span>
             </div>
         </div>
         
         <?php if (empty($paged_posts)): ?>
-            <p>No items found matching your criteria.</p>
+            <p>No items found matching your criteria on this page.</p>
         <?php else: ?>
         
         <form id="sync-form">
@@ -262,10 +299,14 @@ function render_date_sync_tool_page() {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($paged_posts as $item): 
+                    <?php 
+                    $has_out_of_sync = false;
+                    foreach ($paged_posts as $item): 
                         $post = $item['post'];
                         $custom_date = $item['custom_date'];
                         $is_out_of_sync = $item['is_out_of_sync'];
+                        if ($is_out_of_sync) $has_out_of_sync = true;
+                        
                         $now = current_time('timestamp');
                         $custom_timestamp = strtotime($custom_date);
                         $will_be_scheduled = $custom_timestamp > $now;
@@ -321,7 +362,7 @@ function render_date_sync_tool_page() {
                 </tbody>
             </table>
             
-            <?php if ($out_of_sync_count > 0): ?>
+            <?php if ($has_out_of_sync): ?>
             <div class="tablenav bottom">
                 <div class="alignleft actions">
                     <button type="button" id="sync-selected" class="button button-primary" disabled>
