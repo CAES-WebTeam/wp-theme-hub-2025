@@ -39,6 +39,7 @@ function handle_date_sync_ajax() {
         $batch_ids = array_slice($post_ids, $offset, $batch_size);
         $updated_count = 0;
         $scheduled_count = 0;
+        $drafted_count = 0;
         
         foreach ($batch_ids as $post_id) {
             $post_id = intval($post_id);
@@ -46,10 +47,10 @@ function handle_date_sync_ajax() {
             
             if (!$post) continue;
             
-            $custom_date = get_custom_date_for_post($post_id);
-            if (!$custom_date) continue;
+            $custom_data = get_custom_date_for_post($post_id);
+            if (!$custom_data) continue;
             
-            $custom_timestamp = strtotime($custom_date);
+            $custom_timestamp = strtotime($custom_data['date']);
             $now = current_time('timestamp');
             
             $post_data = [
@@ -58,10 +59,17 @@ function handle_date_sync_ajax() {
                 'post_date_gmt' => gmdate('Y-m-d H:i:s', $custom_timestamp)
             ];
             
-            if ($custom_timestamp > $now) {
+            // Determine the correct post status
+            if (!$custom_data['should_publish']) {
+                // Should be drafted (publications with non-published status)
+                $post_data['post_status'] = 'draft';
+                $drafted_count++;
+            } elseif ($custom_timestamp > $now) {
+                // Should be scheduled (future date)
                 $post_data['post_status'] = 'future';
                 $scheduled_count++;
             } else {
+                // Should be published (past/present date with published status)
                 $post_data['post_status'] = 'publish';
                 $updated_count++;
             }
@@ -76,6 +84,7 @@ function handle_date_sync_ajax() {
         wp_send_json_success([
             'updated' => $updated_count,
             'scheduled' => $scheduled_count,
+            'drafted' => $drafted_count,
             'processed' => count($batch_ids),
             'total_processed' => $processed_count,
             'total_count' => $total_count,
@@ -86,21 +95,36 @@ function handle_date_sync_ajax() {
 }
 add_action('wp_ajax_sync_batch_dates', 'handle_date_sync_ajax');
 
-// Get custom date for a post
+// Get custom date for a post with status info
 function get_custom_date_for_post($post_id) {
     $post_type = get_post_type($post_id);
     
     if ($post_type === 'post') {
-        return get_field('release_date_new', $post_id);
+        $release_date = get_field('release_date_new', $post_id);
+        if ($release_date) {
+            return [
+                'date' => $release_date,
+                'should_publish' => true, // Posts with release dates should be published/scheduled
+                'source' => 'ACF: release_date_new'
+            ];
+        }
     } elseif ($post_type === 'publications') {
-        return get_latest_publish_date_from_history($post_id);
+        $latest_entry = get_latest_date_and_status_from_history($post_id);
+        if ($latest_entry) {
+            return [
+                'date' => $latest_entry['date'],
+                'should_publish' => $latest_entry['is_published'],
+                'source' => 'History: ' . $latest_entry['status_label'],
+                'status_label' => $latest_entry['status_label']
+            ];
+        }
     }
     
     return null;
 }
 
-// Get latest publish date from publications history
-function get_latest_publish_date_from_history($post_id) {
+// Get latest date from publications history (regardless of status)
+function get_latest_date_and_status_from_history($post_id) {
     $history = get_field('history', $post_id);
     
     if (!$history || !is_array($history)) {
@@ -120,23 +144,28 @@ function get_latest_publish_date_from_history($post_id) {
     ];
     
     $published_statuses = [2, 4, 5, 6];
-    $latest_publish_date = null;
+    $latest_entry = null;
     $latest_timestamp = 0;
     
     foreach ($history as $entry) {
         $status_raw = $entry['status'] ?? '';
         $date = $entry['date'] ?? '';
         
-        if (in_array((int)$status_raw, $published_statuses) && !empty($date)) {
+        if (!empty($date)) {
             $timestamp = strtotime($date);
             if ($timestamp > $latest_timestamp) {
                 $latest_timestamp = $timestamp;
-                $latest_publish_date = $date;
+                $latest_entry = [
+                    'date' => $date,
+                    'status' => (int)$status_raw,
+                    'status_label' => $status_labels[(int)$status_raw] ?? 'Unknown',
+                    'is_published' => in_array((int)$status_raw, $published_statuses)
+                ];
             }
         }
     }
     
-    return $latest_publish_date;
+    return $latest_entry;
 }
 
 // Render the admin page
@@ -172,12 +201,12 @@ function render_date_sync_tool_page() {
         $post = get_post($post_id);
         if (!$post) continue;
         
-        $custom_date = get_custom_date_for_post($post_id);
-        if (!$custom_date) continue;
+        $custom_data = get_custom_date_for_post($post_id);
+        if (!$custom_data) continue;
         
         $wp_date = $post->post_date;
-        $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_date));
-        $is_out_of_sync = ($wp_date !== $custom_formatted);
+        $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_data['date']));
+        $is_out_of_sync = ($wp_date !== $custom_formatted) || ($post->post_status === 'publish' && !$custom_data['should_publish']);
         
         if ($show_out_of_sync_only && !$is_out_of_sync) {
             continue;
@@ -185,7 +214,7 @@ function render_date_sync_tool_page() {
         
         $paged_posts[] = [
             'post' => $post,
-            'custom_date' => $custom_date,
+            'custom_data' => $custom_data,
             'custom_formatted' => $custom_formatted,
             'is_out_of_sync' => $is_out_of_sync
         ];
@@ -208,15 +237,17 @@ function render_date_sync_tool_page() {
     if ($total_items < 1000) {
         // If manageable size, count out of sync items
         foreach ($all_post_ids as $post_id) {
-            $custom_date = get_custom_date_for_post($post_id);
-            if (!$custom_date) continue;
+            $custom_data = get_custom_date_for_post($post_id);
+            if (!$custom_data) continue;
             
             $post = get_post($post_id);
             if (!$post) continue;
             
             $wp_date = $post->post_date;
-            $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_date));
-            if ($wp_date !== $custom_formatted) {
+            $custom_formatted = date('Y-m-d H:i:s', strtotime($custom_data['date']));
+            $is_out_of_sync = ($wp_date !== $custom_formatted) || ($post->post_status === 'publish' && !$custom_data['should_publish']);
+            
+            if ($is_out_of_sync) {
                 $out_of_sync_count++;
             }
         }
@@ -303,13 +334,14 @@ function render_date_sync_tool_page() {
                     $has_out_of_sync = false;
                     foreach ($paged_posts as $item): 
                         $post = $item['post'];
-                        $custom_date = $item['custom_date'];
+                        $custom_data = $item['custom_data'];
                         $is_out_of_sync = $item['is_out_of_sync'];
                         if ($is_out_of_sync) $has_out_of_sync = true;
                         
                         $now = current_time('timestamp');
-                        $custom_timestamp = strtotime($custom_date);
+                        $custom_timestamp = strtotime($custom_data['date']);
                         $will_be_scheduled = $custom_timestamp > $now;
+                        $will_be_drafted = !$custom_data['should_publish'];
                     ?>
                     <tr <?php if ($is_out_of_sync) echo 'style="background-color: #fff3cd;"'; ?>>
                         <th scope="row" class="check-column">
@@ -342,15 +374,13 @@ function render_date_sync_tool_page() {
                             <br><small><?php echo date('g:i a', $custom_timestamp); ?></small>
                         </td>
                         <td>
-                            <?php if ($post->post_type === 'post'): ?>
-                                <small>ACF: release_date_new</small>
-                            <?php else: ?>
-                                <small>History: Latest publish date</small>
-                            <?php endif; ?>
+                            <small><?php echo esc_html($custom_data['source']); ?></small>
                         </td>
                         <td>
                             <?php if (!$is_out_of_sync): ?>
                                 <span style="color: #46b450;">In Sync</span>
+                            <?php elseif ($will_be_drafted): ?>
+                                <span style="color: #d63638;">Out of sync - Will draft</span>
                             <?php elseif ($will_be_scheduled): ?>
                                 <span style="color: #d63638;">Out of sync - Will schedule</span>
                             <?php else: ?>
@@ -443,6 +473,7 @@ function render_date_sync_tool_page() {
             
             var totalUpdated = 0;
             var totalScheduled = 0;
+            var totalDrafted = 0;
             
             processBatch(0);
             
@@ -463,6 +494,7 @@ function render_date_sync_tool_page() {
                         var data = response.data;
                         totalUpdated += data.updated;
                         totalScheduled += data.scheduled;
+                        totalDrafted += data.drafted;
                         
                         var newPercentage = Math.round((data.total_processed / selectedItems.length) * 100);
                         $('#sync-progress-bar').css('width', newPercentage + '%');
@@ -474,14 +506,22 @@ function render_date_sync_tool_page() {
                         } else {
                             // Complete
                             $('#sync-progress-bar').css('width', '100%');
-                            $('#sync-progress-text').text('Complete! Updated ' + totalUpdated + ' posts, scheduled ' + totalScheduled + ' future posts.');
+                            var completionText = 'Complete! ';
+                            if (totalUpdated > 0) completionText += 'Updated ' + totalUpdated + ' posts. ';
+                            if (totalScheduled > 0) completionText += 'Scheduled ' + totalScheduled + ' future posts. ';
+                            if (totalDrafted > 0) completionText += 'Drafted ' + totalDrafted + ' posts.';
+                            
+                            $('#sync-progress-text').text(completionText);
                             
                             var message = 'Sync Complete! ';
                             if (totalUpdated > 0) {
                                 message += 'Updated ' + totalUpdated + ' posts. ';
                             }
                             if (totalScheduled > 0) {
-                                message += 'Scheduled ' + totalScheduled + ' future posts.';
+                                message += 'Scheduled ' + totalScheduled + ' future posts. ';
+                            }
+                            if (totalDrafted > 0) {
+                                message += 'Drafted ' + totalDrafted + ' posts.';
                             }
                             
                             $('#sync-results-text').text(message);
