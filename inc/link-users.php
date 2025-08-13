@@ -713,21 +713,21 @@ function process_content_linking_batch_callback() {
             wp_send_json_error(['message' => 'Exception: ' . $e->getMessage()]);
         }
     } else {
-        // Handle JSON file data for writers/experts (existing functionality)
-        $json_file_path = '';
+        // Handle API data for writers/experts (updated to use APIs instead of JSON files)
+        $api_url = '';
         $user_meta_key = '';
         $story_user_field = '';
         $user_type_label = '';
         $json_id_key = '';
 
         if ($linking_type === 'writers') {
-            $json_file_path = get_template_directory() . '/json/news-writers-association.json';
+            $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryWriter';
             $user_meta_key = 'writer_id';
             $story_user_field = 'authors';
             $user_type_label = 'writer';
             $json_id_key = 'WRITER_ID';
         } elseif ($linking_type === 'experts') {
-            $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
+            $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStorySourceExpert';
             $user_meta_key = 'source_expert_id';
             $story_user_field = 'experts';
             $user_type_label = 'expert';
@@ -736,19 +736,19 @@ function process_content_linking_batch_callback() {
             wp_send_json_error(['message' => 'Invalid linking type specified.']);
         }
 
-        if (!file_exists($json_file_path)) {
-            wp_send_json_error(['message' => 'Data file not found for ' . $linking_type]);
-        }
-
         try {
-            // Read and parse JSON
-            $json_data = file_get_contents($json_file_path);
-            $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data);
-            $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8');
-            $records = json_decode($json_data, true);
+            // Fetch data from API instead of reading JSON file
+            $response = wp_remote_get($api_url, ['timeout' => 30]);
+            
+            if (is_wp_error($response)) {
+                wp_send_json_error(['message' => 'API request failed for ' . $linking_type . ': ' . $response->get_error_message()]);
+            }
+            
+            $body = wp_remote_retrieve_body($response);
+            $records = json_decode($body, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                wp_send_json_error(['message' => 'JSON decode error: ' . json_last_error_msg()]);
+                wp_send_json_error(['message' => 'API JSON decode error for ' . $linking_type . ': ' . json_last_error_msg()]);
             }
 
             // Get the batch slice
