@@ -8,28 +8,35 @@
  */
 
 // ===================================
-// FIX FOR /news/latest/ CONFLICT
+// FIX FOR /news/ SUB-PAGE CONFLICTS
 // ===================================
 
 /**
- * NEW AND FINAL FIX: Intercept the request for /news/latest/ before WordPress can perform a faulty redirect.
- * This is the most reliable way to handle this specific conflict.
+ * Intercept requests for specific pages under /news/ before WordPress can perform a faulty redirect.
+ * This is the most reliable way to handle these specific conflicts.
  */
-function caes_intercept_latest_news_page() {
+function caes_intercept_special_news_pages() {
+    // Define the paths of the special pages that need protection.
+    $special_pages = [
+        'news/latest',
+        'news/topics',
+        'news/features',
+    ];
+    
     // Get the current request path
     $current_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
-    // Check if the request is exactly for 'news/latest'
-    if ($current_path === 'news/latest') {
+    // Check if the current request is for one of our special pages.
+    if (in_array($current_path, $special_pages)) {
         
-        // Find the "Latest" page using its path
-        $latest_page = get_page_by_path('news/latest');
+        // Find the page using its path (e.g., 'news/latest')
+        $page = get_page_by_path($current_path);
 
-        if ($latest_page) {
+        if ($page) {
             // If the page exists, set up the global query to correctly identify it.
             // This makes all template tags like the_title() and the_content() work correctly.
             global $wp_query, $post;
-            $post = $latest_page;
+            $post = $page;
             $wp_query->is_page = true;
             $wp_query->is_singular = true;
             $wp_query->is_home = false;
@@ -55,11 +62,11 @@ function caes_intercept_latest_news_page() {
     }
 }
 // Use a priority of 1 to run before WordPress's own redirect_canonical function (which runs at priority 10)
-add_action('template_redirect', 'caes_intercept_latest_news_page', 1);
+add_action('template_redirect', 'caes_intercept_special_news_pages', 1);
 
 
 // ===================================
-// REWRITE RULES SECTION (Unchanged but still necessary)
+// REWRITE RULES SECTION
 // ===================================
 
 /**
@@ -67,13 +74,24 @@ add_action('template_redirect', 'caes_intercept_latest_news_page', 1);
  * Order matters - more specific rules should come first.
  */
 function custom_news_rewrite_rules() {
-    // This rule helps WordPress understand that news/latest is a valid structure,
-    // even though the interceptor function above does the heavy lifting.
+    // PRIORITY 1: Add rules for our specific pages. This helps WordPress recognize them as valid.
     add_rewrite_rule(
         '^news/latest/?$',
-        'index.php?pagename=news/latest', // Point it directly to the page
+        'index.php?pagename=news/latest',
         'top'
     );
+    add_rewrite_rule(
+        '^news/topics/?$',
+        'index.php?pagename=news/topics',
+        'top'
+    );
+    add_rewrite_rule(
+        '^news/features/?$',
+        'index.php?pagename=news/features',
+        'top'
+    );
+    
+    // PRIORITY 2: Handle specific taxonomy patterns.
     add_rewrite_rule(
         '^news/category/([^/]+)/?$',
         'index.php?category_name=$matches[1]',
@@ -94,6 +112,8 @@ function custom_news_rewrite_rules() {
         'index.php?tag=$matches[1]&paged=$matches[2]',
         'top'
     );
+
+    // PRIORITY 3 (FALLBACK): Handle any other slug as a single post.
     add_rewrite_rule(
         '^news/([^/]+)/?$',
         'index.php?post_type=post&name=$matches[1]',
@@ -335,7 +355,7 @@ function custom_topic_term_link($termlink, $term, $taxonomy)
 add_filter('term_link', 'custom_topic_term_link', 10, 3);
 
 // ===================================
-// REDIRECTION RULES SECTION (New Section)
+// REDIRECTION RULES SECTION
 // ===================================
 
 /**
