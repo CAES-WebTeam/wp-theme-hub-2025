@@ -725,13 +725,13 @@ function process_content_linking_batch_callback() {
             $user_meta_key = 'writer_id';
             $story_user_field = 'authors';
             $user_type_label = 'writer';
-            $json_id_key = 'WRITER_ID';
+            $json_id_key = 'ID';
         } elseif ($linking_type === 'experts') {
             $json_file_path = get_template_directory() . '/json/NewsAssociationStorySourceExpert.json';
             $user_meta_key = 'source_expert_id';
             $story_user_field = 'experts';
             $user_type_label = 'expert';
-            $json_id_key = 'SOURCE_EXPERT_ID';
+            $json_id_key = 'ID';
         } else {
             wp_send_json_error(['message' => 'Invalid linking type specified.']);
         }
