@@ -465,3 +465,41 @@ function redirect_feature_to_features() {
     }
 }
 add_action('template_redirect', 'redirect_feature_to_features');
+
+/**
+ * If a user visits a URL like /publications/topic/57/15428/, redirect to /publications/topic/actual-slug/
+ * by looking up the topic term's type_id and topic_id ACF fields.
+ */
+function redirect_topic_ids_to_canonical_url() {
+    // Only run on frontend
+    if (is_admin()) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // Check if URL matches /publications/topic/{number}/{number}/ pattern
+    if (preg_match('#^/publications/topic/(\d+)/(\d+)/?$#', $requested_path, $matches)) {
+        $type_id = $matches[1];
+        $topic_id = $matches[2];
+        
+        // Get all topics terms
+        $terms = get_terms([
+            'taxonomy' => 'topics',
+            'hide_empty' => false,
+        ]);
+        
+        // Look for term with matching ACF fields
+        foreach ($terms as $term) {
+            $term_type_id = get_field('type_id', $term);
+            $term_topic_id = get_field('topic_id', $term);
+            
+            if ($term_type_id == $type_id && $term_topic_id == $topic_id) {
+                $canonical_url = "/publications/topic/{$term->slug}/";
+                
+                // Perform 301 redirect
+                wp_redirect(home_url($canonical_url), 301);
+                exit;
+            }
+        }
+    }
+}
+add_action('init', 'redirect_topic_ids_to_canonical_url');
