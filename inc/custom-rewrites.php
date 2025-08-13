@@ -342,14 +342,20 @@ function redirect_news_id_to_canonical_url() {
         $post_slug = wp_cache_get($cache_key);
         
         if ($post_slug === false) {
-            // Use get_posts() with optimized parameters
+            // Use get_posts() with optimized parameters and exact matching
             $posts = get_posts([
                 'post_type'      => 'post',
                 'post_status'    => 'publish',
                 'numberposts'    => 1,
                 'fields'         => 'ids', // Only get IDs first
-                'meta_key'       => 'id',
-                'meta_value'     => $story_id,
+                'meta_query'     => [
+                    [
+                        'key'     => 'id',
+                        'value'   => $story_id,
+                        'compare' => '=',
+                        'type'    => 'CHAR' // Force string comparison for exact match
+                    ]
+                ],
                 'no_found_rows'  => true, // Skip pagination calculations
                 'update_post_meta_cache' => false, // Skip meta cache
                 'update_post_term_cache' => false, // Skip term cache
