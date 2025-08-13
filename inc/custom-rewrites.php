@@ -15,13 +15,6 @@
  * Order matters - more specific rules should come first.
  */
 function custom_news_rewrite_rules() {
-     // Latest page
-    add_rewrite_rule(
-        '^news/latest/?$',
-        'index.php?pagename=news/latest', // Adjust this based on your page structure
-        'top'
-    );
-    
     // Category archives under /news/
     add_rewrite_rule(
         '^news/category/([^/]+)/?$',
@@ -46,10 +39,9 @@ function custom_news_rewrite_rules() {
         'top'
     );
 
-    // Single news posts - now more specific to avoid conflicts
-    // This should come after category/tag rules
+    // Single news posts - exclude reserved slugs to avoid conflicts with pages
     add_rewrite_rule(
-        '^news/([^/]+)/?$',
+        '^news/(?!latest|category|tag|topic)([^/]+)/?$',
         'index.php?post_type=post&name=$matches[1]',
         'top'
     );
