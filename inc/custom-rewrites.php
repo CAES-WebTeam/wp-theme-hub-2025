@@ -202,8 +202,9 @@ add_action('init', 'custom_topic_rewrite_rules');
 function custom_publications_rewrite_rules()
 {
     // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
+    // MODIFIED: Replaced the overly strict regex with a more flexible one.
     add_rewrite_rule(
-        '^publications/([A-Za-z]+\d+(?:-[A-Za-z0-9]+)*)/([^/]+)/?$',
+        '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
         'index.php?post_type=publications&name=$matches[2]',
         'top'
     );
