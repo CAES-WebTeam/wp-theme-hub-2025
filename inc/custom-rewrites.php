@@ -20,7 +20,14 @@
  * Order matters - more specific rules should come first.
  */
 function custom_news_rewrite_rules() {
-    // Category archives under /news/ (Specific patterns first)
+    // PRIORITY 1: Handle specific pages first to create exceptions.
+    add_rewrite_rule(
+        '^news/latest/?$',
+        'index.php?pagename=news/latest',
+        'top'
+    );
+
+    // PRIORITY 2: Handle specific taxonomy patterns.
     add_rewrite_rule(
         '^news/category/([^/]+)/?$',
         'index.php?category_name=$matches[1]',
@@ -31,8 +38,6 @@ function custom_news_rewrite_rules() {
         'index.php?category_name=$matches[1]&paged=$matches[2]',
         'top'
     );
-
-    // Tag archives under /news/
     add_rewrite_rule(
         '^news/tag/([^/]+)/?$',
         'index.php?tag=$matches[1]',
@@ -44,21 +49,11 @@ function custom_news_rewrite_rules() {
         'top'
     );
 
-    // Single news posts - this must come BEFORE the generic page rule
-    // The negative lookahead prevents this rule from matching real page slugs like 'latest'
-    add_rewrite_rule(
-        '^news/(?!latest|category|tag|topic)([^/]+)/?$',
-        'index.php?post_type=post&name=$matches[1]',
-        'top'
-    );
-
-    // --- NEW ---
-    // Fallback rule for any child PAGE under /news/.
-    // This will now correctly handle '/news/latest/' and any others you create.
-    // It must be last so it doesn't override posts, categories, or tags.
+    // PRIORITY 3 (FALLBACK): Handle any other slug as a single post.
+    // This comes last. It will not run for '/news/latest/' because the first rule already caught it.
     add_rewrite_rule(
         '^news/([^/]+)/?$',
-        'index.php?pagename=news/$matches[1]',
+        'index.php?post_type=post&name=$matches[1]',
         'top'
     );
 }
