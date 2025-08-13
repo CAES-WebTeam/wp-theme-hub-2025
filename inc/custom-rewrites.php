@@ -377,7 +377,7 @@ function redirect_news_id_to_canonical_url() {
         error_log("Regex did not match for path: {$requested_path}");
     }
 }
-add_action('template_redirect', 'redirect_news_id_to_canonical_url');
+add_action('init', 'redirect_news_id_to_canonical_url'); // Changed from template_redirect to init
 
 
 // Redirect old caes-departments URLs to new departments URLs
