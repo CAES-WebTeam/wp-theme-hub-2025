@@ -333,14 +333,9 @@ function redirect_news_id_to_canonical_url() {
     
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
     
-    // Debug: Always log when function runs
-    error_log("Redirect function running. Path: {$requested_path}");
-    
     // Check if URL matches /news/{number}/ pattern
     if (preg_match('#^/news/(\d+)/?$#', $requested_path, $matches)) {
         $story_id = $matches[1];
-        
-        error_log("Regex matched! Looking for story ID: {$story_id}");
         
         // Query to find post with matching ACF 'id' field
         $args = [
@@ -356,28 +351,18 @@ function redirect_news_id_to_canonical_url() {
         
         $query = new WP_Query($args);
         
-        error_log("Query found " . $query->found_posts . " posts");
-        
         if ($query->have_posts()) {
             $found_post = $query->posts[0];
             $post_slug = $found_post->post_name;
-            
-            $stored_id = get_field('id', $found_post->ID);
-            error_log("Found match! Post ID: {$found_post->ID}, Stored ACF id: {$stored_id}, Slug: {$post_slug}");
-            
             $canonical_url = "/news/{$post_slug}/";
             
             // Perform 301 redirect
             wp_redirect(home_url($canonical_url), 301);
             exit;
-        } else {
-            error_log("No posts found with ACF id = {$story_id}");
         }
-    } else {
-        error_log("Regex did not match for path: {$requested_path}");
     }
 }
-add_action('init', 'redirect_news_id_to_canonical_url'); // Changed from template_redirect to init
+add_action('init', 'redirect_news_id_to_canonical_url');
 
 
 // Redirect old caes-departments URLs to new departments URLs
