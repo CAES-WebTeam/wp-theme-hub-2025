@@ -14,11 +14,23 @@
  * Custom rewrite rules for news (post type) including categories, tags, and single posts.
  * Order matters - more specific rules should come first.
  */
+
+/**
+ * Updated custom_news_rewrite_rules function with debugging and latest page fix
+ */
 function custom_news_rewrite_rules() {
-     // Latest page
+    // FIRST: Handle the specific /news/latest/ page
+    // Try multiple variations to see which one works
     add_rewrite_rule(
         '^news/latest/?$',
-        'index.php?pagename=news/latest', // Adjust this based on your page structure
+        'index.php?pagename=news/latest',
+        'top'
+    );
+    
+    // Alternative if it's a top-level page
+    add_rewrite_rule(
+        '^news/latest/?$',
+        'index.php?page_id=' . get_page_by_path('news/latest')->ID ?? 0,
         'top'
     );
     
@@ -45,16 +57,72 @@ function custom_news_rewrite_rules() {
         'index.php?tag=$matches[1]&paged=$matches[2]',
         'top'
     );
-
-    // Single news posts - now more specific to avoid conflicts
-    // This should come after category/tag rules
+    
+    // Single news posts - EXCLUDE reserved paths
     add_rewrite_rule(
-        '^news/([^/]+)/?$',
+        '^news/(?!latest|category|tag|topic|submit)([^/]+)/?$',
         'index.php?post_type=post&name=$matches[1]',
         'top'
     );
 }
-add_action('init', 'custom_news_rewrite_rules');
+
+/**
+ * Temporary debugging function to see what's happening
+ * Add this temporarily and remove after fixing
+ */
+function debug_news_latest_redirect() {
+    if (is_admin()) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    if ($requested_path === '/news/latest') {
+        // Log what WordPress is trying to do
+        error_log('Requested: /news/latest');
+        error_log('Current query vars: ' . print_r(get_query_var(), true));
+        error_log('Is page: ' . (is_page() ? 'yes' : 'no'));
+        error_log('Is single: ' . (is_single() ? 'yes' : 'no'));
+        
+        // Check if the page exists
+        $page = get_page_by_path('news/latest');
+        if ($page) {
+            error_log('Page found with ID: ' . $page->ID);
+        } else {
+            error_log('No page found at news/latest');
+            
+            // Check for other variations
+            $latest_page = get_page_by_path('latest');
+            if ($latest_page) {
+                error_log('Found page "latest" with ID: ' . $latest_page->ID);
+            }
+        }
+    }
+}
+add_action('template_redirect', 'debug_news_latest_redirect', 1);
+
+/**
+ * Force redirect to correct page if needed
+ * This is a more aggressive approach
+ */
+function force_news_latest_redirect() {
+    if (is_admin()) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // If someone is accessing /news/latest but getting redirected to a post
+    if ($requested_path === '/news/latest' && is_single()) {
+        // Check if there's a page that should handle this
+        $page = get_page_by_path('news/latest');
+        if ($page) {
+            wp_redirect(get_permalink($page->ID), 301);
+            exit;
+        }
+        
+        // Alternative: redirect to a specific page ID if you know it
+        // wp_redirect(get_permalink(YOUR_PAGE_ID), 301);
+        // exit;
+    }
+}
+add_action('template_redirect', 'force_news_latest_redirect', 5);
 
 // Custom rewrite rules for the event series taxonomy
 function custom_events_rewrite_rules()
