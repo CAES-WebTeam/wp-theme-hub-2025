@@ -589,3 +589,36 @@ function redirect_topic_ids_to_canonical_url()
     }
 }
 add_action('init', 'redirect_topic_ids_to_canonical_url');
+
+
+// ===================================
+// EXTERNAL URL FOR NEWS POSTS
+// ===================================
+
+/**
+ * Replace permalink with ACF external URL if it is set and valid for a news post.
+ */
+function custom_external_story_url($url, $post = null)
+{
+    if (! $post instanceof WP_Post) {
+        $post = get_post($post);
+    }
+
+    // Only apply to 'post' post type
+    if (! $post || $post->post_type !== 'post') {
+        return $url;
+    }
+
+    // Use get_post_meta for better performance than get_field
+    $external_url = get_post_meta($post->ID, 'external_story_url', true);
+
+    // If the external URL exists and is a valid URL format, return it.
+    if ($external_url && filter_var($external_url, FILTER_VALIDATE_URL)) {
+        return esc_url($external_url);
+    }
+
+    // Otherwise, return the original URL passed to the function.
+    return $url;
+}
+// Apply this filter *after* the custom_news_permalink filter (which has a priority of 99)
+add_filter('post_link', 'custom_external_story_url', 100, 2);
