@@ -323,6 +323,59 @@ function redirect_publications_to_canonical_url()
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
+/**
+ * If a user visits a URL like /news/10345/, redirect to /news/post-slug/
+ * by looking up the ACF 'id' field and obtaining the canonical slug.
+ */
+function redirect_news_id_to_canonical_url() {
+    // Only run on frontend
+    if (is_admin()) return;
+    
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // Check if URL matches /news/{number}/ pattern
+    if (preg_match('#^/news/(\d+)/?$#', $requested_path, $matches)) {
+        $story_id = $matches[1];
+        
+        // Check cache first
+        $cache_key = "news_id_redirect_{$story_id}";
+        $post_slug = wp_cache_get($cache_key);
+        
+        if ($post_slug === false) {
+            // Use get_posts() with optimized parameters
+            $posts = get_posts([
+                'post_type'      => 'post',
+                'post_status'    => 'publish',
+                'numberposts'    => 1,
+                'fields'         => 'ids', // Only get IDs first
+                'meta_key'       => 'id',
+                'meta_value'     => $story_id,
+                'no_found_rows'  => true, // Skip pagination calculations
+                'update_post_meta_cache' => false, // Skip meta cache
+                'update_post_term_cache' => false, // Skip term cache
+            ]);
+            
+            if ($posts) {
+                $post_slug = get_post_field('post_name', $posts[0]);
+            } else {
+                $post_slug = 'not_found';
+            }
+            
+            // Cache result for 1 hour
+            wp_cache_set($cache_key, $post_slug, '', 3600);
+        }
+        
+        if ($post_slug && $post_slug !== 'not_found') {
+            $canonical_url = "/news/{$post_slug}/";
+            
+            // Perform 301 redirect
+            wp_redirect(home_url($canonical_url), 301);
+            exit;
+        }
+    }
+}
+add_action('template_redirect', 'redirect_news_id_to_canonical_url');
+
 
 // Redirect old caes-departments URLs to new departments URLs
 function redirect_old_department_urls() {
