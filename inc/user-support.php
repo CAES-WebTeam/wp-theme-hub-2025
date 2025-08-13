@@ -593,74 +593,48 @@ function sync_personnel_users2()
  */
 
 /**
- * Imports news experts/sources data from a local JSON file (`news-experts.json`).
+ * Imports news experts/sources data from the API endpoint.
  * Creates new 'expert_user' roles or updates existing ones.
- * Handles matching by email or personnel ID.
+ * Handles matching by personnel ID or source_expert_id.
  *
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
  */
 function import_news_experts()
 {
-    $json_file_path = get_template_directory() . '/json/news-experts.json';
+    $api_url = 'https://secure.caes.uga.edu/rest/news/getExperts';
 
-    if (!file_exists($json_file_path)) {
-        return new WP_Error('file_not_found', 'News Experts JSON file not found.');
+    // Fetch API Data.
+    $response = wp_remote_get($api_url);
+    if (is_wp_error($response)) {
+        error_log('API Request Failed for News Experts: ' . $response->get_error_message());
+        return new WP_Error('api_error', 'News Experts API Request Failed: ' . $response->get_error_message());
     }
 
-    // Load and sanitize JSON content.
-    $json_data = file_get_contents($json_file_path);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove Byte Order Mark (BOM).
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding to UTF-8.
-    $json_data = trim($json_data);
+    $data = wp_remote_retrieve_body($response);
+    $records = json_decode($data, true);
 
-    $records = json_decode($json_data, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return new WP_Error('json_decode_error', 'News Experts JSON decode error: ' . json_last_error_msg());
+    if (!is_array($records)) {
+        error_log('Invalid API response for News Experts.');
+        return new WP_Error('invalid_response', 'Invalid API response for News Experts.');
     }
 
     $created = 0;
     $updated = 0;
-    $linked = 0; // Count of users linked by personnel ID.
+    $linked = 0; // Count of users linked by personnel ID or source_expert_id.
 
-    // Iterate through each record in the JSON data.
+    // Iterate through each record from the API.
     foreach ($records as $person) {
-        $email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
+        $original_email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
         $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
         $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
         $personnel_id = $person['PERSONNEL_ID'] ?? null;
+        $source_expert_id = $person['ID'] ?? null;
 
         $user_id = null;
 
-        // Attempt to find or create user by email first.
-        if ($email && is_email($email)) {
-            $user = get_user_by('email', $email);
-            if (!$user) {
-                // Create New User if email doesn't exist.
-                $user_id = wp_insert_user([
-                    'user_login' => sanitize_user($email), // Use email as login for consistency.
-                    'user_pass' => wp_generate_password(),
-                    'user_email' => $email,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'role' => 'expert_user',
-                ]);
-
-                if (is_wp_error($user_id)) {
-                    error_log("User creation failed for expert {$email}: " . $user_id->get_error_message());
-                    continue; // Skip to next record on error.
-                }
-
-                $created++;
-            } else {
-                // If user exists by email, just get their ID for updating.
-                $user_id = $user->ID;
-                $updated++;
-            }
-        }
-
-        // If user not found by email, and personnel_id exists, attempt to link by personnel ID.
-        if (!$user_id && $personnel_id) {
+        // First, attempt to find user by personnel_id if it exists.
+        if ($personnel_id) {
             $users = get_users([
                 'meta_key' => 'personnel_id',
                 'meta_value' => $personnel_id,
@@ -671,39 +645,81 @@ function import_news_experts()
             if (!empty($users)) {
                 $user_id = $users[0];
                 $linked++;
+                error_log("Found existing user by personnel_id {$personnel_id} with ID {$user_id} for {$first_name} {$last_name}.");
             }
         }
 
-        // If still no user_id (meaning no email and no matching personnel_id), create with placeholder email.
-        if (!$user_id && !$email && !$personnel_id) {
-            $placeholder_email = generate_placeholder_email($first_name, $last_name);
+        // If not found by personnel_id, try to find by source_expert_id.
+        if (!$user_id && $source_expert_id) {
+            $users = get_users([
+                'meta_key' => 'source_expert_id',
+                'meta_value' => $source_expert_id,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+
+            if (!empty($users)) {
+                $user_id = $users[0];
+                $linked++;
+                error_log("Found existing user by source_expert_id {$source_expert_id} with ID {$user_id} for {$first_name} {$last_name}.");
+            }
+        }
+
+        // If still no user found, create a new one.
+        if (!$user_id) {
+            $email_to_use = $original_email;
+            
+            // Check if we need to spoof the email due to duplicates
+            if ($original_email && email_exists($original_email)) {
+                // Create a unique spoofed email address using source_expert_id or fallback
+                $unique_id = $source_expert_id ? $source_expert_id : uniqid();
+                $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
+                error_log("Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+            } elseif (!$original_email) {
+                // No email provided, create placeholder
+                $unique_id = $source_expert_id ? $source_expert_id : uniqid();
+                $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
+                error_log("No email provided. Using spoofed email: {$email_to_use}");
+            }
+
+            $username = sanitize_user($email_to_use);
+            
             $user_id = wp_insert_user([
-                'user_login' => sanitize_user($placeholder_email),
+                'user_login' => $username,
                 'user_pass' => wp_generate_password(),
-                'user_email' => $placeholder_email,
+                'user_email' => $email_to_use,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
                 'role' => 'expert_user',
             ]);
 
             if (is_wp_error($user_id)) {
-                error_log("User creation failed for expert {$first_name} {$last_name} with placeholder: " . $user_id->get_error_message());
+                error_log("User creation failed for expert {$first_name} {$last_name}: " . $user_id->get_error_message());
                 continue; // Skip to next record on error.
             }
 
             $created++;
+            error_log("Created new expert user with ID {$user_id} for {$first_name} {$last_name} using email: {$email_to_use}");
+        } else {
+            $updated++;
         }
 
         // Update ACF fields if a user was found or created.
         if ($user_id) {
+            // Store original email in uga_email field
+            if ($original_email) {
+                update_field('uga_email', $original_email, 'user_' . $user_id);
+            }
+            
             update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
             update_field('description', $person['DESCRIPTION'] ?? '', 'user_' . $user_id);
-            // Update personnel_id if provided and not already set (to avoid overwriting API data if that's the source of truth).
-            // If JSON is the definitive source for personnel_id for experts, this 'if' condition could be removed.
-            if ($personnel_id && empty(get_user_meta($user_id, 'personnel_id', true))) {
+            
+            // Update personnel_id if provided
+            if ($personnel_id) {
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
             }
-            update_field('source_expert_id', $person['ID'], 'user_' . $user_id);
+            
+            update_field('source_expert_id', $source_expert_id, 'user_' . $user_id);
             update_field('area_of_expertise', $person['AREA_OF_EXPERTISE'] ?? '', 'user_' . $user_id);
             update_field('is_source', (bool)($person['IS_SOURCE'] ?? false), 'user_' . $user_id);
             update_field('is_expert', (bool)($person['IS_EXPERT'] ?? false), 'user_' . $user_id);
@@ -721,85 +737,54 @@ function import_news_experts()
 }
 
 /**
- * Imports news writers data from a local JSON file (`news-writers.json`).
+ * Imports news writers data from the API endpoint.
  * Creates new 'expert_user' roles or updates existing ones.
- * Handles matching by email or personnel ID.
+ * Handles matching by personnel ID or writer_id.
  *
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
  */
 function import_news_writers()
 {
-    $json_file_path = get_template_directory() . '/json/news-writers.json';
+    $api_url = 'https://secure.caes.uga.edu/rest/news/getWriters';
 
-    if (!file_exists($json_file_path)) {
-        error_log('DEBUG WRITER: News Writers JSON file not found at ' . $json_file_path);
-        return new WP_Error('file_not_found', 'News Writers JSON file not found.');
+    // Fetch API Data.
+    $response = wp_remote_get($api_url);
+    if (is_wp_error($response)) {
+        error_log('API Request Failed for News Writers: ' . $response->get_error_message());
+        return new WP_Error('api_error', 'News Writers API Request Failed: ' . $response->get_error_message());
     }
 
-    // Load and sanitize JSON content.
-    $json_data = file_get_contents($json_file_path);
-    $json_data = preg_replace('/^\xEF\xBB\xBF/', '', $json_data); // Remove Byte Order Mark (BOM).
-    $json_data = mb_convert_encoding($json_data, 'UTF-8', 'UTF-8'); // Normalize encoding to UTF-8.
-    $json_data = trim($json_data);
+    $data = wp_remote_retrieve_body($response);
+    $records = json_decode($data, true);
 
-    $records = json_decode($json_data, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        error_log('DEBUG WRITER: JSON decode error: ' . json_last_error_msg());
-        return new WP_Error('json_decode_error', 'News Writers JSON decode error: ' . json_last_error_msg());
+    if (!is_array($records)) {
+        error_log('Invalid API response for News Writers.');
+        return new WP_Error('invalid_response', 'Invalid API response for News Writers.');
     }
 
     $created = 0;
     $updated = 0;
-    $linked = 0; // Count of users linked by personnel ID.
+    $linked = 0; // Count of users linked by personnel ID or writer_id.
 
-    // Iterate through each record in the JSON data.
+    // Iterate through each record from the API.
     foreach ($records as $person) {
-        // Specifically log data for Elmer Gray if found, or for all if names are empty.
-        $current_name = (isset($person['FIRST_NAME']) ? $person['FIRST_NAME'] : '') . ' ' . (isset($person['LAST_NAME']) ? $person['LAST_NAME'] : '');
-        if (strpos($current_name, 'Elmer Gray') !== false || (empty($person['FIRST_NAME']) && empty($person['LAST_NAME']))) {
-            error_log('DEBUG WRITER: Processing record: ' . print_r($person, true));
-        }
-
-        $email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
+        $original_email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
         $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
         $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
         $personnel_id = $person['PERSONNEL_ID'] ?? null;
-        $writer_id_from_json = $person['ID'] ?? null; // Capture the ID field from JSON.
+        $writer_id_from_api = $person['ID'] ?? null; // Capture the ID field from API.
+
+        // Specifically log data for Elmer Gray if found, or for all if names are empty.
+        $current_name = $first_name . ' ' . $last_name;
+        if (strpos($current_name, 'Elmer Gray') !== false || (empty($first_name) && empty($last_name))) {
+            error_log('DEBUG WRITER: Processing record: ' . print_r($person, true));
+        }
 
         $user_id = null;
 
-        // Attempt to find or create user by email first.
-        if ($email && is_email($email)) {
-            $user = get_user_by('email', $email);
-            if (!$user) {
-                // Create New User if email doesn't exist.
-                $user_id = wp_insert_user([
-                    'user_login' => sanitize_user($email), // Use email as login for consistency.
-                    'user_pass' => wp_generate_password(),
-                    'user_email' => $email,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'role' => 'expert_user', // Changed from 'author' to 'expert_user'
-                ]);
-
-                if (is_wp_error($user_id)) {
-                    error_log("DEBUG WRITER: User creation failed for writer {$email}: " . $user_id->get_error_message());
-                    continue; // Skip to next record on error.
-                }
-
-                $created++;
-                error_log("DEBUG WRITER: Created new user with ID {$user_id} for {$email} ({$first_name} {$last_name}).");
-            } else {
-                // If user exists by email, just get their ID for updating.
-                $user_id = $user->ID;
-                $updated++;
-                error_log("DEBUG WRITER: Found existing user by email {$email} with ID {$user_id} for {$first_name} {$last_name}.");
-            }
-        }
-
-        // If user not found by email, and personnel_id exists, attempt to link by personnel ID.
-        if (!$user_id && $personnel_id) {
+        // First, attempt to find user by personnel_id if it exists.
+        if ($personnel_id) {
             $users = get_users([
                 'meta_key' => 'personnel_id',
                 'meta_value' => $personnel_id,
@@ -816,46 +801,89 @@ function import_news_writers()
             }
         }
 
-        // If still no user_id (meaning no email and no matching personnel_id), create with placeholder email.
-        if (!$user_id && !$email && !$personnel_id) {
-            $placeholder_email = generate_placeholder_email($first_name, $last_name);
+        // If not found by personnel_id, try to find by writer_id.
+        if (!$user_id && $writer_id_from_api) {
+            $users = get_users([
+                'meta_key' => 'writer_id',
+                'meta_value' => $writer_id_from_api,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+
+            if (!empty($users)) {
+                $user_id = $users[0];
+                $linked++;
+                error_log("DEBUG WRITER: Found existing user by writer_id {$writer_id_from_api} with ID {$user_id} for {$first_name} {$last_name}.");
+            } else {
+                error_log("DEBUG WRITER: No existing user found by writer_id {$writer_id_from_api} for {$first_name} {$last_name}.");
+            }
+        }
+
+        // If still no user found, create a new one.
+        if (!$user_id) {
+            $email_to_use = $original_email;
+            
+            // Check if we need to spoof the email due to duplicates
+            if ($original_email && email_exists($original_email)) {
+                // Create a unique spoofed email address using writer_id or fallback
+                $unique_id = $writer_id_from_api ? $writer_id_from_api : uniqid();
+                $email_to_use = "writer_{$unique_id}@caes.uga.edu.spoofed";
+                error_log("DEBUG WRITER: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+            } elseif (!$original_email) {
+                // No email provided, create placeholder
+                $unique_id = $writer_id_from_api ? $writer_id_from_api : uniqid();
+                $email_to_use = "writer_{$unique_id}@caes.uga.edu.spoofed";
+                error_log("DEBUG WRITER: No email provided. Using spoofed email: {$email_to_use}");
+            }
+
+            $username = sanitize_user($email_to_use);
+            
             $user_id = wp_insert_user([
-                'user_login' => sanitize_user($placeholder_email),
+                'user_login' => $username,
                 'user_pass' => wp_generate_password(),
-                'user_email' => $placeholder_email,
+                'user_email' => $email_to_use,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
-                'role' => 'expert_user', // Changed from 'author' to 'expert_user'
+                'role' => 'expert_user',
             ]);
 
             if (is_wp_error($user_id)) {
-                error_log("DEBUG WRITER: User creation failed for writer {$first_name} {$last_name} with placeholder: " . $user_id->get_error_message());
+                error_log("DEBUG WRITER: User creation failed for writer {$first_name} {$last_name}: " . $user_id->get_error_message());
                 continue; // Skip to next record on error.
             }
 
             $created++;
-            error_log("DEBUG WRITER: Created new user with ID {$user_id} for {$first_name} {$last_name} using placeholder email: {$placeholder_email}.");
+            error_log("DEBUG WRITER: Created new user with ID {$user_id} for {$first_name} {$last_name} using email: {$email_to_use}.");
+        } else {
+            $updated++;
         }
 
         // Update ACF fields if a user was found or created.
         if ($user_id) {
             error_log("DEBUG WRITER: Attempting to update ACF fields for user ID: {$user_id} ({$first_name} {$last_name}).");
+            
+            // Store original email in uga_email field
+            if ($original_email) {
+                update_field('uga_email', $original_email, 'user_' . $user_id);
+            }
+            
             update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
             update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
-            // Update personnel_id if provided and not already set.
-            if ($personnel_id && empty(get_user_meta($user_id, 'personnel_id', true))) {
+            
+            // Update personnel_id if provided
+            if ($personnel_id) {
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 error_log("DEBUG WRITER: Updated personnel_id to {$personnel_id} for user {$user_id}.");
             }
 
             // --- Specific Debugging for writer_id ---
-            error_log("DEBUG WRITER: Trying to set writer_id for user {$user_id} to value '{$writer_id_from_json}'.");
-            $update_result = update_field('writer_id', $writer_id_from_json, 'user_' . $user_id);
+            error_log("DEBUG WRITER: Trying to set writer_id for user {$user_id} to value '{$writer_id_from_api}'.");
+            $update_result = update_field('writer_id', $writer_id_from_api, 'user_' . $user_id);
 
             if ($update_result === false) {
                 error_log("DEBUG WRITER: Failed to update 'writer_id' for user {$user_id}. This could mean the field doesn't exist or is not configured correctly for users.");
             } else {
-                error_log("DEBUG WRITER: Successfully updated 'writer_id' to '{$writer_id_from_json}' for user {$user_id}.");
+                error_log("DEBUG WRITER: Successfully updated 'writer_id' to '{$writer_id_from_api}' for user {$user_id}.");
             }
             // --- End Specific Debugging for writer_id ---
 
