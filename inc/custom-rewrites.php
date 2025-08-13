@@ -15,16 +15,12 @@
  * Custom rewrite rules for news (post type) including categories, tags, and single posts.
  * Order matters - more specific rules should come first.
  */
-function custom_news_rewrite_rules()
-{
-    // Force /news/latest/ to be treated as a page (very specific rule first)
-    add_rewrite_rule(
-        '^news/latest/?$',
-        'index.php?pagename=news/latest', // Use the page path for reliability
-        'top'
-    );
-
-    // Category archives under /news/
+/**
+ * Custom rewrite rules for news (post type) including categories, tags, and single posts.
+ * Order matters - more specific rules should come first.
+ */
+function custom_news_rewrite_rules() {
+    // Category archives under /news/ (Specific patterns first)
     add_rewrite_rule(
         '^news/category/([^/]+)/?$',
         'index.php?category_name=$matches[1]',
@@ -48,10 +44,21 @@ function custom_news_rewrite_rules()
         'top'
     );
 
-    // Single news posts - exclude reserved slugs to avoid conflicts with pages
+    // Single news posts - this must come BEFORE the generic page rule
+    // The negative lookahead prevents this rule from matching real page slugs like 'latest'
     add_rewrite_rule(
         '^news/(?!latest|category|tag|topic)([^/]+)/?$',
         'index.php?post_type=post&name=$matches[1]',
+        'top'
+    );
+
+    // --- NEW ---
+    // Fallback rule for any child PAGE under /news/.
+    // This will now correctly handle '/news/latest/' and any others you create.
+    // It must be last so it doesn't override posts, categories, or tags.
+    add_rewrite_rule(
+        '^news/([^/]+)/?$',
+        'index.php?pagename=news/$matches[1]',
         'top'
     );
 }
