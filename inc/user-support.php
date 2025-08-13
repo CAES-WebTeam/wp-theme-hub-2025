@@ -219,7 +219,7 @@ function sync_personnel_users()
         // Sanitize and extract relevant user data from the API response.
         $personnel_id = intval($user['PERSONNEL_ID']);
         $college_id = intval($user['COLLEGEID']);
-        $email = sanitize_email($user['EMAIL']);
+        $original_email = sanitize_email($user['EMAIL']);
         $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
         $nickname = sanitize_text_field($user['NAME']);
         $display_name = sanitize_text_field($user['NAME']);
@@ -254,10 +254,10 @@ function sync_personnel_users()
             error_log("Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
         } else {
             // Fallback: Check if user exists by email (for users who might not have personnel_id set)
-            $existing_user = get_user_by('email', $email);
+            $existing_user = get_user_by('email', $original_email);
             if ($existing_user && in_array('personnel_user', $existing_user->roles)) {
                 $user_id = $existing_user->ID;
-                error_log("Found existing personnel_user by email {$email}: User ID {$user_id} (missing personnel_id)");
+                error_log("Found existing personnel_user by email {$original_email}: User ID {$user_id} (missing personnel_id)");
             }
         }
 
@@ -272,7 +272,7 @@ function sync_personnel_users()
             // Update core WordPress user fields.
             wp_update_user([
                 'ID' => $user_id,
-                'user_email' => $email,
+                'user_email' => $original_email,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
                 'nickname' => $nickname,
@@ -282,6 +282,7 @@ function sync_personnel_users()
             // Update ACF fields for the existing user.
             update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
             update_field('college_id', $college_id, 'user_' . $user_id);
+            update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
             update_field('title', $title, 'user_' . $user_id);
             update_field('phone_number', $phone, 'user_' . $user_id);
             update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
@@ -303,10 +304,20 @@ function sync_personnel_users()
 
             error_log("Updated existing user {$user_id} with personnel_id {$personnel_id}");
         } else {
+
+            $email_to_use = $original_email;
+            
+            // Check if email already exists in WordPress
+            if (email_exists($original_email)) {
+                // Create a unique spoofed email address
+                $email_to_use = "personnel_{$personnel_id}@caes.uga.edu.spoofed";
+                error_log("Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+            }
+
             // Create New User if not found.
             $user_id = wp_insert_user([
                 'user_login' => $username,
-                'user_email' => $email,
+                'user_email' => $email_to_use,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
                 'nickname' => $nickname,
@@ -321,6 +332,7 @@ function sync_personnel_users()
                 // Update ACF fields for the new user.
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 update_field('college_id', $college_id, 'user_' . $user_id);
+                update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
                 update_field('title', $title, 'user_' . $user_id);
                 update_field('phone_number', $phone, 'user_' . $user_id);
                 update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
@@ -340,7 +352,7 @@ function sync_personnel_users()
                 update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
                 update_field('image_name', $image_name, 'user_' . $user_id);
 
-                error_log("Created new user {$user_id} with personnel_id {$personnel_id}");
+                error_log("Created new user {$user_id} with personnel_id {$personnel_id} using email: {$email_to_use}");
             } else {
                 error_log("Failed to create user for personnel_id {$personnel_id}: " . $user_id->get_error_message());
             }
@@ -426,7 +438,7 @@ function sync_personnel_users2()
         // Sanitize and extract relevant user data from the API response.
         $personnel_id = intval($user['PERSONNEL_ID']);
         $college_id = intval($user['COLLEGEID']);
-        $email = sanitize_email($user['EMAIL']);
+        $original_email = sanitize_email($user['EMAIL']);
         $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
         $first_name = sanitize_text_field($user['FNAME']);
         $last_name = sanitize_text_field($user['LNAME']);
@@ -460,10 +472,10 @@ function sync_personnel_users2()
             error_log("Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
         } else {
             // Fallback: Check if user exists by email (for users who might not have personnel_id set)
-            $existing_user = get_user_by('email', $email);
+            $existing_user = get_user_by('email', $original_email);
             if ($existing_user && in_array('personnel_user', $existing_user->roles)) {
                 $user_id = $existing_user->ID;
-                error_log("Found existing personnel_user by email {$email}: User ID {$user_id} (missing personnel_id)");
+                error_log("Found existing personnel_user by email {$original_email}: User ID {$user_id} (missing personnel_id)");
             }
         }
 
@@ -474,7 +486,7 @@ function sync_personnel_users2()
             // Update core WordPress user fields.
             wp_update_user([
                 'ID' => $user_id,
-                'user_email' => $email,
+                'user_email' => $original_email,
                 'first_name' => $first_name,
                 'last_name' => $last_name,
                 'display_name' => $display_name
@@ -483,6 +495,7 @@ function sync_personnel_users2()
             // Update ACF fields for the existing user.
             update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
             update_field('college_id', $college_id, 'user_' . $user_id);
+            update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
             update_field('title', $title, 'user_' . $user_id);
             update_field('phone_number', $phone, 'user_' . $user_id);
             update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
@@ -505,10 +518,19 @@ function sync_personnel_users2()
             error_log("Updated existing user {$user_id} with personnel_id {$personnel_id}");
         } else {
             // Create New User if not found.
+            $email_to_use = $original_email;
+            
+            // Check if email already exists in WordPress
+            if (email_exists($original_email)) {
+                // Create a unique spoofed email address
+                $email_to_use = "personnel_{$personnel_id}@caes.uga.edu.spoofed";
+                error_log("Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+            }
+            
             try {
                 $user_id = wp_insert_user([
                     'user_login' => $username,
-                    'user_email' => $email,
+                    'user_email' => $email_to_use,
                     'first_name' => $first_name,
                     'last_name' => $last_name,
                     'display_name' => $display_name,
@@ -526,6 +548,7 @@ function sync_personnel_users2()
                 // Update ACF fields for the new user.
                 update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 update_field('college_id', $college_id, 'user_' . $user_id);
+                update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
                 update_field('title', $title, 'user_' . $user_id);
                 update_field('phone_number', $phone, 'user_' . $user_id);
                 update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
@@ -545,7 +568,7 @@ function sync_personnel_users2()
                 update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
                 update_field('image_name', $image_name, 'user_' . $user_id);
                 
-                error_log("Created new user {$user_id} with personnel_id {$personnel_id}");
+                error_log("Created new user {$user_id} with personnel_id {$personnel_id} using email: {$email_to_use}");
             } else {
                 error_log("Failed to create user for personnel_id {$personnel_id}: " . $user_id->get_error_message());
             }
@@ -559,6 +582,7 @@ function sync_personnel_users2()
         'message' => "Inactive Personnel users synced successfully. Created: {$created_count}, Updated: {$updated_count}."
     ];
 }
+
 
 /**
  * ---------------------------------------------------------------------------------
