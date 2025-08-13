@@ -12,36 +12,54 @@
 // ===================================
 
 /**
- * Step 1: Register a custom query variable so WordPress recognizes our flag.
- * This is used to definitively identify when the /news/latest/ page is being requested.
+ * NEW AND FINAL FIX: Intercept the request for /news/latest/ before WordPress can perform a faulty redirect.
+ * This is the most reliable way to handle this specific conflict.
  */
-function caes_custom_query_vars($vars) {
-    $vars[] = "is_latest_news_page";
-    return $vars;
-}
-add_filter('query_vars', 'caes_custom_query_vars');
+function caes_intercept_latest_news_page() {
+    // Get the current request path
+    $current_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
-/**
- * Step 2: Intercept the main WordPress query.
- * If our flag is set, this function hijacks the query and forces it to load the correct page,
- * bypassing the faulty canonical redirect.
- */
-function caes_force_latest_news_page($query) {
-    // Only run this code on the main query for site visitors (not in the admin dashboard).
-    if (!is_admin() && $query->is_main_query()) {
-        // Check if our custom flag was set by the rewrite rule below.
-        if (get_query_var('is_latest_news_page')) {
-            // It is! Force the query to load the 'news/latest' page.
-            $query->set('pagename', 'news/latest');
-            $query->set('post_type', 'page');
+    // Check if the request is exactly for 'news/latest'
+    if ($current_path === 'news/latest') {
+        
+        // Find the "Latest" page using its path
+        $latest_page = get_page_by_path('news/latest');
+
+        if ($latest_page) {
+            // If the page exists, set up the global query to correctly identify it.
+            // This makes all template tags like the_title() and the_content() work correctly.
+            global $wp_query, $post;
+            $post = $latest_page;
+            $wp_query->is_page = true;
+            $wp_query->is_singular = true;
+            $wp_query->is_home = false;
+            $wp_query->is_archive = false;
+            $wp_query->queried_object = $post;
+            $wp_query->queried_object_id = $post->ID;
+            $wp_query->set('page_id', $post->ID);
+
+            setup_postdata($post);
+
+            // Determine which template to load (page.php or a custom template)
+            $template = get_page_template();
+            if (!$template) {
+                $template = get_index_template();
+            }
+
+            // Load the template
+            include($template);
+            
+            // Stop WordPress from doing anything else. This is critical.
+            exit();
         }
     }
 }
-add_action('pre_get_posts', 'caes_force_latest_news_page');
+// Use a priority of 1 to run before WordPress's own redirect_canonical function (which runs at priority 10)
+add_action('template_redirect', 'caes_intercept_latest_news_page', 1);
 
 
 // ===================================
-// REWRITE RULES SECTION
+// REWRITE RULES SECTION (Unchanged but still necessary)
 // ===================================
 
 /**
@@ -49,15 +67,13 @@ add_action('pre_get_posts', 'caes_force_latest_news_page');
  * Order matters - more specific rules should come first.
  */
 function custom_news_rewrite_rules() {
-    // PRIORITY 1: The special rule for the "Latest" page.
-    // This rule sets our custom flag 'is_latest_news_page' to 1.
+    // This rule helps WordPress understand that news/latest is a valid structure,
+    // even though the interceptor function above does the heavy lifting.
     add_rewrite_rule(
         '^news/latest/?$',
-        'index.php?is_latest_news_page=1',
+        'index.php?pagename=news/latest', // Point it directly to the page
         'top'
     );
-
-    // PRIORITY 2: Handle specific taxonomy patterns.
     add_rewrite_rule(
         '^news/category/([^/]+)/?$',
         'index.php?category_name=$matches[1]',
@@ -78,9 +94,6 @@ function custom_news_rewrite_rules() {
         'index.php?tag=$matches[1]&paged=$matches[2]',
         'top'
     );
-
-    // PRIORITY 3 (FALLBACK): Handle any other slug as a single post.
-    // This will now be safely ignored for '/news/latest/'.
     add_rewrite_rule(
         '^news/([^/]+)/?$',
         'index.php?post_type=post&name=$matches[1]',
