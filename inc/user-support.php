@@ -289,7 +289,7 @@ function sync_personnel_users()
         // Spoof an email if necessary so that the record can be imported
         if (!isset($user['EMAIL']) || empty(trim($user['EMAIL']))) {
                 $user['EMAIL'] = generate_placeholder_email($user['FNAME'], $user['LNAME']);
-            }
+        }
 
         if (!empty($missing_fields)) {
             $error_msg = "Missing required fields: " . implode(', ', $missing_fields);
@@ -578,13 +578,18 @@ function sync_personnel_users2()
     foreach ($users as $index => $user) {
         $user_log_prefix = "USER #{$index}";
         
-        // Validate required fields first
-        $required_fields = ['PERSONNEL_ID', 'EMAIL', 'NAME', 'FNAME', 'LNAME'];
+                // Validate required fields first
+        $required_fields = ['PERSONNEL_ID', 'NAME', 'FNAME', 'LNAME'];
         $missing_fields = [];
         foreach ($required_fields as $field) {
             if (!isset($user[$field]) || empty(trim($user[$field]))) {
                 $missing_fields[] = $field;
             }
+        }
+        
+        // Spoof an email if necessary so that the record can be imported
+        if (!isset($user['EMAIL']) || empty(trim($user['EMAIL']))) {
+            $user['EMAIL'] = generate_placeholder_email($user['FNAME'], $user['LNAME']);
         }
         
         if (!empty($missing_fields)) {
