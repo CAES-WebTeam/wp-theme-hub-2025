@@ -7,7 +7,7 @@ add_filter('wpseo_remove_reply_to_com', '__return_false');
 // Custom RSS2 feed with ACF authors
 remove_all_actions('do_feed_rss2');
 function create_custom_rss2_feed() {
-    load_template(get_template_directory() . '/inc/feed-rss2.php');
+    load_template(get_template_directory() . '/inc/rss-template.php');
 }
 add_action('do_feed_rss2', 'create_custom_rss2_feed', 10, 1);
 
