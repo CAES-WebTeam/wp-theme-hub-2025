@@ -1,14 +1,28 @@
 <?php
 
-// Suppress default WordPress author in RSS (we handle all authors in ACF function)
-function suppress_default_rss_author($author) {
-    if (!is_feed()) {
-        return $author;
+// Completely remove default WordPress author from RSS feeds
+function remove_default_rss_author() {
+    if (is_feed()) {
+        // Filter author functions to return empty
+        add_filter('the_author', '__return_empty_string');
+        add_filter('get_the_author', '__return_empty_string');
     }
-    
-    // Always suppress default WordPress author in feeds
-    // Our ACF function handles all author display including fallback
-    return '';
+}
+
+// Clean up RSS output to remove empty dc:creator tags
+function clean_rss_output() {
+    if (is_feed()) {
+        ob_start();
+    }
+}
+
+function finish_rss_cleanup() {
+    if (is_feed() && ob_get_level()) {
+        $content = ob_get_clean();
+        // Remove empty dc:creator tags
+        $content = preg_replace('/<dc:creator><!\[CDATA\[\s*\]\]><\/dc:creator>\s*\n?/', '', $content);
+        echo $content;
+    }
 }
 
 // Add ACF authors as dc:creator in RSS feed
@@ -72,7 +86,9 @@ function add_acf_authors_to_rss() {
 }
 
 // Hook into RSS feeds for ACF authors
-add_filter('the_author', 'suppress_default_rss_author');
-add_action('rss2_item', 'add_acf_authors_to_rss');
-add_action('rss_item', 'add_acf_authors_to_rss'); // RSS 1.0
-add_action('atom_entry', 'add_acf_authors_to_rss'); // Atom feed
+add_action('template_redirect', 'remove_default_rss_author');
+add_action('template_redirect', 'clean_rss_output', 1);
+add_action('shutdown', 'finish_rss_cleanup', 999);
+add_action('rss2_item', 'add_acf_authors_to_rss', 20); // Run later to override defaults
+add_action('rss_item', 'add_acf_authors_to_rss', 20); // RSS 1.0
+add_action('atom_entry', 'add_acf_authors_to_rss', 20); // Atom feed
