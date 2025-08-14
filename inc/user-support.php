@@ -365,7 +365,8 @@ function sync_personnel_users()
                 
                 if (email_exists($original_email)) {
                     // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                    $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
+                    $unique_id = uniqid();
+                    $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
@@ -426,7 +427,8 @@ function sync_personnel_users()
                 // Check if email already exists in WordPress
                 if (email_exists($original_email) || $original_email == '') {
                     // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                    $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
+                    $unique_id = uniqid();
+                    $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
@@ -673,7 +675,8 @@ function sync_personnel_users2()
                 
                 if (email_exists($original_email)) {
                     // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                    $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
+                    $unique_id = uniqid();
+                    $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
@@ -744,7 +747,8 @@ function sync_personnel_users2()
             // Check if email already exists in WordPress
             if (email_exists($original_email)) {
                 // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
+                $unique_id = uniqid();
+                $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
                 output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
             }
             
