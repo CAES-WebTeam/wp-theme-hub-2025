@@ -240,34 +240,6 @@ add_action('init', function() {
     add_rewrite_rule('^news/([^/]+)/?$', 'index.php?name=$matches[1]', 'top');
 });
 
-// Replace permalink with ACF external URL if set and valid
-function custom_external_story_url($url, $post = null)
-{
-    if (! $post instanceof WP_Post) {
-        $post = get_post($post);
-    }
-
-    // Only apply to 'post' post type
-    if (! $post || $post->post_type !== 'post') {
-        return $url;
-    }
-
-    // Use get_post_meta for performance
-    $external_url = get_post_meta($post->ID, 'external_story_url', true);
-
-    if ($external_url && filter_var($external_url, FILTER_VALIDATE_URL)) {
-        return esc_url($external_url);
-    }
-
-    return $url;
-}
-
-// Apply to standard permalink filters
-add_filter('post_link', 'custom_external_story_url', 15, 2);
-add_filter('post_type_link', 'custom_external_story_url', 15, 2);
-add_filter('page_link', 'custom_external_story_url', 15, 2);
-add_filter('post_type_archive_link', 'custom_external_story_url', 15, 2);
-
 // Apply to REST API responses (used in block editor, feeds, etc.)
 add_filter('rest_prepare_post', function ($response, $post, $request) {
     $external_url = get_post_meta($post->ID, 'external_story_url', true);

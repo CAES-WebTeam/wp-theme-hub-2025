@@ -259,37 +259,6 @@ function add_excerpts_to_pages() {
 }
 add_action('init', 'add_excerpts_to_pages');
 
-// Use featured image in RSS feed
-function add_featured_image_to_rss() {
-    global $post;
-
-    if (!has_post_thumbnail($post->ID)) {
-        return;
-    }
-
-    $imgsize = 'full'; // Get the best quality image available
-
-    if (isset($_GET['imgsize'])) {
-        $imgsize_param = sanitize_text_field($_GET['imgsize']);
-        if ($imgsize_param === 'lg') {
-            $imgsize = 'large';
-        }
-    }
-
-    $thumbnail_ID = get_post_thumbnail_id($post->ID);
-    $thumbnail = wp_get_attachment_image_src($thumbnail_ID, $imgsize);
-
-    if (!empty($thumbnail)) {
-        $thumbnail_url = esc_url($thumbnail[0]);
-        $width = intval($thumbnail[1]);
-        $height = intval($thumbnail[2]);
-
-        echo '<media:content xmlns:media="http://search.yahoo.com/mrss" url="' . $thumbnail_url . '" medium="image" width="' . $width . '" height="' . $height . '" />';
-    }
-}
-
-add_action('rss2_item', 'add_featured_image_to_rss');
-
 // Add custom login stylesheet
 function hub_login_stylesheet()
 {

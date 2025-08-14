@@ -197,39 +197,23 @@ function custom_topic_rewrite_rules()
 add_action('init', 'custom_topic_rewrite_rules');
 
 /**
- * Custom rewrite rules for publications, including publication series and child pages.
+ * Custom rewrite rules for publications
  */
 function custom_publications_rewrite_rules()
 {
-    // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
-    // MODIFIED: Replaced the overly strict regex with a more flexible one.
-    add_rewrite_rule(
-        '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
-        'index.php?post_type=publications&name=$matches[2]',
-        'top'
-    );
+	// Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
+	add_rewrite_rule(
+		'^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
+		'index.php?post_type=publications&name=$matches[2]',
+		'top'
+	);
 
-    // Rule to specifically handle the publication series taxonomy URLs
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/?$',
-        'index.php?publication_series=$matches[1]',
-        'top'
-    );
-
-    // Rule for pagination in taxonomy archives
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/page/([0-9]+)/?$',
-        'index.php?publication_series=$matches[1]&paged=$matches[2]',
-        'top'
-    );
-
-    // Child pages rule - this handles regular child pages under "publications"
-    // This should be last so it doesn't catch /publications/series/
-    add_rewrite_rule(
-        '^publications/([^/]+)/?$',
-        'index.php?pagename=publications/$matches[1]',
-        'top'
-    );
+	// Child pages rule - this handles regular child pages under "publications"
+	add_rewrite_rule(
+		'^publications/([^/]+)/?$',
+		'index.php?pagename=publications/$matches[1]',
+		'top'
+	);
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
@@ -365,10 +349,16 @@ add_filter('term_link', 'custom_topic_term_link', 10, 3);
  */
 function redirect_publications_to_canonical_url()
 {
+    // Do not run this redirect logic in the admin or on a publication series archive page.
+    if (is_admin() || is_tax('publication_series')) {
+        return;
+    }
+
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
     // Only proceed if the URL starts with '/publications/'
     if (strpos($requested_path, '/publications/') === 0) {
+        // Further check to ensure it is not a series archive.
         if (preg_match('#^/publications/([A-Za-z0-9-]+)#', $requested_path, $matches)) {
             $publication_number = $matches[1];
             // Add a space before the first digit so the stored value (e.g. "C 1037-23-SP") can match.
@@ -589,3 +579,36 @@ function redirect_topic_ids_to_canonical_url()
     }
 }
 add_action('init', 'redirect_topic_ids_to_canonical_url');
+
+
+// ===================================
+// EXTERNAL URL FOR NEWS POSTS
+// ===================================
+
+/**
+ * Replace permalink with ACF external URL if it is set and valid for a news post.
+ */
+function custom_external_story_url($url, $post = null)
+{
+    if (! $post instanceof WP_Post) {
+        $post = get_post($post);
+    }
+
+    // Only apply to 'post' post type
+    if (! $post || $post->post_type !== 'post') {
+        return $url;
+    }
+
+    // Use get_post_meta for better performance than get_field
+    $external_url = get_post_meta($post->ID, 'external_story_url', true);
+
+    // If the external URL exists and is a valid URL format, return it.
+    if ($external_url && filter_var($external_url, FILTER_VALIDATE_URL)) {
+        return esc_url($external_url);
+    }
+
+    // Otherwise, return the original URL passed to the function.
+    return $url;
+}
+// Apply this filter *after* the custom_news_permalink filter (which has a priority of 99)
+add_filter('post_link', 'custom_external_story_url', 100, 2);
