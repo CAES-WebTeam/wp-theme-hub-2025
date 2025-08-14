@@ -1299,7 +1299,7 @@ function import_news_writers()
 
                 // --- Specific Debugging for writer_id ---
                 output_sync_message("{$user_log_prefix}: Trying to set writer_id for user {$user_id} to value '{$writer_id_from_api}'.");
-                $update_result = update_field('writer_id', $writer_id_from_api, 'user_' . $user_id);
+                $update_result = update_field('writer_id', $writer_id_from_api, 'user_'.$user_id);
 
                 if ($update_result === false) {
                     $error_msg = "Failed to update 'writer_id' field - field may not exist or not configured correctly for users";
