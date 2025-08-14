@@ -97,14 +97,12 @@ $wrapper_attributes = get_block_wrapper_attributes([
                                 type="button"
                                 class="nav-btn prev-btn"
                                 aria-label="<?php esc_attr_e('Previous image', 'lightbox-gallery'); ?>">
-                                <span aria-hidden="true">&#8249;</span>
                                 <span class="sr-only"><?php esc_html_e('Previous', 'lightbox-gallery'); ?></span>
                             </button>
                             <button
                                 type="button"
                                 class="nav-btn next-btn"
                                 aria-label="<?php esc_attr_e('Next image', 'lightbox-gallery'); ?>">
-                                <span aria-hidden="true">&#8250;</span>
                                 <span class="sr-only"><?php esc_html_e('Next', 'lightbox-gallery'); ?></span>
                             </button>
                         </div>
