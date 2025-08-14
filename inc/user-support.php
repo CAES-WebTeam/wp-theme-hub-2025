@@ -359,9 +359,19 @@ function sync_personnel_users()
         if ($user_id) {
             // Update Existing User
             try {
+
+                // Check to ensure email is not a duplicate. Generate a non-duplicate email if needed.
+                $email_to_use = $original_email;
+                
+                if (email_exists($original_email)) {
+                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                    $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
+                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+                }
+
                 $update_result = wp_update_user([
                     'ID' => $user_id,
-                    'user_email' => $original_email,
+                    'user_email' => $email_to_use,
                     'first_name' => $first_name,
                     'last_name' => $last_name,
                     'nickname' => $nickname,
@@ -414,7 +424,7 @@ function sync_personnel_users()
                 $email_to_use = $original_email;
                 
                 // Check if email already exists in WordPress
-                if (email_exists($original_email)) {
+                if (email_exists($original_email) || $original_email == '') {
                     // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
                     $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
@@ -658,10 +668,19 @@ function sync_personnel_users2()
             output_sync_message("{$user_log_prefix}: UPDATING existing user ID {$user_id}");
             
             try {
+                // Check to ensure email is not a duplicate. Generate a non-duplicate email if needed.
+                $email_to_use = $original_email;
+                
+                if (email_exists($original_email)) {
+                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                    $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
+                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+                }
+
                 // Update core WordPress user fields.
                 $update_result = wp_update_user([
                     'ID' => $user_id,
-                    'user_email' => $original_email,
+                    'user_email' => $email_to_use,
                     'first_name' => $first_name,
                     'last_name' => $last_name,
                     'display_name' => $display_name
@@ -984,7 +1003,7 @@ function import_news_experts()
                     $unique_id = $source_expert_id ? $source_expert_id : uniqid();
                     $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-                } elseif (!$original_email) {
+                } elseif ($original_email == '') {
                     // No email provided, create placeholder
                     $unique_id = $source_expert_id ? $source_expert_id : uniqid();
                     $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
