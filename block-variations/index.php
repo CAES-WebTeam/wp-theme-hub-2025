@@ -309,136 +309,163 @@ add_filter('rest_query_vars', 'add_custom_query_vars');
 /** END FRONT END */
 
 
+// Add this to functions.php temporarily - focused debug for author stories
 
-
-
-// Debug function to check meta values for stories
-function debug_story_meta_fields() {
+function debug_author_stories_specifically() {
     // Only run on author pages for logged-in users who can edit posts
     if (!is_author() || !current_user_can('edit_posts')) {
         return;
     }
     
     $author_id = get_queried_object_id();
-    echo '<div style="background: #f0f0f0; padding: 20px; margin: 20px 0; border: 1px solid #ccc;">';
-    echo '<h3>DEBUG: Story Feed Meta Fields</h3>';
-    echo '<p><strong>Current Author ID:</strong> ' . $author_id . '</p>';
+    $author = get_userdata($author_id);
     
-    // Get all stories (adjust post type if needed)
-    $stories = get_posts(array(
+    echo '<div style="background: #e3f2fd; padding: 20px; margin: 20px 0; border: 2px solid #1976d2; border-radius: 5px;">';
+    echo '<h3>🔍 DEBUG: Stories for Author "' . esc_html($author->display_name) . '" (ID: ' . $author_id . ')</h3>';
+    
+    // Test 1: Direct meta query to find posts with this author ID
+    echo '<h4>Test 1: Direct Meta Query Search</h4>';
+    
+    $direct_query = new WP_Query(array(
         'post_type' => 'post', // Change to 'stories' if that's your post type
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => 'all_author_ids',
+                'value' => 'i:' . $author_id . ';',
+                'compare' => 'LIKE'
+            )
+        )
+    ));
+    
+    echo '<p><strong>Query found ' . $direct_query->found_posts . ' posts with author ID in all_author_ids</strong></p>';
+    
+    if ($direct_query->have_posts()) {
+        echo '<ul>';
+        while ($direct_query->have_posts()) {
+            $direct_query->the_post();
+            $meta_value = get_post_meta(get_the_ID(), 'all_author_ids', true);
+            echo '<li><strong>' . get_the_title() . '</strong> (ID: ' . get_the_ID() . ')<br>';
+            echo 'Meta value: <code>' . esc_html($meta_value) . '</code></li>';
+        }
+        echo '</ul>';
+        wp_reset_postdata();
+    } else {
+        echo '<p style="color: red;">❌ No posts found with this author ID in all_author_ids field</p>';
+    }
+    
+    // Test 2: Check ALL posts to see what's actually stored
+    echo '<h4>Test 2: Check All Posts for Author Meta</h4>';
+    
+    $all_posts = get_posts(array(
+        'post_type' => 'post', // Change to 'stories' if needed
         'posts_per_page' => -1,
         'post_status' => 'publish'
     ));
     
-    echo '<h4>Stories and their meta values:</h4>';
-    echo '<table style="border-collapse: collapse; width: 100%;">';
-    echo '<tr style="background: #ddd;">
-            <th style="border: 1px solid #999; padding: 8px;">Story Title</th>
-            <th style="border: 1px solid #999; padding: 8px;">all_author_ids</th>
-            <th style="border: 1px solid #999; padding: 8px;">all_expert_ids</th>
-            <th style="border: 1px solid #999; padding: 8px;">Matches Current Author?</th>
-          </tr>';
+    $found_matches = array();
+    $all_author_fields = array();
     
-    foreach ($stories as $story) {
-        $author_ids = get_post_meta($story->ID, 'all_author_ids', true);
-        $expert_ids = get_post_meta($story->ID, 'all_expert_ids', true);
-        
-        // Check if current author is in either field
-        $author_match = strpos($author_ids, 'i:' . $author_id . ';') !== false;
-        $expert_match = strpos($expert_ids, 'i:' . $author_id . ';') !== false;
-        $matches = $author_match || $expert_match;
-        
-        $row_style = $matches ? 'background: #d4edda;' : '';
-        
-        echo '<tr style="' . $row_style . '">';
-        echo '<td style="border: 1px solid #999; padding: 8px;">' . esc_html($story->post_title) . '</td>';
-        echo '<td style="border: 1px solid #999; padding: 8px; font-family: monospace;">' . esc_html($author_ids ?: 'empty') . '</td>';
-        echo '<td style="border: 1px solid #999; padding: 8px; font-family: monospace;">' . esc_html($expert_ids ?: 'empty') . '</td>';
-        echo '<td style="border: 1px solid #999; padding: 8px;">';
-        if ($author_match) echo 'AUTHOR ✓ ';
-        if ($expert_match) echo 'EXPERT ✓ ';
-        if (!$matches) echo 'NO MATCH';
-        echo '</td>';
-        echo '</tr>';
+    foreach ($all_posts as $post) {
+        $author_ids_meta = get_post_meta($post->ID, 'all_author_ids', true);
+        if (!empty($author_ids_meta)) {
+            $all_author_fields[] = array(
+                'post_id' => $post->ID,
+                'title' => $post->post_title,
+                'meta_value' => $author_ids_meta
+            );
+            
+            // Check various possible formats
+            if (
+                strpos($author_ids_meta, 'i:' . $author_id . ';') !== false ||
+                strpos($author_ids_meta, '"' . $author_id . '"') !== false ||
+                strpos($author_ids_meta, $author_id) !== false
+            ) {
+                $found_matches[] = array(
+                    'post_id' => $post->ID,
+                    'title' => $post->post_title,
+                    'meta_value' => $author_ids_meta
+                );
+            }
+        }
     }
     
+    echo '<p><strong>Posts with ANY all_author_ids data:</strong> ' . count($all_author_fields) . '</p>';
+    echo '<p><strong>Posts that contain author ID ' . $author_id . ' in any format:</strong> ' . count($found_matches) . '</p>';
+    
+    if (!empty($found_matches)) {
+        echo '<div style="background: #d4edda; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb;">';
+        echo '<h5>✅ Found matches:</h5>';
+        foreach ($found_matches as $match) {
+            echo '<p><strong>' . esc_html($match['title']) . '</strong><br>';
+            echo 'Raw meta: <code>' . esc_html($match['meta_value']) . '</code></p>';
+        }
+        echo '</div>';
+    }
+    
+    // Test 3: Show some examples of actual meta values to understand format
+    echo '<h4>Test 3: Sample Meta Values (to understand format)</h4>';
+    echo '<table style="border-collapse: collapse; font-size: 12px;">';
+    echo '<tr style="background: #f8f9fa;"><th style="border: 1px solid #ddd; padding: 5px;">Post</th><th style="border: 1px solid #ddd; padding: 5px;">all_author_ids Value</th></tr>';
+    
+    $sample_count = 0;
+    foreach ($all_author_fields as $field) {
+        if ($sample_count >= 10) break; // Limit to first 10 for readability
+        echo '<tr>';
+        echo '<td style="border: 1px solid #ddd; padding: 5px;">' . esc_html($field['title']) . '</td>';
+        echo '<td style="border: 1px solid #ddd; padding: 5px; font-family: monospace; word-break: break-all;">' . esc_html($field['meta_value']) . '</td>';
+        echo '</tr>';
+        $sample_count++;
+    }
     echo '</table>';
     
-    // Show what the query should look like
-    echo '<h4>Expected Query Meta:</h4>';
-    echo '<pre style="background: #fff; padding: 10px; border: 1px solid #999;">';
-    echo "Looking for: 'i:" . $author_id . ";' in either field\n";
-    echo "Meta Query should be:\n";
-    print_r(array(
-        'relation' => 'OR',
-        array(
-            'key' => 'all_expert_ids',
-            'value' => 'i:' . $author_id . ';',
-            'compare' => 'LIKE'
-        ),
-        array(
-            'key' => 'all_author_ids',
-            'value' => 'i:' . $author_id . ';',
-            'compare' => 'LIKE'
-        )
-    ));
-    echo '</pre>';
+    // Test 4: Try different query patterns
+    echo '<h4>Test 4: Try Different Search Patterns</h4>';
+    $patterns_to_test = array(
+        'i:' . $author_id . ';',
+        '"' . $author_id . '"',
+        $author_id,
+        ':' . $author_id . '',
+        'i:' . $author_id . '}'
+    );
+    
+    foreach ($patterns_to_test as $pattern) {
+        $test_query = new WP_Query(array(
+            'post_type' => 'post',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'meta_query' => array(
+                array(
+                    'key' => 'all_author_ids',
+                    'value' => $pattern,
+                    'compare' => 'LIKE'
+                )
+            )
+        ));
+        
+        echo '<p>Pattern "<code>' . esc_html($pattern) . '</code>": <strong>' . $test_query->found_posts . ' results</strong></p>';
+        wp_reset_postdata();
+    }
     
     echo '</div>';
 }
 
-// Hook it to run early on author pages
-add_action('wp_head', 'debug_story_meta_fields');
+// Hook it to display
+add_action('wp_head', 'debug_author_stories_specifically');
 
-// Alternative: Add to the beginning of content for easier viewing
-function debug_story_meta_in_content($content) {
-    if (is_author() && current_user_can('edit_posts') && is_main_query()) {
-        ob_start();
-        debug_story_meta_fields();
-        $debug_output = ob_get_clean();
-        return $debug_output . $content;
-    }
-    return $content;
-}
-// Uncomment this line if you want it in the content area instead:
-// add_filter('the_content', 'debug_story_meta_in_content');
-
-// Debug the actual query being run
-function debug_story_query($query_vars, $block) {
-    if (!is_author() || !current_user_can('edit_posts')) {
-        return $query_vars;
+// Also add a shortcode version for easy testing
+function debug_author_stories_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'author_id' => get_queried_object_id()
+    ), $atts);
+    
+    if (!current_user_can('edit_posts')) {
+        return 'Debug only available for editors';
     }
     
-    // Check if this is a stories-feed block
-    if (isset($block->parsed_block['attrs']['namespace']) && 
-        $block->parsed_block['attrs']['namespace'] === 'stories-feed') {
-        
-        echo '<div style="background: #fff3cd; padding: 15px; margin: 10px 0; border: 1px solid #ffeaa7;">';
-        echo '<h4>DEBUG: Stories Query Variables</h4>';
-        echo '<pre style="background: #fff; padding: 10px; border: 1px solid #ddd; overflow: auto;">';
-        print_r($query_vars);
-        echo '</pre>';
-        echo '</div>';
-    }
-    
-    return $query_vars;
+    ob_start();
+    debug_author_stories_specifically();
+    return ob_get_clean();
 }
-add_filter('query_loop_block_query_vars', 'debug_story_query', 999, 2);
-
-// Quick function to check a specific post's meta
-function check_specific_post_meta($post_id) {
-    if (!current_user_can('edit_posts')) return;
-    
-    $author_ids = get_post_meta($post_id, 'all_author_ids', true);
-    $expert_ids = get_post_meta($post_id, 'all_expert_ids', true);
-    
-    echo "<div style='background: #f8f9fa; padding: 10px; margin: 10px; border: 1px solid #dee2e6;'>";
-    echo "<strong>Post ID {$post_id}:</strong><br>";
-    echo "all_author_ids: " . ($author_ids ?: 'empty') . "<br>";
-    echo "all_expert_ids: " . ($expert_ids ?: 'empty') . "<br>";
-    echo "</div>";
-}
-
-// Usage: add this anywhere in a template to check specific posts
-// check_specific_post_meta(123); // Replace 123 with actual post ID
+add_shortcode('debug_author_stories', 'debug_author_stories_shortcode');
