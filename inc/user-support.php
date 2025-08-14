@@ -956,13 +956,14 @@ function import_news_experts()
         $source_expert_id = $person['ID'] ?? null;
 
         // Basic validation
-        if (empty($first_name) && empty($last_name)) {
-            $error_msg = "Missing both first name and last name";
-            output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
-            record_import_error("{$user_log_prefix} (Expert ID: {$source_expert_id})", $error_msg, $person);
-            $error_count++;
-            continue;
-        }
+        // No names is OK.
+        // if (empty($first_name) && empty($last_name)) {
+        //     $error_msg = "Missing both first name and last name";
+        //     output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
+        //     record_import_error("{$user_log_prefix} (Expert ID: {$source_expert_id})", $error_msg, $person);
+        //     $error_count++;
+        //     continue;
+        // }
 
         if (!$source_expert_id) {
             $error_msg = "Missing source expert ID";
@@ -1159,13 +1160,14 @@ function import_news_writers()
         $writer_id_from_api = $person['ID'] ?? null; // Capture the ID field from API.
 
         // Basic validation
-        if (empty($first_name) && empty($last_name)) {
-            $error_msg = "Missing both first name and last name";
-            output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
-            record_import_error("{$user_log_prefix} (Writer ID: {$writer_id_from_api})", $error_msg, $person);
-            $error_count++;
-            continue;
-        }
+        // No names is OK.
+        // if (empty($first_name) && empty($last_name)) {
+        //     $error_msg = "Missing both first name and last name";
+        //     output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
+        //     record_import_error("{$user_log_prefix} (Writer ID: {$writer_id_from_api})", $error_msg, $person);
+        //     $error_count++;
+        //     continue;
+        // }
 
         if (!$writer_id_from_api) {
             $error_msg = "Missing writer ID";
