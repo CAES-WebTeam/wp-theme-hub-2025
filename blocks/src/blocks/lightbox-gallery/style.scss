@@ -240,75 +240,64 @@ body.lightbox-open {
   overflow: hidden;
 }
 
-/* Responsive design */
 @media (max-width: 768px) {
-  .lightbox-content {
-    max-width: 95vw;
-    max-height: 95vh;
-  }
-
-  .lightbox-image {
-    max-height: 50vh;
-  }
-
-  .view-gallery-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
-
+  /* Existing mobile styles... */
+  
+  /* Position navigation to match image dimensions and position */
   .lightbox-navigation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto; /* Change from 'bottom: 0' */
+    height: 50vh; /* Match the image max-height */
+    max-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
     padding: 0 0.5rem;
   }
-
+  
+  /* Ensure arrows stay within the image area */
   .prev-btn {
-    left: 0.5rem;
+    position: static; /* Change from absolute positioning */
+    pointer-events: auto;
   }
 
   .next-btn {
-    right: 0.5rem;
-  }
-
-  .nav-btn {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 1.5rem;
+    position: static; /* Change from absolute positioning */
+    pointer-events: auto;
   }
 }
 
 @media (max-width: 480px) {
-  .lightbox-header {
-    padding: 0.75rem;
-  }
-
-  .lightbox-title {
-    font-size: 1rem;
-  }
-
-  .lightbox-image-container {
-    padding: 0.75rem 0;
-  }
-
+  /* Existing mobile styles... */
+  
+  /* Adjust for smaller mobile screens */
   .lightbox-navigation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    height: 50vh; /* Keep matching image height */
+    max-height: 50vh;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
     padding: 0 0.25rem;
   }
-
+  
   .prev-btn {
-    left: 0.25rem;
+    position: static;
+    pointer-events: auto;
   }
 
   .next-btn {
-    right: 0.25rem;
-  }
-
-  .nav-btn {
-    width: 2rem;
-    height: 2rem;
-    font-size: 1.2rem;
-  }
-
-  .view-gallery-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.75rem;
+    position: static;
+    pointer-events: auto;
   }
 }
 
