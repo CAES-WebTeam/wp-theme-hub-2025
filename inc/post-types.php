@@ -65,7 +65,7 @@ add_action('init', function () {
 });
 
 // Add this temporarily to see all post types
-add_action('init', function() {
+add_action('init', function () {
     if (isset($_GET['debug_pt'])) {
         $post_types = get_post_types(['public' => true], 'objects');
         echo '<pre>';
@@ -82,129 +82,129 @@ add_action('init', function() {
 
 // Register 'Publications' Custom Post Type
 add_action('init', function () {
-	register_post_type('publications', array(
-		'labels' => array(
-			'name' => 'Publications',
-			'singular_name' => 'Publication',
-			'menu_name' => 'Publications',
-			'all_items' => 'All Publications',
-			'edit_item' => 'Edit Publication',
-			'view_item' => 'View Publication',
-			'view_items' => 'View Publications',
-			'add_new_item' => 'Add New Publication',
-			'add_new' => 'Add New Publication',
-			'new_item' => 'New Publication',
-			'parent_item_colon' => 'Parent Publications:',
-			'search_items' => 'Search Publications',
-			'not_found' => 'No publications found',
-			'not_found_in_trash' => 'No publications found in Trash',
-			'archives' => 'Publications Archives',
-			'attributes' => 'Publications Attributes',
-			'insert_into_item' => 'Insert into publications',
-			'uploaded_to_this_item' => 'Uploaded to this publications',
-			'filter_items_list' => 'Filter publications list',
-			'filter_by_date' => 'Filter publications by date',
-			'items_list_navigation' => 'Publications list navigation',
-			'items_list' => 'Publications list',
-			'item_published' => 'Publications published.',
-			'item_published_privately' => 'Publications published privately.',
-			'item_reverted_to_draft' => 'Publications reverted to draft.',
-			'item_scheduled' => 'Publications scheduled.',
-			'item_updated' => 'Publications updated.',
-			'item_link' => 'Publications Link',
-			'item_link_description' => 'A link to a publications.',
-		),
-		'public' => true,
-		'show_in_rest' => true,
-		'menu_icon' => 'dashicons-admin-post',
+    register_post_type('publications', array(
+        'labels' => array(
+            'name' => 'Publications',
+            'singular_name' => 'Publication',
+            'menu_name' => 'Publications',
+            'all_items' => 'All Publications',
+            'edit_item' => 'Edit Publication',
+            'view_item' => 'View Publication',
+            'view_items' => 'View Publications',
+            'add_new_item' => 'Add New Publication',
+            'add_new' => 'Add New Publication',
+            'new_item' => 'New Publication',
+            'parent_item_colon' => 'Parent Publications:',
+            'search_items' => 'Search Publications',
+            'not_found' => 'No publications found',
+            'not_found_in_trash' => 'No publications found in Trash',
+            'archives' => 'Publications Archives',
+            'attributes' => 'Publications Attributes',
+            'insert_into_item' => 'Insert into publications',
+            'uploaded_to_this_item' => 'Uploaded to this publications',
+            'filter_items_list' => 'Filter publications list',
+            'filter_by_date' => 'Filter publications by date',
+            'items_list_navigation' => 'Publications list navigation',
+            'items_list' => 'Publications list',
+            'item_published' => 'Publications published.',
+            'item_published_privately' => 'Publications published privately.',
+            'item_reverted_to_draft' => 'Publications reverted to draft.',
+            'item_scheduled' => 'Publications scheduled.',
+            'item_updated' => 'Publications updated.',
+            'item_link' => 'Publications Link',
+            'item_link_description' => 'A link to a publications.',
+        ),
+        'public' => true,
+        'show_in_rest' => true,
+        'menu_icon' => 'dashicons-admin-post',
         'rewrite'     => array('slug' => 'publications', 'with_front' => false),
-		'supports' => array(
-			0 => 'title',
-			1 => 'author',
-			2 => 'editor',
-			3 => 'tags',
-			4 => 'thumbnail',
+        'supports' => array(
+            0 => 'title',
+            1 => 'author',
+            2 => 'editor',
+            3 => 'tags',
+            4 => 'thumbnail',
             5 => 'revisions'
-		),
-		'delete_with_user' => false
-	));
+        ),
+        'delete_with_user' => false
+    ));
 });
 
 
 // Register 'Series' Taxonomies for Events and Publications
 // This code registers two custom taxonomies: 'event_series' and 'publication_series'.
 add_action('init', function () {
-	// Register Series taxonomy for Events
-	register_taxonomy('event_series', array('events'), array(
-		'labels' => array(
-			'name' => 'Event Series',
-			'singular_name' => 'Event Series',
-			'menu_name' => 'Event Series',
-			'all_items' => 'All Event Series',
-			'edit_item' => 'Edit Event Series',
-			'view_item' => 'View Event Series',
-			'update_item' => 'Update Event Series',
-			'add_new_item' => 'Add New Event Series',
-			'new_item_name' => 'New Event Series Name',
-			'search_items' => 'Search Event Series',
-			'popular_items' => 'Popular Event Series',
-			'separate_items_with_commas' => 'Separate event series with commas',
-			'add_or_remove_items' => 'Add or remove event series',
-			'choose_from_most_used' => 'Choose from the most used event series',
-			'not_found' => 'No event series found',
-			'no_terms' => 'No event series',
-			'items_list_navigation' => 'Event series list navigation',
-			'items_list' => 'Event series list',
-			'back_to_items' => '← Go to event series',
-			'item_link' => 'Event Series Link',
-			'item_link_description' => 'A link to an event series',
-		),
-		'public' 		=> true,
-		'show_in_menu'	=> true,
-		'show_in_rest' 	=> true,
-		'query_var'		=> true,
-		'rewrite' => array(
+    // Register Series taxonomy for Events
+    register_taxonomy('event_series', array('events'), array(
+        'labels' => array(
+            'name' => 'Event Series',
+            'singular_name' => 'Event Series',
+            'menu_name' => 'Event Series',
+            'all_items' => 'All Event Series',
+            'edit_item' => 'Edit Event Series',
+            'view_item' => 'View Event Series',
+            'update_item' => 'Update Event Series',
+            'add_new_item' => 'Add New Event Series',
+            'new_item_name' => 'New Event Series Name',
+            'search_items' => 'Search Event Series',
+            'popular_items' => 'Popular Event Series',
+            'separate_items_with_commas' => 'Separate event series with commas',
+            'add_or_remove_items' => 'Add or remove event series',
+            'choose_from_most_used' => 'Choose from the most used event series',
+            'not_found' => 'No event series found',
+            'no_terms' => 'No event series',
+            'items_list_navigation' => 'Event series list navigation',
+            'items_list' => 'Event series list',
+            'back_to_items' => '← Go to event series',
+            'item_link' => 'Event Series Link',
+            'item_link_description' => 'A link to an event series',
+        ),
+        'public'         => true,
+        'show_in_menu'    => true,
+        'show_in_rest'     => true,
+        'query_var'        => true,
+        'rewrite' => array(
             'slug' => 'events/series',
             'with_front' => false,
             'hierarchical' => true
         )
-	));
+    ));
 
-	// Register Series taxonomy for Publications
-	register_taxonomy('publication_series', array('publications'), array(
-		'labels' => array(
-			'name' => 'Publication Series',
-			'singular_name' => 'Publication Series',
-			'menu_name' => 'Publication Series',
-			'all_items' => 'All Publication Series',
-			'edit_item' => 'Edit Publication Series',
-			'view_item' => 'View Publication Series',
-			'update_item' => 'Update Publication Series',
-			'add_new_item' => 'Add New Publication Series',
-			'new_item_name' => 'New Publication Series Name',
-			'search_items' => 'Search Publication Series',
-			'popular_items' => 'Popular Publication Series',
-			'separate_items_with_commas' => 'Separate publication series with commas',
-			'add_or_remove_items' => 'Add or remove publication series',
-			'choose_from_most_used' => 'Choose from the most used publication series',
-			'not_found' => 'No publication series found',
-			'no_terms' => 'No publication series',
-			'items_list_navigation' => 'Publication series list navigation',
-			'items_list' => 'Publication series list',
-			'back_to_items' => '← Go to publication series',
-			'item_link' => 'Publication Series Link',
-			'item_link_description' => 'A link to a publication series',
-		),
-		'public' 		=> true,
-		'show_in_menu'	=> true,
-		'show_in_rest' 	=> true,
-		'query_var'		=> true,
-		'rewrite' => array(
+    // Register Series taxonomy for Publications
+    register_taxonomy('publication_series', array('publications'), array(
+        'labels' => array(
+            'name' => 'Publication Series',
+            'singular_name' => 'Publication Series',
+            'menu_name' => 'Publication Series',
+            'all_items' => 'All Publication Series',
+            'edit_item' => 'Edit Publication Series',
+            'view_item' => 'View Publication Series',
+            'update_item' => 'Update Publication Series',
+            'add_new_item' => 'Add New Publication Series',
+            'new_item_name' => 'New Publication Series Name',
+            'search_items' => 'Search Publication Series',
+            'popular_items' => 'Popular Publication Series',
+            'separate_items_with_commas' => 'Separate publication series with commas',
+            'add_or_remove_items' => 'Add or remove publication series',
+            'choose_from_most_used' => 'Choose from the most used publication series',
+            'not_found' => 'No publication series found',
+            'no_terms' => 'No publication series',
+            'items_list_navigation' => 'Publication series list navigation',
+            'items_list' => 'Publication series list',
+            'back_to_items' => '← Go to publication series',
+            'item_link' => 'Publication Series Link',
+            'item_link_description' => 'A link to a publication series',
+        ),
+        'public'         => true,
+        'show_in_menu'    => true,
+        'show_in_rest'     => true,
+        'query_var'        => true,
+        'rewrite' => array(
             'slug' => 'publications/series',
             'with_front' => false,
             'hierarchical' => true
         )
-	));
+    ));
 });
 
 // Register 'CAES Departments' taxonomy for Events
@@ -240,7 +240,8 @@ add_action('init', function () {
 });
 
 // Hide default taxonomy metaboxes for events since we're using ACF
-function hide_event_taxonomy_metaboxes() {
+function hide_event_taxonomy_metaboxes()
+{
     remove_meta_box('tagsdiv-event_series', 'events', 'side');
     remove_meta_box('tagsdiv-event_caes_departments', 'events', 'side');
 }
@@ -270,18 +271,20 @@ function register_topics_taxonomy()
         'show_admin_column' => true,
         'query_var'         => true,
         'show_in_rest'      => true,
-        'rewrite'           => array('slug' => 'topic','with_front' => false), // Changed slug to 'topic'
+        'publicly_queryable' => true,
+        'rewrite'           => array('slug' => 'topic', 'with_front' => false), // Changed slug to 'topic'
     );
 
     // Register the taxonomy and associate it with the same post types
-    register_taxonomy('topics', array('post', 'publications','shorthand_story'), $args); // Changed taxonomy name to 'topics'
+    register_taxonomy('topics', array('post', 'publications', 'shorthand_story'), $args); // Changed taxonomy name to 'topics'
 }
 add_action('init', 'register_topics_taxonomy'); // Changed function name in action hook
 
 // Primary Topics ACF Field - specifies the primary topic for posts,
 // publications, and shorthand stories, pulling from the 'topics' taxonomy.
-function create_primary_topics_field() {
-    if( function_exists('acf_add_local_field_group') ):
+function create_primary_topics_field()
+{
+    if (function_exists('acf_add_local_field_group')):
         acf_add_local_field_group(array(
             'key' => 'group_primary_topic', // Changed group key for consistency
             'title' => 'Primary Topics', // Changed title
@@ -330,12 +333,13 @@ function create_primary_topics_field() {
 add_action('acf/init', 'create_primary_topics_field'); // Changed function name in action hook
 
 // Disable Yoast SEO Primary Term metabox
-add_filter( 'wpseo_primary_term_taxonomies', '__return_empty_array' );
+add_filter('wpseo_primary_term_taxonomies', '__return_empty_array');
 
 
 
 // External Publisher Taxonomy for posts
-function create_external_publisher_taxonomy_and_field() {
+function create_external_publisher_taxonomy_and_field()
+{
     // Register the taxonomy first
     $labels = array(
         'name'              => 'External Publishers',
@@ -367,13 +371,15 @@ function create_external_publisher_taxonomy_and_field() {
 add_action('init', 'create_external_publisher_taxonomy_and_field');
 
 // Hide the default WordPress taxonomy metabox since we're using ACF
-function hide_external_publisher_metabox() {
+function hide_external_publisher_metabox()
+{
     remove_meta_box('external_publisherdiv', 'post', 'side');
 }
 add_action('admin_menu', 'hide_external_publisher_metabox');
 
 // Fix Query Loop filtering for external_publisher taxonomy
-function fix_external_publisher_rest_query($args, $request) {
+function fix_external_publisher_rest_query($args, $request)
+{
     if (isset($request['external_publisher'])) {
         $args['tax_query'] = array(
             array(
@@ -388,8 +394,9 @@ function fix_external_publisher_rest_query($args, $request) {
 add_filter('rest_post_query', 'fix_external_publisher_rest_query', 10, 2);
 
 // Add a random placeholder image if no featured image is set
-add_filter( 'post_thumbnail_html', 'caes_ordered_placeholder_if_no_thumbnail', 10, 5 );
-function caes_ordered_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbnail_id, $size, $attr ) {
+add_filter('post_thumbnail_html', 'caes_ordered_placeholder_if_no_thumbnail', 10, 5);
+function caes_ordered_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnail_id, $size, $attr)
+{
     static $counter = 0;
 
     // 1) Skip main post on single pages:
@@ -403,7 +410,7 @@ function caes_ordered_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbn
     }
 
     // 2) If there’s already a featured image, don’t touch it:
-    if ( has_post_thumbnail( $post_id ) ) {
+    if (has_post_thumbnail($post_id)) {
         return $html;
     }
 
@@ -418,42 +425,43 @@ function caes_ordered_placeholder_if_no_thumbnail( $html, $post_id, $post_thumbn
         'placeholder-bg-2-lake-herrick.jpg',
         'placeholder-bg-2-olympic.jpg',
     ];
-    $index = $counter % count( $placeholders );
-    $file  = $placeholders[ $index ];
+    $index = $counter % count($placeholders);
+    $file  = $placeholders[$index];
     $counter++;
 
     $url = get_template_directory_uri() . '/assets/images/' . $file;
-    $alt = get_the_title( $post_id );
+    $alt = get_the_title($post_id);
 
     return sprintf(
         '<img src="%s" alt="%s" class="wp-post-image" />',
-        esc_url( $url ),
-        esc_attr( $alt )
+        esc_url($url),
+        esc_attr($alt)
     );
 }
 
 // Replace placeholder for main background featured image
-add_filter( 'render_block', 'replace_placeholder_for_main_bg_featured_image', 10, 2 );
-function replace_placeholder_for_main_bg_featured_image( $block_content, $block ) {
+add_filter('render_block', 'replace_placeholder_for_main_bg_featured_image', 10, 2);
+function replace_placeholder_for_main_bg_featured_image($block_content, $block)
+{
     // Only target core/post-featured-image block
-    if ( ! isset( $block['blockName'] ) || $block['blockName'] !== 'core/post-featured-image' ) {
+    if (! isset($block['blockName']) || $block['blockName'] !== 'core/post-featured-image') {
         return $block_content;
     }
 
     // Check if block has the special class
-    $class_attr = isset( $block['attrs']['className'] ) ? $block['attrs']['className'] : '';
-    if ( strpos( $class_attr, 'caes-hub-main-bg-f-img' ) === false ) {
+    $class_attr = isset($block['attrs']['className']) ? $block['attrs']['className'] : '';
+    if (strpos($class_attr, 'caes-hub-main-bg-f-img') === false) {
         // Class not present — leave as is
         return $block_content;
     }
 
     // Get the post ID from block context if present, fallback to queried object
-    $post_id = isset( $block['context']['postId'] ) && intval( $block['context']['postId'] )
-        ? intval( $block['context']['postId'] )
+    $post_id = isset($block['context']['postId']) && intval($block['context']['postId'])
+        ? intval($block['context']['postId'])
         : get_queried_object_id();
 
     // If post has featured image, leave as is
-    if ( has_post_thumbnail( $post_id ) ) {
+    if (has_post_thumbnail($post_id)) {
         return $block_content;
     }
 
@@ -462,12 +470,12 @@ function replace_placeholder_for_main_bg_featured_image( $block_content, $block 
     $placeholder_url = get_template_directory_uri() . '/assets/images/placeholder-bg-2-lake-herrick.jpg';
 
     // Use the post title as alt text
-    $alt = get_the_title( $post_id );
+    $alt = get_the_title($post_id);
 
     // Return a simple figure with placeholder image
     return sprintf(
         '<figure class="wp-block-post-featured-image caes-hub-main-bg-f-img"><img src="%s" alt="%s" class="wp-post-image" /></figure>',
-        esc_url( $placeholder_url ),
-        esc_attr( $alt )
+        esc_url($placeholder_url),
+        esc_attr($alt)
     );
 }
