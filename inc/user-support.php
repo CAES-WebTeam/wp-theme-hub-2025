@@ -288,7 +288,7 @@ function sync_personnel_users()
         
         // Spoof an email if necessary so that the record can be imported
         if (!isset($user['EMAIL']) || empty(trim($user['EMAIL']))) {
-                $user[EMAIL] = generate_placeholder_email($user['FNAME'], $user['LNAME']);
+                $user['EMAIL'] = generate_placeholder_email($user['FNAME'], $user['LNAME']);
             }
 
         if (!empty($missing_fields)) {
