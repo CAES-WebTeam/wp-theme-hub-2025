@@ -202,7 +202,6 @@ add_action('init', 'custom_topic_rewrite_rules');
 function custom_publications_rewrite_rules()
 {
     // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
-    // MODIFIED: Replaced the overly strict regex with a more flexible one.
     add_rewrite_rule(
         '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
         'index.php?post_type=publications&name=$matches[2]',
@@ -304,6 +303,18 @@ function custom_publications_permalink($post_link, $post)
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
 /**
+ * NEW: Modify the permalink for the 'publication_series' taxonomy.
+ */
+function custom_publication_series_link($termlink, $term, $taxonomy) {
+    if ($taxonomy === 'publication_series') {
+        return home_url("/publications/series/{$term->slug}/");
+    }
+    return $termlink;
+}
+add_filter('term_link', 'custom_publication_series_link', 10, 3);
+
+
+/**
  * Modify topic links to be post-type specific (e.g., /news/topic/sports/).
  */
 function custom_topic_term_link($termlink, $term, $taxonomy)
@@ -367,8 +378,8 @@ function redirect_publications_to_canonical_url()
 {
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
-    // Only proceed if the URL starts with '/publications/'
-    if (strpos($requested_path, '/publications/') === 0) {
+    // MODIFIED: Only proceed if the URL starts with '/publications/' AND NOT '/publications/series/'.
+    if (strpos($requested_path, '/publications/') === 0 && strpos($requested_path, '/publications/series/') === false) {
         if (preg_match('#^/publications/([A-Za-z0-9-]+)#', $requested_path, $matches)) {
             $publication_number = $matches[1];
             // Add a space before the first digit so the stored value (e.g. "C 1037-23-SP") can match.
