@@ -308,164 +308,285 @@ add_filter('rest_query_vars', 'add_custom_query_vars');
 
 /** END FRONT END */
 
-
-// Add this to functions.php temporarily - focused debug for author stories
-
-function debug_author_stories_specifically() {
-    // Only run on author pages for logged-in users who can edit posts
+<?php
+// 1. DEBUG: Check ACF field structure
+function debug_acf_author_fields() {
     if (!is_author() || !current_user_can('edit_posts')) {
         return;
     }
     
     $author_id = get_queried_object_id();
-    $author = get_userdata($author_id);
     
-    echo '<div style="background: #e3f2fd; padding: 20px; margin: 20px 0; border: 2px solid #1976d2; border-radius: 5px;">';
-    echo '<h3>🔍 DEBUG: Stories for Author "' . esc_html($author->display_name) . '" (ID: ' . $author_id . ')</h3>';
+    echo '<div style="background: #fff3cd; padding: 20px; margin: 20px 0; border: 2px solid #856404; border-radius: 5px;">';
+    echo '<h3>🔧 ACF AUTHOR FIELDS DEBUG</h3>';
+    echo '<p>Looking for author ID: ' . $author_id . '</p>';
     
-    // Test 1: Direct meta query to find posts with this author ID
-    echo '<h4>Test 1: Direct Meta Query Search</h4>';
-    
-    $direct_query = new WP_Query(array(
-        'post_type' => 'post', // Change to 'stories' if that's your post type
-        'posts_per_page' => -1,
-        'post_status' => 'publish',
-        'meta_query' => array(
-            array(
-                'key' => 'all_author_ids',
-                'value' => 'i:' . $author_id . ';',
-                'compare' => 'LIKE'
-            )
-        )
-    ));
-    
-    echo '<p><strong>Query found ' . $direct_query->found_posts . ' posts with author ID in all_author_ids</strong></p>';
-    
-    if ($direct_query->have_posts()) {
-        echo '<ul>';
-        while ($direct_query->have_posts()) {
-            $direct_query->the_post();
-            $meta_value = get_post_meta(get_the_ID(), 'all_author_ids', true);
-            echo '<li><strong>' . get_the_title() . '</strong> (ID: ' . get_the_ID() . ')<br>';
-            echo 'Meta value: <code>' . esc_html($meta_value) . '</code></li>';
-        }
-        echo '</ul>';
-        wp_reset_postdata();
-    } else {
-        echo '<p style="color: red;">❌ No posts found with this author ID in all_author_ids field</p>';
-    }
-    
-    // Test 2: Check ALL posts to see what's actually stored
-    echo '<h4>Test 2: Check All Posts for Author Meta</h4>';
-    
-    $all_posts = get_posts(array(
-        'post_type' => 'post', // Change to 'stories' if needed
-        'posts_per_page' => -1,
+    // Get some sample posts to check
+    $sample_posts = get_posts(array(
+        'post_type' => 'post',
+        'posts_per_page' => 5,
         'post_status' => 'publish'
     ));
     
-    $found_matches = array();
-    $all_author_fields = array();
-    
-    foreach ($all_posts as $post) {
-        $author_ids_meta = get_post_meta($post->ID, 'all_author_ids', true);
-        if (!empty($author_ids_meta)) {
-            $all_author_fields[] = array(
-                'post_id' => $post->ID,
-                'title' => $post->post_title,
-                'meta_value' => $author_ids_meta
-            );
-            
-            // Check various possible formats
-            if (
-                strpos($author_ids_meta, 'i:' . $author_id . ';') !== false ||
-                strpos($author_ids_meta, '"' . $author_id . '"') !== false ||
-                strpos($author_ids_meta, $author_id) !== false
-            ) {
-                $found_matches[] = array(
-                    'post_id' => $post->ID,
-                    'title' => $post->post_title,
-                    'meta_value' => $author_ids_meta
-                );
-            }
-        }
-    }
-    
-    echo '<p><strong>Posts with ANY all_author_ids data:</strong> ' . count($all_author_fields) . '</p>';
-    echo '<p><strong>Posts that contain author ID ' . $author_id . ' in any format:</strong> ' . count($found_matches) . '</p>';
-    
-    if (!empty($found_matches)) {
-        echo '<div style="background: #d4edda; padding: 10px; margin: 10px 0; border: 1px solid #c3e6cb;">';
-        echo '<h5>✅ Found matches:</h5>';
-        foreach ($found_matches as $match) {
-            echo '<p><strong>' . esc_html($match['title']) . '</strong><br>';
-            echo 'Raw meta: <code>' . esc_html($match['meta_value']) . '</code></p>';
-        }
-        echo '</div>';
-    }
-    
-    // Test 3: Show some examples of actual meta values to understand format
-    echo '<h4>Test 3: Sample Meta Values (to understand format)</h4>';
-    echo '<table style="border-collapse: collapse; font-size: 12px;">';
-    echo '<tr style="background: #f8f9fa;"><th style="border: 1px solid #ddd; padding: 5px;">Post</th><th style="border: 1px solid #ddd; padding: 5px;">all_author_ids Value</th></tr>';
-    
-    $sample_count = 0;
-    foreach ($all_author_fields as $field) {
-        if ($sample_count >= 10) break; // Limit to first 10 for readability
-        echo '<tr>';
-        echo '<td style="border: 1px solid #ddd; padding: 5px;">' . esc_html($field['title']) . '</td>';
-        echo '<td style="border: 1px solid #ddd; padding: 5px; font-family: monospace; word-break: break-all;">' . esc_html($field['meta_value']) . '</td>';
-        echo '</tr>';
-        $sample_count++;
-    }
-    echo '</table>';
-    
-    // Test 4: Try different query patterns
-    echo '<h4>Test 4: Try Different Search Patterns</h4>';
-    $patterns_to_test = array(
-        'i:' . $author_id . ';',
-        '"' . $author_id . '"',
-        $author_id,
-        ':' . $author_id . '',
-        'i:' . $author_id . '}'
-    );
-    
-    foreach ($patterns_to_test as $pattern) {
-        $test_query = new WP_Query(array(
-            'post_type' => 'post',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'meta_query' => array(
-                array(
-                    'key' => 'all_author_ids',
-                    'value' => $pattern,
-                    'compare' => 'LIKE'
-                )
-            )
-        ));
+    foreach ($sample_posts as $post) {
+        echo '<div style="background: #f8f9fa; padding: 15px; margin: 10px 0; border: 1px solid #dee2e6;">';
+        echo '<h4>' . esc_html($post->post_title) . ' (ID: ' . $post->ID . ')</h4>';
         
-        echo '<p>Pattern "<code>' . esc_html($pattern) . '</code>": <strong>' . $test_query->found_posts . ' results</strong></p>';
-        wp_reset_postdata();
+        // Check raw ACF fields
+        $authors = get_field('authors', $post->ID);
+        $experts = get_field('experts', $post->ID);
+        
+        echo '<h5>Authors Repeater Field:</h5>';
+        if ($authors) {
+            echo '<pre style="background: #fff; padding: 10px; font-size: 12px; overflow: auto;">';
+            print_r($authors);
+            echo '</pre>';
+            
+            echo '<p><strong>Processing each author row:</strong></p>';
+            foreach ($authors as $index => $author) {
+                echo '<div style="background: #e9ecef; padding: 5px; margin: 2px 0;">';
+                echo "Row {$index}: ";
+                if (isset($author['user'])) {
+                    echo "✅ 'user' field found = " . $author['user'];
+                    if (is_object($author['user'])) {
+                        echo " (OBJECT - ID: " . $author['user']->ID . ")";
+                    }
+                } else {
+                    echo "❌ 'user' field missing. Available keys: " . implode(', ', array_keys($author));
+                }
+                echo '</div>';
+            }
+        } else {
+            echo '<p>No authors repeater data</p>';
+        }
+        
+        echo '<h5>Experts Repeater Field:</h5>';
+        if ($experts) {
+            echo '<pre style="background: #fff; padding: 10px; font-size: 12px; overflow: auto;">';
+            print_r($experts);
+            echo '</pre>';
+        } else {
+            echo '<p>No experts repeater data</p>';
+        }
+        
+        // Check the flattened meta fields
+        $all_author_ids = get_post_meta($post->ID, 'all_author_ids', true);
+        $all_expert_ids = get_post_meta($post->ID, 'all_expert_ids', true);
+        
+        echo '<h5>Flattened Meta Fields:</h5>';
+        echo '<p><strong>all_author_ids:</strong> ';
+        if ($all_author_ids) {
+            echo '<code>' . print_r($all_author_ids, true) . '</code>';
+            if (in_array($author_id, $all_author_ids)) {
+                echo ' ✅ CONTAINS CURRENT AUTHOR!';
+            }
+        } else {
+            echo 'empty';
+        }
+        echo '</p>';
+        
+        echo '<p><strong>all_expert_ids:</strong> ';
+        if ($all_expert_ids) {
+            echo '<code>' . print_r($all_expert_ids, true) . '</code>';
+            if (in_array($author_id, $all_expert_ids)) {
+                echo ' ✅ CONTAINS CURRENT AUTHOR!';
+            }
+        } else {
+            echo 'empty';
+        }
+        echo '</p>';
+        
+        echo '</div>';
     }
     
     echo '</div>';
 }
+add_action('wp_head', 'debug_acf_author_fields');
 
-// Hook it to display
-add_action('wp_head', 'debug_author_stories_specifically');
-
-// Also add a shortcode version for easy testing
-function debug_author_stories_shortcode($atts) {
-    $atts = shortcode_atts(array(
-        'author_id' => get_queried_object_id()
-    ), $atts);
+// 2. IMPROVED: Update the story feed filter to handle arrays correctly
+function variations_query_filter_fixed($query, $block)
+{
+    global $parsed_blocks_for_filtering;
     
-    if (!current_user_can('edit_posts')) {
-        return 'Debug only available for editors';
+    // Get block query ID
+    $block_query_id = null;
+    if (isset($block->parsed_block['attrs']['queryId'])) {
+        $block_query_id = $block->parsed_block['attrs']['queryId'];
+    } elseif (isset($block->attributes['queryId'])) {
+        $block_query_id = $block->attributes['queryId'];
+    } elseif (isset($block->context['queryId'])) {
+        $block_query_id = $block->context['queryId'];
     }
-    
-    ob_start();
-    debug_author_stories_specifically();
-    return ob_get_clean();
+
+    // Find matching parsed block
+    if (!$block_query_id || !isset($parsed_blocks_for_filtering[$block_query_id])) {
+        return $query;
+    }
+
+    $parsed_block = $parsed_blocks_for_filtering[$block_query_id];
+    $meta_query = [];
+
+    // Handle blocks WITH namespace (your variations)
+    if (isset($parsed_block['attrs']['namespace'])) {
+        $namespace = $parsed_block['attrs']['namespace'];
+
+        // For stories-feed blocks using ARRAY format (not serialized string)
+        if ('stories-feed' === $namespace) {
+            // Filter by author (expert OR author) if on author archive
+            if (is_author()) {
+                $author_id = get_queried_object_id();
+                
+                // Create an OR condition to check both expert and author fields
+                // Using LIKE with serialized array format that WordPress creates
+                $meta_query[] = array(
+                    'relation' => 'OR',
+                    array(
+                        'key' => 'all_expert_ids',
+                        'value' => serialize(strval($author_id)), // Check for string version
+                        'compare' => 'LIKE'
+                    ),
+                    array(
+                        'key' => 'all_expert_ids', 
+                        'value' => serialize(intval($author_id)), // Check for integer version
+                        'compare' => 'LIKE'
+                    ),
+                    array(
+                        'key' => 'all_author_ids',
+                        'value' => serialize(strval($author_id)), // Check for string version
+                        'compare' => 'LIKE'
+                    ),
+                    array(
+                        'key' => 'all_author_ids',
+                        'value' => serialize(intval($author_id)), // Check for integer version
+                        'compare' => 'LIKE'
+                    )
+                );
+            }
+        }
+
+        // For pubs-feed blocks (keep existing logic)
+        if ('pubs-feed' === $namespace) {
+            // Filter by language
+            if (!empty($parsed_block['attrs']['query']['language'])) {
+                $language_id = absint($parsed_block['attrs']['query']['language']);
+                $meta_query[] = array(
+                    'key' => 'language',
+                    'value' => $language_id,
+                    'compare' => '='
+                );
+            }
+
+            // Filter by author if on author archive (assuming same array format)
+            if (is_author()) {
+                $author_id = get_queried_object_id();
+                $meta_query[] = array(
+                    'relation' => 'OR',
+                    array(
+                        'key' => 'all_author_ids',
+                        'value' => serialize(strval($author_id)),
+                        'compare' => 'LIKE'
+                    ),
+                    array(
+                        'key' => 'all_author_ids',
+                        'value' => serialize(intval($author_id)),
+                        'compare' => 'LIKE'
+                    )
+                );
+            }
+        }
+
+        // For upcoming-events blocks (keep existing)
+        if ('upcoming-events' === $namespace) {
+            if (!empty($parsed_block['attrs']['query']['event_type'])) {
+                $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
+                $meta_query[] = array(
+                    'key' => 'event_type',
+                    'value' => $event_type,
+                    'compare' => '='
+                );
+            }
+        }
+    }
+
+    // Apply meta query if we have conditions
+    if (!empty($meta_query)) {
+        if (count($meta_query) > 1) {
+            $meta_query['relation'] = 'AND';
+        }
+        
+        // Merge with existing meta_query if it exists
+        if (isset($query['meta_query'])) {
+            $query['meta_query'] = array_merge($query['meta_query'], $meta_query);
+            if (count($query['meta_query']) > 1 && !isset($query['meta_query']['relation'])) {
+                $query['meta_query']['relation'] = 'AND';
+            }
+        } else {
+            $query['meta_query'] = $meta_query;
+        }
+    }
+
+    return $query;
 }
-add_shortcode('debug_author_stories', 'debug_author_stories_shortcode');
+
+// Replace the old filter with this new one
+// remove_filter('query_loop_block_query_vars', 'variations_query_filter', 10, 2);
+// add_filter('query_loop_block_query_vars', 'variations_query_filter_fixed', 10, 2);
+
+// 3. FIX: Improved ACF save function to handle different user field formats
+function update_flat_author_ids_meta_improved($post_id)
+{
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (!in_array(get_post_type($post_id), ['publications', 'post'])) return;
+
+    // Get ACF repeater field called 'authors'
+    $authors = get_field('authors', $post_id);
+
+    if (!$authors || !is_array($authors)) {
+        delete_post_meta($post_id, 'all_author_ids');
+        return;
+    }
+
+    $author_ids = [];
+
+    foreach ($authors as $author) {
+        error_log("🔍 Full author array: " . print_r($author, true));
+        
+        // Handle different possible field structures
+        if (!empty($author['user'])) {
+            $user_value = $author['user'];
+            
+            // If it's a user object (from user field)
+            if (is_object($user_value) && isset($user_value->ID)) {
+                $author_ids[] = (int) $user_value->ID;
+                error_log("✅ Found user object ID: " . $user_value->ID);
+            }
+            // If it's already a numeric ID
+            elseif (is_numeric($user_value)) {
+                $author_ids[] = (int) $user_value;
+                error_log("✅ Found numeric user ID: " . $user_value);
+            }
+            // If it's an array with ID (some ACF formats)
+            elseif (is_array($user_value) && isset($user_value['ID'])) {
+                $author_ids[] = (int) $user_value['ID'];
+                error_log("✅ Found user array ID: " . $user_value['ID']);
+            }
+            else {
+                error_log("⚠️ Unknown user field format: " . gettype($user_value) . " = " . print_r($user_value, true));
+            }
+        } else {
+            error_log("⚠️ No 'user' field found. Available keys: " . implode(', ', array_keys($author)));
+        }
+    }
+
+    if (!empty($author_ids)) {
+        update_post_meta($post_id, 'all_author_ids', $author_ids);
+        error_log("✅ Updated all_author_ids for post {$post_id}: " . implode(', ', $author_ids));
+    } else {
+        delete_post_meta($post_id, 'all_author_ids');
+        error_log("❌ No valid author IDs found for post {$post_id}");
+    }
+}
+
+// Temporarily replace the function to test
+// remove_action('acf/save_post', 'update_flat_author_ids_meta', 20);
+// add_action('acf/save_post', 'update_flat_author_ids_meta_improved', 20);
