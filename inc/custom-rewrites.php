@@ -222,10 +222,10 @@ function custom_publications_rewrite_rules()
         'top'
     );
 
-    // Child pages rule - this handles regular child pages under "publications"
-    // This should be last so it doesn't catch /publications/series/
+    // MODIFIED: Child pages rule - this handles regular child pages under "publications"
+    // The negative lookahead (?!series) prevents this rule from matching the series taxonomy archive.
     add_rewrite_rule(
-        '^publications/([^/]+)/?$',
+        '^publications/(?!series)([^/]+)/?$',
         'index.php?pagename=publications/$matches[1]',
         'top'
     );
@@ -303,7 +303,7 @@ function custom_publications_permalink($post_link, $post)
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
 
 /**
- * NEW: Modify the permalink for the 'publication_series' taxonomy.
+ * Modify the permalink for the 'publication_series' taxonomy.
  */
 function custom_publication_series_link($termlink, $term, $taxonomy) {
     if ($taxonomy === 'publication_series') {
@@ -376,10 +376,16 @@ add_filter('term_link', 'custom_topic_term_link', 10, 3);
  */
 function redirect_publications_to_canonical_url()
 {
+    // Do not run this redirect logic in the admin or on a publication series archive page.
+    if (is_admin() || is_tax('publication_series')) {
+        return;
+    }
+
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
-    // MODIFIED: Only proceed if the URL starts with '/publications/' AND NOT '/publications/series/'.
-    if (strpos($requested_path, '/publications/') === 0 && strpos($requested_path, '/publications/series/') === false) {
+    // Only proceed if the URL starts with '/publications/'
+    if (strpos($requested_path, '/publications/') === 0) {
+        // Further check to ensure it is not a series archive.
         if (preg_match('#^/publications/([A-Za-z0-9-]+)#', $requested_path, $matches)) {
             $publication_number = $matches[1];
             // Add a space before the first digit so the stored value (e.g. "C 1037-23-SP") can match.
