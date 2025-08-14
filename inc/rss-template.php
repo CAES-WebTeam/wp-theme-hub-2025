@@ -115,7 +115,13 @@ do_action( 'rss_tag_pre', 'rss2' );
 		if ($post_type === 'publications') {
 			// Use ACF summary field for publications
 			$summary = get_field('summary', get_the_ID());
-			$description = !empty($summary) ? $summary : get_the_excerpt();
+			if (!empty($summary)) {
+				// Strip HTML tags and clean up the text for RSS
+				$description = wp_strip_all_tags($summary);
+				$description = trim($description);
+			} else {
+				$description = get_the_excerpt();
+			}
 		} else {
 			// Use default excerpt for other post types
 			$description = get_the_excerpt();
@@ -123,14 +129,14 @@ do_action( 'rss_tag_pre', 'rss2' );
 		?>
 		
 		<?php if ( get_option( 'rss_use_excerpt' ) ) : ?>
-			<description><![CDATA[<?php echo esc_html($description); ?>]]></description>
+			<description><![CDATA[<?php echo $description; ?>]]></description>
 		<?php else : ?>
-			<description><![CDATA[<?php echo esc_html($description); ?>]]></description>
+			<description><![CDATA[<?php echo $description; ?>]]></description>
 			<?php $content = get_the_content_feed( 'rss2' ); ?>
 			<?php if ( strlen( $content ) > 0 ) : ?>
 				<content:encoded><![CDATA[<?php echo $content; ?>]]></content:encoded>
 			<?php else : ?>
-				<content:encoded><![CDATA[<?php echo esc_html($description); ?>]]></content:encoded>
+				<content:encoded><![CDATA[<?php echo $description; ?>]]></content:encoded>
 			<?php endif; ?>
 		<?php endif; ?>
 
