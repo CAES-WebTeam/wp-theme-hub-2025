@@ -201,29 +201,14 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
-	// PRIORITY 1: Publication posts rule (most specific): e.g. /publications/C1037-23-SP/some-publication/
+	// Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
 	add_rewrite_rule(
 		'^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
 		'index.php?post_type=publications&name=$matches[2]',
 		'top'
 	);
 
-	// PRIORITY 2: Rule to specifically handle the publication series taxonomy URLs
-	add_rewrite_rule(
-		'^publications/series/([^/]+)/?$',
-		'index.php?publication_series=$matches[1]',
-		'top'
-	);
-
-	// PRIORITY 3: Rule for pagination in taxonomy archives
-	add_rewrite_rule(
-		'^publications/series/([^/]+)/page/([0-9]+)/?$',
-		'index.php?publication_series=$matches[1]&paged=$matches[2]',
-		'top'
-	);
-
-	// PRIORITY 4 (FALLBACK): Child pages rule - this handles regular child pages under "publications"
-	// This should be last so it doesn't catch /publications/series/ or single posts.
+	// Child pages rule - this handles regular child pages under "publications"
 	add_rewrite_rule(
 		'^publications/([^/]+)/?$',
 		'index.php?pagename=publications/$matches[1]',
@@ -301,18 +286,6 @@ function custom_publications_permalink($post_link, $post)
     return $post_link;
 }
 add_filter('post_type_link', 'custom_publications_permalink', 10, 2);
-
-/**
- * Modify the permalink for the 'publication_series' taxonomy.
- */
-function custom_publication_series_link($termlink, $term, $taxonomy) {
-    if ($taxonomy === 'publication_series') {
-        return home_url("/publications/series/{$term->slug}/");
-    }
-    return $termlink;
-}
-add_filter('term_link', 'custom_publication_series_link', 10, 3);
-
 
 /**
  * Modify topic links to be post-type specific (e.g., /news/topic/sports/).
