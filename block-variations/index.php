@@ -308,7 +308,6 @@ add_filter('rest_query_vars', 'add_custom_query_vars');
 
 /** END FRONT END */
 
-<?php
 // 1. DEBUG: Check ACF field structure
 function debug_acf_author_fields() {
     if (!is_author() || !current_user_can('edit_posts')) {
