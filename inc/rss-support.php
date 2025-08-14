@@ -1,37 +1,54 @@
 <?php
 
-// Completely remove default WordPress author from RSS feeds
-function remove_default_rss_author() {
-    if (is_feed()) {
-        // Filter author functions to return empty
-        add_filter('the_author', '__return_empty_string');
-        add_filter('get_the_author', '__return_empty_string');
-    }
-}
+// Disable Yoast RSS feed modifications
+add_filter('wpseo_enable_rss_modification', '__return_false');
+add_filter('wpseo_remove_reply_to_com', '__return_false');
 
-// Clean up RSS output to remove empty dc:creator tags
-function clean_rss_output() {
-    if (is_feed()) {
-        ob_start();
-    }
+// Custom RSS2 feed with ACF authors
+remove_all_actions('do_feed_rss2');
+function create_custom_rss2_feed() {
+    load_template(get_template_directory() . '/inc/rss-template.php');
 }
+add_action('do_feed_rss2', 'create_custom_rss2_feed', 10, 1);
 
-function finish_rss_cleanup() {
-    if (is_feed() && ob_get_level()) {
-        $content = ob_get_clean();
-        // Remove empty dc:creator tags
-        $content = preg_replace('/<dc:creator><!\[CDATA\[\s*\]\]><\/dc:creator>\s*\n?/', '', $content);
-        echo $content;
+// Filter taxonomy feeds by post type based on URL
+function filter_taxonomy_feeds_by_post_type($query) {
+    if (!is_feed() || !$query->is_main_query()) {
+        return;
     }
-}
-
-// Add ACF authors as dc:creator in RSS feed
-function add_acf_authors_to_rss() {
-    global $post;
     
-    $post_id = $post->ID;
+    // Only run on taxonomy queries
+    if (!$query->is_tax()) {
+        return;
+    }
+    
+    // Get the current URL path
+    $request_uri = $_SERVER['REQUEST_URI'];
+    
+    // Determine post type from URL
+    $post_type = null;
+    if (strpos($request_uri, '/publications/topic/') !== false) {
+        $post_type = 'publications';
+    } elseif (strpos($request_uri, '/news/topic/') !== false) {
+        $post_type = 'post';
+    } elseif (strpos($request_uri, '/shorthand-story/topic/') !== false) {
+        $post_type = 'shorthand_story';
+    } elseif (strpos($request_uri, '/events/topic/') !== false) {
+        $post_type = 'events';
+    }
+    
+    // Filter the query if we found a post type
+    if ($post_type) {
+        $query->set('post_type', $post_type);
+        // Ensure we get the right posts
+        $query->set('posts_per_page', get_option('posts_per_rss', 10));
+    }
+}
+add_action('pre_get_posts', 'filter_taxonomy_feeds_by_post_type');
+
+// Helper function to get ACF authors (for use in custom feed template)
+function get_acf_authors_for_feed($post_id) {
     $authors = get_field('authors', $post_id, false);
-    
     $author_names = [];
     
     if ($authors && is_array($authors)) {
@@ -77,18 +94,5 @@ function add_acf_authors_to_rss() {
         $author_names[] = 'The Office of Marketing and Communications';
     }
     
-    // Output dc:creator tags
-    foreach ($author_names as $name) {
-        if (!empty($name)) {
-            echo '<dc:creator><![CDATA[' . esc_html($name) . ']]></dc:creator>' . "\n";
-        }
-    }
+    return $author_names;
 }
-
-// Hook into RSS feeds for ACF authors
-add_action('template_redirect', 'remove_default_rss_author');
-add_action('template_redirect', 'clean_rss_output', 1);
-add_action('shutdown', 'finish_rss_cleanup', 999);
-add_action('rss2_item', 'add_acf_authors_to_rss', 20); // Run later to override defaults
-add_action('rss_item', 'add_acf_authors_to_rss', 20); // RSS 1.0
-add_action('atom_entry', 'add_acf_authors_to_rss', 20); // Atom feed

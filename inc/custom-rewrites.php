@@ -172,18 +172,35 @@ function custom_topic_rewrite_rules()
 {
     // Topic archives for each post type
     add_rewrite_rule(
-        '^news/topic/([^/]+)/?$',
-        'index.php?topics=$matches[1]&post_type=post', // 'post' for news
-        'top'
-    );
-    add_rewrite_rule(
         '^publications/topic/([^/]+)/?$',
         'index.php?topics=$matches[1]&post_type=publications',
         'top'
     );
     add_rewrite_rule(
+        '^news/topic/([^/]+)/?$',
+        'index.php?topics=$matches[1]&post_type=post',
+        'top'
+    );
+    add_rewrite_rule(
         '^shorthand-story/topic/([^/]+)/?$',
         'index.php?topics=$matches[1]&post_type=shorthand_story',
+        'top'
+    );
+
+    // ADD THESE FEED RULES:
+    add_rewrite_rule(
+        '^publications/topic/([^/]+)/feed/?$',
+        'index.php?topics=$matches[1]&post_type=publications&feed=rss2',
+        'top'
+    );
+    add_rewrite_rule(
+        '^news/topic/([^/]+)/feed/?$',
+        'index.php?topics=$matches[1]&post_type=post&feed=rss2',
+        'top'
+    );
+    add_rewrite_rule(
+        '^shorthand-story/topic/([^/]+)/feed/?$',
+        'index.php?topics=$matches[1]&post_type=shorthand_story&feed=rss2',
         'top'
     );
 
