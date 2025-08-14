@@ -107,15 +107,30 @@ do_action( 'rss_tag_pre', 'rss2' );
 		<?php the_category_rss( 'rss2' ); ?>
 		<guid isPermaLink="false"><?php the_guid(); ?></guid>
 
+		<?php 
+		// Custom description logic based on post type
+		$post_type = get_post_type();
+		$description = '';
+		
+		if ($post_type === 'publications') {
+			// Use ACF summary field for publications
+			$summary = get_field('summary', get_the_ID());
+			$description = !empty($summary) ? $summary : get_the_excerpt();
+		} else {
+			// Use default excerpt for other post types
+			$description = get_the_excerpt();
+		}
+		?>
+		
 		<?php if ( get_option( 'rss_use_excerpt' ) ) : ?>
-			<description><![CDATA[<?php the_excerpt_rss(); ?>]]></description>
+			<description><![CDATA[<?php echo esc_html($description); ?>]]></description>
 		<?php else : ?>
-			<description><![CDATA[<?php the_excerpt_rss(); ?>]]></description>
+			<description><![CDATA[<?php echo esc_html($description); ?>]]></description>
 			<?php $content = get_the_content_feed( 'rss2' ); ?>
 			<?php if ( strlen( $content ) > 0 ) : ?>
 				<content:encoded><![CDATA[<?php echo $content; ?>]]></content:encoded>
 			<?php else : ?>
-				<content:encoded><![CDATA[<?php the_excerpt_rss(); ?>]]></content:encoded>
+				<content:encoded><![CDATA[<?php echo esc_html($description); ?>]]></content:encoded>
 			<?php endif; ?>
 		<?php endif; ?>
 

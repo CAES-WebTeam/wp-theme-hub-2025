@@ -45,17 +45,3 @@ require get_template_directory() . '/inc/topic-term-fixer.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
-
-// TEMPORARY: Debug rewrite rules
-add_action('init', function() {
-    if (isset($_GET['debug_rewrites'])) {
-        global $wp_rewrite;
-        echo '<pre>';
-        echo "Current rewrite rules:\n";
-        print_r($wp_rewrite->wp_rewrite_rules());
-        echo "\n\nQuery vars:\n";
-        print_r($GLOBALS['wp']->public_query_vars);
-        echo '</pre>';
-        exit;
-    }
-}, 999);
