@@ -30,7 +30,7 @@
 
 .view-gallery-btn {
   background: var(--wp--preset--color--contrast);
-  top: 100%;
+  bottom: 0;
   color: var(--wp--preset--color--base);
   left: 50%;
   padding: var(--wp--preset--spacing--40);
@@ -307,7 +307,6 @@ body.lightbox-open {
   }
 
   .view-gallery-btn {
-    bottom: 0.5rem;
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
   }
