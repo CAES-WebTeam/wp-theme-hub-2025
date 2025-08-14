@@ -197,7 +197,7 @@ function custom_topic_rewrite_rules()
 add_action('init', 'custom_topic_rewrite_rules');
 
 /**
- * Custom rewrite rules for publications, including publication series and child pages.
+ * Custom rewrite rules for publications
  */
 function custom_publications_rewrite_rules()
 {
