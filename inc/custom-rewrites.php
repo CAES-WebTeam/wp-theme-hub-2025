@@ -201,34 +201,34 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
-    // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
-    add_rewrite_rule(
-        '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
-        'index.php?post_type=publications&name=$matches[2]',
-        'top'
-    );
+	// PRIORITY 1: Publication posts rule (most specific): e.g. /publications/C1037-23-SP/some-publication/
+	add_rewrite_rule(
+		'^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
+		'index.php?post_type=publications&name=$matches[2]',
+		'top'
+	);
 
-    // Rule to specifically handle the publication series taxonomy URLs
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/?$',
-        'index.php?publication_series=$matches[1]',
-        'top'
-    );
+	// PRIORITY 2: Rule to specifically handle the publication series taxonomy URLs
+	add_rewrite_rule(
+		'^publications/series/([^/]+)/?$',
+		'index.php?publication_series=$matches[1]',
+		'top'
+	);
 
-    // Rule for pagination in taxonomy archives
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/page/([0-9]+)/?$',
-        'index.php?publication_series=$matches[1]&paged=$matches[2]',
-        'top'
-    );
+	// PRIORITY 3: Rule for pagination in taxonomy archives
+	add_rewrite_rule(
+		'^publications/series/([^/]+)/page/([0-9]+)/?$',
+		'index.php?publication_series=$matches[1]&paged=$matches[2]',
+		'top'
+	);
 
-    // MODIFIED: Child pages rule - this handles regular child pages under "publications"
-    // The negative lookahead (?!series) prevents this rule from matching the series taxonomy archive.
-    add_rewrite_rule(
-        '^publications/(?!series)([^/]+)/?$',
-        'index.php?pagename=publications/$matches[1]',
-        'top'
-    );
+	// PRIORITY 4 (FALLBACK): Child pages rule - this handles regular child pages under "publications"
+	// This should be last so it doesn't catch /publications/series/ or single posts.
+	add_rewrite_rule(
+		'^publications/([^/]+)/?$',
+		'index.php?pagename=publications/$matches[1]',
+		'top'
+	);
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
@@ -370,6 +370,10 @@ add_filter('term_link', 'custom_topic_term_link', 10, 3);
 // REDIRECTION RULES SECTION
 // ===================================
 
+/**
+ * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
+ * by looking up the publication number and obtaining the canonical slug.
+ */
 /**
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
  * by looking up the publication number and obtaining the canonical slug.
