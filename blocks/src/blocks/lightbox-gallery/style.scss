@@ -259,6 +259,10 @@ body.lightbox-open {
     padding: 0 0.5rem;
   }
   
+  .view-gallery-btn {
+    padding: var(--wp--preset--spacing--20);
+  }
+
   /* Ensure arrows stay within the image area */
   .prev-btn {
     position: static; /* Change from absolute positioning */
