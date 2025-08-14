@@ -1,37 +1,15 @@
 <?php
 
-// Completely remove default WordPress author from RSS feeds
-function remove_default_rss_author() {
-    if (is_feed()) {
-        // Filter author functions to return empty
-        add_filter('the_author', '__return_empty_string');
-        add_filter('get_the_author', '__return_empty_string');
-    }
+// Custom RSS2 feed with ACF authors
+remove_all_actions('do_feed_rss2');
+function create_custom_rss2_feed() {
+    load_template(get_template_directory() . '/inc/rss-template.php');
 }
+add_action('do_feed_rss2', 'create_custom_rss2_feed', 10, 1);
 
-// Clean up RSS output to remove empty dc:creator tags
-function clean_rss_output() {
-    if (is_feed()) {
-        ob_start();
-    }
-}
-
-function finish_rss_cleanup() {
-    if (is_feed() && ob_get_level()) {
-        $content = ob_get_clean();
-        // Remove empty dc:creator tags
-        $content = preg_replace('/<dc:creator><!\[CDATA\[\s*\]\]><\/dc:creator>\s*\n?/', '', $content);
-        echo $content;
-    }
-}
-
-// Add ACF authors as dc:creator in RSS feed
-function add_acf_authors_to_rss() {
-    global $post;
-    
-    $post_id = $post->ID;
+// Helper function to get ACF authors (for use in custom feed template)
+function get_acf_authors_for_feed($post_id) {
     $authors = get_field('authors', $post_id, false);
-    
     $author_names = [];
     
     if ($authors && is_array($authors)) {
@@ -77,18 +55,5 @@ function add_acf_authors_to_rss() {
         $author_names[] = 'The Office of Marketing and Communications';
     }
     
-    // Output dc:creator tags
-    foreach ($author_names as $name) {
-        if (!empty($name)) {
-            echo '<dc:creator><![CDATA[' . esc_html($name) . ']]></dc:creator>' . "\n";
-        }
-    }
+    return $author_names;
 }
-
-// Hook into RSS feeds for ACF authors
-add_action('template_redirect', 'remove_default_rss_author');
-add_action('template_redirect', 'clean_rss_output', 1);
-add_action('shutdown', 'finish_rss_cleanup', 999);
-add_action('rss2_item', 'add_acf_authors_to_rss', 20); // Run later to override defaults
-add_action('rss_item', 'add_acf_authors_to_rss', 20); // RSS 1.0
-add_action('atom_entry', 'add_acf_authors_to_rss', 20); // Atom feed
