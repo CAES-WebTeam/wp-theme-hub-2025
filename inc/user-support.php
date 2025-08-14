@@ -354,13 +354,6 @@ function sync_personnel_users()
         if (isset($existing_user_ids[$personnel_id])) {
             $user_id = $existing_user_ids[$personnel_id];
             output_sync_message("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
-        } else {
-            // Fallback: Check if user exists by email (for users who might not have personnel_id set)
-            $existing_user = get_user_by('email', $original_email);
-            if ($existing_user && in_array('personnel_user', $existing_user->roles)) {
-                $user_id = $existing_user->ID;
-                output_sync_message("{$user_log_prefix}: Found existing personnel_user by email {$original_email}: User ID {$user_id} (missing personnel_id)");
-            }
         }
 
         if ($user_id) {
@@ -384,9 +377,9 @@ function sync_personnel_users()
                 }
 
                 // Update ACF fields for the existing user.
-            update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
+                update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
                 update_field('college_id', $college_id, 'user_' . $user_id);
-            update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
+                update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
                 update_field('title', $title, 'user_' . $user_id);
                 update_field('phone_number', $phone, 'user_' . $user_id);
                 update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
@@ -422,7 +415,8 @@ function sync_personnel_users()
                 
                 // Check if email already exists in WordPress
                 if (email_exists($original_email)) {
-                    $email_to_use = "personnel_{$personnel_id}@caes.uga.edu.spoofed";
+                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                    $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
@@ -657,8 +651,6 @@ function sync_personnel_users2()
             output_sync_message("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
         } else {
             output_sync_message("{$user_log_prefix}: No existing user found with personnel_id {$personnel_id}");
-            
-
         }
 
         if ($user_id) {
@@ -729,11 +721,11 @@ function sync_personnel_users2()
             output_sync_message("{$user_log_prefix}: CREATING new user");
             
             $email_to_use = $original_email;
-            
+                
             // Check if email already exists in WordPress
             if (email_exists($original_email)) {
-                // Create a unique spoofed email address
-                $email_to_use = "personnel_{$personnel_id}@caes.uga.edu.spoofed";
+                // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                $email_to_use = "personnel_{$personnel_id}{uniqid()}@caes.uga.edu.spoofed";
                 output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
             }
             
