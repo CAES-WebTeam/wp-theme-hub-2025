@@ -48,37 +48,6 @@ require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php'
 
 /**
  * ===================================================================
- * Part 1: The Original Function to Update a Single Post's Meta
- * ===================================================================
- * This function is called by the AJAX handler for each post.
- */
-//** Update all_author_ids meta field when saving a post  */
-add_action('acf/save_post', 'update_flat_author_ids_meta', 20);
-function update_flat_author_ids_meta($post_id)
-{
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-    if (!in_array(get_post_type($post_id), ['publications', 'post'])) return;
-
-    // Get ACF repeater field called 'authors'
-    $authors = get_field('authors', $post_id);
-
-    if (!$authors || !is_array($authors)) {
-        delete_post_meta($post_id, 'all_author_ids');
-        return;
-    }
-    $author_ids = [];
-
-    foreach ($authors as $author) {
-        if (!empty($author['user']) && is_numeric($author['user'])) {
-            $author_ids[] = (int) $author['user'];
-        }
-    }
-
-    update_post_meta($post_id, 'all_author_ids', $author_ids);
-}
-
-/**
- * ===================================================================
  * Part 2: Create the Admin Page for the Tool
  * ===================================================================
  * This adds a new page under "Tools" -> "Update Author Meta".
