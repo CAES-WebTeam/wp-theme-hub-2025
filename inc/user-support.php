@@ -410,9 +410,11 @@ function sync_personnel_users2()
     $users = json_decode($data, true);
 
     if (!is_array($users)) {
-        error_log('Invalid API response for Inactive Personnel.');
+        error_log('Invalid API response for Inactive Personnel. Response body: ' . substr($data, 0, 500));
         return new WP_Error('invalid_response', 'Invalid API response for Inactive Personnel.');
     }
+
+    error_log("SYNC START: Processing " . count($users) . " users from Inactive Personnel API");
 
     // Prepare a map of existing personnel_id to WordPress user ID for efficient lookup.
     $existing_users = get_users([
@@ -429,38 +431,89 @@ function sync_personnel_users2()
         }
     }
 
+    error_log("EXISTING USERS MAP: Found " . count($existing_user_ids) . " existing personnel users");
+
     $api_user_ids = []; // To keep track of personnel_ids from the current API fetch.
     $created_count = 0;
     $updated_count = 0;
+    $error_count = 0;
+    $skipped_count = 0;
 
     // Iterate through each user record from the API.
-    foreach ($users as $user) {
+    foreach ($users as $index => $user) {
+        $user_log_prefix = "USER #{$index}";
+        
+        // Log raw user data for debugging
+        error_log("{$user_log_prefix}: Raw API data: " . json_encode($user));
+        
+        // Validate required fields first
+        $required_fields = ['PERSONNEL_ID', 'EMAIL', 'NAME', 'FNAME', 'LNAME'];
+        $missing_fields = [];
+        foreach ($required_fields as $field) {
+            if (!isset($user[$field]) || empty(trim($user[$field]))) {
+                $missing_fields[] = $field;
+            }
+        }
+        
+        if (!empty($missing_fields)) {
+            error_log("{$user_log_prefix} ERROR: Missing required fields: " . implode(', ', $missing_fields));
+            $error_count++;
+            continue;
+        }
+
         // Sanitize and extract relevant user data from the API response.
         $personnel_id = intval($user['PERSONNEL_ID']);
-        $college_id = intval($user['COLLEGEID']);
+        $college_id = intval($user['COLLEGEID'] ?? 0);
         $original_email = sanitize_email($user['EMAIL']);
         $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
         $first_name = sanitize_text_field($user['FNAME']);
         $last_name = sanitize_text_field($user['LNAME']);
         $display_name = sanitize_text_field($user['NAME']);
-        $title = sanitize_text_field($user['TITLE']);
-        $department = sanitize_text_field($user['DEPARTMENT']);
-        $program_area = sanitize_text_field($user['PROGRAMAREALIST']);
-        $phone = sanitize_text_field($user['PHONE_NUMBER']);
-        $cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER']);
-        $fax = sanitize_text_field($user['FAX_NUMBER']);
-        $caes_location_id = intval($user['CAES_LOCATION_ID']);
-        $mailing_address = sanitize_text_field($user['MAILING_ADDRESS1']);
-        $mailing_address2 = sanitize_text_field($user['MAILING_ADDRESS2']);
-        $mailing_city = sanitize_text_field($user['MAILING_CITY']);
-        $mailing_state = sanitize_text_field($user['MAILING_STATE']);
-        $mailing_zip = sanitize_text_field($user['MAILING_ZIP']);
-        $shipping_address = sanitize_text_field($user['SHIPPING_ADDRESS1']);
-        $shipping_address2 = sanitize_text_field($user['SHIPPING_ADDRESS2']);
-        $shipping_city = sanitize_text_field($user['SHIPPING_CITY']);
-        $shipping_state = sanitize_text_field($user['SHIPPING_STATE']);
-        $shipping_zip = sanitize_text_field($user['SHIPPING_ZIP']);
-        $image_name = sanitize_text_field($user['IMAGE']);
+        $title = sanitize_text_field($user['TITLE'] ?? '');
+        $department = sanitize_text_field($user['DEPARTMENT'] ?? '');
+        $program_area = sanitize_text_field($user['PROGRAMAREALIST'] ?? '');
+        $phone = sanitize_text_field($user['PHONE_NUMBER'] ?? '');
+        $cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER'] ?? '');
+        $fax = sanitize_text_field($user['FAX_NUMBER'] ?? '');
+        $caes_location_id = intval($user['CAES_LOCATION_ID'] ?? 0);
+        $mailing_address = sanitize_text_field($user['MAILING_ADDRESS1'] ?? '');
+        $mailing_address2 = sanitize_text_field($user['MAILING_ADDRESS2'] ?? '');
+        $mailing_city = sanitize_text_field($user['MAILING_CITY'] ?? '');
+        $mailing_state = sanitize_text_field($user['MAILING_STATE'] ?? '');
+        $mailing_zip = sanitize_text_field($user['MAILING_ZIP'] ?? '');
+        $shipping_address = sanitize_text_field($user['SHIPPING_ADDRESS1'] ?? '');
+        $shipping_address2 = sanitize_text_field($user['SHIPPING_ADDRESS2'] ?? '');
+        $shipping_city = sanitize_text_field($user['SHIPPING_CITY'] ?? '');
+        $shipping_state = sanitize_text_field($user['SHIPPING_STATE'] ?? '');
+        $shipping_zip = sanitize_text_field($user['SHIPPING_ZIP'] ?? '');
+        $image_name = sanitize_text_field($user['IMAGE'] ?? '');
+
+        // Validate sanitized data
+        if ($personnel_id <= 0) {
+            error_log("{$user_log_prefix} ERROR: Invalid personnel_id after sanitization: '{$user['PERSONNEL_ID']}' -> {$personnel_id}");
+            $error_count++;
+            continue;
+        }
+        
+        if (!is_email($original_email)) {
+            error_log("{$user_log_prefix} ERROR: Invalid email after sanitization: '{$user['EMAIL']}' -> '{$original_email}'");
+            $error_count++;
+            continue;
+        }
+        
+        if (empty($username)) {
+            error_log("{$user_log_prefix} ERROR: Empty username after sanitization. Original NAME: '{$user['NAME']}'");
+            $error_count++;
+            continue;
+        }
+        
+        if (strlen($username) < 3) {
+            error_log("{$user_log_prefix} ERROR: Username too short after sanitization: '{$username}' (original: '{$user['NAME']}')");
+            $error_count++;
+            continue;
+        }
+
+        error_log("{$user_log_prefix}: Processing personnel_id={$personnel_id}, email={$original_email}, username={$username}");
 
         $api_user_ids[] = $personnel_id;
 
@@ -469,66 +522,101 @@ function sync_personnel_users2()
         // First, check if the user already exists by personnel_id.
         if (isset($existing_user_ids[$personnel_id])) {
             $user_id = $existing_user_ids[$personnel_id];
-            error_log("Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
+            error_log("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id}: User ID {$user_id}");
         } else {
-            // Fallback: Check if user exists by email (for users who might not have personnel_id set)
-            $existing_user = get_user_by('email', $original_email);
-            if ($existing_user && in_array('personnel_user', $existing_user->roles)) {
-                $user_id = $existing_user->ID;
-                error_log("Found existing personnel_user by email {$original_email}: User ID {$user_id} (missing personnel_id)");
-            }
+            error_log("{$user_log_prefix}: No existing user found with personnel_id {$personnel_id}");
+            
+
         }
 
         if ($user_id) {
             // Update Existing User
-            $updated_count++;
+            error_log("{$user_log_prefix}: UPDATING existing user ID {$user_id}");
             
-            // Update core WordPress user fields.
-            wp_update_user([
-                'ID' => $user_id,
-                'user_email' => $original_email,
-                'first_name' => $first_name,
-                'last_name' => $last_name,
-                'display_name' => $display_name
-            ]);
+            try {
+                // Update core WordPress user fields.
+                $update_result = wp_update_user([
+                    'ID' => $user_id,
+                    'user_email' => $original_email,
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'display_name' => $display_name
+                ]);
 
-            // Update ACF fields for the existing user.
-            update_field('personnel_id', $personnel_id, 'user_' . $user_id); // Make sure this gets set!
-            update_field('college_id', $college_id, 'user_' . $user_id);
-            update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
-            update_field('title', $title, 'user_' . $user_id);
-            update_field('phone_number', $phone, 'user_' . $user_id);
-            update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
-            update_field('fax_number', $fax, 'user_' . $user_id);
-            update_field('department', $department, 'user_' . $user_id);
-            update_field('program_area', $program_area, 'user_' . $user_id);
-            update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
-            update_field('mailing_address', $mailing_address, 'user_' . $user_id);
-            update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
-            update_field('mailing_city', $mailing_city, 'user_' . $user_id);
-            update_field('mailing_state', $mailing_state, 'user_' . $user_id);
-            update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
-            update_field('shipping_address', $shipping_address, 'user_' . $user_id);
-            update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
-            update_field('shipping_city', $shipping_city, 'user_' . $user_id);
-            update_field('shipping_state', $shipping_state, 'user_' . $user_id);
-            update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
-            update_field('image_name', $image_name, 'user_' . $user_id);
-            
-            error_log("Updated existing user {$user_id} with personnel_id {$personnel_id}");
+                if (is_wp_error($update_result)) {
+                    error_log("{$user_log_prefix} UPDATE ERROR: wp_update_user failed: " . $update_result->get_error_message());
+                    $error_count++;
+                    continue;
+                }
+
+                // Update ACF fields for the existing user.
+                $acf_updates = [
+                    'personnel_id' => $personnel_id,
+                    'college_id' => $college_id,
+                    'uga_email' => $original_email,
+                    'title' => $title,
+                    'phone_number' => $phone,
+                    'cell_phone_number' => $cell_phone,
+                    'fax_number' => $fax,
+                    'department' => $department,
+                    'program_area' => $program_area,
+                    'caes_location_id' => $caes_location_id,
+                    'mailing_address' => $mailing_address,
+                    'mailing_address2' => $mailing_address2,
+                    'mailing_city' => $mailing_city,
+                    'mailing_state' => $mailing_state,
+                    'mailing_zip' => $mailing_zip,
+                    'shipping_address' => $shipping_address,
+                    'shipping_address2' => $shipping_address2,
+                    'shipping_city' => $shipping_city,
+                    'shipping_state' => $shipping_state,
+                    'shipping_zip' => $shipping_zip,
+                    'image_name' => $image_name
+                ];
+
+                foreach ($acf_updates as $field_name => $field_value) {
+                    $acf_result = update_field($field_name, $field_value, 'user_' . $user_id);
+                    if (!$acf_result) {
+                        error_log("{$user_log_prefix} UPDATE WARNING: Failed to update ACF field '{$field_name}' with value '{$field_value}' for user {$user_id}");
+                    }
+                }
+                
+                $updated_count++;
+                error_log("{$user_log_prefix}: Successfully updated user {$user_id} with personnel_id {$personnel_id}");
+                
+            } catch (Exception $e) {
+                error_log("{$user_log_prefix} UPDATE ERROR: Exception during update: " . $e->getMessage());
+                $error_count++;
+            }
         } else {
             // Create New User if not found.
+            error_log("{$user_log_prefix}: CREATING new user");
+            
             $email_to_use = $original_email;
             
             // Check if email already exists in WordPress
             if (email_exists($original_email)) {
                 // Create a unique spoofed email address
                 $email_to_use = "personnel_{$personnel_id}@caes.uga.edu.spoofed";
-                error_log("Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+                error_log("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+            }
+            
+            // Check if username already exists
+            if (username_exists($username)) {
+                $original_username = $username;
+                $username = $username . '_' . $personnel_id;
+                error_log("{$user_log_prefix}: Username '{$original_username}' already exists. Using: '{$username}'");
+            }
+            
+            // Validate final username
+            if (!validate_username($username)) {
+                error_log("{$user_log_prefix} CREATE ERROR: Invalid username after all processing: '{$username}'");
+                $error_count++;
+                continue;
             }
             
             try {
-                $user_id = wp_insert_user([
+                $user_data = [
                     'user_login' => $username,
                     'user_email' => $email_to_use,
                     'first_name' => $first_name,
@@ -536,50 +624,104 @@ function sync_personnel_users2()
                     'display_name' => $display_name,
                     'user_pass' => wp_generate_password(),
                     'role' => 'personnel_user'
-                ]);
+                ];
+                
+                error_log("{$user_log_prefix}: Creating user with data: " . json_encode($user_data));
+                
+                $user_id = wp_insert_user($user_data);
+                
             } catch (Exception $e) {
-                error_log("Error creating user from Inactive Personnel feed: " . $e->getMessage());
+                error_log("{$user_log_prefix} CREATE ERROR: Exception during wp_insert_user: " . $e->getMessage());
+                $error_count++;
                 continue; // Skip this user if there's an error.
             }
 
-            if (!is_wp_error($user_id)) {
-                $created_count++;
-                
+            if (is_wp_error($user_id)) {
+                error_log("{$user_log_prefix} CREATE ERROR: wp_insert_user failed: " . $user_id->get_error_message() . 
+                         " | Error data: " . json_encode($user_id->get_error_data()));
+                $error_count++;
+                continue;
+            }
+            
+            if (!$user_id || $user_id <= 0) {
+                error_log("{$user_log_prefix} CREATE ERROR: wp_insert_user returned invalid user ID: " . var_export($user_id, true));
+                $error_count++;
+                continue;
+            }
+
+            // Verify user was actually created
+            $created_user = get_user_by('ID', $user_id);
+            if (!$created_user) {
+                error_log("{$user_log_prefix} CREATE ERROR: User ID {$user_id} was returned but user doesn't exist in database");
+                $error_count++;
+                continue;
+            }
+
+            error_log("{$user_log_prefix}: Successfully created user ID {$user_id}, verifying role assignment...");
+            
+            // Verify role assignment
+            if (!in_array('personnel_user', $created_user->roles)) {
+                error_log("{$user_log_prefix} CREATE WARNING: User {$user_id} doesn't have personnel_user role. Current roles: " . implode(', ', $created_user->roles));
+                // Try to assign the role manually
+                $created_user->set_role('personnel_user');
+            }
+
+            try {
                 // Update ACF fields for the new user.
-                update_field('personnel_id', $personnel_id, 'user_' . $user_id);
-                update_field('college_id', $college_id, 'user_' . $user_id);
-                update_field('uga_email', $original_email, 'user_' . $user_id); // Store original email in ACF field
-                update_field('title', $title, 'user_' . $user_id);
-                update_field('phone_number', $phone, 'user_' . $user_id);
-                update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
-                update_field('fax_number', $fax, 'user_' . $user_id);
-                update_field('department', $department, 'user_' . $user_id);
-                update_field('program_area', $program_area, 'user_' . $user_id);
-                update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
-                update_field('mailing_address', $mailing_address, 'user_' . $user_id);
-                update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
-                update_field('mailing_city', $mailing_city, 'user_' . $user_id);
-                update_field('mailing_state', $mailing_state, 'user_' . $user_id);
-                update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
-                update_field('shipping_address', $shipping_address, 'user_' . $user_id);
-                update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
-                update_field('shipping_city', $shipping_city, 'user_' . $user_id);
-                update_field('shipping_state', $shipping_state, 'user_' . $user_id);
-                update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
-                update_field('image_name', $image_name, 'user_' . $user_id);
+                $acf_updates = [
+                    'personnel_id' => $personnel_id,
+                    'college_id' => $college_id,
+                    'uga_email' => $original_email,
+                    'title' => $title,
+                    'phone_number' => $phone,
+                    'cell_phone_number' => $cell_phone,
+                    'fax_number' => $fax,
+                    'department' => $department,
+                    'program_area' => $program_area,
+                    'caes_location_id' => $caes_location_id,
+                    'mailing_address' => $mailing_address,
+                    'mailing_address2' => $mailing_address2,
+                    'mailing_city' => $mailing_city,
+                    'mailing_state' => $mailing_state,
+                    'mailing_zip' => $mailing_zip,
+                    'shipping_address' => $shipping_address,
+                    'shipping_address2' => $shipping_address2,
+                    'shipping_city' => $shipping_city,
+                    'shipping_state' => $shipping_state,
+                    'shipping_zip' => $shipping_zip,
+                    'image_name' => $image_name
+                ];
+
+                foreach ($acf_updates as $field_name => $field_value) {
+                    $acf_result = update_field($field_name, $field_value, 'user_' . $user_id);
+                    if (!$acf_result) {
+                        error_log("{$user_log_prefix} CREATE WARNING: Failed to update ACF field '{$field_name}' with value '{$field_value}' for new user {$user_id}");
+                    }
+                }
                 
-                error_log("Created new user {$user_id} with personnel_id {$personnel_id} using email: {$email_to_use}");
-            } else {
-                error_log("Failed to create user for personnel_id {$personnel_id}: " . $user_id->get_error_message());
+                $created_count++;
+                error_log("{$user_log_prefix}: Successfully created new user {$user_id} with personnel_id {$personnel_id} using email: {$email_to_use}");
+                
+            } catch (Exception $e) {
+                error_log("{$user_log_prefix} CREATE ERROR: Exception during ACF field updates for new user {$user_id}: " . $e->getMessage());
+                // User was created but ACF update failed - still count as created
+                $created_count++;
             }
         }
     }
+
+    $total_processed = $created_count + $updated_count + $error_count + $skipped_count;
+    error_log("SYNC COMPLETE: Total API records: " . count($users) . 
+             " | Processed: {$total_processed} | Created: {$created_count} | Updated: {$updated_count} | Errors: {$error_count} | Skipped: {$skipped_count}");
 
     // Return results for reporting in the admin interface.
     return [
         'created' => $created_count,
         'updated' => $updated_count,
-        'message' => "Inactive Personnel users synced successfully. Created: {$created_count}, Updated: {$updated_count}."
+        'errors' => $error_count,
+        'skipped' => $skipped_count,
+        'total_api_records' => count($users),
+        'message' => "Inactive Personnel users synced. Created: {$created_count}, Updated: {$updated_count}, Errors: {$error_count}, Skipped: {$skipped_count} out of " . count($users) . " API records."
     ];
 }
 
