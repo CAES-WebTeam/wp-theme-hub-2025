@@ -374,10 +374,6 @@ add_filter('term_link', 'custom_topic_term_link', 10, 3);
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
  * by looking up the publication number and obtaining the canonical slug.
  */
-/**
- * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
- * by looking up the publication number and obtaining the canonical slug.
- */
 function redirect_publications_to_canonical_url()
 {
     // Do not run this redirect logic in the admin or on a publication series archive page.
