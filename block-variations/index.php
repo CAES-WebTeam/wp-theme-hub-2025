@@ -161,6 +161,9 @@ function variations_query_filter($query, $block)
 
             $query['post_type'] = ['post', 'shorthand_story'];
 
+            // CRITICAL: Remove the block's postType parameter that overrides our setting
+            unset($query['postType']);
+
             // DEBUG: Track post_type change
             $debug_stories_feed[] = "Set post_type to: " . print_r($query['post_type'], true);
 
@@ -339,9 +342,10 @@ add_filter('rest_query_vars', 'add_custom_query_vars');
 
 
 // Display debug info at the bottom of the page
-function display_debug_stories_feed() {
+function display_debug_stories_feed()
+{
     global $debug_stories_feed;
-    
+
     if (!empty($debug_stories_feed) && current_user_can('manage_options')) {
         echo '<div style="background: #f0f0f0; border: 2px solid #333; padding: 20px; margin: 20px; font-family: monospace; white-space: pre-wrap; position: relative; z-index: 9999;">';
         echo '<h3 style="margin-top: 0; color: #d63638;">Stories Feed Debug Info:</h3>';
