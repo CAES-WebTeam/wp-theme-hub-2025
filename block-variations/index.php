@@ -147,6 +147,12 @@ function variations_query_filter($query, $block)
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
             $query['post_type'] = ['post', 'shorthand_story'];
+            
+            // ---- START DEBUGGING ----
+            var_dump($query['post_type']); // This will print the post_type array
+            die(); // This will stop the page from loading further
+            // ---- END DEBUGGING ----
+            
             // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
