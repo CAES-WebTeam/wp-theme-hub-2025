@@ -928,9 +928,109 @@ function sync_personnel_users2()
  */
 
 /**
+ * Helper function to find and remove duplicate expert users
+ * This handles the case where expert_user accounts were created before
+ * personnel_id matching was implemented.
+ */
+function find_and_remove_duplicate_expert_users($personnel_user_id, $source_expert_id = null, $writer_id = null, $user_log_prefix = '') {
+    $duplicates_removed = 0;
+    $removal_details = array();
+    
+    // Only look for duplicates if we have IDs to match against
+    if (!$source_expert_id && !$writer_id) {
+        return array('removed' => 0, 'details' => array());
+    }
+    
+    $duplicate_users = array();
+    
+    // Look for expert_user accounts with matching source_expert_id
+    if ($source_expert_id) {
+        $expert_users = get_users([
+            'meta_key' => 'source_expert_id',
+            'meta_value' => $source_expert_id,
+            'role' => 'expert_user',
+            'exclude' => array($personnel_user_id) // Exclude the main user we're updating
+        ]);
+        
+        foreach ($expert_users as $user) {
+            $duplicate_users[] = array('user' => $user, 'match_field' => 'source_expert_id', 'match_value' => $source_expert_id);
+        }
+    }
+    
+    // Look for expert_user accounts with matching writer_id
+    if ($writer_id) {
+        $writer_users = get_users([
+            'meta_key' => 'writer_id',
+            'meta_value' => $writer_id,
+            'role' => 'expert_user',
+            'exclude' => array($personnel_user_id) // Exclude the main user we're updating
+        ]);
+        
+        foreach ($writer_users as $user) {
+            // Check if this user is already in our duplicates array
+            $already_found = false;
+            foreach ($duplicate_users as $dup) {
+                if ($dup['user']->ID == $user->ID) {
+                    $already_found = true;
+                    break;
+                }
+            }
+            
+            if (!$already_found) {
+                $duplicate_users[] = array('user' => $user, 'match_field' => 'writer_id', 'match_value' => $writer_id);
+            }
+        }
+    }
+    
+    // Remove duplicate users
+    foreach ($duplicate_users as $duplicate) {
+        $dup_user = $duplicate['user'];
+        $match_info = $duplicate['match_field'] . '=' . $duplicate['match_value'];
+        
+        // Additional safety check: make sure this is actually an expert_user role
+        if (!in_array('expert_user', $dup_user->roles)) {
+            output_sync_message("{$user_log_prefix}: SKIP DELETION - User {$dup_user->ID} ({$dup_user->user_login}) does not have expert_user role");
+            continue;
+        }
+        
+        // Additional safety check: make sure this user doesn't have a personnel_id
+        $dup_personnel_id = get_field('personnel_id', 'user_' . $dup_user->ID);
+        if (!empty($dup_personnel_id)) {
+            output_sync_message("{$user_log_prefix}: SKIP DELETION - User {$dup_user->ID} ({$dup_user->user_login}) has personnel_id {$dup_personnel_id}");
+            continue;
+        }
+        
+        // Log before deletion
+        $user_info = array(
+            'id' => $dup_user->ID,
+            'login' => $dup_user->user_login,
+            'email' => $dup_user->user_email,
+            'name' => $dup_user->first_name . ' ' . $dup_user->last_name,
+            'match_info' => $match_info
+        );
+        
+        output_sync_message("{$user_log_prefix}: DELETING duplicate expert_user {$dup_user->ID} ({$dup_user->user_login}) - matched by {$match_info}");
+        
+        $deleted = wp_delete_user($dup_user->ID);
+        
+        if ($deleted) {
+            $duplicates_removed++;
+            $removal_details[] = array('success' => true, 'user_info' => $user_info);
+            output_sync_message("{$user_log_prefix}: Successfully deleted duplicate user {$dup_user->ID} ({$dup_user->user_login})");
+        } else {
+            $removal_details[] = array('success' => false, 'user_info' => $user_info, 'error' => 'wp_delete_user returned false');
+            output_sync_message("{$user_log_prefix}: ERROR - Failed to delete duplicate user {$dup_user->ID} ({$dup_user->user_login})");
+        }
+    }
+    
+    return array('removed' => $duplicates_removed, 'details' => $removal_details);
+}
+
+/**
  * Imports news experts/sources data from the API endpoint.
  * Creates new 'expert_user' roles or updates existing ones.
  * Handles matching by personnel ID or source_expert_id.
+ * Now includes duplicate cleanup when personnel_id matches are found.
  *
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
@@ -950,6 +1050,7 @@ function import_news_experts()
     if (is_wp_error($response)) {
         $error_msg = 'API Request Failed for News Experts: ' . $response->get_error_message();
         output_sync_message($error_msg, 'error');
+        enable_user_notifications();
         return new WP_Error('api_error', $error_msg);
     }
 
@@ -959,6 +1060,7 @@ function import_news_experts()
     if (!is_array($records)) {
         $error_msg = 'Invalid API response for News Experts.';
         output_sync_message($error_msg, 'error');
+        enable_user_notifications();
         return new WP_Error('invalid_response', $error_msg);
     }
 
@@ -967,6 +1069,7 @@ function import_news_experts()
     $created = 0;
     $updated = 0;
     $linked = 0; // Count of users linked by personnel ID or source_expert_id.
+    $duplicates_removed = 0; // Count of duplicate expert users removed
     $error_count = 0;
 
     // Iterate through each record from the API.
@@ -980,15 +1083,6 @@ function import_news_experts()
         $source_expert_id = $person['ID'] ?? null;
 
         // Basic validation
-        // No names is OK.
-        // if (empty($first_name) && empty($last_name)) {
-        //     $error_msg = "Missing both first name and last name";
-        //     output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
-        //     record_import_error("{$user_log_prefix} (Expert ID: {$source_expert_id})", $error_msg, $person);
-        //     $error_count++;
-        //     continue;
-        // }
-
         if (!$source_expert_id) {
             $error_msg = "Missing source expert ID";
             output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
@@ -998,6 +1092,7 @@ function import_news_experts()
         }
 
         $user_id = null;
+        $found_by_personnel_id = false;
 
         // First, attempt to find user by personnel_id if it exists.
         if ($personnel_id) {
@@ -1011,6 +1106,7 @@ function import_news_experts()
             if (!empty($users)) {
                 $user_id = $users[0];
                 $linked++;
+                $found_by_personnel_id = true;
                 output_sync_message("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id} with ID {$user_id} for {$first_name} {$last_name}.");
             }
         }
@@ -1090,6 +1186,8 @@ function import_news_experts()
 
         // Update ACF fields if a user was found or created.
         if ($user_id) {
+            $acf_update_successful = false;
+            
             try {
                 // Store original email in uga_email field
                 if ($original_email) {
@@ -1110,6 +1208,7 @@ function import_news_experts()
                 update_field('is_expert', (bool)($person['IS_EXPERT'] ?? false), 'user_' . $user_id);
                 update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
                 
+                $acf_update_successful = true;
                 output_sync_message("{$user_log_prefix}: Successfully updated ACF fields for user {$user_id}");
                 
             } catch (Exception $e) {
@@ -1118,28 +1217,59 @@ function import_news_experts()
                 record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
                 $error_count++;
             }
+            
+            // NEW: If this user was found by personnel_id AND ACF update was successful,
+            // look for and remove duplicate expert users
+            if ($found_by_personnel_id && $acf_update_successful) {
+                output_sync_message("{$user_log_prefix}: User found by personnel_id and updated successfully. Checking for duplicate expert users to remove...");
+                
+                $cleanup_result = find_and_remove_duplicate_expert_users(
+                    $user_id, 
+                    $source_expert_id, 
+                    null, // Don't pass writer_id for experts
+                    $user_log_prefix
+                );
+                
+                if ($cleanup_result['removed'] > 0) {
+                    $duplicates_removed += $cleanup_result['removed'];
+                    output_sync_message("{$user_log_prefix}: Removed {$cleanup_result['removed']} duplicate expert user(s)");
+                    
+                    // Log details of removed users
+                    foreach ($cleanup_result['details'] as $detail) {
+                        if ($detail['success']) {
+                            output_sync_message("{$user_log_prefix}: - Deleted user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['user_info']['match_info']}");
+                        } else {
+                            output_sync_message("{$user_log_prefix}: - Failed to delete user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['error']}");
+                        }
+                    }
+                } else {
+                    output_sync_message("{$user_log_prefix}: No duplicate expert users found to remove");
+                }
+            }
         }
     }
 
-    output_sync_message("IMPORT COMPLETE: News Experts processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Errors: {$error_count}", 'success');
+    output_sync_message("IMPORT COMPLETE: News Experts processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}", 'success');
+
+    enable_user_notifications();
 
     // Return results for reporting in the admin interface.
     return [
         'created' => $created,
         'updated' => $updated,
         'linked' => $linked,
+        'duplicates_removed' => $duplicates_removed,
         'errors' => $error_count,
         'total_api_records' => count($records),
-        'message' => "News Experts import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Errors: {$error_count}."
+        'message' => "News Experts import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}."
     ];
-
-    enable_user_notifications();
 }
 
 /**
  * Imports news writers data from the API endpoint.
  * Creates new 'expert_user' roles or updates existing ones.
  * Handles matching by personnel ID or writer_id.
+ * Now includes duplicate cleanup when personnel_id matches are found.
  *
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
@@ -1159,6 +1289,7 @@ function import_news_writers()
     if (is_wp_error($response)) {
         $error_msg = 'API Request Failed for News Writers: ' . $response->get_error_message();
         output_sync_message($error_msg, 'error');
+        enable_user_notifications();
         return new WP_Error('api_error', $error_msg);
     }
 
@@ -1168,6 +1299,7 @@ function import_news_writers()
     if (!is_array($records)) {
         $error_msg = 'Invalid API response for News Writers.';
         output_sync_message($error_msg, 'error');
+        enable_user_notifications();
         return new WP_Error('invalid_response', $error_msg);
     }
 
@@ -1176,6 +1308,7 @@ function import_news_writers()
     $created = 0;
     $updated = 0;
     $linked = 0; // Count of users linked by personnel ID or writer_id.
+    $duplicates_removed = 0; // Count of duplicate expert users removed
     $error_count = 0;
 
     // Iterate through each record from the API.
@@ -1189,15 +1322,6 @@ function import_news_writers()
         $writer_id_from_api = $person['ID'] ?? null; // Capture the ID field from API.
 
         // Basic validation
-        // No names is OK.
-        // if (empty($first_name) && empty($last_name)) {
-        //     $error_msg = "Missing both first name and last name";
-        //     output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
-        //     record_import_error("{$user_log_prefix} (Writer ID: {$writer_id_from_api})", $error_msg, $person);
-        //     $error_count++;
-        //     continue;
-        // }
-
         if (!$writer_id_from_api) {
             $error_msg = "Missing writer ID";
             output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
@@ -1213,6 +1337,7 @@ function import_news_writers()
         }
 
         $user_id = null;
+        $found_by_personnel_id = false;
 
         // First, attempt to find user by personnel_id if it exists.
         if ($personnel_id) {
@@ -1226,6 +1351,7 @@ function import_news_writers()
             if (!empty($users)) {
                 $user_id = $users[0];
                 $linked++;
+                $found_by_personnel_id = true;
                 output_sync_message("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id} with ID {$user_id} for {$first_name} {$last_name}.");
             } else {
                 output_sync_message("{$user_log_prefix}: No existing user found by personnel_id {$personnel_id} for {$first_name} {$last_name}.");
@@ -1309,6 +1435,8 @@ function import_news_writers()
 
         // Update ACF fields if a user was found or created.
         if ($user_id) {
+            $acf_update_successful = false;
+            
             try {
                 output_sync_message("{$user_log_prefix}: Attempting to update ACF fields for user ID: {$user_id} ({$first_name} {$last_name}).");
                 
@@ -1444,6 +1572,7 @@ function import_news_writers()
                                     $updated_value = get_field('writer_id', 'user_' . $user_id);
                                     if ($updated_value == $writer_id_from_api) {
                                         output_sync_message("{$user_log_prefix}: VERIFIED - writer_id successfully updated to '{$writer_id_from_api}' for user {$user_id}.");
+                                        $acf_update_successful = true;
                                     } else {
                                         $error_msg = "Update appeared to succeed but verification failed. Expected: '{$writer_id_from_api}', Got: " . json_encode($updated_value);
                                         output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
@@ -1468,13 +1597,44 @@ function import_news_writers()
                 update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
                 update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
                 
-                output_sync_message("{$user_log_prefix}: Successfully updated ACF fields for user {$user_id}");
+                if ($acf_update_successful) {
+                    output_sync_message("{$user_log_prefix}: Successfully updated ACF fields for user {$user_id}");
+                }
                 
             } catch (Exception $e) {
                 $error_msg = "Exception during ACF field updates: " . $e->getMessage();
                 output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
                 record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
                 $error_count++;
+            }
+            
+            // NEW: If this user was found by personnel_id AND ACF update was successful,
+            // look for and remove duplicate expert users
+            if ($found_by_personnel_id && $acf_update_successful) {
+                output_sync_message("{$user_log_prefix}: User found by personnel_id and updated successfully. Checking for duplicate expert users to remove...");
+                
+                $cleanup_result = find_and_remove_duplicate_expert_users(
+                    $user_id, 
+                    null, // Don't pass source_expert_id for writers
+                    $writer_id_from_api,
+                    $user_log_prefix
+                );
+                
+                if ($cleanup_result['removed'] > 0) {
+                    $duplicates_removed += $cleanup_result['removed'];
+                    output_sync_message("{$user_log_prefix}: Removed {$cleanup_result['removed']} duplicate expert user(s)");
+                    
+                    // Log details of removed users
+                    foreach ($cleanup_result['details'] as $detail) {
+                        if ($detail['success']) {
+                            output_sync_message("{$user_log_prefix}: - Deleted user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['user_info']['match_info']}");
+                        } else {
+                            output_sync_message("{$user_log_prefix}: - Failed to delete user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['error']}");
+                        }
+                    }
+                } else {
+                    output_sync_message("{$user_log_prefix}: No duplicate expert users found to remove");
+                }
             }
         } else {
             $error_msg = "No user_id obtained for record";
@@ -1484,19 +1644,20 @@ function import_news_writers()
         }
     }
 
-    output_sync_message("IMPORT COMPLETE: News Writers processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Errors: {$error_count}", 'success');
+    output_sync_message("IMPORT COMPLETE: News Writers processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}", 'success');
+
+    enable_user_notifications();
 
     // Return results for reporting in the admin interface.
     return [
         'created' => $created,
         'updated' => $updated,
         'linked' => $linked,
+        'duplicates_removed' => $duplicates_removed,
         'errors' => $error_count,
         'total_api_records' => count($records),
-        'message' => "News Writers import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Errors: {$error_count}."
+        'message' => "News Writers import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}."
     ];
-
-    enable_user_notifications();
 }
 
 /**
