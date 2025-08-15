@@ -46,3 +46,30 @@ require get_template_directory() . '/inc/retired-one-time-scripts/populate-user-
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+
+add_action('admin_init', function() {
+    // Change this to the post type you want to inspect
+    $post_type_slug = 'shorthand_story';
+
+    // Check if we are on an admin page and the post type exists
+    if (is_admin() && post_type_exists($post_type_slug)) {
+        $post_type_object = get_post_type_object($post_type_slug);
+
+        // Use a unique query parameter to trigger the debug output
+        if (isset($_GET['debug_cpt'])) {
+            echo '<pre>';
+            echo '<strong>Post Type Details for: ' . esc_html($post_type_slug) . '</strong><br><br>';
+
+            echo 'Publicly Queryable: ';
+            var_dump($post_type_object->publicly_queryable);
+
+            echo 'Public: ';
+            var_dump($post_type_object->public);
+
+            echo 'Exclude From Search: ';
+            var_dump($post_type_object->exclude_from_search);
+            echo '</pre>';
+            die(); // Stop everything to show the results clearly
+        }
+    }
+});
