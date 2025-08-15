@@ -88,8 +88,9 @@ class CAES_Post_Sync {
         $posts_checked = 0;
         $batch_size = 50; // Process 50 posts at a time
         $offset = 0;
+        $has_more_posts = true;
         
-        do {
+        while ($has_more_posts) {
             // Get posts in batches instead of all at once
             $posts = get_posts(array(
                 'post_type' => 'post',
@@ -103,6 +104,10 @@ class CAES_Post_Sync {
                     )
                 )
             ));
+            
+            // Check if we have more posts to process
+            $posts_count = count($posts);
+            $has_more_posts = ($posts_count === $batch_size);
             
             foreach ($posts as $post) {
                 $posts_checked++;
@@ -157,8 +162,7 @@ class CAES_Post_Sync {
             if (!$dry_run && $offset % 200 === 0) {
                 usleep(100000); // 0.1 second pause every 200 posts
             }
-            
-        } while (count($posts) === $batch_size); // Continue until we get fewer posts than batch size
+        }
         
         return array(
             'api_count' => count($api_data),
