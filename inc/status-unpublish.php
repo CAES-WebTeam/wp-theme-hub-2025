@@ -113,7 +113,8 @@ class CAES_Post_Sync {
                 $posts_checked++;
                 
                 // Get the ACF ID field
-                $acf_id = get_field('id', $post->ID);
+                // $acf_id = get_field('id', $post->ID);
+                $acf_id = get_post_meta($post->ID, 'id', true);
                 
                 if (!$acf_id) {
                     continue;
@@ -154,6 +155,8 @@ class CAES_Post_Sync {
             
             // Free up memory by unsetting the posts array
             unset($posts);
+
+            wp_cache_flush();
             
             // Move to next batch
             $offset += $batch_size;
