@@ -227,7 +227,7 @@ function story_meta_association_tools_render_page()
 <?php
 }
 
-// AJAX handler for Sync Keywords
+// AJAX handler for Sync Keywords - OPTIMIZED VERSION
 add_action('wp_ajax_sync_keywords', 'story_meta_association_sync_keywords');
 function story_meta_association_sync_keywords()
 {
@@ -276,18 +276,107 @@ function story_meta_association_sync_keywords()
         // End API call
     }
 
-    $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 10; // Batch limit
+    // Create lookup tables for posts and terms (cached)
+    $transient_posts_key = 'story_posts_lookup';
+    $transient_terms_key = 'topic_terms_lookup';
+    
+    $posts_lookup = get_transient($transient_posts_key);
+    $terms_lookup = get_transient($transient_terms_key);
+    
+    if (false === $posts_lookup) {
+        // Get all posts with story IDs
+        $all_posts = get_posts([
+            'post_type'      => 'post',
+            'post_status'    => 'any',
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+            'meta_query'     => [
+                [
+                    'key'     => 'id',
+                    'compare' => 'EXISTS'
+                ],
+                [
+                    'key'     => 'id',
+                    'value'   => '',
+                    'compare' => '!='
+                ]
+            ]
+        ]);
+        
+        $posts_lookup = [];
+        foreach ($all_posts as $post_id) {
+            $story_id = get_field('id', $post_id);
+            if ($story_id) {
+                $posts_lookup[intval($story_id)] = $post_id;
+            }
+        }
+        
+        set_transient($transient_posts_key, $posts_lookup, HOUR_IN_SECONDS);
+    }
+    
+    if (false === $terms_lookup) {
+        // Get all topic terms
+        $all_terms = get_terms([
+            'taxonomy'   => 'topics',
+            'hide_empty' => false,
+            'meta_query' => [
+                [
+                    'key'     => 'topic_id',
+                    'compare' => 'EXISTS'
+                ]
+            ]
+        ]);
+        
+        $terms_lookup = [];
+        foreach ($all_terms as $term) {
+            $topic_id = get_field('topic_id', 'topics_' . $term->term_id);
+            if ($topic_id) {
+                $terms_lookup[intval($topic_id)] = $term->term_id;
+            }
+        }
+        
+        set_transient($transient_terms_key, $terms_lookup, HOUR_IN_SECONDS);
+    }
 
-    $total_records = count($records);
-    $batch_records = array_slice($records, $start, $limit);
+    // Filter records to only those where both post and term exist
+    $transient_valid_records_key = 'valid_keyword_records';
+    $valid_records = get_transient($transient_valid_records_key);
+    
+    if (false === $valid_records) {
+        $valid_records = [];
+        foreach ($records as $record) {
+            $story_id = intval($record['STORY_ID']);
+            $topic_id = intval($record['KEYWORD_ID']);
+            
+            if (isset($posts_lookup[$story_id]) && isset($terms_lookup[$topic_id])) {
+                $valid_records[] = [
+                    'story_id' => $story_id,
+                    'topic_id' => $topic_id,
+                    'post_id'  => $posts_lookup[$story_id],
+                    'term_id'  => $terms_lookup[$topic_id]
+                ];
+            }
+        }
+        
+        set_transient($transient_valid_records_key, $valid_records, HOUR_IN_SECONDS);
+    }
+
+    $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
+    $limit = 50; // Increased batch limit since we're doing less work per record
+
+    $total_records = count($valid_records);
+    $batch_records = array_slice($valid_records, $start, $limit);
 
     $linked = 0;
     $log = [];
 
     if (empty($batch_records)) {
-        // Clear the cached API data when done
+        // Clear the cached data when done
         delete_transient($transient_key);
+        delete_transient($transient_posts_key);
+        delete_transient($transient_terms_key);
+        delete_transient($transient_valid_records_key);
+        
         wp_send_json_success([
             'message' => "Keyword linking complete. No more records to process.",
             'finished' => true,
@@ -295,41 +384,12 @@ function story_meta_association_sync_keywords()
         ]);
     }
 
-    foreach ($batch_records as $index => $pair) {
-        $story_id = intval($pair['STORY_ID']);
-        $topic_id = intval($pair['KEYWORD_ID']);
+    foreach ($batch_records as $index => $record) {
+        $story_id = $record['story_id'];
+        $topic_id = $record['topic_id'];
+        $post_id = $record['post_id'];
+        $term_id = $record['term_id'];
         $current_index = $start + $index;
-
-        $posts = get_posts([
-            'post_type' => 'post',
-            'meta_key' => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields' => 'ids',
-            'post_status' => 'any'
-        ]);
-
-        if (empty($posts)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Story ID {$story_id} not found.";
-            continue;
-        }
-        $post_id = $posts[0];
-
-        $terms = get_terms([
-            'taxonomy' => 'topics',
-            'hide_empty' => false,
-            'meta_query' => [[
-                'key' => 'topic_id',
-                'value' => $topic_id,
-                'compare' => '='
-            ]]
-        ]);
-
-        if (empty($terms) || is_wp_error($terms)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Topic ID {$topic_id} not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
-            continue;
-        }
-        $term_id = $terms[0]->term_id;
 
         $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']);
 
@@ -347,7 +407,7 @@ function story_meta_association_sync_keywords()
     $finished = ($next_start >= $total_records);
 
     wp_send_json_success([
-        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Topics linked in this batch: {$linked}. Total records: {$total_records}",
+        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Topics linked in this batch: {$linked}. Total valid records: {$total_records}",
         'start'    => $next_start,
         'finished' => $finished,
         'log'      => $log,
