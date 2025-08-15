@@ -480,141 +480,154 @@ function story_meta_association_sync_publication_keywords()
     ]);
 }
 
-// AJAX handler for Link Story Images
+// AJAX handler for Link Story Images - OPTIMIZED VERSION
 add_action('wp_ajax_link_story_images', 'story_meta_association_link_story_images');
-// Registers the AJAX action 'link_story_images' to call the 'story_meta_association_link_story_images' function.
-// This allows JavaScript on the frontend (or an admin script) to trigger this PHP function.
-
 function story_meta_association_link_story_images()
 {
-    // Verifies the nonce to protect against CSRF attacks.
-    // 'story_meta_association_tools_nonce' is the action name used when creating the nonce,
-    // and 'nonce' is the name of the POST variable where the nonce is expected.
     check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
 
-    // Checks if the current user has 'manage_options' capability (typically administrators).
-    // If not, it sends a JSON error response and terminates the script, ensuring only authorized users can run this.
     if (!current_user_can('manage_options')) {
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
-    // Defines the path to the JSON file containing the story-image association data.
-    // get_template_directory() gets the absolute path to the current theme's directory.
-    $json_file = get_template_directory() . '/json/news-image-association.json';
+    // Get cached API data or fetch it
+    $transient_key = 'story_images_api_data';
+    $api_records = get_transient($transient_key);
 
-    // Checks if the specified JSON file exists.
-    // If not, it sends a JSON error response with the file path and terminates.
-    if (!file_exists($json_file)) {
-        wp_send_json_error('JSON file not found: ' . $json_file);
+    if (false === $api_records) {
+        $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
+
+        try {
+            $response = wp_remote_get($api_url);
+
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
+
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $decoded_API_response = json_decode($raw_JSON, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
+
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            $api_records = $decoded_API_response;
+            
+            // Cache for 1 hour
+            set_transient($transient_key, $api_records, HOUR_IN_SECONDS);
+        } catch (Exception $e) {
+            error_log('News Association Story Image API Error: ' . $e->getMessage());
+            wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
+        }
     }
 
-    // Begin API call
-    $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
-    $decoded_API_response = null; // Initialize to null
-
-    try {
-        // Fetch data from the API.
-        $response = wp_remote_get($api_url);
-
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
+    // Convert API data to lookup array for faster searching
+    $transient_lookup_key = 'story_images_lookup_data';
+    $image_lookup = get_transient($transient_lookup_key);
+    
+    if (false === $image_lookup) {
+        $image_lookup = [];
+        foreach ($api_records as $record) {
+            $story_id = intval($record['STORY_ID']);
+            $image_id = intval($record['IMAGE_ID']);
+            if ($story_id && $image_id) {
+                $image_lookup[$story_id] = $image_id;
+            }
         }
-
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
-
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
-        }
-
-        $records = $decoded_API_response;
-    } catch (Exception $e) {
-        error_log('News Association Story Image API Error: ' . $e->getMessage());
-        wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
+        set_transient($transient_lookup_key, $image_lookup, HOUR_IN_SECONDS);
     }
 
-    // End API call
+    // Get posts that need image_id updates (cached)
+    $transient_posts_key = 'posts_needing_image_ids';
+    $posts_needing_updates = get_transient($transient_posts_key);
+    
+    if (false === $posts_needing_updates) {
+        // Find all posts that don't have image_id set or have it empty
+        $posts_needing_updates = get_posts([
+            'post_type'      => 'post',
+            'post_status'    => 'any',
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+            'meta_query'     => [
+                'relation' => 'OR',
+                [
+                    'key'     => 'image_id',
+                    'compare' => 'NOT EXISTS'
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '',
+                    'compare' => '='
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '0',
+                    'compare' => '='
+                ]
+            ]
+        ]);
+        
+        // Cache for 1 hour
+        set_transient($transient_posts_key, $posts_needing_updates, HOUR_IN_SECONDS);
+    }
 
-    // Retrieves the 'start' index from the POST request, or defaults to 0.
-    // This parameter is used for batch processing to determine which record to start from.
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 100; // Batch limit
+    $limit = 50; // Smaller batch size for better performance
 
-    $total_records = count($records);
-    // Extracts a subset of records for the current batch, starting from '$start' for '$limit' records.
-    $batch_records = array_slice($records, $start, $limit);
+    $total_posts = count($posts_needing_updates);
+    $batch_posts = array_slice($posts_needing_updates, $start, $limit);
 
-    $updated = 0; // Counter for records successfully updated in the current batch.
-    $log = [];    // Array to store log messages for the current batch.
+    $updated = 0;
+    $log = [];
 
-    // Checks if the current batch of records is empty.
-    // This typically means all records have been processed.
-    if (empty($batch_records)) {
-        // Sends a success JSON response indicating completion.
+    if (empty($batch_posts)) {
+        // Clear all cached data when done
+        delete_transient($transient_key);
+        delete_transient($transient_lookup_key);
+        delete_transient($transient_posts_key);
+        
         wp_send_json_success([
-            'message' => "Image linking complete. No more records to process.",
+            'message' => "Image linking complete. No more posts to process.",
             'finished' => true,
             'log' => $log,
         ]);
     }
 
-    // Loops through each record in the current batch.
-    foreach ($batch_records as $index => $record) {
-        // Extracts and sanitizes 'STORY_ID' and 'IMAGE_ID' from the current record.
-        $story_id = intval($record['STORY_ID']);
-        $image_id = intval($record['IMAGE_ID']);
-        // Calculates the absolute index of the current record within the total records.
+    foreach ($batch_posts as $index => $post_id) {
         $current_index = $start + $index;
-
-        // Skips the record if either 'STORY_ID' or 'IMAGE_ID' is missing or invalid (0 after intval).
-        if (!$story_id || !$image_id) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Skipping due to missing Story ID or Image ID.";
-            continue; // Move to the next record in the batch.
+        
+        // Get the story ID for this post
+        $story_id = get_field('id', $post_id);
+        
+        if (!$story_id) {
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: Post ID {$post_id} has no 'id' field.";
+            continue;
         }
 
-        // Queries WordPress posts to find a 'post' type post with a custom field 'id' matching '$story_id'.
-        // 'numberposts' => 1 ensures only one post is returned, as we expect a unique match.
-        // 'fields' => 'ids' returns only the post ID, optimizing the query.
-        $posts = get_posts([
-            'post_type'  => 'post',
-            'meta_key'   => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields'     => 'ids',
-            'post_status' => 'any' // Ensures we check all post statuses, not just 'publish'.
-        ]);
-
-        // If no post is found for the given 'STORY_ID', logs a message and skips to the next record.
-        if (empty($posts)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Post with Story ID {$story_id} not found.";
-            continue; // Move to the next record in the batch.
+        // Look up image_id for this story_id
+        if (isset($image_lookup[$story_id])) {
+            $image_id = $image_lookup[$story_id];
+            
+            update_field('image_id', $image_id, $post_id);
+            $updated++;
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: Updated Post ID {$post_id} (Story ID: {$story_id}) with Image ID {$image_id}.";
+        } else {
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: No image found for Post ID {$post_id} (Story ID: {$story_id}).";
         }
-        // Retrieves the ID of the found post.
-        $post_id = $posts[0];
-
-        // Updates a custom field named 'image_id' for the found post with the '$image_id'.
-        // This assumes 'image_id' is a custom field registered, probably by ACF.
-        update_field('image_id', $image_id, $post_id);
-        $updated++; // Increments the counter for successfully updated records.
-        // Logs the successful update.
-        $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Updated Post ID {$post_id} with Image ID {$image_id}.";
     }
 
-    // Calculates the starting index for the *next* batch.
-    $next_start = $start + count($batch_records);
-    // Determines if all records have been processed.
-    $finished = ($next_start >= $total_records);
+    $next_start = $start + count($batch_posts);
+    $finished = ($next_start >= $total_posts);
 
-    // Sends a JSON success response with details about the processed batch.
     wp_send_json_success([
-        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Total updated in this batch: {$updated}. Total records: {$total_records}", // Summary message.
-        'start'    => $next_start, // The starting index for the next AJAX call.
-        'finished' => $finished,   // Boolean indicating if all processing is complete.
-        'log'      => $log,        // Array of log messages for this batch.
+        'message' => "Batch processed from post {$start} to " . ($next_start - 1) . ". Total updated in this batch: {$updated}. Total posts needing updates: {$total_posts}",
+        'start'    => $next_start,
+        'finished' => $finished,
+        'log'      => $log,
     ]);
 }
 
