@@ -623,7 +623,7 @@ function sync_personnel_users2()
         $personnel_id = intval($user['PERSONNEL_ID']);
         $college_id = intval($user['COLLEGEID'] ?? 0);
         $original_email = sanitize_email($user['EMAIL']);
-        $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
+        $username = sanitize_user(strtolower(str_replace(array(' ', '(', ')'), '', $user['NAME'])));
         $nickname = sanitize_text_field($user['NAME']);
         $display_name = sanitize_text_field($user['NAME']);
         $first_name = sanitize_text_field($user['FNAME']);
