@@ -68,7 +68,7 @@ class CAES_Post_Sync {
     }
     
     /**
-     * Main sync function
+     * Main sync function - Memory optimized version
      */
     private function sync_posts($dry_run = false) {
         // Fetch API data
@@ -83,65 +83,82 @@ class CAES_Post_Sync {
             $api_lookup[$story['ID']] = $story;
         }
         
-        // Get all published posts with ACF 'id' field
-        $posts = get_posts(array(
-            'post_type' => 'post',
-            'post_status' => 'publish',
-            'numberposts' => -1,
-            'meta_query' => array(
-                array(
-                    'key' => 'id',
-                    'compare' => 'EXISTS'
-                )
-            )
-        ));
-        
         $updated_posts = array();
         $errors = array();
         $posts_checked = 0;
+        $batch_size = 50; // Process 50 posts at a time
+        $offset = 0;
         
-        foreach ($posts as $post) {
-            $posts_checked++;
+        do {
+            // Get posts in batches instead of all at once
+            $posts = get_posts(array(
+                'post_type' => 'post',
+                'post_status' => 'publish',
+                'numberposts' => $batch_size,
+                'offset' => $offset,
+                'meta_query' => array(
+                    array(
+                        'key' => 'id',
+                        'compare' => 'EXISTS'
+                    )
+                )
+            ));
             
-            // Get the ACF ID field
-            $acf_id = get_field('id', $post->ID);
-            
-            if (!$acf_id) {
-                continue;
-            }
-            
-            // Check if this ID exists in API data
-            if (!isset($api_lookup[$acf_id])) {
-                continue;
-            }
-            
-            $api_story = $api_lookup[$acf_id];
-            $status_id = $api_story['STATUS_ID'];
-            
-            // If status is not 3, draft the post
-            if ($status_id != 3) {
-                if (!$dry_run) {
-                    $update_result = wp_update_post(array(
-                        'ID' => $post->ID,
-                        'post_status' => 'draft',
-                        'post_date' => '',
-                        'post_date_gmt' => ''
-                    ));
-                    
-                    if (is_wp_error($update_result)) {
-                        $errors[] = "Failed to update post ID {$post->ID}: " . $update_result->get_error_message();
-                        continue;
-                    }
+            foreach ($posts as $post) {
+                $posts_checked++;
+                
+                // Get the ACF ID field
+                $acf_id = get_field('id', $post->ID);
+                
+                if (!$acf_id) {
+                    continue;
                 }
                 
-                $updated_posts[] = array(
-                    'post_id' => $post->ID,
-                    'title' => $post->post_title,
-                    'api_id' => $acf_id,
-                    'api_status' => $status_id
-                );
+                // Check if this ID exists in API data
+                if (!isset($api_lookup[$acf_id])) {
+                    continue;
+                }
+                
+                $api_story = $api_lookup[$acf_id];
+                $status_id = $api_story['STATUS_ID'];
+                
+                // If status is not 3, draft the post
+                if ($status_id != 3) {
+                    if (!$dry_run) {
+                        $update_result = wp_update_post(array(
+                            'ID' => $post->ID,
+                            'post_status' => 'draft',
+                            'post_date' => '',
+                            'post_date_gmt' => ''
+                        ));
+                        
+                        if (is_wp_error($update_result)) {
+                            $errors[] = "Failed to update post ID {$post->ID}: " . $update_result->get_error_message();
+                            continue;
+                        }
+                    }
+                    
+                    $updated_posts[] = array(
+                        'post_id' => $post->ID,
+                        'title' => $post->post_title,
+                        'api_id' => $acf_id,
+                        'api_status' => $status_id
+                    );
+                }
             }
-        }
+            
+            // Free up memory by unsetting the posts array
+            unset($posts);
+            
+            // Move to next batch
+            $offset += $batch_size;
+            
+            // Optional: Add a small delay to prevent overwhelming the server
+            if (!$dry_run && $offset % 200 === 0) {
+                usleep(100000); // 0.1 second pause every 200 posts
+            }
+            
+        } while (count($posts) === $batch_size); // Continue until we get fewer posts than batch size
         
         return array(
             'api_count' => count($api_data),
