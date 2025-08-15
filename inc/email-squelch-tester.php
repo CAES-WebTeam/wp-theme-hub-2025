@@ -11,8 +11,8 @@
  */
 
 // Load WordPress
-require_once('wp-config.php');
-require_once('wp-load.php');
+// require_once('wp-config.php');
+// require_once('wp-load.php');
 
 // Check if ACF is active
 if (!function_exists('get_field')) {
