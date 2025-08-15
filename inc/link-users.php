@@ -591,6 +591,7 @@ function process_content_linking_batch_callback() {
                     'no_found_rows' => true,
                     'update_post_term_cache' => false,
                     'update_post_meta_cache' => false,
+                    'post_status' => 'any'
                 ]);
 
                 if (empty($posts)) {
@@ -778,6 +779,7 @@ function process_content_linking_batch_callback() {
                     'no_found_rows' => true,
                     'update_post_term_cache' => false,
                     'update_post_meta_cache' => false,
+                    'post_status' => 'any'
                 ]);
 
                 if (empty($posts)) {
