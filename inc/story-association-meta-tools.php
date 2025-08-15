@@ -542,7 +542,7 @@ function story_meta_association_link_story_images()
     // Retrieves the 'start' index from the POST request, or defaults to 0.
     // This parameter is used for batch processing to determine which record to start from.
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 500; // Batch limit
+    $limit = 100; // Batch limit
 
     $total_records = count($records);
     // Extracts a subset of records for the current batch, starting from '$start' for '$limit' records.
@@ -661,7 +661,7 @@ function story_meta_association_assign_web_image_filenames()
     // End API call
 
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 500; // Batch limit
+    $limit = 100; // Batch limit
 
     $total_records = count($records);
     $batch_records = array_slice($records, $start, $limit);
