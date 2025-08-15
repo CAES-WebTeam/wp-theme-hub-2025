@@ -1297,19 +1297,142 @@ function import_news_writers()
                     output_sync_message("{$user_log_prefix}: Updated personnel_id to {$personnel_id} for user {$user_id}.");
                 }
 
-                // --- Specific Debugging for writer_id ---
-                output_sync_message("{$user_log_prefix}: Trying to set writer_id for user {$user_id} to value '{$writer_id_from_api}'.");
-                $update_result = update_field('writer_id', $writer_id_from_api, 'user_'.$user_id);
+                // --- Enhanced Debugging for writer_id ---
+                output_sync_message("{$user_log_prefix}: Starting detailed writer_id field update process for user {$user_id}.");
 
-                if ($update_result === false) {
-                    $error_msg = "Failed to update 'writer_id' field - field may not exist or not configured correctly for users";
+                // Check if ACF is active
+                if (!function_exists('update_field')) {
+                    $error_msg = "ACF update_field function is not available - ACF plugin may not be active";
                     output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
                     record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
                     $error_count++;
                 } else {
-                    output_sync_message("{$user_log_prefix}: Successfully updated 'writer_id' to '{$writer_id_from_api}' for user {$user_id}.");
+                    output_sync_message("{$user_log_prefix}: ACF update_field function is available.");
+                    
+                    // Check if the field exists and get field object
+                    $field_object = get_field_object('writer_id', 'user_' . $user_id);
+                    if (!$field_object) {
+                        // Try to get field object by field key if field name doesn't work
+                        $field_object = get_field_object('field_writer_id', 'user_' . $user_id);
+                    }
+                    
+                    if (!$field_object) {
+                        $error_msg = "writer_id field object not found - field may not exist or not be configured for users";
+                        output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
+                        record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                        $error_count++;
+                    } else {
+                        output_sync_message("{$user_log_prefix}: writer_id field object found. Field details: " . json_encode([
+                            'key' => $field_object['key'] ?? 'N/A',
+                            'name' => $field_object['name'] ?? 'N/A',
+                            'type' => $field_object['type'] ?? 'N/A',
+                            'required' => $field_object['required'] ?? 'N/A',
+                            'location' => isset($field_object['location']) ? json_encode($field_object['location']) : 'N/A'
+                        ]));
+                        
+                        // Check current field value before update
+                        $current_value = get_field('writer_id', 'user_' . $user_id);
+                        output_sync_message("{$user_log_prefix}: Current writer_id value: " . json_encode($current_value));
+                        
+                        // Validate the input data
+                        if ($writer_id_from_api === null) {
+                            output_sync_message("{$user_log_prefix}: WARNING - writer_id_from_api is null");
+                        } else {
+                            output_sync_message("{$user_log_prefix}: writer_id_from_api value: '{$writer_id_from_api}' (type: " . gettype($writer_id_from_api) . ")");
+                        }
+                        
+                        // Check user exists and is valid
+                        $user = get_user_by('ID', $user_id);
+                        if (!$user) {
+                            $error_msg = "User with ID {$user_id} does not exist";
+                            output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
+                            record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                            $error_count++;
+                        } else {
+                            output_sync_message("{$user_log_prefix}: User {$user_id} exists. User login: {$user->user_login}");
+                            
+                            // Attempt the update with detailed error catching
+                            try {
+                                output_sync_message("{$user_log_prefix}: Attempting update_field('writer_id', '{$writer_id_from_api}', 'user_{$user_id}')");
+                                
+                                // Try different approaches to updating the field
+                                $update_attempts = [
+                                    ['method' => 'field_name_with_user_prefix', 'field' => 'writer_id', 'object' => 'user_' . $user_id],
+                                    ['method' => 'field_name_with_user_id', 'field' => 'writer_id', 'object' => $user_id],
+                                    ['method' => 'field_key_if_available', 'field' => $field_object['key'] ?? 'writer_id', 'object' => 'user_' . $user_id]
+                                ];
+                                
+                                $update_successful = false;
+                                
+                                foreach ($update_attempts as $attempt) {
+                                    output_sync_message("{$user_log_prefix}: Trying method '{$attempt['method']}' with field '{$attempt['field']}' and object '{$attempt['object']}'");
+                                    
+                                    $update_result = update_field($attempt['field'], $writer_id_from_api, $attempt['object']);
+                                    
+                                    if ($update_result !== false) {
+                                        output_sync_message("{$user_log_prefix}: SUCCESS - Method '{$attempt['method']}' worked. Update result: " . json_encode($update_result));
+                                        $update_successful = true;
+                                        break;
+                                    } else {
+                                        output_sync_message("{$user_log_prefix}: Method '{$attempt['method']}' failed. Update result: " . json_encode($update_result));
+                                        
+                                        // Check for WordPress/PHP errors
+                                        if (function_exists('error_get_last')) {
+                                            $last_error = error_get_last();
+                                            if ($last_error && $last_error['message']) {
+                                                output_sync_message("{$user_log_prefix}: Last PHP error: " . $last_error['message']);
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                if (!$update_successful) {
+                                    $error_msg = "All update_field attempts failed for writer_id. Field exists but cannot be updated.";
+                                    output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
+                                    record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                                    $error_count++;
+                                    
+                                    // Additional debugging - try to understand why it failed
+                                    output_sync_message("{$user_log_prefix}: Additional debug info:");
+                                    output_sync_message("  - ACF version: " . (defined('ACF_VERSION') ? ACF_VERSION : 'Not available'));
+                                    output_sync_message("  - WordPress version: " . get_bloginfo('version'));
+                                    output_sync_message("  - Current user can edit users: " . (current_user_can('edit_users') ? 'Yes' : 'No'));
+                                    
+                                    // Check if there are any field validation rules
+                                    if (isset($field_object['validate']) && !empty($field_object['validate'])) {
+                                        output_sync_message("  - Field has validation rules: " . json_encode($field_object['validate']));
+                                    }
+                                    
+                                    // Check field type specific requirements
+                                    if (isset($field_object['type'])) {
+                                        output_sync_message("  - Field type: " . $field_object['type']);
+                                        if ($field_object['type'] === 'select' && isset($field_object['choices'])) {
+                                            output_sync_message("  - Available choices: " . json_encode($field_object['choices']));
+                                        }
+                                    }
+                                } else {
+                                    // Verify the update worked by reading the value back
+                                    $updated_value = get_field('writer_id', 'user_' . $user_id);
+                                    if ($updated_value == $writer_id_from_api) {
+                                        output_sync_message("{$user_log_prefix}: VERIFIED - writer_id successfully updated to '{$writer_id_from_api}' for user {$user_id}.");
+                                    } else {
+                                        $error_msg = "Update appeared to succeed but verification failed. Expected: '{$writer_id_from_api}', Got: " . json_encode($updated_value);
+                                        output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
+                                        record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                                        $error_count++;
+                                    }
+                                }
+                                
+                            } catch (Exception $e) {
+                                $error_msg = "Exception during writer_id field update: " . $e->getMessage() . " (Line: " . $e->getLine() . ", File: " . $e->getFile() . ")";
+                                output_sync_message("{$user_log_prefix} ACF EXCEPTION: {$error_msg}");
+                                record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                                $error_count++;
+                            }
+                        }
+                    }
                 }
-                // --- End Specific Debugging for writer_id ---
+                // --- End Enhanced Debugging for writer_id ---
 
                 update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
                 update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
