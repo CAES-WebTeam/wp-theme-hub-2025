@@ -71,7 +71,7 @@ $parsed_blocks_for_filtering = [];
 function variations_pre_render_block($pre_render, $parsed_block)
 {
     global $parsed_blocks_for_filtering;
-    
+
     // Store blocks that need filtering
     if (isset($parsed_block['attrs']['queryId'])) {
         $query_id = $parsed_block['attrs']['queryId'];
@@ -81,11 +81,15 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 
+// Global variable to store debug info
+global $debug_stories_feed;
+$debug_stories_feed = [];
+
 // Consolidated filter function for all query modifications
 function variations_query_filter($query, $block)
 {
-    global $parsed_blocks_for_filtering;
-    
+    global $parsed_blocks_for_filtering, $debug_stories_feed;
+
     // Get block query ID
     $block_query_id = null;
     if (isset($block->parsed_block['attrs']['queryId'])) {
@@ -146,10 +150,13 @@ function variations_query_filter($query, $block)
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
-            // Filter by author (expert OR author) if on author archive
+            $query['post_type'] = ['post', 'shorthand_story'];
+            unset($query['postType']);
+
+            // Filter by author (expert OR author) ONLY if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
-                
+
                 // Create an OR condition to check both expert and author fields
                 $meta_query[] = array(
                     'relation' => 'OR',
@@ -165,8 +172,8 @@ function variations_query_filter($query, $block)
                     )
                 );
             }
+            // If NOT on author archive, no additional filtering - just show all posts from both post types
         }
-
     }
 
     // Apply meta query if we have conditions
@@ -191,7 +198,7 @@ function variations_query_filter($query, $block)
         if (isset($query['tax_query']) && is_array($query['tax_query'])) {
             // If there's already a tax_query, merge them
             $existing_tax_query = $query['tax_query'];
-            
+
             // Remove relation if it exists to add it back properly
             if (isset($existing_tax_query['relation'])) {
                 $relation = $existing_tax_query['relation'];
@@ -199,15 +206,15 @@ function variations_query_filter($query, $block)
             } else {
                 $relation = 'AND';
             }
-            
+
             // Merge the arrays
             $merged_tax_query = array_merge($existing_tax_query, $tax_query);
-            
+
             // Add relation if we have multiple conditions
             if (count($merged_tax_query) > 1) {
                 $merged_tax_query['relation'] = $relation;
             }
-            
+
             $query['tax_query'] = $merged_tax_query;
         } else {
             // No existing tax_query, just set ours
@@ -222,7 +229,7 @@ function variations_query_filter($query, $block)
 }
 
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
-add_filter('query_loop_block_query_vars', 'variations_query_filter', 10, 2);
+add_filter('query_loop_block_query_vars', 'variations_query_filter', 99, 2);
 
 add_filter('render_block', function ($block_content, $block) {
     // Only apply to core/query blocks on author archive pages that use our variations
