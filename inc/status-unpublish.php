@@ -86,7 +86,7 @@ class CAES_Post_Sync {
         $updated_posts = array();
         $errors = array();
         $posts_checked = 0;
-        $batch_size = 50; // Process 50 posts at a time
+        $batch_size = 10; // Process 10 posts at a time
         $offset = 0;
         $has_more_posts = true;
         
