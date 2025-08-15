@@ -109,6 +109,9 @@ class CAES_Post_Sync {
             )
         ));
         
+        // Save count before processing
+        $posts_count = count($posts);
+        
         foreach ($posts as $post) {
             $posts_checked++;
             
@@ -156,8 +159,8 @@ class CAES_Post_Sync {
         unset($posts);
         wp_cache_flush();
         
-        // Check if there are more posts to process
-        $has_more = (count($posts) === $batch_size);
+        // Check if there are more posts to process (using saved count)
+        $has_more = ($posts_count === $batch_size);
         
         return array(
             'api_count' => count($api_data),
