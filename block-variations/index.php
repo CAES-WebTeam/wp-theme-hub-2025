@@ -191,6 +191,68 @@ function variations_query_filter($query, $block)
             wp_reset_postdata();
             // END NEW DEBUG CODE
 
+            // ADD THIS COMPREHENSIVE DEBUG CODE AFTER THE EXISTING TEST:
+
+            // 1. Check if ANY shorthand_story posts exist at all
+            $all_shorthand = new WP_Query([
+                'post_type' => 'shorthand_story',
+                'posts_per_page' => 5,
+                'post_status' => 'publish'
+            ]);
+            $debug_stories_feed[] = "Total shorthand_story posts in database: " . $all_shorthand->found_posts;
+
+            // 2. If posts exist, check their meta field values
+            if ($all_shorthand->have_posts()) {
+                $debug_stories_feed[] = "Checking meta fields of first few shorthand_story posts:";
+
+                foreach ($all_shorthand->posts as $post) {
+                    $expert_ids = get_post_meta($post->ID, 'all_expert_ids', true);
+                    $author_ids = get_post_meta($post->ID, 'all_author_ids', true);
+
+                    $debug_stories_feed[] = "Post {$post->ID} ('{$post->post_title}'): expert_ids='{$expert_ids}', author_ids='{$author_ids}'";
+                }
+            }
+
+            // 3. Check what meta keys actually exist for shorthand_story posts
+            if ($all_shorthand->have_posts()) {
+                $first_post_id = $all_shorthand->posts[0]->ID;
+                $all_meta = get_post_meta($first_post_id);
+                $meta_keys = array_keys($all_meta);
+                $debug_stories_feed[] = "Available meta keys for post {$first_post_id}: " . implode(', ', $meta_keys);
+            }
+
+            wp_reset_postdata();
+
+            // 4. Double-check: what does a working 'post' look like?
+            $working_post_query = new WP_Query([
+                'post_type' => 'post',
+                'meta_query' => [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'all_expert_ids',
+                        'value' => 'i:' . $author_id . ';',
+                        'compare' => 'LIKE'
+                    ],
+                    [
+                        'key' => 'all_author_ids',
+                        'value' => 'i:' . $author_id . ';',
+                        'compare' => 'LIKE'
+                    ]
+                ],
+                'posts_per_page' => 1
+            ]);
+
+            $debug_stories_feed[] = "Found " . $working_post_query->found_posts . " regular posts for this author";
+
+            if ($working_post_query->have_posts()) {
+                $working_post = $working_post_query->posts[0];
+                $working_expert_ids = get_post_meta($working_post->ID, 'all_expert_ids', true);
+                $working_author_ids = get_post_meta($working_post->ID, 'all_author_ids', true);
+
+                $debug_stories_feed[] = "Working post {$working_post->ID}: expert_ids='{$working_expert_ids}', author_ids='{$working_author_ids}'";
+            }
+            wp_reset_postdata();
+
 
             // Filter by author (expert OR author) if on author archive
             if (is_author()) {
