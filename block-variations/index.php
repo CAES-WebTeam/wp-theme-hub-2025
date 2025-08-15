@@ -356,3 +356,27 @@ function display_debug_stories_feed()
     }
 }
 add_action('wp_footer', 'display_debug_stories_feed');
+
+if ('stories-feed' === $namespace) {
+    // Check if shorthand_story posts exist for this author
+    $test_query = new WP_Query([
+        'post_type' => 'shorthand_story',
+        'meta_query' => [
+            'relation' => 'OR',
+            [
+                'key' => 'all_expert_ids',
+                'value' => 'i:1561;',
+                'compare' => 'LIKE'
+            ],
+            [
+                'key' => 'all_author_ids', 
+                'value' => 'i:1561;',
+                'compare' => 'LIKE'
+            ]
+        ],
+        'posts_per_page' => -1
+    ]);
+    
+    $debug_stories_feed[] = "Found " . $test_query->found_posts . " shorthand_story posts for this author";
+    wp_reset_postdata();
+}
