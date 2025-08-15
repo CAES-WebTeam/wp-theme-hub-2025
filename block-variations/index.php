@@ -71,7 +71,7 @@ $parsed_blocks_for_filtering = [];
 function variations_pre_render_block($pre_render, $parsed_block)
 {
     global $parsed_blocks_for_filtering;
-
+    
     // Store blocks that need filtering
     if (isset($parsed_block['attrs']['queryId'])) {
         $query_id = $parsed_block['attrs']['queryId'];
@@ -88,9 +88,8 @@ $debug_stories_feed = [];
 // Consolidated filter function for all query modifications
 function variations_query_filter($query, $block)
 {
-    // global $parsed_blocks_for_filtering;
     global $parsed_blocks_for_filtering, $debug_stories_feed;
-
+    
     // Get block query ID
     $block_query_id = null;
     if (isset($block->parsed_block['attrs']['queryId'])) {
@@ -113,9 +112,6 @@ function variations_query_filter($query, $block)
     // Handle blocks WITH namespace (your variations)
     if (isset($parsed_block['attrs']['namespace'])) {
         $namespace = $parsed_block['attrs']['namespace'];
-
-        // DEBUG: Track what we're processing
-        $debug_stories_feed[] = "Processing namespace: " . $namespace;
 
         // For pubs-feed blocks
         if ('pubs-feed' === $namespace) {
@@ -154,113 +150,68 @@ function variations_query_filter($query, $block)
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
-
-            // DEBUG: Track stories-feed processing
-            $debug_stories_feed[] = "Found stories-feed block!";
-            $debug_stories_feed[] = "Original query post_type: " . print_r($query['post_type'] ?? 'not set', true);
-
             $query['post_type'] = ['post', 'shorthand_story'];
-
-            // CRITICAL: Remove the block's postType parameter that overrides our setting
             unset($query['postType']);
 
-            // DEBUG: Track post_type change
-            $debug_stories_feed[] = "Set post_type to: " . print_r($query['post_type'], true);
-
-            // ADD THIS NEW DEBUG CODE HERE:
-            // Check if shorthand_story posts exist for this author
-            $test_query = new WP_Query([
-                'post_type' => 'shorthand_story',
-                'meta_query' => [
-                    'relation' => 'OR',
-                    [
-                        'key' => 'all_expert_ids',
-                        'value' => 'i:' . $author_id . ';',
-                        'compare' => 'LIKE'
-                    ],
-                    [
-                        'key' => 'all_author_ids',
-                        'value' => 'i:' . $author_id . ';',
-                        'compare' => 'LIKE'
-                    ]
-                ],
-                'posts_per_page' => -1
-            ]);
-
-            $debug_stories_feed[] = "Found " . $test_query->found_posts . " shorthand_story posts for this author";
-            wp_reset_postdata();
-            // END NEW DEBUG CODE
-
-            // ADD THIS COMPREHENSIVE DEBUG CODE AFTER THE EXISTING TEST:
-
-            // 1. Check if ANY shorthand_story posts exist at all
+            // FOCUSED DEBUG: Check data format
             $all_shorthand = new WP_Query([
                 'post_type' => 'shorthand_story',
-                'posts_per_page' => 5,
+                'posts_per_page' => 2,
                 'post_status' => 'publish'
             ]);
-            $debug_stories_feed[] = "Total shorthand_story posts in database: " . $all_shorthand->found_posts;
 
-            // 2. If posts exist, check their meta field values
             if ($all_shorthand->have_posts()) {
-                $debug_stories_feed[] = "Checking meta fields of first few shorthand_story posts:";
-
+                $debug_stories_feed[] = "=== ANALYZING DATA FORMAT ===";
+                
                 foreach ($all_shorthand->posts as $post) {
-                    $expert_ids = get_post_meta($post->ID, 'all_expert_ids', true);
-                    $author_ids = get_post_meta($post->ID, 'all_author_ids', true);
-
-                    $debug_stories_feed[] = "Post {$post->ID} ('{$post->post_title}'): expert_ids='{$expert_ids}', author_ids='{$author_ids}'";
+                    $debug_stories_feed[] = "--- Post {$post->ID}: '{$post->post_title}' ---";
+                    
+                    // Get the raw data
+                    $raw_author_ids = get_post_meta($post->ID, 'all_author_ids', true);
+                    $raw_expert_ids = get_post_meta($post->ID, 'all_expert_ids', true);
+                    
+                    // Check data types
+                    $debug_stories_feed[] = "all_author_ids type: " . gettype($raw_author_ids);
+                    $debug_stories_feed[] = "all_expert_ids type: " . gettype($raw_expert_ids);
+                    
+                    // Show raw content
+                    if (is_array($raw_author_ids)) {
+                        $debug_stories_feed[] = "all_author_ids (array): " . print_r($raw_author_ids, true);
+                    } else {
+                        $debug_stories_feed[] = "all_author_ids (string): '{$raw_author_ids}'";
+                        $debug_stories_feed[] = "all_author_ids length: " . strlen($raw_author_ids);
+                        
+                        // Check if it's serialized
+                        if (is_serialized($raw_author_ids)) {
+                            $unserialized = unserialize($raw_author_ids);
+                            $debug_stories_feed[] = "UNSERIALIZED: " . print_r($unserialized, true);
+                        }
+                    }
+                    
+                    if (is_array($raw_expert_ids)) {
+                        $debug_stories_feed[] = "all_expert_ids (array): " . print_r($raw_expert_ids, true);
+                    } else {
+                        $debug_stories_feed[] = "all_expert_ids (string): '{$raw_expert_ids}'";
+                    }
+                    
+                    // Check individual author fields too
+                    $author_0 = get_post_meta($post->ID, 'authors_0_user', true);
+                    $author_1 = get_post_meta($post->ID, 'authors_1_user', true);
+                    $debug_stories_feed[] = "authors_0_user: '{$author_0}'";
+                    $debug_stories_feed[] = "authors_1_user: '{$author_1}'";
+                    
+                    $debug_stories_feed[] = ""; // Empty line for readability
+                    
+                    // Only check first 2 posts to avoid too much output
+                    if ($post === $all_shorthand->posts[1]) break;
                 }
             }
-
-            // 3. Check what meta keys actually exist for shorthand_story posts
-            if ($all_shorthand->have_posts()) {
-                $first_post_id = $all_shorthand->posts[0]->ID;
-                $all_meta = get_post_meta($first_post_id);
-                $meta_keys = array_keys($all_meta);
-                $debug_stories_feed[] = "Available meta keys for post {$first_post_id}: " . implode(', ', $meta_keys);
-            }
-
             wp_reset_postdata();
-
-            // 4. Double-check: what does a working 'post' look like?
-            $working_post_query = new WP_Query([
-                'post_type' => 'post',
-                'meta_query' => [
-                    'relation' => 'OR',
-                    [
-                        'key' => 'all_expert_ids',
-                        'value' => 'i:' . $author_id . ';',
-                        'compare' => 'LIKE'
-                    ],
-                    [
-                        'key' => 'all_author_ids',
-                        'value' => 'i:' . $author_id . ';',
-                        'compare' => 'LIKE'
-                    ]
-                ],
-                'posts_per_page' => 1
-            ]);
-
-            $debug_stories_feed[] = "Found " . $working_post_query->found_posts . " regular posts for this author";
-
-            if ($working_post_query->have_posts()) {
-                $working_post = $working_post_query->posts[0];
-                $working_expert_ids = get_post_meta($working_post->ID, 'all_expert_ids', true);
-                $working_author_ids = get_post_meta($working_post->ID, 'all_author_ids', true);
-
-                $debug_stories_feed[] = "Working post {$working_post->ID}: expert_ids='{$working_expert_ids}', author_ids='{$working_author_ids}'";
-            }
-            wp_reset_postdata();
-
 
             // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
-
-                // DEBUG: Track author ID
-                $debug_stories_feed[] = "On author archive for author ID: " . $author_id;
-
+                
                 // Create an OR condition to check both expert and author fields
                 $meta_query[] = array(
                     'relation' => 'OR',
@@ -275,11 +226,9 @@ function variations_query_filter($query, $block)
                         'compare' => 'LIKE'
                     )
                 );
-                $debug_stories_feed[] = "Added meta query for author";
-            } else {
-                $debug_stories_feed[] = "Not on author archive";
             }
         }
+
     }
 
     // Apply meta query if we have conditions
@@ -304,7 +253,7 @@ function variations_query_filter($query, $block)
         if (isset($query['tax_query']) && is_array($query['tax_query'])) {
             // If there's already a tax_query, merge them
             $existing_tax_query = $query['tax_query'];
-
+            
             // Remove relation if it exists to add it back properly
             if (isset($existing_tax_query['relation'])) {
                 $relation = $existing_tax_query['relation'];
@@ -312,15 +261,15 @@ function variations_query_filter($query, $block)
             } else {
                 $relation = 'AND';
             }
-
+            
             // Merge the arrays
             $merged_tax_query = array_merge($existing_tax_query, $tax_query);
-
+            
             // Add relation if we have multiple conditions
             if (count($merged_tax_query) > 1) {
                 $merged_tax_query['relation'] = $relation;
             }
-
+            
             $query['tax_query'] = $merged_tax_query;
         } else {
             // No existing tax_query, just set ours
@@ -329,11 +278,6 @@ function variations_query_filter($query, $block)
             }
             $query['tax_query'] = $tax_query;
         }
-    }
-
-    // DEBUG: Final query
-    if (isset($parsed_block['attrs']['namespace']) && $parsed_block['attrs']['namespace'] === 'stories-feed') {
-        $debug_stories_feed[] = "Final query args: " . print_r($query, true);
     }
 
     return $query;
@@ -425,7 +369,6 @@ function add_custom_query_vars($valid_vars)
 add_filter('rest_query_vars', 'add_custom_query_vars');
 
 /** END FRONT END */
-
 
 // Display debug info at the bottom of the page
 function display_debug_stories_feed()
