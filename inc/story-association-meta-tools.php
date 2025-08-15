@@ -227,7 +227,7 @@ function story_meta_association_tools_render_page()
 <?php
 }
 
-// AJAX handler for Sync Keywords
+// AJAX handler for Sync Keywords - OPTIMIZED VERSION
 add_action('wp_ajax_sync_keywords', 'story_meta_association_sync_keywords');
 function story_meta_association_sync_keywords()
 {
@@ -276,18 +276,107 @@ function story_meta_association_sync_keywords()
         // End API call
     }
 
-    $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 10; // Batch limit
+    // Create lookup tables for posts and terms (cached)
+    $transient_posts_key = 'story_posts_lookup';
+    $transient_terms_key = 'topic_terms_lookup';
+    
+    $posts_lookup = get_transient($transient_posts_key);
+    $terms_lookup = get_transient($transient_terms_key);
+    
+    if (false === $posts_lookup) {
+        // Get all posts with story IDs
+        $all_posts = get_posts([
+            'post_type'      => 'post',
+            'post_status'    => 'any',
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+            'meta_query'     => [
+                [
+                    'key'     => 'id',
+                    'compare' => 'EXISTS'
+                ],
+                [
+                    'key'     => 'id',
+                    'value'   => '',
+                    'compare' => '!='
+                ]
+            ]
+        ]);
+        
+        $posts_lookup = [];
+        foreach ($all_posts as $post_id) {
+            $story_id = get_field('id', $post_id);
+            if ($story_id) {
+                $posts_lookup[intval($story_id)] = $post_id;
+            }
+        }
+        
+        set_transient($transient_posts_key, $posts_lookup, HOUR_IN_SECONDS);
+    }
+    
+    if (false === $terms_lookup) {
+        // Get all topic terms
+        $all_terms = get_terms([
+            'taxonomy'   => 'topics',
+            'hide_empty' => false,
+            'meta_query' => [
+                [
+                    'key'     => 'topic_id',
+                    'compare' => 'EXISTS'
+                ]
+            ]
+        ]);
+        
+        $terms_lookup = [];
+        foreach ($all_terms as $term) {
+            $topic_id = get_field('topic_id', 'topics_' . $term->term_id);
+            if ($topic_id) {
+                $terms_lookup[intval($topic_id)] = $term->term_id;
+            }
+        }
+        
+        set_transient($transient_terms_key, $terms_lookup, HOUR_IN_SECONDS);
+    }
 
-    $total_records = count($records);
-    $batch_records = array_slice($records, $start, $limit);
+    // Filter records to only those where both post and term exist
+    $transient_valid_records_key = 'valid_keyword_records';
+    $valid_records = get_transient($transient_valid_records_key);
+    
+    if (false === $valid_records) {
+        $valid_records = [];
+        foreach ($records as $record) {
+            $story_id = intval($record['STORY_ID']);
+            $topic_id = intval($record['KEYWORD_ID']);
+            
+            if (isset($posts_lookup[$story_id]) && isset($terms_lookup[$topic_id])) {
+                $valid_records[] = [
+                    'story_id' => $story_id,
+                    'topic_id' => $topic_id,
+                    'post_id'  => $posts_lookup[$story_id],
+                    'term_id'  => $terms_lookup[$topic_id]
+                ];
+            }
+        }
+        
+        set_transient($transient_valid_records_key, $valid_records, HOUR_IN_SECONDS);
+    }
+
+    $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
+    $limit = 50; // Increased batch limit since we're doing less work per record
+
+    $total_records = count($valid_records);
+    $batch_records = array_slice($valid_records, $start, $limit);
 
     $linked = 0;
     $log = [];
 
     if (empty($batch_records)) {
-        // Clear the cached API data when done
+        // Clear the cached data when done
         delete_transient($transient_key);
+        delete_transient($transient_posts_key);
+        delete_transient($transient_terms_key);
+        delete_transient($transient_valid_records_key);
+        
         wp_send_json_success([
             'message' => "Keyword linking complete. No more records to process.",
             'finished' => true,
@@ -295,41 +384,12 @@ function story_meta_association_sync_keywords()
         ]);
     }
 
-    foreach ($batch_records as $index => $pair) {
-        $story_id = intval($pair['STORY_ID']);
-        $topic_id = intval($pair['KEYWORD_ID']);
+    foreach ($batch_records as $index => $record) {
+        $story_id = $record['story_id'];
+        $topic_id = $record['topic_id'];
+        $post_id = $record['post_id'];
+        $term_id = $record['term_id'];
         $current_index = $start + $index;
-
-        $posts = get_posts([
-            'post_type' => 'post',
-            'meta_key' => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields' => 'ids',
-            'post_status' => 'any'
-        ]);
-
-        if (empty($posts)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Story ID {$story_id} not found.";
-            continue;
-        }
-        $post_id = $posts[0];
-
-        $terms = get_terms([
-            'taxonomy' => 'topics',
-            'hide_empty' => false,
-            'meta_query' => [[
-                'key' => 'topic_id',
-                'value' => $topic_id,
-                'compare' => '='
-            ]]
-        ]);
-
-        if (empty($terms) || is_wp_error($terms)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Topic ID {$topic_id} not found or error: " . (is_wp_error($terms) ? $terms->get_error_message() : 'Unknown error');
-            continue;
-        }
-        $term_id = $terms[0]->term_id;
 
         $existing_terms = wp_get_object_terms($post_id, 'topics', ['fields' => 'ids']);
 
@@ -347,7 +407,7 @@ function story_meta_association_sync_keywords()
     $finished = ($next_start >= $total_records);
 
     wp_send_json_success([
-        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Topics linked in this batch: {$linked}. Total records: {$total_records}",
+        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Topics linked in this batch: {$linked}. Total valid records: {$total_records}",
         'start'    => $next_start,
         'finished' => $finished,
         'log'      => $log,
@@ -480,144 +540,158 @@ function story_meta_association_sync_publication_keywords()
     ]);
 }
 
-// AJAX handler for Link Story Images
+// AJAX handler for Link Story Images - OPTIMIZED VERSION
 add_action('wp_ajax_link_story_images', 'story_meta_association_link_story_images');
-// Registers the AJAX action 'link_story_images' to call the 'story_meta_association_link_story_images' function.
-// This allows JavaScript on the frontend (or an admin script) to trigger this PHP function.
-
 function story_meta_association_link_story_images()
 {
-    // Verifies the nonce to protect against CSRF attacks.
-    // 'story_meta_association_tools_nonce' is the action name used when creating the nonce,
-    // and 'nonce' is the name of the POST variable where the nonce is expected.
     check_ajax_referer('story_meta_association_tools_nonce', 'nonce');
 
-    // Checks if the current user has 'manage_options' capability (typically administrators).
-    // If not, it sends a JSON error response and terminates the script, ensuring only authorized users can run this.
     if (!current_user_can('manage_options')) {
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
-    // Defines the path to the JSON file containing the story-image association data.
-    // get_template_directory() gets the absolute path to the current theme's directory.
-    $json_file = get_template_directory() . '/json/news-image-association.json';
+    // Get cached API data or fetch it
+    $transient_key = 'story_images_api_data';
+    $api_records = get_transient($transient_key);
 
-    // Checks if the specified JSON file exists.
-    // If not, it sends a JSON error response with the file path and terminates.
-    if (!file_exists($json_file)) {
-        wp_send_json_error('JSON file not found: ' . $json_file);
+    if (false === $api_records) {
+        $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
+
+        try {
+            $response = wp_remote_get($api_url);
+
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
+
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $decoded_API_response = json_decode($raw_JSON, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
+
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            $api_records = $decoded_API_response;
+            
+            // Cache for 1 hour
+            set_transient($transient_key, $api_records, HOUR_IN_SECONDS);
+        } catch (Exception $e) {
+            error_log('News Association Story Image API Error: ' . $e->getMessage());
+            wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
+        }
     }
 
-    // Begin API call
-    $api_url = 'https://secure.caes.uga.edu/rest/news/getAssociationStoryImage';
-    $decoded_API_response = null; // Initialize to null
-
-    try {
-        // Fetch data from the API.
-        $response = wp_remote_get($api_url);
-
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
+    // Convert API data to lookup array for faster searching
+    $transient_lookup_key = 'story_images_lookup_data';
+    $image_lookup = get_transient($transient_lookup_key);
+    
+    if (false === $image_lookup) {
+        $image_lookup = [];
+        foreach ($api_records as $record) {
+            $story_id = intval($record['STORY_ID']);
+            $image_id = intval($record['IMAGE_ID']);
+            if ($story_id && $image_id) {
+                $image_lookup[$story_id] = $image_id;
+            }
         }
-
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
-
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
-        }
-
-        $records = $decoded_API_response;
-    } catch (Exception $e) {
-        error_log('News Association Story Image API Error: ' . $e->getMessage());
-        wp_send_json_error('API Error for News Association Story Image: ' . $e->getMessage());
+        set_transient($transient_lookup_key, $image_lookup, HOUR_IN_SECONDS);
     }
 
-    // End API call
+    // Get posts that need image_id updates (cached)
+    $transient_posts_key = 'posts_needing_image_ids';
+    $posts_needing_updates = get_transient($transient_posts_key);
+    
+    if (false === $posts_needing_updates) {
+        // Find all posts that don't have image_id set or have it empty
+        $posts_needing_updates = get_posts([
+            'post_type'      => 'post',
+            'post_status'    => 'any',
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+            'meta_query'     => [
+                'relation' => 'OR',
+                [
+                    'key'     => 'image_id',
+                    'compare' => 'NOT EXISTS'
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '',
+                    'compare' => '='
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '0',
+                    'compare' => '='
+                ]
+            ]
+        ]);
+        
+        // Cache for 1 hour
+        set_transient($transient_posts_key, $posts_needing_updates, HOUR_IN_SECONDS);
+    }
 
-    // Retrieves the 'start' index from the POST request, or defaults to 0.
-    // This parameter is used for batch processing to determine which record to start from.
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 500; // Batch limit
+    $limit = 50; // Smaller batch size for better performance
 
-    $total_records = count($records);
-    // Extracts a subset of records for the current batch, starting from '$start' for '$limit' records.
-    $batch_records = array_slice($records, $start, $limit);
+    $total_posts = count($posts_needing_updates);
+    $batch_posts = array_slice($posts_needing_updates, $start, $limit);
 
-    $updated = 0; // Counter for records successfully updated in the current batch.
-    $log = [];    // Array to store log messages for the current batch.
+    $updated = 0;
+    $log = [];
 
-    // Checks if the current batch of records is empty.
-    // This typically means all records have been processed.
-    if (empty($batch_records)) {
-        // Sends a success JSON response indicating completion.
+    if (empty($batch_posts)) {
+        // Clear all cached data when done
+        delete_transient($transient_key);
+        delete_transient($transient_lookup_key);
+        delete_transient($transient_posts_key);
+        
         wp_send_json_success([
-            'message' => "Image linking complete. No more records to process.",
+            'message' => "Image linking complete. No more posts to process.",
             'finished' => true,
             'log' => $log,
         ]);
     }
 
-    // Loops through each record in the current batch.
-    foreach ($batch_records as $index => $record) {
-        // Extracts and sanitizes 'STORY_ID' and 'IMAGE_ID' from the current record.
-        $story_id = intval($record['STORY_ID']);
-        $image_id = intval($record['IMAGE_ID']);
-        // Calculates the absolute index of the current record within the total records.
+    foreach ($batch_posts as $index => $post_id) {
         $current_index = $start + $index;
-
-        // Skips the record if either 'STORY_ID' or 'IMAGE_ID' is missing or invalid (0 after intval).
-        if (!$story_id || !$image_id) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Skipping due to missing Story ID or Image ID.";
-            continue; // Move to the next record in the batch.
+        
+        // Get the story ID for this post
+        $story_id = get_field('id', $post_id);
+        
+        if (!$story_id) {
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: Post ID {$post_id} has no 'id' field.";
+            continue;
         }
 
-        // Queries WordPress posts to find a 'post' type post with a custom field 'id' matching '$story_id'.
-        // 'numberposts' => 1 ensures only one post is returned, as we expect a unique match.
-        // 'fields' => 'ids' returns only the post ID, optimizing the query.
-        $posts = get_posts([
-            'post_type'  => 'post',
-            'meta_key'   => 'id',
-            'meta_value' => $story_id,
-            'numberposts' => 1,
-            'fields'     => 'ids',
-        ]);
-
-        // If no post is found for the given 'STORY_ID', logs a message and skips to the next record.
-        if (empty($posts)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Post with Story ID {$story_id} not found.";
-            continue; // Move to the next record in the batch.
+        // Look up image_id for this story_id
+        if (isset($image_lookup[$story_id])) {
+            $image_id = $image_lookup[$story_id];
+            
+            update_field('image_id', $image_id, $post_id);
+            $updated++;
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: Updated Post ID {$post_id} (Story ID: {$story_id}) with Image ID {$image_id}.";
+        } else {
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: No image found for Post ID {$post_id} (Story ID: {$story_id}).";
         }
-        // Retrieves the ID of the found post.
-        $post_id = $posts[0];
-
-        // Updates a custom field named 'image_id' for the found post with the '$image_id'.
-        // This assumes 'image_id' is a custom field registered, probably by ACF.
-        update_field('image_id', $image_id, $post_id);
-        $updated++; // Increments the counter for successfully updated records.
-        // Logs the successful update.
-        $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Updated Post ID {$post_id} with Image ID {$image_id}.";
     }
 
-    // Calculates the starting index for the *next* batch.
-    $next_start = $start + count($batch_records);
-    // Determines if all records have been processed.
-    $finished = ($next_start >= $total_records);
+    $next_start = $start + count($batch_posts);
+    $finished = ($next_start >= $total_posts);
 
-    // Sends a JSON success response with details about the processed batch.
     wp_send_json_success([
-        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Total updated in this batch: {$updated}. Total records: {$total_records}", // Summary message.
-        'start'    => $next_start, // The starting index for the next AJAX call.
-        'finished' => $finished,   // Boolean indicating if all processing is complete.
-        'log'      => $log,        // Array of log messages for this batch.
+        'message' => "Batch processed from post {$start} to " . ($next_start - 1) . ". Total updated in this batch: {$updated}. Total posts needing updates: {$total_posts}",
+        'start'    => $next_start,
+        'finished' => $finished,
+        'log'      => $log,
     ]);
 }
 
-// AJAX handler for Assign Web Image Filenames
+// AJAX handler for Assign Web Image Filenames - OPTIMIZED VERSION
 add_action('wp_ajax_assign_web_image_filenames', 'story_meta_association_assign_web_image_filenames');
 function story_meta_association_assign_web_image_filenames()
 {
@@ -627,97 +701,164 @@ function story_meta_association_assign_web_image_filenames()
         wp_send_json_error('You do not have sufficient permissions.');
     }
 
-    // Begin API call (replaces JSON ingestion)
+    // Get cached API data or fetch it
+    $transient_key = 'image_filenames_api_data';
+    $api_records = get_transient($transient_key);
 
-    $api_url = 'https://secure.caes.uga.edu/rest/news/getImage';
-    $decoded_API_response = null; // Initialize to null
+    if (false === $api_records) {
+        // Begin API call (replaces JSON ingestion)
+        $api_url = 'https://secure.caes.uga.edu/rest/news/getImage';
+        $decoded_API_response = null; // Initialize to null
 
-    try {
-        // Fetch data from the API.
-        $response = wp_remote_get($api_url);
+        try {
+            // Fetch data from the API.
+            $response = wp_remote_get($api_url);
 
-        if (is_wp_error($response)) {
-            throw new Exception('API Request Failed: ' . $response->get_error_message());
+            if (is_wp_error($response)) {
+                throw new Exception('API Request Failed: ' . $response->get_error_message());
+            }
+
+            $raw_JSON = wp_remote_retrieve_body($response);
+            $decoded_API_response = json_decode($raw_JSON, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('JSON decode error from API: ' . json_last_error_msg());
+            }
+
+            if (!is_array($decoded_API_response)) {
+                throw new Exception('Invalid API response format: Expected an array.');
+            }
+
+            $api_records = $decoded_API_response;
+            
+            // Cache for 1 hour
+            set_transient($transient_key, $api_records, HOUR_IN_SECONDS);
+        } catch (Exception $e) {
+            error_log('News Image API Error: ' . $e->getMessage());
+            wp_send_json_error('API Error for News Image: ' . $e->getMessage());
         }
-
-        $raw_JSON = wp_remote_retrieve_body($response);
-        $decoded_API_response = json_decode($raw_JSON, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new Exception('JSON decode error from API: ' . json_last_error_msg());
-        }
-
-        if (!is_array($decoded_API_response)) {
-            throw new Exception('Invalid API response format: Expected an array.');
-        }
-
-        $records = $decoded_API_response;
-    } catch (Exception $e) {
-        error_log('News Image API Error: ' . $e->getMessage());
-        wp_send_json_error('API Error for News Image: ' . $e->getMessage());
+        // End API call
     }
 
-    // End API call
+    // Convert API data to lookup array for faster searching
+    $transient_lookup_key = 'image_filenames_lookup_data';
+    $filename_lookup = get_transient($transient_lookup_key);
+    
+    if (false === $filename_lookup) {
+        $filename_lookup = [];
+        foreach ($api_records as $record) {
+            $image_id = intval($record['ID']);
+            $filename = trim($record['WEB_VERSION_FILE_NAME'] ?? '');
+            if ($image_id && $filename) {
+                $filename_lookup[$image_id] = $filename;
+            }
+        }
+        set_transient($transient_lookup_key, $filename_lookup, HOUR_IN_SECONDS);
+    }
+
+    // Get posts that need web_version_file_name updates (cached)
+    $transient_posts_key = 'posts_needing_filenames';
+    $posts_needing_updates = get_transient($transient_posts_key);
+    
+    if (false === $posts_needing_updates) {
+        // Find all posts that have image_id but don't have web_version_file_name set or have it empty
+        $posts_needing_updates = get_posts([
+            'post_type'      => 'post',
+            'post_status'    => 'any', // Ensures we check all post statuses, not just 'publish'.
+            'fields'         => 'ids',
+            'posts_per_page' => -1,
+            'meta_query'     => [
+                'relation' => 'AND',
+                [
+                    'key'     => 'image_id',
+                    'compare' => 'EXISTS'
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '',
+                    'compare' => '!='
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '0',
+                    'compare' => '!='
+                ],
+                [
+                    'relation' => 'OR',
+                    [
+                        'key'     => 'web_version_file_name',
+                        'compare' => 'NOT EXISTS'
+                    ],
+                    [
+                        'key'     => 'web_version_file_name',
+                        'value'   => '',
+                        'compare' => '='
+                    ]
+                ]
+            ]
+        ]);
+        
+        // Cache for 1 hour
+        set_transient($transient_posts_key, $posts_needing_updates, HOUR_IN_SECONDS);
+    }
 
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 500; // Batch limit
+    $limit = 50; // Smaller batch limit
 
-    $total_records = count($records);
-    $batch_records = array_slice($records, $start, $limit);
+    $total_posts = count($posts_needing_updates);
+    $batch_posts = array_slice($posts_needing_updates, $start, $limit);
 
     $updated = 0;
     $log = [];
 
-    if (empty($batch_records)) {
+    if (empty($batch_posts)) {
+        // Clear all cached data when done
+        delete_transient($transient_key);
+        delete_transient($transient_lookup_key);
+        delete_transient($transient_posts_key);
+        
         wp_send_json_success([
-            'message' => "Filename assignment complete. No more records to process.",
+            'message' => "Filename assignment complete. No more posts to process.",
             'finished' => true,
             'log' => $log,
         ]);
     }
 
-    foreach ($batch_records as $index => $record) {
-        $image_id = intval($record['ID']);
-        $filename = trim($record['WEB_VERSION_FILE_NAME'] ?? '');
+    foreach ($batch_posts as $index => $post_id) {
         $current_index = $start + $index;
-
-        if (!$image_id || !$filename) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Skipping due to missing Image ID or Filename.";
+        
+        // Get the image_id for this post
+        $image_id = get_field('image_id', $post_id);
+        
+        if (!$image_id) {
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: Post ID {$post_id} has no 'image_id' field.";
             continue;
         }
 
-        $posts = get_posts([
-            'post_type'  => 'post',
-            'meta_key'   => 'image_id',
-            'meta_value' => $image_id,
-            'numberposts' => -1,
-            'fields'     => 'ids',
-        ]);
-
-        if (empty($posts)) {
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: No posts found with Image ID {$image_id}.";
-            continue;
-        }
-
-        foreach ($posts as $post_id) {
+        // Look up filename for this image_id
+        if (isset($filename_lookup[$image_id])) {
+            $filename = $filename_lookup[$image_id];
+            
             update_field('web_version_file_name', $filename, $post_id);
             $updated++;
-            $log[] = "Record " . ($current_index + 1) . "/{$total_records}: Updated Post ID {$post_id} with filename '{$filename}' for Image ID {$image_id}.";
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: Updated Post ID {$post_id} with filename '{$filename}' for Image ID {$image_id}.";
+        } else {
+            $log[] = "Post " . ($current_index + 1) . "/{$total_posts}: No filename found for Post ID {$post_id} (Image ID: {$image_id}).";
         }
     }
 
-    $next_start = $start + count($batch_records);
-    $finished = ($next_start >= $total_records);
+    $next_start = $start + count($batch_posts);
+    $finished = ($next_start >= $total_posts);
 
     wp_send_json_success([
-        'message' => "Batch processed from index {$start} to " . ($next_start - 1) . ". Total posts updated in this batch: {$updated}. Total records: {$total_records}",
+        'message' => "Batch processed from post {$start} to " . ($next_start - 1) . ". Total posts updated in this batch: {$updated}. Total posts needing updates: {$total_posts}",
         'start'    => $next_start,
         'finished' => $finished,
         'log'      => $log,
     ]);
 }
 
-// AJAX handler for Import Featured Images
+// AJAX handler for Import Featured Images - OPTIMIZED VERSION
 add_action('wp_ajax_import_featured_images', 'story_meta_association_import_featured_images');
 function story_meta_association_import_featured_images()
 {
@@ -728,31 +869,70 @@ function story_meta_association_import_featured_images()
     }
 
     $start = isset($_POST['start']) ? intval($_POST['start']) : 0;
-    $limit = 100; // Batch limit for posts
+    $limit = 25; // Smaller batch limit for posts since image downloading is intensive
 
-    // Get all post IDs only once for consistent batching
-    $all_posts = get_transient('story_meta_association_all_post_ids');
-    if (false === $all_posts) {
-        $all_posts = get_posts([
+    // Get posts that need featured images (cached)
+    $transient_posts_key = 'posts_needing_featured_images';
+    $posts_needing_images = get_transient($transient_posts_key);
+    
+    if (false === $posts_needing_images) {
+        // Find posts that have both image_id and web_version_file_name but don't have featured images
+        $all_posts_with_meta = get_posts([
             'post_type'      => 'post',
             'post_status'    => 'any',
             'fields'         => 'ids',
             'orderby'        => 'ID',
             'order'          => 'ASC',
             'posts_per_page' => -1,
+            'meta_query'     => [
+                'relation' => 'AND',
+                [
+                    'key'     => 'image_id',
+                    'compare' => 'EXISTS'
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '',
+                    'compare' => '!='
+                ],
+                [
+                    'key'     => 'image_id',
+                    'value'   => '0',
+                    'compare' => '!='
+                ],
+                [
+                    'key'     => 'web_version_file_name',
+                    'compare' => 'EXISTS'
+                ],
+                [
+                    'key'     => 'web_version_file_name',
+                    'value'   => '',
+                    'compare' => '!='
+                ]
+            ]
         ]);
-        set_transient('story_meta_association_all_post_ids', $all_posts, DAY_IN_SECONDS); // Cache for 24 hours
+        
+        // Filter out posts that already have featured images
+        $posts_needing_images = [];
+        foreach ($all_posts_with_meta as $post_id) {
+            if (!has_post_thumbnail($post_id)) {
+                $posts_needing_images[] = $post_id;
+            }
+        }
+        
+        // Cache for 24 hours
+        set_transient($transient_posts_key, $posts_needing_images, DAY_IN_SECONDS);
     }
 
-    $total_posts = count($all_posts);
-    $batch_posts = array_slice($all_posts, $start, $limit);
+    $total_posts = count($posts_needing_images);
+    $batch_posts = array_slice($posts_needing_images, $start, $limit);
 
     $updated = 0;
     $log = [];
 
     if (empty($batch_posts)) {
         // Clear the cached post IDs when done
-        delete_transient('story_meta_association_all_post_ids');
+        delete_transient($transient_posts_key);
         wp_send_json_success([
             'message' => "Featured image import complete. No more posts to process.",
             'finished' => true,
@@ -812,7 +992,7 @@ function story_meta_association_import_featured_images()
     $finished = ($next_start >= $total_posts);
 
     wp_send_json_success([
-        'message' => "Processed posts {$start} to " . ($next_start - 1) . ". Featured images assigned in this batch: {$updated}. Total posts: {$total_posts}",
+        'message' => "Processed posts {$start} to " . ($next_start - 1) . ". Featured images assigned in this batch: {$updated}. Total posts needing images: {$total_posts}",
         'start'    => $next_start,
         'finished' => $finished,
         'log'      => $log,
