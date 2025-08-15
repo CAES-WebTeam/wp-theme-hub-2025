@@ -1883,6 +1883,26 @@ CSS;
     echo '<p>Run each data synchronization process separately. Each operation creates or updates WordPress user accounts and provides detailed error reporting.</p>';
     echo '<table class="form-table">';
     echo '<tbody>';
+
+    // Sync Active Personnel row
+    $active_url = esc_url(add_query_arg('action', 'sync_personnel_active', admin_url('tools.php?page=user-data-management')));
+    echo '<tr>';
+    echo '<th scope="row">Sync Active Personnel</th>';
+    echo '<td>';
+    echo '<a href="' . $active_url . '" class="button button-secondary">Run Sync</a>';
+    echo '<p class="description">Synchronizes **active personnel data** from the primary external personnel API. Creates new users or updates existing ones with the \'personnel_user\' role and comprehensive contact/department ACF fields.</p>';
+    echo '</td>';
+    echo '</tr>';
+    
+    // Sync Inactive Personnel row
+    $inactive_url = esc_url(add_query_arg('action', 'sync_personnel_inactive', admin_url('tools.php?page=user-data-management')));
+    echo '<tr>';
+    echo '<th scope="row">Sync Inactive Personnel</th>';
+    echo '<td>';
+    echo '<a href="' . $inactive_url . '" class="button button-secondary">Run Sync</a>';
+    echo '<p class="description">Synchronizes **inactive/archived personnel data** from a secondary external personnel API. Updates \'personnel_user\' roles for those marked as inactive in the source system, with detailed error tracking.</p>';
+    echo '</td>';
+    echo '</tr>';
     
     // Import News Experts row
     $experts_url = esc_url(add_query_arg('action', 'import_experts', admin_url('tools.php?page=user-data-management')));
@@ -1901,26 +1921,6 @@ CSS;
     echo '<td>';
     echo '<a href="' . $writers_url . '" class="button button-secondary">Run Import</a>';
     echo '<p class="description">Imports user data from the News Writers API to create or update **Expert Users** (with \'expert_user\' role and specific ACF fields). Includes special debugging for specific cases.</p>';
-    echo '</td>';
-    echo '</tr>';
-    
-    // Sync Active Personnel row
-    $active_url = esc_url(add_query_arg('action', 'sync_personnel_active', admin_url('tools.php?page=user-data-management')));
-    echo '<tr>';
-    echo '<th scope="row">Sync Active Personnel</th>';
-    echo '<td>';
-    echo '<a href="' . $active_url . '" class="button button-secondary">Run Sync</a>';
-    echo '<p class="description">Synchronizes **active personnel data** from the primary external personnel API. Creates new users or updates existing ones with the \'personnel_user\' role and comprehensive contact/department ACF fields.</p>';
-    echo '</td>';
-    echo '</tr>';
-    
-    // Sync Inactive Personnel row
-    $inactive_url = esc_url(add_query_arg('action', 'sync_personnel_inactive', admin_url('tools.php?page=user-data-management')));
-    echo '<tr>';
-    echo '<th scope="row">Sync Inactive Personnel</th>';
-    echo '<td>';
-    echo '<a href="' . $inactive_url . '" class="button button-secondary">Run Sync</a>';
-    echo '<p class="description">Synchronizes **inactive/archived personnel data** from a secondary external personnel API. Updates \'personnel_user\' roles for those marked as inactive in the source system, with detailed error tracking.</p>';
     echo '</td>';
     echo '</tr>';
     
