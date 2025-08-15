@@ -585,6 +585,7 @@ function story_meta_association_link_story_images()
             'meta_value' => $story_id,
             'numberposts' => 1,
             'fields'     => 'ids',
+            'post_status' => 'any' // Ensures we check all post statuses, not just 'publish'.
         ]);
 
         // If no post is found for the given 'STORY_ID', logs a message and skips to the next record.
@@ -692,6 +693,7 @@ function story_meta_association_assign_web_image_filenames()
             'meta_value' => $image_id,
             'numberposts' => -1,
             'fields'     => 'ids',
+            'post_status' => 'any' // Ensures we check all post statuses, not just 'publish'.
         ]);
 
         if (empty($posts)) {
