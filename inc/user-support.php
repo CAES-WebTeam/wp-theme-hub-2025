@@ -211,6 +211,17 @@ function sanitize_email_part($name)
     return $name;
 }
 
+// Turn email notifications on and off
+function disable_user_notifications() {
+    add_filter('send_email_change_email', '__return_false');
+    add_filter('send_new_user_notifications', '__return_false'); 
+}  
+
+function enable_user_notifications() {
+    remove_filter('send_email_change_email', '__return_false');
+    remove_filter('send_new_user_notifications', '__return_false'); 
+}
+
 /**
  * ---------------------------------------------------------------------------------
  * 5. Personnel User Synchronization Functions
