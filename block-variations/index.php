@@ -71,7 +71,7 @@ $parsed_blocks_for_filtering = [];
 function variations_pre_render_block($pre_render, $parsed_block)
 {
     global $parsed_blocks_for_filtering;
-    
+
     // Store blocks that need filtering
     if (isset($parsed_block['attrs']['queryId'])) {
         $query_id = $parsed_block['attrs']['queryId'];
@@ -81,11 +81,16 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 
+// Global variable to store debug info
+global $debug_stories_feed;
+$debug_stories_feed = [];
+
 // Consolidated filter function for all query modifications
 function variations_query_filter($query, $block)
 {
-    global $parsed_blocks_for_filtering;
-    
+    // global $parsed_blocks_for_filtering;
+    global $parsed_blocks_for_filtering, $debug_stories_feed;
+
     // Get block query ID
     $block_query_id = null;
     if (isset($block->parsed_block['attrs']['queryId'])) {
@@ -108,6 +113,9 @@ function variations_query_filter($query, $block)
     // Handle blocks WITH namespace (your variations)
     if (isset($parsed_block['attrs']['namespace'])) {
         $namespace = $parsed_block['attrs']['namespace'];
+
+        // DEBUG: Track what we're processing
+        $debug_stories_feed[] = "Processing namespace: " . $namespace;
 
         // For pubs-feed blocks
         if ('pubs-feed' === $namespace) {
@@ -146,12 +154,24 @@ function variations_query_filter($query, $block)
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
+
+            // DEBUG: Track stories-feed processing
+            $debug_stories_feed[] = "Found stories-feed block!";
+            $debug_stories_feed[] = "Original query post_type: " . print_r($query['post_type'] ?? 'not set', true);
+
             $query['post_type'] = ['post', 'shorthand_story'];
-    
+
+            // DEBUG: Track post_type change
+            $debug_stories_feed[] = "Set post_type to: " . print_r($query['post_type'], true);
+
+
             // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
-                
+
+                // DEBUG: Track author ID
+                $debug_stories_feed[] = "On author archive for author ID: " . $author_id;
+
                 // Create an OR condition to check both expert and author fields
                 $meta_query[] = array(
                     'relation' => 'OR',
@@ -166,9 +186,11 @@ function variations_query_filter($query, $block)
                         'compare' => 'LIKE'
                     )
                 );
+                $debug_stories_feed[] = "Added meta query for author";
+            } else {
+                $debug_stories_feed[] = "Not on author archive";
             }
         }
-
     }
 
     // Apply meta query if we have conditions
@@ -193,7 +215,7 @@ function variations_query_filter($query, $block)
         if (isset($query['tax_query']) && is_array($query['tax_query'])) {
             // If there's already a tax_query, merge them
             $existing_tax_query = $query['tax_query'];
-            
+
             // Remove relation if it exists to add it back properly
             if (isset($existing_tax_query['relation'])) {
                 $relation = $existing_tax_query['relation'];
@@ -201,15 +223,15 @@ function variations_query_filter($query, $block)
             } else {
                 $relation = 'AND';
             }
-            
+
             // Merge the arrays
             $merged_tax_query = array_merge($existing_tax_query, $tax_query);
-            
+
             // Add relation if we have multiple conditions
             if (count($merged_tax_query) > 1) {
                 $merged_tax_query['relation'] = $relation;
             }
-            
+
             $query['tax_query'] = $merged_tax_query;
         } else {
             // No existing tax_query, just set ours
@@ -218,6 +240,11 @@ function variations_query_filter($query, $block)
             }
             $query['tax_query'] = $tax_query;
         }
+    }
+
+    // DEBUG: Final query
+    if (isset($parsed_block['attrs']['namespace']) && $parsed_block['attrs']['namespace'] === 'stories-feed') {
+        $debug_stories_feed[] = "Final query args: " . print_r($query, true);
     }
 
     return $query;
@@ -309,3 +336,19 @@ function add_custom_query_vars($valid_vars)
 add_filter('rest_query_vars', 'add_custom_query_vars');
 
 /** END FRONT END */
+
+
+// Display debug info at the bottom of the page
+function display_debug_stories_feed() {
+    global $debug_stories_feed;
+    
+    if (!empty($debug_stories_feed) && current_user_can('manage_options')) {
+        echo '<div style="background: #f0f0f0; border: 2px solid #333; padding: 20px; margin: 20px; font-family: monospace; white-space: pre-wrap; position: relative; z-index: 9999;">';
+        echo '<h3 style="margin-top: 0; color: #d63638;">Stories Feed Debug Info:</h3>';
+        foreach ($debug_stories_feed as $debug_line) {
+            echo $debug_line . "\n";
+        }
+        echo '</div>';
+    }
+}
+add_action('wp_footer', 'display_debug_stories_feed');
