@@ -239,6 +239,9 @@ function enable_user_notifications() {
  */
 function sync_personnel_users()
 {
+    // Suppress email notifications
+    disable_user_notifications();
+
     global $import_errors;
     $import_errors = []; // Reset errors for this operation
     
@@ -521,6 +524,8 @@ function sync_personnel_users()
         'total_api_records' => count($users),
         'message' => "Active Personnel users synced. Created: {$created_count}, Updated: {$updated_count}, Errors: {$error_count} out of " . count($users) . " API records."
     ];
+
+    enable_user_notifications();
 }
 /**
  * Sets up a daily CRON job to automatically run `sync_personnel_users`.
@@ -539,6 +544,9 @@ add_action('daily_personnel_sync', 'sync_personnel_users');
  */
 function sync_personnel_users2()
 {
+    // Suppress email notifications
+    disable_user_notifications();
+
     global $import_errors;
     $import_errors = []; // Reset errors for this operation
     
@@ -907,6 +915,8 @@ function sync_personnel_users2()
         'total_api_records' => count($users),
         'message' => "Inactive Personnel users synced. Created: {$created_count}, Updated: {$updated_count}, Errors: {$error_count}, Skipped: {$skipped_count} out of " . count($users) . " API records."
     ];
+
+    enable_user_notifications();
 }
 
 /**
@@ -927,6 +937,9 @@ function sync_personnel_users2()
  */
 function import_news_experts()
 {
+    // Suppress email notifications
+    disable_user_notifications();
+
     global $import_errors;
     $import_errors = []; // Reset errors for this operation
     
@@ -1119,6 +1132,8 @@ function import_news_experts()
         'total_api_records' => count($records),
         'message' => "News Experts import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Errors: {$error_count}."
     ];
+
+    enable_user_notifications();
 }
 
 /**
@@ -1131,6 +1146,9 @@ function import_news_experts()
  */
 function import_news_writers()
 {
+    // Suppress email notifications
+    disable_user_notifications();
+
     global $import_errors;
     $import_errors = []; // Reset errors for this operation
     
@@ -1477,6 +1495,8 @@ function import_news_writers()
         'total_api_records' => count($records),
         'message' => "News Writers import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Errors: {$error_count}."
     ];
+
+    enable_user_notifications();
 }
 
 /**
