@@ -41,10 +41,6 @@ function caes_tools_main_page()
                 <li><a href="<?php echo admin_url('admin.php?page=clear-release-date'); ?>">Story Clear Release Date Field</a></li>
                 <li><a href="<?php echo admin_url('admin.php?page=duplicate-post-checker'); ?>">Story Duplicate Checker</a></li>
             </ul>
-            <h2>Tools for user imports</h2>
-            <ul>
-                <li><a href="<?php echo admin_url('admin.php?page=email-squelch-tester'); ?>">Email Squelch Tester</a></li>
-            </ul>
         </div>
     </div>
     <?php
