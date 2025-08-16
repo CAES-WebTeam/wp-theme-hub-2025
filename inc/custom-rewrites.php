@@ -558,6 +558,26 @@ function redirect_feature_to_features()
 }
 add_action('template_redirect', 'redirect_feature_to_features');
 
+// Redirect /features/*/index.html URLs to /features/*/ (remove index.html)
+function redirect_features_remove_index_html()
+{
+    // Only run on frontend and skip previews
+    if (is_admin() || isset($_GET['preview'])) return;
+
+    $requested_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+    // Check if URL is under /features/ and ends with index.html
+    if (strpos($requested_path, '/features/') === 0 && substr($requested_path, -11) === '/index.html') {
+        // Remove the /index.html part
+        $new_path = substr($requested_path, 0, -10); // Remove 'index.html' but keep the trailing slash
+        
+        // Perform 301 redirect
+        wp_redirect(home_url($new_path), 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_features_remove_index_html');
+
 /**
  * If a user visits a URL like /publications/topic/57/15428/, redirect to /publications/topic/actual-slug/
  * by looking up the topic term's type_id and topic_id ACF fields.
