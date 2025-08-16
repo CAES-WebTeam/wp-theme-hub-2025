@@ -106,9 +106,8 @@
         height: 100vh;
         overflow: hidden;
         .flyout-content {
-            height: 100%;
+            height: calc(100vh - (var(--wp--preset--spacing--60) * 2));
             overflow-y: auto;
-            padding: 0; // Ensure no padding interferes
             box-sizing: border-box;
         }
     }
