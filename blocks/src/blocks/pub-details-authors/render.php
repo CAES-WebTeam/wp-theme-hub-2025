@@ -84,7 +84,7 @@ if (!function_exists('process_people')) {
                 $title = '';
                 $profile_url = '';
                 
-                if ($entry_type === 'custom') {
+                if ($entry_type === 'Custom') {
                     // Handle custom user entry
                     $custom_user = $item['custom_user'] ?? [];
                     $first_name = $custom_user['first_name'] ?? '';
