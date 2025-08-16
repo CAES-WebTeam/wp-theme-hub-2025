@@ -452,6 +452,41 @@ function redirect_news_id_to_canonical_url()
 }
 add_action('init', 'redirect_news_id_to_canonical_url');
 
+/**
+ * Redirect root-level post URLs to include /news/ prefix
+ * e.g., /some-post-slug/ → /news/some-post-slug/
+ */
+function redirect_root_posts_to_news()
+{
+    // Only run on frontend and skip previews
+    if (is_admin() || isset($_GET['preview'])) return;
+
+    $requested_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+    
+    // Only proceed if this is a root-level request (no forward slashes)
+    if (empty($requested_path) || strpos($requested_path, '/') !== false) {
+        return;
+    }
+    
+    // Check if there's a published post with this slug
+    $args = array(
+        'name' => $requested_path,
+        'post_type' => 'post',
+        'post_status' => 'publish',
+        'posts_per_page' => 1
+    );
+    
+    $posts = get_posts($args);
+    
+    if (!empty($posts)) {
+        // This slug matches a post, redirect to /news/ version
+        $new_url = home_url("/news/{$requested_path}/");
+        wp_redirect($new_url, 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_root_posts_to_news');
+
 
 // Redirect old caes-departments URLs to new departments URLs
 function redirect_old_department_urls()
