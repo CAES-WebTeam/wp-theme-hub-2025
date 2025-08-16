@@ -96,12 +96,12 @@ if (!function_exists('process_people')) {
                 $profile_url = '';
 
                 if ($entry_type === 'Custom') {
-                    // Handle custom user entry
-                    $custom_user = $item['custom_user'] ?? [];
+                    // Handle custom user entry - check both possible field names
+                    $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
                     $first_name = $custom_user['first_name'] ?? '';
                     $last_name = $custom_user['last_name'] ?? '';
-                    $title = $custom_user['title'] ?? '';
-                    // No profile URL for custom users
+                    // Handle both 'title' and 'titile' (typo)
+                    $title = $custom_user['title'] ?? $custom_user['titile'] ?? '';
                     $profile_url = '';
                 } else {
                     // Handle WordPress user selection (existing logic)
