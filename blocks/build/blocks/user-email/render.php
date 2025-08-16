@@ -1,25 +1,30 @@
 <?php
 
-
 // Get author ID
 $author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_user_id'] : get_queried_object_id();
 
-// Get email
-$email = get_the_author_meta('user_email', $author_id);
+// Try to get email from ACF field first
+$email = get_field('field_uga_email_custom', 'user_' . $author_id);
+
+// If ACF field is empty, fall back to user email
+if (empty($email)) {
+    $email = get_the_author_meta('user_email', $author_id);
+}
 
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
-// If email isn't blank, output the clickable email
-// Also check to make sure email doesn't contain "placeholder"
+// Check if email is valid and doesn't contain problematic strings
 if ($email && !strpos($email, 'placeholder')) {
-    echo '<a ' . $attrs . ' href="mailto:' . esc_html($email) . '"><span>' . esc_html($email) . '</span></a>';    
+    // Check if email domain contains "spoofed"
+    $email_parts = explode('@', $email);
+    if (count($email_parts) === 2) {
+        $domain = $email_parts[1];
+        // If domain doesn't contain "spoofed", display the email
+        if (strpos($domain, 'spoofed') === false) {
+            echo '<a ' . $attrs . ' href="mailto:' . esc_html($email) . '"><span>' . esc_html($email) . '</span></a>';
+        }
+    }
 }
-
-// Get all user meta fields
-// $user_meta = get_user_meta($author_id);
-// echo '<h3>All User Meta:</h3><pre>';
-// print_r($user_meta);
-// echo '</pre>';
 
 ?>
