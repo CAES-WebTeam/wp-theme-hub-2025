@@ -32,9 +32,9 @@ $oneLine = $displayVersion === 'names-and-titles';
 $useGrid = $displayVersion === 'name-and-title-below' && $grid;
 
 // Get ACF fields
-$authors = get_field('authors', $post_id, false);
-$translators = get_field('translator', $post_id, false);
-$sources = get_field('experts', $post_id, false);
+$authors = get_field('authors', $post_id);
+$translators = get_field('translator', $post_id);
+$sources = get_field('experts', $post_id);
 
 switch ($type) {
     case 'translators':
