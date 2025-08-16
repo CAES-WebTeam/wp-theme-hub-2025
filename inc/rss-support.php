@@ -30,8 +30,8 @@ function filter_taxonomy_feeds_by_post_type($query) {
     if (strpos($request_uri, '/publications/topic/') !== false) {
         $post_type = 'publications';
     } elseif (strpos($request_uri, '/news/topic/') !== false) {
-        $post_type = 'post';
-    } elseif (strpos($request_uri, '/shorthand-story/topic/') !== false) {
+        $post_type = array('post', 'shorthand_story');
+    } elseif (strpos($request_uri, '/features/topic/') !== false) {
         $post_type = 'shorthand_story';
     } elseif (strpos($request_uri, '/events/topic/') !== false) {
         $post_type = 'events';
