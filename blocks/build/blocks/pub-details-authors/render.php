@@ -74,19 +74,8 @@ if (!function_exists('process_people')) {
         $names = [];
         $output = '';
 
-        // SIMPLE DEBUGGING - Remove this after testing
-        echo '<pre style="background: #f0f0f0; padding: 10px; margin: 10px 0; font-size: 12px;">';
-        echo 'DEBUG: People data structure:';
-        print_r($people);
-        echo '</pre>';
-
         if ($people) {
             foreach ($people as $index => $item) {
-                // SIMPLE DEBUGGING - Remove this after testing
-                echo '<pre style="background: #ffffcc; padding: 5px; margin: 5px 0; font-size: 11px;">';
-                echo "DEBUG: Item #$index:";
-                print_r($item);
-                echo '</pre>';
                 // Check the type field to determine if this is a user or custom entry
                 $entry_type = $item['type'] ?? '';
                 
