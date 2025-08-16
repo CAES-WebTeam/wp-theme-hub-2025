@@ -153,7 +153,7 @@ function variations_query_filter($query, $block)
             $query['post_type'] = ['post', 'shorthand_story'];
             unset($query['postType']);
 
-            // Filter by author (expert OR author) ONLY if on author archive
+            // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
 
@@ -172,7 +172,19 @@ function variations_query_filter($query, $block)
                     )
                 );
             }
-            // If NOT on author archive, no additional filtering - just show all posts from both post types
+            // Handle taxonomy archives (categories, tags, topics, etc.)
+            elseif (is_category() || is_tag() || is_tax()) {
+                $queried_object = get_queried_object();
+
+                if ($queried_object && isset($queried_object->taxonomy) && isset($queried_object->term_id)) {
+                    $tax_query[] = array(
+                        'taxonomy' => $queried_object->taxonomy,
+                        'field'    => 'term_id',
+                        'terms'    => $queried_object->term_id,
+                    );
+                }
+            }
+            // If NOT on author or taxonomy archive, no additional filtering - just show all posts from both post types
         }
     }
 
