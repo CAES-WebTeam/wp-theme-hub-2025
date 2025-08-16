@@ -87,136 +87,131 @@ if (!function_exists('process_people')) {
                 echo "DEBUG: Item #$index:";
                 print_r($item);
                 echo '</pre>';
+                // Check the type field to determine if this is a user or custom entry
+                $entry_type = $item['type'] ?? '';
 
-                if ($people) {
-                    foreach ($people as $index => $item) {
-                        // Check the type field to determine if this is a user or custom entry
-                        $entry_type = $item['type'] ?? '';
+                $first_name = '';
+                $last_name = '';
+                $title = '';
+                $profile_url = '';
 
-                        $first_name = '';
-                        $last_name = '';
-                        $title = '';
-                        $profile_url = '';
+                if ($entry_type === 'Custom') {
+                    // Handle custom user entry
+                    $custom_user = $item['custom_user'] ?? [];
+                    $first_name = $custom_user['first_name'] ?? '';
+                    $last_name = $custom_user['last_name'] ?? '';
+                    $title = $custom_user['title'] ?? '';
+                    // No profile URL for custom users
+                    $profile_url = '';
+                } else {
+                    // Handle WordPress user selection (existing logic)
+                    $user_id = null;
 
-                        if ($entry_type === 'Custom') {
-                            // Handle custom user entry
-                            $custom_user = $item['custom_user'] ?? [];
-                            $first_name = $custom_user['first_name'] ?? '';
-                            $last_name = $custom_user['last_name'] ?? '';
-                            $title = $custom_user['title'] ?? '';
-                            // No profile URL for custom users
-                            $profile_url = '';
-                        } else {
-                            // Handle WordPress user selection (existing logic)
-                            $user_id = null;
+                    // First check for 'user' key (standard ACF format)
+                    if (isset($item['user']) && !empty($item['user'])) {
+                        $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
+                    }
 
-                            // First check for 'user' key (standard ACF format)
-                            if (isset($item['user']) && !empty($item['user'])) {
-                                $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-                            }
-
-                            // Fallback: check for numeric values in any field (ACF internal field keys)
-                            if (empty($user_id) && is_array($item)) {
-                                foreach ($item as $key => $value) {
-                                    if (is_numeric($value) && $value > 0) {
-                                        $user_id = $value;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if ($user_id && is_numeric($user_id)) {
-                                $first_name = get_the_author_meta('first_name', $user_id);
-                                $last_name = get_the_author_meta('last_name', $user_id);
-                                $profile_url = get_author_posts_url($user_id);
-                                $public_title = get_field('public_friendly_title', 'user_' . $user_id);
-                                $regular_title = get_the_author_meta('title', $user_id);
-                                $title = !empty($public_title) ? $public_title : $regular_title;
+                    // Fallback: check for numeric values in any field (ACF internal field keys)
+                    if (empty($user_id) && is_array($item)) {
+                        foreach ($item as $key => $value) {
+                            if (is_numeric($value) && $value > 0) {
+                                $user_id = $value;
+                                break;
                             }
                         }
+                    }
 
-                        // Only proceed if we have at least a name
-                        if (!empty($first_name) || !empty($last_name)) {
-                            $full_name = trim("$first_name $last_name");
-
-                            if ($asSnippet) {
-                                $names[] = $full_name;
-                            } else {
-                                if ($oneLine) {
-                                    $output .= '<p class="pub-author-oneline">';
-                                    if (!empty($profile_url)) {
-                                        $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html($full_name) . '</a>';
-                                    } else {
-                                        $output .= '<span class="pub-author-name">' . esc_html($full_name) . '</span>';
-                                    }
-                                    if ($title) {
-                                        $output .= ', ' . esc_html($title);
-                                    }
-                                    $output .= '</p>';
-                                } else {
-                                    $output .= '<div class="pub-author">';
-                                    if (!empty($profile_url)) {
-                                        $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html($full_name) . '</a>';
-                                    } else {
-                                        $output .= '<span class="pub-author-name">' . esc_html($full_name) . '</span>';
-                                    }
-                                    if ($title) {
-                                        $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
-                                    }
-                                    $output .= '</div>';
-                                }
-                            }
-                        }
+                    if ($user_id && is_numeric($user_id)) {
+                        $first_name = get_the_author_meta('first_name', $user_id);
+                        $last_name = get_the_author_meta('last_name', $user_id);
+                        $profile_url = get_author_posts_url($user_id);
+                        $public_title = get_field('public_friendly_title', 'user_' . $user_id);
+                        $regular_title = get_the_author_meta('title', $user_id);
+                        $title = !empty($public_title) ? $public_title : $regular_title;
                     }
                 }
 
-                if (!empty($names)) {
-                    $formatted_names = '';
-                    $count = count($names);
+                // Only proceed if we have at least a name
+                if (!empty($first_name) || !empty($last_name)) {
+                    $full_name = trim("$first_name $last_name");
 
-                    if ($count === 1) {
-                        $formatted_names = $names[0];
-                    } elseif ($count === 2) {
-                        $formatted_names = $names[0] . ' and ' . $names[1];
+                    if ($asSnippet) {
+                        $names[] = $full_name;
                     } else {
-                        $last = array_pop($names);
-                        $formatted_names = implode(', ', $names) . ', and ' . $last;
+                        if ($oneLine) {
+                            $output .= '<p class="pub-author-oneline">';
+                            if (!empty($profile_url)) {
+                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html($full_name) . '</a>';
+                            } else {
+                                $output .= '<span class="pub-author-name">' . esc_html($full_name) . '</span>';
+                            }
+                            if ($title) {
+                                $output .= ', ' . esc_html($title);
+                            }
+                            $output .= '</p>';
+                        } else {
+                            $output .= '<div class="pub-author">';
+                            if (!empty($profile_url)) {
+                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html($full_name) . '</a>';
+                            } else {
+                                $output .= '<span class="pub-author-name">' . esc_html($full_name) . '</span>';
+                            }
+                            if ($title) {
+                                $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
+                            }
+                            $output .= '</div>';
+                        }
                     }
-
-                    return $asSnippet ? esc_html($formatted_names) : $output;
-                } else {
-                    return $asSnippet ? '' : $output;
                 }
             }
         }
 
-        // Generate output
-        if ($data) {
-            echo '<div ' . $attrs . '>';
+        if (!empty($names)) {
+            $formatted_names = '';
+            $count = count($names);
 
-            if ($showHeading) {
-                echo '<h2 class="' . $headingStyles . '">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
-            }
-
-            if ($authorNamesOnly) {
-                $snippet_output = process_people($data, true);
-                if (!empty($snippet_output)) {
-                    if (!empty($snippetPrefix) && $snippetPrefixPosition === 'above') {
-                        $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span><br/>' . $snippet_output . '</p>';
-                    } elseif (!empty($snippetPrefix) && $snippetPrefixPosition === 'same-line') {
-                        $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span>' . $snippet_output . '</p>';
-                    } else {
-                        $snippet_output = '<p>' . $snippet_output . '</p>';
-                    }
-                    echo $snippet_output;
-                }
+            if ($count === 1) {
+                $formatted_names = $names[0];
+            } elseif ($count === 2) {
+                $formatted_names = $names[0] . ' and ' . $names[1];
             } else {
-                echo '<div class="pub-authors-wrap' . ($useGrid ? ' pub-authors-grid' : '') . '">';
-                echo process_people($data, false, $oneLine);
-                echo '</div>';
+                $last = array_pop($names);
+                $formatted_names = implode(', ', $names) . ', and ' . $last;
             }
 
-            echo '</div>';
+            return $asSnippet ? esc_html($formatted_names) : $output;
+        } else {
+            return $asSnippet ? '' : $output;
         }
     }
+}
+
+// Generate output
+if ($data) {
+    echo '<div ' . $attrs . '>';
+
+    if ($showHeading) {
+        echo '<h2 class="' . $headingStyles . '">' . esc_html($customHeading ?: $defaultHeading) . '</h2>';
+    }
+
+    if ($authorNamesOnly) {
+        $snippet_output = process_people($data, true);
+        if (!empty($snippet_output)) {
+            if (!empty($snippetPrefix) && $snippetPrefixPosition === 'above') {
+                $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span><br/>' . $snippet_output . '</p>';
+            } elseif (!empty($snippetPrefix) && $snippetPrefixPosition === 'same-line') {
+                $snippet_output = '<p><span class="pub-authors-snippet-prefix">' . esc_html($snippetPrefix) . ' </span>' . $snippet_output . '</p>';
+            } else {
+                $snippet_output = '<p>' . $snippet_output . '</p>';
+            }
+            echo $snippet_output;
+        }
+    } else {
+        echo '<div class="pub-authors-wrap' . ($useGrid ? ' pub-authors-grid' : '') . '">';
+        echo process_people($data, false, $oneLine);
+        echo '</div>';
+    }
+
+    echo '</div>';
 }
