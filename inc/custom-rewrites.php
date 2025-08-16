@@ -234,6 +234,27 @@ function custom_publications_rewrite_rules()
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
+/**
+ * Custom rewrite rules for person (author) pages
+ */
+function custom_person_rewrite_rules()
+{
+    // Single person page: /person/123/display-name/
+    add_rewrite_rule(
+        '^person/([0-9]+)/([^/]+)/?$',
+        'index.php?author=$matches[1]',
+        'top'
+    );
+    
+    // Paginated person pages: /person/123/display-name/page/2/
+    add_rewrite_rule(
+        '^person/([0-9]+)/([^/]+)/page/([0-9]+)/?$',
+        'index.php?author=$matches[1]&paged=$matches[3]',
+        'top'
+    );
+}
+add_action('init', 'custom_person_rewrite_rules');
+
 // ===================================
 // PERMALINK MODIFICATION SECTION
 // ===================================
@@ -355,6 +376,29 @@ function custom_topic_term_link($termlink, $term, $taxonomy)
     return $termlink;
 }
 add_filter('term_link', 'custom_topic_term_link', 10, 3);
+
+/**
+ * Modify author links to use /person/ID/display-name/ format
+ */
+function custom_person_author_link($link, $author_id)
+{
+    $user = get_userdata($author_id);
+    if (!$user) {
+        return $link;
+    }
+    
+    // Get display name and sanitize it for URL
+    $display_name = $user->display_name;
+    $display_name_slug = sanitize_title($display_name);
+    
+    // If display name is empty, fall back to user_nicename
+    if (empty($display_name_slug)) {
+        $display_name_slug = $user->user_nicename;
+    }
+    
+    return home_url("/person/{$author_id}/{$display_name_slug}/");
+}
+add_filter('author_link', 'custom_person_author_link', 10, 2);
 
 // ===================================
 // REDIRECTION RULES SECTION
@@ -487,6 +531,45 @@ function redirect_root_posts_to_news()
 }
 add_action('template_redirect', 'redirect_root_posts_to_news');
 
+/**
+ * Redirect old /author/username/ URLs to new /person/ID/display-name/ format
+ */
+function redirect_author_to_person()
+{
+    // Only run on frontend and skip previews
+    if (is_admin() || isset($_GET['preview'])) return;
+
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    
+    // Check if URL matches /author/username/ or /author/username/page/X/ pattern
+    if (preg_match('#^/author/([^/]+)(?:/page/([0-9]+))?/?$#', $requested_path, $matches)) {
+        $username = $matches[1];
+        $page_num = isset($matches[2]) ? $matches[2] : null;
+        
+        // Look up user by username/nicename
+        $user = get_user_by('slug', $username);
+        
+        if ($user) {
+            // Generate new URL
+            $display_name_slug = sanitize_title($user->display_name);
+            if (empty($display_name_slug)) {
+                $display_name_slug = $user->user_nicename;
+            }
+            
+            $new_url = "/person/{$user->ID}/{$display_name_slug}/";
+            
+            // Add pagination if present
+            if ($page_num) {
+                $new_url .= "page/{$page_num}/";
+            }
+            
+            // Perform 301 redirect
+            wp_redirect(home_url($new_url), 301);
+            exit;
+        }
+    }
+}
+add_action('template_redirect', 'redirect_author_to_person');
 
 // Redirect old caes-departments URLs to new departments URLs
 function redirect_old_department_urls()
