@@ -172,6 +172,21 @@ class CAES_Event_Import_Tool {
         .log-success { border-left-color: #46b450; background: #f0f8f0; }
         .log-error { border-left-color: #dc3232; background: #f8f0f0; }
         .log-warning { border-left-color: #ffb900; background: #f8f6f0; }
+        
+        details {
+            margin: 10px 0;
+        }
+        details summary {
+            cursor: pointer;
+            font-weight: bold;
+            padding: 5px 0;
+        }
+        details summary:hover {
+            color: #0073aa;
+        }
+        details[open] summary {
+            margin-bottom: 10px;
+        }
         </style>
         
         <script>
@@ -233,22 +248,92 @@ class CAES_Event_Import_Tool {
             function displayPreflightResults(data) {
                 let html = '<h3>Preflight Check Results</h3>';
                 
+                // Main stats
                 if (data.total_events === 0) {
                     html += '<div class="notice notice-warning"><p>No events found matching your date criteria.</p></div>';
-                } else {
-                    html += '<div class="notice notice-success"><p><strong>' + data.total_events + ' events</strong> will be imported</p></div>';
+                    $('#preflight-results').html(html);
+                    return;
+                }
+                
+                // Show duplicate analysis
+                const stats = data.duplicate_info.stats;
+                html += '<div class="notice notice-info">';
+                html += '<h4>Import Summary</h4>';
+                html += '<ul>';
+                html += '<li><strong>' + stats.total_from_api + '</strong> events found in date range</li>';
+                html += '<li><strong>' + stats.unique_after_dedup + '</strong> unique events will be imported</li>';
+                if (stats.exact_duplicates_found > 0) {
+                    html += '<li><strong>' + stats.exact_duplicates_found + '</strong> exact duplicates (same ID) will be skipped</li>';
+                }
+                if (stats.title_date_duplicates_found > 0) {
+                    html += '<li><strong>' + stats.title_date_duplicates_found + '</strong> title+date duplicates will be skipped</li>';
+                }
+                if (stats.title_only_duplicates_found > 0) {
+                    html += '<li><strong>' + stats.title_only_duplicates_found + '</strong> events with same titles but different dates (may be recurring)</li>';
+                }
+                html += '</ul>';
+                html += '</div>';
+                
+                // Show duplicate details if any exist
+                if (stats.exact_duplicates_found > 0 || stats.title_date_duplicates_found > 0) {
+                    html += '<div class="notice notice-warning">';
+                    html += '<h4>Duplicate Events Found</h4>';
+                    html += '<details>';
+                    html += '<summary>Click to see duplicate details</summary>';
                     
-                    if (data.events && data.events.length > 0) {
-                        html += '<h4>Events to be imported:</h4>';
-                        html += '<div class="event-list">';
-                        data.events.forEach(function(event) {
-                            html += '<div class="event-item">';
-                            html += '<strong>' + event.TITLE + '</strong><br>';
-                            html += '<small>Display: ' + event.DISPLAY_START + ' - ' + event.DISPLAY_END + '</small>';
+                    if (data.duplicate_info.exact_duplicates.length > 0) {
+                        html += '<h5>Exact Duplicates (Same API ID):</h5>';
+                        data.duplicate_info.exact_duplicates.forEach(function(dup) {
+                            html += '<div style="margin: 10px 0; padding: 10px; background: #ffe6e6; border-left: 3px solid #dc3232;">';
+                            html += '<strong>ID ' + dup.original.ID + ':</strong> ' + dup.original.TITLE + '<br>';
+                            html += '<small>Original: ' + dup.original.DISPLAY_START + ' | Duplicate: ' + dup.duplicate.DISPLAY_START + '</small>';
                             html += '</div>';
                         });
-                        html += '</div>';
                     }
+                    
+                    if (data.duplicate_info.title_date_duplicates.length > 0) {
+                        html += '<h5>Title + Date Duplicates:</h5>';
+                        data.duplicate_info.title_date_duplicates.forEach(function(dup) {
+                            html += '<div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-left: 3px solid #ffb900;">';
+                            html += '<strong>' + dup.original.TITLE + '</strong><br>';
+                            html += '<small>IDs: ' + dup.original.ID + ' vs ' + dup.duplicate.ID + ' | Date: ' + dup.original.FIRST_START_DATE + '</small>';
+                            html += '</div>';
+                        });
+                    }
+                    
+                    html += '</details>';
+                    html += '</div>';
+                }
+                
+                // Show recurring events info if any
+                if (stats.title_only_duplicates_found > 0) {
+                    html += '<div class="notice notice-info">';
+                    html += '<h4>Possible Recurring Events</h4>';
+                    html += '<details>';
+                    html += '<summary>Click to see events with same titles but different dates</summary>';
+                    data.duplicate_info.title_duplicates.forEach(function(dup) {
+                        html += '<div style="margin: 10px 0; padding: 10px; background: #e7f3ff; border-left: 3px solid #0073aa;">';
+                        html += '<strong>' + dup.original.TITLE + '</strong><br>';
+                        html += '<small>ID ' + dup.original.ID + ': ' + dup.original.FIRST_START_DATE + '</small><br>';
+                        html += '<small>ID ' + dup.similar.ID + ': ' + dup.similar.FIRST_START_DATE + '</small>';
+                        html += '</div>';
+                    });
+                    html += '</details>';
+                    html += '</div>';
+                }
+                
+                // Show event list
+                if (data.duplicate_info.unique_events && data.duplicate_info.unique_events.length > 0) {
+                    html += '<h4>Unique Events to be Imported (' + data.duplicate_info.unique_events.length + '):</h4>';
+                    html += '<div class="event-list">';
+                    data.duplicate_info.unique_events.forEach(function(event) {
+                        html += '<div class="event-item">';
+                        html += '<strong>' + event.TITLE + '</strong> <small>(ID: ' + event.ID + ')</small><br>';
+                        html += '<small>Display: ' + event.DISPLAY_START + ' - ' + event.DISPLAY_END + '</small><br>';
+                        html += '<small>Event Date: ' + event.FIRST_START_DATE + '</small>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
                 }
                 
                 $('#preflight-results').html(html);
@@ -256,7 +341,7 @@ class CAES_Event_Import_Tool {
             
             function startImport() {
                 const batchSize = parseInt($('#batch_size').val());
-                const totalEvents = preflightData.total_events;
+                const totalEvents = preflightData.unique_events; // Use unique events count
                 const totalBatches = Math.ceil(totalEvents / batchSize);
                 
                 $('#import-progress').html(
@@ -264,7 +349,7 @@ class CAES_Event_Import_Tool {
                     '<div class="import-progress">' +
                         '<div class="import-progress-bar" style="width: 0%">0%</div>' +
                     '</div>' +
-                    '<p>Processing batch 0 of ' + totalBatches + '</p>'
+                    '<p>Processing batch 0 of ' + totalBatches + ' (importing ' + totalEvents + ' unique events)</p>'
                 );
                 
                 $('#import-log').html('<h4>Import Log</h4>');
@@ -300,6 +385,13 @@ class CAES_Event_Import_Tool {
                                     '<div class="log-entry ' + logClass + '">' + result.message + '</div>'
                                 );
                             });
+                            
+                            // Log duplicates skipped if any
+                            if (response.data.duplicates_skipped > 0) {
+                                $('#import-log').append(
+                                    '<div class="log-entry log-warning">Skipped ' + response.data.duplicates_skipped + ' duplicate events in this batch</div>'
+                                );
+                            }
                             
                             // Continue with next batch or finish
                             if (currentBatch + 1 < totalBatches) {
@@ -349,9 +441,14 @@ class CAES_Event_Import_Tool {
             $events = $this->fetch_events_from_api($this->api_endpoint);
             $filtered_events = $this->filter_events_by_date($events, $start_date, $end_date);
             
+            // Analyze for duplicates
+            $duplicate_analysis = $this->analyze_duplicates($filtered_events);
+            
             wp_send_json_success(array(
                 'total_events' => count($filtered_events),
-                'events' => $filtered_events
+                'unique_events' => count($duplicate_analysis['unique_events']),
+                'events' => $filtered_events,
+                'duplicate_info' => $duplicate_analysis
             ));
             
         } catch (Exception $e) {
@@ -377,7 +474,12 @@ class CAES_Event_Import_Tool {
         try {
             $events = $this->fetch_events_from_api($this->api_endpoint);
             $filtered_events = $this->filter_events_by_date($events, $start_date, $end_date);
-            $batch_events = array_slice($filtered_events, $batch_start, $batch_size);
+            
+            // Remove duplicates before processing
+            $duplicate_analysis = $this->analyze_duplicates($filtered_events);
+            $unique_events = $duplicate_analysis['unique_events'];
+            
+            $batch_events = array_slice($unique_events, $batch_start, $batch_size);
             
             $results = array();
             foreach ($batch_events as $event_data) {
@@ -389,7 +491,8 @@ class CAES_Event_Import_Tool {
                 'batch_start' => $batch_start,
                 'batch_size' => $batch_size,
                 'processed' => count($batch_events),
-                'results' => $results
+                'results' => $results,
+                'duplicates_skipped' => count($filtered_events) - count($unique_events)
             ));
             
         } catch (Exception $e) {
@@ -459,8 +562,78 @@ class CAES_Event_Import_Tool {
     }
     
     /**
-     * Parse API date format to timestamp
+     * Analyze events for duplicates
      */
+    private function analyze_duplicates($events) {
+        $analysis = array(
+            'exact_duplicates' => array(),      // Same ID
+            'title_date_duplicates' => array(), // Same title + start date
+            'title_duplicates' => array(),      // Same title only
+            'unique_events' => array(),
+            'stats' => array()
+        );
+        
+        $seen_ids = array();
+        $seen_title_dates = array();
+        $seen_titles = array();
+        $unique_events = array();
+        
+        foreach ($events as $event) {
+            $event_id = $event['ID'];
+            $title = trim($event['TITLE']);
+            $start_date = $event['FIRST_START_DATE'];
+            
+            // Create keys for comparison
+            $title_date_key = $title . '|' . $start_date;
+            $title_key = strtolower($title);
+            
+            // Check for exact ID duplicates
+            if (isset($seen_ids[$event_id])) {
+                $analysis['exact_duplicates'][] = array(
+                    'original' => $seen_ids[$event_id],
+                    'duplicate' => $event
+                );
+                continue; // Skip this duplicate
+            }
+            
+            // Check for title + date duplicates
+            if (isset($seen_title_dates[$title_date_key])) {
+                $analysis['title_date_duplicates'][] = array(
+                    'original' => $seen_title_dates[$title_date_key],
+                    'duplicate' => $event,
+                    'reason' => 'Same title and start date'
+                );
+                continue; // Skip this duplicate
+            }
+            
+            // Check for title-only duplicates (but different dates)
+            if (isset($seen_titles[$title_key])) {
+                $analysis['title_duplicates'][] = array(
+                    'original' => $seen_titles[$title_key],
+                    'similar' => $event,
+                    'reason' => 'Same title, different dates'
+                );
+                // Don't skip - these might be legitimate recurring events
+            }
+            
+            // Store for future comparison
+            $seen_ids[$event_id] = $event;
+            $seen_title_dates[$title_date_key] = $event;
+            $seen_titles[$title_key] = $event;
+            $unique_events[] = $event;
+        }
+        
+        $analysis['unique_events'] = $unique_events;
+        $analysis['stats'] = array(
+            'total_from_api' => count($events),
+            'unique_after_dedup' => count($unique_events),
+            'exact_duplicates_found' => count($analysis['exact_duplicates']),
+            'title_date_duplicates_found' => count($analysis['title_date_duplicates']),
+            'title_only_duplicates_found' => count($analysis['title_duplicates'])
+        );
+        
+        return $analysis;
+    }
     private function parse_api_date($date_string) {
         // API format: "July, 17 2025 00:00:00"
         // Remove comma after month
