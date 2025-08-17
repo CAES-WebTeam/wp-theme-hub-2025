@@ -65,15 +65,7 @@
 <h2 class="wp-block-heading has-text-align-center is-style-default has-oswald-font-family" style="text-transform:uppercase">Explore</h2>
 <!-- /wp:heading -->
 
-<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
-<div class="wp-block-buttons"><!-- wp:button {"className":"is-style-caes-hub-red-border","style":{"spacing":{"padding":{"left":"var:preset|spacing|50","right":"var:preset|spacing|50","top":"var:preset|spacing|30","bottom":"var:preset|spacing|30"}}}} -->
-<div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" style="padding-top:var(--wp--preset--spacing--30);padding-right:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--30);padding-left:var(--wp--preset--spacing--50)">CAES</a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"className":"is-style-caes-hub-red-border","style":{"spacing":{"padding":{"left":"var:preset|spacing|50","right":"var:preset|spacing|50","top":"var:preset|spacing|30","bottom":"var:preset|spacing|30"}}}} -->
-<div class="wp-block-button is-style-caes-hub-red-border"><a class="wp-block-button__link wp-element-button" style="padding-top:var(--wp--preset--spacing--30);padding-right:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--30);padding-left:var(--wp--preset--spacing--50)">CAES Departments</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons --></div>
+<!-- wp:categories {"taxonomy":"event_caes_departments","displayAsDropdown":true,"showLabel":false,"align":"center"} /--></div>
 <!-- /wp:group -->
 
 <!-- wp:group {"align":"wide","style":{"spacing":{"blockGap":"var:preset|spacing|50"}},"layout":{"type":"default"}} -->
@@ -81,7 +73,7 @@
 <h2 class="wp-block-heading is-style-caes-hub-section-heading">CAES Events</h2>
 <!-- /wp:heading -->
 
-<!-- wp:query {"queryId":1,"query":{"postType":"events","offset":0,"filterByDate":true,"perPage":6,"event_type":"CAES"},"namespace":"upcoming-events","className":"caes-hub-post-list-grid"} -->
+<!-- wp:query {"queryId":1,"query":{"postType":"events","offset":0,"filterByDate":true,"perPage":50,"event_type":"CAES","taxQuery":{"event_caes_departments":[1514]}},"namespace":"upcoming-events","className":"caes-hub-post-list-grid"} -->
 <div class="wp-block-query caes-hub-post-list-grid"><!-- wp:post-template {"layout":{"type":"grid","columnCount":null,"minimumColumnWidth":"24rem"}} -->
 <!-- wp:group {"metadata":{"name":"caes-hub-post-list-grid-item"},"className":"caes-hub-post-list-grid-item","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"flex","orientation":"vertical","justifyContent":"stretch"}} -->
 <div class="wp-block-group caes-hub-post-list-grid-item"><!-- wp:caes-hub/event-details-featured-image {"className":"caes-hub-post-list-img-container"} /-->
@@ -100,13 +92,7 @@
 <!-- wp:caes-hub/action-share /--></div>
 <!-- /wp:group --></div>
 <!-- /wp:group -->
-<!-- /wp:post-template -->
-
-<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"right"}} -->
-<div class="wp-block-buttons"><!-- wp:button {"className":"is-style-caes-hub-arrow"} -->
-<div class="wp-block-button is-style-caes-hub-arrow"><a class="wp-block-button__link wp-element-button" href="/events/caes/">View more CAES events</a></div>
-<!-- /wp:button --></div>
-<!-- /wp:buttons --></div>
+<!-- /wp:post-template --></div>
 <!-- /wp:query --></div>
 <!-- /wp:group --></div>
 <!-- /wp:group --></main>
