@@ -49,24 +49,67 @@ require get_template_directory() . '/inc/event-import-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 
-// Check NPC event approval status
+// One-time script to approve all events for their assigned taxonomies
 add_action('wp_footer', function() {
-    if (current_user_can('administrator')) {
-        echo '<div style="background: orange; padding: 20px; margin: 20px; border: 2px solid red; position: fixed; top: 100px; left: 0; z-index: 9999; max-width: 400px;">';
-        echo '<h3>NPC Event Approval Status</h3>';
+    if (current_user_can('administrator') && isset($_GET['approve_all_events'])) {
+        echo '<div style="background: blue; color: white; padding: 20px; margin: 20px; border: 2px solid navy; position: fixed; top: 0; left: 0; z-index: 9999; max-width: 600px; max-height: 400px; overflow: auto;">';
+        echo '<h3>Approving All Events...</h3>';
         
-        $event_id = 86574;
-        $approval_status = get_post_meta($event_id, '_calendar_approval_status', true);
+        // Get all events
+        $all_events = get_posts(array(
+            'post_type' => 'events',
+            'post_status' => 'publish',
+            'numberposts' => -1
+        ));
         
-        echo '<h4>Approval Status:</h4>';
-        echo '<pre>';
-        if (empty($approval_status)) {
-            echo 'NO APPROVAL STATUS META FIELD';
-        } else {
-            print_r($approval_status);
+        echo '<p>Found ' . count($all_events) . ' events to process...</p>';
+        
+        $updated_count = 0;
+        
+        foreach ($all_events as $event) {
+            // Get all CAES departments assigned to this event
+            $assigned_terms = wp_get_post_terms($event->ID, 'event_caes_departments');
+            
+            if (!empty($assigned_terms)) {
+                // Build approval status array
+                $approval_status = array();
+                
+                foreach ($assigned_terms as $term) {
+                    $approval_status[$term->term_id] = 'approved';
+                }
+                
+                // Update the approval status
+                update_post_meta($event->ID, '_calendar_approval_status', $approval_status);
+                
+                echo '<p>✓ Approved: ' . $event->post_title . ' for ' . count($assigned_terms) . ' calendar(s)</p>';
+                $updated_count++;
+            } else {
+                echo '<p>⚠ Skipped: ' . $event->post_title . ' (no calendars assigned)</p>';
+            }
         }
-        echo '</pre>';
         
+        echo '<h4>✅ DONE! Updated ' . $updated_count . ' events</h4>';
+        echo '<p><strong>You can now remove this code and refresh the page.</strong></p>';
         echo '</div>';
+    }
+});
+
+// Also auto-approve future events when they're saved
+add_action('save_post_events', function($post_id) {
+    // Skip during bulk operations and autosaves
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    if (wp_is_post_revision($post_id)) return;
+    
+    // Get assigned terms
+    $assigned_terms = wp_get_post_terms($post_id, 'event_caes_departments');
+    
+    if (!empty($assigned_terms)) {
+        $approval_status = array();
+        
+        foreach ($assigned_terms as $term) {
+            $approval_status[$term->term_id] = 'approved';
+        }
+        
+        update_post_meta($post_id, '_calendar_approval_status', $approval_status);
     }
 });
