@@ -145,31 +145,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-/** Event Query Block Variation - START */
-
-// Register event query block variation
-
-const eventsVariation = 'upcoming-events';
-(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockVariation)('core/query', {
-  name: eventsVariation,
-  title: 'Upcoming Events',
-  description: 'Displays a list of upcoming events',
-  icon: 'calendar-alt',
-  attributes: {
-    namespace: eventsVariation,
-    query: {
-      postType: 'events',
-      perPage: 4,
-      offset: 0,
-      filterByDate: true
-    }
-  },
-  isActive: ['namespace'],
-  scope: ['inserter'],
-  innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
-});
-/** Event Query Block Variation - END */
-
 /** Publications Query Block Variation - START */
 
 const publicationsVariation = 'pubs-feed';
