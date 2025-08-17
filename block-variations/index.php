@@ -21,31 +21,6 @@ function variation_assets()
 }
 add_action('enqueue_block_editor_assets', 'variation_assets');
 
-
-/*** START EVENTS */
-// Backend
-function rest_event_type($args, $request)
-{
-    $event_type = $request->get_param('event_type');
-
-    // Sanitize and confirm the sanitized value
-    $sanitized_event_type = sanitize_text_field($event_type);
-
-    if (!empty($sanitized_event_type) && $sanitized_event_type !== 'All') {
-        $args['meta_key'] = 'event_type';
-        $args['meta_value'] = $sanitized_event_type;
-        $args['meta_compare'] = '='; // Explicitly set for exact matching
-    } else {
-        // When "All" is selected, remove the filter
-        unset($args['meta_key'], $args['meta_value'], $args['meta_compare']);
-    }
-
-    return $args;
-}
-add_filter('rest_events_query', 'rest_event_type', 10, 2);
-
-/*** END EVENTS */
-
 /*** START PUBLICATIONS */
 // Backend
 function rest_pub_language_orderby($args, $request)
