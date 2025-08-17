@@ -9,6 +9,18 @@
 	Load files
 \*------------------------------------*/
 
+// TEMPORARY: Disable all query modifications to test
+add_action('init', function() {
+    if (!is_admin() && current_user_can('administrator')) {
+        // Remove all query-related filters temporarily
+        remove_all_filters('pre_get_posts');
+        remove_all_filters('query_loop_block_query_vars');
+        remove_all_filters('posts_pre_query');
+        remove_all_filters('the_posts');
+    }
+}, 999);
+
+
 require get_template_directory() . '/inc/theme-support.php';
 require get_template_directory() . '/inc/post-types.php';
 require get_template_directory() . '/inc/blocks.php';
@@ -156,28 +168,32 @@ add_filter('query_loop_block_query_vars', function($query_vars, $block) {
     return $query_vars;
 }, 999, 2);
 
-// Test the exact same query that the block is trying to run
+// Test with EXACT same parameters as the block
 add_action('wp_footer', function() {
     if (current_user_can('administrator')) {
         echo '<div style="background: orange; padding: 20px; margin: 20px; border: 2px solid black; position: fixed; top: 0; left: 0; z-index: 9999; max-width: 400px;">';
-        echo '<h3>Direct Query Test</h3>';
+        echo '<h3>Exact Block Query Test</h3>';
         
-        // Test the exact same query vars the block is using
+        // Use EXACTLY the same parameters as the block
         $test_query = new WP_Query(array(
             'post_type' => 'events',
             'order' => 'DESC',
             'orderby' => 'date',
-            'posts_per_page' => 9,
+            'post__not_in' => array(),
             'tax_query' => array(
                 array(
                     'taxonomy' => 'event_caes_departments',
                     'terms' => array(1514),
-                    'include_children' => false
+                    'include_children' => '' // Empty string like the block
                 )
-            )
+            ),
+            'offset' => 0,
+            'posts_per_page' => 9,
+            'author__in' => array()
         ));
         
         echo '<p>Found posts: ' . $test_query->found_posts . '</p>';
+        echo '<p>Query SQL: ' . $test_query->request . '</p>';
         echo '<p>Posts:</p><ul>';
         if ($test_query->have_posts()) {
             while ($test_query->have_posts()) {
