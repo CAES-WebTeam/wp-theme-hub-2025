@@ -1428,11 +1428,3 @@ function preserve_calendars_before_save() {
         }
     }
 }
-
-// Use events archive template for all event-related taxonomies
-add_filter('template_hierarchy', function($templates) {
-    if (is_tax('event_caes_departments') || is_tax('event_series')) {
-        array_unshift($templates, 'archive-events.html');
-    }
-    return $templates;
-});
