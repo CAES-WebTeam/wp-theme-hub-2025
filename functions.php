@@ -49,58 +49,23 @@ require get_template_directory() . '/inc/event-import-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 
-// Database-level debug for the NPC event
+// Check NPC event approval status
 add_action('wp_footer', function() {
     if (current_user_can('administrator')) {
-        global $wpdb;
+        echo '<div style="background: orange; padding: 20px; margin: 20px; border: 2px solid red; position: fixed; top: 100px; left: 0; z-index: 9999; max-width: 400px;">';
+        echo '<h3>NPC Event Approval Status</h3>';
         
-        echo '<div style="background: lightgreen; padding: 20px; margin: 20px; border: 2px solid green; position: fixed; bottom: 0; right: 0; z-index: 9999; max-width: 500px;">';
-        echo '<h3>Database Debug for NPC Event</h3>';
+        $event_id = 86574;
+        $approval_status = get_post_meta($event_id, '_calendar_approval_status', true);
         
-        $event_id = 86574; // NPC event ID
-        
-        // 1. Check post status
-        $post = get_post($event_id);
-        echo '<p>Post status: ' . $post->post_status . '</p>';
-        echo '<p>Post type: ' . $post->post_type . '</p>';
-        
-        // 2. Check term relationships in database
-        $relationships = $wpdb->get_results($wpdb->prepare("
-            SELECT tr.term_taxonomy_id, tt.term_id, t.name 
-            FROM {$wpdb->term_relationships} tr
-            JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-            JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
-            WHERE tr.object_id = %d AND tt.taxonomy = 'event_caes_departments'
-        ", $event_id));
-        
-        echo '<h4>Database relationships:</h4>';
-        foreach ($relationships as $rel) {
-            echo '<p>Term: ' . $rel->name . ' (ID: ' . $rel->term_id . ', taxonomy_id: ' . $rel->term_taxonomy_id . ')</p>';
+        echo '<h4>Approval Status:</h4>';
+        echo '<pre>';
+        if (empty($approval_status)) {
+            echo 'NO APPROVAL STATUS META FIELD';
+        } else {
+            print_r($approval_status);
         }
-        
-        // 3. Test simple query without any other filters
-        $simple_query = new WP_Query(array(
-            'post_type' => 'events',
-            'post_status' => 'any', // Include all statuses
-            'posts_per_page' => -1,
-            'tax_query' => array(
-                array(
-                    'taxonomy' => 'event_caes_departments',
-                    'field' => 'term_id',
-                    'terms' => 1528
-                )
-            )
-        ));
-        
-        echo '<h4>Simple query (post_status = any):</h4>';
-        echo '<p>Found: ' . $simple_query->found_posts . ' posts</p>';
-        if ($simple_query->have_posts()) {
-            while ($simple_query->have_posts()) {
-                $simple_query->the_post();
-                echo '<p>' . get_the_title() . ' (Status: ' . get_post_status() . ')</p>';
-            }
-        }
-        wp_reset_postdata();
+        echo '</pre>';
         
         echo '</div>';
     }
