@@ -48,3 +48,30 @@ require get_template_directory() . '/inc/event-import-tool.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+
+// Debug approval status for your events
+add_action('wp_footer', function() {
+    if (current_user_can('administrator')) {
+        echo '<div style="background: lightblue; padding: 20px; margin: 20px; border: 2px solid blue; position: fixed; bottom: 0; left: 0; z-index: 9999; max-width: 600px; max-height: 400px; overflow: auto;">';
+        echo '<h3>Event Approval Status Debug</h3>';
+        
+        // Check the specific events we know exist
+        $event_ids = [86577, 86573, 86576, 86569, 86570, 86571, 86572, 86568, 78770];
+        
+        foreach ($event_ids as $event_id) {
+            $post_title = get_the_title($event_id);
+            $approval_status = get_post_meta($event_id, '_calendar_approval_status', true);
+            
+            echo '<h4>' . $post_title . ' (ID: ' . $event_id . ')</h4>';
+            echo '<pre style="font-size: 11px; background: white; padding: 5px;">';
+            if (empty($approval_status)) {
+                echo 'NO APPROVAL STATUS META FIELD';
+            } else {
+                print_r($approval_status);
+            }
+            echo '</pre>';
+        }
+        
+        echo '</div>';
+    }
+});
