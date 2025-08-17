@@ -144,3 +144,14 @@ add_filter('query_loop_block_query_vars', function($query_vars, $block) {
     }
     return $query_vars;
 }, 999, 2);
+
+// Add this to see exactly what the Query Loop block is doing
+add_filter('query_loop_block_query_vars', function($query_vars, $block) {
+    if (current_user_can('administrator') && isset($query_vars['post_type']) && $query_vars['post_type'] === 'events') {
+        echo '<div style="background: yellow; padding: 10px; margin: 10px; border: 1px solid black;">';
+        echo '<h4>Query Loop Block Query Vars:</h4>';
+        echo '<pre>' . print_r($query_vars, true) . '</pre>';
+        echo '</div>';
+    }
+    return $query_vars;
+}, 999, 2);
