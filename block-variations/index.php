@@ -21,6 +21,31 @@ function variation_assets()
 }
 add_action('enqueue_block_editor_assets', 'variation_assets');
 
+
+/*** START EVENTS */
+// Backend
+function rest_event_type($args, $request)
+{
+    $event_type = $request->get_param('event_type');
+
+    // Sanitize and confirm the sanitized value
+    $sanitized_event_type = sanitize_text_field($event_type);
+
+    if (!empty($sanitized_event_type) && $sanitized_event_type !== 'All') {
+        $args['meta_key'] = 'event_type';
+        $args['meta_value'] = $sanitized_event_type;
+        $args['meta_compare'] = '='; // Explicitly set for exact matching
+    } else {
+        // When "All" is selected, remove the filter
+        unset($args['meta_key'], $args['meta_value'], $args['meta_compare']);
+    }
+
+    return $args;
+}
+add_filter('rest_events_query', 'rest_event_type', 10, 2);
+
+/*** END EVENTS */
+
 /*** START PUBLICATIONS */
 // Backend
 function rest_pub_language_orderby($args, $request)
@@ -56,10 +81,14 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 
+// Global variable to store debug info
+global $debug_stories_feed;
+$debug_stories_feed = [];
+
 // Consolidated filter function for all query modifications
 function variations_query_filter($query, $block)
 {
-    global $parsed_blocks_for_filtering;
+    global $parsed_blocks_for_filtering, $debug_stories_feed;
 
     // Get block query ID
     $block_query_id = null;
@@ -106,6 +135,33 @@ function variations_query_filter($query, $block)
                 );
             }
         }
+
+        // For upcoming-events blocks
+        if ('upcoming-events' === $namespace) {
+            // Debug: Store what's already in the query
+            global $debug_events_query;
+            $debug_events_query[] = [
+                'step' => 'Before custom filter',
+                'query' => $query,
+                'parsed_block_attrs' => $parsed_block['attrs'] ?? 'No attrs'
+            ];
+
+            if (!empty($parsed_block['attrs']['query']['event_type'])) {
+                $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
+                $meta_query[] = array(
+                    'key' => 'event_type',
+                    'value' => $event_type,
+                    'compare' => '='
+                );
+
+                $debug_events_query[] = [
+                    'step' => 'Added event_type meta query',
+                    'event_type' => $event_type,
+                    'meta_query' => $meta_query
+                ];
+            }
+        }
+
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {

@@ -3,6 +3,40 @@ import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
 import { PanelBody, SelectControl, ToggleControl } from '@wordpress/components';
 
+/** Event Query Block Variation - START */
+
+// Register event query block variation
+const eventsVariation = 'upcoming-events';
+
+registerBlockVariation('core/query', {
+  name: eventsVariation,
+  title: 'Upcoming Events',
+  description: 'Displays a list of upcoming events',
+  icon: 'calendar-alt',
+  attributes: {
+    namespace: eventsVariation,
+    query: {
+      postType: 'events',
+      perPage: 4,
+      offset: 0,
+      filterByDate: true
+    },
+  },
+  isActive: ['namespace'],
+  scope: ['inserter'],
+  innerBlocks: [
+    [
+      'core/post-template',
+      {},
+      [
+        ['core/post-title']
+      ],
+    ]
+  ]
+});
+
+/** Event Query Block Variation - END */
+
 /** Publications Query Block Variation - START */
 
 const publicationsVariation = 'pubs-feed';
