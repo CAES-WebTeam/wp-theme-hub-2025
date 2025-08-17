@@ -48,3 +48,40 @@ require get_template_directory() . '/inc/event-import-tool.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+
+// Check Tifton events specifically
+add_action('wp_footer', function() {
+    if (current_user_can('administrator')) {
+        echo '<div style="background: yellow; padding: 20px; margin: 20px; border: 2px solid orange; position: fixed; top: 0; right: 0; z-index: 9999; max-width: 400px;">';
+        echo '<h3>Tifton Events Debug</h3>';
+        
+        // Get events assigned to Tifton Campus Conference Center (term ID 1528)
+        $tifton_events = get_posts(array(
+            'post_type' => 'events',
+            'numberposts' => 10,
+            'tax_query' => array(
+                array(
+                    'taxonomy' => 'event_caes_departments',
+                    'field' => 'term_id',
+                    'terms' => 1528
+                )
+            )
+        ));
+        
+        echo '<p>Found ' . count($tifton_events) . ' events with Tifton term</p>';
+        
+        foreach ($tifton_events as $event) {
+            $approval_status = get_post_meta($event->ID, '_calendar_approval_status', true);
+            echo '<h4>' . $event->post_title . ' (ID: ' . $event->ID . ')</h4>';
+            echo '<pre style="font-size: 10px; background: white; padding: 3px;">';
+            if (empty($approval_status)) {
+                echo 'NO APPROVAL STATUS';
+            } else {
+                print_r($approval_status);
+            }
+            echo '</pre>';
+        }
+        
+        echo '</div>';
+    }
+});
