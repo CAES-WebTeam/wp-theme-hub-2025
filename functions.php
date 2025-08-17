@@ -49,57 +49,58 @@ require get_template_directory() . '/inc/event-import-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 
-// Debug Tifton term and events more thoroughly
+// Database-level debug for the NPC event
 add_action('wp_footer', function() {
     if (current_user_can('administrator')) {
-        echo '<div style="background: pink; padding: 20px; margin: 20px; border: 2px solid red; position: fixed; top: 50px; right: 0; z-index: 9999; max-width: 500px;">';
-        echo '<h3>Tifton Term Debug</h3>';
+        global $wpdb;
         
-        // 1. Check what the actual term ID is for "Tifton Campus Conference Center"
-        $tifton_term = get_term_by('name', 'Tifton Campus Conference Center', 'event_caes_departments');
-        if ($tifton_term) {
-            echo '<p>Tifton term found: ' . $tifton_term->name . ' (ID: ' . $tifton_term->term_id . ')</p>';
-            
-            // Check events with this term using the correct ID
-            $tifton_events = get_posts(array(
-                'post_type' => 'events',
-                'numberposts' => 10,
-                'tax_query' => array(
-                    array(
-                        'taxonomy' => 'event_caes_departments',
-                        'field' => 'term_id',
-                        'terms' => $tifton_term->term_id
-                    )
-                )
-            ));
-            
-            echo '<p>Events with correct term ID: ' . count($tifton_events) . '</p>';
-            foreach ($tifton_events as $event) {
-                echo '<p>' . $event->post_title . ' (ID: ' . $event->ID . ')</p>';
-            }
-        } else {
-            echo '<p>Tifton term NOT found by name</p>';
+        echo '<div style="background: lightgreen; padding: 20px; margin: 20px; border: 2px solid green; position: fixed; bottom: 0; right: 0; z-index: 9999; max-width: 500px;">';
+        echo '<h3>Database Debug for NPC Event</h3>';
+        
+        $event_id = 86574; // NPC event ID
+        
+        // 1. Check post status
+        $post = get_post($event_id);
+        echo '<p>Post status: ' . $post->post_status . '</p>';
+        echo '<p>Post type: ' . $post->post_type . '</p>';
+        
+        // 2. Check term relationships in database
+        $relationships = $wpdb->get_results($wpdb->prepare("
+            SELECT tr.term_taxonomy_id, tt.term_id, t.name 
+            FROM {$wpdb->term_relationships} tr
+            JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+            JOIN {$wpdb->terms} t ON tt.term_id = t.term_id
+            WHERE tr.object_id = %d AND tt.taxonomy = 'event_caes_departments'
+        ", $event_id));
+        
+        echo '<h4>Database relationships:</h4>';
+        foreach ($relationships as $rel) {
+            echo '<p>Term: ' . $rel->name . ' (ID: ' . $rel->term_id . ', taxonomy_id: ' . $rel->term_taxonomy_id . ')</p>';
         }
         
-        // 2. Check the specific event "NPC Night of the Gladiators" 
-        $npc_event = get_posts(array(
+        // 3. Test simple query without any other filters
+        $simple_query = new WP_Query(array(
             'post_type' => 'events',
-            'name' => 'npc-night-of-the-gladiators', // slug
-            'numberposts' => 1
+            'post_status' => 'any', // Include all statuses
+            'posts_per_page' => -1,
+            'tax_query' => array(
+                array(
+                    'taxonomy' => 'event_caes_departments',
+                    'field' => 'term_id',
+                    'terms' => 1528
+                )
+            )
         ));
         
-        if (!empty($npc_event)) {
-            $event_id = $npc_event[0]->ID;
-            echo '<h4>NPC Event (ID: ' . $event_id . '):</h4>';
-            $terms = wp_get_post_terms($event_id, 'event_caes_departments');
-            echo '<p>Terms: ';
-            foreach ($terms as $term) {
-                echo $term->name . ' (ID: ' . $term->term_id . '), ';
+        echo '<h4>Simple query (post_status = any):</h4>';
+        echo '<p>Found: ' . $simple_query->found_posts . ' posts</p>';
+        if ($simple_query->have_posts()) {
+            while ($simple_query->have_posts()) {
+                $simple_query->the_post();
+                echo '<p>' . get_the_title() . ' (Status: ' . get_post_status() . ')</p>';
             }
-            echo '</p>';
-        } else {
-            echo '<p>NPC event not found</p>';
         }
+        wp_reset_postdata();
         
         echo '</div>';
     }
