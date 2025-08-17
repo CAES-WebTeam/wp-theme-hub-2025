@@ -49,37 +49,56 @@ require get_template_directory() . '/inc/event-import-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 
-// Check Tifton events specifically
+// Debug Tifton term and events more thoroughly
 add_action('wp_footer', function() {
     if (current_user_can('administrator')) {
-        echo '<div style="background: yellow; padding: 20px; margin: 20px; border: 2px solid orange; position: fixed; top: 0; right: 0; z-index: 9999; max-width: 400px;">';
-        echo '<h3>Tifton Events Debug</h3>';
+        echo '<div style="background: pink; padding: 20px; margin: 20px; border: 2px solid red; position: fixed; top: 50px; right: 0; z-index: 9999; max-width: 500px;">';
+        echo '<h3>Tifton Term Debug</h3>';
         
-        // Get events assigned to Tifton Campus Conference Center (term ID 1528)
-        $tifton_events = get_posts(array(
-            'post_type' => 'events',
-            'numberposts' => 10,
-            'tax_query' => array(
-                array(
-                    'taxonomy' => 'event_caes_departments',
-                    'field' => 'term_id',
-                    'terms' => 1528
+        // 1. Check what the actual term ID is for "Tifton Campus Conference Center"
+        $tifton_term = get_term_by('name', 'Tifton Campus Conference Center', 'event_caes_departments');
+        if ($tifton_term) {
+            echo '<p>Tifton term found: ' . $tifton_term->name . ' (ID: ' . $tifton_term->term_id . ')</p>';
+            
+            // Check events with this term using the correct ID
+            $tifton_events = get_posts(array(
+                'post_type' => 'events',
+                'numberposts' => 10,
+                'tax_query' => array(
+                    array(
+                        'taxonomy' => 'event_caes_departments',
+                        'field' => 'term_id',
+                        'terms' => $tifton_term->term_id
+                    )
                 )
-            )
+            ));
+            
+            echo '<p>Events with correct term ID: ' . count($tifton_events) . '</p>';
+            foreach ($tifton_events as $event) {
+                echo '<p>' . $event->post_title . ' (ID: ' . $event->ID . ')</p>';
+            }
+        } else {
+            echo '<p>Tifton term NOT found by name</p>';
+        }
+        
+        // 2. Check the specific event "NPC Night of the Gladiators" 
+        $npc_event = get_posts(array(
+            'post_type' => 'events',
+            'name' => 'npc-night-of-the-gladiators', // slug
+            'numberposts' => 1
         ));
         
-        echo '<p>Found ' . count($tifton_events) . ' events with Tifton term</p>';
-        
-        foreach ($tifton_events as $event) {
-            $approval_status = get_post_meta($event->ID, '_calendar_approval_status', true);
-            echo '<h4>' . $event->post_title . ' (ID: ' . $event->ID . ')</h4>';
-            echo '<pre style="font-size: 10px; background: white; padding: 3px;">';
-            if (empty($approval_status)) {
-                echo 'NO APPROVAL STATUS';
-            } else {
-                print_r($approval_status);
+        if (!empty($npc_event)) {
+            $event_id = $npc_event[0]->ID;
+            echo '<h4>NPC Event (ID: ' . $event_id . '):</h4>';
+            $terms = wp_get_post_terms($event_id, 'event_caes_departments');
+            echo '<p>Terms: ';
+            foreach ($terms as $term) {
+                echo $term->name . ' (ID: ' . $term->term_id . '), ';
             }
-            echo '</pre>';
+            echo '</p>';
+        } else {
+            echo '<p>NPC event not found</p>';
         }
         
         echo '</div>';
