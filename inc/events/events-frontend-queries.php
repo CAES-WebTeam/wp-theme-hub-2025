@@ -24,7 +24,7 @@ function get_approved_events_for_calendar($calendar_term_id, $args = array()) {
         'meta_query' => array(
             array(
                 'key' => '_calendar_approval_status',
-                'value' => serialize(strval($calendar_term_id)) . ';s:8:"approved"',
+                'value' => 'i:' . $calendar_term_id . ';s:8:"approved"',
                 'compare' => 'LIKE'
             )
         ),
@@ -60,7 +60,7 @@ function get_approved_events_for_calendars($calendar_term_ids, $args = array()) 
     foreach ($calendar_term_ids as $term_id) {
         $meta_query[] = array(
             'key' => '_calendar_approval_status',
-            'value' => serialize(strval($term_id)) . ';s:8:"approved"',
+            'value' => 'i:' . $term_id . ';s:8:"approved"',
             'compare' => 'LIKE'
         );
     }
@@ -258,7 +258,7 @@ function modify_events_query_for_approvals($query) {
             $meta_query = $query->get('meta_query') ?: [];
             $meta_query[] = [
                 'key' => '_calendar_approval_status',
-                'value' => serialize(strval($current_term->term_id)) . ';s:8:"approved"',
+                'value' => 'i:' . $current_term->term_id . ';s:8:"approved"',
                 'compare' => 'LIKE'
             ];
             $query->set('meta_query', $meta_query);
@@ -287,7 +287,7 @@ function modify_events_query_for_approvals($query) {
             if ($approved_calendar) {
                 $meta_query[] = [
                     'key' => '_calendar_approval_status',
-                    'value' => serialize(strval($approved_calendar)) . ';s:8:"approved"',
+                    'value' => 'i:' . $approved_calendar . ';s:8:"approved"',
                     'compare' => 'LIKE'
                 ];
                 
@@ -323,7 +323,7 @@ function modify_events_query_for_approvals($query) {
                 foreach ($calendar_ids as $term_id) {
                     $approval_meta_query[] = [
                         'key' => '_calendar_approval_status',
-                        'value' => serialize(strval($term_id)) . ';s:8:"approved"',
+                        'value' => 'i:' . $term_id . ';s:8:"approved"',
                         'compare' => 'LIKE'
                     ];
                 }
@@ -383,7 +383,7 @@ function modify_wp_query_for_approvals($query) {
                         $term_id = is_numeric($terms[0]) ? $terms[0] : get_term_by('slug', $terms[0], 'event_caes_departments')->term_id;
                         $meta_query[] = [
                             'key' => '_calendar_approval_status',
-                            'value' => serialize(strval($term_id)) . ';s:8:"approved"',
+                            'value' => 'i:' . $term_id . ';s:8:"approved"',
                             'compare' => 'LIKE'
                         ];
                     } else {
@@ -393,7 +393,7 @@ function modify_wp_query_for_approvals($query) {
                             $term_id = is_numeric($term) ? $term : get_term_by('slug', $term, 'event_caes_departments')->term_id;
                             $approval_meta_query[] = [
                                 'key' => '_calendar_approval_status',
-                                'value' => serialize(strval($term_id)) . ';s:8:"approved"',
+                                'value' => 'i:' . $term_id . ';s:8:"approved"',
                                 'compare' => 'LIKE'
                             ];
                         }
@@ -426,7 +426,7 @@ function modify_wp_query_for_approvals($query) {
             if ($approved_calendar) {
                 $meta_query[] = [
                     'key' => '_calendar_approval_status',
-                    'value' => serialize(strval($approved_calendar)) . ';s:8:"approved"',
+                    'value' => 'i:' . $approved_calendar . ';s:8:"approved"',
                     'compare' => 'LIKE'
                 ];
                 
@@ -460,7 +460,7 @@ function modify_wp_query_for_approvals($query) {
                 foreach ($calendar_ids as $term_id) {
                     $approval_meta_query[] = [
                         'key' => '_calendar_approval_status',
-                        'value' => serialize(strval($term_id)) . ';s:8:"approved"',
+                        'value' => 'i:' . $term_id . ';s:8:"approved"',
                         'compare' => 'LIKE'
                     ];
                 }
