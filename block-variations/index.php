@@ -132,20 +132,6 @@ function variations_query_filter($query, $block)
             }
         }
 
-        // For upcoming-events blocks
-        if ('upcoming-events' === $namespace) {
-            // Only add meta query if event_type is NOT "All" and is not empty
-            if (!empty($parsed_block['attrs']['query']['event_type']) && $parsed_block['attrs']['query']['event_type'] !== 'All') {
-                $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
-                $meta_query[] = array(
-                    'key' => 'event_type',
-                    'value' => $event_type,
-                    'compare' => '='
-                );
-            }
-        }
-
-
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
             $query['post_type'] = ['post', 'shorthand_story'];

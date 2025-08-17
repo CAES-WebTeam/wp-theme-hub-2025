@@ -34,51 +34,6 @@ registerBlockVariation('core/query', {
     ]
   ]
 });
-
-// Check if block is using our Events variation
-const isEventsVariation = (props) => {
-  const { attributes: { namespace } } = props;
-  return namespace && namespace === eventsVariation;
-};
-
-// Add Inspector Controls for selecting event type
-const EventsVariationControls = ({ props: { attributes, setAttributes } }) => {
-  const { query } = attributes;
-
-  return (
-    <PanelBody title="Events Feed Settings">
-      <SelectControl
-        label="CAES or Extension"
-        value={query.event_type}
-        options={[
-          { value: 'All', label: 'All' },
-          { value: 'CAES', label: 'CAES' },
-          { value: 'Extension', label: 'Extension' }
-        ]}
-        onChange={(value) =>
-          setAttributes({ query: { ...query, event_type: value } })
-        }
-      />
-    </PanelBody>
-  );
-};
-
-
-export const withEventsVariationControls = (BlockEdit) => (props) => {
-  return isEventsVariation(props) ? (
-    <>
-      <BlockEdit {...props} />
-      <InspectorControls>
-        <EventsVariationControls props={props} />
-      </InspectorControls>
-    </>
-  ) : (
-    <BlockEdit {...props} />
-  );
-};
-
-addFilter('editor.BlockEdit', 'core/query', withEventsVariationControls);
-
 /** Event Query Block Variation - END */
 
 /** Publications Query Block Variation - START */
