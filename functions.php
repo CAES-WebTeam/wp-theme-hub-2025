@@ -145,13 +145,17 @@ add_filter('query_loop_block_query_vars', function($query_vars, $block) {
     return $query_vars;
 }, 999, 2);
 
-// Add this to see exactly what the Query Loop block is doing
+// Replace the previous debug with this simpler one
 add_filter('query_loop_block_query_vars', function($query_vars, $block) {
-    if (current_user_can('administrator') && isset($query_vars['post_type']) && $query_vars['post_type'] === 'events') {
-        echo '<div style="background: yellow; padding: 10px; margin: 10px; border: 1px solid black;">';
-        echo '<h4>Query Loop Block Query Vars:</h4>';
-        echo '<pre>' . print_r($query_vars, true) . '</pre>';
-        echo '</div>';
+    // Simple test - this should always show for any Query Loop block
+    echo '<div style="background: lime; padding: 10px; margin: 10px; border: 2px solid black; position: relative; z-index: 9999;">';
+    echo '<h4>QUERY LOOP DETECTED</h4>';
+    echo '<p>Post type: ' . (isset($query_vars['post_type']) ? $query_vars['post_type'] : 'not set') . '</p>';
+    if (isset($query_vars['post_type']) && $query_vars['post_type'] === 'events') {
+        echo '<h4>EVENTS QUERY VARS:</h4>';
+        echo '<pre style="font-size: 11px;">' . print_r($query_vars, true) . '</pre>';
     }
+    echo '</div>';
+    
     return $query_vars;
 }, 999, 2);
