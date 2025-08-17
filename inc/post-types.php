@@ -454,7 +454,7 @@ function replace_placeholder_for_main_bg_featured_image($block_content, $block)
     $placeholder_url = get_template_directory_uri() . '/assets/images/placeholder-bg-2-lake-herrick.jpg';
     $alt = get_the_title($post_id);
 
-    // Return a simple figure with placeholder image
+    // Return a simple figure with placeholder image...
     return sprintf(
         '<figure class="wp-block-post-featured-image caes-hub-main-bg-f-img"><img src="%s" alt="%s" class="wp-post-image" /></figure>',
         esc_url($placeholder_url),
