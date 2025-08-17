@@ -193,3 +193,50 @@ add_action('wp_footer', function() {
         echo '</div>';
     }
 });
+
+// Add this to check the actual database relationships
+add_action('wp_footer', function() {
+    if (current_user_can('administrator')) {
+        echo '<div style="background: pink; padding: 20px; margin: 20px; border: 2px solid black; position: fixed; top: 50px; left: 0; z-index: 9999; max-width: 500px; max-height: 400px; overflow: auto;">';
+        echo '<h3>Database Check</h3>';
+        
+        // Check the actual database relationships
+        global $wpdb;
+        
+        // Get term_taxonomy_id for our term
+        $term_info = $wpdb->get_row($wpdb->prepare("
+            SELECT t.term_id, t.name, tt.term_taxonomy_id, tt.taxonomy, tt.count 
+            FROM {$wpdb->terms} t 
+            JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id 
+            WHERE t.term_id = %d AND tt.taxonomy = %s
+        ", 1514, 'event_caes_departments'));
+        
+        echo '<h4>Term Info:</h4>';
+        echo '<pre>' . print_r($term_info, true) . '</pre>';
+        
+        if ($term_info) {
+            // Get actual post relationships
+            $relationships = $wpdb->get_results($wpdb->prepare("
+                SELECT tr.object_id, p.post_title, p.post_status
+                FROM {$wpdb->term_relationships} tr
+                JOIN {$wpdb->posts} p ON tr.object_id = p.ID
+                WHERE tr.term_taxonomy_id = %d AND p.post_type = 'events'
+                ORDER BY p.post_date DESC
+                LIMIT 10
+            ", $term_info->term_taxonomy_id));
+            
+            echo '<h4>Posts with this term (from database):</h4>';
+            if (!empty($relationships)) {
+                echo '<ul>';
+                foreach ($relationships as $rel) {
+                    echo '<li>' . $rel->post_title . ' (ID: ' . $rel->object_id . ', Status: ' . $rel->post_status . ')</li>';
+                }
+                echo '</ul>';
+            } else {
+                echo '<p>No relationships found in database</p>';
+            }
+        }
+        
+        echo '</div>';
+    }
+});
