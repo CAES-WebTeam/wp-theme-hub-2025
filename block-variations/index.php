@@ -199,8 +199,8 @@ function variations_query_filter($query, $block)
     return $query;
 }
 
-add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
-add_filter('query_loop_block_query_vars', 'variations_query_filter', 99, 2);
+// add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
+// add_filter('query_loop_block_query_vars', 'variations_query_filter', 99, 2);
 
 add_filter('render_block', function ($block_content, $block) {
     // Only apply to core/query blocks on author archive pages that use our variations

@@ -145,17 +145,51 @@ add_filter('query_loop_block_query_vars', function($query_vars, $block) {
     return $query_vars;
 }, 999, 2);
 
-// Replace the previous debug with this simpler one
+// Add this to see exactly what the Query Loop block is doing
 add_filter('query_loop_block_query_vars', function($query_vars, $block) {
-    // Simple test - this should always show for any Query Loop block
-    echo '<div style="background: lime; padding: 10px; margin: 10px; border: 2px solid black; position: relative; z-index: 9999;">';
-    echo '<h4>QUERY LOOP DETECTED</h4>';
-    echo '<p>Post type: ' . (isset($query_vars['post_type']) ? $query_vars['post_type'] : 'not set') . '</p>';
-    if (isset($query_vars['post_type']) && $query_vars['post_type'] === 'events') {
-        echo '<h4>EVENTS QUERY VARS:</h4>';
-        echo '<pre style="font-size: 11px;">' . print_r($query_vars, true) . '</pre>';
+    if (current_user_can('administrator') && isset($query_vars['post_type']) && $query_vars['post_type'] === 'events') {
+        echo '<div style="background: yellow; padding: 10px; margin: 10px; border: 1px solid black;">';
+        echo '<h4>Query Loop Block Query Vars:</h4>';
+        echo '<pre>' . print_r($query_vars, true) . '</pre>';
+        echo '</div>';
     }
-    echo '</div>';
-    
     return $query_vars;
 }, 999, 2);
+
+// Test the exact same query that the block is trying to run
+add_action('wp_footer', function() {
+    if (current_user_can('administrator')) {
+        echo '<div style="background: orange; padding: 20px; margin: 20px; border: 2px solid black; position: fixed; top: 0; left: 0; z-index: 9999; max-width: 400px;">';
+        echo '<h3>Direct Query Test</h3>';
+        
+        // Test the exact same query vars the block is using
+        $test_query = new WP_Query(array(
+            'post_type' => 'events',
+            'order' => 'DESC',
+            'orderby' => 'date',
+            'posts_per_page' => 9,
+            'tax_query' => array(
+                array(
+                    'taxonomy' => 'event_caes_departments',
+                    'terms' => array(1514),
+                    'include_children' => false
+                )
+            )
+        ));
+        
+        echo '<p>Found posts: ' . $test_query->found_posts . '</p>';
+        echo '<p>Posts:</p><ul>';
+        if ($test_query->have_posts()) {
+            while ($test_query->have_posts()) {
+                $test_query->the_post();
+                echo '<li>' . get_the_title() . '</li>';
+            }
+        } else {
+            echo '<li>No posts found</li>';
+        }
+        echo '</ul>';
+        wp_reset_postdata();
+        
+        echo '</div>';
+    }
+});
