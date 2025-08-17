@@ -229,6 +229,8 @@ add_action('init', function () {
         ),
         'public' => true,
         'show_in_rest' => true,
+        'show_ui' => true,
+        'publicly_queryable' => true,
         'query_var' => true,
         'hierarchical' => false,
         'show_admin_column' => false, // Hidden since we're using ACF
