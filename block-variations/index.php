@@ -81,9 +81,6 @@ function variations_pre_render_block($pre_render, $parsed_block)
     return $pre_render;
 }
 
-global $debug_events_query;
-$debug_events_query = [];
-
 // Consolidated filter function for all query modifications
 function variations_query_filter($query, $block)
 {
@@ -137,27 +134,14 @@ function variations_query_filter($query, $block)
 
         // For upcoming-events blocks
         if ('upcoming-events' === $namespace) {
-            // Debug: Store what's already in the query
-            global $debug_events_query;
-            $debug_events_query[] = [
-                'step' => 'Before custom filter',
-                'query' => $query,
-                'parsed_block_attrs' => $parsed_block['attrs'] ?? 'No attrs'
-            ];
-
-            if (!empty($parsed_block['attrs']['query']['event_type'])) {
+            // Only add meta query if event_type is NOT "All" and is not empty
+            if (!empty($parsed_block['attrs']['query']['event_type']) && $parsed_block['attrs']['query']['event_type'] !== 'All') {
                 $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
                 $meta_query[] = array(
                     'key' => 'event_type',
                     'value' => $event_type,
                     'compare' => '='
                 );
-
-                $debug_events_query[] = [
-                    'step' => 'Added event_type meta query',
-                    'event_type' => $event_type,
-                    'meta_query' => $meta_query
-                ];
             }
         }
 
@@ -340,26 +324,3 @@ function add_custom_query_vars($valid_vars)
 add_filter('rest_query_vars', 'add_custom_query_vars');
 
 /** END FRONT END */
-
-// At the very end of your variations_query_filter function, add:
-global $debug_events_query;
-if (!empty($debug_events_query)) {
-    $debug_events_query[] = [
-        'step' => 'Final query after all filters',
-        'final_query' => $query
-    ];
-}
-
-// Add this at the bottom of your index.php file to display the debug info
-add_action('wp_footer', function() {
-    global $debug_events_query;
-    
-    if (!empty($debug_events_query) && current_user_can('administrator')) {
-        echo '<div style="background: white; padding: 20px; margin: 20px; border: 2px solid red; position: relative; z-index: 9999;">';
-        echo '<h3>Events Query Debug</h3>';
-        echo '<pre style="font-size: 12px; max-height: 400px; overflow: auto;">';
-        print_r($debug_events_query);
-        echo '</pre>';
-        echo '</div>';
-    }
-});
