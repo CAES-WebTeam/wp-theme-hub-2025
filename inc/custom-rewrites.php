@@ -15,20 +15,21 @@
  * Intercept requests for specific pages under /news/ before WordPress can perform a faulty redirect.
  * This is the most reliable way to handle these specific conflicts.
  */
-function caes_intercept_special_news_pages() {
+function caes_intercept_special_news_pages()
+{
     // Define the paths of the special pages that need protection.
     $special_pages = [
         'news/latest',
         'news/topics',
         'news/features',
     ];
-    
+
     // Get the current request path
     $current_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
     // Check if the current request is for one of our special pages.
     if (in_array($current_path, $special_pages)) {
-        
+
         // Find the page using its path (e.g., 'news/latest')
         $page = get_page_by_path($current_path);
 
@@ -55,7 +56,7 @@ function caes_intercept_special_news_pages() {
 
             // Load the template
             include($template);
-            
+
             // Stop WordPress from doing anything else. This is critical.
             exit();
         }
@@ -73,7 +74,8 @@ add_action('template_redirect', 'caes_intercept_special_news_pages', 1);
  * Custom rewrite rules for news (post type) including categories, tags, and single posts.
  * Order matters - more specific rules should come first.
  */
-function custom_news_rewrite_rules() {
+function custom_news_rewrite_rules()
+{
     // PRIORITY 1: Add rules for our specific pages. This helps WordPress recognize them as valid.
     add_rewrite_rule(
         '^news/latest/?$',
@@ -90,7 +92,7 @@ function custom_news_rewrite_rules() {
         'index.php?pagename=news/features',
         'top'
     );
-    
+
     // PRIORITY 2: Handle specific taxonomy patterns.
     add_rewrite_rule(
         '^news/category/([^/]+)/?$',
@@ -153,12 +155,12 @@ function custom_events_rewrite_rules()
 
     // CAES departments rules
     add_rewrite_rule(
-        '^events/departments/([^/]+)/?$',
+        '^events/caes-departments/([^/]+)/?$',
         'index.php?event_caes_departments=$matches[1]',
         'top'
     );
     add_rewrite_rule(
-        '^events/departments/([^/]+)/page/([0-9]+)/?$',
+        '^events/caes-departments/([^/]+)/page/([0-9]+)/?$',
         'index.php?event_caes_departments=$matches[1]&paged=$matches[2]',
         'top'
     );
@@ -218,19 +220,19 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
-	// Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
-	add_rewrite_rule(
-		'^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
-		'index.php?post_type=publications&name=$matches[2]',
-		'top'
-	);
+    // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
+    add_rewrite_rule(
+        '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
+        'index.php?post_type=publications&name=$matches[2]',
+        'top'
+    );
 
-	// Child pages rule - this handles regular child pages under "publications"
-	add_rewrite_rule(
-		'^publications/([^/]+)/?$',
-		'index.php?pagename=publications/$matches[1]',
-		'top'
-	);
+    // Child pages rule - this handles regular child pages under "publications"
+    add_rewrite_rule(
+        '^publications/([^/]+)/?$',
+        'index.php?pagename=publications/$matches[1]',
+        'top'
+    );
 }
 add_action('init', 'custom_publications_rewrite_rules');
 
@@ -245,7 +247,7 @@ function custom_person_rewrite_rules()
         'index.php?author=$matches[1]',
         'top'
     );
-    
+
     // Paginated person pages: /person/123/display-name/page/2/
     add_rewrite_rule(
         '^person/([0-9]+)/([^/]+)/page/([0-9]+)/?$',
@@ -386,16 +388,16 @@ function custom_person_author_link($link, $author_id)
     if (!$user) {
         return $link;
     }
-    
+
     // Get display name and sanitize it for URL
     $display_name = $user->display_name;
     $display_name_slug = sanitize_title($display_name);
-    
+
     // If display name is empty, fall back to user_nicename
     if (empty($display_name_slug)) {
         $display_name_slug = $user->user_nicename;
     }
-    
+
     return home_url("/person/{$author_id}/{$display_name_slug}/");
 }
 add_filter('author_link', 'custom_person_author_link', 10, 2);
@@ -506,12 +508,12 @@ function redirect_root_posts_to_news()
     if (is_admin() || isset($_GET['preview'])) return;
 
     $requested_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-    
+
     // Only proceed if this is a root-level request (no forward slashes)
     if (empty($requested_path) || strpos($requested_path, '/') !== false) {
         return;
     }
-    
+
     // Check if there's a published post with this slug
     $args = array(
         'name' => $requested_path,
@@ -519,9 +521,9 @@ function redirect_root_posts_to_news()
         'post_status' => 'publish',
         'posts_per_page' => 1
     );
-    
+
     $posts = get_posts($args);
-    
+
     if (!empty($posts)) {
         // This slug matches a post, redirect to /news/ version
         $new_url = home_url("/news/{$requested_path}/");
@@ -540,29 +542,29 @@ function redirect_author_to_person()
     if (is_admin() || isset($_GET['preview'])) return;
 
     $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-    
+
     // Check if URL matches /author/username/ or /author/username/page/X/ pattern
     if (preg_match('#^/author/([^/]+)(?:/page/([0-9]+))?/?$#', $requested_path, $matches)) {
         $username = $matches[1];
         $page_num = isset($matches[2]) ? $matches[2] : null;
-        
+
         // Look up user by username/nicename
         $user = get_user_by('slug', $username);
-        
+
         if ($user) {
             // Generate new URL
             $display_name_slug = sanitize_title($user->display_name);
             if (empty($display_name_slug)) {
                 $display_name_slug = $user->user_nicename;
             }
-            
+
             $new_url = "/person/{$user->ID}/{$display_name_slug}/";
-            
+
             // Add pagination if present
             if ($page_num) {
                 $new_url .= "page/{$page_num}/";
             }
-            
+
             // Perform 301 redirect
             wp_redirect(home_url($new_url), 301);
             exit;
@@ -570,29 +572,6 @@ function redirect_author_to_person()
     }
 }
 add_action('template_redirect', 'redirect_author_to_person');
-
-// Redirect old caes-departments URLs to new departments URLs
-function redirect_old_department_urls()
-{
-    // Only run on frontend
-    if (is_admin()) return;
-
-    // Check if we're on the old department taxonomy URL
-    if (is_tax('event_caes_departments')) {
-        $current_url = $_SERVER['REQUEST_URI'];
-
-        // Check if URL contains the old format
-        if (strpos($current_url, '/events/caes-departments/') !== false) {
-            // Replace old path with new path
-            $new_url = str_replace('/events/caes-departments/', '/events/departments/', $current_url);
-
-            // Perform 301 redirect
-            wp_redirect(home_url($new_url), 301);
-            exit;
-        }
-    }
-}
-add_action('template_redirect', 'redirect_old_department_urls');
 
 // Redirect /blog/features/ URLs to /features/
 function redirect_blog_features_to_features()
@@ -688,7 +667,7 @@ function redirect_features_remove_index_html()
     if (strpos($requested_path, '/features/') === 0 && substr($requested_path, -11) === '/index.html') {
         // Remove the /index.html part
         $new_path = substr($requested_path, 0, -10); // Remove 'index.html' but keep the trailing slash
-        
+
         // Perform 301 redirect
         wp_redirect(home_url($new_path), 301);
         exit;
