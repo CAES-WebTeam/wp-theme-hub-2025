@@ -193,6 +193,23 @@
     .caes-hub-post-list-grid {
         .caes-hub-content-actions {
             flex-direction: column !important;
+            display: none !important;
+        }
+
+        // Remove hover effects on mobile
+        .caes-hub-post-list-grid-item {
+            &:hover,
+            &:focus-within {
+                .caes-hub-post-list-img-container {
+                    &::after {
+                        opacity: 0 !important;
+                    }
+
+                    img {
+                        transform: none !important;
+                    }
+                }
+            }
         }
 
         .caes-hub-post-list-grid-item.is-layout-grid {
