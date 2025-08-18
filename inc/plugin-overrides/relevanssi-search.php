@@ -37,11 +37,11 @@ add_action('parse_request', 'simple_search_page_fix');
 if (! function_exists('caes_hub_render_relevanssi_search_results')) {
     function caes_hub_render_relevanssi_search_results($search_query, $orderby, $order, $post_type, $taxonomy_slug, $topic_terms, $paged = 1, $allowed_post_types_from_block = array(), $author_ids = array(), $language = '') // Add language parameter
     {
-        error_log('RENDER: caes_hub_render_relevanssi_search_results function called.');
-        error_log('RENDER: Incoming Params: s=' . $search_query . ', orderby=' . $orderby . ', order=' . $order . ', post_type=' . $post_type . ', taxonomy_slug=' . $taxonomy_slug . ', topic_terms=' . print_r($topic_terms, true) . ', paged=' . $paged);
-        error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true));
-        error_log('RENDER: author_ids: ' . print_r($author_ids, true)); // DEBUG author IDs
-        error_log('RENDER: language: ' . $language); // DEBUG language
+        // error_log('RENDER: caes_hub_render_relevanssi_search_results function called.');
+        // error_log('RENDER: Incoming Params: s=' . $search_query . ', orderby=' . $orderby . ', order=' . $order . ', post_type=' . $post_type . ', taxonomy_slug=' . $taxonomy_slug . ', topic_terms=' . print_r($topic_terms, true) . ', paged=' . $paged);
+        // error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true));
+        // error_log('RENDER: author_ids: ' . print_r($author_ids, true)); // DEBUG author IDs
+        // error_log('RENDER: language: ' . $language); // DEBUG language
 
         $args = array(
             's'              => $search_query,
@@ -75,7 +75,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
 
         // Handle language filtering using ACF custom field
         if (!empty($language)) {
-            error_log('RENDER: Processing language filter with value: ' . $language);
+            // error_log('RENDER: Processing language filter with value: ' . $language);
             
             // For AJAX requests, language is already converted to ID
             // For URL requests, convert pretty slug to ID if needed
@@ -91,9 +91,9 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 );
                 
                 $language_id = isset($language_slug_to_id[$language]) ? $language_slug_to_id[$language] : $language;
-                error_log('RENDER: Converted language slug "' . $language . '" to ID "' . $language_id . '"');
+                // error_log('RENDER: Converted language slug "' . $language . '" to ID "' . $language_id . '"');
             } else {
-                error_log('RENDER: Language is already numeric ID: ' . $language_id);
+                // error_log('RENDER: Language is already numeric ID: ' . $language_id);
             }
             
             $meta_query[] = array(
@@ -102,7 +102,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 'compare' => '='
             );
             
-            error_log('RENDER: Added language meta_query: key=language, value=' . $language_id . ', compare==');
+            // error_log('RENDER: Added language meta_query: key=language, value=' . $language_id . ', compare==');
         }
 
         if (! empty($topic_terms) && $topic_terms[0] !== '') {
@@ -171,21 +171,21 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 $meta_query['relation'] = 'AND';
             }
             $args['meta_query'] = $meta_query;
-            error_log('RENDER: Final meta_query: ' . print_r($meta_query, true));
+            // error_log('RENDER: Final meta_query: ' . print_r($meta_query, true));
         }
 
-        error_log('RENDER: Final WP_Query Args: ' . print_r($args, true));
+        // error_log('RENDER: Final WP_Query Args: ' . print_r($args, true));
 
         if (function_exists('relevanssi_do_query')) {
-            error_log('RENDER: Relevanssi is active. Preparing WP_Query for relevanssi_do_query.');
+            // error_log('RENDER: Relevanssi is active. Preparing WP_Query for relevanssi_do_query.');
             $query = new WP_Query($args);
             relevanssi_do_query($query);
         } else {
-            error_log('RENDER: Relevanssi not active. Using standard WP_Query.');
+            // error_log('RENDER: Relevanssi not active. Using standard WP_Query.');
             $query = new WP_Query($args);
         }
         
-        error_log('RENDER: Query found_posts: ' . $query->found_posts);
+        // error_log('RENDER: Query found_posts: ' . $query->found_posts);
 
         // Store the global $wp_query to restore later 
         global $wp_query;
@@ -284,7 +284,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 
                 echo '</ul>';
                 echo '</div>';
-                error_log('RENDER: Results found: ' . $post_count . ' posts.');
+                // error_log('RENDER: Results found: ' . $post_count . ' posts.');
                 the_posts_pagination(
                     array(
                         'prev_text'          => __('Previous', 'caes-hub'),
@@ -293,7 +293,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                     )
                 );
             } else {
-                error_log('RENDER: No results found by WP_Query/Relevanssi.');
+                // error_log('RENDER: No results found by WP_Query/Relevanssi.');
                 ?>
                 <p><?php esc_html_e('No results found.', 'caes-hub'); ?></p>
             <?php
@@ -302,7 +302,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             // Restore the original global $wp_query 
             $wp_query = $original_query;
             wp_reset_postdata();
-            error_log('RENDER: wp_reset_postdata() called and global $wp_query restored.');
+            // error_log('RENDER: wp_reset_postdata() called and global $wp_query restored.');
             ?>
         </div>
 <?php
@@ -343,7 +343,7 @@ function caes_hub_handle_relevanssi_ajax_search()
     $show_topic_filter = isset($_POST['showTopicFilter']) && $_POST['showTopicFilter'] === 'true';
     $show_language_filter = isset($_POST['showLanguageFilter']) && $_POST['showLanguageFilter'] === 'true';
 
-    error_log('AJAX: show_language_filter: ' . ($show_language_filter ? 'true' : 'false'));
+    // error_log('AJAX: show_language_filter: ' . ($show_language_filter ? 'true' : 'false'));
 
     $ajax_s           = isset($_POST['s']) ? sanitize_text_field(wp_unslash($_POST['s'])) : '';
     $ajax_orderby     = isset($_POST['orderby']) ? sanitize_text_field(wp_unslash($_POST['orderby'])) : '';
