@@ -323,20 +323,20 @@ add_action('init', 'caes_hub_register_relevanssi_ajax_action');
  */
 function caes_hub_handle_relevanssi_ajax_search()
 {
-    error_log('AJAX: caes_hub_handle_relevanssi_ajax_search function called.');
+    // error_log('AJAX: caes_hub_handle_relevanssi_ajax_search function called.');
 
     if (! defined('DOING_AJAX') || ! DOING_AJAX) {
-        error_log('AJAX: Not an AJAX request. Exiting.');
+        // error_log('AJAX: Not an AJAX request. Exiting.');
         wp_die('Not an AJAX request.', 403);
     }
 
-    error_log('AJAX: $_POST Data: ' . print_r($_POST, true));
+    // error_log('AJAX: $_POST Data: ' . print_r($_POST, true));
 
     $taxonomy_slug = 'category';
     if (isset($_POST['taxonomySlug'])) {
         $taxonomy_slug = sanitize_text_field(wp_unslash($_POST['taxonomySlug']));
     }
-    error_log('AJAX: Determined taxonomy_slug: ' . $taxonomy_slug);
+    // error_log('AJAX: Determined taxonomy_slug: ' . $taxonomy_slug);
 
     // Get filter toggle states from AJAX request
     $show_author_filter = isset($_POST['showAuthorFilter']) && $_POST['showAuthorFilter'] === 'true';
@@ -360,7 +360,7 @@ function caes_hub_handle_relevanssi_ajax_search()
     $ajax_language = '';
     if ($show_language_filter && isset($_POST['language'])) {
         $raw_language = sanitize_text_field(wp_unslash($_POST['language']));
-        error_log('AJAX: Raw language from POST: ' . $raw_language);
+        // error_log('AJAX: Raw language from POST: ' . $raw_language);
         
         // Convert pretty language slug to database ID for AJAX requests
         if (!empty($raw_language)) {
@@ -374,14 +374,14 @@ function caes_hub_handle_relevanssi_ajax_search()
             // If it's a pretty slug, convert to database ID
             if (isset($language_slug_to_id[$raw_language])) {
                 $ajax_language = $language_slug_to_id[$raw_language];
-                error_log('AJAX: Converted language slug "' . $raw_language . '" to ID "' . $ajax_language . '"');
+                // error_log('AJAX: Converted language slug "' . $raw_language . '" to ID "' . $ajax_language . '"');
             } else {
                 $ajax_language = $raw_language; // Keep as-is for backward compatibility
-                error_log('AJAX: Language not found in mapping, keeping as-is: ' . $ajax_language);
+                // error_log('AJAX: Language not found in mapping, keeping as-is: ' . $ajax_language);
             }
         }
     } else {
-        error_log('AJAX: Language not processed. show_language_filter=' . ($show_language_filter ? 'true' : 'false') . ', language_posted=' . (isset($_POST['language']) ? 'yes' : 'no'));
+        // error_log('AJAX: Language not processed. show_language_filter=' . ($show_language_filter ? 'true' : 'false') . ', language_posted=' . (isset($_POST['language']) ? 'yes' : 'no'));
     }
     
     $ajax_paged       = isset($_POST['paged']) ? intval(wp_unslash($_POST['paged'])) : 1;
@@ -416,21 +416,21 @@ function caes_hub_handle_relevanssi_ajax_search()
         }
     }
 
-    error_log('AJAX: Sanitized Query Params for render function:');
-    error_log('  s: ' . $ajax_s);
-    error_log('  orderby: ' . $ajax_orderby);
-    error_log('  order: ' . $ajax_order);
-    error_log('  post_type: ' . $ajax_post_type);
-    error_log('  topic_terms: ' . print_r($ajax_topic_terms, true));
-    error_log('  author_ids: ' . print_r($ajax_author_ids, true));
-    error_log('  language: ' . $ajax_language);
-    error_log('  paged: ' . $ajax_paged);
-    error_log('  allowedPostTypes: ' . print_r($ajax_allowed_post_types, true));
+    // error_log('AJAX: Sanitized Query Params for render function:');
+    // error_log('  s: ' . $ajax_s);
+    // error_log('  orderby: ' . $ajax_orderby);
+    // error_log('  order: ' . $ajax_order);
+    // error_log('  post_type: ' . $ajax_post_type);
+    // error_log('  topic_terms: ' . print_r($ajax_topic_terms, true));
+    // error_log('  author_ids: ' . print_r($ajax_author_ids, true));
+    // error_log('  language: ' . $ajax_language);
+    // error_log('  paged: ' . $ajax_paged);
+    // error_log('  allowedPostTypes: ' . print_r($ajax_allowed_post_types, true));
 
     // Pass the allowed post types, author IDs, and language to the render function for AJAX requests
     echo caes_hub_render_relevanssi_search_results($ajax_s, $ajax_orderby, $ajax_order, $ajax_post_type, $taxonomy_slug, $ajax_topic_terms, $ajax_paged, $ajax_allowed_post_types, $ajax_author_ids, $ajax_language);
 
-    error_log('AJAX: wp_die() called.');
+    // error_log('AJAX: wp_die() called.');
     wp_die();
 }
 
