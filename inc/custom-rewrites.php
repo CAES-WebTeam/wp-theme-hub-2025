@@ -746,3 +746,35 @@ function custom_external_story_url($url, $post = null)
 }
 // Apply this filter *after* the custom_news_permalink filter (which has a priority of 99)
 add_filter('post_link', 'custom_external_story_url', 100, 2);
+
+// ===================================
+// EXTERNAL URL FOR EVENTS
+// ===================================
+
+/**
+ * Replace permalink with ACF external URL if it is set and valid for an event.
+ */
+function custom_external_event_url($url, $post = null)
+{
+    if (! $post instanceof WP_Post) {
+        $post = get_post($post);
+    }
+
+    // Only apply to 'events' post type
+    if (! $post || $post->post_type !== 'events') {
+        return $url;
+    }
+
+    // Use get_post_meta for better performance than get_field
+    $external_url = get_post_meta($post->ID, 'event_page_external_address', true);
+
+    // If the external URL exists and is a valid URL format, return it.
+    if ($external_url && filter_var($external_url, FILTER_VALIDATE_URL)) {
+        return esc_url($external_url);
+    }
+
+    // Otherwise, return the original URL passed to the function.
+    return $url;
+}
+// Apply this filter to custom post type links
+add_filter('post_type_link', 'custom_external_event_url', 100, 2);
