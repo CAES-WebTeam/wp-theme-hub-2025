@@ -105,6 +105,12 @@ wp.blocks.registerBlockStyle( 'core/group', {
   label: 'Step Arrow Right'
 })
 
+// PARAGRAPH STYLES
+wp.blocks.registerBlockStyle( 'core/paragraph', {
+  name: 'caes-hub-hanging-indent',
+  label: 'Hanging Indent'
+});
+
 // CUSTOM BLOCKS
 wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
   name: 'caes-hub-compact',
