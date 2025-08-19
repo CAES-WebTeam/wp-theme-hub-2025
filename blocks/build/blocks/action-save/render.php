@@ -1,4 +1,9 @@
 <?php
+// Temporarily disable this block
+if (true) {
+    return '';
+}
+
 $post_id = get_the_ID();
 $post_type = get_post_type($post_id);
 $page_title = get_the_title($post_id);
