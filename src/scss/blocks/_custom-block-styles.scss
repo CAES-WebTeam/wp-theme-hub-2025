@@ -280,5 +280,5 @@ ul.is-style-caes-hub-list-checkbox {
 }
 
 .is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
-    max-width: calc(var(--wp--style--global--content-size) - 40px);
+    max-width: calc(var(--wp--style--global--content-size) - 40px) !important;
 }
