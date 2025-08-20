@@ -406,6 +406,22 @@ add_filter('author_link', 'custom_person_author_link', 10, 2);
 // REDIRECTION RULES SECTION
 // ===================================
 
+function custom_publication_series_rewrite_rules()
+{
+    // Publication series rules - must come BEFORE publications rules
+    add_rewrite_rule(
+        '^publication-series/([^/]+)/?$',
+        'index.php?publication_series=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^publication-series/([^/]+)/page/([0-9]+)/?$',
+        'index.php?publication_series=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+}
+add_action('init', 'custom_publication_series_rewrite_rules', 8); // Priority 8 to run before others
+
 /**
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
  * by looking up the publication number and obtaining the canonical slug.
@@ -455,27 +471,6 @@ function redirect_publications_to_canonical_url()
     }
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
-
-/**
- * Redirect /publication-series/slug/ URLs to /publication_series/slug/
- */
-function redirect_publication_series_urls()
-{
-    if (is_admin()) return;
-
-    $requested_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-
-    // Check if URL matches publication-series/slug pattern
-    if (preg_match('#^publication-series/([^/]+)/?$#', $requested_path, $matches)) {
-        $series_slug = $matches[1];
-        
-        // Redirect to the correct taxonomy URL
-        $new_url = home_url("/publication_series/{$series_slug}/");
-        wp_redirect($new_url, 301);
-        exit;
-    }
-}
-add_action('template_redirect', 'redirect_publication_series_urls', 1);
 
 
 /**
