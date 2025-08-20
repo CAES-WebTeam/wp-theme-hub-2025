@@ -261,6 +261,28 @@ function debug_rewrite_rules() {
 }
 add_action('init', 'debug_rewrite_rules', 999);
 
+function debug_taxonomy_query() {
+    if (strpos($_SERVER['REQUEST_URI'], '/publications/series/') === 0) {
+        global $wp_query;
+        echo '<pre>';
+        echo "Request URI: " . $_SERVER['REQUEST_URI'] . "\n";
+        echo "Query vars: " . print_r($wp_query->query_vars, true) . "\n";
+        echo "Is tax: " . (is_tax() ? 'YES' : 'NO') . "\n";
+        echo "Is tax publication_series: " . (is_tax('publication_series') ? 'YES' : 'NO') . "\n";
+        echo "Queried object: " . print_r($wp_query->queried_object, true) . "\n";
+        echo "Found posts: " . $wp_query->found_posts . "\n";
+        echo '</pre>';
+        
+        // Check if term exists
+        $term = get_term_by('slug', '2023-georgia-ag-forecast', 'publication_series');
+        echo '<pre>Term exists: ' . ($term ? 'YES' : 'NO') . '</pre>';
+        if ($term) {
+            echo '<pre>Term: ' . print_r($term, true) . '</pre>';
+        }
+    }
+}
+add_action('wp', 'debug_taxonomy_query');
+
 /**
  * Custom rewrite rules for person (author) pages
  */
