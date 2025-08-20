@@ -457,6 +457,28 @@ function redirect_publications_to_canonical_url()
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
 /**
+ * Redirect /publication-series/slug/ URLs to /publication_series/slug/
+ */
+function redirect_publication_series_urls()
+{
+    if (is_admin()) return;
+
+    $requested_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+
+    // Check if URL matches publication-series/slug pattern
+    if (preg_match('#^publication-series/([^/]+)/?$#', $requested_path, $matches)) {
+        $series_slug = $matches[1];
+        
+        // Redirect to the correct taxonomy URL
+        $new_url = home_url("/publication_series/{$series_slug}/");
+        wp_redirect($new_url, 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_publication_series_urls', 1);
+
+
+/**
  * If a user visits a URL like /news/10345/, redirect to /news/post-slug/
  * by looking up the ACF 'id' field and obtaining the canonical slug.
  */
