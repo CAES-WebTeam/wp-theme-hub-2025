@@ -784,11 +784,11 @@ function initialize_content_linking_callback()
     }
 
     // Find content that actually needs linking
-    // $content_needing_links = find_content_needing_links($linking_type, $cached_data);
+    $content_needing_links = find_content_needing_links($linking_type, $cached_data);
 
     // Instead of just caching lookup tables, cache the full work list
-    $work_list_key = "work_list_{$linking_type}";
-    $content_needing_links = get_transient($work_list_key);
+    // $work_list_key = "work_list_{$linking_type}";
+    // $content_needing_links = get_transient($work_list_key);
 
     if (false === $content_needing_links) {
         $content_needing_links = find_content_needing_links($linking_type, $cached_data);
@@ -821,11 +821,11 @@ function process_content_linking_batch_callback()
     }
 
     // Get content that needs linking
-    // $content_needing_links = find_content_needing_links($linking_type, $cached_data);
+    $content_needing_links = find_content_needing_links($linking_type, $cached_data);
 
     // Get the cached work list instead of recalculating
-    $work_list_key = "work_list_{$linking_type}";
-    $content_needing_links = get_transient($work_list_key);
+    // $work_list_key = "work_list_{$linking_type}";
+    // $content_needing_links = get_transient($work_list_key);
 
     if (false === $content_needing_links) {
         wp_send_json_error(['message' => 'Work list cache expired. Please restart the process.']);
