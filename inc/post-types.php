@@ -200,7 +200,7 @@ add_action('init', function () {
         'show_in_rest'     => true,
         'query_var'        => true,
         'rewrite' => array(
-            'slug' => 'publications/series',
+            'slug' => 'publication-series',
             'with_front' => false,
             'hierarchical' => true
         )
