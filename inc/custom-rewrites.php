@@ -456,6 +456,23 @@ function redirect_publications_to_canonical_url()
 }
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
+/**
+ * Redirect /publication_series/ base archive to custom /publications/series/ page
+ */
+function redirect_publication_series_base_archive()
+{
+    if (is_admin()) return;
+
+    $requested_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+
+    // Check if URL is exactly 'publication_series' (base archive)
+    if ($requested_path === 'publication_series') {
+        wp_redirect(home_url('/publications/series/'), 301);
+        exit;
+    }
+}
+add_action('template_redirect', 'redirect_publication_series_base_archive');
+
 
 /**
  * If a user visits a URL like /news/10345/, redirect to /news/post-slug/
