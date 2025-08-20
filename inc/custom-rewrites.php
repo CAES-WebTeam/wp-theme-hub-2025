@@ -471,7 +471,7 @@ function redirect_publication_series_base_archive()
         exit;
     }
 }
-add_action('template_redirect', 'redirect_publication_series_base_archive');
+add_action('init', 'redirect_publication_series_base_archive'); // Changed from template_redirect to init
 
 
 /**
