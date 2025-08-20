@@ -220,6 +220,18 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
+    // Publication series rules FIRST - more specific rules must come before general ones
+    add_rewrite_rule(
+        '^publications/series/([^/]+)/?$',
+        'index.php?publication_series=$matches[1]',
+        'top'
+    );
+    add_rewrite_rule(
+        '^publications/series/([^/]+)/page/([0-9]+)/?$',
+        'index.php?publication_series=$matches[1]&paged=$matches[2]',
+        'top'
+    );
+    
     // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
     add_rewrite_rule(
         '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
@@ -405,22 +417,6 @@ add_filter('author_link', 'custom_person_author_link', 10, 2);
 // ===================================
 // REDIRECTION RULES SECTION
 // ===================================
-
-function custom_publication_series_rewrite_rules()
-{
-    // Publication series rules
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/?$',
-        'index.php?publication_series=$matches[1]',
-        'top'
-    );
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/page/([0-9]+)/?$',
-        'index.php?publication_series=$matches[1]&paged=$matches[2]',
-        'top'
-    );
-}
-add_action('init', 'custom_publication_series_rewrite_rules', 8);
 
 /**
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
