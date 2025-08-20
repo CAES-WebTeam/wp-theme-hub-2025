@@ -134,12 +134,12 @@ function render_content_linking_admin_page()
                     success: function(response) {
                         if (response.success) {
                             totalRecords = response.data.total_records;
-                            addProgressDetail('Found ' + totalRecords + ' records to process for ' + linkingType, 'info');
+                            addProgressDetail('Found ' + totalRecords + ' API records to process for ' + linkingType, 'info');
                             
                             if (totalRecords > 0) {
                                 processBatch(0);
                             } else {
-                                finishProcessing('No records found to process');
+                                finishProcessing('No API records found to process');
                             }
                         } else {
                             finishProcessing('Initialization failed: ' + response.data.message);
@@ -412,85 +412,6 @@ function process_api_data($api_data, $content_lookup, $user_lookup, $linking_typ
     return $linking_data;
 }
 
-// Find content that needs linking updates
-function find_content_needing_updates($linking_data, $content_lookup, $linking_type)
-{
-    $updates_needed = [];
-    $field_name = ($linking_type === 'experts') ? 'experts' : 'authors';
-
-    foreach ($linking_data as $content_id => $required_links) {
-        if (!isset($content_lookup[$content_id])) continue;
-
-        $post_id = $content_lookup[$content_id];
-        $existing_links = get_field($field_name, $post_id);
-        if (!is_array($existing_links)) $existing_links = [];
-
-        $needs_update = false;
-
-        if ($linking_type === 'publications') {
-            // Check publications with roles
-            $existing_user_ids = [];
-            foreach ($existing_links as $link) {
-                $user = $link['user'];
-                if (is_object($user)) $existing_user_ids[] = $user->ID;
-                elseif (is_array($user)) $existing_user_ids[] = $user['ID'];
-                elseif (is_numeric($user)) $existing_user_ids[] = intval($user);
-            }
-
-            foreach ($required_links as $required_link) {
-                $user_id = $required_link['user_id'];
-                if (!in_array($user_id, $existing_user_ids)) {
-                    $needs_update = true;
-                    break;
-                }
-
-                // Check roles
-                foreach ($existing_links as $existing_link) {
-                    $existing_user = $existing_link['user'];
-                    if (is_object($existing_user)) $existing_user = $existing_user->ID;
-                    if (is_array($existing_user)) $existing_user = $existing_user['ID'];
-
-                    if (intval($existing_user) === $user_id) {
-                        $current_lead = isset($existing_link['lead_author']) ? (bool)$existing_link['lead_author'] : false;
-                        $current_co = isset($existing_link['co_author']) ? (bool)$existing_link['co_author'] : false;
-
-                        if ($current_lead !== $required_link['is_lead_author'] || $current_co !== $required_link['is_co_author']) {
-                            $needs_update = true;
-                            break 2;
-                        }
-                    }
-                }
-            }
-        } else {
-            // Check writers/experts
-            $existing_user_ids = [];
-            foreach ($existing_links as $link) {
-                $user = $link['user'];
-                if (is_object($user)) $existing_user_ids[] = $user->ID;
-                elseif (is_array($user)) $existing_user_ids[] = $user['ID'];
-                elseif (is_numeric($user)) $existing_user_ids[] = intval($user);
-            }
-
-            foreach ($required_links as $required_user_id) {
-                if (!in_array($required_user_id, $existing_user_ids)) {
-                    $needs_update = true;
-                    break;
-                }
-            }
-        }
-
-        if ($needs_update) {
-            $updates_needed[] = [
-                'content_id' => $content_id,
-                'post_id' => $post_id,
-                'required_links' => $required_links
-            ];
-        }
-    }
-
-    return $updates_needed;
-}
-
 // AJAX handler to initialize and count records
 add_action('wp_ajax_initialize_content_linking', 'initialize_content_linking_callback');
 function initialize_content_linking_callback()
@@ -509,16 +430,7 @@ function initialize_content_linking_callback()
         wp_send_json_error(['message' => $api_data->get_error_message()]);
     }
 
-    // Build lookup tables
-    list($content_lookup, $user_lookup) = build_lookup_tables($linking_type);
-
-    // Process API data
-    $linking_data = process_api_data($api_data, $content_lookup, $user_lookup, $linking_type);
-
-    // Find content needing updates
-    $updates_needed = find_content_needing_updates($linking_data, $content_lookup, $linking_type);
-
-    wp_send_json_success(['total_records' => count($updates_needed)]);
+    wp_send_json_success(['total_records' => count($api_data)]);
 }
 
 // AJAX handler for batch processing
@@ -541,20 +453,36 @@ function process_content_linking_batch_callback()
         wp_send_json_error(['message' => $api_data->get_error_message()]);
     }
 
+    // Get the batch of API records
+    $batch_records = array_slice($api_data, $offset, $batch_size);
+    
+    // Build lookup tables
     list($content_lookup, $user_lookup) = build_lookup_tables($linking_type);
-    $linking_data = process_api_data($api_data, $content_lookup, $user_lookup, $linking_type);
-    $updates_needed = find_content_needing_updates($linking_data, $content_lookup, $linking_type);
-
-    $batch_content = array_slice($updates_needed, $offset, $batch_size);
-    $stats = ['linked' => 0, 'processed_count' => count($batch_content), 'already_linked' => 0, 'errors' => [], 'success_details' => []];
-
+    
+    $stats = ['linked' => 0, 'processed_count' => count($batch_records), 'already_linked' => 0, 'errors' => [], 'success_details' => []];
     $field_name = ($linking_type === 'experts') ? 'experts' : 'authors';
+    $api_keys = [
+        'writers' => ['STORY_ID', 'WRITER_ID'],
+        'experts' => ['STORY_ID', 'SOURCE_EXPERT_ID'],
+        'publications' => ['PUBLICATION_ID', 'COLLEGE_ID']
+    ];
 
-    foreach ($batch_content as $content_data) {
-        $post_id = $content_data['post_id'];
-        $required_links = $content_data['required_links'];
+    foreach ($batch_records as $record) {
+        $content_id = intval($record[$api_keys[$linking_type][0]]);
+        $user_external_id = intval($record[$api_keys[$linking_type][1]]);
+
+        // Skip if we don't have matching content or user
+        if (!isset($content_lookup[$content_id]) || !isset($user_lookup[$user_external_id])) {
+            continue;
+        }
+
+        $post_id = $content_lookup[$content_id];
+        $user_id = $user_lookup[$user_external_id];
         $post_title = get_the_title($post_id);
+        $user_info = get_userdata($user_id);
+        $display_name = $user_info ? $user_info->display_name : "User {$user_id}";
 
+        // Get existing links
         $existing_links = get_field($field_name, $post_id);
         if (!is_array($existing_links)) $existing_links = [];
 
@@ -562,99 +490,93 @@ function process_content_linking_batch_callback()
 
         if ($linking_type === 'publications') {
             // Handle publications with roles
-            foreach ($required_links as $required_link) {
-                $user_id = $required_link['user_id'];
-                $user_info = get_userdata($user_id);
-                $display_name = $user_info ? $user_info->display_name : "User {$user_id}";
+            $is_lead_author = isset($record['IS_LEAD_AUTHOR']) ? (bool)$record['IS_LEAD_AUTHOR'] : false;
+            $is_co_author = isset($record['IS_CO_AUTHOR']) ? (bool)$record['IS_CO_AUTHOR'] : false;
 
-                $user_found_index = -1;
-                $needs_update = false;
+            $user_found_index = -1;
+            $needs_update = false;
 
-                foreach ($existing_links as $index => $existing_link) {
-                    $existing_user = $existing_link['user'];
-                    if (is_object($existing_user)) $existing_user = $existing_user->ID;
-                    if (is_array($existing_user)) $existing_user = $existing_user['ID'];
+            foreach ($existing_links as $index => $existing_link) {
+                $existing_user = $existing_link['user'];
+                if (is_object($existing_user)) $existing_user = $existing_user->ID;
+                if (is_array($existing_user)) $existing_user = $existing_user['ID'];
 
-                    if (intval($existing_user) === intval($user_id)) {
-                        $user_found_index = $index;
-                        $current_lead = isset($existing_link['lead_author']) ? (bool)$existing_link['lead_author'] : false;
-                        $current_co = isset($existing_link['co_author']) ? (bool)$existing_link['co_author'] : false;
+                if (intval($existing_user) === intval($user_id)) {
+                    $user_found_index = $index;
+                    $current_lead = isset($existing_link['lead_author']) ? (bool)$existing_link['lead_author'] : false;
+                    $current_co = isset($existing_link['co_author']) ? (bool)$existing_link['co_author'] : false;
 
-                        if ($current_lead !== $required_link['is_lead_author'] || $current_co !== $required_link['is_co_author']) {
-                            $needs_update = true;
-                        }
-                        break;
+                    if ($current_lead !== $is_lead_author || $current_co !== $is_co_author) {
+                        $needs_update = true;
                     }
+                    break;
                 }
+            }
 
-                if ($user_found_index === -1) {
-                    $existing_links[] = [
-                        'user' => $user_id,
-                        'lead_author' => $required_link['is_lead_author'],
-                        'co_author' => $required_link['is_co_author']
-                    ];
-                    $updated_this_post = true;
-                    $stats['linked']++;
-                    
-                    $roles = [];
-                    if ($required_link['is_lead_author']) $roles[] = 'Lead Author';
-                    if ($required_link['is_co_author']) $roles[] = 'Co-Author';
-                    $role_text = !empty($roles) ? ' (' . implode(', ', $roles) . ')' : '';
-                    
-                    $stats['success_details'][] = [
-                        'message' => "LINKED: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
-                        'type' => 'link'
-                    ];
-                } elseif ($needs_update) {
-                    $existing_links[$user_found_index]['lead_author'] = $required_link['is_lead_author'];
-                    $existing_links[$user_found_index]['co_author'] = $required_link['is_co_author'];
-                    $updated_this_post = true;
-                    $stats['linked']++;
-                    
-                    $roles = [];
-                    if ($required_link['is_lead_author']) $roles[] = 'Lead Author';
-                    if ($required_link['is_co_author']) $roles[] = 'Co-Author';
-                    $role_text = !empty($roles) ? ' (' . implode(', ', $roles) . ')' : '';
-                    
-                    $stats['success_details'][] = [
-                        'message' => "UPDATED: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
-                        'type' => 'link'
-                    ];
-                } else {
-                    $stats['already_linked']++;
-                }
+            if ($user_found_index === -1) {
+                // Add new user
+                $existing_links[] = [
+                    'user' => $user_id,
+                    'lead_author' => $is_lead_author,
+                    'co_author' => $is_co_author
+                ];
+                $updated_this_post = true;
+                $stats['linked']++;
+                
+                $roles = [];
+                if ($is_lead_author) $roles[] = 'Lead Author';
+                if ($is_co_author) $roles[] = 'Co-Author';
+                $role_text = !empty($roles) ? ' (' . implode(', ', $roles) . ')' : '';
+                
+                $stats['success_details'][] = [
+                    'message' => "LINKED: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
+                    'type' => 'link'
+                ];
+            } elseif ($needs_update) {
+                // Update roles
+                $existing_links[$user_found_index]['lead_author'] = $is_lead_author;
+                $existing_links[$user_found_index]['co_author'] = $is_co_author;
+                $updated_this_post = true;
+                $stats['linked']++;
+                
+                $roles = [];
+                if ($is_lead_author) $roles[] = 'Lead Author';
+                if ($is_co_author) $roles[] = 'Co-Author';
+                $role_text = !empty($roles) ? ' (' . implode(', ', $roles) . ')' : '';
+                
+                $stats['success_details'][] = [
+                    'message' => "UPDATED: \"{$display_name}\" → \"{$post_title}\"{$role_text}",
+                    'type' => 'link'
+                ];
+            } else {
+                $stats['already_linked']++;
             }
         } else {
             // Handle writers/experts
-            foreach ($required_links as $user_id) {
-                $user_info = get_userdata($user_id);
-                $display_name = $user_info ? $user_info->display_name : "User {$user_id}";
+            $already_linked = false;
+            foreach ($existing_links as $existing_link) {
+                $existing_user = $existing_link['user'];
+                if (is_object($existing_user)) $existing_user = $existing_user->ID;
+                if (is_array($existing_user)) $existing_user = $existing_user['ID'];
 
-                $already_linked = false;
-                foreach ($existing_links as $existing_link) {
-                    $existing_user = $existing_link['user'];
-                    if (is_object($existing_user)) $existing_user = $existing_user->ID;
-                    if (is_array($existing_user)) $existing_user = $existing_user['ID'];
-
-                    if (intval($existing_user) === intval($user_id)) {
-                        $already_linked = true;
-                        break;
-                    }
+                if (intval($existing_user) === intval($user_id)) {
+                    $already_linked = true;
+                    break;
                 }
+            }
 
-                if (!$already_linked) {
-                    $existing_links[] = ['user' => $user_id];
-                    $updated_this_post = true;
-                    $stats['linked']++;
-                    
-                    $user_type = ($linking_type === 'writers') ? 'writer' : 'expert';
-                    $stats['success_details'][] = [
-                        'message' => "LINKED {$user_type}: \"{$display_name}\" → \"{$post_title}\"",
-                        'type' => 'link'
-                    ];
-                } else {
-                    $stats['already_linked']++;
-                }
+            if (!$already_linked) {
+                $existing_links[] = ['user' => $user_id];
+                $updated_this_post = true;
+                $stats['linked']++;
+                
+                $user_type = ($linking_type === 'writers') ? 'writer' : 'expert';
+                $stats['success_details'][] = [
+                    'message' => "LINKED {$user_type}: \"{$display_name}\" → \"{$post_title}\"",
+                    'type' => 'link'
+                ];
+            } else {
+                $stats['already_linked']++;
             }
         }
 
@@ -687,8 +609,6 @@ function check_content_linking_status_callback()
         }
 
         list($content_lookup, $user_lookup) = build_lookup_tables($linking_type);
-        $linking_data = process_api_data($api_data, $content_lookup, $user_lookup, $linking_type);
-        $updates_needed = find_content_needing_updates($linking_data, $content_lookup, $linking_type);
 
         $type_labels = [
             'writers' => 'Writers',
@@ -697,10 +617,9 @@ function check_content_linking_status_callback()
         ];
 
         $message = sprintf(
-            'Found %d %s records that need linking updates from %d total API records. %d content items found, %d users found.',
-            count($updates_needed),
-            $type_labels[$linking_type],
+            'Found %d %s API records to process. %d content items found, %d users found.',
             count($api_data),
+            $type_labels[$linking_type],
             count($content_lookup),
             count($user_lookup)
         );
