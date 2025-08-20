@@ -220,25 +220,6 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
-    // Publication series ARCHIVE (base URL) - must be first
-    add_rewrite_rule(
-        '^publications/series/?$',
-        'index.php?post_type=publications&publication_series=',
-        'top'
-    );
-    
-    // Publication series rules FIRST
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/?$',
-        'index.php?publication_series=$matches[1]',
-        'top'
-    );
-    add_rewrite_rule(
-        '^publications/series/([^/]+)/page/([0-9]+)/?$',
-        'index.php?publication_series=$matches[1]&paged=$matches[2]',
-        'top'
-    );
-    
     // Publication posts rule: more specific to exclude reserved words
     add_rewrite_rule(
         '^publications/(?!series|topic)([A-Za-z]+[0-9][A-Za-z0-9-]*)/([^/]+)/?$',
@@ -253,42 +234,6 @@ function custom_publications_rewrite_rules()
         'top'
     );
 }
-
-function debug_rewrite_rules() {
-    if (isset($_GET['debug_rewrites'])) {
-        global $wp_rewrite;
-        echo '<pre>';
-        echo "Current rewrite rules:\n";
-        print_r($wp_rewrite->wp_rewrite_rules());
-        echo "\n\nCurrent request: " . $_SERVER['REQUEST_URI'] . "\n";
-        echo "Parsed URL: " . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) . "\n";
-        echo '</pre>';
-        exit;
-    }
-}
-add_action('init', 'debug_rewrite_rules', 999);
-
-function debug_taxonomy_query() {
-    if (strpos($_SERVER['REQUEST_URI'], '/publications/series/') === 0) {
-        global $wp_query;
-        echo '<pre>';
-        echo "Request URI: " . $_SERVER['REQUEST_URI'] . "\n";
-        echo "Query vars: " . print_r($wp_query->query_vars, true) . "\n";
-        echo "Is tax: " . (is_tax() ? 'YES' : 'NO') . "\n";
-        echo "Is tax publication_series: " . (is_tax('publication_series') ? 'YES' : 'NO') . "\n";
-        echo "Queried object: " . print_r($wp_query->queried_object, true) . "\n";
-        echo "Found posts: " . $wp_query->found_posts . "\n";
-        echo '</pre>';
-        
-        // Check if term exists
-        $term = get_term_by('slug', '2023-georgia-ag-forecast', 'publication_series');
-        echo '<pre>Term exists: ' . ($term ? 'YES' : 'NO') . '</pre>';
-        if ($term) {
-            echo '<pre>Term: ' . print_r($term, true) . '</pre>';
-        }
-    }
-}
-add_action('wp', 'debug_taxonomy_query');
 
 /**
  * Custom rewrite rules for person (author) pages
