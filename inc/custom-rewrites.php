@@ -234,6 +234,7 @@ function custom_publications_rewrite_rules()
         'top'
     );
 }
+add_action('init', 'custom_publications_rewrite_rules');
 
 /**
  * Custom rewrite rules for person (author) pages
