@@ -408,19 +408,19 @@ add_filter('author_link', 'custom_person_author_link', 10, 2);
 
 function custom_publication_series_rewrite_rules()
 {
-    // Publication series rules - must come BEFORE publications rules
+    // Publication series rules
     add_rewrite_rule(
-        '^publication-series/([^/]+)/?$',
+        '^publications/series/([^/]+)/?$',
         'index.php?publication_series=$matches[1]',
         'top'
     );
     add_rewrite_rule(
-        '^publication-series/([^/]+)/page/([0-9]+)/?$',
+        '^publications/series/([^/]+)/page/([0-9]+)/?$',
         'index.php?publication_series=$matches[1]&paged=$matches[2]',
         'top'
     );
 }
-add_action('init', 'custom_publication_series_rewrite_rules', 8); // Priority 8 to run before others
+add_action('init', 'custom_publication_series_rewrite_rules', 8);
 
 /**
  * If a user visits a URL like /publications/C1234, redirect to /publications/C1234/title-slug/
