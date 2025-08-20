@@ -41,7 +41,7 @@
                 font-weight: 600;
             }
         }
-        
+
     }
 
     // Nav items with submenus
@@ -104,7 +104,13 @@
         z-index: 9998;
         background-color: var(--wp--preset--color--base);
         height: 100vh;
-        overflow-y: auto;
+        overflow: hidden;
+
+        .flyout-content {
+            height: calc(100vh - (var(--wp--preset--spacing--60) * 2));
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
     }
 
     // Animation when submenu is open
@@ -116,7 +122,9 @@
 
     // Shared hover styles for nav items
     .nav-item:hover {
-        .nav-link, .submenu-toggle {
+
+        .nav-link,
+        .submenu-toggle {
             background-color: rgba(0, 0, 0, 0.05);
         }
     }
@@ -145,6 +153,11 @@
             box-shadow: none;
             border: none;
             background: rgba(0, 0, 0, 0.02);
+            overflow: auto;
+            .flyout-content {
+                height: auto;
+                overflow-y: auto;
+            }
         }
     }
 }

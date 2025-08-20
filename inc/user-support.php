@@ -531,10 +531,16 @@ function sync_personnel_users()
  * Sets up a daily CRON job to automatically run `sync_personnel_users`.
  * This ensures regular synchronization without manual intervention.
  */
-if (!wp_next_scheduled('daily_personnel_sync')) {
-    wp_schedule_event(time(), 'daily', 'daily_personnel_sync');
+// if (!wp_next_scheduled('daily_personnel_sync')) {
+//     wp_schedule_event(time(), 'daily', 'daily_personnel_sync');
+// }
+// add_action('daily_personnel_sync', 'sync_personnel_users');
+
+// Add this temporarily to clear existing cron job
+if (wp_next_scheduled('daily_personnel_sync')) {
+    wp_clear_scheduled_hook('daily_personnel_sync');
 }
-add_action('daily_personnel_sync', 'sync_personnel_users');
+
 /**
  * Syncs inactive/archived personnel user data from a secondary external API endpoint.
  * This is similar to `sync_personnel_users` but targets users marked as inactive.

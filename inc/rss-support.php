@@ -30,8 +30,8 @@ function filter_taxonomy_feeds_by_post_type($query) {
     if (strpos($request_uri, '/publications/topic/') !== false) {
         $post_type = 'publications';
     } elseif (strpos($request_uri, '/news/topic/') !== false) {
-        $post_type = 'post';
-    } elseif (strpos($request_uri, '/shorthand-story/topic/') !== false) {
+        $post_type = array('post', 'shorthand_story');
+    } elseif (strpos($request_uri, '/features/topic/') !== false) {
         $post_type = 'shorthand_story';
     } elseif (strpos($request_uri, '/events/topic/') !== false) {
         $post_type = 'events';
@@ -45,6 +45,30 @@ function filter_taxonomy_feeds_by_post_type($query) {
     }
 }
 add_action('pre_get_posts', 'filter_taxonomy_feeds_by_post_type');
+
+// Include shorthand_story posts in main RSS feed alongside regular posts
+function include_shorthand_stories_in_main_feed($query) {
+    // Only modify the main RSS feed, not admin queries or other feeds
+    if (!is_feed() || !$query->is_main_query() || is_admin()) {
+        return;
+    }
+    
+    // Only modify if this is NOT a taxonomy feed (we want to leave those alone)
+    if ($query->is_tax()) {
+        return;
+    }
+    
+    // Set post types to include both posts and shorthand stories
+    $query->set('post_type', array('post', 'shorthand_story'));
+    
+    // Ensure we respect the RSS posts per page setting
+    $query->set('posts_per_page', get_option('posts_per_rss', 10));
+    
+    // Order by date, newest first
+    $query->set('orderby', 'date');
+    $query->set('order', 'DESC');
+}
+add_action('pre_get_posts', 'include_shorthand_stories_in_main_feed');
 
 // Helper function to get ACF authors (for use in custom feed template)
 function get_acf_authors_for_feed($post_id) {

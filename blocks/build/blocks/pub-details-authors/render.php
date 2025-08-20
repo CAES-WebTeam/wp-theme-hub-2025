@@ -32,9 +32,9 @@ $oneLine = $displayVersion === 'names-and-titles';
 $useGrid = $displayVersion === 'name-and-title-below' && $grid;
 
 // Get ACF fields
-$authors = get_field('authors', $post_id, false);
-$translators = get_field('translator', $post_id, false);
-$sources = get_field('experts', $post_id, false);
+$authors = get_field('authors', $post_id);
+$translators = get_field('translator', $post_id);
+$sources = get_field('experts', $post_id);
 
 switch ($type) {
     case 'translators':
@@ -75,46 +75,77 @@ if (!function_exists('process_people')) {
         $output = '';
 
         if ($people) {
-            foreach ($people as $item) {
-                // Get user ID from the ACF structure
-                $user_id = null;
+            foreach ($people as $index => $item) {
+                // Check the type field to determine if this is a user or custom entry
+                $entry_type = $item['type'] ?? '';
 
-                // First check for 'user' key (standard ACF format)
-                if (isset($item['user']) && !empty($item['user'])) {
-                    $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-                }
+                $first_name = '';
+                $last_name = '';
+                $title = '';
+                $profile_url = '';
 
-                // Fallback: check for numeric values in any field (ACF internal field keys)
-                if (empty($user_id) && is_array($item)) {
-                    foreach ($item as $key => $value) {
-                        if (is_numeric($value) && $value > 0) {
-                            $user_id = $value;
-                            break;
+                if ($entry_type === 'Custom') {
+                    // Handle custom user entry - check both possible field names
+                    $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
+                    $first_name = $custom_user['first_name'] ?? '';
+                    $last_name = $custom_user['last_name'] ?? '';
+                    // Handle both 'title' and 'titile' (typo)
+                    $title = $custom_user['title'] ?? $custom_user['titile'] ?? '';
+                    $profile_url = '';
+                } else {
+                    // Handle WordPress user selection (existing logic)
+                    $user_id = null;
+
+                    // First check for 'user' key (standard ACF format)
+                    if (isset($item['user']) && !empty($item['user'])) {
+                        $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
+                    }
+
+                    // Fallback: check for numeric values in any field (ACF internal field keys)
+                    if (empty($user_id) && is_array($item)) {
+                        foreach ($item as $key => $value) {
+                            if (is_numeric($value) && $value > 0) {
+                                $user_id = $value;
+                                break;
+                            }
                         }
+                    }
+
+                    if ($user_id && is_numeric($user_id)) {
+                        $first_name = get_the_author_meta('first_name', $user_id);
+                        $last_name = get_the_author_meta('last_name', $user_id);
+                        $profile_url = get_author_posts_url($user_id);
+                        $public_title = get_field('public_friendly_title', 'user_' . $user_id);
+                        $regular_title = get_the_author_meta('title', $user_id);
+                        $title = !empty($public_title) ? $public_title : $regular_title;
                     }
                 }
 
-                if ($user_id && is_numeric($user_id)) {
-                    $first_name = get_the_author_meta('first_name', $user_id);
-                    $last_name = get_the_author_meta('last_name', $user_id);
-                    $profile_url = get_author_posts_url($user_id);
-                    $public_title = get_field('public_friendly_title', 'user_' . $user_id);
-                    $regular_title = get_the_author_meta('title', $user_id);
-                    $title = !empty($public_title) ? $public_title : $regular_title;
+                // Only proceed if we have at least a name
+                if (!empty($first_name) || !empty($last_name)) {
+                    $full_name = trim("$first_name $last_name");
 
                     if ($asSnippet) {
-                        $names[] = trim("$first_name $last_name");
+                        $names[] = $full_name;
                     } else {
                         if ($oneLine) {
                             $output .= '<p class="pub-author-oneline">';
-                            $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                            if (!empty($profile_url)) {
+                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html($full_name) . '</a>';
+                            } else {
+                                $output .= '<span class="pub-author-name">' . esc_html($full_name) . '</span>';
+                            }
                             if ($title) {
                                 $output .= ', ' . esc_html($title);
                             }
                             $output .= '</p>';
                         } else {
                             $output .= '<div class="pub-author">';
-                            $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html(trim("$first_name $last_name")) . '</a>';
+                            if (!empty($profile_url)) {
+                                $output .= '<a class="pub-author-name" href="' . esc_url($profile_url) . '">' . esc_html($full_name) . '</a>';
+                            } else {
+                                $output .= '<span class="pub-author-name">' . esc_html($full_name) . '</span>';
+                            }
                             if ($title) {
                                 $output .= '<p class="pub-author-title">' . esc_html($title) . '</p>';
                             }

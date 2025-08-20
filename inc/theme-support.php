@@ -465,3 +465,32 @@ function add_gtm_noscript_block_theme() {
     }
 }
 add_action('wp_body_open', 'add_gtm_noscript_block_theme');
+
+// Global counter for placeholder images
+global $caes_placeholder_counter;
+$caes_placeholder_counter = 0;
+
+// Helper function for placeholder images in custom blocks
+function caes_get_placeholder_image($post_id) {
+    global $caes_placeholder_counter;
+    
+    $placeholders = [
+        'placeholder-bg-1-athens.jpg',
+        'placeholder-bg-1-hedges.jpg',
+        'placeholder-bg-1-lake-herrick.jpg',
+        'placeholder-bg-1-olympic.jpg',
+        'placeholder-bg-2-athens.jpg',
+        'placeholder-bg-2-hedges.jpg',
+        'placeholder-bg-2-lake-herrick.jpg',
+        'placeholder-bg-2-olympic.jpg',
+    ];
+    
+    $index = $caes_placeholder_counter % count($placeholders);
+    $file = $placeholders[$index];
+    $caes_placeholder_counter++;
+    
+    return [
+        'url' => get_template_directory_uri() . '/assets/images/' . $file,
+        'alt' => get_the_title($post_id)
+    ];
+}

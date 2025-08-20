@@ -138,6 +138,14 @@ function variations_query_filter($query, $block)
 
         // For upcoming-events blocks
         if ('upcoming-events' === $namespace) {
+            // Debug: Store what's already in the query
+            global $debug_events_query;
+            $debug_events_query[] = [
+                'step' => 'Before custom filter',
+                'query' => $query,
+                'parsed_block_attrs' => $parsed_block['attrs'] ?? 'No attrs'
+            ];
+
             if (!empty($parsed_block['attrs']['query']['event_type'])) {
                 $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
                 $meta_query[] = array(
@@ -145,15 +153,22 @@ function variations_query_filter($query, $block)
                     'value' => $event_type,
                     'compare' => '='
                 );
+
+                $debug_events_query[] = [
+                    'step' => 'Added event_type meta query',
+                    'event_type' => $event_type,
+                    'meta_query' => $meta_query
+                ];
             }
         }
+
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
             $query['post_type'] = ['post', 'shorthand_story'];
             unset($query['postType']);
 
-            // Filter by author (expert OR author) ONLY if on author archive
+            // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
 
@@ -172,7 +187,19 @@ function variations_query_filter($query, $block)
                     )
                 );
             }
-            // If NOT on author archive, no additional filtering - just show all posts from both post types
+            // Handle taxonomy archives (categories, tags, topics, etc.)
+            elseif (is_category() || is_tag() || is_tax()) {
+                $queried_object = get_queried_object();
+
+                if ($queried_object && isset($queried_object->taxonomy) && isset($queried_object->term_id)) {
+                    $tax_query[] = array(
+                        'taxonomy' => $queried_object->taxonomy,
+                        'field'    => 'term_id',
+                        'terms'    => $queried_object->term_id,
+                    );
+                }
+            }
+            // If NOT on author or taxonomy archive, no additional filtering - just show all posts from both post types
         }
     }
 
