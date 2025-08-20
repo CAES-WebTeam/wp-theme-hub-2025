@@ -220,14 +220,14 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
-    // Publication posts rule: more specific to exclude reserved words
+    // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
     add_rewrite_rule(
-        '^publications/(?!series|topic)([A-Za-z]+[0-9][A-Za-z0-9-]*)/([^/]+)/?$',
+        '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
         'index.php?post_type=publications&name=$matches[2]',
         'top'
     );
 
-    // Child pages rule
+    // Child pages rule - this handles regular child pages under "publications"
     add_rewrite_rule(
         '^publications/([^/]+)/?$',
         'index.php?pagename=publications/$matches[1]',
