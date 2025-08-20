@@ -247,6 +247,20 @@ function custom_publications_rewrite_rules()
     );
 }
 
+function debug_rewrite_rules() {
+    if (isset($_GET['debug_rewrites'])) {
+        global $wp_rewrite;
+        echo '<pre>';
+        echo "Current rewrite rules:\n";
+        print_r($wp_rewrite->wp_rewrite_rules());
+        echo "\n\nCurrent request: " . $_SERVER['REQUEST_URI'] . "\n";
+        echo "Parsed URL: " . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) . "\n";
+        echo '</pre>';
+        exit;
+    }
+}
+add_action('init', 'debug_rewrite_rules', 999);
+
 /**
  * Custom rewrite rules for person (author) pages
  */
