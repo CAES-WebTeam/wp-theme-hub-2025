@@ -220,7 +220,7 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
-    // Publication series rules FIRST - more specific rules must come before general ones
+    // Publication series rules FIRST
     add_rewrite_rule(
         '^publications/series/([^/]+)/?$',
         'index.php?publication_series=$matches[1]',
@@ -232,21 +232,20 @@ function custom_publications_rewrite_rules()
         'top'
     );
     
-    // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
+    // Publication posts rule: more specific to exclude reserved words
     add_rewrite_rule(
-        '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
+        '^publications/(?!series|topic)([A-Za-z]+[0-9][A-Za-z0-9-]*)/([^/]+)/?$',
         'index.php?post_type=publications&name=$matches[2]',
         'top'
     );
 
-    // Child pages rule - this handles regular child pages under "publications"
+    // Child pages rule
     add_rewrite_rule(
         '^publications/([^/]+)/?$',
         'index.php?pagename=publications/$matches[1]',
         'top'
     );
 }
-add_action('init', 'custom_publications_rewrite_rules');
 
 /**
  * Custom rewrite rules for person (author) pages
