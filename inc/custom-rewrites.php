@@ -220,6 +220,13 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
+    // Publication series ARCHIVE (base URL) - must be first
+    add_rewrite_rule(
+        '^publications/series/?$',
+        'index.php?post_type=publications&publication_series=',
+        'top'
+    );
+    
     // Publication series rules FIRST
     add_rewrite_rule(
         '^publications/series/([^/]+)/?$',
