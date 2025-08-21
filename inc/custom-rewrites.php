@@ -457,7 +457,7 @@ function redirect_publications_to_canonical_url()
 add_action('template_redirect', 'redirect_publications_to_canonical_url');
 
 /**
- * Redirect /publication_series/ base archive to custom /publications/series/ page
+ * Redirect /publication-series/ base archive to custom /publications/series/ page
  */
 function redirect_publication_series_base_archive()
 {
@@ -465,8 +465,8 @@ function redirect_publication_series_base_archive()
 
     $requested_path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
-    // Check if URL is exactly 'publication_series' (base archive)
-    if ($requested_path === 'publication_series') {
+    // Check if URL is exactly 'publication-series' (base archive)
+    if ($requested_path === 'publication-series') {
         wp_redirect(home_url('/publications/series/'), 301);
         exit;
     }

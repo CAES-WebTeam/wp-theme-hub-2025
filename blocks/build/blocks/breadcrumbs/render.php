@@ -211,6 +211,65 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
     $term = get_queried_object();
     $position = $start_position;
     
+    // Special handling for publication_series taxonomy
+    if ($term->taxonomy === 'publication_series') {
+        // Add Publications page
+        $publications_page = get_page_by_path('publications');
+        if ($publications_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($publications_page->ID),
+                'url' => get_permalink($publications_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Expert Resources',
+                'url' => home_url('/publications/'),
+                'position' => $position++
+            );
+        }
+
+        // Add Publication Series page
+        $series_page = get_page_by_path('publications/series');
+        if ($series_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($series_page->ID),
+                'url' => get_permalink($series_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Publication Series',
+                'url' => home_url('/publications/series/'),
+                'position' => $position++
+            );
+        }
+        
+        // Handle term hierarchy for publication-series
+        if ($term->parent) {
+            $ancestors = get_ancestors($term->term_id, $term->taxonomy);
+            $ancestors = array_reverse($ancestors);
+            
+            foreach ($ancestors as $ancestor_id) {
+                $ancestor = get_term($ancestor_id, $term->taxonomy);
+                $breadcrumbs[] = array(
+                    'title' => $ancestor->name,
+                    'url' => get_term_link($ancestor),
+                    'position' => $position++
+                );
+            }
+        }
+        
+        // Current term
+        $breadcrumbs[] = array(
+            'title' => $term->name,
+            'url' => null,
+            'position' => $position
+        );
+        
+        return $breadcrumbs;
+    }
+    
     // Special handling for topics taxonomy - detect context from URL
     if ($term->taxonomy === 'topics') {
         $current_url = $_SERVER['REQUEST_URI'];
