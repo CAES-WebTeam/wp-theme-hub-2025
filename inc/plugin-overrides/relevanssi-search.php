@@ -1,27 +1,29 @@
 <?php
+
 /** 
  * Simple fix for search parameters on custom pages
  */
-function simple_search_page_fix($wp) {
+function simple_search_page_fix($wp)
+{
     // Only proceed if there's a search parameter
     if (!isset($_GET['s']) || empty($_GET['s'])) {
         return;
     }
-    
+
     // Only proceed if WordPress thinks this is a search
     if (!isset($wp->query_vars['s'])) {
         return;
     }
-    
+
     // Check if this URL looks like a page (not the default search)
     // Default search URLs are usually just /?s=query or /search/?s=query
     $current_path = trim($wp->request, '/');
-    
+
     // If there's a meaningful path (not empty, not just "search"), treat it as a page
     if (!empty($current_path) && $current_path !== 'search') {
         // Try to find a page at this path
         $page = get_page_by_path($current_path);
-        
+
         if ($page && $page->post_status === 'publish') {
             // Override WordPress search behavior
             unset($wp->query_vars['s']);
@@ -52,14 +54,15 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
 
         // Handle post_type: if empty, search all allowed post types instead of defaulting to 'post' 
         if (! empty($post_type)) {
-            $args['post_type'] = $post_type;
+            // Special case: when "Stories" is selected (post_type = 'post'), include both post and shorthand_story
+            if ($post_type === 'post') {
+                $args['post_type'] = array('post', 'shorthand_story');
+            } else {
+                $args['post_type'] = $post_type;
+            }
         } else {
             // When no specific post type is selected, search all configured post types 
-            // Use the allowed_post_types passed from the block's attributes
-            $all_allowed_post_types_for_query = empty($allowed_post_types_from_block) ? array('post', 'page') : $allowed_post_types_from_block; // Fallback if block doesn't provide
-            $filtered_post_types = array_filter($all_allowed_post_types_for_query, function ($type) {
-                return $type !== 'shorthand_story';
-            });
+            $all_allowed_post_types_for_query = empty($allowed_post_types_from_block) ? array('post', 'page') : $allowed_post_types_from_block;
             $args['post_type'] = $filtered_post_types;
         }
 
@@ -76,11 +79,11 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
         // Handle language filtering using ACF custom field
         if (!empty($language)) {
             // error_log('RENDER: Processing language filter with value: ' . $language);
-            
+
             // For AJAX requests, language is already converted to ID
             // For URL requests, convert pretty slug to ID if needed
             $language_id = $language;
-            
+
             // Only do slug-to-ID conversion if it looks like a slug (not a number)
             if (!is_numeric($language)) {
                 $language_slug_to_id = array(
@@ -89,19 +92,19 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                     'chinese' => '3',
                     'other' => '4'
                 );
-                
+
                 $language_id = isset($language_slug_to_id[$language]) ? $language_slug_to_id[$language] : $language;
                 // error_log('RENDER: Converted language slug "' . $language . '" to ID "' . $language_id . '"');
             } else {
                 // error_log('RENDER: Language is already numeric ID: ' . $language_id);
             }
-            
+
             $meta_query[] = array(
                 'key'     => 'language',
                 'value'   => $language_id,
                 'compare' => '='
             );
-            
+
             // error_log('RENDER: Added language meta_query: key=language, value=' . $language_id . ', compare==');
         }
 
@@ -121,7 +124,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
         if (!empty($author_ids)) {
             // Use a single meta_query with IN comparison for all author positions
             $meta_query_or_conditions = array('relation' => 'OR');
-            
+
             // Instead of checking each author separately, check all positions for all authors
             for ($i = 0; $i <= 9; $i++) {
                 $meta_query_or_conditions[] = array(
@@ -130,14 +133,13 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                     'compare' => 'IN'       // Use IN instead of multiple = comparisons
                 );
             }
-            
+
             // Single query to get all posts with any of the selected authors
             $author_posts_query = new WP_Query(array(
-                'post_type' => !empty($post_type) ? array($post_type) : 
-                    (empty($allowed_post_types_from_block) ? array('post', 'page') : 
-                    array_filter($allowed_post_types_from_block, function ($type) {
-                        return $type !== 'shorthand_story';
-                    })),
+                'post_type' => !empty($post_type) ? array($post_type) : (empty($allowed_post_types_from_block) ? array('post', 'page') :
+                        array_filter($allowed_post_types_from_block, function ($type) {
+                            return $type !== 'shorthand_story';
+                        })),
                 'posts_per_page' => -1,
                 'fields' => 'ids',
                 'post_status' => 'publish',
@@ -146,12 +148,12 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 'update_post_meta_cache' => false, // Skip meta cache
                 'update_post_term_cache' => false  // Skip term cache
             ));
-            
+
             $author_post_ids = $author_posts_query->posts;
-            
+
             // Clean up
             wp_reset_postdata();
-            
+
             if (!empty($author_post_ids)) {
                 $args['post__in'] = $author_post_ids;
             } else {
@@ -184,7 +186,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             // error_log('RENDER: Relevanssi not active. Using standard WP_Query.');
             $query = new WP_Query($args);
         }
-        
+
         // error_log('RENDER: Query found_posts: ' . $query->found_posts);
 
         // Store the global $wp_query to restore later 
@@ -252,11 +254,11 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             <?php
             if (have_posts()) {
                 $post_count = 0;
-                
+
                 // Create query loop structure like post-template
                 echo '<div class="wp-block-query caes-hub-post-list-grid">';
                 echo '<ul class="wp-block-post-template" style="gap: var(--wp--preset--spacing--50);padding: 0;display: flex;flex-direction: column;">';
-                
+
                 while (have_posts()) {
                     the_post();
                     $post_count++;
@@ -264,24 +266,24 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                     // Determine which template to use based on post type
                     $current_post_type = get_post_type();
                     $is_publication = ($current_post_type === 'publication'); // Adjust this condition based on your publication post type
-                    
+
                     // Select appropriate template
                     $template_to_use = $is_publication ? $publication_search_result_template : $general_search_result_template;
-                    
+
                     // Parse the selected block template
                     $parsed_blocks = parse_blocks($template_to_use);
 
                     // Each post wrapped in <li> like post-template does
                     echo '<li class="wp-block-post post-' . get_the_ID() . ' ' . implode(' ', get_post_class()) . '">';
-                    
+
                     // Render the blocks for each post
                     foreach ($parsed_blocks as $block) {
                         echo render_block($block);
                     }
-                    
+
                     echo '</li>';
                 }
-                
+
                 echo '</ul>';
                 echo '</div>';
                 // error_log('RENDER: Results found: ' . $post_count . ' posts.');
@@ -294,7 +296,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
                 );
             } else {
                 // error_log('RENDER: No results found by WP_Query/Relevanssi.');
-                ?>
+            ?>
                 <p><?php esc_html_e('No results found.', 'caes-hub'); ?></p>
             <?php
             }
@@ -349,19 +351,19 @@ function caes_hub_handle_relevanssi_ajax_search()
     $ajax_orderby     = isset($_POST['orderby']) ? sanitize_text_field(wp_unslash($_POST['orderby'])) : '';
     $ajax_order       = isset($_POST['order']) ? sanitize_text_field(wp_unslash($_POST['order'])) : '';
     $ajax_post_type   = isset($_POST['post_type']) ? sanitize_text_field(wp_unslash($_POST['post_type'])) : '';
-    
+
     // Only process topic terms if topic filter is enabled
     $ajax_topic_terms = array();
     if ($show_topic_filter && isset($_POST[$taxonomy_slug])) {
         $ajax_topic_terms = array_map('sanitize_text_field', wp_unslash($_POST[$taxonomy_slug]));
     }
-    
+
     // Only process language if language filter is enabled
     $ajax_language = '';
     if ($show_language_filter && isset($_POST['language'])) {
         $raw_language = sanitize_text_field(wp_unslash($_POST['language']));
         // error_log('AJAX: Raw language from POST: ' . $raw_language);
-        
+
         // Convert pretty language slug to database ID for AJAX requests
         if (!empty($raw_language)) {
             $language_slug_to_id = array(
@@ -370,7 +372,7 @@ function caes_hub_handle_relevanssi_ajax_search()
                 'chinese' => '3',
                 'other' => '4'
             );
-            
+
             // If it's a pretty slug, convert to database ID
             if (isset($language_slug_to_id[$raw_language])) {
                 $ajax_language = $language_slug_to_id[$raw_language];
@@ -383,7 +385,7 @@ function caes_hub_handle_relevanssi_ajax_search()
     } else {
         // error_log('AJAX: Language not processed. show_language_filter=' . ($show_language_filter ? 'true' : 'false') . ', language_posted=' . (isset($_POST['language']) ? 'yes' : 'no'));
     }
-    
+
     $ajax_paged       = isset($_POST['paged']) ? intval(wp_unslash($_POST['paged'])) : 1;
 
     // Only process author slugs if author filter is enabled - SECURITY: using slugs instead of IDs
@@ -391,12 +393,12 @@ function caes_hub_handle_relevanssi_ajax_search()
     if ($show_author_filter && isset($_POST['author_slug']) && is_array($_POST['author_slug'])) {
         $ajax_author_slugs = array_map('sanitize_text_field', wp_unslash($_POST['author_slug']));
         $ajax_author_slugs = array_filter($ajax_author_slugs); // Remove any empty values
-        
+
         // Validate author slugs for security
-        $ajax_author_slugs = array_filter($ajax_author_slugs, function($slug) {
+        $ajax_author_slugs = array_filter($ajax_author_slugs, function ($slug) {
             return preg_match('/^[a-zA-Z0-9\-_]+$/', $slug);
         });
-        
+
         // Convert slugs back to IDs for internal processing
         foreach ($ajax_author_slugs as $slug) {
             $user = get_user_by('slug', $slug);

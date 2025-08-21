@@ -186,9 +186,9 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 							<?php
 							foreach ($allowed_post_types as $pt_slug) {
 								// Skip "Shorthand Story" post type entirely
-								if ($pt_slug === 'shorthand_story') {
-									continue;
-								}
+								// if ($pt_slug === 'shorthand_story') {
+								// 	continue;
+								// }
 
 								$post_type_obj = get_post_type_object($pt_slug);
 								if ($post_type_obj && $post_type_obj->public) {
