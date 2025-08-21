@@ -63,7 +63,7 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
         } else {
             // When no specific post type is selected, search all configured post types 
             $all_allowed_post_types_for_query = empty($allowed_post_types_from_block) ? array('post', 'page') : $allowed_post_types_from_block;
-            $args['post_type'] = $filtered_post_types;
+            $args['post_type'] = $all_allowed_post_types_for_query; // Use this variable instead
         }
 
         if ($orderby === 'post_date') {
@@ -137,9 +137,9 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             // Single query to get all posts with any of the selected authors
             $author_posts_query = new WP_Query(array(
                 'post_type' => !empty($post_type) ? array($post_type) : (empty($allowed_post_types_from_block) ? array('post', 'page') :
-                        array_filter($allowed_post_types_from_block, function ($type) {
-                            return $type !== 'shorthand_story';
-                        })),
+                    array_filter($allowed_post_types_from_block, function ($type) {
+                        return $type !== 'shorthand_story';
+                    })),
                 'posts_per_page' => -1,
                 'fields' => 'ids',
                 'post_status' => 'publish',
