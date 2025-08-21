@@ -472,19 +472,15 @@ function process_content_linking_batch_callback()
         $user_external_id = intval($record[$api_keys[$linking_type][1]]);
 
         // Skip if we don't have matching content or user
-        if (!isset($content_lookup[$content_id]) ) {
-            $stats['errors'][] = [
-                'message' => "Could not find content with \"{$api_keys[$linking_type][0]}\" \"{$content_id}\"",
-                'type' => 'link'
-            ];
+        if (!isset($content_lookup[$content_id])) {
+            $content_type = ($linking_type === 'publications') ? 'publication' : 'story';
+            $stats['errors'][] = "Missing {$content_type}: No {$content_type} found with {$api_keys[$linking_type][0]} = {$content_id}";
             continue;
         }
 
         if (!isset($user_lookup[$user_external_id])) {
-            $stats['errors'][] = [
-                'message' => "Could not find user with \"{$api_keys[$linking_type][1]}\" \"{$user_external_id}\"",
-                'type' => 'link'
-            ];
+            $user_type = ($linking_type === 'writers') ? 'writer' : ($linking_type === 'experts' ? 'expert' : 'author');
+            $stats['errors'][] = "Missing {$user_type}: No user found with {$api_keys[$linking_type][1]} = {$user_external_id}";
             continue;
         }
 
