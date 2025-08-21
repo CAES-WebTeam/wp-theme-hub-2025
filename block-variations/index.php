@@ -40,6 +40,12 @@ function rest_event_type($args, $request)
         unset($args['meta_key'], $args['meta_value'], $args['meta_compare']);
     }
 
+    // Add chronological ordering for events using ACF start_date field
+    $args['meta_key'] = 'start_date';
+    $args['orderby'] = 'meta_value';
+    $args['order'] = 'ASC';
+    $args['meta_type'] = 'DATE';
+
     return $args;
 }
 add_filter('rest_events_query', 'rest_event_type', 10, 2);
@@ -146,6 +152,7 @@ function variations_query_filter($query, $block)
                 'parsed_block_attrs' => $parsed_block['attrs'] ?? 'No attrs'
             ];
 
+            // Filter by event type if specified
             if (!empty($parsed_block['attrs']['query']['event_type'])) {
                 $event_type = sanitize_text_field($parsed_block['attrs']['query']['event_type']);
                 $meta_query[] = array(
@@ -160,8 +167,13 @@ function variations_query_filter($query, $block)
                     'meta_query' => $meta_query
                 ];
             }
-        }
 
+            // Set chronological ordering for events using ACF start_date field
+            $query['meta_key'] = 'start_date';
+            $query['orderby'] = 'meta_value';
+            $query['order'] = 'ASC'; // Chronological order (earliest first)
+            $query['meta_type'] = 'DATE'; // Since ACF stores dates in Ymd format
+        }
 
         // For stories-feed blocks using custom author field
         if ('stories-feed' === $namespace) {
