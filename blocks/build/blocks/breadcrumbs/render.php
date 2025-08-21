@@ -211,25 +211,8 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
     $term = get_queried_object();
     $position = $start_position;
     
-    // Debug: Display what we're working with directly on page (remove this after testing)
-    if (current_user_can('manage_options')) { // Only show to admins
-        echo '<div style="background: #f0f0f0; border: 1px solid #ccc; padding: 10px; margin: 10px; font-family: monospace;">';
-        echo '<strong>BREADCRUMB DEBUG:</strong><br>';
-        echo 'Taxonomy: ' . $term->taxonomy . '<br>';
-        echo 'Term slug: ' . $term->slug . '<br>';
-        echo 'Term name: ' . $term->name . '<br>';
-        echo 'Current URL: ' . $_SERVER['REQUEST_URI'] . '<br>';
-        echo 'Is category: ' . (is_category() ? 'YES' : 'NO') . '<br>';
-        echo 'Is tag: ' . (is_tag() ? 'YES' : 'NO') . '<br>';
-        echo 'Is tax: ' . (is_tax() ? 'YES' : 'NO') . '<br>';
-        echo 'get_queried_object type: ' . get_class($term) . '<br>';
-        echo '</div>';
-    }
-    
-    // Special handling for publication-series taxonomy
-    // Check both taxonomy name and URL pattern as fallback
-    $current_url = $_SERVER['REQUEST_URI'];
-    if ($term->taxonomy === 'publication-series' || strpos($current_url, '/publication-series/') !== false) {
+    // Special handling for publication_series taxonomy
+    if ($term->taxonomy === 'publication_series') {
         // Add Publications page
         $publications_page = get_page_by_path('publications');
         if ($publications_page) {
