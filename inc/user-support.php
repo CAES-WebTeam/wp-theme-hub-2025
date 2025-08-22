@@ -1033,15 +1033,15 @@ function find_and_remove_duplicate_expert_users($personnel_user_id, $source_expe
 }
 
 /**
- * Imports news experts/sources data from the API endpoint.
+ * Imports news writers data from the API endpoint.
  * Creates new 'expert_user' roles or updates existing ones.
- * Handles matching by personnel ID or source_expert_id.
+ * Handles matching by personnel ID or writer_id.
  * Now includes duplicate cleanup when personnel_id matches are found.
  *
  * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
  * or a WP_Error object on failure.
  */
-function import_news_experts()
+function import_news_writers()
 {
     // Suppress email notifications
     disable_user_notifications();
@@ -1049,12 +1049,12 @@ function import_news_experts()
     global $import_errors;
     $import_errors = []; // Reset errors for this operation
     
-    $api_url = 'https://secure.caes.uga.edu/rest/news/getExperts';
+    $api_url = 'https://secure.caes.uga.edu/rest/news/getWriters';
 
     // Fetch API Data.
     $response = wp_remote_get($api_url);
     if (is_wp_error($response)) {
-        $error_msg = 'API Request Failed for News Experts: ' . $response->get_error_message();
+        $error_msg = 'API Request Failed for News Writers: ' . $response->get_error_message();
         output_sync_message($error_msg, 'error');
         enable_user_notifications();
         return new WP_Error('api_error', $error_msg);
@@ -1064,33 +1064,33 @@ function import_news_experts()
     $records = json_decode($data, true);
 
     if (!is_array($records)) {
-        $error_msg = 'Invalid API response for News Experts.';
+        $error_msg = 'Invalid API response for News Writers.';
         output_sync_message($error_msg, 'error');
         enable_user_notifications();
         return new WP_Error('invalid_response', $error_msg);
     }
 
-    output_sync_message("IMPORT START: Processing " . count($records) . " experts from News Experts API");
+    output_sync_message("IMPORT START: Processing " . count($records) . " writers from News Writers API");
 
     $created = 0;
     $updated = 0;
-    $linked = 0; // Count of users linked by personnel ID or source_expert_id.
+    $linked = 0; // Count of users linked by personnel ID or writer_id.
     $duplicates_removed = 0; // Count of duplicate expert users removed
     $error_count = 0;
 
     // Iterate through each record from the API.
     foreach ($records as $index => $person) {
-        $user_log_prefix = "EXPERT #{$index}";
+        $user_log_prefix = "WRITER #{$index}";
         
         $original_email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
         $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
         $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
         $personnel_id = $person['PERSONNEL_ID'] ?? null;
-        $source_expert_id = $person['ID'] ?? null;
+        $writer_id_from_api = $person['ID'] ?? null; // Capture the ID field from API.
 
         // Basic validation
-        if (!$source_expert_id) {
-            $error_msg = "Missing source expert ID";
+        if (!$writer_id_from_api) {
+            $error_msg = "Missing writer ID";
             output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
             record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
             $error_count++;
@@ -1117,11 +1117,11 @@ function import_news_experts()
             }
         }
 
-        // If not found by personnel_id, try to find by source_expert_id.
-        if (!$user_id && $source_expert_id) {
+        // If not found by personnel_id, try to find by writer_id.
+        if (!$user_id && $writer_id_from_api) {
             $users = get_users([
-                'meta_key' => 'source_expert_id',
-                'meta_value' => $source_expert_id,
+                'meta_key' => 'writer_id',
+                'meta_value' => $writer_id_from_api,
                 'number' => 1,
                 'fields' => 'ID',
             ]);
@@ -1129,7 +1129,7 @@ function import_news_experts()
             if (!empty($users)) {
                 $user_id = $users[0];
                 $linked++;
-                output_sync_message("{$user_log_prefix}: Found existing user by source_expert_id {$source_expert_id} with ID {$user_id} for {$first_name} {$last_name}.");
+                output_sync_message("{$user_log_prefix}: Found existing user by writer_id {$writer_id_from_api} with ID {$user_id} for {$first_name} {$last_name}.");
             }
         }
 
@@ -1140,14 +1140,14 @@ function import_news_experts()
                 
                 // Check if we need to spoof the email due to duplicates
                 if ($original_email && email_exists($original_email)) {
-                    // Create a unique spoofed email address using source_expert_id or fallback
-                    $unique_id = $source_expert_id ? $source_expert_id : uniqid();
-                    $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
+                    // Create a unique spoofed email address using writer_id or fallback
+                    $unique_id = $writer_id_from_api ? $writer_id_from_api : uniqid();
+                    $email_to_use = "writer_{$unique_id}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-                } elseif ($original_email == '') {
+                } elseif (!$original_email) {
                     // No email provided, create placeholder
-                    $unique_id = $source_expert_id ? $source_expert_id : uniqid();
-                    $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
+                    $unique_id = $writer_id_from_api ? $writer_id_from_api : uniqid();
+                    $email_to_use = "writer_{$unique_id}@caes.uga.edu.spoofed";
                     output_sync_message("{$user_log_prefix}: No email provided. Using spoofed email: {$email_to_use}");
                 }
 
@@ -1155,7 +1155,7 @@ function import_news_experts()
                 
                 // Check if username exists and modify if needed
                 if (username_exists($username)) {
-                    $username = $username . '_' . $source_expert_id;
+                    $username = $username . '_' . $writer_id_from_api;
                     output_sync_message("{$user_log_prefix}: Username already exists. Using: {$username}");
                 }
                 
@@ -1177,7 +1177,7 @@ function import_news_experts()
                 }
 
                 $created++;
-                output_sync_message("{$user_log_prefix}: Created new expert user with ID {$user_id} for {$first_name} {$last_name} using email: {$email_to_use}");
+                output_sync_message("{$user_log_prefix}: Created new user with ID {$user_id} for {$first_name} {$last_name} using email: {$email_to_use}.");
                 
             } catch (Exception $e) {
                 $error_msg = "Exception during user creation: " . $e->getMessage();
@@ -1201,17 +1201,17 @@ function import_news_experts()
                 }
                 
                 update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
-                update_field('description', $person['DESCRIPTION'] ?? '', 'user_' . $user_id);
+                update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
                 
                 // Update personnel_id if provided
                 if ($personnel_id) {
                     update_field('personnel_id', $personnel_id, 'user_' . $user_id);
                 }
                 
-                update_field('source_expert_id', $source_expert_id, 'user_' . $user_id);
-                update_field('area_of_expertise', $person['AREA_OF_EXPERTISE'] ?? '', 'user_' . $user_id);
-                update_field('is_source', (bool)($person['IS_SOURCE'] ?? false), 'user_' . $user_id);
-                update_field('is_expert', (bool)($person['IS_EXPERT'] ?? false), 'user_' . $user_id);
+                update_field('writer_id', $writer_id_from_api, 'user_' . $user_id);
+                update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
+                update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
+                update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
                 update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
                 
                 $acf_update_successful = true;
@@ -1231,8 +1231,7 @@ function import_news_experts()
                 
                 $cleanup_result = find_and_remove_duplicate_expert_users(
                     $user_id, 
-                    $source_expert_id, 
-                    null, // Don't pass writer_id for experts
+                    $writer_id_from_api,
                     $user_log_prefix
                 );
                 
@@ -1255,7 +1254,7 @@ function import_news_experts()
         }
     }
 
-    output_sync_message("IMPORT COMPLETE: News Experts processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}", 'success');
+    output_sync_message("IMPORT COMPLETE: News Writers processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}", 'success');
 
     enable_user_notifications();
 
@@ -1267,9 +1266,10 @@ function import_news_experts()
         'duplicates_removed' => $duplicates_removed,
         'errors' => $error_count,
         'total_api_records' => count($records),
-        'message' => "News Experts import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}."
+        'message' => "News Writers import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}."
     ];
 }
+
 
 /**
  * Imports news writers data from the API endpoint.
