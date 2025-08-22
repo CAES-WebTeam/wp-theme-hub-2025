@@ -1372,6 +1372,16 @@ function import_news_writers()
             }
         }
 
+        // If still not found and we have an email, try to find by email address
+        if (!$user_id && $original_email) {
+            $existing_user = get_user_by('email', $original_email);
+            if ($existing_user) {
+                $user_id = $existing_user->ID;
+                $linked++;
+                output_sync_message("{$user_log_prefix}: Found existing user by email {$original_email} with ID {$user_id} for {$first_name} {$last_name}.");
+            }
+        }
+
         // If still no user found, create a new one.
         if (!$user_id) {
             try {
