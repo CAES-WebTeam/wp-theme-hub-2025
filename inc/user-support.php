@@ -1033,6 +1033,245 @@ function find_and_remove_duplicate_expert_users($personnel_user_id, $source_expe
 }
 
 /**
+ * Imports news experts/sources data from the API endpoint.
+ * Creates new 'expert_user' roles or updates existing ones.
+ * Handles matching by personnel ID or source_expert_id.
+ * Now includes duplicate cleanup when personnel_id matches are found.
+ *
+ * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
+ * or a WP_Error object on failure.
+ */
+function import_news_experts()
+{
+    // Suppress email notifications
+    disable_user_notifications();
+
+    global $import_errors;
+    $import_errors = []; // Reset errors for this operation
+    
+    $api_url = 'https://secure.caes.uga.edu/rest/news/getExperts';
+
+    // Fetch API Data.
+    $response = wp_remote_get($api_url);
+    if (is_wp_error($response)) {
+        $error_msg = 'API Request Failed for News Experts: ' . $response->get_error_message();
+        output_sync_message($error_msg, 'error');
+        enable_user_notifications();
+        return new WP_Error('api_error', $error_msg);
+    }
+
+    $data = wp_remote_retrieve_body($response);
+    $records = json_decode($data, true);
+
+    if (!is_array($records)) {
+        $error_msg = 'Invalid API response for News Experts.';
+        output_sync_message($error_msg, 'error');
+        enable_user_notifications();
+        return new WP_Error('invalid_response', $error_msg);
+    }
+
+    output_sync_message("IMPORT START: Processing " . count($records) . " experts from News Experts API");
+
+    $created = 0;
+    $updated = 0;
+    $linked = 0; // Count of users linked by personnel ID or source_expert_id.
+    $duplicates_removed = 0; // Count of duplicate expert users removed
+    $error_count = 0;
+
+    // Iterate through each record from the API.
+    foreach ($records as $index => $person) {
+        $user_log_prefix = "EXPERT #{$index}";
+        
+        $original_email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
+        $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
+        $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
+        $personnel_id = $person['PERSONNEL_ID'] ?? null;
+        $source_expert_id = $person['ID'] ?? null;
+
+        // Basic validation
+        if (!$source_expert_id) {
+            $error_msg = "Missing source expert ID";
+            output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
+            record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+            $error_count++;
+            continue;
+        }
+
+        $user_id = null;
+        $found_by_personnel_id = false;
+
+        // First, attempt to find user by personnel_id if it exists.
+        if ($personnel_id) {
+            $users = get_users([
+                'meta_key' => 'personnel_id',
+                'meta_value' => $personnel_id,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+
+            if (!empty($users)) {
+                $user_id = $users[0];
+                $linked++;
+                $found_by_personnel_id = true;
+                output_sync_message("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id} with ID {$user_id} for {$first_name} {$last_name}.");
+            }
+        }
+
+        // If not found by personnel_id, try to find by source_expert_id.
+        if (!$user_id && $source_expert_id) {
+            $users = get_users([
+                'meta_key' => 'source_expert_id',
+                'meta_value' => $source_expert_id,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+
+            if (!empty($users)) {
+                $user_id = $users[0];
+                $linked++;
+                output_sync_message("{$user_log_prefix}: Found existing user by source_expert_id {$source_expert_id} with ID {$user_id} for {$first_name} {$last_name}.");
+            }
+        }
+
+        // If still no user found, create a new one.
+        if (!$user_id) {
+            try {
+                $email_to_use = $original_email;
+                
+                // Check if we need to spoof the email due to duplicates
+                if ($original_email && email_exists($original_email)) {
+                    // Create a unique spoofed email address using source_expert_id or fallback
+                    $unique_id = $source_expert_id ? $source_expert_id : uniqid();
+                    $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
+                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
+                } elseif ($original_email == '') {
+                    // No email provided, create placeholder
+                    $unique_id = $source_expert_id ? $source_expert_id : uniqid();
+                    $email_to_use = "expert_{$unique_id}@caes.uga.edu.spoofed";
+                    output_sync_message("{$user_log_prefix}: No email provided. Using spoofed email: {$email_to_use}");
+                }
+
+                $username = sanitize_user($email_to_use);
+                
+                // Check if username exists and modify if needed
+                if (username_exists($username)) {
+                    $username = $username . '_' . $source_expert_id;
+                    output_sync_message("{$user_log_prefix}: Username already exists. Using: {$username}");
+                }
+                
+                $user_id = wp_insert_user([
+                    'user_login' => $username,
+                    'user_pass' => wp_generate_password(),
+                    'user_email' => $email_to_use,
+                    'first_name' => $first_name,
+                    'last_name' => $last_name,
+                    'role' => 'expert_user',
+                ]);
+
+                if (is_wp_error($user_id)) {
+                    $error_msg = "User creation failed: " . $user_id->get_error_message();
+                    output_sync_message("{$user_log_prefix} CREATE ERROR: {$error_msg}");
+                    record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                    $error_count++;
+                    continue; // Skip to next record on error.
+                }
+
+                $created++;
+                output_sync_message("{$user_log_prefix}: Created new expert user with ID {$user_id} for {$first_name} {$last_name} using email: {$email_to_use}");
+                
+            } catch (Exception $e) {
+                $error_msg = "Exception during user creation: " . $e->getMessage();
+                output_sync_message("{$user_log_prefix} CREATE ERROR: {$error_msg}");
+                record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                $error_count++;
+                continue;
+            }
+        } else {
+            $updated++;
+        }
+
+        // Update ACF fields if a user was found or created.
+        if ($user_id) {
+            $acf_update_successful = false;
+            
+            try {
+                // Store original email in uga_email field
+                if ($original_email) {
+                    update_field('uga_email', $original_email, 'user_' . $user_id);
+                }
+                
+                update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
+                update_field('description', $person['DESCRIPTION'] ?? '', 'user_' . $user_id);
+                
+                // Update personnel_id if provided
+                if ($personnel_id) {
+                    update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+                }
+                
+                update_field('source_expert_id', $source_expert_id, 'user_' . $user_id);
+                update_field('area_of_expertise', $person['AREA_OF_EXPERTISE'] ?? '', 'user_' . $user_id);
+                update_field('is_source', (bool)($person['IS_SOURCE'] ?? false), 'user_' . $user_id);
+                update_field('is_expert', (bool)($person['IS_EXPERT'] ?? false), 'user_' . $user_id);
+                update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
+                
+                $acf_update_successful = true;
+                output_sync_message("{$user_log_prefix}: Successfully updated ACF fields for user {$user_id}");
+                
+            } catch (Exception $e) {
+                $error_msg = "Exception during ACF field updates: " . $e->getMessage();
+                output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
+                record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
+                $error_count++;
+            }
+            
+            // NEW: If this user was found by personnel_id AND ACF update was successful,
+            // look for and remove duplicate expert users
+            if ($found_by_personnel_id && $acf_update_successful) {
+                output_sync_message("{$user_log_prefix}: User found by personnel_id and updated successfully. Checking for duplicate expert users to remove...");
+                
+                $cleanup_result = find_and_remove_duplicate_expert_users(
+                    $user_id, 
+                    $source_expert_id, 
+                    null, // Don't pass writer_id for experts
+                    $user_log_prefix
+                );
+                
+                if ($cleanup_result['removed'] > 0) {
+                    $duplicates_removed += $cleanup_result['removed'];
+                    output_sync_message("{$user_log_prefix}: Removed {$cleanup_result['removed']} duplicate expert user(s)");
+                    
+                    // Log details of removed users
+                    foreach ($cleanup_result['details'] as $detail) {
+                        if ($detail['success']) {
+                            output_sync_message("{$user_log_prefix}: - Deleted user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['user_info']['match_info']}");
+                        } else {
+                            output_sync_message("{$user_log_prefix}: - Failed to delete user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['error']}");
+                        }
+                    }
+                } else {
+                    output_sync_message("{$user_log_prefix}: No duplicate expert users found to remove");
+                }
+            }
+        }
+    }
+
+    output_sync_message("IMPORT COMPLETE: News Experts processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}", 'success');
+
+    enable_user_notifications();
+
+    // Return results for reporting in the admin interface.
+    return [
+        'created' => $created,
+        'updated' => $updated,
+        'linked' => $linked,
+        'duplicates_removed' => $duplicates_removed,
+        'errors' => $error_count,
+        'total_api_records' => count($records),
+        'message' => "News Experts import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}."
+    ];
+}
+
+/**
  * Imports news writers data from the API endpoint.
  * Creates new 'expert_user' roles or updates existing ones.
  * Handles matching by personnel ID or writer_id.
@@ -1231,396 +1470,6 @@ function import_news_writers()
                 
                 $cleanup_result = find_and_remove_duplicate_expert_users(
                     $user_id, 
-                    $writer_id_from_api,
-                    $user_log_prefix
-                );
-                
-                if ($cleanup_result['removed'] > 0) {
-                    $duplicates_removed += $cleanup_result['removed'];
-                    output_sync_message("{$user_log_prefix}: Removed {$cleanup_result['removed']} duplicate expert user(s)");
-                    
-                    // Log details of removed users
-                    foreach ($cleanup_result['details'] as $detail) {
-                        if ($detail['success']) {
-                            output_sync_message("{$user_log_prefix}: - Deleted user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['user_info']['match_info']}");
-                        } else {
-                            output_sync_message("{$user_log_prefix}: - Failed to delete user {$detail['user_info']['id']} ({$detail['user_info']['login']}) - {$detail['error']}");
-                        }
-                    }
-                } else {
-                    output_sync_message("{$user_log_prefix}: No duplicate expert users found to remove");
-                }
-            }
-        }
-    }
-
-    output_sync_message("IMPORT COMPLETE: News Writers processed. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}", 'success');
-
-    enable_user_notifications();
-
-    // Return results for reporting in the admin interface.
-    return [
-        'created' => $created,
-        'updated' => $updated,
-        'linked' => $linked,
-        'duplicates_removed' => $duplicates_removed,
-        'errors' => $error_count,
-        'total_api_records' => count($records),
-        'message' => "News Writers import complete. Created: {$created}, Updated: {$updated}, Linked: {$linked}, Duplicates Removed: {$duplicates_removed}, Errors: {$error_count}."
-    ];
-}
-
-
-/**
- * Imports news writers data from the API endpoint.
- * Creates new 'expert_user' roles or updates existing ones.
- * Handles matching by personnel ID or writer_id.
- * Now includes duplicate cleanup when personnel_id matches are found.
- *
- * @return array|WP_Error An array with import results (created/updated/linked counts) on success,
- * or a WP_Error object on failure.
- */
-function import_news_writers()
-{
-    // Suppress email notifications
-    disable_user_notifications();
-
-    global $import_errors;
-    $import_errors = []; // Reset errors for this operation
-    
-    $api_url = 'https://secure.caes.uga.edu/rest/news/getWriters';
-
-    // Fetch API Data.
-    $response = wp_remote_get($api_url);
-    if (is_wp_error($response)) {
-        $error_msg = 'API Request Failed for News Writers: ' . $response->get_error_message();
-        output_sync_message($error_msg, 'error');
-        enable_user_notifications();
-        return new WP_Error('api_error', $error_msg);
-    }
-
-    $data = wp_remote_retrieve_body($response);
-    $records = json_decode($data, true);
-
-    if (!is_array($records)) {
-        $error_msg = 'Invalid API response for News Writers.';
-        output_sync_message($error_msg, 'error');
-        enable_user_notifications();
-        return new WP_Error('invalid_response', $error_msg);
-    }
-
-    output_sync_message("IMPORT START: Processing " . count($records) . " writers from News Writers API");
-
-    $created = 0;
-    $updated = 0;
-    $linked = 0; // Count of users linked by personnel ID or writer_id.
-    $duplicates_removed = 0; // Count of duplicate expert users removed
-    $error_count = 0;
-
-    // Iterate through each record from the API.
-    foreach ($records as $index => $person) {
-        $user_log_prefix = "WRITER #{$index}";
-        
-        $original_email = isset($person['EMAIL']) ? sanitize_email($person['EMAIL']) : null;
-        $first_name = sanitize_text_field($person['FIRST_NAME'] ?? '');
-        $last_name = sanitize_text_field($person['LAST_NAME'] ?? '');
-        $personnel_id = $person['PERSONNEL_ID'] ?? null;
-        $writer_id_from_api = $person['ID'] ?? null; // Capture the ID field from API.
-
-        // Basic validation
-        if (!$writer_id_from_api) {
-            $error_msg = "Missing writer ID";
-            output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
-            record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-            $error_count++;
-            continue;
-        }
-
-        // Specifically log data for Elmer Gray if found, or for all if names are empty.
-        $current_name = $first_name . ' ' . $last_name;
-        if (strpos($current_name, 'Elmer Gray') !== false || (empty($first_name) && empty($last_name))) {
-            output_sync_message("{$user_log_prefix}: Processing special case record for '{$current_name}': " . json_encode($person));
-        }
-
-        $user_id = null;
-        $found_by_personnel_id = false;
-
-        // First, attempt to find user by personnel_id if it exists.
-        if ($personnel_id) {
-            $users = get_users([
-                'meta_key' => 'personnel_id',
-                'meta_value' => $personnel_id,
-                'number' => 1,
-                'fields' => 'ID',
-            ]);
-
-            if (!empty($users)) {
-                $user_id = $users[0];
-                $linked++;
-                $found_by_personnel_id = true;
-                output_sync_message("{$user_log_prefix}: Found existing user by personnel_id {$personnel_id} with ID {$user_id} for {$first_name} {$last_name}.");
-            } else {
-                output_sync_message("{$user_log_prefix}: No existing user found by personnel_id {$personnel_id} for {$first_name} {$last_name}.");
-            }
-        }
-
-        // If not found by personnel_id, try to find by writer_id.
-        if (!$user_id && $writer_id_from_api) {
-            $users = get_users([
-                'meta_key' => 'writer_id',
-                'meta_value' => $writer_id_from_api,
-                'number' => 1,
-                'fields' => 'ID',
-            ]);
-
-            if (!empty($users)) {
-                $user_id = $users[0];
-                $linked++;
-                output_sync_message("{$user_log_prefix}: Found existing user by writer_id {$writer_id_from_api} with ID {$user_id} for {$first_name} {$last_name}.");
-            } else {
-                output_sync_message("{$user_log_prefix}: No existing user found by writer_id {$writer_id_from_api} for {$first_name} {$last_name}.");
-            }
-        }
-
-        // If still no user found, create a new one.
-        if (!$user_id) {
-            try {
-                $email_to_use = $original_email;
-                
-                // Check if we need to spoof the email due to duplicates
-                if ($original_email && email_exists($original_email)) {
-                    // Create a unique spoofed email address using writer_id or fallback
-                    $unique_id = $writer_id_from_api ? $writer_id_from_api : uniqid();
-                    $email_to_use = "writer_{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-                } elseif (!$original_email) {
-                    // No email provided, create placeholder
-                    $unique_id = $writer_id_from_api ? $writer_id_from_api : uniqid();
-                    $email_to_use = "writer_{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: No email provided. Using spoofed email: {$email_to_use}");
-                }
-
-                $username = sanitize_user($email_to_use);
-                
-                // Check if username exists and modify if needed
-                if (username_exists($username)) {
-                    $username = $username . '_' . $writer_id_from_api;
-                    output_sync_message("{$user_log_prefix}: Username already exists. Using: {$username}");
-                }
-                
-                $user_id = wp_insert_user([
-                    'user_login' => $username,
-                    'user_pass' => wp_generate_password(),
-                    'user_email' => $email_to_use,
-                    'first_name' => $first_name,
-                    'last_name' => $last_name,
-                    'role' => 'expert_user',
-                ]);
-
-                if (is_wp_error($user_id)) {
-                    $error_msg = "User creation failed: " . $user_id->get_error_message();
-                    output_sync_message("{$user_log_prefix} CREATE ERROR: {$error_msg}");
-                    record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                    $error_count++;
-                    continue; // Skip to next record on error.
-                }
-
-                $created++;
-                output_sync_message("{$user_log_prefix}: Created new user with ID {$user_id} for {$first_name} {$last_name} using email: {$email_to_use}.");
-                
-            } catch (Exception $e) {
-                $error_msg = "Exception during user creation: " . $e->getMessage();
-                output_sync_message("{$user_log_prefix} CREATE ERROR: {$error_msg}");
-                record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                $error_count++;
-                continue;
-            }
-        } else {
-            $updated++;
-        }
-
-        // Update ACF fields if a user was found or created.
-        if ($user_id) {
-            $acf_update_successful = false;
-            
-            try {
-                output_sync_message("{$user_log_prefix}: Attempting to update ACF fields for user ID: {$user_id} ({$first_name} {$last_name}).");
-                
-                // Store original email in uga_email field
-                if ($original_email) {
-                    update_field('uga_email', $original_email, 'user_' . $user_id);
-                }
-                
-                update_field('phone_number', $person['PHONE'] ?? '', 'user_' . $user_id);
-                update_field('tagline', $person['TAGLINE'] ?? '', 'user_' . $user_id);
-                
-                // Update personnel_id if provided
-                if ($personnel_id) {
-                    update_field('personnel_id', $personnel_id, 'user_' . $user_id);
-                    output_sync_message("{$user_log_prefix}: Updated personnel_id to {$personnel_id} for user {$user_id}.");
-                }
-
-                // --- Enhanced Debugging for writer_id ---
-                output_sync_message("{$user_log_prefix}: Starting detailed writer_id field update process for user {$user_id}.");
-
-                // Check if ACF is active
-                if (!function_exists('update_field')) {
-                    $error_msg = "ACF update_field function is not available - ACF plugin may not be active";
-                    output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
-                    record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                    $error_count++;
-                } else {
-                    output_sync_message("{$user_log_prefix}: ACF update_field function is available.");
-                    
-                    // Check if the field exists and get field object
-                    $field_object = get_field_object('writer_id', 'user_' . $user_id);
-                    if (!$field_object) {
-                        // Try to get field object by field key if field name doesn't work
-                        $field_object = get_field_object('field_writer_id', 'user_' . $user_id);
-                    }
-                    
-                    if (!$field_object) {
-                        $error_msg = "writer_id field object not found - field may not exist or not be configured for users";
-                        output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
-                        record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                        $error_count++;
-                    } else {
-                        output_sync_message("{$user_log_prefix}: writer_id field object found. Field details: " . json_encode([
-                            'key' => $field_object['key'] ?? 'N/A',
-                            'name' => $field_object['name'] ?? 'N/A',
-                            'type' => $field_object['type'] ?? 'N/A',
-                            'required' => $field_object['required'] ?? 'N/A',
-                            'location' => isset($field_object['location']) ? json_encode($field_object['location']) : 'N/A'
-                        ]));
-                        
-                        // Check current field value before update
-                        $current_value = get_field('writer_id', 'user_' . $user_id);
-                        output_sync_message("{$user_log_prefix}: Current writer_id value: " . json_encode($current_value));
-                        
-                        // Validate the input data
-                        if ($writer_id_from_api === null) {
-                            output_sync_message("{$user_log_prefix}: WARNING - writer_id_from_api is null");
-                        } else {
-                            output_sync_message("{$user_log_prefix}: writer_id_from_api value: '{$writer_id_from_api}' (type: " . gettype($writer_id_from_api) . ")");
-                        }
-                        
-                        // Check user exists and is valid
-                        $user = get_user_by('ID', $user_id);
-                        if (!$user) {
-                            $error_msg = "User with ID {$user_id} does not exist";
-                            output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
-                            record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                            $error_count++;
-                        } else {
-                            output_sync_message("{$user_log_prefix}: User {$user_id} exists. User login: {$user->user_login}");
-                            
-                            // Attempt the update with detailed error catching
-                            try {
-                                output_sync_message("{$user_log_prefix}: Attempting update_field('writer_id', '{$writer_id_from_api}', 'user_{$user_id}')");
-                                
-                                // Try different approaches to updating the field
-                                $update_attempts = [
-                                    ['method' => 'field_name_with_user_prefix', 'field' => 'writer_id', 'object' => 'user_' . $user_id],
-                                    ['method' => 'field_name_with_user_id', 'field' => 'writer_id', 'object' => $user_id],
-                                    ['method' => 'field_key_if_available', 'field' => $field_object['key'] ?? 'writer_id', 'object' => 'user_' . $user_id]
-                                ];
-                                
-                                $update_successful = false;
-                                
-                                foreach ($update_attempts as $attempt) {
-                                    output_sync_message("{$user_log_prefix}: Trying method '{$attempt['method']}' with field '{$attempt['field']}' and object '{$attempt['object']}'");
-                                    
-                                    $update_result = update_field($attempt['field'], $writer_id_from_api, $attempt['object']);
-                                    
-                                    if ($update_result !== false) {
-                                        output_sync_message("{$user_log_prefix}: SUCCESS - Method '{$attempt['method']}' worked. Update result: " . json_encode($update_result));
-                                        $update_successful = true;
-                                        break;
-                                    } else {
-                                        output_sync_message("{$user_log_prefix}: Method '{$attempt['method']}' failed. Update result: " . json_encode($update_result));
-                                        
-                                        // Check for WordPress/PHP errors
-                                        if (function_exists('error_get_last')) {
-                                            $last_error = error_get_last();
-                                            if ($last_error && $last_error['message']) {
-                                                output_sync_message("{$user_log_prefix}: Last PHP error: " . $last_error['message']);
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                if (!$update_successful) {
-                                    $error_msg = "All update_field attempts failed for writer_id. Field exists but cannot be updated.";
-                                    output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
-                                    record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                                    $error_count++;
-                                    
-                                    // Additional debugging - try to understand why it failed
-                                    output_sync_message("{$user_log_prefix}: Additional debug info:");
-                                    output_sync_message("  - ACF version: " . (defined('ACF_VERSION') ? ACF_VERSION : 'Not available'));
-                                    output_sync_message("  - WordPress version: " . get_bloginfo('version'));
-                                    output_sync_message("  - Current user can edit users: " . (current_user_can('edit_users') ? 'Yes' : 'No'));
-                                    
-                                    // Check if there are any field validation rules
-                                    if (isset($field_object['validate']) && !empty($field_object['validate'])) {
-                                        output_sync_message("  - Field has validation rules: " . json_encode($field_object['validate']));
-                                    }
-                                    
-                                    // Check field type specific requirements
-                                    if (isset($field_object['type'])) {
-                                        output_sync_message("  - Field type: " . $field_object['type']);
-                                        if ($field_object['type'] === 'select' && isset($field_object['choices'])) {
-                                            output_sync_message("  - Available choices: " . json_encode($field_object['choices']));
-                                        }
-                                    }
-                                } else {
-                                    // Verify the update worked by reading the value back
-                                    $updated_value = get_field('writer_id', 'user_' . $user_id);
-                                    if ($updated_value == $writer_id_from_api) {
-                                        output_sync_message("{$user_log_prefix}: VERIFIED - writer_id successfully updated to '{$writer_id_from_api}' for user {$user_id}.");
-                                        $acf_update_successful = true;
-                                    } else {
-                                        $error_msg = "Update appeared to succeed but verification failed. Expected: '{$writer_id_from_api}', Got: " . json_encode($updated_value);
-                                        output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
-                                        record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                                        $error_count++;
-                                    }
-                                }
-                                
-                            } catch (Exception $e) {
-                                $error_msg = "Exception during writer_id field update: " . $e->getMessage() . " (Line: " . $e->getLine() . ", File: " . $e->getFile() . ")";
-                                output_sync_message("{$user_log_prefix} ACF EXCEPTION: {$error_msg}");
-                                record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                                $error_count++;
-                            }
-                        }
-                    }
-                }
-                // --- End Enhanced Debugging for writer_id ---
-
-                update_field('coverage_area', $person['COVERAGE_AREA'] ?? '', 'user_' . $user_id);
-                update_field('is_proofer', (bool)($person['IS_PROOFER'] ?? false), 'user_' . $user_id);
-                update_field('is_media_contact', (bool)($person['IS_MEDIA_CONTACT'] ?? false), 'user_' . $user_id);
-                update_field('is_active', (bool)($person['IS_ACTIVE'] ?? false), 'user_' . $user_id);
-                
-                if ($acf_update_successful) {
-                    output_sync_message("{$user_log_prefix}: Successfully updated ACF fields for user {$user_id}");
-                }
-                
-            } catch (Exception $e) {
-                $error_msg = "Exception during ACF field updates: " . $e->getMessage();
-                output_sync_message("{$user_log_prefix} ACF ERROR: {$error_msg}");
-                record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-                $error_count++;
-            }
-            
-            // NEW: If this user was found by personnel_id AND ACF update was successful,
-            // look for and remove duplicate expert users
-            if ($found_by_personnel_id && $acf_update_successful) {
-                output_sync_message("{$user_log_prefix}: User found by personnel_id and updated successfully. Checking for duplicate expert users to remove...");
-                
-                $cleanup_result = find_and_remove_duplicate_expert_users(
-                    $user_id, 
                     null, // Don't pass source_expert_id for writers
                     $writer_id_from_api,
                     $user_log_prefix
@@ -1642,11 +1491,6 @@ function import_news_writers()
                     output_sync_message("{$user_log_prefix}: No duplicate expert users found to remove");
                 }
             }
-        } else {
-            $error_msg = "No user_id obtained for record";
-            output_sync_message("{$user_log_prefix} ERROR: {$error_msg}");
-            record_import_error("{$user_log_prefix} ({$first_name} {$last_name})", $error_msg, $person);
-            $error_count++;
         }
     }
 
