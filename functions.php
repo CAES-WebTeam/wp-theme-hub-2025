@@ -45,6 +45,7 @@ require get_template_directory() . '/inc/topic-term-fixer.php';
 require get_template_directory() . '/inc/retired-one-time-scripts/populate-user-ids-to-stories.php';
 require get_template_directory() . '/inc/status-unpublish.php';
 require get_template_directory() . '/inc/event-import-tool.php';
+require get_template_directory() . '/inc/pub-state-issue-set.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
