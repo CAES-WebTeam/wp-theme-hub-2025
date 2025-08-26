@@ -11,10 +11,10 @@
 .mobile-hamburger-trigger {
     align-items: center;
     background: transparent;
-    color: inherit;
+    color: var(--wp--preset--color--contrast);
     border: 0;
     display: flex;
-    padding: var(--wp--preset--spacing--40);
+    padding: 10px;
     transition: all .2s ease;
 }
 

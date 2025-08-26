@@ -28,6 +28,15 @@
 		text-transform: uppercase;
 		line-height: 1;
 	}
+
+	.logo-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--40);
+		align-items: center;
+		justify-content: center;
+	}
+
 }
 
 @media (max-width:781px) {
@@ -37,9 +46,13 @@
 			flex-wrap: wrap;
 		}
 
+		.logo-wrapper {
+			flex-direction: row;
+		}
+
 		.caes-hub-header-brand-logo {
 			margin: 0;
-			height: 4rem;
+			height: 3rem;
 		}
 	}
 }
