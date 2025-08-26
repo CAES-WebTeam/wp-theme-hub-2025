@@ -380,29 +380,29 @@ function state_issue_updater_execute_update() {
                 // Get current state issue value from WordPress
                 $current_state_issue = get_field('state_issue', $wp_post->ID);
                 
-                // Get API state issue value (STATE_ISSUE_ID field)
-                $api_state_issue = isset($api_pub['STATE_ISSUE_ID']) ? $api_pub['STATE_ISSUE_ID'] : null;
+                // Get API state issue label value (STATE_ISSUE_LABEL field)
+                $api_state_issue_label = isset($api_pub['STATE_ISSUE_LABEL']) ? $api_pub['STATE_ISSUE_LABEL'] : null;
                 
                 // Convert empty strings to null for consistent comparison
                 if ($current_state_issue === '') {
                     $current_state_issue = null;
                 }
-                if ($api_state_issue === '') {
-                    $api_state_issue = null;
+                if ($api_state_issue_label === '') {
+                    $api_state_issue_label = null;
                 }
 
-                // Compare current value with API value
-                if ($current_state_issue == $api_state_issue) {
+                // Compare current value with API label value
+                if ($current_state_issue == $api_state_issue_label) {
                     $log[] = "UNCHANGED: WordPress post ID {$wp_post->ID} (Publication ID: {$publication_id}) - State Issue already correct (" . 
                              ($current_state_issue ? $current_state_issue : 'null') . ")";
                     $stats['posts_unchanged']++;
                 } else {
-                    // Update the state issue field
-                    $update_result = update_field('state_issue', $api_state_issue, $wp_post->ID);
+                    // Update the state issue field with the label value
+                    $update_result = update_field('state_issue', $api_state_issue_label, $wp_post->ID);
                     
                     if ($update_result) {
                         $old_value = $current_state_issue ? $current_state_issue : 'null';
-                        $new_value = $api_state_issue ? $api_state_issue : 'null';
+                        $new_value = $api_state_issue_label ? $api_state_issue_label : 'null';
                         $log[] = "UPDATE: WordPress post ID {$wp_post->ID} (Publication ID: {$publication_id}) - State Issue updated from '{$old_value}' to '{$new_value}'";
                         $stats['posts_updated']++;
                     } else {
