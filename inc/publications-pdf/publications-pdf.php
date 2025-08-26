@@ -343,7 +343,7 @@ function add_tcpdf_table_attributes($table_html)
                 'border' => '1',
                 'cellpadding' => '4',
                 'cellspacing' => '0',
-                'autosize' => '1' 
+                'autosize' => '1'
             ];
 
             foreach ($required_attrs as $attr => $default_value) {
@@ -396,25 +396,7 @@ function add_tcpdf_table_attributes($table_html)
 // Enhanced table styling CSS for PDF generation
 function get_enhanced_table_css_for_pdf()
 {
-    return '
-    <style>
-        table {
-            border-collapse: collapse;
-            font-family: georgia;
-            font-size: 10px;
-        }
-        
-        table td, table th {
-            border: 1px solid #333333;
-            padding: 4px 6px;
-            vertical-align: top;
-        }
-        
-        table th {
-            background-color: #e8e8e8;
-            font-weight: bold;
-        }
-    </style>';
+    return '<style>table{font-size:10px;}</style>';
 }
 
 // Updated main styling function
@@ -650,9 +632,9 @@ function process_content_for_pdf($content, $pdf)
 
     // Wrap tables in figures with proper semantic markup
     $content = preg_replace_callback(
-        '/<table\b[^>]*>.*?<\/table>/is',
+        '/<table\b[^>]*>/i',
         function ($matches) {
-            return '<br>' . $matches[0] . '<br>';
+            return '<table border="1" cellpadding="4" cellspacing="0">';
         },
         $content
     );
