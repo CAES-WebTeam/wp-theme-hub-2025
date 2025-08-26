@@ -10,8 +10,15 @@ require_once get_template_directory() . '/inc/tcpdf/tcpdf.php';
 
 // Function to normalize hyphens in content for PDF generation
 function normalize_hyphens_for_pdf($content) {
-    // Convert Unicode true hyphen (U+2010) to ASCII hyphen-minus (U+002D)
-    $content = str_replace('‐', '-', $content);
+    // Only convert Unicode true hyphen (U+2010) to ASCII hyphen-minus (U+002D)
+    // Preserve em dashes (—) and en dashes (–) as they serve different purposes
+    $replacements = [
+        '‐' => '-',        // U+2010 (true hyphen) → regular hyphen
+        'â€' => '-',     // Corrupted encoding of true hyphen
+        "\u{2010}" => '-', // Unicode escape for true hyphen
+    ];
+    
+    $content = str_replace(array_keys($replacements), array_values($replacements), $content);
     return $content;
 }
 
