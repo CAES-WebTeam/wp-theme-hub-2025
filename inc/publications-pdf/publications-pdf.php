@@ -342,7 +342,8 @@ function add_tcpdf_table_attributes($table_html)
             $required_attrs = [
                 'border' => '1',
                 'cellpadding' => '4',
-                'cellspacing' => '0'
+                'cellspacing' => '0',
+                'autosize' => '1' 
             ];
 
             foreach ($required_attrs as $attr => $default_value) {
