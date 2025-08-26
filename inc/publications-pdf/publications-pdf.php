@@ -341,9 +341,7 @@ function add_tcpdf_table_attributes($table_html)
             $required_attrs = [
                 'border' => '1',
                 'cellpadding' => '4', 
-                'cellspacing' => '0',
-                'width' => '100%',  // This is crucial for full width
-                'style' => 'width: 100%;'  // Additional CSS for full width
+                'cellspacing' => '0'
             ];
 
             foreach ($required_attrs as $attr => $default_value) {
@@ -398,105 +396,21 @@ function get_enhanced_table_css_for_pdf()
 {
     return '
     <style>
-        /* Base table styling with explicit width */
-        table, table.pdf-table {
+        table {
             border-collapse: collapse;
-            border: 1px solid #333333;
-            margin: 8px 0px;
             font-family: georgia;
-            page-break-inside: avoid;
-            page-break-before: auto;
-            page-break-after: auto;
+            font-size: 10px;
         }
         
-        /* Ensure table container takes full width */
-        .pdf-table-wrapper {
-            overflow: visible;
-            page-break-inside: avoid;
-        }
-        
-        /* Cell styling */
-        table th, table.pdf-table th,
-        table td, table.pdf-table td {
+        table td, table th {
             border: 1px solid #333333;
             padding: 4px 6px;
-            text-align: left;
             vertical-align: top;
-            line-height: 1.3;
-            font-size: 10px;
-            word-wrap: break-word;
         }
         
-        /* Header styling */
-        table th, table.pdf-table th {
+        table th {
             background-color: #e8e8e8;
             font-weight: bold;
-        }
-        
-        /* Row styling */
-        table tr, table.pdf-table tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-        }
-        
-        /* Footer row styling */
-        .table-footer-row td,
-        .table-footer-cell {
-            font-size: 9px;
-            font-style: italic;
-            background-color: #f9f9f9;
-            border-top: 2px solid #333333;
-        }
-        
-        /* WordPress block table compatibility */
-        .wp-block-table {
-            page-break-inside: avoid;
-            margin: 15px 0;
-            width: 100% !important;
-        }
-        
-        .wp-block-table table {
-            border-collapse: collapse;
-            border: 1px solid #333333;
-            page-break-inside: avoid;
-            width: 100% !important;
-        }
-        
-        .wp-block-table table th,
-        .wp-block-table table td {
-            border: 1px solid #333333;
-            padding: 4px 6px;
-        }
-        
-        /* Caption styling */
-        .wp-block-table figcaption,
-        table caption,
-        figcaption {
-            font-weight: bold;
-            margin-bottom: 8px;
-            margin-top: 5px;
-            text-align: left;
-            font-size: 11px;
-            page-break-after: avoid;
-            line-height: 1.4;
-            width: 100%;
-        }
-        
-        /* Enhanced figure styling */
-        figure.wp-block-table {
-            margin: 15px 0;
-            page-break-inside: avoid;
-            width: 100% !important;
-        }
-        
-        /* Prevent orphaned content */
-        h1, h2, h3, h4, h5, h6 {
-            page-break-after: avoid;
-        }
-        
-        p {
-            orphans: 3;
-            widows: 3;
         }
     </style>';
 }
