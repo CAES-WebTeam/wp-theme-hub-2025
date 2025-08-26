@@ -256,7 +256,7 @@ function state_issue_updater_execute_update() {
     }
 
     $log = []; // Array to store log messages
-    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true';
+    $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubs?apiKey=541398745&omitPublicationText=true&bypassReturnLimit=true&includeStateIssueLabels=true';
     
     $stats = [
         'posts_updated' => 0,
