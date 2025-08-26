@@ -396,7 +396,34 @@ function add_tcpdf_table_attributes($table_html)
 // Enhanced table styling CSS for PDF generation
 function get_enhanced_table_css_for_pdf()
 {
-    return '<style>table{font-size:10px;}</style>';
+    return '
+    <style>
+        table, table.pdf-table {
+            border-collapse: collapse;
+            border: 1px solid #333333;
+            margin: 8px 0px;
+            font-family: georgia;
+            page-break-inside: avoid;
+            page-break-before: auto;
+            page-break-after: auto;
+        }
+        
+        table th, table.pdf-table th,
+        table td, table.pdf-table td {
+            border: 1px solid #333333;
+            padding: 4px 6px;
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.3;
+            font-size: 10px;
+            word-wrap: break-word;
+        }
+        
+        table th, table.pdf-table th {
+            background-color: #e8e8e8;
+            font-weight: bold;
+        }
+    </style>';
 }
 
 // Updated main styling function
@@ -632,9 +659,21 @@ function process_content_for_pdf($content, $pdf)
 
     // Wrap tables in figures with proper semantic markup
     $content = preg_replace_callback(
-        '/<table\b[^>]*>/i',
-        function ($matches) {
-            return '<table border="1" cellpadding="4" cellspacing="0">';
+        '/<table\b[^>]*>.*?<\/table>/is',
+        function ($matches) use ($pdf) {
+            $table_html = $matches[0];
+
+            $caption_html = '';
+            $table_only_html = $table_html;
+
+            // Extract caption if present and convert to figcaption
+            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_html, $caption_matches)) {
+                $caption_content = $caption_matches[1];
+                $caption_html = '<figcaption>' . $caption_content . '</figcaption>';
+                $table_only_html = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_html);
+            }
+
+            return '<br>' . $caption_html . $table_only_html . '<br>';
         },
         $content
     );
