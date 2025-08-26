@@ -342,7 +342,6 @@ function add_tcpdf_table_attributes($table_html)
                 'border' => '1',
                 'cellpadding' => '4', 
                 'cellspacing' => '0',
-                'nobr' => 'true',
                 'width' => '100%',  // This is crucial for full width
                 'style' => 'width: 100%;'  // Additional CSS for full width
             ];
@@ -403,19 +402,15 @@ function get_enhanced_table_css_for_pdf()
         table, table.pdf-table {
             border-collapse: collapse;
             border: 1px solid #333333;
-            width: 100% !important;
             margin: 8px 0px;
             font-family: georgia;
             page-break-inside: avoid;
             page-break-before: auto;
             page-break-after: auto;
-            width: 100% !important;
-min-width: 100% !important;
         }
         
         /* Ensure table container takes full width */
         .pdf-table-wrapper {
-            width: 100% !important;
             overflow: visible;
             page-break-inside: avoid;
         }
