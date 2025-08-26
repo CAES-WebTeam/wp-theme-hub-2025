@@ -678,17 +678,13 @@ function process_content_for_pdf($content, $pdf)
     //     $content
     // );
 
-    // $content = preg_replace_callback(
-    //     '/<table\b[^>]*>.*?<\/table>/is',
-    //     function ($matches) {
-    //         return '<br>' . $matches[0] . '<br>';
-    //     },
-    //     $content
-    // );
-
-    // Remove ALL table standardization - just normalize spacing
-    $content = preg_replace('/<br>\s*<table/', '<table', $content);
-    $content = preg_replace('/<\/table>\s*<br>/', '</table>', $content);
+    $content = preg_replace_callback(
+        '/<table\b[^>]*>.*?<\/table>/is',
+        function ($matches) {
+            return '<br>' . $matches[0] . '<br>';
+        },
+        $content
+    );
 
     // STEP 1: Process WordPress image blocks with semantic markup
     $content = preg_replace_callback(
