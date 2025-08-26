@@ -627,7 +627,6 @@ function add_table_styling_for_pdf($content)
     return add_enhanced_table_styling_for_pdf($content);
 }
 
-// Function to process content for PDF generation
 function process_content_for_pdf($content, $pdf)
 {
     // Normalize hyphens FIRST
@@ -653,8 +652,34 @@ function process_content_for_pdf($content, $pdf)
         return $img_html;
     };
 
-    // SIMPLE CAPTION REMOVAL - no complex processing
-    $content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $content);
+    // SAFE CAPTION EXTRACTION - only processes captions that are actually inside tables
+    $content = preg_replace_callback(
+        '/<table([^>]*?)>(.*?)<\/table>/is',
+        function ($matches) {
+            $table_attrs = $matches[1];
+            $table_content = $matches[2];
+            
+            // Only process if this table actually contains a caption
+            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_content, $caption_matches)) {
+                $caption_content = trim($caption_matches[1]);
+                
+                // Remove the caption from within the table content
+                $clean_table_content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_content);
+                
+                // Rebuild the table without the caption
+                $clean_table = '<table' . $table_attrs . '>' . $clean_table_content . '</table>';
+                
+                // Return caption as styled paragraph before table
+                $caption_p = '<p style="font-weight: bold; text-align: center; margin: 10px 0 5px 0; font-size: 11px;">' . $caption_content . '</p>';
+                
+                return $caption_p . $clean_table;
+            }
+            
+            // If no caption found, return table unchanged
+            return $matches[0];
+        },
+        $content
+    );
 
     // Process all tables with enhanced standardization
     $content = standardize_tables_for_pdf($content);
