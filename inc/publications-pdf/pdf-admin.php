@@ -510,3 +510,349 @@ function fr2025_ajax_queue_missing_pdfs() {
     ));
 }
 add_action('wp_ajax_fr2025_pdf_queue_missing_pdfs', 'fr2025_ajax_queue_missing_pdfs');
+
+/**
+ * Adds the PDF process monitor admin page
+ */
+function fr2025_add_pdf_monitor_page() {
+    add_submenu_page(
+        'edit.php?post_type=publications',
+        'PDF Process Monitor',
+        'PDF Process Monitor', 
+        'manage_options',
+        'fr2025-pdf-monitor',
+        'fr2025_render_pdf_monitor_page'
+    );
+}
+add_action('admin_menu', 'fr2025_add_pdf_monitor_page');
+
+/**
+ * Renders the PDF process monitor page
+ */
+function fr2025_render_pdf_monitor_page() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+    ?>
+    <div class="wrap">
+        <h1>PDF Process Monitor</h1>
+        
+        <div id="process-status" style="margin: 20px 0; padding: 15px; background: #f1f1f1; border-radius: 5px;">
+            <h3>System Status</h3>
+            <p><strong>Server Memory:</strong> <?php echo ini_get('memory_limit'); ?> (Used: <?php echo size_format(memory_get_usage(true)); ?>)</p>
+            <p><strong>Max Execution Time:</strong> <?php echo ini_get('max_execution_time'); ?>s</p>
+            <p><strong>Cron Lock Status:</strong> <span id="cron-lock-status"><?php echo get_transient('pdf_generation_lock') ? 'LOCKED' : 'FREE'; ?></span></p>
+            <p><strong>Next Cron Run:</strong> <?php 
+                $next_cron = wp_next_scheduled('my_pdf_generation_cron_hook');
+                echo $next_cron ? date('Y-m-d H:i:s', $next_cron) : 'Not scheduled';
+            ?></p>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <button id="refresh-monitor" class="button button-primary">Refresh Status</button>
+            <button id="clear-cron-lock" class="button button-secondary">Clear Cron Lock</button>
+            <button id="force-cron-run" class="button button-secondary">Force Cron Run</button>
+        </div>
+
+        <div id="queue-table-container">
+            <!-- Table will be populated by AJAX -->
+        </div>
+
+        <script>
+        jQuery(document).ready(function($) {
+            function refreshMonitor() {
+                $('#refresh-monitor').prop('disabled', true).text('Refreshing...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_get_pdf_queue_status',
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_monitor_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#queue-table-container').html(response.data.table_html);
+                            $('#cron-lock-status').text(response.data.cron_locked ? 'LOCKED' : 'FREE');
+                        }
+                    },
+                    complete: function() {
+                        $('#refresh-monitor').prop('disabled', false).text('Refresh Status');
+                    }
+                });
+            }
+
+            function cancelProcess(queueId, postId) {
+                if (!confirm('Cancel this PDF generation process?')) return;
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_cancel_pdf_process',
+                        queue_id: queueId,
+                        post_id: postId,
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_monitor_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            refreshMonitor();
+                        }
+                        alert(response.data || 'Action completed');
+                    }
+                });
+            }
+
+            function requeueProcess(queueId, postId) {
+                if (!confirm('Requeue this PDF for generation?')) return;
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST', 
+                    data: {
+                        action: 'fr2025_requeue_pdf_process',
+                        queue_id: queueId,
+                        post_id: postId,
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_monitor_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            refreshMonitor();
+                        }
+                        alert(response.data || 'Action completed');
+                    }
+                });
+            }
+
+            // Event handlers
+            $('#refresh-monitor').on('click', refreshMonitor);
+            
+            $('#clear-cron-lock').on('click', function() {
+                if (!confirm('Clear the cron lock? This should only be done if processes are stuck.')) return;
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_clear_cron_lock',
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_monitor_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        alert(response.data || 'Cron lock cleared');
+                        refreshMonitor();
+                    }
+                });
+            });
+
+            $('#force-cron-run').on('click', function() {
+                if (!confirm('Force a cron run now? This will process pending PDFs immediately.')) return;
+                
+                $(this).prop('disabled', true).text('Running...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_force_cron_run',
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_monitor_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        alert(response.data || 'Cron run completed');
+                        refreshMonitor();
+                    },
+                    complete: function() {
+                        $('#force-cron-run').prop('disabled', false).text('Force Cron Run');
+                    }
+                });
+            });
+
+            // Delegate events for dynamically added buttons
+            $(document).on('click', '.cancel-process', function() {
+                const queueId = $(this).data('queue-id');
+                const postId = $(this).data('post-id');
+                cancelProcess(queueId, postId);
+            });
+
+            $(document).on('click', '.requeue-process', function() {
+                const queueId = $(this).data('queue-id');
+                const postId = $(this).data('post-id');
+                requeueProcess(queueId, postId);
+            });
+
+            // Initial load
+            refreshMonitor();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(refreshMonitor, 30000);
+        });
+        </script>
+    </div>
+    <?php
+}
+
+/**
+ * AJAX handler to get current queue status
+ */
+function fr2025_ajax_get_pdf_queue_status() {
+    check_ajax_referer('fr2025_pdf_monitor_nonce', '_ajax_nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+    
+    $queue_items = $wpdb->get_results(
+        "SELECT *, TIMESTAMPDIFF(MINUTE, queued_at, NOW()) as minutes_in_queue 
+         FROM {$table_name} 
+         ORDER BY 
+            CASE status 
+                WHEN 'processing' THEN 1 
+                WHEN 'pending' THEN 2 
+                WHEN 'failed' THEN 3 
+                ELSE 4 
+            END,
+            queued_at DESC"
+    );
+    
+    $table_html = '<h3>PDF Generation Queue (' . count($queue_items) . ' items)</h3>';
+    $table_html .= '<table class="wp-list-table widefat fixed striped">';
+    $table_html .= '<thead><tr>';
+    $table_html .= '<th>Post ID</th><th>Title</th><th>Status</th><th>Queued</th><th>Time in Queue</th><th>Message</th><th>Actions</th>';
+    $table_html .= '</tr></thead><tbody>';
+    
+    if (empty($queue_items)) {
+        $table_html .= '<tr><td colspan="7">No items in queue</td></tr>';
+    } else {
+        foreach ($queue_items as $item) {
+            $post_title = get_the_title($item->post_id) ?: 'Unknown Post';
+            $status_class = '';
+            $actions = '';
+            
+            switch ($item->status) {
+                case 'processing':
+                    $status_class = 'style="background-color: #fff3cd;"';
+                    $actions = '<button class="button button-small cancel-process" data-queue-id="' . $item->id . '" data-post-id="' . $item->post_id . '">Cancel</button>';
+                    // Highlight stuck processes (processing for more than 10 minutes)
+                    if ($item->minutes_in_queue > 10) {
+                        $status_class = 'style="background-color: #f8d7da;"';
+                        $actions .= ' <strong style="color: red;">STUCK?</strong>';
+                    }
+                    break;
+                case 'pending':
+                    $status_class = 'style="background-color: #d1ecf1;"';
+                    $actions = '<button class="button button-small cancel-process" data-queue-id="' . $item->id . '" data-post-id="' . $item->post_id . '">Remove</button>';
+                    break;
+                case 'failed':
+                    $status_class = 'style="background-color: #f8d7da;"';
+                    $actions = '<button class="button button-small requeue-process" data-queue-id="' . $item->id . '" data-post-id="' . $item->post_id . '">Retry</button>';
+                    break;
+                case 'completed':
+                    $status_class = 'style="background-color: #d4edda;"';
+                    $actions = '<button class="button button-small cancel-process" data-queue-id="' . $item->id . '" data-post-id="' . $item->post_id . '">Remove</button>';
+                    break;
+            }
+            
+            $table_html .= '<tr ' . $status_class . '>';
+            $table_html .= '<td>' . $item->post_id . '</td>';
+            $table_html .= '<td><a href="' . get_edit_post_link($item->post_id) . '">' . esc_html($post_title) . '</a></td>';
+            $table_html .= '<td><strong>' . strtoupper($item->status) . '</strong></td>';
+            $table_html .= '<td>' . $item->queued_at . '</td>';
+            $table_html .= '<td>' . $item->minutes_in_queue . ' min</td>';
+            $table_html .= '<td>' . esc_html($item->message ?: 'N/A') . '</td>';
+            $table_html .= '<td>' . $actions . '</td>';
+            $table_html .= '</tr>';
+        }
+    }
+    
+    $table_html .= '</tbody></table>';
+    
+    wp_send_json_success([
+        'table_html' => $table_html,
+        'cron_locked' => (bool)get_transient('pdf_generation_lock')
+    ]);
+}
+add_action('wp_ajax_fr2025_get_pdf_queue_status', 'fr2025_ajax_get_pdf_queue_status');
+
+/**
+ * AJAX handler to cancel a PDF process
+ */
+function fr2025_ajax_cancel_pdf_process() {
+    check_ajax_referer('fr2025_pdf_monitor_nonce', '_ajax_nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    $queue_id = intval($_POST['queue_id']);
+    $post_id = intval($_POST['post_id']);
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+    
+    // Remove from queue entirely
+    $result = $wpdb->delete($table_name, ['id' => $queue_id], ['%d']);
+    
+    if ($result !== false) {
+        wp_send_json_success('Process cancelled and removed from queue');
+    } else {
+        wp_send_json_error('Failed to cancel process');
+    }
+}
+add_action('wp_ajax_fr2025_cancel_pdf_process', 'fr2025_ajax_cancel_pdf_process');
+
+/**
+ * AJAX handler to requeue a failed PDF process
+ */
+function fr2025_ajax_requeue_pdf_process() {
+    check_ajax_referer('fr2025_pdf_monitor_nonce', '_ajax_nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    $queue_id = intval($_POST['queue_id']);
+    $post_id = intval($_POST['post_id']);
+    
+    if (update_pdf_queue_status($queue_id, 'pending', 'Manually requeued from monitor')) {
+        wp_send_json_success('Process requeued successfully');
+    } else {
+        wp_send_json_error('Failed to requeue process');
+    }
+}
+add_action('wp_ajax_fr2025_requeue_pdf_process', 'fr2025_ajax_requeue_pdf_process');
+
+/**
+ * AJAX handler to clear cron lock
+ */
+function fr2025_ajax_clear_cron_lock() {
+    check_ajax_referer('fr2025_pdf_monitor_nonce', '_ajax_nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    delete_transient('pdf_generation_lock');
+    wp_send_json_success('Cron lock cleared');
+}
+add_action('wp_ajax_fr2025_clear_cron_lock', 'fr2025_ajax_clear_cron_lock');
+
+/**
+ * AJAX handler to force cron run
+ */
+function fr2025_ajax_force_cron_run() {
+    check_ajax_referer('fr2025_pdf_monitor_nonce', '_ajax_nonce');
+    
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+    
+    // Clear any existing lock first
+    delete_transient('pdf_generation_lock');
+    
+    // Run the cron function directly
+    process_pdf_generation_queue();
+    
+    wp_send_json_success('Cron run completed');
+}
+add_action('wp_ajax_fr2025_force_cron_run', 'fr2025_ajax_force_cron_run');

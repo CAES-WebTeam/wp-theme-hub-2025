@@ -710,8 +710,11 @@ function process_content_for_pdf($content, $pdf)
     //     $content
     // );
 
-    $content = preg_replace('/<caption([^>]*)>(.*?)<\/caption>/is', '</table><p><strong>$2</strong></p><table$1>', $content);
-    $content = preg_replace('/<table[^>]*><\/table><p><strong>/', '<p><strong>', $content); // Clean up empty tables
+    // $content = preg_replace('/<caption([^>]*)>(.*?)<\/caption>/is', '</table><p><strong>$2</strong></p><table$1>', $content);
+    // $content = preg_replace('/<table[^>]*><\/table><p><strong>/', '<p><strong>', $content); // Clean up empty tables
+
+    $content = preg_replace('/<caption[^>]*>(.*?)<\/caption>/is', '', $content);
+
 
     // STEP 1: Process WordPress image blocks with semantic markup
     $content = preg_replace_callback(
