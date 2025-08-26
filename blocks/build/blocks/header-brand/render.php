@@ -7,7 +7,7 @@
 		if (is_front_page() || is_home()) {
 			echo '<a href="/"><h1 style="margin:0" class="caes-hub-header-brand-text">Field Report</h1></a>';
 		} else {
-			echo '<a href="/"><span class="caes-hub-header-brand-text">Field Report</span</a>>';
+			echo '<a href="/"><span class="caes-hub-header-brand-text">Field Report</span</a>';
 		}
 		?>
 	</div>
