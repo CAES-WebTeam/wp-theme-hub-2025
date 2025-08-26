@@ -506,58 +506,6 @@ min-width: 100% !important;
     </style>';
 }
 
-
-// Updated process_content_for_pdf function to use the new table processing
-function process_content_for_pdf_enhanced($content, $pdf)
-{
-    // Normalize hyphens
-    $content = normalize_hyphens_for_pdf($content);
-
-    // STEP 1: Standardize all tables first
-    $content = standardize_tables_for_pdf($content);
-    
-    // STEP 2: Wrap tables in figures with proper semantic markup
-    $content = preg_replace_callback(
-        '/<table\b[^>]*>.*?<\/table>/is',
-        function ($matches) use ($pdf) {
-            $table_html = $matches[0];
-            
-            $caption_html = '';
-            $table_only_html = $table_html;
-
-            // Extract caption if present and convert to figcaption
-            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_html, $caption_matches)) {
-                $caption_content = $caption_matches[1];
-                $caption_html = '<figcaption>' . $caption_content . '</figcaption>';
-                // Remove caption from the table HTML
-                $table_only_html = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_html);
-            }
-
-            // Wrap the table in a figure with page break check
-            return '<tcpdf method="checkSpaceAndBreak" params="100" />' .
-                   '<figure class="wp-block-table pdf-table-wrapper" style="page-break-inside: avoid;">' .
-                   $caption_html .
-                   $table_only_html .
-                   '</figure>';
-        },
-        $content
-    );
-    
-    // STEP 3: Continue with existing image processing...
-    // (Keep the rest of your existing image processing code)
-    
-    // Calculate image dimensions once for reuse
-    $margins = $pdf->getMargins();
-    $available_width = $pdf->getPageWidth() - $margins['left'] - $margins['right'];
-    $image_width_mm = $available_width * 0.7;
-    $image_width_px = $image_width_mm * 3.78;
-    $width_attr = 'width="' . round($image_width_px) . '"';
-
-    // [Keep your existing image processing code here...]
-    
-    return $content;
-}
-
 // Updated main styling function
 function add_enhanced_table_styling_for_pdf($content)
 {
@@ -760,8 +708,12 @@ function add_table_styling_for_pdf($content)
 }
 
 // Function to process content for PDF generation
+// Function to process content for PDF generation
 function process_content_for_pdf($content, $pdf)
 {
+    // Normalize hyphens FIRST
+    $content = normalize_hyphens_for_pdf($content);
+    
     // Calculate image dimensions once for reuse
     $margins = $pdf->getMargins();
     $available_width = $pdf->getPageWidth() - $margins['left'] - $margins['right'];
@@ -1131,7 +1083,7 @@ function generate_publication_pdf_file($post_id)
             $post_content = json_encode($post_content);
         }
 
-        $post_content = process_content_for_pdf_enhanced($post_content, $pdf);
+        $post_content = process_content_for_pdf($post_content, $pdf);
         $post_content = add_table_styling_for_pdf($post_content);
 
         $pdf->writeHTML($post_content, true, false, true, false, '');
