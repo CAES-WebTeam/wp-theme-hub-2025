@@ -687,8 +687,28 @@ function process_content_for_pdf($content, $pdf)
     // );
 
     // Remove ALL table standardization - just normalize spacing
-    $content = preg_replace('/<br>\s*<table/', '<table', $content);
-    $content = preg_replace('/<\/table>\s*<br>/', '</table>', $content);
+    // $content = preg_replace('/<br>\s*<table/', '<table', $content);
+    // $content = preg_replace('/<\/table>\s*<br>/', '</table>', $content);
+
+    // Extract and externalize captions to fix table layout
+    $content = preg_replace_callback(
+        '/<table\b[^>]*>.*?<\/table>/is',
+        function ($matches) {
+            $table_html = $matches[0];
+
+            // Extract caption content if present
+            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_html, $caption_matches)) {
+                $caption_content = trim($caption_matches[1]);
+                // Remove caption from table
+                $clean_table = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_html);
+                // Return caption as paragraph ABOVE table
+                return '<p><strong>' . $caption_content . '</strong></p>' . $clean_table;
+            }
+
+            return $table_html;
+        },
+        $content
+    );
 
     // STEP 1: Process WordPress image blocks with semantic markup
     $content = preg_replace_callback(
