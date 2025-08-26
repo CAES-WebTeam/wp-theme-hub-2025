@@ -73,120 +73,120 @@ function format_publication_number_for_display($publication_number)
 }
 
 // Enhanced function to standardize and process tables for PDF generation
-function standardize_tables_for_pdf($content)
-{
-    error_log('TCPDF DEBUG - Starting table standardization');
+// function standardize_tables_for_pdf($content)
+// {
+//     error_log('TCPDF DEBUG - Starting table standardization');
 
-    // Count tables in content
-    $table_count = preg_match_all('/<table[^>]*>.*?<\/table>/is', $content, $matches);
-    error_log('TCPDF DEBUG - Found ' . $table_count . ' tables to process');
+//     // Count tables in content
+//     $table_count = preg_match_all('/<table[^>]*>.*?<\/table>/is', $content, $matches);
+//     error_log('TCPDF DEBUG - Found ' . $table_count . ' tables to process');
 
-    // First, let's clean up and standardize all table markup
-    $content = preg_replace_callback(
-        '/<table[^>]*>.*?<\/table>/is',
-        function ($matches) {
-            error_log('TCPDF DEBUG - Processing individual table...');
-            return process_single_table_for_pdf($matches[0]);
-        },
-        $content
-    );
+//     // First, let's clean up and standardize all table markup
+//     $content = preg_replace_callback(
+//         '/<table[^>]*>.*?<\/table>/is',
+//         function ($matches) {
+//             error_log('TCPDF DEBUG - Processing individual table...');
+//             return process_single_table_for_pdf($matches[0]);
+//         },
+//         $content
+//     );
 
-    error_log('TCPDF DEBUG - Table standardization complete');
-    return $content;
-}
+//     error_log('TCPDF DEBUG - Table standardization complete');
+//     return $content;
+// }
 
 // Process individual table to standardize its markup
-function process_single_table_for_pdf($table_html)
-{
-    // Step 1: Extract and clean table attributes
-    $table_html = clean_table_attributes($table_html);
+// function process_single_table_for_pdf($table_html)
+// {
+//     // Step 1: Extract and clean table attributes
+//     $table_html = clean_table_attributes($table_html);
 
-    // Step 2: Handle background colors and inline styles
-    $table_html = normalize_table_styling($table_html);
+//     // Step 2: Handle background colors and inline styles
+//     $table_html = normalize_table_styling($table_html);
 
-    // Step 3: Process table caption
-    $table_html = process_table_caption($table_html);
+//     // Step 3: Process table caption
+//     $table_html = process_table_caption($table_html);
 
-    // Step 4: Handle table footer (tfoot) elements
-    $table_html = process_table_footer($table_html);
+//     // Step 4: Handle table footer (tfoot) elements
+//     $table_html = process_table_footer($table_html);
 
-    // Step 5: Ensure proper TCPDF attributes
-    $table_html = add_tcpdf_table_attributes($table_html);
+//     // Step 5: Ensure proper TCPDF attributes
+//     $table_html = add_tcpdf_table_attributes($table_html);
 
-    return $table_html;
-}
+//     return $table_html;
+// }
 
 // Clean and standardize table opening tag attributes
-function clean_table_attributes($table_html)
-{
-    // Remove problematic inline styles from table tag
-    $table_html = preg_replace_callback(
-        '/<table([^>]*)>/i',
-        function ($matches) {
-            $attributes = $matches[1];
+// function clean_table_attributes($table_html)
+// {
+//     // Remove problematic inline styles from table tag
+//     $table_html = preg_replace_callback(
+//         '/<table([^>]*)>/i',
+//         function ($matches) {
+//             $attributes = $matches[1];
 
-            // Remove any existing style attributes that might conflict
-            $attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $attributes);
+//             // Remove any existing style attributes that might conflict
+//             $attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $attributes);
 
-            // Remove width attributes that might cause issues
-            $attributes = preg_replace('/\s*width\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $attributes);
+//             // Remove width attributes that might cause issues
+//             $attributes = preg_replace('/\s*width\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $attributes);
 
-            return '<table' . $attributes . '>';
-        },
-        $table_html
-    );
+//             return '<table' . $attributes . '>';
+//         },
+//         $table_html
+//     );
 
-    return $table_html;
-}
+//     return $table_html;
+// }
 
 // Normalize table cell styling for consistent PDF output
-function normalize_table_styling($table_html)
-{
-    // Debug: Log the original table HTML
-    error_log('TCPDF DEBUG - Original table HTML: ' . substr($table_html, 0, 500));
+// function normalize_table_styling($table_html)
+// {
+//     // Debug: Log the original table HTML
+//     error_log('TCPDF DEBUG - Original table HTML: ' . substr($table_html, 0, 500));
 
-    // Handle background colors in table cells with a more robust regex
-    $table_html = preg_replace_callback(
-        '/<(td|th)([^>]*)>/i',
-        function ($matches) {
-            $tag = $matches[1];
-            $attributes = $matches[2];
+//     // Handle background colors in table cells with a more robust regex
+//     $table_html = preg_replace_callback(
+//         '/<(td|th)([^>]*)>/i',
+//         function ($matches) {
+//             $tag = $matches[1];
+//             $attributes = $matches[2];
 
-            // Check if this cell has a style attribute with background-color
-            if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $attributes, $style_matches)) {
-                $style_content = $style_matches[1];
+//             // Check if this cell has a style attribute with background-color
+//             if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $attributes, $style_matches)) {
+//                 $style_content = $style_matches[1];
 
-                // Look for background-color in the style
-                if (preg_match('/background-color:\s*([^;]+)/i', $style_content, $bg_matches)) {
-                    $bg_color = trim($bg_matches[1]);
+//                 // Look for background-color in the style
+//                 if (preg_match('/background-color:\s*([^;]+)/i', $style_content, $bg_matches)) {
+//                     $bg_color = trim($bg_matches[1]);
 
-                    // Convert background color to TCPDF-friendly format
-                    $tcpdf_bg = convert_bg_color_for_tcpdf($bg_color);
+//                     // Convert background color to TCPDF-friendly format
+//                     $tcpdf_bg = convert_bg_color_for_tcpdf($bg_color);
 
-                    // Remove the style attribute
-                    $clean_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $attributes);
+//                     // Remove the style attribute
+//                     $clean_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $attributes);
 
-                    // Add the bgcolor attribute
-                    $clean_attributes .= ' bgcolor="' . $tcpdf_bg . '"';
+//                     // Add the bgcolor attribute
+//                     $clean_attributes .= ' bgcolor="' . $tcpdf_bg . '"';
 
-                    error_log('TCPDF DEBUG - Converted bg color: ' . $bg_color . ' -> ' . $tcpdf_bg);
+//                     error_log('TCPDF DEBUG - Converted bg color: ' . $bg_color . ' -> ' . $tcpdf_bg);
 
-                    return '<' . $tag . $clean_attributes . '>';
-                }
-            }
+//                     return '<' . $tag . $clean_attributes . '>';
+//                 }
+//             }
 
-            // No background color found, just remove any style attributes that might cause issues
-            $clean_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $attributes);
-            return '<' . $tag . $clean_attributes . '>';
-        },
-        $table_html
-    );
+//             // No background color found, just remove any style attributes that might cause issues
+//             $clean_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $attributes);
+//             return '<' . $tag . $clean_attributes . '>';
+//         },
+//         $table_html
+//     );
 
-    // Debug: Log the processed table HTML
-    error_log('TCPDF DEBUG - Processed table HTML: ' . substr($table_html, 0, 500));
+//     // Debug: Log the processed table HTML
+//     error_log('TCPDF DEBUG - Processed table HTML: ' . substr($table_html, 0, 500));
 
-    return $table_html;
-}
+//     return $table_html;
+// }
 
 // Convert CSS background colors to TCPDF-compatible format
 function convert_bg_color_for_tcpdf($color)
@@ -327,71 +327,71 @@ function process_table_footer($table_html)
 }
 
 // Add necessary TCPDF attributes to tables
-function add_tcpdf_table_attributes($table_html)
-{
-    error_log('TCPDF DEBUG - Adding TCPDF attributes to table...');
+// function add_tcpdf_table_attributes($table_html)
+// {
+//     error_log('TCPDF DEBUG - Adding TCPDF attributes to table...');
 
-    $table_html = preg_replace_callback(
-        '/<table([^>]*)>/i',
-        function ($matches) {
-            $existing_attributes = $matches[1];
+//     $table_html = preg_replace_callback(
+//         '/<table([^>]*)>/i',
+//         function ($matches) {
+//             $existing_attributes = $matches[1];
 
-            error_log('TCPDF DEBUG - Original table tag: <table' . $existing_attributes . '>');
+//             error_log('TCPDF DEBUG - Original table tag: <table' . $existing_attributes . '>');
 
-            // Ensure required TCPDF attributes are present with explicit width
-            $required_attrs = [
-                'border' => '1',
-                'cellpadding' => '4',
-                'cellspacing' => '0',
-                'autosize' => '1'
-            ];
+//             // Ensure required TCPDF attributes are present with explicit width
+//             $required_attrs = [
+//                 'border' => '1',
+//                 'cellpadding' => '4',
+//                 'cellspacing' => '0',
+//                 'autosize' => '1'
+//             ];
 
-            foreach ($required_attrs as $attr => $default_value) {
-                if (!preg_match('/' . preg_quote($attr) . '\s*=\s*["\']?[^"\'\s>]+["\']?/i', $existing_attributes)) {
-                    if ($attr === 'style') {
-                        // Handle style attribute specially - merge with existing or add new
-                        if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $existing_attributes, $style_matches)) {
-                            $existing_style = $style_matches[1];
-                            $new_style = $existing_style . '; width: 100%;';
-                            $existing_attributes = preg_replace(
-                                '/style\s*=\s*["\'][^"\']*["\']/',
-                                'style="' . $new_style . '"',
-                                $existing_attributes
-                            );
-                        } else {
-                            $existing_attributes .= ' style="' . $default_value . '"';
-                        }
-                    } else {
-                        $existing_attributes .= ' ' . $attr . '="' . $default_value . '"';
-                    }
-                }
-            }
+//             foreach ($required_attrs as $attr => $default_value) {
+//                 if (!preg_match('/' . preg_quote($attr) . '\s*=\s*["\']?[^"\'\s>]+["\']?/i', $existing_attributes)) {
+//                     if ($attr === 'style') {
+//                         // Handle style attribute specially - merge with existing or add new
+//                         if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $existing_attributes, $style_matches)) {
+//                             $existing_style = $style_matches[1];
+//                             $new_style = $existing_style . '; width: 100%;';
+//                             $existing_attributes = preg_replace(
+//                                 '/style\s*=\s*["\'][^"\']*["\']/',
+//                                 'style="' . $new_style . '"',
+//                                 $existing_attributes
+//                             );
+//                         } else {
+//                             $existing_attributes .= ' style="' . $default_value . '"';
+//                         }
+//                     } else {
+//                         $existing_attributes .= ' ' . $attr . '="' . $default_value . '"';
+//                     }
+//                 }
+//             }
 
-            // Add or append 'pdf-table' class
-            if (preg_match('/class\s*=\s*["\']([^"\']*)["\']/', $existing_attributes, $class_matches)) {
-                $existing_class = $class_matches[1];
-                if (strpos($existing_class, 'pdf-table') === false) {
-                    $new_class = trim($existing_class . ' pdf-table');
-                    $existing_attributes = preg_replace(
-                        '/class\s*=\s*["\']([^"\']*)["\']/',
-                        'class="' . $new_class . '"',
-                        $existing_attributes
-                    );
-                }
-            } else {
-                $existing_attributes .= ' class="pdf-table"';
-            }
+//             // Add or append 'pdf-table' class
+//             if (preg_match('/class\s*=\s*["\']([^"\']*)["\']/', $existing_attributes, $class_matches)) {
+//                 $existing_class = $class_matches[1];
+//                 if (strpos($existing_class, 'pdf-table') === false) {
+//                     $new_class = trim($existing_class . ' pdf-table');
+//                     $existing_attributes = preg_replace(
+//                         '/class\s*=\s*["\']([^"\']*)["\']/',
+//                         'class="' . $new_class . '"',
+//                         $existing_attributes
+//                     );
+//                 }
+//             } else {
+//                 $existing_attributes .= ' class="pdf-table"';
+//             }
 
-            $final_tag = '<table' . $existing_attributes . '>';
-            error_log('TCPDF DEBUG - Final table tag: ' . $final_tag);
+//             $final_tag = '<table' . $existing_attributes . '>';
+//             error_log('TCPDF DEBUG - Final table tag: ' . $final_tag);
 
-            return $final_tag;
-        },
-        $table_html
-    );
+//             return $final_tag;
+//         },
+//         $table_html
+//     );
 
-    return $table_html;
-}
+//     return $table_html;
+// }
 
 // Enhanced table styling CSS for PDF generation
 function get_enhanced_table_css_for_pdf()
@@ -678,13 +678,17 @@ function process_content_for_pdf($content, $pdf)
     //     $content
     // );
 
-    $content = preg_replace_callback(
-        '/<table\b[^>]*>.*?<\/table>/is',
-        function ($matches) {
-            return '<br>' . $matches[0] . '<br>';
-        },
-        $content
-    );
+    // $content = preg_replace_callback(
+    //     '/<table\b[^>]*>.*?<\/table>/is',
+    //     function ($matches) {
+    //         return '<br>' . $matches[0] . '<br>';
+    //     },
+    //     $content
+    // );
+
+    // Remove ALL table standardization - just normalize spacing
+    $content = preg_replace('/<br>\s*<table/', '<table', $content);
+    $content = preg_replace('/<\/table>\s*<br>/', '</table>', $content);
 
     // STEP 1: Process WordPress image blocks with semantic markup
     $content = preg_replace_callback(
