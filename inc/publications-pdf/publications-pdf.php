@@ -1131,7 +1131,7 @@ function generate_publication_pdf_file($post_id)
             $post_content = json_encode($post_content);
         }
 
-        $post_content = process_content_for_pdf($post_content, $pdf);
+        $post_content = process_content_for_pdf_enhanced($post_content, $pdf);
         $post_content = add_table_styling_for_pdf($post_content);
 
         $pdf->writeHTML($post_content, true, false, true, false, '');
