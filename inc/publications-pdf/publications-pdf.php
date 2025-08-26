@@ -628,7 +628,6 @@ function add_table_styling_for_pdf($content)
 }
 
 // Function to process content for PDF generation
-// Function to process content for PDF generation
 function process_content_for_pdf($content, $pdf)
 {
     // Normalize hyphens FIRST
@@ -654,26 +653,17 @@ function process_content_for_pdf($content, $pdf)
         return $img_html;
     };
 
+    // SIMPLE CAPTION REMOVAL - no complex processing
+    $content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $content);
+
     // Process all tables with enhanced standardization
     $content = standardize_tables_for_pdf($content);
 
-    // Wrap tables in figures with proper semantic markup
+    // Simple table wrapping - no caption processing at all
     $content = preg_replace_callback(
         '/<table\b[^>]*>.*?<\/table>/is',
-        function ($matches) use ($pdf) {
-            $table_html = $matches[0];
-
-            $caption_html = '';
-            $table_only_html = $table_html;
-
-            // Extract caption if present and convert to figcaption
-            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_html, $caption_matches)) {
-                $caption_content = $caption_matches[1];
-                $caption_html = '<figcaption>' . $caption_content . '</figcaption>';
-                $table_only_html = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_html);
-            }
-
-            return '<br>' . $caption_html . $table_only_html . '<br>';
+        function ($matches) {
+            return '<br>' . $matches[0] . '<br>';
         },
         $content
     );
