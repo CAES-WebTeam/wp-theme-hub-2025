@@ -8,6 +8,13 @@
 // Load TCPDF library FIRST, as MYPDF extends TCPDF.
 require_once get_template_directory() . '/inc/tcpdf/tcpdf.php';
 
+// Function to normalize hyphens in content for PDF generation
+function normalize_hyphens_for_pdf($content) {
+    // Convert Unicode true hyphen (U+2010) to ASCII hyphen-minus (U+002D)
+    $content = str_replace('‐', '-', $content);
+    return $content;
+}
+
 // Function to format the publication number for display
 function format_publication_number_for_display($publication_number)
 {
@@ -496,6 +503,9 @@ min-width: 100% !important;
 // Updated process_content_for_pdf function to use the new table processing
 function process_content_for_pdf_enhanced($content, $pdf)
 {
+    // Normalize hyphens
+    $content = normalize_hyphens_for_pdf($content);
+
     // STEP 1: Standardize all tables first
     $content = standardize_tables_for_pdf($content);
     
