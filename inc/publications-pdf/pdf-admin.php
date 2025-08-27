@@ -488,19 +488,15 @@ function fr2025_ajax_get_publications_table() {
         }
     }
 
-    // MODIFIED: Add search conditions with space-insensitive matching for pub number
     $search_joins = '';
     $search_params = [];
     if (!empty($search_term)) {
         $search_joins = "LEFT JOIN {$wpdb->postmeta} pm_pub_num ON p.ID = pm_pub_num.post_id AND pm_pub_num.meta_key = 'publication_number'";
         
         $like_term = '%' . $wpdb->esc_like($search_term) . '%';
-        // Create a version of the search term with spaces removed for robust matching.
         $compact_search_term = str_replace(' ', '', $search_term);
         $compact_like_term = '%' . $wpdb->esc_like($compact_search_term) . '%';
 
-        // Search title with the original term.
-        // Search pub number with the original term AND a space-removed version.
         $where_clause .= " AND (p.post_title LIKE %s OR pm_pub_num.meta_value LIKE %s OR REPLACE(pm_pub_num.meta_value, ' ', '') LIKE %s)";
         
         $search_params[] = $like_term;
@@ -684,7 +680,7 @@ function fr2025_ajax_queue_bulk_pdfs()
 /**
  * AJAX handler to clear cron lock and remove stuck processes
  */
-function fr2025_ajax_clear_ cron_lock() {
+function fr2025_ajax_clear_cron_lock() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     
     if (!current_user_can('manage_options')) {
