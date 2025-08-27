@@ -548,7 +548,7 @@ class MYPDF extends TCPDF
             $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
 
             $this->SetFont('georgia', '', 7);
-            $this->writeHTMLCell($content_width, 25, $margins['left'], $y_position, $footer_paragraph, 0, 0, false, true, 'L')
+            $this->writeHTMLCell($content_width, 25, $margins['left'], $y_position, $footer_paragraph, 0, 0, false, true, 'L');
         } else {
             // REGULAR FOOTER FOR ALL OTHER CONTENT PAGES
             // Set position at 15 mm from bottom
