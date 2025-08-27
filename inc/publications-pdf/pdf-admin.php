@@ -636,16 +636,34 @@ function fr2025_ajax_queue_single_pdf()
 }
 
 /**
- * AJAX handler to clear cron lock
+ * AJAX handler to clear cron lock and remove stuck processes
  */
-function fr2025_ajax_clear_cron_lock()
-{
+function fr2025_ajax_clear_cron_lock() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
-
+    
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
     }
-
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+    
+    // Clear the cron lock
     delete_transient('pdf_generation_lock');
-    wp_send_json_success('Cron lock cleared');
+    
+    // Remove or reset stuck processes (processing for more than 10 minutes)
+    $affected = $wpdb->query(
+        "DELETE FROM {$table_name} 
+         WHERE status = 'processing' 
+         AND TIMESTAMPDIFF(MINUTE, queued_at, NOW()) > 10"
+    );
+    
+    // Also remove very old pending items (more than 1 hour)
+    $wpdb->query(
+        "DELETE FROM {$table_name} 
+         WHERE status = 'pending' 
+         AND TIMESTAMPDIFF(MINUTE, queued_at, NOW()) > 60"
+    );
+    
+    wp_send_json_success("Cron lock cleared and removed $affected stuck processes");
 }
