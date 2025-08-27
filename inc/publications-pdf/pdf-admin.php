@@ -202,530 +202,337 @@ function fr2025_add_pdf_maintenance_page()
 }
 add_action('admin_menu', 'fr2025_add_pdf_maintenance_page');
 
-function fr2025_render_pdf_maintenance_page()
-{
-?>
+function fr2025_render_pdf_maintenance_page() {
+    ?>
     <div class="wrap">
-        <h1>PDF Maintenance</h1>
-
-        <!-- Quick Actions Bar -->
+        <h1>PDF Management</h1>
+        
+        <!-- Controls -->
         <div style="background: #f1f1f1; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <button id="scan-table-pdfs" class="button button-primary">Find PDFs with Tables</button>
-            <button id="scan-missing-pdfs" class="button button-primary">Find Missing PDFs</button>
-            <button id="refresh-processes" class="button button-secondary">Refresh Processes</button>
+            <button id="refresh-table" class="button button-primary">Refresh Table</button>
             <button id="clear-cron-lock" class="button button-secondary">Clear Stuck Processes</button>
-            <span id="quick-status" style="margin-left: 20px; color: #666;"></span>
+            <span id="status-message" style="margin-left: 20px; color: #666;"></span>
         </div>
 
-        <!-- Three Problem-Solving Sections -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 20px;">
-
-            <!-- Problem 1: Publications with Tables -->
-            <div class="maintenance-section">
-                <h3>Tables in Publications</h3>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Publications that contain tables (shows PDF generation status and allows regeneration)</p>
-                <div id="table-pdfs-content">
-                    <p style="color: #999; font-style: italic;">Click "Find PDFs with Tables" to scan</p>
-                </div>
-            </div>
-
-            <!-- Problem 2: Missing PDFs -->
-            <div class="maintenance-section">
-                <h3>📄 Missing PDFs</h3>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Published publications that don't have generated PDFs yet</p>
-                <div id="missing-pdfs-content">
-                    <p style="color: #999; font-style: italic;">Click "Find Missing PDFs" to scan</p>
-                </div>
-            </div>
-
-            <!-- Problem 3: Process Monitor -->
-            <div class="maintenance-section">
-                <h3>⚙️ Current Processes</h3>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Active PDF generation processes and recent completions</p>
-                <div id="current-processes-content">
-                    <p style="color: #999; font-style: italic;">Loading...</p>
-                </div>
-            </div>
+        <!-- Publications Table -->
+        <div id="publications-table-container">
+            <p style="color: #666; font-style: italic;">Loading publications...</p>
         </div>
 
         <script>
-            jQuery(document).ready(function($) {
+        jQuery(document).ready(function($) {
+            var currentPage = 1;
+            
+            function setStatus(message, type = 'info') {
+                var color = type === 'error' ? 'red' : (type === 'success' ? 'green' : '#666');
+                $('#status-message').html('<span style="color:' + color + ';">' + message + '</span>');
+            }
 
-                function setQuickStatus(message, type = 'info') {
-                    var color = type === 'error' ? 'red' : (type === 'success' ? 'green' : '#666');
-                    $('#quick-status').html('<span style="color:' + color + ';">' + message + '</span>');
-                }
-
-                function refreshProcesses() {
-                    setQuickStatus('Refreshing processes...');
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'fr2025_get_current_processes_simple',
-                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#current-processes-content').html(response.data.html);
-                                var statusText = response.data.cron_locked ? 'Cron LOCKED' : 'Cron FREE';
-                                setQuickStatus(statusText + ' - ' + response.data.count + ' processes');
-                            } else {
-                                setQuickStatus('Error refreshing processes', 'error');
-                            }
+            function loadPublicationsTable(page = 1) {
+                setStatus('Loading publications...');
+                $('#publications-table-container').html('<p style="color: #ff9800;">Loading page ' + page + '...</p>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_get_publications_table',
+                        page: page,
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#publications-table-container').html(response.data.html);
+                            currentPage = response.data.page;
+                            setStatus('Page ' + page + ' loaded (' + response.data.count + ' publications)', 'success');
+                        } else {
+                            $('#publications-table-container').html('<p style="color: red;">Error: ' + response.data + '</p>');
+                            setStatus('Error loading table', 'error');
                         }
-                    });
-                }
-
-                function scanTablePDFs() {
-                    loadTablePage(1);
-                }
-
-                function loadTablePage(page) {
-                    $('#table-pdfs-content').html('<p style="color: #ff9800;">Loading publications with tables (page ' + page + ')...</p>');
-                    setQuickStatus('Loading page ' + page + '...');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'fr2025_find_pdfs_with_tables',
-                            page: page,
-                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#table-pdfs-content').html(response.data.html);
-                                setQuickStatus('Page ' + response.data.page + ' loaded - ' + response.data.total_found + ' publications with tables', 'success');
-                            } else {
-                                $('#table-pdfs-content').html('<p style="color: red;">Error: ' + response.data + '</p>');
-                                setQuickStatus('Error loading page', 'error');
-                            }
-                        },
-                        error: function() {
-                            $('#table-pdfs-content').html('<p style="color: red;">Network error</p>');
-                            setQuickStatus('Network error', 'error');
-                        }
-                    });
-                }
-
-                // Add pagination click handler to the existing delegated event handlers
-                $(document).on('click', '.table-pagination-btn', function() {
-                    var page = $(this).data('page');
-                    loadTablePage(page);
+                    },
+                    error: function() {
+                        $('#publications-table-container').html('<p style="color: red;">Network error loading table</p>');
+                        setStatus('Network error', 'error');
+                    }
                 });
+            }
 
-                function scanMissingPDFs() {
-                    $('#missing-pdfs-content').html('<p style="color: #ff9800;">Scanning for publications without PDFs...</p>');
-                    setQuickStatus('Scanning for missing PDFs...');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'fr2025_find_missing_pdfs',
-                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#missing-pdfs-content').html(response.data.html);
-                                setQuickStatus('Found ' + response.data.count + ' missing PDFs', 'success');
-                            } else {
-                                $('#missing-pdfs-content').html('<p style="color: red;">Error: ' + response.data + '</p>');
-                                setQuickStatus('Error scanning missing PDFs', 'error');
-                            }
-                        }
-                    });
-                }
-
-                // Event handlers
-                $('#scan-table-pdfs').on('click', scanTablePDFs);
-                $('#scan-missing-pdfs').on('click', scanMissingPDFs);
-                $('#refresh-processes').on('click', refreshProcesses);
-
-                $('#clear-cron-lock').on('click', function() {
-                    if (!confirm('Clear cron lock and cancel stuck processes?')) return;
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'fr2025_clear_cron_lock',
-                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            setQuickStatus('Cron lock cleared', 'success');
-                            refreshProcesses();
-                        }
-                    });
-                });
-
-                // Delegated event handlers for dynamic buttons
-                $(document).on('click', '.regenerate-pdf-btn', function() {
-                    var postId = $(this).data('post-id');
-                    var postTitle = $(this).data('post-title');
-
-                    if (!confirm('Regenerate PDF for "' + postTitle + '"?')) return;
-
-                    $(this).prop('disabled', true).text('Queuing...');
-
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'fr2025_queue_single_pdf',
-                            post_id: postId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                setQuickStatus('Queued PDF generation for ' + postTitle, 'success');
-                                refreshProcesses();
-                            } else {
-                                setQuickStatus('Failed to queue PDF: ' + response.data, 'error');
-                            }
-                        }
-                    });
-                });
-
-                $(document).on('click', '.cancel-process-btn', function() {
-                    var queueId = $(this).data('queue-id');
-
-                    if (!confirm('Cancel this PDF generation process?')) return;
-
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'fr2025_cancel_pdf_process',
-                            queue_id: queueId,
-                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            setQuickStatus(response.data || 'Process cancelled', 'success');
-                            refreshProcesses();
-                        }
-                    });
-                });
-
-                // Initialize
-                refreshProcesses();
+            // Event handlers
+            $('#refresh-table').on('click', function() {
+                loadPublicationsTable(currentPage);
             });
+            
+            $('#clear-cron-lock').on('click', function() {
+                if (!confirm('Clear cron lock and cancel stuck processes?')) return;
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_clear_cron_lock',
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        setStatus('Cron lock cleared', 'success');
+                        loadPublicationsTable(currentPage);
+                    }
+                });
+            });
+
+            // Delegated event handlers
+            $(document).on('click', '.pagination-btn', function() {
+                var page = $(this).data('page');
+                loadPublicationsTable(page);
+            });
+
+            $(document).on('click', '.regenerate-pdf-btn', function() {
+                var postId = $(this).data('post-id');
+                var postTitle = $(this).data('post-title');
+                
+                if (!confirm('Generate PDF for "' + postTitle + '"?')) return;
+                
+                $(this).prop('disabled', true).text('Queuing...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'fr2025_queue_single_pdf',
+                        post_id: postId,
+                        _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            setStatus('Queued PDF generation for ' + postTitle, 'success');
+                            setTimeout(function() { loadPublicationsTable(currentPage); }, 1000);
+                        } else {
+                            setStatus('Failed to queue PDF: ' + response.data, 'error');
+                        }
+                    },
+                    complete: function() {
+                        $('.regenerate-pdf-btn').prop('disabled', false).text('Generate PDF');
+                    }
+                });
+            });
+
+            // Initialize
+            loadPublicationsTable(1);
+            
+            // Auto-refresh every 60 seconds
+            setInterval(function() {
+                loadPublicationsTable(currentPage);
+            }, 60000);
+        });
         </script>
 
         <style>
-            .maintenance-section {
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                padding: 15px;
-                background: white;
-                min-height: 400px;
-            }
-
-            .maintenance-section h3 {
-                margin-top: 0;
-                padding-bottom: 10px;
-                border-bottom: 1px solid #eee;
-            }
-
-            .pdf-item {
-                padding: 8px;
-                border: 1px solid #eee;
-                border-radius: 3px;
-                margin-bottom: 8px;
-                background: #fafafa;
-            }
-
-            .pdf-item-title {
-                font-weight: bold;
-                font-size: 13px;
-                margin-bottom: 4px;
-            }
-
-            .pdf-item-meta {
-                font-size: 11px;
-                color: #666;
-                margin-bottom: 6px;
-            }
-
-            .process-item {
-                padding: 6px;
-                margin-bottom: 6px;
-                border-left: 3px solid #ccc;
-                font-size: 12px;
-            }
-
-            .process-item.processing {
-                border-left-color: #ff9800;
-            }
-
-            .process-item.pending {
-                border-left-color: #2196F3;
-            }
-
-            .process-item.failed {
-                border-left-color: #f44336;
-            }
-
-            .process-item.completed {
-                border-left-color: #4CAF50;
-            }
-
-            @media (max-width: 1200px) {
-                div[style*="grid-template-columns: 1fr 1fr 1fr"] {
-                    grid-template-columns: 1fr !important;
-                }
-            }
+        .publications-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        .publications-table th,
+        .publications-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        .publications-table th {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            border-bottom: 2px solid #ddd;
+        }
+        .publications-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-generated { background-color: #4CAF50; }
+        .status-manual { background-color: #2196F3; }
+        .status-missing { background-color: #f44336; }
+        .status-processing { background-color: #ff9800; }
+        .pagination-controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .pagination-controls button {
+            margin: 0 2px;
+        }
         </style>
     </div>
-<?php
+    <?php
 }
 
-// AJAX handlers for the three main functions
-add_action('wp_ajax_fr2025_find_pdfs_with_tables', 'fr2025_ajax_find_pdfs_with_tables');
-add_action('wp_ajax_fr2025_find_missing_pdfs', 'fr2025_ajax_find_missing_pdfs');
-add_action('wp_ajax_fr2025_get_current_processes_simple', 'fr2025_ajax_get_current_processes_simple');
+// Replace all the existing AJAX handlers with these
+add_action('wp_ajax_fr2025_get_publications_table', 'fr2025_ajax_get_publications_table');
 add_action('wp_ajax_fr2025_queue_single_pdf', 'fr2025_ajax_queue_single_pdf');
-add_action('wp_ajax_fr2025_cancel_pdf_process', 'fr2025_ajax_cancel_pdf_process');
 add_action('wp_ajax_fr2025_clear_cron_lock', 'fr2025_ajax_clear_cron_lock');
 
 /**
- * Find publications with tables
+ * Get publications table with all PDF status information
  */
-function fr2025_ajax_find_pdfs_with_tables()
-{
+function fr2025_ajax_get_publications_table() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) wp_send_json_error('Insufficient permissions');
 
     $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
-    $per_page = 20; // Show 20 results per page
+    $per_page = 25;
     $offset = ($page - 1) * $per_page;
-
+    
     global $wpdb;
-
-    // Get all publications (with pagination)
-    $posts = $wpdb->get_results($wpdb->prepare(
+    
+    // Get publications with pagination
+    $publications = $wpdb->get_results($wpdb->prepare(
         "SELECT ID, post_title 
          FROM {$wpdb->posts} 
          WHERE post_type = 'publications' 
          AND post_status = 'publish' 
          ORDER BY post_title 
          LIMIT %d OFFSET %d",
-        $per_page,
-        $offset
+        $per_page, $offset
     ));
-
-    // Get total count for pagination
-    $total_posts = $wpdb->get_var(
-        "SELECT COUNT(*) 
-         FROM {$wpdb->posts} 
-         WHERE post_type = 'publications' 
-         AND post_status = 'publish'"
+    
+    $total_pubs = $wpdb->get_var(
+        "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'publications' AND post_status = 'publish'"
     );
-
-    $publications_with_tables = array();
-
-    foreach ($posts as $post) {
-        $post_content = get_post_field('post_content', $post->ID);
-        $table_count = preg_match_all('/<table[^>]*>.*?<\/table>/is', $post_content);
-
-        if ($table_count > 0) {
-            // Get PDF info
-            $pdf_url = get_field('pdf_download_url', $post->ID);
-            $pdf_generated_date = '';
-
-            // Get latest PDF generation date from queue
-            $queue_item = $wpdb->get_row($wpdb->prepare(
-                "SELECT completed_at FROM {$wpdb->prefix}pdf_generation_queue 
-                 WHERE post_id = %d AND status = 'completed' 
-                 ORDER BY completed_at DESC LIMIT 1",
-                $post->ID
-            ));
-
-            if ($queue_item && $queue_item->completed_at) {
-                $pdf_generated_date = date('M j, Y g:i A', strtotime($queue_item->completed_at));
-            }
-
-            $publications_with_tables[] = array(
-                'id' => $post->ID,
-                'title' => $post->post_title,
-                'table_count' => $table_count,
-                'pdf_url' => $pdf_url,
-                'pdf_generated_date' => $pdf_generated_date,
-                'view_url' => get_permalink($post->ID)
-            );
+    
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+    
+    $html = '<table class="publications-table">';
+    $html .= '<thead><tr>';
+    $html .= '<th>Publication</th>';
+    $html .= '<th>Publication #</th>';
+    $html .= '<th>Manual PDF</th>';
+    $html .= '<th>Generated PDF Status</th>';
+    $html .= '<th>Last Generated</th>';
+    $html .= '<th>Actions</th>';
+    $html .= '</tr></thead><tbody>';
+    
+    foreach ($publications as $pub) {
+        $pub_number = get_field('publication_number', $pub->ID);
+        $manual_pdf = get_field('pdf', $pub->ID);
+        $generated_pdf = get_field('pdf_download_url', $pub->ID);
+        
+        // Check queue status
+        $queue_item = $wpdb->get_row($wpdb->prepare(
+            "SELECT status, completed_at FROM {$table_name} 
+             WHERE post_id = %d 
+             ORDER BY queued_at DESC LIMIT 1",
+            $pub->ID
+        ));
+        
+        $html .= '<tr>';
+        
+        // Publication name
+        $html .= '<td><strong>' . esc_html($pub->post_title) . '</strong></td>';
+        
+        // Publication number
+        $html .= '<td>' . esc_html($pub_number ?: 'N/A') . '</td>';
+        
+        // Manual PDF status
+        $manual_status = '';
+        if (is_array($manual_pdf) && !empty($manual_pdf['url'])) {
+            $manual_status = '<span class="status-indicator status-manual"></span>Yes';
+        } elseif (is_string($manual_pdf) && filter_var($manual_pdf, FILTER_VALIDATE_URL)) {
+            $manual_status = '<span class="status-indicator status-manual"></span>Yes';
+        } else {
+            $manual_status = '<span class="status-indicator status-missing"></span>No';
         }
-    }
-
-    // Build HTML
-    $html = '';
-    if (empty($publications_with_tables)) {
-        $html = '<p style="color: #666;">No publications with tables found on this page.</p>';
-    } else {
-        foreach ($publications_with_tables as $item) {
-            $html .= '<div class="pdf-item">';
-            $html .= '<div class="pdf-item-title">' . esc_html($item['title']) . '</div>';
-
-            $meta_parts = array($item['table_count'] . ' tables');
-            if ($item['pdf_generated_date']) {
-                $meta_parts[] = 'PDF generated: ' . $item['pdf_generated_date'];
-            } else {
-                $meta_parts[] = 'No PDF generated yet';
-            }
-
-            $html .= '<div class="pdf-item-meta">' . implode(' | ', $meta_parts) . '</div>';
-
-            $html .= '<div class="pdf-item-actions" style="margin-top: 6px;">';
-
-            // View Publication button
-            $html .= '<a href="' . esc_url($item['view_url']) . '" target="_blank" class="button button-small">View Publication</a> ';
-
-            // View PDF button (if PDF exists)
-            if ($item['pdf_url']) {
-                $html .= '<a href="' . esc_url($item['pdf_url']) . '" target="_blank" class="button button-small">View PDF</a> ';
-                $html .= '<button class="button button-small regenerate-pdf-btn" data-post-id="' . $item['id'] . '" data-post-title="' . esc_attr($item['title']) . '">Regenerate PDF</button>';
-            } else {
-                $html .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $item['id'] . '" data-post-title="' . esc_attr($item['title']) . '">Generate PDF</button>';
-            }
-
-            $html .= '</div></div>';
+        $html .= '<td>' . $manual_status . '</td>';
+        
+        // Generated PDF status
+        $gen_status = '';
+        if ($queue_item && $queue_item->status === 'processing') {
+            $gen_status = '<span class="status-indicator status-processing"></span>Processing';
+        } elseif ($generated_pdf) {
+            $gen_status = '<span class="status-indicator status-generated"></span>Generated';
+        } else {
+            $gen_status = '<span class="status-indicator status-missing"></span>Missing';
         }
+        $html .= '<td>' . $gen_status . '</td>';
+        
+        // Last generated date
+        $last_generated = 'Never';
+        if ($queue_item && $queue_item->completed_at) {
+            $last_generated = date('M j, Y g:i A', strtotime($queue_item->completed_at));
+        }
+        $html .= '<td>' . $last_generated . '</td>';
+        
+        // Actions
+        $actions = '';
+        
+        // View Publication
+        $actions .= '<a href="' . esc_url(get_permalink($pub->ID)) . '" target="_blank" class="button button-small">View</a> ';
+        
+        // View PDFs
+        if ($manual_pdf && is_array($manual_pdf) && !empty($manual_pdf['url'])) {
+            $actions .= '<a href="' . esc_url($manual_pdf['url']) . '" target="_blank" class="button button-small">Manual PDF</a> ';
+        }
+        if ($generated_pdf) {
+            $actions .= '<a href="' . esc_url($generated_pdf) . '" target="_blank" class="button button-small">Generated PDF</a> ';
+        }
+        
+        // Generate/Regenerate button
+        if ($queue_item && $queue_item->status === 'processing') {
+            $actions .= '<span style="color: #ff9800;">Processing...</span>';
+        } else {
+            $button_text = $generated_pdf ? 'Regenerate PDF' : 'Generate PDF';
+            $actions .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
+        }
+        
+        $html .= '<td>' . $actions . '</td>';
+        $html .= '</tr>';
     }
-
-    // Add pagination
-    $total_pages = ceil($total_posts / $per_page);
+    
+    $html .= '</tbody></table>';
+    
+    // Pagination
+    $total_pages = ceil($total_pubs / $per_page);
     if ($total_pages > 1) {
-        $html .= '<div class="pagination-controls" style="margin-top: 15px; text-align: center;">';
-
+        $html .= '<div class="pagination-controls">';
+        
         if ($page > 1) {
-            $html .= '<button class="button table-pagination-btn" data-page="' . ($page - 1) . '">Previous</button> ';
+            $html .= '<button class="button pagination-btn" data-page="1">First</button> ';
+            $html .= '<button class="button pagination-btn" data-page="' . ($page - 1) . '">Previous</button> ';
         }
-
-        $html .= '<span style="margin: 0 10px;">Page ' . $page . ' of ' . $total_pages . '</span>';
-
+        
+        $start = max(1, $page - 2);
+        $end = min($total_pages, $page + 2);
+        
+        for ($i = $start; $i <= $end; $i++) {
+            $class = $i === $page ? 'button-primary' : 'button-secondary';
+            $html .= '<button class="button ' . $class . ' pagination-btn" data-page="' . $i . '">' . $i . '</button> ';
+        }
+        
         if ($page < $total_pages) {
-            $html .= ' <button class="button table-pagination-btn" data-page="' . ($page + 1) . '">Next</button>';
+            $html .= '<button class="button pagination-btn" data-page="' . ($page + 1) . '">Next</button> ';
+            $html .= '<button class="button pagination-btn" data-page="' . $total_pages . '">Last</button>';
         }
-
+        
         $html .= '</div>';
     }
-
+    
     wp_send_json_success(array(
         'html' => $html,
-        'count' => count($publications_with_tables),
-        'total_found' => count($publications_with_tables),
         'page' => $page,
-        'total_pages' => $total_pages
-    ));
-}
-
-/**
- * Find publications without PDFs
- */
-function fr2025_ajax_find_missing_pdfs()
-{
-    check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
-    if (!current_user_can('manage_options')) wp_send_json_error('Insufficient permissions');
-
-    global $wpdb;
-
-    // Get posts that DON'T have pdf_download_url
-    $post_ids_with_pdf = $wpdb->get_col(
-        "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'pdf_download_url' AND meta_value != ''"
-    );
-
-    $query_args = array(
-        'post_type' => 'publications',
-        'posts_per_page' => 50, // Limit to first 50 for performance
-        'post_status' => 'publish',
-        'post__not_in' => !empty($post_ids_with_pdf) ? $post_ids_with_pdf : array(0),
-        'meta_query' => array(
-            array('key' => 'publication_number', 'compare' => 'EXISTS'),
-            array('key' => 'publication_number', 'value' => '', 'compare' => '!='),
-        ),
-        'orderby' => 'title',
-        'order' => 'ASC'
-    );
-
-    $posts = new WP_Query($query_args);
-
-    $html = '';
-    if (!$posts->have_posts()) {
-        $html = '<p style="color: #666;">No missing PDFs found.</p>';
-    } else {
-        foreach ($posts->posts as $post) {
-            $pub_number = get_field('publication_number', $post->ID);
-            $html .= '<div class="pdf-item">';
-            $html .= '<div class="pdf-item-title">' . esc_html($post->post_title) . '</div>';
-            $html .= '<div class="pdf-item-meta">Pub #: ' . esc_html($pub_number) . ' | <a href="' . get_edit_post_link($post->ID) . '" target="_blank">Edit</a></div>';
-            $html .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $post->ID . '" data-post-title="' . esc_attr($post->post_title) . '">Generate PDF</button>';
-            $html .= '</div>';
-        }
-        if ($posts->found_posts > 50) {
-            $html .= '<p style="color: #666; font-style: italic;">Showing first 50 of ' . $posts->found_posts . ' total</p>';
-        }
-    }
-
-    wp_send_json_success(array('html' => $html, 'count' => $posts->found_posts));
-}
-
-/**
- * Get current processes (simplified)
- */
-function fr2025_ajax_get_current_processes_simple()
-{
-    check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
-    if (!current_user_can('manage_options')) wp_send_json_error('Insufficient permissions');
-
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'pdf_generation_queue';
-
-    $queue_items = $wpdb->get_results(
-        "SELECT *, TIMESTAMPDIFF(MINUTE, queued_at, NOW()) as minutes_in_queue 
-         FROM {$table_name} 
-         WHERE status IN ('processing', 'pending', 'failed') 
-            OR (status = 'completed' AND completed_at > DATE_SUB(NOW(), INTERVAL 2 HOUR))
-         ORDER BY 
-            CASE status WHEN 'processing' THEN 1 WHEN 'pending' THEN 2 WHEN 'failed' THEN 3 ELSE 4 END,
-            queued_at DESC
-         LIMIT 15"
-    );
-
-    $html = '';
-    if (empty($queue_items)) {
-        $html = '<p style="color: #666;">No current processes</p>';
-    } else {
-        foreach ($queue_items as $item) {
-            $post_title = get_the_title($item->post_id) ? get_the_title($item->post_id) : 'Unknown Post';
-            $stuck_warning = ($item->status === 'processing' && $item->minutes_in_queue > 10) ? ' <span style="color: red;">(STUCK)</span>' : '';
-
-            $html .= '<div class="process-item ' . $item->status . '">';
-            $html .= '<strong>' . esc_html(substr($post_title, 0, 30)) . '</strong>' . $stuck_warning . '<br>';
-            $html .= '<span style="color: #666;">' . strtoupper($item->status) . ' (' . $item->minutes_in_queue . ' min ago)</span>';
-
-            if (in_array($item->status, array('processing', 'pending', 'failed'))) {
-                $html .= '<br><button class="button button-small cancel-process-btn" data-queue-id="' . $item->id . '">Cancel</button>';
-            }
-            $html .= '</div>';
-        }
-    }
-
-    wp_send_json_success(array(
-        'html' => $html,
-        'count' => count($queue_items),
-        'cron_locked' => (bool)get_transient('pdf_generation_lock')
+        'count' => count($publications),
+        'total' => $total_pubs
     ));
 }
 
 /**
  * Queue a single PDF for generation
  */
-function fr2025_ajax_queue_single_pdf()
-{
+function fr2025_ajax_queue_single_pdf() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) wp_send_json_error('Insufficient permissions');
 
     $post_id = intval($_POST['post_id']);
-
+    
     if (insert_or_update_pdf_queue($post_id, 'pending')) {
         wp_send_json_success('PDF queued successfully');
     } else {
@@ -734,42 +541,15 @@ function fr2025_ajax_queue_single_pdf()
 }
 
 /**
- * AJAX handler to cancel a PDF process
- */
-function fr2025_ajax_cancel_pdf_process()
-{
-    check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
-
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Insufficient permissions');
-    }
-
-    $queue_id = intval($_POST['queue_id']);
-
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'pdf_generation_queue';
-
-    // Remove from queue entirely
-    $result = $wpdb->delete($table_name, array('id' => $queue_id), array('%d'));
-
-    if ($result !== false) {
-        wp_send_json_success('Process cancelled and removed from queue');
-    } else {
-        wp_send_json_error('Failed to cancel process');
-    }
-}
-
-/**
  * AJAX handler to clear cron lock
  */
-function fr2025_ajax_clear_cron_lock()
-{
+function fr2025_ajax_clear_cron_lock() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
-
+    
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
     }
-
+    
     delete_transient('pdf_generation_lock');
     wp_send_json_success('Cron lock cleared');
 }
