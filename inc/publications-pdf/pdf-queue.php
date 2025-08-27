@@ -152,6 +152,30 @@ function remove_from_pdf_queue($post_id) {
         array('%d')
     );
 
-    // $result will be the number of rows deleted, or false on error.
     return $result !== false;
+}
+
+/**
+ * Removes multiple posts from the PDF generation queue.
+ *
+ * @param array $post_ids An array of post IDs to remove.
+ * @return int|false The number of rows deleted, or false on error.
+ */
+function remove_multiple_from_pdf_queue($post_ids) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+
+    if (empty($post_ids)) {
+        return 0;
+    }
+
+    // Sanitize all IDs to be integers
+    $sanitized_ids = array_map('intval', $post_ids);
+    $ids_placeholder = implode(',', $sanitized_ids);
+
+    $query = "DELETE FROM {$table_name} WHERE post_id IN ({$ids_placeholder})";
+    
+    $result = $wpdb->query($query);
+
+    return $result;
 }
