@@ -663,19 +663,11 @@ function fr2025_ajax_get_publications_table() {
                 $status_for_js = 'generated';
             }
             
-            // MODIFIED: Added data-status to checkbox
             $html .= '<td><input type="checkbox" class="publication-checkbox" value="' . $pub->ID . '" data-status="' . $status_for_js . '"></td>';
             $html .= '<td><strong>' . esc_html($pub->post_title) . '</strong></td>';
             $html .= '<td>' . esc_html($pub_number ?: 'N/A') . '</td>';
+            $html .= '<td>' . $manual_status . '</td>';
             $html .= '<td>' . $gen_status . '</td>';
-            
-            $last_generated = 'Never';
-            if ($queue_item && $queue_item->completed_at) {
-                $last_generated = date('M j, Y g:i A', strtotime($queue_item->completed_at));
-            } elseif ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) {
-                $last_generated = 'Queued ' . human_time_diff(strtotime($queue_item->queued_at)) . ' ago';
-            }
-            $html .= '<td>' . $last_generated . '</td>';
             
             $actions = '';
             if ($manual_pdf && is_array($manual_pdf) && !empty($manual_pdf['url'])) {
