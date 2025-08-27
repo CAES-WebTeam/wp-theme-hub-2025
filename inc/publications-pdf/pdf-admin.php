@@ -531,10 +531,10 @@ function fr2025_ajax_get_publications_table() {
             // MODIFIED: Reordered actions
             $actions = '';
             if ($manual_pdf && is_array($manual_pdf) && !empty($manual_pdf['url'])) {
-                $actions .= '<a href="' . esc_url($manual_pdf['url']) . '" target="_blank" class="button button-small">Manual PDF</a> ';
+                $actions .= '<a href="' . esc_url($manual_pdf['url']) . '" target="_blank" class="button button-small" style="margin:5px 0 0 0">Manual PDF</a> ';
             }
             if ($generated_pdf) {
-                $actions .= '<a href="' . esc_url($generated_pdf) . '" target="_blank" class="button button-small">View Generated PDF</a> ';
+                $actions .= '<a href="' . esc_url($generated_pdf) . '" target="_blank" class="button button-small" style="margin:5px 0 0 0">View Generated PDF</a> ';
             }
             
             if ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) {
