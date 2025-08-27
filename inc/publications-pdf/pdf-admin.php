@@ -429,6 +429,37 @@ jQuery(document).ready(function($) {
             }
         });
     });
+    
+    // NEW: Cancel PDF generation
+    $(document).on('click', '.cancel-pdf-btn', function() {
+        var postId = $(this).data('post-id');
+        var postTitle = $(this).data('post-title');
+        
+        if (!confirm('Are you sure you want to cancel the PDF generation for "' + postTitle + '"?')) {
+            return;
+        }
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'fr2025_cancel_single_pdf',
+                post_id: postId,
+                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    setStatus(response.data, 'success');
+                    loadPublicationsTable(currentPage); // Refresh the table
+                } else {
+                    setStatus('Error cancelling PDF: ' + response.data, 'error');
+                }
+            },
+            error: function() {
+                setStatus('Network error during cancellation.', 'error');
+            }
+        });
+    });
 
     // Initialize
     loadPublicationsTable(1);
@@ -458,6 +489,7 @@ add_action('wp_ajax_fr2025_get_publications_table', 'fr2025_ajax_get_publication
 add_action('wp_ajax_fr2025_queue_single_pdf', 'fr2025_ajax_queue_single_pdf');
 add_action('wp_ajax_fr2025_clear_cron_lock', 'fr2025_ajax_clear_cron_lock');
 add_action('wp_ajax_fr2025_queue_bulk_pdfs', 'fr2025_ajax_queue_bulk_pdfs');
+add_action('wp_ajax_fr2025_cancel_single_pdf', 'fr2025_ajax_cancel_single_pdf'); // NEW
 
 /**
  * Get publications table with all PDF status information
@@ -582,7 +614,7 @@ function fr2025_ajax_get_publications_table() {
             }
             
             if ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) {
-                $actions .= '<span style="color: #ff9800;">Processing...</span>';
+                $actions .= '<button class="button button-small button-secondary cancel-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">Cancel</button>';
             } else {
                 $button_text = $generated_pdf ? 'Regenerate' : 'Generate';
                 $actions .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
@@ -696,4 +728,26 @@ function fr2025_ajax_clear_cron_lock() {
     $wpdb->query("DELETE FROM {$table_name} WHERE status = 'pending' AND TIMESTAMPDIFF(MINUTE, queued_at, NOW()) > 60");
     
     wp_send_json_success("Cron lock cleared and removed $affected stuck processes");
+}
+
+/**
+ * NEW: AJAX handler to cancel a single PDF generation process
+ */
+function fr2025_ajax_cancel_single_pdf() {
+    check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+
+    $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+    if ($post_id <= 0) {
+        wp_send_json_error('Invalid Post ID.');
+    }
+
+    // This function needs to be created in pdf-queue.php
+    if (remove_from_pdf_queue($post_id)) {
+        wp_send_json_success('PDF generation cancelled successfully.');
+    } else {
+        wp_send_json_error('Could not cancel PDF generation. It might have already completed or been removed.');
+    }
 }

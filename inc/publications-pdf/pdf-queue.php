@@ -135,3 +135,23 @@ function update_pdf_queue_status($id, $status, $message = '') {
     }
     return true;
 }
+
+/**
+ * Removes a post from the PDF generation queue.
+ *
+ * @param int $post_id The ID of the post to remove.
+ * @return bool True on successful removal, false otherwise.
+ */
+function remove_from_pdf_queue($post_id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pdf_generation_queue';
+
+    $result = $wpdb->delete(
+        $table_name,
+        array('post_id' => $post_id),
+        array('%d')
+    );
+
+    // $result will be the number of rows deleted, or false on error.
+    return $result !== false;
+}
