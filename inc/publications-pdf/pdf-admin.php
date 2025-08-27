@@ -234,8 +234,8 @@ function fr2025_render_pdf_maintenance_page()
 jQuery(document).ready(function($) {
     var currentPage = 1;
     var filterNoManual = true;
-    var searchTerm = ''; // NEW: Search term state
-    var searchTimeout; // NEW: Timeout for debouncing search input
+    var searchTerm = ''; 
+    var searchTimeout; 
 
     function setStatus(message, type = 'info') {
         var color = type === 'error' ? 'red' : (type === 'success' ? 'green' : '#666');
@@ -246,7 +246,6 @@ jQuery(document).ready(function($) {
         setStatus('Loading publications...');
         $('#publications-table-container').html('<p style="color: #ff9800;">Loading page ' + page + '...</p>');
         
-        // Clear any existing timeout
         clearTimeout(searchTimeout);
 
         $.ajax({
@@ -256,7 +255,7 @@ jQuery(document).ready(function($) {
                 action: 'fr2025_get_publications_table',
                 page: page,
                 filter_no_manual: filterNoManual ? 1 : 0,
-                search: searchTerm, // NEW: Pass search term
+                search: searchTerm, 
                 _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
             },
             success: function(response) {
@@ -291,7 +290,6 @@ jQuery(document).ready(function($) {
 
     // --- Event handlers ---
     
-    // NEW: Search functionality with debouncing
     $('#publication-search').on('keyup', function() {
         clearTimeout(searchTimeout);
         var newSearchTerm = $(this).val();
@@ -299,15 +297,15 @@ jQuery(document).ready(function($) {
         searchTimeout = setTimeout(function() {
             if (newSearchTerm !== searchTerm) {
                 searchTerm = newSearchTerm;
-                currentPage = 1; // Reset to first page
+                currentPage = 1;
                 loadPublicationsTable(1);
             }
-        }, 500); // 500ms delay after user stops typing
+        }, 500); 
     });
 
     $('#search-button').on('click', function() {
         searchTerm = $('#publication-search').val();
-        currentPage = 1; // Reset to first page
+        currentPage = 1;
         loadPublicationsTable(1);
     });
     
@@ -470,17 +468,15 @@ function fr2025_ajax_get_publications_table() {
 
     $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
     $filter_no_manual = isset($_POST['filter_no_manual']) && $_POST['filter_no_manual'] == '1';
-    $search_term = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : ''; // NEW: Get search term
+    $search_term = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
     $per_page = 25;
     $offset = ($page - 1) * $per_page;
     
     global $wpdb;
     $table_name = $wpdb->prefix . 'pdf_generation_queue';
     
-    // Base WHERE clause
     $where_clause = "p.post_type = 'publications' AND p.post_status = 'publish'";
     
-    // Filter for publications without manual PDFs
     if ($filter_no_manual) {
         $manual_pdf_post_ids = $wpdb->get_col(
             "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'pdf' AND meta_value IS NOT NULL AND meta_value != '' AND meta_value != 'a:0:{}'"
@@ -492,19 +488,26 @@ function fr2025_ajax_get_publications_table() {
         }
     }
 
-    // NEW: Add search conditions
+    // MODIFIED: Add search conditions with space-insensitive matching for pub number
     $search_joins = '';
     $search_params = [];
     if (!empty($search_term)) {
-        // We need to join postmeta to search the publication number
         $search_joins = "LEFT JOIN {$wpdb->postmeta} pm_pub_num ON p.ID = pm_pub_num.post_id AND pm_pub_num.meta_key = 'publication_number'";
-        $where_clause .= " AND (p.post_title LIKE %s OR pm_pub_num.meta_value LIKE %s)";
+        
         $like_term = '%' . $wpdb->esc_like($search_term) . '%';
+        // Create a version of the search term with spaces removed for robust matching.
+        $compact_search_term = str_replace(' ', '', $search_term);
+        $compact_like_term = '%' . $wpdb->esc_like($compact_search_term) . '%';
+
+        // Search title with the original term.
+        // Search pub number with the original term AND a space-removed version.
+        $where_clause .= " AND (p.post_title LIKE %s OR pm_pub_num.meta_value LIKE %s OR REPLACE(pm_pub_num.meta_value, ' ', '') LIKE %s)";
+        
         $search_params[] = $like_term;
         $search_params[] = $like_term;
+        $search_params[] = $compact_like_term;
     }
     
-    // Construct the final query for getting the posts
     $query = "SELECT DISTINCT p.ID, p.post_title, q.status as queue_status, q.queued_at
               FROM {$wpdb->posts} p
               LEFT JOIN {$table_name} q ON p.ID = q.post_id AND q.id = (SELECT id FROM {$table_name} q2 WHERE q2.post_id = p.ID ORDER BY q2.queued_at DESC LIMIT 1)
@@ -515,7 +518,6 @@ function fr2025_ajax_get_publications_table() {
               
     $publications = $wpdb->get_results($wpdb->prepare($query, array_merge($search_params, [$per_page, $offset])));
     
-    // Construct the query for the total count
     $total_query = "SELECT COUNT(DISTINCT p.ID) 
                     FROM {$wpdb->posts} p
                     {$search_joins}
@@ -640,7 +642,7 @@ function fr2025_ajax_queue_single_pdf()
 }
 
 /**
- * NEW: Queue multiple PDFs for generation
+ * Queue multiple PDFs for generation
  */
 function fr2025_ajax_queue_bulk_pdfs()
 {
@@ -682,7 +684,7 @@ function fr2025_ajax_queue_bulk_pdfs()
 /**
  * AJAX handler to clear cron lock and remove stuck processes
  */
-function fr2025_ajax_clear_cron_lock() {
+function fr2025_ajax_clear_ cron_lock() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     
     if (!current_user_can('manage_options')) {
