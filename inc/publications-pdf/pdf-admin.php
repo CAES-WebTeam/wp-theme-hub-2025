@@ -560,6 +560,9 @@ add_action('wp_ajax_fr2025_cancel_bulk_pdfs', 'fr2025_ajax_cancel_bulk_pdfs'); /
 /**
  * Get publications table with all PDF status information
  */
+/**
+ * Get publications table with all PDF status information
+ */
 function fr2025_ajax_get_publications_table() {
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) wp_send_json_error('Insufficient permissions');
@@ -569,17 +572,17 @@ function fr2025_ajax_get_publications_table() {
     $search_term = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
     $per_page = 25;
     $offset = ($page - 1) * $per_page;
-    
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'pdf_generation_queue';
-    
+
     $where_clause = "p.post_type = 'publications' AND p.post_status = 'publish'";
-    
+
     if ($filter_no_manual) {
         $manual_pdf_post_ids = $wpdb->get_col(
             "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'pdf' AND meta_value IS NOT NULL AND meta_value != '' AND meta_value != 'a:0:{}'"
         );
-        
+
         if (!empty($manual_pdf_post_ids)) {
             $manual_pdf_ids_string = implode(',', array_map('intval', $manual_pdf_post_ids));
             $where_clause .= " AND p.ID NOT IN ($manual_pdf_ids_string)";
@@ -590,18 +593,18 @@ function fr2025_ajax_get_publications_table() {
     $search_params = [];
     if (!empty($search_term)) {
         $search_joins = "LEFT JOIN {$wpdb->postmeta} pm_pub_num ON p.ID = pm_pub_num.post_id AND pm_pub_num.meta_key = 'publication_number'";
-        
+
         $like_term = '%' . $wpdb->esc_like($search_term) . '%';
         $compact_search_term = str_replace(' ', '', $search_term);
         $compact_like_term = '%' . $wpdb->esc_like($compact_search_term) . '%';
 
         $where_clause .= " AND (p.post_title LIKE %s OR pm_pub_num.meta_value LIKE %s OR REPLACE(pm_pub_num.meta_value, ' ', '') LIKE %s)";
-        
+
         $search_params[] = $like_term;
         $search_params[] = $like_term;
         $search_params[] = $compact_like_term;
     }
-    
+
     $query = "SELECT DISTINCT p.ID, p.post_title, q.status as queue_status, q.queued_at
               FROM {$wpdb->posts} p
               LEFT JOIN {$table_name} q ON p.ID = q.post_id AND q.id = (SELECT id FROM {$table_name} q2 WHERE q2.post_id = p.ID ORDER BY q2.queued_at DESC LIMIT 1)
@@ -609,14 +612,14 @@ function fr2025_ajax_get_publications_table() {
               WHERE {$where_clause}
               ORDER BY CASE WHEN q.status = 'processing' THEN 1 WHEN q.status = 'pending' THEN 2 ELSE 3 END, q.queued_at DESC, p.post_title
               LIMIT %d OFFSET %d";
-              
+
     $publications = $wpdb->get_results($wpdb->prepare($query, array_merge($search_params, [$per_page, $offset])));
-    
-    $total_query = "SELECT COUNT(DISTINCT p.ID) 
+
+    $total_query = "SELECT COUNT(DISTINCT p.ID)
                     FROM {$wpdb->posts} p
                     {$search_joins}
                     WHERE {$where_clause}";
-                    
+
     $total_pubs = $wpdb->get_var($wpdb->prepare($total_query, $search_params));
 
     $html = '<table class="publications-table">';
@@ -629,28 +632,26 @@ function fr2025_ajax_get_publications_table() {
     $html .= '<th>Last Generated</th>';
     $html .= '<th>Actions</th>';
     $html .= '</tr></thead><tbody>';
-    
+
     if (empty($publications)) {
         $html .= '<tr><td colspan="7" style="text-align:center; padding: 20px;">No publications found matching your criteria.</td></tr>';
     } else {
         foreach ($publications as $pub) {
+            // --- 1. Gather all data for the row ---
             $pub_number = get_field('publication_number', $pub->ID);
             $manual_pdf = get_field('pdf', $pub->ID);
             $generated_pdf = get_field('pdf_download_url', $pub->ID);
-            
             $queue_item = $wpdb->get_row($wpdb->prepare("SELECT status, completed_at, queued_at FROM {$table_name} WHERE post_id = %d ORDER BY queued_at DESC LIMIT 1", $pub->ID));
-            
             $row_class = ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) ? ' class="recently-queued"' : '';
-            $status_for_js = 'none'; // Default status for JS
-            
-            $html .= '<tr' . $row_class . '>';
-            
+
+            // Manual PDF Status
             $manual_status = '<span class="status-indicator status-missing"></span>No';
             if ((is_array($manual_pdf) && !empty($manual_pdf['url'])) || (is_string($manual_pdf) && filter_var($manual_pdf, FILTER_VALIDATE_URL))) {
                 $manual_status = '<span class="status-indicator status-manual"></span>Yes';
             }
-            $html .= '<td>' . $manual_status . '</td>';
-            
+
+            // Generated PDF Status
+            $status_for_js = 'none';
             $gen_status = '<span class="status-indicator status-missing"></span>Missing';
             if ($queue_item && $queue_item->status === 'processing') {
                 $gen_status = '<span class="status-indicator status-processing"></span>Processing';
@@ -662,13 +663,16 @@ function fr2025_ajax_get_publications_table() {
                 $gen_status = '<span class="status-indicator status-generated"></span>Generated';
                 $status_for_js = 'generated';
             }
-            
-            $html .= '<td><input type="checkbox" class="publication-checkbox" value="' . $pub->ID . '" data-status="' . $status_for_js . '"></td>';
-            $html .= '<td><strong>' . esc_html($pub->post_title) . '</strong></td>';
-            $html .= '<td>' . esc_html($pub_number ?: 'N/A') . '</td>';
-            $html .= '<td>' . $manual_status . '</td>';
-            $html .= '<td>' . $gen_status . '</td>';
-            
+
+            // Last Generated Time
+            $last_generated = 'Never';
+            if ($queue_item && $queue_item->completed_at) {
+                $last_generated = date('M j, Y g:i A', strtotime($queue_item->completed_at));
+            } elseif ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) {
+                $last_generated = 'Queued ' . human_time_diff(strtotime($queue_item->queued_at)) . ' ago';
+            }
+
+            // Actions
             $actions = '';
             if ($manual_pdf && is_array($manual_pdf) && !empty($manual_pdf['url'])) {
                 $actions .= '<a href="' . esc_url($manual_pdf['url']) . '" target="_blank" class="button button-small">Manual PDF</a> ';
@@ -676,24 +680,30 @@ function fr2025_ajax_get_publications_table() {
             if ($generated_pdf) {
                 $actions .= '<a href="' . esc_url($generated_pdf) . '" target="_blank" class="button button-small">Generated PDF</a> ';
             }
-            
             if ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) {
                 $actions .= '<button class="button button-small button-secondary cancel-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">Cancel</button>';
             } else {
                 $button_text = $generated_pdf ? 'Regenerate' : 'Generate';
                 $actions .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
             }
-            
             $actions .= '<a href="' . esc_url(get_edit_post_link($pub->ID)) . '" style="margin-left: 5px;" title="Edit Publication">Edit</a>';
             $actions .= '<a href="' . esc_url(get_permalink($pub->ID)) . '" target="_blank" style="margin-left: 5px;" title="View Publication on site">View</a> ';
-            
-            $html .= '<td>' . rtrim($actions) . '</td>';
+
+            // --- 2. Build the HTML row in the correct order ---
+            $html .= '<tr' . $row_class . '>';
+            $html .= '<td><input type="checkbox" class="publication-checkbox" value="' . $pub->ID . '" data-status="' . $status_for_js . '"></td>'; // Col 1: Checkbox
+            $html .= '<td><strong>' . esc_html($pub->post_title) . '</strong></td>'; // Col 2: Publication
+            $html .= '<td>' . esc_html($pub_number ?: 'N/A') . '</td>'; // Col 3: Publication #
+            $html .= '<td>' . $manual_status . '</td>'; // Col 4: Manual PDF
+            $html .= '<td>' . $gen_status . '</td>'; // Col 5: Generated PDF Status
+            $html .= '<td>' . $last_generated . '</td>'; // Col 6: Last Generated
+            $html .= '<td>' . rtrim($actions) . '</td>'; // Col 7: Actions
             $html .= '</tr>';
         }
     }
-    
+
     $html .= '</tbody></table>';
-    
+
     $total_pages = ceil($total_pubs / $per_page);
     if ($total_pages > 1) {
         $html .= '<div class="pagination-controls">';
@@ -712,7 +722,7 @@ function fr2025_ajax_get_publications_table() {
         }
         $html .= '</div>';
     }
-    
+
     wp_send_json_success(['html' => $html, 'page' => $page, 'count' => count($publications), 'total' => $total_pubs]);
 }
 
