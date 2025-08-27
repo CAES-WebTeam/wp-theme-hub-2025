@@ -193,8 +193,8 @@ function fr2025_add_pdf_maintenance_page()
 {
     add_submenu_page(
         'edit.php?post_type=publications',
-        'PDF Management',
-        'PDF Management',
+        'PDF Maintenance',
+        'PDF Maintenance',
         'manage_options',
         'fr2025-pdf-maintenance',
         'fr2025_render_pdf_maintenance_page'
@@ -208,8 +208,13 @@ function fr2025_render_pdf_maintenance_page()
     <div class="wrap">
         <h1>PDF Management</h1>
 
-        <div style="background: #f1f1f1; padding: 15px; border-radius: 5px; margin: 20px 0; display: flex; align-items: center; gap: 15px;">
-            <button id="refresh-table" class="button button-primary">Refresh Table</button>
+        <div style="background: #f1f1f1; padding: 15px; border-radius: 5px; margin: 20px 0; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            
+            <div style="display: flex; flex-grow: 1; min-width: 250px;">
+                <input type="search" id="publication-search" placeholder="Search by title or pub #" style="width: 100%; margin-right: -1px;">
+                <button id="search-button" class="button">Search</button>
+            </div>
+
             <button id="queue-selected-pdfs" class="button button-primary" disabled>Queue Selected PDFs</button>
             <button id="clear-cron-lock" class="button button-secondary">Clear Stuck Processes</button>
 
@@ -218,7 +223,7 @@ function fr2025_render_pdf_maintenance_page()
                 Show only publications without manual PDFs
             </label>
 
-            <span id="status-message" style="margin-left: 20px; color: #666;"></span>
+            <span id="status-message" style="margin-left: 20px; color: #666; width: 100%; text-align: right;"></span>
         </div>
 
         <div id="publications-table-container">
@@ -228,8 +233,10 @@ function fr2025_render_pdf_maintenance_page()
         <script>
 jQuery(document).ready(function($) {
     var currentPage = 1;
-    var filterNoManual = true; // MODIFIED: Default to true
-    
+    var filterNoManual = true;
+    var searchTerm = ''; // NEW: Search term state
+    var searchTimeout; // NEW: Timeout for debouncing search input
+
     function setStatus(message, type = 'info') {
         var color = type === 'error' ? 'red' : (type === 'success' ? 'green' : '#666');
         $('#status-message').html('<span style="color:' + color + ';">' + message + '</span>');
@@ -239,6 +246,9 @@ jQuery(document).ready(function($) {
         setStatus('Loading publications...');
         $('#publications-table-container').html('<p style="color: #ff9800;">Loading page ' + page + '...</p>');
         
+        // Clear any existing timeout
+        clearTimeout(searchTimeout);
+
         $.ajax({
             url: ajaxurl,
             type: 'POST',
@@ -246,15 +256,18 @@ jQuery(document).ready(function($) {
                 action: 'fr2025_get_publications_table',
                 page: page,
                 filter_no_manual: filterNoManual ? 1 : 0,
+                search: searchTerm, // NEW: Pass search term
                 _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
             },
             success: function(response) {
                 if (response.success) {
                     $('#publications-table-container').html(response.data.html);
                     currentPage = response.data.page;
-                    var filterText = filterNoManual ? ' (filtered)' : '';
-                    setStatus('Page ' + page + ' loaded (' + response.data.count + ' publications)' + filterText, 'success');
-                    updateBulkButtonState(); // Ensure button state is correct after table load
+                    var statusText = 'Page ' + page + ' loaded (' + response.data.total + ' total publications found)';
+                    if (filterNoManual) statusText += ' (filtered)';
+                    if (searchTerm) statusText += ' for search term "' + searchTerm + '"';
+                    setStatus(statusText, 'success');
+                    updateBulkButtonState();
                 } else {
                     $('#publications-table-container').html('<p style="color: red;">Error: ' + response.data + '</p>');
                     setStatus('Error loading table', 'error');
@@ -267,7 +280,6 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // NEW: Function to manage the state of the bulk action button
     function updateBulkButtonState() {
         var checkedCount = $('.publication-checkbox:checked').length;
         if (checkedCount > 0) {
@@ -278,13 +290,30 @@ jQuery(document).ready(function($) {
     }
 
     // --- Event handlers ---
-    $('#refresh-table').on('click', function() {
-        loadPublicationsTable(currentPage);
+    
+    // NEW: Search functionality with debouncing
+    $('#publication-search').on('keyup', function() {
+        clearTimeout(searchTimeout);
+        var newSearchTerm = $(this).val();
+        
+        searchTimeout = setTimeout(function() {
+            if (newSearchTerm !== searchTerm) {
+                searchTerm = newSearchTerm;
+                currentPage = 1; // Reset to first page
+                loadPublicationsTable(1);
+            }
+        }, 500); // 500ms delay after user stops typing
+    });
+
+    $('#search-button').on('click', function() {
+        searchTerm = $('#publication-search').val();
+        currentPage = 1; // Reset to first page
+        loadPublicationsTable(1);
     });
     
     $('#filter-no-manual').on('change', function() {
         filterNoManual = $(this).is(':checked');
-        currentPage = 1; // Reset to first page when filtering
+        currentPage = 1;
         loadPublicationsTable(1);
     });
     
@@ -304,7 +333,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // --- NEW: Event handlers for bulk actions ---
     $('#queue-selected-pdfs').on('click', function() {
         var postIds = $('.publication-checkbox:checked').map(function() {
             return $(this).val();
@@ -333,7 +361,7 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     setStatus(response.data.message, 'success');
-                    loadPublicationsTable(currentPage); // Refresh table
+                    loadPublicationsTable(currentPage);
                 } else {
                     setStatus('Error queuing PDFs: ' + response.data, 'error');
                 }
@@ -352,12 +380,10 @@ jQuery(document).ready(function($) {
         loadPublicationsTable(page);
     });
     
-    // NEW: Delegated handler for individual checkboxes
     $(document).on('change', '.publication-checkbox', function() {
         updateBulkButtonState();
     });
 
-    // NEW: Delegated handler for "select all" checkbox
     $(document).on('change', '#select-all-publications', function() {
         $('.publication-checkbox').prop('checked', $(this).is(':checked'));
         updateBulkButtonState();
@@ -430,11 +456,10 @@ jQuery(document).ready(function($) {
 <?php
 }
 
-// Replace all the existing AJAX handlers with these
 add_action('wp_ajax_fr2025_get_publications_table', 'fr2025_ajax_get_publications_table');
 add_action('wp_ajax_fr2025_queue_single_pdf', 'fr2025_ajax_queue_single_pdf');
 add_action('wp_ajax_fr2025_clear_cron_lock', 'fr2025_ajax_clear_cron_lock');
-add_action('wp_ajax_fr2025_queue_bulk_pdfs', 'fr2025_ajax_queue_bulk_pdfs'); // NEW ACTION
+add_action('wp_ajax_fr2025_queue_bulk_pdfs', 'fr2025_ajax_queue_bulk_pdfs');
 
 /**
  * Get publications table with all PDF status information
@@ -445,14 +470,17 @@ function fr2025_ajax_get_publications_table() {
 
     $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
     $filter_no_manual = isset($_POST['filter_no_manual']) && $_POST['filter_no_manual'] == '1';
+    $search_term = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : ''; // NEW: Get search term
     $per_page = 25;
     $offset = ($page - 1) * $per_page;
     
     global $wpdb;
     $table_name = $wpdb->prefix . 'pdf_generation_queue';
     
-    $where_clause = "WHERE p.post_type = 'publications' AND p.post_status = 'publish'";
+    // Base WHERE clause
+    $where_clause = "p.post_type = 'publications' AND p.post_status = 'publish'";
     
+    // Filter for publications without manual PDFs
     if ($filter_no_manual) {
         $manual_pdf_post_ids = $wpdb->get_col(
             "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'pdf' AND meta_value IS NOT NULL AND meta_value != '' AND meta_value != 'a:0:{}'"
@@ -463,22 +491,41 @@ function fr2025_ajax_get_publications_table() {
             $where_clause .= " AND p.ID NOT IN ($manual_pdf_ids_string)";
         }
     }
+
+    // NEW: Add search conditions
+    $search_joins = '';
+    $search_params = [];
+    if (!empty($search_term)) {
+        // We need to join postmeta to search the publication number
+        $search_joins = "LEFT JOIN {$wpdb->postmeta} pm_pub_num ON p.ID = pm_pub_num.post_id AND pm_pub_num.meta_key = 'publication_number'";
+        $where_clause .= " AND (p.post_title LIKE %s OR pm_pub_num.meta_value LIKE %s)";
+        $like_term = '%' . $wpdb->esc_like($search_term) . '%';
+        $search_params[] = $like_term;
+        $search_params[] = $like_term;
+    }
     
-    $publications = $wpdb->get_results($wpdb->prepare(
-        "SELECT p.ID, p.post_title, q.status as queue_status, q.queued_at
-         FROM {$wpdb->posts} p
-         LEFT JOIN {$table_name} q ON p.ID = q.post_id AND q.id = (SELECT id FROM {$table_name} q2 WHERE q2.post_id = p.ID ORDER BY q2.queued_at DESC LIMIT 1)
-         $where_clause
-         ORDER BY CASE WHEN q.status = 'processing' THEN 1 WHEN q.status = 'pending' THEN 2 ELSE 3 END, q.queued_at DESC, p.post_title
-         LIMIT %d OFFSET %d",
-        $per_page, $offset
-    ));
+    // Construct the final query for getting the posts
+    $query = "SELECT DISTINCT p.ID, p.post_title, q.status as queue_status, q.queued_at
+              FROM {$wpdb->posts} p
+              LEFT JOIN {$table_name} q ON p.ID = q.post_id AND q.id = (SELECT id FROM {$table_name} q2 WHERE q2.post_id = p.ID ORDER BY q2.queued_at DESC LIMIT 1)
+              {$search_joins}
+              WHERE {$where_clause}
+              ORDER BY CASE WHEN q.status = 'processing' THEN 1 WHEN q.status = 'pending' THEN 2 ELSE 3 END, q.queued_at DESC, p.post_title
+              LIMIT %d OFFSET %d";
+              
+    $publications = $wpdb->get_results($wpdb->prepare($query, array_merge($search_params, [$per_page, $offset])));
     
-    $total_pubs = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} p $where_clause");
-    
+    // Construct the query for the total count
+    $total_query = "SELECT COUNT(DISTINCT p.ID) 
+                    FROM {$wpdb->posts} p
+                    {$search_joins}
+                    WHERE {$where_clause}";
+                    
+    $total_pubs = $wpdb->get_var($wpdb->prepare($total_query, $search_params));
+
     $html = '<table class="publications-table">';
     $html .= '<thead><tr>';
-    $html .= '<th><input type="checkbox" id="select-all-publications"></th>'; // MODIFIED: Added select-all checkbox
+    $html .= '<th><input type="checkbox" id="select-all-publications"></th>';
     $html .= '<th>Publication</th>';
     $html .= '<th>Publication #</th>';
     $html .= '<th>Manual PDF</th>';
@@ -500,7 +547,7 @@ function fr2025_ajax_get_publications_table() {
             $row_class = ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) ? ' class="recently-queued"' : '';
             
             $html .= '<tr' . $row_class . '>';
-            $html .= '<td><input type="checkbox" class="publication-checkbox" value="' . $pub->ID . '"></td>'; // MODIFIED: Added row checkbox
+            $html .= '<td><input type="checkbox" class="publication-checkbox" value="' . $pub->ID . '"></td>';
             $html .= '<td><strong>' . esc_html($pub->post_title) . '</strong></td>';
             $html .= '<td>' . esc_html($pub_number ?: 'N/A') . '</td>';
             
@@ -528,28 +575,24 @@ function fr2025_ajax_get_publications_table() {
             }
             $html .= '<td>' . $last_generated . '</td>';
             
-            // MODIFIED: Reordered actions
             $actions = '';
             if ($manual_pdf && is_array($manual_pdf) && !empty($manual_pdf['url'])) {
-                $actions .= '<a href="' . esc_url($manual_pdf['url']) . '" target="_blank" class="button button-small" style="margin:5px 0 0 0">Manual PDF</a> ';
+                $actions .= '<a href="' . esc_url($manual_pdf['url']) . '" target="_blank" class="button button-small">Manual PDF</a> ';
             }
             if ($generated_pdf) {
-                $actions .= '<a href="' . esc_url($generated_pdf) . '" target="_blank" class="button button-small" style="margin:5px 0 0 0">View Generated PDF</a> ';
+                $actions .= '<a href="' . esc_url($generated_pdf) . '" target="_blank" class="button button-small">Generated PDF</a> ';
             }
             
             if ($queue_item && in_array($queue_item->status, ['processing', 'pending'])) {
                 $actions .= '<span style="color: #ff9800;">Processing...</span>';
             } else {
                 $button_text = $generated_pdf ? 'Regenerate' : 'Generate';
-                $actions .= '<button style="margin:5px 0 0 0" class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
+                $actions .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
             }
             
-            $actions .= '<div style="margin: 5px 0 0 0; font-size: 0.9em;">';
             $actions .= '<a href="' . esc_url(get_edit_post_link($pub->ID)) . '" style="margin-left: 5px;" title="Edit Publication">Edit</a>';
             $actions .= '<a href="' . esc_url(get_permalink($pub->ID)) . '" target="_blank" style="margin-left: 5px;" title="View Publication on site">View</a> ';
-            $acitons .= '</div>';
-
-
+            
             $html .= '<td>' . rtrim($actions) . '</td>';
             $html .= '</tr>';
         }
