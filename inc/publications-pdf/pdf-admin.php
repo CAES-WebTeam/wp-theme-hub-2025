@@ -193,8 +193,8 @@ function fr2025_add_pdf_maintenance_page()
 {
     add_submenu_page(
         'edit.php?post_type=publications',
-        'PDF Maintenance',
-        'PDF Maintenance',
+        'PDF Management',
+        'PDF Management',
         'manage_options',
         'fr2025-pdf-maintenance',
         'fr2025_render_pdf_maintenance_page'
