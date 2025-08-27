@@ -541,7 +541,7 @@ function fr2025_ajax_get_publications_table() {
                 $actions .= '<span style="color: #ff9800;">Processing...</span>';
             } else {
                 $button_text = $generated_pdf ? 'Regenerate' : 'Generate';
-                $actions .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
+                $actions .= '<button style="margin:5px 0 0 0" class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
             }
             
             $actions .= '<div style="margin: 5px 0 0 0; font-size: 0.9em;">';
