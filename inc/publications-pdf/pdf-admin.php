@@ -544,10 +544,12 @@ function fr2025_ajax_get_publications_table() {
                 $actions .= '<button class="button button-small button-primary regenerate-pdf-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '">' . $button_text . '</button>';
             }
             
-            $actions .= '<br/>';
+            $actions .= '<div style="margin: 5px 0 0 0; font-size: 0.9em;">';
             $actions .= '<a href="' . esc_url(get_edit_post_link($pub->ID)) . '" style="margin-left: 5px;" title="Edit Publication">Edit</a>';
             $actions .= '<a href="' . esc_url(get_permalink($pub->ID)) . '" target="_blank" style="margin-left: 5px;" title="View Publication on site">View</a> ';
-            
+            $acitons .= '</div>';
+
+
             $html .= '<td>' . rtrim($actions) . '</td>';
             $html .= '</tr>';
         }
