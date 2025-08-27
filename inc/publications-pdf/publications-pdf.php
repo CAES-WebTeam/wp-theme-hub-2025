@@ -12,10 +12,10 @@ require_once get_template_directory() . '/inc/tcpdf/tcpdf.php';
 function normalize_hyphens_for_pdf($content)
 {
     // Only convert Unicode true hyphen (U+2010) to ASCII hyphen-minus (U+002D)
-    // Preserve em dashes (—) and en dashes (–) as they serve different purposes
+    // Preserve em dashes (â€") and en dashes (â€") as they serve different purposes
     $replacements = [
-        '‐' => '-',        // U+2010 (true hyphen) → regular hyphen
-        'â€' => '-',     // Corrupted encoding of true hyphen
+        'â€' => '-',        // U+2010 (true hyphen) â†' regular hyphen
+        'Ã¢â‚¬' => '-',     // Corrupted encoding of true hyphen
         "\u{2010}" => '-', // Unicode escape for true hyphen
     ];
 
@@ -490,7 +490,7 @@ class MYPDF extends TCPDF
     {
         if ($this->last_page_flag) {
             // SPECIAL FOOTER FOR LAST PAGE ONLY
-            $this->SetY(-50); // Start 50mm from bottom for special footer
+            $this->SetY(-60); // Increased from -50 to -60 to accommodate permalink
             $y_position = $this->GetY();
             $margins = $this->getMargins();
             $page_width = $this->getPageWidth();
@@ -538,7 +538,17 @@ class MYPDF extends TCPDF
             $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
 
             $this->SetFont('georgia', '', 7);
-            $this->writeHTMLCell($content_width, 30, $margins['left'], $y_position, $footer_paragraph, 0, 0, false, true, 'L');
+            $this->writeHTMLCell($content_width, 25, $margins['left'], $y_position, $footer_paragraph, 0, 0, false, true, 'L');
+            $y_position += 25; // Move down after footer paragraph
+
+            // Add permalink information
+            $permalink_url = get_permalink($this->post_id);
+            if (!empty($permalink_url)) {
+                $permalink_text = 'The permalink for this UGA Extension publication is <a href="' . esc_url($permalink_url) . '">' . esc_html($permalink_url) . '</a>';
+                
+                $this->SetFont('georgia', '', 7);
+                $this->writeHTMLCell($content_width, 10, $margins['left'], $y_position, $permalink_text, 0, 0, false, true, 'L');
+            }
         } else {
             // REGULAR FOOTER FOR ALL OTHER CONTENT PAGES
             // Set position at 15 mm from bottom
@@ -941,7 +951,7 @@ function generate_publication_pdf_file($post_id)
 
         // Load Georgia bold italic for <strong><em> tags to work
         $fontpath_bold_italic = get_template_directory() . '/assets/fonts/Georgia-Bold-Italic.ttf';
-        TCPDF_FONTS::addTTFfont($fontpath_bold_italic, 'TrueTypeUnicode', '', 32);
+        TCPDF_FONTS::addTTFFont($fontpath_bold_italic, 'TrueTypeUnicode', '', 32);
 
         // Set default page margins.
         $pdf->SetMargins(15, 15, 15);
@@ -1003,7 +1013,7 @@ function generate_publication_pdf_file($post_id)
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(true);
         $pdf->SetFont('georgia', '', 12);
-        $pdf->SetAutoPageBreak(true, 50);
+        $pdf->SetAutoPageBreak(true, 60); // Increased from 50 to 60 to accommodate permalink
         $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 
         $post_content = $post->post_content;
