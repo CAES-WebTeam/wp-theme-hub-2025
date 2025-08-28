@@ -131,6 +131,7 @@ if ($feed_type === 'hand-picked') {
         if (count($primary_posts) > 0) {
             foreach ($primary_posts as $p) {
                 echo '  - ' . $p->ID . ': ' . get_the_title($p->ID) . '<br>';
+                echo '    → Matched on PRIMARY TOPIC: "' . $primary_topic_name . '"<br>';
             }
         } else {
             echo '  (none found)<br>';
@@ -149,6 +150,12 @@ if ($feed_type === 'hand-picked') {
             $all_topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'all'));
             $all_topic_ids = wp_list_pluck($all_topics, 'term_id');
             $filtered_topics = array_diff($all_topic_ids, array(1634)); // Remove "Departments"
+            
+            // Create a lookup for topic names
+            $topic_names_lookup = array();
+            foreach ($all_topics as $topic) {
+                $topic_names_lookup[$topic->term_id] = $topic->name;
+            }
             
             echo 'All topics on current post: ';
             foreach ($all_topics as $topic) {
@@ -177,6 +184,20 @@ if ($feed_type === 'hand-picked') {
                 echo 'Found ' . count($additional_posts) . ' additional posts:<br>';
                 foreach ($additional_posts as $p) {
                     echo '  - ' . $p->ID . ': ' . get_the_title($p->ID) . '<br>';
+                    
+                    // Show which topics matched
+                    $post_topics = wp_get_post_terms($p->ID, 'topics', array('fields' => 'ids'));
+                    $matching_topics = array_intersect($filtered_topics, $post_topics);
+                    if (!empty($matching_topics)) {
+                        echo '    → Matched on: ';
+                        $matched_names = array();
+                        foreach ($matching_topics as $topic_id) {
+                            if (isset($topic_names_lookup[$topic_id])) {
+                                $matched_names[] = '"' . $topic_names_lookup[$topic_id] . '"';
+                            }
+                        }
+                        echo implode(', ', $matched_names) . '<br>';
+                    }
                 }
             } else {
                 echo 'No topics available for additional matching<br>';
@@ -209,6 +230,12 @@ if ($feed_type === 'hand-picked') {
         $all_topic_ids = wp_list_pluck($topics, 'term_id');
         $filtered_topics = array_diff($all_topic_ids, array(1634)); // Remove "Departments"
         
+        // Create a lookup for topic names
+        $topic_names_lookup = array();
+        foreach ($topics as $topic) {
+            $topic_names_lookup[$topic->term_id] = $topic->name;
+        }
+        
         // Debug output
         echo '<div style="background: #fff8dc; border: 2px solid #ffa500; padding: 15px; margin: 10px 0; font-family: monospace; font-size: 14px;">';
         echo '<strong>Related Posts Debug Info:</strong><br>';
@@ -238,6 +265,20 @@ if ($feed_type === 'hand-picked') {
                 $count = 1;
                 foreach ($block_query->posts as $p) {
                     echo $count . '. ' . $p->ID . ': ' . get_the_title($p->ID) . '<br>';
+                    
+                    // Show which topics matched
+                    $post_topics = wp_get_post_terms($p->ID, 'topics', array('fields' => 'ids'));
+                    $matching_topics = array_intersect($filtered_topics, $post_topics);
+                    if (!empty($matching_topics)) {
+                        echo '    → Matched on: ';
+                        $matched_names = array();
+                        foreach ($matching_topics as $topic_id) {
+                            if (isset($topic_names_lookup[$topic_id])) {
+                                $matched_names[] = '"' . $topic_names_lookup[$topic_id] . '"';
+                            }
+                        }
+                        echo implode(', ', $matched_names) . '<br>';
+                    }
                     $count++;
                 }
             } else {
