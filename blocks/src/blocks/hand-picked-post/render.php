@@ -79,6 +79,12 @@ if ($feed_type === 'hand-picked') {
 
     // Try to get topics taxonomy terms (changed from keywords to topics)
     $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
+    // Add this right after getting topics
+    if (empty($topics)) {
+        error_log('Hand Picked Post Block: No topics found for post ID ' . $post->ID . ' - Title: ' . get_the_title($post->ID));
+    } else {
+        error_log('Hand Picked Post Block: Found topics for post ID ' . $post->ID . ': ' . implode(', ', $topics));
+    }
 
     if (is_wp_error($topics)) {
         // error_log( 'Hand Picked Post Block: Error getting topics: ' . $topics->get_error_message() );
