@@ -124,7 +124,9 @@ if ($feed_type === 'hand-picked') {
             $found_post_ids[] = $post_obj->ID;
         }
         
-        // error_log('Hand Picked Post Block: Stage 1 - Found ' . count($primary_posts) . ' posts with matching primary_topics');
+        // Brief debug output
+        $primary_topic_name = $primary_topic[0]->name ?? 'Unknown';
+        echo '<!-- Related Posts Debug: Primary topic "' . $primary_topic_name . '" found ' . count($primary_posts) . ' matches -->';
         
         // Stage 2: Fill remaining slots with regular topic matches (if needed)
         $remaining_slots = $number_of_posts - count($primary_posts);
@@ -152,8 +154,7 @@ if ($feed_type === 'hand-picked') {
                 $additional_query = new WP_Query($additional_query_args);
                 $additional_posts = $additional_query->posts;
                 
-                // error_log('Hand Picked Post Block: Stage 2 - Found ' . count($additional_posts) . ' additional posts from filtered topics');
-                // error_log('Hand Picked Post Block: Excluded topics: 1634 (Departments)');
+                echo '<!-- Related Posts Debug: Additional ' . count($additional_posts) . ' posts from regular topics (excluded Departments) -->';
             }
         }
         
@@ -166,12 +167,12 @@ if ($feed_type === 'hand-picked') {
         $block_query->found_posts = count($combined_posts);
         $block_query->post_count = count($combined_posts);
         
-        // error_log('Hand Picked Post Block: Combined results - Total: ' . count($combined_posts) . ' posts');
-        
     } else {
         // No primary topic set - use regular topics taxonomy (excluding Departments)
         $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
         $filtered_topics = array_diff($topics, array(1634)); // Remove "Departments"
+        
+        echo '<!-- Related Posts Debug: No primary topic set, using ' . count($filtered_topics) . ' regular topics (excluded Departments) -->';
         
         // error_log('Hand Picked Post Block: No primary topic - using filtered topics: ' . print_r($filtered_topics, true));
         
