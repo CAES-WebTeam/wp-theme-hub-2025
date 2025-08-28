@@ -143,6 +143,7 @@ if ($feed_type === 'hand-picked') {
                 'field'    => 'term_id',
                 'terms'    => $topics,
                 'operator' => 'IN',
+                'include_children' => false
             ),
         );
 
