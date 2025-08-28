@@ -212,6 +212,81 @@ if ($block_query->found_posts > 0) {
 echo '</div>';
 // END DEBUG
 
+// DEBUG: Check primary_topic ACF field alternative
+echo '<div style="background: #f3e5f5; padding: 10px; margin: 10px 0; border: 1px solid #9c27b0;">';
+echo '<h4>PRIMARY TOPIC ALTERNATIVE ANALYSIS:</h4>';
+
+$primary_topic = get_field('primary_topic', $post->ID);
+echo '<p><strong>Current Post Primary Topic:</strong> ';
+if ($primary_topic) {
+    if (is_object($primary_topic)) {
+        echo 'ID: ' . $primary_topic->term_id . ' - Name: "' . $primary_topic->name . '"';
+        $primary_topic_id = $primary_topic->term_id;
+    } elseif (is_array($primary_topic)) {
+        echo 'ID: ' . $primary_topic['term_id'] . ' - Name: "' . $primary_topic['name'] . '"';
+        $primary_topic_id = $primary_topic['term_id'];
+    } else {
+        echo 'ID: ' . $primary_topic;
+        $primary_topic_id = $primary_topic;
+    }
+} else {
+    echo 'NONE SET';
+    $primary_topic_id = null;
+}
+echo '</p>';
+
+if ($primary_topic_id) {
+    // Test query using primary_topic
+    $primary_topic_query_args = array(
+        'posts_per_page'      => 10, // Get more to see variety
+        'ignore_sticky_posts' => 1,
+        'post_type'           => $post_type,
+        'post__not_in'        => array($post->ID),
+        'post_status'         => 'publish',
+        'meta_query'          => array(
+            array(
+                'key'     => 'primary_topic',
+                'value'   => $primary_topic_id,
+                'compare' => '='
+            )
+        )
+    );
+    
+    $primary_topic_query = new WP_Query($primary_topic_query_args);
+    
+    echo '<p><strong>Primary Topic Query Results:</strong> Found ' . $primary_topic_query->found_posts . ' posts</p>';
+    
+    if ($primary_topic_query->have_posts()) {
+        echo '<p><strong>Posts that would match using primary_topic:</strong></p>';
+        echo '<ul>';
+        $count = 0;
+        while ($primary_topic_query->have_posts() && $count < 10) {
+            $primary_topic_query->the_post();
+            $matched_primary = get_field('primary_topic', get_the_ID());
+            $matched_primary_name = '';
+            if (is_object($matched_primary)) {
+                $matched_primary_name = $matched_primary->name;
+            } elseif (is_array($matched_primary)) {
+                $matched_primary_name = $matched_primary['name'];
+            }
+            echo '<li>' . get_the_ID() . ' - ' . get_the_title() . ' (Primary: ' . $matched_primary_name . ')</li>';
+            $count++;
+        }
+        echo '</ul>';
+        wp_reset_postdata();
+    } else {
+        echo '<p>No posts found with matching primary_topic</p>';
+    }
+    
+    echo '<p><strong>SQL for primary_topic query:</strong></p>';
+    echo '<pre style="font-size: 12px; overflow-x: auto;">' . $primary_topic_query->request . '</pre>';
+} else {
+    echo '<p><strong>Cannot test primary_topic:</strong> No primary_topic set for current post</p>';
+}
+
+echo '</div>';
+// END PRIMARY TOPIC DEBUG
+
 $query_end_time = microtime(true);
 
 // Calculate and log query execution time
