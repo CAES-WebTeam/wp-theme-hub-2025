@@ -262,7 +262,7 @@ if ($primary_topic_id) {
         $count = 0;
         while ($primary_topic_query->have_posts() && $count < 10) {
             $primary_topic_query->the_post();
-            $matched_primary = get_field('primary_topic', get_the_ID());
+            $matched_primary = get_field('primary_topics', get_the_ID());
             $matched_primary_name = '';
             if (is_object($matched_primary)) {
                 $matched_primary_name = $matched_primary->name;
