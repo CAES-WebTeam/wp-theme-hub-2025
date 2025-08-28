@@ -1,7 +1,7 @@
 <?php
 // Get attributes with proper defaults to match frontend
 $post_type = isset($block->attributes['postType']) ? $block->attributes['postType'] : ['post'];
-$feed_type = isset($block->attributes['feedType']) ? $block->attributes['feedType'] : 'related-topics'; // Changed default to 'related-topics' for clarity
+$feed_type = isset($block->attributes['feedType']) ? $block->attributes['feedType'] : 'related-topics';
 $number_of_posts = isset($block->attributes['numberOfItems']) ? $block->attributes['numberOfItems'] : 3;
 $post_ids = isset($block->attributes['postIds']) ? $block->attributes['postIds'] : [];
 $query_id = isset($block->attributes['queryId']) ? $block->attributes['queryId'] : 100;
@@ -54,8 +54,6 @@ $start_time = microtime(true);
 if ($feed_type === 'hand-picked') {
     // Hand-picked posts logic
     if (empty($post_ids)) {
-        // No posts selected, don't display anything (fallback behavior)
-        // error_log('Hand Picked Post Block: No post IDs provided for hand-picked feed type.');
         return;
     }
 
@@ -67,6 +65,8 @@ if ($feed_type === 'hand-picked') {
         'orderby'             => 'post__in',
         'post_status'         => 'publish',
     );
+    
+    $block_query = new WP_Query($block_query_args);
 } else {
     // Related topics logic with primary topic priority
     global $post;
@@ -89,8 +89,6 @@ if ($feed_type === 'hand-picked') {
     $primary_topic = get_field('primary_topics', $post->ID);
     $primary_topic_id = null;
 
-    // error_log('Hand Picked Post Block: Post ID ' . $post->ID . ' - Raw primary_topics field: ' . print_r($primary_topic, true));
-
     if ($primary_topic && is_array($primary_topic) && !empty($primary_topic)) {
         $first_topic = $primary_topic[0];
         if (is_object($first_topic)) {
@@ -100,7 +98,6 @@ if ($feed_type === 'hand-picked') {
         } else {
             $primary_topic_id = $first_topic;
         }
-        // error_log('Hand Picked Post Block: Using primary_topics strategy with ID: ' . $primary_topic_id);
     }
 
     if ($primary_topic_id) {
@@ -253,29 +250,9 @@ if ($feed_type === 'hand-picked') {
         
         echo '</div>';
     }
-    }
-}
-
-// Create the query and time its execution (only if not already created above)
-if (!isset($block_query)) {
-    $query_start_time = microtime(true);
-    $block_query = new WP_Query($block_query_args);
-    $query_end_time = microtime(true);
-} else {
-    $query_end_time = microtime(true);
-}
-
-// Log query results
-// error_log('Hand Picked Post Block: Query completed for post ID ' . $post->ID . ' - Found: ' . $block_query->found_posts . ' posts');
-// error_log('Hand Picked Post Block: Final query args: ' . print_r($block_query_args, true));
-
-if ($block_query->found_posts === 0) {
-    // error_log('Hand Picked Post Block: No posts found. SQL query: ' . $block_query->request);
 }
 
 if ($block_query->have_posts()) {
-    // Start timing for rendering
-    $render_start_time = microtime(true);
 ?>
     <div <?php echo wp_kses_post($wrapper_attributes); ?>>
         <div class="<?php echo esc_attr($classes); ?>" style="<?php echo esc_attr($inline_style); ?>">
