@@ -145,6 +145,7 @@ if ($feed_type === 'hand-picked') {
 // Create the query and time its execution
 $query_start_time = microtime(true);
 $block_query = new WP_Query($block_query_args);
+
 // DEBUG: Show query results
 echo '<div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107;">';
 echo '<p><strong>Query Results:</strong> Found ' . $block_query->found_posts . ' posts</p>';
@@ -157,6 +158,32 @@ if ($block_query->found_posts > 0) {
     echo implode(', ', $found_ids) . '</p>';
 }
 echo '</div>';
+
+// DEBUG: Check what topics the found posts actually have
+echo '<div style="background: #e1f5fe; padding: 10px; margin: 10px 0; border: 1px solid #0288d1;">';
+echo '<h4>TOPIC ANALYSIS for Found Posts:</h4>';
+if ($block_query->found_posts > 0) {
+    $temp_posts = $block_query->posts;
+    foreach (array_slice($temp_posts, 0, 3) as $found_post) { // Just check first 3
+        echo '<p><strong>Post: ' . get_the_title($found_post->ID) . ' (ID: ' . $found_post->ID . ')</strong></p>';
+        
+        $post_topics = wp_get_post_terms($found_post->ID, 'topics', array('fields' => 'all'));
+        if (!empty($post_topics)) {
+            echo '<ul>';
+            foreach ($post_topics as $topic) {
+                $is_match = in_array($topic->term_id, $topics) ? ' ✅ MATCH' : '';
+                echo '<li>ID: ' . $topic->term_id . ' - Name: "' . $topic->name . '"' . $is_match . '</li>';
+            }
+            echo '</ul>';
+        } else {
+            echo '<p style="color: red;">No topics found for this post!</p>';
+        }
+        echo '<hr>';
+    }
+}
+echo '</div>';
+// END DEBUG
+
 $query_end_time = microtime(true);
 
 // Calculate and log query execution time
