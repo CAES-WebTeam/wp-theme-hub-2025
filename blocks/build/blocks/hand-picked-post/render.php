@@ -104,28 +104,30 @@ if ($feed_type === 'hand-picked') {
     }
 
     if ($primary_topic_id) {
-        // Use primary topic strategy - more precise matching
-        // ACF stores arrays in serialized format, need to match the serialized string format
-        $block_query_args['meta_query'] = array(
+        // Use primary topic strategy - find posts with this topic anywhere
+        // Instead of only matching primary_topics field, use tax_query to find
+        // any post that has this topic assigned (more inclusive)
+        $block_query_args['tax_query'] = array(
             array(
-                'key'     => 'primary_topics',
-                'value'   => 's:' . strlen($primary_topic_id) . ':"' . $primary_topic_id . '";',
-                'compare' => 'LIKE'
-            )
+                'taxonomy' => 'topics',
+                'field'    => 'term_id',
+                'terms'    => array($primary_topic_id),
+                'operator' => 'IN',
+                'include_children' => false
+            ),
         );
-        error_log('Hand Picked Post Block: Added meta_query for primary_topics with serialized format');
+        error_log('Hand Picked Post Block: Using primary_topics strategy with tax_query for ID: ' . $primary_topic_id);
         
-        // Test the primary_topic query first
+        // Test the query
         $primary_test_query = new WP_Query($block_query_args);
         
         if ($primary_test_query->found_posts > 0) {
             // Primary topic query found results, use it
-            error_log('Hand Picked Post Block: Primary topic query found ' . $primary_test_query->found_posts . ' posts');
+            error_log('Hand Picked Post Block: Primary topic tax_query found ' . $primary_test_query->found_posts . ' posts');
             $block_query = $primary_test_query;
         } else {
-            // No results from primary topic, fall back to topics taxonomy
-            error_log('Hand Picked Post Block: Primary topic found 0 posts, falling back to topics taxonomy');
-            unset($block_query_args['meta_query']);
+            // Still no results, fall back to ALL topics from current post
+            error_log('Hand Picked Post Block: Primary topic found 0 posts, falling back to all topics taxonomy');
             
             $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
             error_log('Hand Picked Post Block: Fallback topics: ' . print_r($topics, true));
