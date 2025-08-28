@@ -106,6 +106,12 @@ if ($feed_type === 'hand-picked') {
     if ($primary_topic_id) {
         // Two-stage approach: prioritize primary topic matches, then fill with regular topic matches
         
+        // Debug output - start
+        echo '<div style="background: #f0f8ff; border: 2px solid #0066cc; padding: 15px; margin: 10px 0; font-family: monospace; font-size: 14px;">';
+        echo '<strong>Related Posts Debug Info:</strong><br>';
+        $primary_topic_name = $primary_topic[0]->name ?? 'Unknown';
+        echo 'Primary Topic: "' . $primary_topic_name . '" (ID: ' . $primary_topic_id . ')<br><br>';
+        
         // Stage 1: Find posts with matching primary_topics (highest priority)
         $primary_query_args = $block_query_args;
         $primary_query_args['meta_query'] = array(
@@ -124,18 +130,35 @@ if ($feed_type === 'hand-picked') {
             $found_post_ids[] = $post_obj->ID;
         }
         
-        // Brief debug output
-        $primary_topic_name = $primary_topic[0]->name ?? 'Unknown';
-        echo '<!-- Related Posts Debug: Primary topic "' . $primary_topic_name . '" found ' . count($primary_posts) . ' matches -->';
+        echo '<strong>Stage 1 - Primary Topic Matches:</strong> ' . count($primary_posts) . ' posts<br>';
+        if (count($primary_posts) > 0) {
+            foreach ($primary_posts as $p) {
+                echo '  - ' . $p->ID . ': ' . get_the_title($p->ID) . '<br>';
+            }
+        } else {
+            echo '  (none found)<br>';
+        }
+        echo '<br>';
         
         // Stage 2: Fill remaining slots with regular topic matches (if needed)
         $remaining_slots = $number_of_posts - count($primary_posts);
         $additional_posts = array();
         
+        echo '<strong>Stage 2 - Regular Topic Matches:</strong><br>';
+        echo 'Remaining slots needed: ' . $remaining_slots . '<br>';
+        
         if ($remaining_slots > 0) {
             // Get all topics for current post, excluding "Departments" (ID 1634)
-            $all_topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
-            $filtered_topics = array_diff($all_topics, array(1634)); // Remove "Departments"
+            $all_topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'all'));
+            $all_topic_ids = wp_list_pluck($all_topics, 'term_id');
+            $filtered_topics = array_diff($all_topic_ids, array(1634)); // Remove "Departments"
+            
+            echo 'All topics on current post: ';
+            foreach ($all_topics as $topic) {
+                $excluded = ($topic->term_id == 1634) ? ' (EXCLUDED)' : '';
+                echo '"' . $topic->name . '"' . $excluded . ', ';
+            }
+            echo '<br>';
             
             if (!empty($filtered_topics)) {
                 $additional_query_args = $block_query_args;
@@ -154,12 +177,28 @@ if ($feed_type === 'hand-picked') {
                 $additional_query = new WP_Query($additional_query_args);
                 $additional_posts = $additional_query->posts;
                 
-                echo '<!-- Related Posts Debug: Additional ' . count($additional_posts) . ' posts from regular topics (excluded Departments) -->';
+                echo 'Found ' . count($additional_posts) . ' additional posts:<br>';
+                foreach ($additional_posts as $p) {
+                    echo '  - ' . $p->ID . ': ' . get_the_title($p->ID) . '<br>';
+                }
+            } else {
+                echo 'No topics available for additional matching<br>';
             }
+        } else {
+            echo 'No additional slots needed<br>';
         }
         
         // Combine results: primary_topic posts first, then additional posts
         $combined_posts = array_merge($primary_posts, $additional_posts);
+        
+        echo '<br><strong>Final Results:</strong> ' . count($combined_posts) . ' total posts<br>';
+        for ($i = 0; $i < count($combined_posts); $i++) {
+            $priority = ($i < count($primary_posts)) ? 'PRIMARY' : 'ADDITIONAL';
+            echo ($i + 1) . '. ' . $combined_posts[$i]->ID . ': ' . get_the_title($combined_posts[$i]->ID) . ' (' . $priority . ')<br>';
+        }
+        
+        echo '</div>';
+        // Debug output - end
         
         // Create a mock query object with combined results
         $block_query = new WP_Query(array('post__in' => array(-1))); // Empty query
@@ -169,12 +208,21 @@ if ($feed_type === 'hand-picked') {
         
     } else {
         // No primary topic set - use regular topics taxonomy (excluding Departments)
-        $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
-        $filtered_topics = array_diff($topics, array(1634)); // Remove "Departments"
+        $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'all'));
+        $all_topic_ids = wp_list_pluck($topics, 'term_id');
+        $filtered_topics = array_diff($all_topic_ids, array(1634)); // Remove "Departments"
         
-        echo '<!-- Related Posts Debug: No primary topic set, using ' . count($filtered_topics) . ' regular topics (excluded Departments) -->';
+        // Debug output
+        echo '<div style="background: #fff8dc; border: 2px solid #ffa500; padding: 15px; margin: 10px 0; font-family: monospace; font-size: 14px;">';
+        echo '<strong>Related Posts Debug Info:</strong><br>';
+        echo 'No Primary Topic Set - Using Regular Topics<br><br>';
         
-        // error_log('Hand Picked Post Block: No primary topic - using filtered topics: ' . print_r($filtered_topics, true));
+        echo 'All topics on current post: ';
+        foreach ($topics as $topic) {
+            $excluded = ($topic->term_id == 1634) ? ' (EXCLUDED)' : '';
+            echo '"' . $topic->name . '"' . $excluded . ', ';
+        }
+        echo '<br><br>';
         
         if (!is_wp_error($filtered_topics) && !empty($filtered_topics)) {
             $block_query_args['tax_query'] = array(
@@ -187,9 +235,24 @@ if ($feed_type === 'hand-picked') {
                 ),
             );
             $block_query = new WP_Query($block_query_args);
+            
+            echo '<strong>Query Results:</strong> ' . $block_query->found_posts . ' posts found<br>';
+            if ($block_query->found_posts > 0) {
+                $count = 1;
+                foreach ($block_query->posts as $p) {
+                    echo $count . '. ' . $p->ID . ': ' . get_the_title($p->ID) . '<br>';
+                    $count++;
+                }
+            } else {
+                echo '  (no posts found)<br>';
+            }
         } else {
             $block_query = new WP_Query($block_query_args);
+            echo '<strong>No topics available for matching</strong><br>';
         }
+        
+        echo '</div>';
+    }
     }
 }
 
