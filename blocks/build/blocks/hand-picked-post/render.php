@@ -105,14 +105,15 @@ if ($feed_type === 'hand-picked') {
 
     if ($primary_topic_id) {
         // Use primary topic strategy - more precise matching
+        // ACF stores arrays in serialized format, need to match the serialized string format
         $block_query_args['meta_query'] = array(
             array(
                 'key'     => 'primary_topics',
-                'value'   => '"' . $primary_topic_id . '"',
+                'value'   => 's:' . strlen($primary_topic_id) . ':"' . $primary_topic_id . '";',
                 'compare' => 'LIKE'
             )
         );
-        error_log('Hand Picked Post Block: Added meta_query for primary_topics');
+        error_log('Hand Picked Post Block: Added meta_query for primary_topics with serialized format');
     } else {
         // Strategy 2: Fallback to topics taxonomy (without child terms)
         $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
