@@ -146,6 +146,12 @@ if ($feed_type === 'hand-picked') {
 $query_start_time = microtime(true);
 $block_query = new WP_Query($block_query_args);
 
+// DEBUG: Show actual SQL query
+echo '<div style="background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid #f44336;">';
+echo '<h4>ACTUAL SQL QUERY:</h4>';
+echo '<pre style="font-size: 12px; overflow-x: auto;">' . $block_query->request . '</pre>';
+echo '</div>';
+
 // DEBUG: Show query results
 echo '<div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107;">';
 echo '<p><strong>Query Results:</strong> Found ' . $block_query->found_posts . ' posts</p>';
