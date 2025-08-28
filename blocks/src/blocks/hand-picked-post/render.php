@@ -75,7 +75,7 @@ if ($feed_type === 'hand-picked') {
     // DEBUG: Add this debugging output
     echo '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">';
     echo '<h4>DEBUG INFO for Related Topics Block:</h4>';
-
+    
     if (! $post) {
         echo '<p><strong>❌ Problem:</strong> Post object is not set.</p>';
         echo '</div>';
@@ -88,33 +88,12 @@ if ($feed_type === 'hand-picked') {
     // Try to get topics taxonomy terms
     $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
 
-    // DEBUG: Check what WordPress is actually using for tax_query
-    $debug_query = new WP_Query(array(
-        'posts_per_page' => 1,
-        'post_type' => 'post',
-        'tax_query' => array(
-            array(
-                'taxonomy' => 'topics',
-                'field' => 'term_id',
-                'terms' => $topics,
-                'operator' => 'IN',
-            ),
-        ),
-    ));
-
-    echo '<div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #4caf50;">';
-    echo '<p><strong>DIRECT DATABASE CHECK:</strong></p>';
-    echo '<p><strong>Input term IDs:</strong> ' . implode(', ', $topics) . '</p>';
-    echo '<p><strong>WordPress converted to term_taxonomy_ids:</strong> Check SQL below...</p>';
-    echo '<pre style="font-size: 12px;">' . $debug_query->request . '</pre>';
-    echo '</div>';
-
     if (is_wp_error($topics)) {
         echo '<p><strong>❌ Error getting topics:</strong> ' . $topics->get_error_message() . '</p>';
         $topics = array();
     } else {
         echo '<p><strong>Topics Found (IDs):</strong> ' . (empty($topics) ? 'NONE' : implode(', ', $topics)) . '</p>';
-
+        
         if (!empty($topics)) {
             // Get topic names for display
             $topic_names = wp_get_post_terms($post->ID, 'topics', array('fields' => 'names'));
@@ -143,10 +122,9 @@ if ($feed_type === 'hand-picked') {
                 'field'    => 'term_id',
                 'terms'    => $topics,
                 'operator' => 'IN',
-                'include_children' => false
             ),
         );
-
+        
         // DEBUG: Show that tax_query was added
         echo '<div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #4caf50;">';
         echo '<p><strong>✅ Tax Query Added:</strong> Looking for posts with topic IDs: ' . implode(', ', $topics) . '</p>';
@@ -168,12 +146,6 @@ if ($feed_type === 'hand-picked') {
 $query_start_time = microtime(true);
 $block_query = new WP_Query($block_query_args);
 
-// DEBUG: Show actual SQL query
-echo '<div style="background: #ffebee; padding: 10px; margin: 10px 0; border: 1px solid #f44336;">';
-echo '<h4>ACTUAL SQL QUERY:</h4>';
-echo '<pre style="font-size: 12px; overflow-x: auto;">' . $block_query->request . '</pre>';
-echo '</div>';
-
 // DEBUG: Show query results
 echo '<div style="background: #fff3cd; padding: 10px; margin: 10px 0; border: 1px solid #ffc107;">';
 echo '<p><strong>Query Results:</strong> Found ' . $block_query->found_posts . ' posts</p>';
@@ -194,7 +166,7 @@ if ($block_query->found_posts > 0) {
     $temp_posts = $block_query->posts;
     foreach (array_slice($temp_posts, 0, 3) as $found_post) { // Just check first 3
         echo '<p><strong>Post: ' . get_the_title($found_post->ID) . ' (ID: ' . $found_post->ID . ')</strong></p>';
-
+        
         $post_topics = wp_get_post_terms($found_post->ID, 'topics', array('fields' => 'all'));
         if (!empty($post_topics)) {
             echo '<ul>';
@@ -210,28 +182,58 @@ if ($block_query->found_posts > 0) {
     }
 }
 echo '</div>';
-// END DEBUG
 
 // DEBUG: Check primary_topic ACF field alternative
 echo '<div style="background: #f3e5f5; padding: 10px; margin: 10px 0; border: 1px solid #9c27b0;">';
 echo '<h4>PRIMARY TOPIC ALTERNATIVE ANALYSIS:</h4>';
 
-$primary_topic = get_field('primary_topic', $post->ID);
+// Try both field names in case there are variations
+$primary_topic = get_field('primary_topics', $post->ID); // Note: plural
+if (!$primary_topic) {
+    $primary_topic = get_field('primary_topic', $post->ID); // Try singular too
+}
+
 echo '<p><strong>Current Post Primary Topic:</strong> ';
 if ($primary_topic) {
-    if (is_object($primary_topic)) {
+    if (is_array($primary_topic) && !empty($primary_topic)) {
+        // Handle array - get first item
+        $first_topic = $primary_topic[0];
+        if (is_object($first_topic)) {
+            echo 'ID: ' . $first_topic->term_id . ' - Name: "' . $first_topic->name . '"';
+            $primary_topic_id = $first_topic->term_id;
+        } elseif (is_array($first_topic)) {
+            echo 'ID: ' . $first_topic['term_id'] . ' - Name: "' . $first_topic['name'] . '"';
+            $primary_topic_id = $first_topic['term_id'];
+        } else {
+            echo 'ID: ' . $first_topic;
+            $primary_topic_id = $first_topic;
+        }
+    } elseif (is_object($primary_topic)) {
         echo 'ID: ' . $primary_topic->term_id . ' - Name: "' . $primary_topic->name . '"';
         $primary_topic_id = $primary_topic->term_id;
-    } elseif (is_array($primary_topic)) {
-        echo 'ID: ' . $primary_topic['term_id'] . ' - Name: "' . $primary_topic['name'] . '"';
-        $primary_topic_id = $primary_topic['term_id'];
     } else {
         echo 'ID: ' . $primary_topic;
         $primary_topic_id = $primary_topic;
     }
+    
+    // Show raw field value for debugging
+    echo '<br><strong>Raw field value:</strong> <pre>' . print_r($primary_topic, true) . '</pre>';
 } else {
     echo 'NONE SET';
     $primary_topic_id = null;
+    
+    // Debug: show what fields are actually available
+    echo '<br><strong>Debug - All ACF fields for this post:</strong><br>';
+    $all_fields = get_fields($post->ID);
+    if ($all_fields) {
+        foreach ($all_fields as $key => $value) {
+            if (strpos(strtolower($key), 'topic') !== false) {
+                echo '- ' . $key . ': <pre>' . print_r($value, true) . '</pre><br>';
+            }
+        }
+    } else {
+        echo 'No ACF fields found';
+    }
 }
 echo '</p>';
 
@@ -245,9 +247,9 @@ if ($primary_topic_id) {
         'post_status'         => 'publish',
         'meta_query'          => array(
             array(
-                'key'     => 'primary_topic',
-                'value'   => $primary_topic_id,
-                'compare' => '='
+                'key'     => 'primary_topics',
+                'value'   => '"' . $primary_topic_id . '"',
+                'compare' => 'LIKE'
             )
         )
     );
@@ -257,17 +259,20 @@ if ($primary_topic_id) {
     echo '<p><strong>Primary Topic Query Results:</strong> Found ' . $primary_topic_query->found_posts . ' posts</p>';
     
     if ($primary_topic_query->have_posts()) {
-        echo '<p><strong>Posts that would match using primary_topic:</strong></p>';
+        echo '<p><strong>Posts that would match using primary_topics:</strong></p>';
         echo '<ul>';
         $count = 0;
         while ($primary_topic_query->have_posts() && $count < 10) {
             $primary_topic_query->the_post();
             $matched_primary = get_field('primary_topics', get_the_ID());
             $matched_primary_name = '';
-            if (is_object($matched_primary)) {
-                $matched_primary_name = $matched_primary->name;
-            } elseif (is_array($matched_primary)) {
-                $matched_primary_name = $matched_primary['name'];
+            if (is_array($matched_primary) && !empty($matched_primary)) {
+                $first_matched = $matched_primary[0];
+                if (is_object($first_matched)) {
+                    $matched_primary_name = $first_matched->name;
+                } elseif (is_array($first_matched)) {
+                    $matched_primary_name = $first_matched['name'];
+                }
             }
             echo '<li>' . get_the_ID() . ' - ' . get_the_title() . ' (Primary: ' . $matched_primary_name . ')</li>';
             $count++;
@@ -275,13 +280,13 @@ if ($primary_topic_id) {
         echo '</ul>';
         wp_reset_postdata();
     } else {
-        echo '<p>No posts found with matching primary_topic</p>';
+        echo '<p>No posts found with matching primary_topics</p>';
     }
     
-    echo '<p><strong>SQL for primary_topic query:</strong></p>';
+    echo '<p><strong>SQL for primary_topics query:</strong></p>';
     echo '<pre style="font-size: 12px; overflow-x: auto;">' . $primary_topic_query->request . '</pre>';
 } else {
-    echo '<p><strong>Cannot test primary_topic:</strong> No primary_topic set for current post</p>';
+    echo '<p><strong>Cannot test primary_topics:</strong> No primary_topics set for current post</p>';
 }
 
 echo '</div>';
