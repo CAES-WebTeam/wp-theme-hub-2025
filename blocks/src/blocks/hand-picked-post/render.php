@@ -75,7 +75,7 @@ if ($feed_type === 'hand-picked') {
     // DEBUG: Add this debugging output
     echo '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">';
     echo '<h4>DEBUG INFO for Related Topics Block:</h4>';
-    
+
     if (! $post) {
         echo '<p><strong>❌ Problem:</strong> Post object is not set.</p>';
         echo '</div>';
@@ -88,12 +88,33 @@ if ($feed_type === 'hand-picked') {
     // Try to get topics taxonomy terms
     $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
 
+    // DEBUG: Check what WordPress is actually using for tax_query
+    $debug_query = new WP_Query(array(
+        'posts_per_page' => 1,
+        'post_type' => 'post',
+        'tax_query' => array(
+            array(
+                'taxonomy' => 'topics',
+                'field' => 'term_id',
+                'terms' => $topics,
+                'operator' => 'IN',
+            ),
+        ),
+    ));
+
+    echo '<div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #4caf50;">';
+    echo '<p><strong>DIRECT DATABASE CHECK:</strong></p>';
+    echo '<p><strong>Input term IDs:</strong> ' . implode(', ', $topics) . '</p>';
+    echo '<p><strong>WordPress converted to term_taxonomy_ids:</strong> Check SQL below...</p>';
+    echo '<pre style="font-size: 12px;">' . $debug_query->request . '</pre>';
+    echo '</div>';
+
     if (is_wp_error($topics)) {
         echo '<p><strong>❌ Error getting topics:</strong> ' . $topics->get_error_message() . '</p>';
         $topics = array();
     } else {
         echo '<p><strong>Topics Found (IDs):</strong> ' . (empty($topics) ? 'NONE' : implode(', ', $topics)) . '</p>';
-        
+
         if (!empty($topics)) {
             // Get topic names for display
             $topic_names = wp_get_post_terms($post->ID, 'topics', array('fields' => 'names'));
@@ -124,7 +145,7 @@ if ($feed_type === 'hand-picked') {
                 'operator' => 'IN',
             ),
         );
-        
+
         // DEBUG: Show that tax_query was added
         echo '<div style="background: #e8f5e8; padding: 10px; margin: 10px 0; border: 1px solid #4caf50;">';
         echo '<p><strong>✅ Tax Query Added:</strong> Looking for posts with topic IDs: ' . implode(', ', $topics) . '</p>';
@@ -172,7 +193,7 @@ if ($block_query->found_posts > 0) {
     $temp_posts = $block_query->posts;
     foreach (array_slice($temp_posts, 0, 3) as $found_post) { // Just check first 3
         echo '<p><strong>Post: ' . get_the_title($found_post->ID) . ' (ID: ' . $found_post->ID . ')</strong></p>';
-        
+
         $post_topics = wp_get_post_terms($found_post->ID, 'topics', array('fields' => 'all'));
         if (!empty($post_topics)) {
             echo '<ul>';
