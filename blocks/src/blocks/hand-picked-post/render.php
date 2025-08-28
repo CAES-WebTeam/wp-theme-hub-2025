@@ -89,6 +89,8 @@ if ($feed_type === 'hand-picked') {
     $primary_topic = get_field('primary_topics', $post->ID);
     $primary_topic_id = null;
 
+    error_log('Hand Picked Post Block: Post ID ' . $post->ID . ' - Raw primary_topics field: ' . print_r($primary_topic, true));
+
     if ($primary_topic && is_array($primary_topic) && !empty($primary_topic)) {
         $first_topic = $primary_topic[0];
         if (is_object($first_topic)) {
@@ -98,6 +100,7 @@ if ($feed_type === 'hand-picked') {
         } else {
             $primary_topic_id = $first_topic;
         }
+        error_log('Hand Picked Post Block: Using primary_topics strategy with ID: ' . $primary_topic_id);
     }
 
     if ($primary_topic_id) {
@@ -109,9 +112,12 @@ if ($feed_type === 'hand-picked') {
                 'compare' => 'LIKE'
             )
         );
+        error_log('Hand Picked Post Block: Added meta_query for primary_topics');
     } else {
         // Strategy 2: Fallback to topics taxonomy (without child terms)
         $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
+        
+        error_log('Hand Picked Post Block: Fallback to topics taxonomy. Found topics: ' . print_r($topics, true));
         
         if (!is_wp_error($topics) && !empty($topics)) {
             $block_query_args['tax_query'] = array(
@@ -123,6 +129,9 @@ if ($feed_type === 'hand-picked') {
                     'include_children' => false
                 ),
             );
+            error_log('Hand Picked Post Block: Added tax_query for topics taxonomy');
+        } else {
+            error_log('Hand Picked Post Block: No topics found or error occurred');
         }
     }
 }
@@ -131,6 +140,14 @@ if ($feed_type === 'hand-picked') {
 $query_start_time = microtime(true);
 $block_query = new WP_Query($block_query_args);
 $query_end_time = microtime(true);
+
+// Log query results
+error_log('Hand Picked Post Block: Query completed for post ID ' . $post->ID . ' - Found: ' . $block_query->found_posts . ' posts');
+error_log('Hand Picked Post Block: Final query args: ' . print_r($block_query_args, true));
+
+if ($block_query->found_posts === 0) {
+    error_log('Hand Picked Post Block: No posts found. SQL query: ' . $block_query->request);
+}
 
 if ($block_query->have_posts()) {
     // Start timing for rendering
