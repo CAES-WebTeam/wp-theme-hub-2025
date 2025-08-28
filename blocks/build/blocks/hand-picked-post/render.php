@@ -104,70 +104,89 @@ if ($feed_type === 'hand-picked') {
     }
 
     if ($primary_topic_id) {
-        // Use primary topic strategy - find posts with this topic anywhere
-        // Instead of only matching primary_topics field, use tax_query to find
-        // any post that has this topic assigned (more inclusive)
-        $block_query_args['tax_query'] = array(
+        // Two-stage approach: prioritize primary topic matches, then fill with regular topic matches
+        
+        // Stage 1: Find posts with matching primary_topics (highest priority)
+        $primary_query_args = $block_query_args;
+        $primary_query_args['meta_query'] = array(
             array(
-                'taxonomy' => 'topics',
-                'field'    => 'term_id',
-                'terms'    => array($primary_topic_id),
-                'operator' => 'IN',
-                'include_children' => false
-            ),
+                'key'     => 'primary_topics',
+                'value'   => 's:' . strlen($primary_topic_id) . ':"' . $primary_topic_id . '";',
+                'compare' => 'LIKE'
+            )
         );
-        // error_log('Hand Picked Post Block: Using primary_topics strategy with tax_query for ID: ' . $primary_topic_id);
         
-        // Test the query
-        $primary_test_query = new WP_Query($block_query_args);
+        $primary_query = new WP_Query($primary_query_args);
+        $primary_posts = $primary_query->posts;
+        $found_post_ids = array();
         
-        if ($primary_test_query->found_posts > 0) {
-            // Primary topic query found results, use it
-            // error_log('Hand Picked Post Block: Primary topic tax_query found ' . $primary_test_query->found_posts . ' posts');
-            $block_query = $primary_test_query;
-        } else {
-            // Still no results, fall back to ALL topics from current post
-            // error_log('Hand Picked Post Block: Primary topic found 0 posts, falling back to all topics taxonomy');
+        foreach ($primary_posts as $post_obj) {
+            $found_post_ids[] = $post_obj->ID;
+        }
+        
+        // error_log('Hand Picked Post Block: Stage 1 - Found ' . count($primary_posts) . ' posts with matching primary_topics');
+        
+        // Stage 2: Fill remaining slots with regular topic matches (if needed)
+        $remaining_slots = $number_of_posts - count($primary_posts);
+        $additional_posts = array();
+        
+        if ($remaining_slots > 0) {
+            // Get all topics for current post, excluding "Departments" (ID 1634)
+            $all_topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
+            $filtered_topics = array_diff($all_topics, array(1634)); // Remove "Departments"
             
-            $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
-            // error_log('Hand Picked Post Block: Fallback topics: ' . print_r($topics, true));
-            
-            if (!is_wp_error($topics) && !empty($topics)) {
-                $block_query_args['tax_query'] = array(
+            if (!empty($filtered_topics)) {
+                $additional_query_args = $block_query_args;
+                $additional_query_args['posts_per_page'] = $remaining_slots;
+                $additional_query_args['post__not_in'] = array_merge(array($post->ID), $found_post_ids);
+                $additional_query_args['tax_query'] = array(
                     array(
                         'taxonomy' => 'topics',
                         'field'    => 'term_id',
-                        'terms'    => $topics,
+                        'terms'    => $filtered_topics,
                         'operator' => 'IN',
                         'include_children' => false
                     ),
                 );
-                $block_query = new WP_Query($block_query_args);
-                // error_log('Hand Picked Post Block: Fallback tax_query found ' . $block_query->found_posts . ' posts');
-            } else {
-                $block_query = $primary_test_query; // Use the empty result
+                
+                $additional_query = new WP_Query($additional_query_args);
+                $additional_posts = $additional_query->posts;
+                
+                // error_log('Hand Picked Post Block: Stage 2 - Found ' . count($additional_posts) . ' additional posts from filtered topics');
+                // error_log('Hand Picked Post Block: Excluded topics: 1634 (Departments)');
             }
         }
+        
+        // Combine results: primary_topic posts first, then additional posts
+        $combined_posts = array_merge($primary_posts, $additional_posts);
+        
+        // Create a mock query object with combined results
+        $block_query = new WP_Query(array('post__in' => array(-1))); // Empty query
+        $block_query->posts = $combined_posts;
+        $block_query->found_posts = count($combined_posts);
+        $block_query->post_count = count($combined_posts);
+        
+        // error_log('Hand Picked Post Block: Combined results - Total: ' . count($combined_posts) . ' posts');
+        
     } else {
-        // Strategy 2: Fallback to topics taxonomy (without child terms)
+        // No primary topic set - use regular topics taxonomy (excluding Departments)
         $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
+        $filtered_topics = array_diff($topics, array(1634)); // Remove "Departments"
         
-        // error_log('Hand Picked Post Block: Fallback to topics taxonomy. Found topics: ' . print_r($topics, true));
+        // error_log('Hand Picked Post Block: No primary topic - using filtered topics: ' . print_r($filtered_topics, true));
         
-        if (!is_wp_error($topics) && !empty($topics)) {
+        if (!is_wp_error($filtered_topics) && !empty($filtered_topics)) {
             $block_query_args['tax_query'] = array(
                 array(
                     'taxonomy' => 'topics',
                     'field'    => 'term_id',
-                    'terms'    => $topics,
+                    'terms'    => $filtered_topics,
                     'operator' => 'IN',
                     'include_children' => false
                 ),
             );
-            // error_log('Hand Picked Post Block: Added tax_query for topics taxonomy');
             $block_query = new WP_Query($block_query_args);
         } else {
-            // error_log('Hand Picked Post Block: No topics found or error occurred');
             $block_query = new WP_Query($block_query_args);
         }
     }
