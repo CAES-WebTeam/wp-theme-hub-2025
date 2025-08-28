@@ -41,30 +41,49 @@ function handle_fuzzy_batch_ajax() {
     $similarity_threshold = intval($_POST['threshold']);
     $offset = intval($_POST['offset']);
     $session_id = sanitize_text_field($_POST['session_id']);
+    $config_hash = sanitize_text_field($_POST['config_hash']);
+    
+    // Get filter parameters
+    $limit_posts = intval($_POST['limit_posts']);
+    $date_limit = sanitize_text_field($_POST['date_limit']);
+    $post_type_filter = sanitize_text_field($_POST['post_type_filter']);
+    $sample_mode = sanitize_text_field($_POST['sample_mode']);
+    
+    // Build the WHERE clause based on filters
+    $where_clause = build_filter_where_clause($date_limit, $post_type_filter, $sample_mode);
+    $order_clause = build_order_clause($sample_mode);
+    $limit_clause = ($limit_posts > 0) ? "LIMIT " . $limit_posts : "";
     
     // Get total count for progress calculation
-    $total_posts = $wpdb->get_var("
+    $total_posts_sql = "
         SELECT COUNT(*) 
         FROM {$wpdb->posts} 
-        WHERE post_type IN ('post', 'shorthand_story')
+        WHERE post_type IN (" . get_post_types_sql($post_type_filter) . ")
             AND post_status != 'trash'
             AND post_title != ''
-    ");
+            $where_clause
+        $limit_clause
+    ";
+    $total_posts = $wpdb->get_var($total_posts_sql);
     
     // Get batch of posts to process
-    $posts_batch = $wpdb->get_results($wpdb->prepare("
+    $posts_batch_sql = $wpdb->prepare("
         SELECT ID, post_title, post_type
         FROM {$wpdb->posts}
-        WHERE post_type IN ('post', 'shorthand_story')
+        WHERE post_type IN (" . get_post_types_sql($post_type_filter) . ")
             AND post_status != 'trash'
             AND post_title != ''
-        ORDER BY ID
+            $where_clause
+        $order_clause
         LIMIT %d OFFSET %d
-    ", $batch_size, $offset));
+    ", $batch_size, $offset);
+    
+    $posts_batch = $wpdb->get_results($posts_batch_sql);
     
     if (empty($posts_batch)) {
         // Processing complete, return final results
-        $results = get_transient('fuzzy_results_' . $session_id) ?: [];
+        $results = get_transient('fuzzy_results_' . $session_id . '_' . $config_hash) ?: [];
+        set_transient('fuzzy_complete_' . $session_id . '_' . $config_hash, true, HOUR_IN_SECONDS);
         wp_send_json_success([
             'complete' => true,
             'total_groups' => count($results),
@@ -73,13 +92,14 @@ function handle_fuzzy_batch_ajax() {
         return;
     }
     
-    // Process this batch against all remaining posts for fuzzy matching
-    $batch_groups = process_fuzzy_batch($posts_batch, $similarity_threshold, $session_id);
+    // Process this batch
+    $batch_groups = process_fuzzy_batch($posts_batch, $similarity_threshold, $session_id, $post_type_filter, $where_clause);
     
-    // Store results in transient (expires in 1 hour)
-    $existing_results = get_transient('fuzzy_results_' . $session_id) ?: [];
+    // Store results in transient
+    $cache_key = 'fuzzy_results_' . $session_id . '_' . $config_hash;
+    $existing_results = get_transient($cache_key) ?: [];
     $existing_results = array_merge($existing_results, $batch_groups);
-    set_transient('fuzzy_results_' . $session_id, $existing_results, HOUR_IN_SECONDS);
+    set_transient($cache_key, $existing_results, HOUR_IN_SECONDS);
     
     $progress = min(100, round((($offset + $batch_size) / $total_posts) * 100, 1));
     
@@ -93,26 +113,29 @@ function handle_fuzzy_batch_ajax() {
     ]);
 }
 
-function process_fuzzy_batch($posts_batch, $similarity_threshold, $session_id) {
+function process_fuzzy_batch($posts_batch, $similarity_threshold, $session_id, $post_type_filter = 'both', $where_clause = '') {
     global $wpdb;
     
     $found_groups = [];
     $processed_pairs = get_transient('processed_pairs_' . $session_id) ?: [];
     
     foreach ($posts_batch as $post1) {
-        // Find potential matches for this post
-        $candidates = $wpdb->get_results($wpdb->prepare("
+        // Find potential matches for this post using the same filters
+        $candidates_sql = $wpdb->prepare("
             SELECT ID, post_title, post_type
             FROM {$wpdb->posts}
-            WHERE post_type IN ('post', 'shorthand_story')
+            WHERE post_type IN (" . get_post_types_sql($post_type_filter) . ")
                 AND post_status != 'trash'
                 AND post_title != ''
                 AND ID > %d
+                $where_clause
                 AND (
                     LEFT(LOWER(post_title), 3) = LEFT(LOWER(%s), 3)
                     OR ABS(CHAR_LENGTH(post_title) - CHAR_LENGTH(%s)) <= GREATEST(CHAR_LENGTH(post_title), CHAR_LENGTH(%s)) * 0.3
                 )
-        ", $post1->ID, $post1->post_title, $post1->post_title, $post1->post_title));
+        ", $post1->ID, $post1->post_title, $post1->post_title, $post1->post_title);
+        
+        $candidates = $wpdb->get_results($candidates_sql);
         
         foreach ($candidates as $post2) {
             $pair_key = $post1->ID . '-' . $post2->ID;
@@ -143,6 +166,73 @@ function process_fuzzy_batch($posts_batch, $similarity_threshold, $session_id) {
     return $found_groups;
 }
 
+function get_estimated_post_count($wpdb, $limit_posts = 0, $date_limit = '', $post_type_filter = 'both', $sample_mode = '') {
+    $where_clause = build_filter_where_clause($date_limit, $post_type_filter, $sample_mode);
+    $limit_clause = ($limit_posts > 0) ? "LIMIT " . $limit_posts : "";
+    
+    $sql = "
+        SELECT COUNT(*) 
+        FROM {$wpdb->posts} 
+        WHERE post_type IN (" . get_post_types_sql($post_type_filter) . ")
+            AND post_status != 'trash'
+            AND post_title != ''
+            $where_clause
+        $limit_clause
+    ";
+    
+    $count = $wpdb->get_var($sql);
+    
+    // If using a sample mode with percentage, calculate accordingly
+    if ($sample_mode === 'sample' && !$limit_posts) {
+        $count = min(1000, $count); // Default sample size
+    }
+    
+    return intval($count);
+}
+
+function build_filter_where_clause($date_limit = '', $post_type_filter = 'both', $sample_mode = '') {
+    global $wpdb;
+    $conditions = [];
+    
+    // Date filtering
+    if ($date_limit) {
+        $date_conditions = [
+            '1_month' => "post_date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)",
+            '3_months' => "post_date >= DATE_SUB(NOW(), INTERVAL 3 MONTH)",
+            '6_months' => "post_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)",
+            '1_year' => "post_date >= DATE_SUB(NOW(), INTERVAL 1 YEAR)"
+        ];
+        
+        if (isset($date_conditions[$date_limit])) {
+            $conditions[] = $date_conditions[$date_limit];
+        }
+    }
+    
+    return $conditions ? "AND " . implode(" AND ", $conditions) : "";
+}
+
+function get_post_types_sql($post_type_filter = 'both') {
+    switch ($post_type_filter) {
+        case 'post':
+            return "'post'";
+        case 'shorthand_story':
+            return "'shorthand_story'";
+        default:
+            return "'post', 'shorthand_story'";
+    }
+}
+
+function build_order_clause($sample_mode = '') {
+    switch ($sample_mode) {
+        case 'recent':
+            return "ORDER BY post_date DESC";
+        case 'sample':
+            return "ORDER BY RAND()";
+        default:
+            return "ORDER BY ID";
+    }
+}
+
 function render_duplicate_post_checker() {
     if (!current_user_can('manage_options')) {
         return;
@@ -164,19 +254,69 @@ function render_duplicate_post_checker() {
     $mode = isset($_GET['mode']) ? $_GET['mode'] : 'exact';
     $similarity_threshold = isset($_GET['threshold']) ? intval($_GET['threshold']) : 85;
     $session_id = isset($_GET['session_id']) ? $_GET['session_id'] : '';
+    
+    // Get additional filters
+    $limit_posts = isset($_GET['limit_posts']) ? intval($_GET['limit_posts']) : 0;
+    $date_limit = isset($_GET['date_limit']) ? $_GET['date_limit'] : '';
+    $post_type_filter = isset($_GET['post_type_filter']) ? $_GET['post_type_filter'] : 'both';
+    $sample_mode = isset($_GET['sample_mode']) ? $_GET['sample_mode'] : '';
 
     // Mode selection UI
     echo '<div style="background: #fff; border: 1px solid #ccd0d4; padding: 15px; margin: 20px 0;">';
-    echo '<h3>Search Mode</h3>';
+    echo '<h3>Search Configuration</h3>';
     echo '<form method="GET" style="margin-bottom: 0;" id="mode-form">';
     echo '<input type="hidden" name="page" value="duplicate-post-checker">';
-    echo '<p>';
+    
+    // Search mode
+    echo '<div style="margin-bottom: 15px;">';
+    echo '<h4>Search Mode</h4>';
     echo '<label><input type="radio" name="mode" value="exact"' . ($mode === 'exact' ? ' checked' : '') . '> <strong>Exact Match</strong> - Only exact title duplicates (instant)</label><br>';
-    echo '<label><input type="radio" name="mode" value="fuzzy"' . ($mode === 'fuzzy' ? ' checked' : '') . '> <strong>Fuzzy Match</strong> - Similar titles across post types (batched processing)</label>';
-    echo '</p>';
+    echo '<label><input type="radio" name="mode" value="fuzzy"' . ($mode === 'fuzzy' ? ' checked' : '') . '> <strong>Fuzzy Match</strong> - Similar titles across post types</label>';
+    echo '</div>';
+    
+    // Fuzzy options
     if ($mode === 'fuzzy') {
+        echo '<div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border: 1px solid #e9ecef;">';
+        echo '<h4>Fuzzy Match Options</h4>';
         echo '<p><label>Similarity threshold: <input type="number" name="threshold" value="' . $similarity_threshold . '" min="70" max="95" style="width: 60px;">%</label></p>';
+        
+        echo '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
+        
+        // Sampling options
+        echo '<div>';
+        echo '<h5>Processing Scope</h5>';
+        echo '<label><input type="radio" name="sample_mode" value=""' . ($sample_mode === '' ? ' checked' : '') . '> Process all posts</label><br>';
+        echo '<label><input type="radio" name="sample_mode" value="recent"' . ($sample_mode === 'recent' ? ' checked' : '') . '> Recent posts only</label><br>';
+        echo '<label><input type="radio" name="sample_mode" value="sample"' . ($sample_mode === 'sample' ? ' checked' : '') . '> Random sample</label><br>';
+        echo '<label><input type="radio" name="sample_mode" value="limit"' . ($sample_mode === 'limit' ? ' checked' : '') . '> Limit by count</label>';
+        echo '</div>';
+        
+        // Filters
+        echo '<div>';
+        echo '<h5>Filters</h5>';
+        echo '<p><label>Post types: ';
+        echo '<select name="post_type_filter">';
+        echo '<option value="both"' . ($post_type_filter === 'both' ? ' selected' : '') . '>Both Types</option>';
+        echo '<option value="post"' . ($post_type_filter === 'post' ? ' selected' : '') . '>Posts Only</option>';
+        echo '<option value="shorthand_story"' . ($post_type_filter === 'shorthand_story' ? ' selected' : '') . '>Shorthand Only</option>';
+        echo '</select></label></p>';
+        
+        echo '<p><label>Date limit: ';
+        echo '<select name="date_limit">';
+        echo '<option value=""' . ($date_limit === '' ? ' selected' : '') . '>All dates</option>';
+        echo '<option value="1_month"' . ($date_limit === '1_month' ? ' selected' : '') . '>Last month</option>';
+        echo '<option value="3_months"' . ($date_limit === '3_months' ? ' selected' : '') . '>Last 3 months</option>';
+        echo '<option value="6_months"' . ($date_limit === '6_months' ? ' selected' : '') . '>Last 6 months</option>';
+        echo '<option value="1_year"' . ($date_limit === '1_year' ? ' selected' : '') . '>Last year</option>';
+        echo '</select></label></p>';
+        
+        echo '<p><label>Max posts: <input type="number" name="limit_posts" value="' . $limit_posts . '" min="0" max="5000" placeholder="0 = no limit" style="width: 100px;"></label></p>';
+        echo '</div>';
+        
+        echo '</div>';
+        echo '</div>';
     }
+    
     echo '<p><input type="submit" class="button button-primary" value="Run Analysis"></p>';
     echo '</form>';
     echo '</div>';
@@ -184,7 +324,7 @@ function render_duplicate_post_checker() {
     if ($mode === 'exact') {
         render_exact_results($wpdb);
     } else {
-        render_fuzzy_results($wpdb, $similarity_threshold, $session_id);
+        render_fuzzy_results($wpdb, $similarity_threshold, $session_id, $limit_posts, $date_limit, $post_type_filter, $sample_mode);
     }
 
     echo '</div>'; // .wrap
@@ -207,26 +347,45 @@ function render_exact_results($wpdb) {
     render_results_table($filtered_groups, 'exact');
 }
 
-function render_fuzzy_results($wpdb, $similarity_threshold, $session_id) {
-    // Check if we have cached results
-    if ($session_id && get_transient('fuzzy_complete_' . $session_id)) {
-        $fuzzy_pairs = get_transient('fuzzy_results_' . $session_id) ?: [];
+function render_fuzzy_results($wpdb, $similarity_threshold, $session_id, $limit_posts = 0, $date_limit = '', $post_type_filter = 'both', $sample_mode = '') {
+    // Check if we have cached results for this specific configuration
+    $config_hash = md5(serialize([$similarity_threshold, $limit_posts, $date_limit, $post_type_filter, $sample_mode]));
+    $cache_key = 'fuzzy_results_' . $session_id . '_' . $config_hash;
+    
+    if ($session_id && get_transient('fuzzy_complete_' . $session_id . '_' . $config_hash)) {
+        $fuzzy_pairs = get_transient($cache_key) ?: [];
         if (!empty($fuzzy_pairs)) {
-            echo '<div class="notice notice-success"><p>Using cached fuzzy matching results. <a href="?page=duplicate-post-checker&mode=fuzzy&threshold=' . $similarity_threshold . '">Start fresh analysis</a></p></div>';
+            $current_params = http_build_query($_GET);
+            echo '<div class="notice notice-success"><p>Using cached fuzzy matching results. <a href="?page=duplicate-post-checker&mode=fuzzy&threshold=' . $similarity_threshold . '&' . $current_params . '&new_session=1">Start fresh analysis</a></p></div>';
             $filtered_groups = process_fuzzy_results($fuzzy_pairs);
             render_results_table($filtered_groups, 'fuzzy');
             return;
         }
     }
 
+    // Get estimated count for this configuration
+    $estimated_count = get_estimated_post_count($wpdb, $limit_posts, $date_limit, $post_type_filter, $sample_mode);
+    
+    // Show processing estimate
+    echo '<div class="notice notice-info">';
+    echo '<p><strong>Processing Estimate:</strong> ~' . $estimated_count . ' posts to process ';
+    if ($estimated_count > 2000) {
+        echo '<span style="color: #d63638;">(May take several minutes)</span>';
+    } else if ($estimated_count > 500) {
+        echo '<span style="color: #f5a623;">(Should take 1-2 minutes)</span>';
+    } else {
+        echo '<span style="color: #7ad03a;">(Should be quick!)</span>';
+    }
+    echo '</p></div>';
+
     // Show fuzzy processing interface
-    if (!$session_id) {
+    if (!$session_id || isset($_GET['new_session'])) {
         $session_id = uniqid('fuzzy_', true);
     }
     
     echo '<div id="fuzzy-processor">';
     echo '<h3>Fuzzy Matching Processor</h3>';
-    echo '<p>This will process your posts in batches to find similar titles across post types.</p>';
+    echo '<p>Processing ' . $estimated_count . ' posts with your selected filters.</p>';
     echo '<div id="progress-container" style="display: none;">';
     echo '<div style="background: #fff; border: 1px solid #ccd0d4; padding: 20px; margin: 20px 0;">';
     echo '<h4>Processing...</h4>';
@@ -239,7 +398,19 @@ function render_fuzzy_results($wpdb, $similarity_threshold, $session_id) {
     echo '</div>';
     echo '</div>';
     echo '<div id="results-container"></div>';
-    echo '<button id="start-fuzzy" class="button button-primary" data-threshold="' . $similarity_threshold . '" data-session="' . $session_id . '">Start Fuzzy Analysis</button>';
+    
+    // Add data attributes for all the filters
+    $data_attrs = [
+        'data-threshold="' . $similarity_threshold . '"',
+        'data-session="' . $session_id . '"',
+        'data-limit="' . $limit_posts . '"',
+        'data-date-limit="' . $date_limit . '"',
+        'data-post-type="' . $post_type_filter . '"',
+        'data-sample-mode="' . $sample_mode . '"',
+        'data-config-hash="' . $config_hash . '"'
+    ];
+    
+    echo '<button id="start-fuzzy" class="button button-primary" ' . implode(' ', $data_attrs) . '>Start Fuzzy Analysis (' . $estimated_count . ' posts)</button>';
     echo '</div>';
 }
 
@@ -535,16 +706,22 @@ function add_fuzzy_processing_script() {
         $('#start-fuzzy').on('click', function() {
             if (processingActive) return;
             
-            const threshold = $(this).data('threshold');
-            const sessionId = $(this).data('session');
+            const $btn = $(this);
+            const threshold = $btn.data('threshold');
+            const sessionId = $btn.data('session');
+            const limitPosts = $btn.data('limit') || 0;
+            const dateLimit = $btn.data('date-limit') || '';
+            const postTypeFilter = $btn.data('post-type') || 'both';
+            const sampleMode = $btn.data('sample-mode') || '';
+            const configHash = $btn.data('config-hash');
             
             processingActive = true;
             currentOffset = 0;
-            $(this).prop('disabled', true).text('Processing...');
+            $btn.prop('disabled', true).text('Processing...');
             $('#progress-container').show();
             $('#results-container').empty();
             
-            processBatch(threshold, sessionId, currentOffset);
+            processBatch(threshold, sessionId, currentOffset, limitPosts, dateLimit, postTypeFilter, sampleMode, configHash);
         });
 
         $('#stop-processing').on('click', function() {
@@ -553,7 +730,7 @@ function add_fuzzy_processing_script() {
             $('#progress-container').hide();
         });
 
-        function processBatch(threshold, sessionId, offset) {
+        function processBatch(threshold, sessionId, offset, limitPosts, dateLimit, postTypeFilter, sampleMode, configHash) {
             if (!processingActive) return;
 
             $.ajax({
@@ -564,6 +741,11 @@ function add_fuzzy_processing_script() {
                     threshold: threshold,
                     session_id: sessionId,
                     offset: offset,
+                    limit_posts: limitPosts,
+                    date_limit: dateLimit,
+                    post_type_filter: postTypeFilter,
+                    sample_mode: sampleMode,
+                    config_hash: configHash,
                     nonce: '<?php echo wp_create_nonce('fuzzy_batch_nonce'); ?>'
                 },
                 success: function(response) {
@@ -578,8 +760,12 @@ function add_fuzzy_processing_script() {
                             $('#progress-text').text('100%');
                             $('#progress-stats').text('Processing complete! Found ' + data.total_groups + ' groups.');
                             
+                            // Redirect with current parameters
+                            const currentUrl = new URL(window.location);
+                            currentUrl.searchParams.set('session_id', sessionId);
+                            
                             setTimeout(() => {
-                                window.location.href = '?page=duplicate-post-checker&mode=fuzzy&threshold=' + threshold + '&session_id=' + sessionId;
+                                window.location.href = currentUrl.toString();
                             }, 2000);
                         } else {
                             // Update progress
@@ -592,7 +778,7 @@ function add_fuzzy_processing_script() {
                             
                             // Process next batch
                             setTimeout(() => {
-                                processBatch(threshold, sessionId, data.processed);
+                                processBatch(threshold, sessionId, data.processed, limitPosts, dateLimit, postTypeFilter, sampleMode, configHash);
                             }, 100);
                         }
                     } else {
