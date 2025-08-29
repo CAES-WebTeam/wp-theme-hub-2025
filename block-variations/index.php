@@ -137,7 +137,7 @@ function variations_query_filter($query, $block)
                 $meta_query[] = array(
                     'key' => 'all_author_ids',
                     'value' => 'i:' . $author_id . ';',
-                    'compare' => '='
+                    'compare' => 'LIKE'
                 );
             }
         }
@@ -190,12 +190,12 @@ function variations_query_filter($query, $block)
                     array(
                         'key' => 'all_expert_ids',
                         'value' => 'i:' . $author_id . ';',
-                        'compare' => '='
+                        'compare' => 'LIKE'
                     ),
                     array(
                         'key' => 'all_author_ids',
                         'value' => 'i:' . $author_id . ';',
-                        'compare' => '='
+                        'compare' => 'LIKE'
                     )
                 );
             }
