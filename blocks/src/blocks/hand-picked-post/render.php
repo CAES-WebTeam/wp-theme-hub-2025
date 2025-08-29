@@ -1,4 +1,15 @@
 <?php
+/**
+ * Hand-picked Posts Block.
+ *
+ * This block displays a list of hand-picked or related posts based on the block attributes.
+ * It includes performance optimizations such as caching and a single, efficient query for related posts.
+ *
+ * @see https://developer.wordpress.org/reference/classes/wp_query/
+ * @see https://developer.wordpress.org/apis/transients/
+ * @see https://www.php.net/manual/en/book.outcontrol.php
+ */
+
 // Get attributes with proper defaults to match frontend
 $post_type = isset($block->attributes['postType']) ? $block->attributes['postType'] : ['post'];
 $feed_type = isset($block->attributes['feedType']) ? $block->attributes['feedType'] : 'related-topics';
@@ -47,21 +58,22 @@ if ($displayLayout === 'grid' && $gridItemPosition === 'auto') {
 
 $wrapper_attributes = get_block_wrapper_attributes();
 
-// PERFORMANCE FIX: Add caching for related posts
+// PERFORMANCE FIX: Use the Transient API for caching
 global $post;
+$block_query = null;
+$cache_key = '';
+
 if ($feed_type === 'related-topics' && $post) {
-    $cache_key = 'related_posts_' . $post->ID . '_' . md5(serialize([
+    // Generate a unique cache key based on the post and block attributes
+    $cache_key = 'caes_related_posts_' . $post->ID . '_' . md5(serialize([
         $feed_type, $number_of_posts, $post_type, $displayLayout, $columns, $customGapStep
     ]));
-    $cached_query = wp_cache_get($cache_key, 'caes_related_posts');
     
-    if ($cached_query !== false) {
-        $block_query = $cached_query;
-    }
+    $block_query = get_transient($cache_key);
 }
 
 // Only run query if not cached
-if (!isset($block_query)) {
+if ($block_query === false || $block_query === null) {
     // Determine which query to run
     if ($feed_type === 'hand-picked') {
         // Hand-picked posts logic
@@ -110,29 +122,29 @@ if (!isset($block_query)) {
             }
         }
 
-        if ($primary_topic_id) {
-            // PERFORMANCE FIX: Use a single optimized query instead of multiple queries
-            // Get all topics for current post, excluding "Departments" (ID 1634)
-            $all_topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
-            $filtered_topics = array_diff($all_topics, array(1634)); // Remove "Departments"
+        // Get all topics for current post, excluding "Departments" (ID 1634)
+        $all_topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
+        $filtered_topics = array_diff($all_topics, array(1634)); // Remove "Departments"
+        
+        if (!is_wp_error($filtered_topics) && !empty($filtered_topics)) {
+            // Single tax_query that prioritizes primary topic but includes all topics
+            $block_query_args['tax_query'] = array(
+                array(
+                    'taxonomy' => 'topics',
+                    'field'    => 'term_id',
+                    'terms'    => $filtered_topics,
+                    'operator' => 'IN',
+                    'include_children' => false
+                ),
+            );
             
-            if (!empty($filtered_topics)) {
-                // Single tax_query that prioritizes primary topic but includes all topics
-                $block_query_args['tax_query'] = array(
-                    array(
-                        'taxonomy' => 'topics',
-                        'field'    => 'term_id',
-                        'terms'    => $filtered_topics,
-                        'operator' => 'IN',
-                        'include_children' => false
-                    ),
-                );
-                
-                // PERFORMANCE FIX: Use orderby to prioritize primary topic matches
-                // Custom ordering to put primary topic matches first
-                add_filter('posts_orderby', function($orderby, $query) use ($primary_topic_id) {
+            // PERFORMANCE FIX: Use orderby to prioritize primary topic matches
+            // Custom ordering to put primary topic matches first
+            if ($primary_topic_id) {
+                // Add the filter using a unique function to prevent conflicts
+                $custom_orderby_filter = function($orderby, $query) use ($primary_topic_id) {
                     global $wpdb;
-                    if (!$query->is_main_query() && $query->get('post_type')) {
+                    if (!$query->is_main_query() && $query->get('post_type') && isset($query->query_vars['tax_query'])) {
                         // Create custom ordering that prioritizes posts with the primary topic
                         $custom_order = "CASE WHEN EXISTS (
                             SELECT 1 FROM {$wpdb->term_relationships} tr 
@@ -144,49 +156,34 @@ if (!isset($block_query)) {
                         return $custom_order;
                     }
                     return $orderby;
-                }, 10, 2);
-                
-                $block_query = new WP_Query($block_query_args);
-                
-                // Remove the filter after use
-                remove_all_filters('posts_orderby');
-            } else {
-                $block_query = new WP_Query($block_query_args);
+                };
+                add_filter('posts_orderby', $custom_orderby_filter, 10, 2);
+            }
+            
+            $block_query = new WP_Query($block_query_args);
+            
+            // Remove the filter after use
+            if ($primary_topic_id) {
+                remove_filter('posts_orderby', $custom_orderby_filter, 10);
             }
         } else {
-            // No primary topic set - use regular topics taxonomy (excluding Departments)
-            $topics = wp_get_post_terms($post->ID, 'topics', array('fields' => 'ids'));
-            $filtered_topics = array_diff($topics, array(1634)); // Remove "Departments"
-            
-            if (!is_wp_error($filtered_topics) && !empty($filtered_topics)) {
-                $block_query_args['tax_query'] = array(
-                    array(
-                        'taxonomy' => 'topics',
-                        'field'    => 'term_id',
-                        'terms'    => $filtered_topics,
-                        'operator' => 'IN',
-                        'include_children' => false
-                    ),
-                );
-                $block_query = new WP_Query($block_query_args);
-            } else {
-                $block_query = new WP_Query($block_query_args);
-            }
+            $block_query = new WP_Query($block_query_args);
         }
     }
 
-    // PERFORMANCE FIX: Cache the query results
-    if ($feed_type === 'related-topics' && $post && isset($cache_key)) {
-        wp_cache_set($cache_key, $block_query, 'caes_related_posts', 300); // Cache for 5 minutes
+    // PERFORMANCE FIX: Cache the query results for 5 minutes
+    if ($feed_type === 'related-topics' && $post && !empty($cache_key)) {
+        set_transient($cache_key, $block_query, 5 * MINUTE_IN_SECONDS);
     }
 }
 
-if ($block_query->have_posts()) {
+if ($block_query && $block_query->have_posts()) {
 ?>
     <div <?php echo wp_kses_post($wrapper_attributes); ?>>
         <div class="<?php echo esc_attr($classes); ?>" style="<?php echo esc_attr($inline_style); ?>">
 
             <?php
+            // PERFORMANCE FIX: Use output buffering to capture inner block content and render it all at once
             while ($block_query->have_posts()) {
                 $block_query->the_post();
 
@@ -197,13 +194,19 @@ if ($block_query->have_posts()) {
                     'postId' => get_the_ID(),
                     'postType' => get_post_type(),
                 );
-
+                
+                // Start output buffering
+                ob_start();
+                
                 if (! empty($block->inner_blocks)) {
                     foreach ($block->inner_blocks as $inner_block) {
                         $inner_block_instance = new WP_Block($inner_block->parsed_block, $block_context);
                         echo $inner_block_instance->render();
                     }
                 }
+                
+                // Get the buffered content and echo it
+                echo ob_get_clean();
             }
             ?>
         </div>
