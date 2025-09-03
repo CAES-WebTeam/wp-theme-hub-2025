@@ -40,8 +40,10 @@ function filter_taxonomy_feeds_by_post_type($query) {
     // Filter the query if we found a post type
     if ($post_type) {
         $query->set('post_type', $post_type);
-        // Ensure we get the right posts
         $query->set('posts_per_page', get_option('posts_per_rss', 10));
+        
+        // **ADD THIS LINE to exclude 'soft_publish' posts**
+        $query->set('post_status', 'publish');
     }
 }
 add_action('pre_get_posts', 'filter_taxonomy_feeds_by_post_type');
@@ -60,6 +62,9 @@ function include_shorthand_stories_in_main_feed($query) {
     
     // Set post types to include both posts and shorthand stories
     $query->set('post_type', array('post', 'shorthand_story'));
+    
+    // **ADD THIS LINE to exclude 'soft_publish' posts**
+    $query->set('post_status', 'publish');
     
     // Ensure we respect the RSS posts per page setting
     $query->set('posts_per_page', get_option('posts_per_rss', 10));
