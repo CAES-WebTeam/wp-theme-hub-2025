@@ -501,6 +501,8 @@ function caes_get_placeholder_image($post_id) {
 // and that's easier to change. It would be more complex to add this to the block editor, and isn't being 
 // asked for right now.
 
+/* SOFT PUBLISH POST STATUS */
+
 // 1. REGISTER CUSTOM POST STATUS
 add_action('init', 'rudr_custom_status_creation');
 function rudr_custom_status_creation() {
@@ -598,9 +600,11 @@ function rudr_display_status_label($states) {
     return $states;
 }
 
-// 5. SCHEDULED PUBLISHING FUNCTIONALITY
+// ===================================================================
+// 5. SCHEDULED PUBLISHING FUNCTIONALITY (REVISED AND CORRECTED)
+// ===================================================================
 
-// Add scheduled publish date meta box
+// Add scheduled publish date meta box (No changes needed here)
 function add_scheduled_publish_meta_box() {
     add_meta_box(
         'scheduled_publish_box',
@@ -608,11 +612,12 @@ function add_scheduled_publish_meta_box() {
         'scheduled_publish_meta_box_callback',
         ['shorthand_story'],
         'side',
-		'high'
+        'high'
     );
 }
 add_action('add_meta_boxes', 'add_scheduled_publish_meta_box');
 
+// Meta box content (No changes needed here)
 function scheduled_publish_meta_box_callback($post) {
     wp_nonce_field('scheduled_publish_nonce', 'scheduled_publish_nonce');
     $scheduled_date = get_post_meta($post->ID, '_scheduled_publish_date', true);
@@ -627,6 +632,7 @@ function scheduled_publish_meta_box_callback($post) {
         </div>
         <label for="scheduled_publish_date">Auto-publish on:</label>
         <input type="datetime-local" 
+               id="scheduled_publish_date"
                name="scheduled_publish_date" 
                value="<?php echo $scheduled_date ? date('Y-m-d\TH:i', strtotime($scheduled_date)) : ''; ?>">
         <p><small>Leave blank to publish manually later</small></p>
@@ -644,76 +650,90 @@ function scheduled_publish_meta_box_callback($post) {
     }
 }
 
-// Save scheduled date with better debugging
+// **REVISED** Save scheduled date with timezone and post-specific cron fixes
 function save_scheduled_publish_meta($post_id) {
+    // Basic checks
     if (!isset($_POST['scheduled_publish_nonce']) || 
         !wp_verify_nonce($_POST['scheduled_publish_nonce'], 'scheduled_publish_nonce')) {
         return;
     }
-    
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
         return;
     }
-    
+    if ('shorthand_story' !== get_post_type($post_id)) {
+        return;
+    }
     if (!current_user_can('edit_post', $post_id)) {
         return;
     }
     
-    if (isset($_POST['scheduled_publish_date'])) {
-        if (!empty($_POST['scheduled_publish_date'])) {
-            $scheduled_date = sanitize_text_field($_POST['scheduled_publish_date']);
+    // **FIX**: Define a post-specific hook and arguments
+    $hook = 'publish_specific_soft_post';
+    $args = array('post_id' => $post_id);
+
+    // Always clear the existing schedule for THIS post first
+    wp_clear_scheduled_hook($hook, $args);
+
+    if (isset($_POST['scheduled_publish_date']) && !empty($_POST['scheduled_publish_date'])) {
+        $local_date_string = sanitize_text_field($_POST['scheduled_publish_date']);
+        
+        // **FIX**: Convert local datetime string to a UTC/GMT datetime string
+        $gmt_date_string = get_gmt_from_date($local_date_string);
+        
+        // **FIX**: Create the correct UTC timestamp for scheduling
+        $utc_timestamp = strtotime($gmt_date_string);
+
+        // Only schedule if the time is in the future
+        if ($utc_timestamp > time()) {
+            // Update post meta with the local date string for display purposes in the meta box
+            update_post_meta($post_id, '_scheduled_publish_date', $local_date_string);
             
-            // Convert datetime-local format to MySQL format
-            $mysql_date = date('Y-m-d H:i:s', strtotime($scheduled_date));
-            update_post_meta($post_id, '_scheduled_publish_date', $mysql_date);
+            // **FIX**: Schedule a UNIQUE event for this specific post
+            wp_schedule_single_event($utc_timestamp, $hook, $args);
             
-            // Debug: Log what we're scheduling
-            error_log("Scheduling post {$post_id} for: {$mysql_date} (current time: " . current_time('Y-m-d H:i:s') . ")");
-            
-            // Clear any existing scheduled events first
-            wp_clear_scheduled_hook('publish_soft_posts');
-            
-            // Schedule the cron job
-            wp_schedule_single_event(strtotime($mysql_date), 'publish_soft_posts');
+            error_log("Post {$post_id}: Cleared old schedule. New event scheduled for {$gmt_date_string} UTC.");
+
         } else {
-            delete_post_meta($post_id, '_scheduled_publish_date');
-            wp_clear_scheduled_hook('publish_soft_posts');
+             error_log("Post {$post_id}: Did not schedule, date is in the past.");
         }
+
+    } else {
+        // If the date field is cleared, remove the meta and the schedule
+        delete_post_meta($post_id, '_scheduled_publish_date');
+        error_log("Post {$post_id}: Date cleared, unscheduled event.");
     }
 }
 add_action('save_post', 'save_scheduled_publish_meta');
 
-// Cron function with better debugging
-function check_and_publish_scheduled_posts() {
-    error_log("Cron job running at: " . current_time('Y-m-d H:i:s'));
-    
-    $posts = get_posts([
-        'post_type' => ['post', 'shorthand_story'],
-        'post_status' => 'soft_publish',
-        'posts_per_page' => -1,
-        'meta_query' => [
-            [
-                'key' => '_scheduled_publish_date',
-                'value' => current_time('Y-m-d H:i:s'),
-                'compare' => '<=',
-                'type' => 'DATETIME'
-            ]
-        ]
-    ]);
-    
-    error_log("Found " . count($posts) . " posts to publish");
-    
-    foreach ($posts as $post) {
-        $scheduled_date = get_post_meta($post->ID, '_scheduled_publish_date', true);
-        error_log("Publishing post {$post->ID} (was scheduled for: {$scheduled_date})");
-        
+
+// **REVISED** Cron function to publish a specific post
+function publish_specific_post($post_id) {
+    error_log("Cron running for post {$post_id} at: " . current_time('Y-m-d H:i:s'));
+
+    // Get the specific post
+    $post = get_post($post_id);
+
+    // Double-check that the post is still 'soft_publish' before changing it
+    if ($post && $post->post_status === 'soft_publish') {
         wp_update_post([
-            'ID' => $post->ID,
-            'post_status' => 'publish'
+            'ID'            => $post_id,
+            'post_status'   => 'publish',
+            'post_date'     => current_time('mysql'), // Update publish date to now
+            'post_date_gmt' => current_time('mysql', 1)
         ]);
-        delete_post_meta($post->ID, '_scheduled_publish_date');
+        delete_post_meta($post_id, '_scheduled_publish_date');
+        error_log("Successfully published post {$post_id}.");
+    } else {
+        error_log("Could not publish post {$post_id}. It was either not found or its status was not 'soft_publish'.");
     }
 }
+// **FIX**: Add the action for the NEW, post-specific hook
+add_action('publish_specific_soft_post', 'publish_specific_post', 10, 1);
+
+// ===================================================================
+// END OF REVISED SECTION
+// ===================================================================
+
 
 // 6. OPTIONAL: BULK ACTION TO PROMOTE POSTS TO PUBLISHED
 
@@ -749,11 +769,12 @@ function publish_now_admin_notice() {
     if (!empty($_REQUEST['published_now'])) {
         $count = intval($_REQUEST['published_now']);
         printf('<div id="message" class="updated fade"><p>' .
-            _n('Published %s post.', 'Published %s posts.', $count) .
+            _n('Published %s post.', 'Published %s posts.', $count, 'your-text-domain') .
             '</p></div>', $count);
     }
 }
 add_action('admin_notices', 'publish_now_admin_notice');
+
 
 // Protect soft_publish status from being changed to publish (but allow cron)
 function protect_soft_publish_status($data, $postarr) {
