@@ -619,7 +619,6 @@ function scheduled_publish_meta_box_callback($post) {
     
     if ($post->post_status === 'soft_publish') {
         ?>
-        <!-- Hidden field to preserve status -->
         <input type="hidden" name="keep_soft_publish" value="1">
         
         <div style="background: #f0f6fc; padding: 8px; margin-bottom: 10px; border-radius: 3px;">
@@ -631,6 +630,9 @@ function scheduled_publish_meta_box_callback($post) {
                name="scheduled_publish_date" 
                value="<?php echo $scheduled_date ? date('Y-m-d\TH:i', strtotime($scheduled_date)) : ''; ?>">
         <p><small>Leave blank to publish manually later</small></p>
+        <?php if ($scheduled_date): ?>
+            <p><small>Currently scheduled for: <?php echo date('M j, Y \a\t g:i A', strtotime($scheduled_date)); ?></small></p>
+        <?php endif; ?>
         <?php
     } else {
         ?>
@@ -642,7 +644,7 @@ function scheduled_publish_meta_box_callback($post) {
     }
 }
 
-// Save scheduled date
+// Save scheduled date with better debugging
 function save_scheduled_publish_meta($post_id) {
     if (!isset($_POST['scheduled_publish_nonce']) || 
         !wp_verify_nonce($_POST['scheduled_publish_nonce'], 'scheduled_publish_nonce')) {
@@ -657,27 +659,34 @@ function save_scheduled_publish_meta($post_id) {
         return;
     }
     
-    // Only process if this is actually a form submission (nonce passed = form was submitted)
     if (isset($_POST['scheduled_publish_date'])) {
         if (!empty($_POST['scheduled_publish_date'])) {
             $scheduled_date = sanitize_text_field($_POST['scheduled_publish_date']);
-            update_post_meta($post_id, '_scheduled_publish_date', $scheduled_date);
+            
+            // Convert datetime-local format to MySQL format
+            $mysql_date = date('Y-m-d H:i:s', strtotime($scheduled_date));
+            update_post_meta($post_id, '_scheduled_publish_date', $mysql_date);
+            
+            // Debug: Log what we're scheduling
+            error_log("Scheduling post {$post_id} for: {$mysql_date} (current time: " . current_time('Y-m-d H:i:s') . ")");
+            
+            // Clear any existing scheduled events first
+            wp_clear_scheduled_hook('publish_soft_posts');
             
             // Schedule the cron job
-            wp_schedule_single_event(strtotime($scheduled_date), 'publish_soft_posts');
+            wp_schedule_single_event(strtotime($mysql_date), 'publish_soft_posts');
         } else {
-            // Only delete if the field was explicitly cleared (empty but present in POST)
             delete_post_meta($post_id, '_scheduled_publish_date');
+            wp_clear_scheduled_hook('publish_soft_posts');
         }
     }
-    // If $_POST['scheduled_publish_date'] doesn't exist, do nothing (not a form submission)
 }
 add_action('save_post', 'save_scheduled_publish_meta');
-// Register cron hook
-add_action('publish_soft_posts', 'check_and_publish_scheduled_posts');
 
-// Cron function to publish scheduled posts
+// Cron function with better debugging
 function check_and_publish_scheduled_posts() {
+    error_log("Cron job running at: " . current_time('Y-m-d H:i:s'));
+    
     $posts = get_posts([
         'post_type' => ['post', 'shorthand_story'],
         'post_status' => 'soft_publish',
@@ -692,7 +701,12 @@ function check_and_publish_scheduled_posts() {
         ]
     ]);
     
+    error_log("Found " . count($posts) . " posts to publish");
+    
     foreach ($posts as $post) {
+        $scheduled_date = get_post_meta($post->ID, '_scheduled_publish_date', true);
+        error_log("Publishing post {$post->ID} (was scheduled for: {$scheduled_date})");
+        
         wp_update_post([
             'ID' => $post->ID,
             'post_status' => 'publish'
