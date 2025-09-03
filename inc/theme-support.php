@@ -657,18 +657,22 @@ function save_scheduled_publish_meta($post_id) {
         return;
     }
     
-    if (isset($_POST['scheduled_publish_date']) && !empty($_POST['scheduled_publish_date'])) {
-        $scheduled_date = sanitize_text_field($_POST['scheduled_publish_date']);
-        update_post_meta($post_id, '_scheduled_publish_date', $scheduled_date);
-        
-        // Schedule the cron job
-        wp_schedule_single_event(strtotime($scheduled_date), 'publish_soft_posts');
-    } else {
-        delete_post_meta($post_id, '_scheduled_publish_date');
+    // Only process if this is actually a form submission (nonce passed = form was submitted)
+    if (isset($_POST['scheduled_publish_date'])) {
+        if (!empty($_POST['scheduled_publish_date'])) {
+            $scheduled_date = sanitize_text_field($_POST['scheduled_publish_date']);
+            update_post_meta($post_id, '_scheduled_publish_date', $scheduled_date);
+            
+            // Schedule the cron job
+            wp_schedule_single_event(strtotime($scheduled_date), 'publish_soft_posts');
+        } else {
+            // Only delete if the field was explicitly cleared (empty but present in POST)
+            delete_post_meta($post_id, '_scheduled_publish_date');
+        }
     }
+    // If $_POST['scheduled_publish_date'] doesn't exist, do nothing (not a form submission)
 }
 add_action('save_post', 'save_scheduled_publish_meta');
-
 // Register cron hook
 add_action('publish_soft_posts', 'check_and_publish_scheduled_posts');
 
