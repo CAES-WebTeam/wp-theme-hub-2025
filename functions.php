@@ -33,6 +33,10 @@ require get_template_directory() . '/inc/events-support.php';
 require get_template_directory() . '/inc/events/events-main.php';
 
 
+// CAES Admin Tools to keep
+require get_template_directory() . '/inc/topic-management.php';
+
+
 // Temp include
 require get_template_directory() . '/inc/release-date-migration.php';
 require get_template_directory() . '/inc/release-date-clear.php';

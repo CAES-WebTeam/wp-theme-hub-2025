@@ -494,3 +494,69 @@ function caes_get_placeholder_image($post_id) {
         'alt' => get_the_title($post_id)
     ];
 }
+
+/* SOFT PUBLISH POST STATUS */
+
+// Register the custom post status
+function register_soft_publish_status() {
+    register_post_status('soft_publish', array(
+        'label'                     => _x('Soft Published', 'post status', 'textdomain'),
+        'public'                    => true,
+        'publicly_queryable'        => true,
+        'show_in_admin_status_list' => true,
+        'show_in_admin_all_list'    => true,
+        'exclude_from_search'       => false,
+        'label_count'              => _n_noop(
+            'Soft Published <span class="count">(%s)</span>',
+            'Soft Published <span class="count">(%s)</span>',
+            'textdomain'
+        ),
+    ));
+}
+add_action('init', 'register_soft_publish_status');
+
+// Add soft_publish to the post status dropdown in admin
+function add_soft_publish_to_dropdown() {
+    global $post;
+    
+    // Only for posts and shorthand_story
+    if (!in_array($post->post_type, ['post', 'shorthand_story'])) {
+        return;
+    }
+    
+    $complete = '';
+    $label = '';
+    
+    if ($post->post_status == 'soft_publish') {
+        $complete = ' selected="selected"';
+        $label = '<span id="post-status-display"> Soft Published</span>';
+    }
+    
+    echo '<script>
+    jQuery(document).ready(function($) {
+        $("select#post_status").append("<option value=\"soft_publish\" ' . $complete . '>Soft Published</option>");
+        $(".misc-pub-post-status label").append("' . $label . '");
+    });
+    </script>';
+}
+add_action('admin_footer-post.php', 'add_soft_publish_to_dropdown');
+add_action('admin_footer-post-new.php', 'add_soft_publish_to_dropdown');
+
+// Display custom status in post list
+function display_soft_publish_status_in_post_list($states, $post) {
+    if ($post->post_status == 'soft_publish') {
+        $states['soft_publish'] = __('Soft Published', 'textdomain');
+    }
+    return $states;
+}
+add_filter('display_post_states', 'display_soft_publish_status_in_post_list', 10, 2);
+
+// Add soft_publish to quick edit
+function add_soft_publish_to_quick_edit() {
+    echo "<script>
+    jQuery(document).ready(function($) {
+        $('select[name=\"_status\"] option[value=\"publish\"]').after('<option value=\"soft_publish\">Soft Published</option>');
+    });
+    </script>";
+}
+add_action('admin_footer-edit.php', 'add_soft_publish_to_quick_edit');

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CAES Topics Import Tool
  * Description: Import and manage Topics taxonomy terms from CAES API endpoints
- * Version: 1.0
+ * Version: 1.1
  * Author: Your Name
  */
 
@@ -17,6 +17,8 @@ class CAES_Topics_Import_Tool {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('wp_ajax_caes_import_parent_terms', array($this, 'ajax_import_parent_terms'));
         add_action('wp_ajax_caes_import_child_terms', array($this, 'ajax_import_child_terms'));
+        add_action('wp_ajax_caes_dry_run_status_import', array($this, 'ajax_dry_run_status_import'));
+        add_action('wp_ajax_caes_import_status', array($this, 'ajax_import_status'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
     }
     
@@ -82,8 +84,26 @@ class CAES_Topics_Import_Tool {
             </div>
             
             <div class="card" style="max-width: 800px; margin-top: 20px;">
+                <h2>Step 3: Import Active/Inactive Status</h2>
+                <p>Update topic terms with their active/inactive status from API data.</p>
+                <p>This step will check both parent and child terms and update their custom field status.</p>
+                
+                <div style="margin: 15px 0;">
+                    <button type="button" id="dry-run-status" class="button button-secondary">
+                        Dry Run (Preview Changes)
+                    </button>
+                    <button type="button" id="import-status" class="button button-primary" style="margin-left: 10px;">
+                        Import Status
+                    </button>
+                </div>
+                
+                <div id="status-import-results" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="card" style="max-width: 800px; margin-top: 20px;">
                 <h2>Import Log</h2>
                 <div id="import-log" style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;"></div>
+                <button type="button" id="clear-log" class="button" style="margin-top: 10px;">Clear Log</button>
             </div>
         </div>
         
@@ -95,6 +115,10 @@ class CAES_Topics_Import_Tool {
                 $('#import-log').append('[' + timestamp + '] ' + message + '\n');
                 $('#import-log').scrollTop($('#import-log')[0].scrollHeight);
             }
+            
+            $('#clear-log').click(function() {
+                $('#import-log').empty();
+            });
             
             $('#import-parent-terms').click(function() {
                 const button = $(this);
@@ -169,6 +193,99 @@ class CAES_Topics_Import_Tool {
                     error: function() {
                         button.prop('disabled', false).text('Import Child Terms');
                         status.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
+                        logMessage('ERROR: Ajax request failed');
+                    }
+                });
+            });
+            
+            $('#dry-run-status').click(function() {
+                const button = $(this);
+                const results = $('#status-import-results');
+                
+                button.prop('disabled', true).text('Analyzing...');
+                results.html('<div class="notice notice-info"><p>Analyzing status changes (dry run)...</p></div>');
+                logMessage('Starting status import dry run...');
+                
+                $.ajax({
+                    url: caes_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'caes_dry_run_status_import',
+                        nonce: caes_ajax.nonce
+                    },
+                    success: function(response) {
+                        button.prop('disabled', false).text('Dry Run (Preview Changes)');
+                        
+                        if (response.success) {
+                            let resultHtml = '<div class="notice notice-success"><p>' + response.data.message + '</p></div>';
+                            
+                            if (response.data.changes && response.data.changes.length > 0) {
+                                resultHtml += '<div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin-top: 10px; max-height: 300px; overflow-y: auto;">';
+                                resultHtml += '<strong>Proposed Changes:</strong><br>';
+                                response.data.changes.forEach(function(change) {
+                                    let statusColor = change.new_status === 'active' ? 'green' : 'red';
+                                    resultHtml += '<div style="margin: 5px 0; padding: 5px; background: #f9f9f9; border-left: 3px solid ' + statusColor + ';">';
+                                    resultHtml += '<strong>' + change.term_name + '</strong> (ID: ' + change.term_id + ')<br>';
+                                    resultHtml += 'Status: ' + change.current_status + ' → <strong style="color: ' + statusColor + ';">' + change.new_status + '</strong>';
+                                    resultHtml += '</div>';
+                                });
+                                resultHtml += '</div>';
+                            }
+                            
+                            results.html(resultHtml);
+                            logMessage('DRY RUN COMPLETED: ' + response.data.message);
+                            if (response.data.details) {
+                                response.data.details.forEach(function(detail) {
+                                    logMessage('  - ' + detail);
+                                });
+                            }
+                        } else {
+                            results.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                            logMessage('ERROR: ' + response.data);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).text('Dry Run (Preview Changes)');
+                        results.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
+                        logMessage('ERROR: Ajax request failed');
+                    }
+                });
+            });
+            
+            $('#import-status').click(function() {
+                const button = $(this);
+                const results = $('#status-import-results');
+                
+                button.prop('disabled', true).text('Importing...');
+                results.html('<div class="notice notice-info"><p>Importing status updates...</p></div>');
+                logMessage('Starting status import...');
+                
+                $.ajax({
+                    url: caes_ajax.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'caes_import_status',
+                        nonce: caes_ajax.nonce
+                    },
+                    success: function(response) {
+                        button.prop('disabled', false).text('Import Status');
+                        
+                        if (response.success) {
+                            results.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                            logMessage('SUCCESS: ' + response.data.message);
+                            if (response.data.details) {
+                                response.data.details.forEach(function(detail) {
+                                    logMessage('  - ' + detail);
+                                });
+                            }
+                        } else {
+                            results.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
+                            logMessage('ERROR: ' + response.data);
+                        }
+                    },
+                    error: function() {
+                        button.prop('disabled', false).text('Import Status');
+                        results.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
                         logMessage('ERROR: Ajax request failed');
                     }
                 });
@@ -469,6 +586,229 @@ class CAES_Topics_Import_Tool {
         } catch (Exception $e) {
             wp_send_json_error('Import failed: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * AJAX handler for dry run status import
+     */
+    public function ajax_dry_run_status_import() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'caes_topics_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        try {
+            $status_data = $this->get_status_data_from_apis();
+            $changes = array();
+            $details = array();
+            
+            $will_activate = 0;
+            $will_deactivate = 0;
+            $no_change = 0;
+            $not_found_in_api = 0;
+            
+            // Get all existing terms
+            $existing_terms = get_terms(array(
+                'taxonomy' => 'topics',
+                'hide_empty' => false,
+            ));
+            
+            foreach ($existing_terms as $term) {
+                $topic_id = get_term_meta($term->term_id, 'topic_id', true);
+                $current_status = get_term_meta($term->term_id, 'active', true);
+                
+                // Default to active if no status is set
+                $current_status_display = empty($current_status) || $current_status === '1' || $current_status === 'yes' ? 'active' : 'inactive';
+                
+                if (empty($topic_id)) {
+                    $details[] = "Skipped {$term->name}: No topic_id found";
+                    continue;
+                }
+                
+                if (isset($status_data[$topic_id])) {
+                    $api_status = $status_data[$topic_id]['active'] ? 'active' : 'inactive';
+                    
+                    if ($current_status_display !== $api_status) {
+                        $changes[] = array(
+                            'term_id' => $term->term_id,
+                            'term_name' => $term->name,
+                            'topic_id' => $topic_id,
+                            'current_status' => $current_status_display,
+                            'new_status' => $api_status
+                        );
+                        
+                        if ($api_status === 'active') {
+                            $will_activate++;
+                        } else {
+                            $will_deactivate++;
+                        }
+                    } else {
+                        $no_change++;
+                    }
+                } else {
+                    $not_found_in_api++;
+                    $details[] = "Topic ID {$topic_id} ({$term->name}) not found in API data";
+                }
+            }
+            
+            $summary = "Analysis complete. Would activate: {$will_activate}, Would deactivate: {$will_deactivate}, No change needed: {$no_change}";
+            if ($not_found_in_api > 0) {
+                $summary .= ", Not found in API: {$not_found_in_api}";
+            }
+            
+            wp_send_json_success(array(
+                'message' => $summary,
+                'changes' => $changes,
+                'details' => $details
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Dry run failed: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX handler for importing status
+     */
+    public function ajax_import_status() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'caes_topics_nonce')) {
+            wp_die('Security check failed');
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        try {
+            $status_data = $this->get_status_data_from_apis();
+            $details = array();
+            
+            $activated = 0;
+            $deactivated = 0;
+            $no_change = 0;
+            $not_found_in_api = 0;
+            
+            // Get all existing terms
+            $existing_terms = get_terms(array(
+                'taxonomy' => 'topics',
+                'hide_empty' => false,
+            ));
+            
+            foreach ($existing_terms as $term) {
+                $topic_id = get_term_meta($term->term_id, 'topic_id', true);
+                $current_status = get_term_meta($term->term_id, 'active', true);
+                
+                // Default to active if no status is set
+                $is_currently_active = empty($current_status) || $current_status === '1' || $current_status === 'yes';
+                
+                if (empty($topic_id)) {
+                    $details[] = "Skipped {$term->name}: No topic_id found";
+                    continue;
+                }
+                
+                if (isset($status_data[$topic_id])) {
+                    $should_be_active = $status_data[$topic_id]['active'];
+                    
+                    if ($is_currently_active !== $should_be_active) {
+                        $new_status = $should_be_active ? '1' : '0';
+                        update_term_meta($term->term_id, 'active', $new_status);
+                        
+                        if ($should_be_active) {
+                            $activated++;
+                            $details[] = "Activated: {$term->name} (ID: {$topic_id})";
+                        } else {
+                            $deactivated++;
+                            $details[] = "Deactivated: {$term->name} (ID: {$topic_id})";
+                        }
+                    } else {
+                        $no_change++;
+                    }
+                } else {
+                    $not_found_in_api++;
+                    $details[] = "Topic ID {$topic_id} ({$term->name}) not found in API data - no change made";
+                }
+            }
+            
+            // Clear the topics manager cache to reflect changes
+            delete_transient('caes_topics_data_v3_secure');
+            
+            $message = "Status import completed. Activated: {$activated}, Deactivated: {$deactivated}, No change needed: {$no_change}";
+            if ($not_found_in_api > 0) {
+                $message .= ", Not found in API: {$not_found_in_api}";
+            }
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'details' => $details
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error('Status import failed: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get status data from both APIs
+     */
+    private function get_status_data_from_apis() {
+        $status_data = array();
+        
+        // Get parent terms status
+        $parent_response = wp_remote_get('https://secure.caes.uga.edu/rest/publications/getPubsKeywordTypes', array(
+            'timeout' => 30,
+            'headers' => array('Accept' => 'application/json')
+        ));
+        
+        if (!is_wp_error($parent_response)) {
+            $parent_body = wp_remote_retrieve_body($parent_response);
+            $parent_data = json_decode($parent_body, true);
+            
+            if (is_array($parent_data)) {
+                foreach ($parent_data as $item) {
+                    $topic_id = $item['ID'];
+                    $active = isset($item['ACTIVE']) ? (bool) $item['ACTIVE'] : true; // Default to active if not specified
+                    
+                    $status_data[$topic_id] = array(
+                        'active' => $active,
+                        'type' => 'parent',
+                        'label' => $item['LABEL']
+                    );
+                }
+            }
+        }
+        
+        // Get child terms status
+        $child_response = wp_remote_get('https://secure.caes.uga.edu/rest/publications/getKeywords', array(
+            'timeout' => 30,
+            'headers' => array('Accept' => 'application/json')
+        ));
+        
+        if (!is_wp_error($child_response)) {
+            $child_body = wp_remote_retrieve_body($child_response);
+            $child_data = json_decode($child_body, true);
+            
+            if (is_array($child_data)) {
+                foreach ($child_data as $item) {
+                    $topic_id = $item['ID'];
+                    $active = isset($item['ACTIVE']) ? (bool) $item['ACTIVE'] : true; // Default to active if not specified
+                    
+                    $status_data[$topic_id] = array(
+                        'active' => $active,
+                        'type' => 'child',
+                        'label' => $item['LABEL']
+                    );
+                }
+            }
+        }
+        
+        return $status_data;
     }
 }
 
