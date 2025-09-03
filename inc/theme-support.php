@@ -601,14 +601,23 @@ function scheduled_publish_meta_box_callback($post) {
     
     if ($post->post_status === 'soft_publish') {
         ?>
+        <div style="background: #f0f6fc; padding: 8px; margin-bottom: 10px; border-radius: 3px;">
+            <strong>Soft Publish Scheduling</strong><br>
+            <small>This schedules when your soft published post becomes fully published and appears in feeds.</small>
+        </div>
         <label for="scheduled_publish_date">Auto-publish on:</label>
         <input type="datetime-local" 
                name="scheduled_publish_date" 
                value="<?php echo $scheduled_date ? date('Y-m-d\TH:i', strtotime($scheduled_date)) : ''; ?>">
-        <p><small>Leave blank to publish manually</small></p>
+        <p><small>Leave blank to publish manually later</small></p>
         <?php
     } else {
-        echo '<p>Only available for soft published posts.</p>';
+        ?>
+        <div style="background: #fff2cc; padding: 8px; border-radius: 3px;">
+            <strong>Note:</strong> Soft publish scheduling is only available when post status is set to "Soft Published".<br>
+            <small>Use WordPress's native "Publish immediately" date picker for regular scheduled posts.</small>
+        </div>
+        <?php
     }
 }
 
@@ -666,12 +675,6 @@ function check_and_publish_scheduled_posts() {
         delete_post_meta($post->ID, '_scheduled_publish_date');
     }
 }
-
-// Also run every hour as backup
-if (!wp_next_scheduled('publish_soft_posts_hourly')) {
-    wp_schedule_event(time(), 'hourly', 'publish_soft_posts_hourly');
-}
-add_action('publish_soft_posts_hourly', 'check_and_publish_scheduled_posts');
 
 // 6. OPTIONAL: BULK ACTION TO PROMOTE POSTS TO PUBLISHED
 
