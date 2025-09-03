@@ -724,14 +724,28 @@ function publish_specific_post($post_id) {
 
     // Double-check that the post is still 'soft_publish' before changing it
     if ($post && $post->post_status === 'soft_publish') {
-        wp_update_post([
-            'ID'            => $post_id,
-            'post_status'   => 'publish',
-            'post_date'     => current_time('mysql'), // Update publish date to now
-            'post_date_gmt' => current_time('mysql', 1)
-        ]);
-        delete_post_meta($post_id, '_scheduled_publish_date');
-        error_log("Successfully published post {$post_id}.");
+        
+        // **FIX**: Get the scheduled date from post meta to ensure correct feed order
+        $scheduled_local_date = get_post_meta($post_id, '_scheduled_publish_date', true);
+
+        if ($scheduled_local_date) {
+            // Format the date for WordPress's database fields
+            $post_date_mysql     = date('Y-m-d H:i:s', strtotime($scheduled_local_date));
+            $post_date_gmt_mysql = get_gmt_from_date($post_date_mysql);
+
+            wp_update_post([
+                'ID'            => $post_id,
+                'post_status'   => 'publish',
+                'post_date'     => $post_date_mysql,     // Set the publish date to the scheduled time
+                'post_date_gmt' => $post_date_gmt_mysql, // Set the GMT publish date to the scheduled time
+            ]);
+
+            delete_post_meta($post_id, '_scheduled_publish_date');
+            error_log("Successfully published post {$post_id} with scheduled date: {$post_date_mysql}.");
+        } else {
+            error_log("Could not publish post {$post_id}: _scheduled_publish_date meta was missing.");
+        }
+
     } else {
         error_log("Could not publish post {$post_id}. It was either not found or its status was not 'soft_publish'.");
     }
