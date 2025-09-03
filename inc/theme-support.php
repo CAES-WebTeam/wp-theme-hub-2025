@@ -497,65 +497,88 @@ function caes_get_placeholder_image($post_id) {
 
 /* SOFT PUBLISH POST STATUS */
 
-add_action('init', 'rudr_custom_status_creation');
-function rudr_custom_status_creation() {
-    register_post_status('soft_publish', array(
-        'label' => 'Soft Published',
-        'label_count' => _n_noop('Soft Published <span class="count">(%s)</span>', 'Soft Published <span class="count">(%s)</span>'),
-        'public' => true,
-        'show_in_admin_status_list' => true,
-        'show_in_admin_all_list' => true,
-    ));
+// Note to self: we are only using this on Shorthand posts for now, because it uses the classic type editor,
+// and that's easier to change. It would be more complex to add this to the block editor, and isn't being 
+// asked for right now.
+
+// Add scheduled publish date meta box
+function add_scheduled_publish_meta_box() {
+    add_meta_box(
+        'scheduled_publish_box',
+        'Scheduled Publish',
+        'scheduled_publish_meta_box_callback',
+        ['shorthand_story'],
+        'side'
+    );
+}
+add_action('add_meta_boxes', 'add_scheduled_publish_meta_box');
+
+function scheduled_publish_meta_box_callback($post) {
+    wp_nonce_field('scheduled_publish_nonce', 'scheduled_publish_nonce');
+    $scheduled_date = get_post_meta($post->ID, '_scheduled_publish_date', true);
+    
+    if ($post->post_status === 'soft_publish') {
+        ?>
+        <label for="scheduled_publish_date">Publish on:</label>
+        <input type="datetime-local" 
+               name="scheduled_publish_date" 
+               value="<?php echo $scheduled_date ? date('Y-m-d\TH:i', strtotime($scheduled_date)) : ''; ?>">
+        <p><small>Leave blank to publish manually</small></p>
+        <?php
+    } else {
+        echo '<p>Only available for soft published posts.</p>';
+    }
 }
 
-add_action('admin_footer-post.php', function() {
-    ?>
-    <script>
-    jQuery(function($) {
-        // Add our custom post status to the dropdown
-        $('#post_status').append('<option value="soft_publish">Soft Published</option>');
+// Save scheduled date
+function save_scheduled_publish_meta($post_id) {
+    if (!isset($_POST['scheduled_publish_nonce']) || 
+        !wp_verify_nonce($_POST['scheduled_publish_nonce'], 'scheduled_publish_nonce')) {
+        return;
+    }
+    
+    if (isset($_POST['scheduled_publish_date']) && !empty($_POST['scheduled_publish_date'])) {
+        $scheduled_date = sanitize_text_field($_POST['scheduled_publish_date']);
+        update_post_meta($post_id, '_scheduled_publish_date', $scheduled_date);
         
-        <?php if ('soft_publish' === get_post_status()) : ?>
-            // If current post has this status, update the UI
-            $('#post-status-display').text('Soft Published');
-            $('#post_status').val('soft_publish');
-        <?php endif; ?>
-    });
-    </script>
-    <?php
-});
+        // Schedule the cron job
+        wp_schedule_single_event(strtotime($scheduled_date), 'publish_soft_posts');
+    } else {
+        delete_post_meta($post_id, '_scheduled_publish_date');
+    }
+}
+add_action('save_post', 'save_scheduled_publish_meta');
 
-add_action('admin_footer-post-new.php', function() {
-    ?>
-    <script>
-    jQuery(function($) {
-        $('#post_status').append('<option value="soft_publish">Soft Published</option>');
-    });
-    </script>
-    <?php
-});
+// Register cron hook
+add_action('publish_soft_posts', 'check_and_publish_scheduled_posts');
 
-add_action('admin_footer-edit.php', 'rudr_status_into_inline_edit');
-function rudr_status_into_inline_edit() {
-    ?>
-    <script>
-    jQuery(function($) {
-        $('select[name="_status"]').append('<option value="soft_publish">Soft Published</option>');
-    });
-    </script>
-    <?php
+// Cron function to publish scheduled posts
+function check_and_publish_scheduled_posts() {
+    $posts = get_posts([
+        'post_type' => ['post', 'shorthand_story'],
+        'post_status' => 'soft_publish',
+        'posts_per_page' => -1,
+        'meta_query' => [
+            [
+                'key' => '_scheduled_publish_date',
+                'value' => current_time('Y-m-d H:i:s'),
+                'compare' => '<=',
+                'type' => 'DATETIME'
+            ]
+        ]
+    ]);
+    
+    foreach ($posts as $post) {
+        wp_update_post([
+            'ID' => $post->ID,
+            'post_status' => 'publish'
+        ]);
+        delete_post_meta($post->ID, '_scheduled_publish_date');
+    }
 }
 
-add_filter('display_post_states', 'rudr_display_status_label');
-function rudr_display_status_label($states) {
-    // Skip if we're already filtering by this status
-    if ('soft_publish' === get_query_var('post_status')) {
-        return $states;
-    }
-    
-    if ('soft_publish' === get_post_status()) {
-        $states[] = 'Soft Published';
-    }
-    
-    return $states;
+// Also run every hour as backup
+if (!wp_next_scheduled('publish_soft_posts_hourly')) {
+    wp_schedule_event(time(), 'hourly', 'publish_soft_posts_hourly');
 }
+add_action('publish_soft_posts_hourly', 'check_and_publish_scheduled_posts');
