@@ -34,7 +34,6 @@ if ($handSelectPosts) {
         'posts_per_page' => $numberOfPosts,
         'orderby' => $orderKey, // 'date' or 'title'
         'order' => $orderDirection, // 'ASC' or 'DESC'
-        // **FIX 1: Ensure only 'publish' status posts are queried.**
         'post_status' => 'publish',
     );
 
