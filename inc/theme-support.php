@@ -516,10 +516,12 @@ add_action('add_meta_boxes', 'add_scheduled_publish_meta_box');
 function scheduled_publish_meta_box_callback($post) {
     wp_nonce_field('scheduled_publish_nonce', 'scheduled_publish_nonce');
     $scheduled_date = get_post_meta($post->ID, '_scheduled_publish_date', true);
+    $current_status = isset($_GET['post_status']) ? $_GET['post_status'] : $post->post_status;
     
-    if ($post->post_status === 'soft_publish') {
+    // Show for both soft_publish posts AND when status is being changed to soft_publish
+    if ($current_status === 'soft_publish' || (isset($_POST['post_status']) && $_POST['post_status'] === 'soft_publish')) {
         ?>
-        <label for="scheduled_publish_date">Publish on:</label>
+        <label for="scheduled_publish_date">Auto-publish on:</label>
         <input type="datetime-local" 
                name="scheduled_publish_date" 
                value="<?php echo $scheduled_date ? date('Y-m-d\TH:i', strtotime($scheduled_date)) : ''; ?>">
