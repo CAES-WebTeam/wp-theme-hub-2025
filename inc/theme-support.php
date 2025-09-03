@@ -497,113 +497,65 @@ function caes_get_placeholder_image($post_id) {
 
 /* SOFT PUBLISH POST STATUS */
 
-// Register custom post status - UPDATED VERSION
-function register_soft_publish_status() {
+add_action('init', 'rudr_custom_status_creation');
+function rudr_custom_status_creation() {
     register_post_status('soft_publish', array(
-        'label'                     => _x('Soft Published', 'post status'),
-        'public'                    => true,
-        'publicly_queryable'        => true,
+        'label' => 'Soft Published',
+        'label_count' => _n_noop('Soft Published <span class="count">(%s)</span>', 'Soft Published <span class="count">(%s)</span>'),
+        'public' => true,
         'show_in_admin_status_list' => true,
-        'show_in_admin_all_list'    => true,
-        'exclude_from_search'       => false,
-        // This is important - tells WP it's a "published" type status
-        'date_floating'            => false,
-        'label_count'              => _n_noop(
-            'Soft Published <span class="count">(%s)</span>',
-            'Soft Published <span class="count">(%s)</span>'
-        ),
+        'show_in_admin_all_list' => true,
     ));
 }
-add_action('init', 'register_soft_publish_status', 0); // Priority 0 to run early
 
-// UPDATED dropdown function
-function add_soft_publish_to_dropdown() {
-    global $post;
-    
-    if (!$post || !in_array($post->post_type, ['post', 'shorthand_story'])) {
-        return;
-    }
-    
-    $complete = '';
-    $label = '';
-    
-    if ($post->post_status == 'soft_publish') {
-        $complete = ' selected="selected"';
-        $label = 'Soft Published';
-    }
-    
+add_action('admin_footer-post.php', function() {
     ?>
-    <script type="text/javascript">
-    jQuery(document).ready(function($) {
-        // Wait for elements to be ready
-        setTimeout(function() {
-            // Add to dropdown
-            if ($('select#post_status').length) {
-                $('select#post_status').append('<option value="soft_publish"<?php echo $complete; ?>>Soft Published</option>');
-            }
-            
-            // Update display text
-            <?php if ($post->post_status == 'soft_publish'): ?>
-                $('#post-status-display').text('<?php echo $label; ?>');
-                $('#save-post').val('Update');
-                $('#save-post').removeClass('button-primary').addClass('button-large');
-                $('#publish').val('Update');
-            <?php endif; ?>
-        }, 100);
+    <script>
+    jQuery(function($) {
+        // Add our custom post status to the dropdown
+        $('#post_status').append('<option value="soft_publish">Soft Published</option>');
+        
+        <?php if ('soft_publish' === get_post_status()) : ?>
+            // If current post has this status, update the UI
+            $('#post-status-display').text('Soft Published');
+            $('#post_status').val('soft_publish');
+        <?php endif; ?>
+    });
+    </script>
+    <?php
+});
+
+add_action('admin_footer-post-new.php', function() {
+    ?>
+    <script>
+    jQuery(function($) {
+        $('#post_status').append('<option value="soft_publish">Soft Published</option>');
+    });
+    </script>
+    <?php
+});
+
+add_action('admin_footer-edit.php', 'rudr_status_into_inline_edit');
+function rudr_status_into_inline_edit() {
+    ?>
+    <script>
+    jQuery(function($) {
+        $('select[name="_status"]').append('<option value="soft_publish">Soft Published</option>');
     });
     </script>
     <?php
 }
-add_action('admin_footer-post.php', 'add_soft_publish_to_dropdown');
-add_action('admin_footer-post-new.php', 'add_soft_publish_to_dropdown');
 
-// Display custom status in post list
-function display_soft_publish_status_in_post_list($states, $post) {
-    if ($post->post_status == 'soft_publish') {
-        $states['soft_publish'] = __('Soft Published', 'textdomain');
+add_filter('display_post_states', 'rudr_display_status_label');
+function rudr_display_status_label($states) {
+    // Skip if we're already filtering by this status
+    if ('soft_publish' === get_query_var('post_status')) {
+        return $states;
     }
+    
+    if ('soft_publish' === get_post_status()) {
+        $states[] = 'Soft Published';
+    }
+    
     return $states;
 }
-add_filter('display_post_states', 'display_soft_publish_status_in_post_list', 10, 2);
-
-// Add soft_publish to quick edit
-function add_soft_publish_to_quick_edit() {
-    echo "<script>
-    jQuery(document).ready(function($) {
-        $('select[name=\"_status\"] option[value=\"publish\"]').after('<option value=\"soft_publish\">Soft Published</option>');
-    });
-    </script>";
-}
-add_action('admin_footer-edit.php', 'add_soft_publish_to_quick_edit');
-
-// Prevent WordPress from changing soft_publish back to draft
-function protect_soft_publish_status($data, $postarr) {
-    if (isset($postarr['post_status']) && $postarr['post_status'] === 'soft_publish') {
-        $data['post_status'] = 'soft_publish';
-    }
-    return $data;
-}
-add_filter('wp_insert_post_data', 'protect_soft_publish_status', 10, 2);
-
-// Temporary debug - add to functions.php
-function debug_post_status() {
-    if (is_admin() && current_user_can('manage_options')) {
-        global $wp_post_statuses;
-        error_log('Available post statuses: ' . print_r(array_keys($wp_post_statuses), true));
-        
-        if (isset($wp_post_statuses['soft_publish'])) {
-            error_log('soft_publish status found: ' . print_r($wp_post_statuses['soft_publish'], true));
-        } else {
-            error_log('soft_publish status NOT found');
-        }
-    }
-}
-add_action('admin_init', 'debug_post_status');
-
-// Debug what status is being saved
-function debug_post_save($post_id, $post, $update) {
-    if (in_array($post->post_type, ['post', 'shorthand_story'])) {
-        error_log("Post ID {$post_id} saved with status: {$post->post_status}");
-    }
-}
-add_action('save_post', 'debug_post_save', 10, 3);
