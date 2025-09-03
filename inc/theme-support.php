@@ -737,8 +737,18 @@ function publish_now_admin_notice() {
 }
 add_action('admin_notices', 'publish_now_admin_notice');
 
-// Protect soft_publish status from being changed to publish
+// Protect soft_publish status from being changed to publish (but allow cron)
 function protect_soft_publish_status($data, $postarr) {
+    // Don't interfere with cron jobs or programmatic updates
+    if (defined('DOING_CRON') && DOING_CRON) {
+        return $data;
+    }
+    
+    // Don't interfere if this is a programmatic wp_update_post call
+    if (!isset($_POST['post_status'])) {
+        return $data;
+    }
+    
     // If the original post was soft_publish and no explicit status change requested
     if (isset($postarr['ID']) && $postarr['ID']) {
         $original_post = get_post($postarr['ID']);
@@ -748,8 +758,8 @@ function protect_soft_publish_status($data, $postarr) {
             if (isset($postarr['post_status']) && $postarr['post_status'] === 'soft_publish') {
                 $data['post_status'] = 'soft_publish';
             }
-            // If no explicit status provided, or if it's trying to change to publish, keep soft_publish
-            elseif (!isset($postarr['post_status']) || $postarr['post_status'] === 'publish') {
+            // If it's trying to change to publish via admin form, keep soft_publish
+            elseif (isset($_POST['post_status']) && $_POST['post_status'] === 'publish') {
                 $data['post_status'] = 'soft_publish';
             }
         }
