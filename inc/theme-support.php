@@ -515,16 +515,28 @@ function rudr_custom_status_creation() {
 
 // 2. ADD TO CLASSIC EDITOR DROPDOWN (shorthand_story only)
 add_action('admin_footer-post.php', function() {
-    global $post;
+   global $post;
     if (!$post || $post->post_type !== 'shorthand_story') return;
     ?>
     <script>
     jQuery(function($) {
         $('#post_status').append('<option value="soft_publish">Soft Published</option>');
+        
         <?php if ('soft_publish' === get_post_status()) : ?>
             $('#post-status-display').text('Soft Published');
             $('#post_status').val('soft_publish');
+            // Hide the publish date section for soft published posts
+            $('.misc-pub-curtime').hide();
         <?php endif; ?>
+        
+        // Also hide it when status changes to soft_publish
+        $('#post_status').on('change', function() {
+            if ($(this).val() === 'soft_publish') {
+                $('.misc-pub-curtime').hide();
+            } else {
+                $('.misc-pub-curtime').show();
+            }
+        });
     });
     </script>
     <?php
@@ -577,7 +589,8 @@ function add_scheduled_publish_meta_box() {
         'Scheduled Publish',
         'scheduled_publish_meta_box_callback',
         ['shorthand_story'],
-        'side'
+        'side',
+		'high'
     );
 }
 add_action('add_meta_boxes', 'add_scheduled_publish_meta_box');
