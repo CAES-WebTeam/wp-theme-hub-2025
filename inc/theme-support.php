@@ -520,9 +520,11 @@ add_action('admin_footer-post.php', function() {
     ?>
     <script>
     jQuery(function($) {
+        // First, add the option to dropdown
         $('#post_status').append('<option value="soft_publish">Soft Published</option>');
         
-        function updateButtonForSoftPublish() {
+        // Function to update UI elements
+        function updateSoftPublishUI() {
             var status = $('#post_status').val();
             var $publishButton = $('#publish');
             
@@ -537,15 +539,21 @@ add_action('admin_footer-post.php', function() {
             }
         }
         
+        // Set initial state for existing soft_publish posts
         <?php if ('soft_publish' === get_post_status()) : ?>
             $('#post-status-display').text('Soft Published');
             $('#post_status').val('soft_publish');
-            updateButtonForSoftPublish();
         <?php endif; ?>
         
-        // Update button when status changes
+        // Update UI based on current status
+        updateSoftPublishUI();
+        
+        // Update UI when status changes
         $('#post_status').on('change', function() {
-            updateButtonForSoftPublish();
+            if ($(this).val() === 'soft_publish') {
+                $('#post-status-display').text('Soft Published');
+            }
+            updateSoftPublishUI();
         });
     });
     </script>
