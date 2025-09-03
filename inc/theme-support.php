@@ -619,6 +619,9 @@ function scheduled_publish_meta_box_callback($post) {
     
     if ($post->post_status === 'soft_publish') {
         ?>
+        <!-- Hidden field to preserve status -->
+        <input type="hidden" name="keep_soft_publish" value="1">
+        
         <div style="background: #f0f6fc; padding: 8px; margin-bottom: 10px; border-radius: 3px;">
             <strong>Soft Publish Scheduling</strong><br>
             <small>This schedules when your soft published post becomes fully published and appears in feeds.</small>
@@ -733,3 +736,25 @@ function publish_now_admin_notice() {
     }
 }
 add_action('admin_notices', 'publish_now_admin_notice');
+
+// Protect soft_publish status from being changed to publish
+function protect_soft_publish_status($data, $postarr) {
+    // If the original post was soft_publish and no explicit status change requested
+    if (isset($postarr['ID']) && $postarr['ID']) {
+        $original_post = get_post($postarr['ID']);
+        
+        if ($original_post && $original_post->post_status === 'soft_publish') {
+            // If post_status is explicitly set to soft_publish, keep it
+            if (isset($postarr['post_status']) && $postarr['post_status'] === 'soft_publish') {
+                $data['post_status'] = 'soft_publish';
+            }
+            // If no explicit status provided, or if it's trying to change to publish, keep soft_publish
+            elseif (!isset($postarr['post_status']) || $postarr['post_status'] === 'publish') {
+                $data['post_status'] = 'soft_publish';
+            }
+        }
+    }
+    
+    return $data;
+}
+add_filter('wp_insert_post_data', 'protect_soft_publish_status', 10, 2);
