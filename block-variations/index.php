@@ -113,10 +113,7 @@ function variations_query_filter($query, $block)
 
     $parsed_block = $parsed_blocks_for_filtering[$block_query_id];
 
-    if (isset($parsed_block['attrs']['namespace'])) {
-        // Ensure only published posts appear in query block feeds/archives
-        $query['post_status'] = 'publish';
-    }
+    $query['post_status'] = 'publish';
 
     $meta_query = [];
     $tax_query = [];
