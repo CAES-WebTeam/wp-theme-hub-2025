@@ -677,24 +677,33 @@ function save_scheduled_publish_meta($post_id) {
     if (isset($_POST['scheduled_publish_date']) && !empty($_POST['scheduled_publish_date'])) {
         $local_date_string = sanitize_text_field($_POST['scheduled_publish_date']);
         
-        // **FIX**: Convert local datetime string to a UTC/GMT datetime string
+        // --- NEW DEBUGGING LOGS ---
+        error_log("Post {$post_id} - RAW date received from form: " . $local_date_string);
+        // --- END DEBUGGING LOGS ---
+
+        // Convert local datetime string to a UTC/GMT datetime string
         $gmt_date_string = get_gmt_from_date($local_date_string);
         
-        // **FIX**: Create the correct UTC timestamp for scheduling
+        // Create the correct UTC timestamp for scheduling
         $utc_timestamp = strtotime($gmt_date_string);
 
+        // --- NEW DEBUGGING LOGS ---
+        $current_utc_timestamp = time();
+        error_log("Post {$post_id} - Converted to GMT: {$gmt_date_string} | Schedule Timestamp: {$utc_timestamp} | Current Timestamp: {$current_utc_timestamp}");
+        // --- END DEBUGGING LOGS ---
+
         // Only schedule if the time is in the future
-        if ($utc_timestamp > time()) {
+        if ($utc_timestamp > $current_utc_timestamp) {
             // Update post meta with the local date string for display purposes in the meta box
             update_post_meta($post_id, '_scheduled_publish_date', $local_date_string);
             
-            // **FIX**: Schedule a UNIQUE event for this specific post
+            // Schedule a UNIQUE event for this specific post
             wp_schedule_single_event($utc_timestamp, $hook, $args);
             
-            error_log("Post {$post_id}: Cleared old schedule. New event scheduled for {$gmt_date_string} UTC.");
+            error_log("Post {$post_id}: SUCCESS - Event scheduled for {$gmt_date_string} UTC.");
 
         } else {
-             error_log("Post {$post_id}: Did not schedule, date is in the past.");
+             error_log("Post {$post_id}: FAILED - Did not schedule, date is in the past.");
         }
 
     } else {
