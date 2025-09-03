@@ -515,27 +515,37 @@ function rudr_custom_status_creation() {
 
 // 2. ADD TO CLASSIC EDITOR DROPDOWN (shorthand_story only)
 add_action('admin_footer-post.php', function() {
-   global $post;
+    global $post;
     if (!$post || $post->post_type !== 'shorthand_story') return;
     ?>
     <script>
     jQuery(function($) {
         $('#post_status').append('<option value="soft_publish">Soft Published</option>');
         
+        function updateButtonForSoftPublish() {
+            var status = $('#post_status').val();
+            var $publishButton = $('#publish');
+            
+            if (status === 'soft_publish') {
+                $('.misc-pub-curtime').hide();
+                $publishButton.val('Update');
+                $publishButton.removeClass('button-primary').addClass('button-large');
+            } else {
+                $('.misc-pub-curtime').show();
+                $publishButton.val('Publish');
+                $publishButton.removeClass('button-large').addClass('button-primary');
+            }
+        }
+        
         <?php if ('soft_publish' === get_post_status()) : ?>
             $('#post-status-display').text('Soft Published');
             $('#post_status').val('soft_publish');
-            // Hide the publish date section for soft published posts
-            $('.misc-pub-curtime').hide();
+            updateButtonForSoftPublish();
         <?php endif; ?>
         
-        // Also hide it when status changes to soft_publish
+        // Update button when status changes
         $('#post_status').on('change', function() {
-            if ($(this).val() === 'soft_publish') {
-                $('.misc-pub-curtime').hide();
-            } else {
-                $('.misc-pub-curtime').show();
-            }
+            updateButtonForSoftPublish();
         });
     });
     </script>
