@@ -501,6 +501,75 @@ function caes_get_placeholder_image($post_id) {
 // and that's easier to change. It would be more complex to add this to the block editor, and isn't being 
 // asked for right now.
 
+// 1. REGISTER CUSTOM POST STATUS
+add_action('init', 'rudr_custom_status_creation');
+function rudr_custom_status_creation() {
+    register_post_status('soft_publish', array(
+        'label' => 'Soft Published',
+        'label_count' => _n_noop('Soft Published <span class="count">(%s)</span>', 'Soft Published <span class="count">(%s)</span>'),
+        'public' => true,
+        'show_in_admin_status_list' => true,
+        'show_in_admin_all_list' => true,
+    ));
+}
+
+// 2. ADD TO CLASSIC EDITOR DROPDOWN (shorthand_story only)
+add_action('admin_footer-post.php', function() {
+    global $post;
+    if (!$post || $post->post_type !== 'shorthand_story') return;
+    ?>
+    <script>
+    jQuery(function($) {
+        $('#post_status').append('<option value="soft_publish">Soft Published</option>');
+        <?php if ('soft_publish' === get_post_status()) : ?>
+            $('#post-status-display').text('Soft Published');
+            $('#post_status').val('soft_publish');
+        <?php endif; ?>
+    });
+    </script>
+    <?php
+});
+
+add_action('admin_footer-post-new.php', function() {
+    global $post;
+    if (!$post || $post->post_type !== 'shorthand_story') return;
+    ?>
+    <script>
+    jQuery(function($) {
+        $('#post_status').append('<option value="soft_publish">Soft Published</option>');
+    });
+    </script>
+    <?php
+});
+
+// 3. ADD TO QUICK EDIT
+add_action('admin_footer-edit.php', 'rudr_status_into_inline_edit');
+function rudr_status_into_inline_edit() {
+    ?>
+    <script>
+    jQuery(function($) {
+        $('select[name="_status"]').append('<option value="soft_publish">Soft Published</option>');
+    });
+    </script>
+    <?php
+}
+
+// 4. DISPLAY STATUS LABEL IN POST LIST
+add_filter('display_post_states', 'rudr_display_status_label');
+function rudr_display_status_label($states) {
+    if ('soft_publish' === get_query_var('post_status')) {
+        return $states;
+    }
+    
+    if ('soft_publish' === get_post_status()) {
+        $states[] = 'Soft Published';
+    }
+    
+    return $states;
+}
+
+// 5. SCHEDULED PUBLISHING FUNCTIONALITY
+
 // Add scheduled publish date meta box
 function add_scheduled_publish_meta_box() {
     add_meta_box(
@@ -534,6 +603,14 @@ function scheduled_publish_meta_box_callback($post) {
 function save_scheduled_publish_meta($post_id) {
     if (!isset($_POST['scheduled_publish_nonce']) || 
         !wp_verify_nonce($_POST['scheduled_publish_nonce'], 'scheduled_publish_nonce')) {
+        return;
+    }
+    
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    
+    if (!current_user_can('edit_post', $post_id)) {
         return;
     }
     
@@ -582,3 +659,43 @@ if (!wp_next_scheduled('publish_soft_posts_hourly')) {
     wp_schedule_event(time(), 'hourly', 'publish_soft_posts_hourly');
 }
 add_action('publish_soft_posts_hourly', 'check_and_publish_scheduled_posts');
+
+// 6. OPTIONAL: BULK ACTION TO PROMOTE POSTS TO PUBLISHED
+
+// Add bulk action to promote soft_publish to publish
+function add_publish_now_bulk_action($bulk_actions) {
+    $bulk_actions['publish_now'] = __('Publish Now');
+    return $bulk_actions;
+}
+add_filter('bulk_actions-edit-shorthand_story', 'add_publish_now_bulk_action');
+
+// Handle the bulk action
+function handle_publish_now_bulk_action($redirect_to, $doaction, $post_ids) {
+    if ($doaction !== 'publish_now') {
+        return $redirect_to;
+    }
+    
+    foreach ($post_ids as $post_id) {
+        wp_update_post(array(
+            'ID' => $post_id,
+            'post_status' => 'publish'
+        ));
+        // Remove scheduled date if it exists
+        delete_post_meta($post_id, '_scheduled_publish_date');
+    }
+    
+    $redirect_to = add_query_arg('published_now', count($post_ids), $redirect_to);
+    return $redirect_to;
+}
+add_filter('handle_bulk_actions-edit-shorthand_story', 'handle_publish_now_bulk_action', 10, 3);
+
+// Show admin notice after bulk publish
+function publish_now_admin_notice() {
+    if (!empty($_REQUEST['published_now'])) {
+        $count = intval($_REQUEST['published_now']);
+        printf('<div id="message" class="updated fade"><p>' .
+            _n('Published %s post.', 'Published %s posts.', $count) .
+            '</p></div>', $count);
+    }
+}
+add_action('admin_notices', 'publish_now_admin_notice');
