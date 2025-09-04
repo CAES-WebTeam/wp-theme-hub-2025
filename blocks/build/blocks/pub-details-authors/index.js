@@ -51,12 +51,16 @@ function Edit({
     if (isCompact) {
       return {
         authors: "Meet the Authors",
+        artists: "Meet the Artists",
+        // ADDED
         translators: "Meet the Translators",
         sources: "Meet the Experts"
       }[type] || "Meet the Authors";
     } else {
       return {
         authors: "Authors",
+        artists: "Artists",
+        // ADDED
         translators: "Translators",
         sources: "Expert Sources"
       }[type] || "Authors";
@@ -93,6 +97,11 @@ function Edit({
             label: "Authors",
             value: "authors"
           }, {
+            label: "Artists",
+            value: "artists"
+          },
+          // ADDED
+          {
             label: "Translators",
             value: "translators"
           }, {

@@ -33,10 +33,21 @@ $useGrid = $displayVersion === 'name-and-title-below' && $grid;
 
 // Get ACF fields
 $authors = get_field('authors', $post_id);
+$artists = get_field('artists', $post_id); // ADDED: Get the artists repeater field
 $translators = get_field('translator', $post_id);
 $sources = get_field('experts', $post_id);
 
 switch ($type) {
+    // ADDED: New case for 'artists'
+    case 'artists':
+        $data = $artists;
+        $artist_count = is_array($artists) ? count($artists) : 0;
+        if ($is_compact) {
+            $defaultHeading = $artist_count === 1 ? "Meet the Artist" : "Meet the Artists";
+        } else {
+            $defaultHeading = "Artists";
+        }
+        break;
     case 'translators':
         $data = $translators;
         $translator_count = is_array($translators) ? count($translators) : 0;
