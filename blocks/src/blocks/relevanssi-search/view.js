@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
 
                         // Scroll the user back to the top of the search block.
-                        block.scrollIntoView();
+                        window.scrollTo(0, 0);
 
                         resultsContainer.innerHTML = html;
 
