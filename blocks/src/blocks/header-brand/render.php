@@ -17,7 +17,7 @@
         // This form's action is set to the site's root URL to produce the correct search URL structure.
         $search_submit_url = esc_url(home_url('/'));
         ?>
-        <form role="search" method="get" class="search-form-header" action="<?php echo $search_submit_url; ?>">
+        <form role="search" method="get" class="caes-hub-form__input-button-container" action="<?php echo $search_submit_url; ?>">
             <label for="header-search-input-final">
                 <span class="screen-reader-text">Search for:</span>
             </label>
