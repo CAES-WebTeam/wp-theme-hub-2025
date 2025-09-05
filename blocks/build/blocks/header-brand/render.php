@@ -25,11 +25,6 @@
             <input type="search" id="header-search-input-final" class="caes-hub-form__input" placeholder="Search …" value="<?php echo get_search_query(); ?>" name="s" />
 
             <input type="hidden" name="paged" value="1">
-
-            <button type="submit" class="search-submit">
-                <span class="screen-reader-text">Search</span>
-                <?php // SVG icon can go here ?>
-            </button>
         </form>
         <?php // --- END: CUSTOM SEARCH FORM --- ?>
 	</div>
