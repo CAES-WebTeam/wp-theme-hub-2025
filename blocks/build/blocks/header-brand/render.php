@@ -22,7 +22,7 @@
                 <span class="screen-reader-text">Search for:</span>
             </label>
             
-            <input type="search" id="header-search-input-final" class="search-field" placeholder="Search …" value="<?php echo get_search_query(); ?>" name="s" />
+            <input type="search" id="header-search-input-final" class="caes-hub-form__input" placeholder="Search …" value="<?php echo get_search_query(); ?>" name="s" />
 
             <input type="hidden" name="paged" value="1">
 
