@@ -14,15 +14,15 @@
 	<div class="caes-hub-header-search caes-hub-header-search--desktop">
 		<?php
         // --- START: CUSTOM SEARCH FORM ---
-        // This form includes hidden fields to pass default search parameters.
-        $search_page_url = esc_url(site_url('/search/'));
+        // This form's action is set to the site's root URL to produce the correct search URL structure.
+        $search_submit_url = esc_url(home_url('/'));
         ?>
-        <form role="search" method="get" class="search-form-header" action="<?php echo $search_page_url; ?>">
-            <label for="header-search-input-with-params">
+        <form role="search" method="get" class="search-form-header" action="<?php echo $search_submit_url; ?>">
+            <label for="header-search-input-final">
                 <span class="screen-reader-text">Search for:</span>
             </label>
             
-            <input type="search" id="header-search-input-with-params" class="search-field" placeholder="Search …" value="<?php echo get_search_query(); ?>" name="s" />
+            <input type="search" id="header-search-input-final" class="search-field" placeholder="Search …" value="<?php echo get_search_query(); ?>" name="s" />
 
             <input type="hidden" name="paged" value="1">
 
