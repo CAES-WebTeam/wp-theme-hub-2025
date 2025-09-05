@@ -267,8 +267,7 @@ function variations_query_filter($query, $block)
         }
     }
 
-        error_log('Final Query Vars for block ' . $block_query_id . ': ' . print_r($query, true));
-
+    error_log('Final Query Vars for block ' . $block_query_id . ': ' . print_r($query, true));
 
     return $query;
 }
