@@ -282,6 +282,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Wait for the remaining time before showing results
         setTimeout(() => {
+          // Scroll the user back to the top of the search block.
+          block.scrollIntoView();
           resultsContainer.innerHTML = html;
 
           // Update the H2 results heading AFTER DOM is updated
@@ -330,9 +332,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
           updateResultsCount(resultsCount);
           attachPaginationListeners();
-
-          // Scroll the user back to the top of the search block.
-          window.scrollTo(0, 0);
         }, remainingTime);
       }).catch(error => {
         console.error('Error fetching search results:', error);
