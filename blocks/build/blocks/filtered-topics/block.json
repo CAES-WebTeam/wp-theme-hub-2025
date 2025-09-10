@@ -7,10 +7,6 @@
   "category": "theme",
   "icon": "tag",
   "description": "Displays topics filtered by current post type context.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php"
-  },
   "supports": {
     "color": {
       "background": true,
