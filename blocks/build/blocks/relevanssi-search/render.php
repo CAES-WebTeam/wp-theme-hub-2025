@@ -150,7 +150,8 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 	
 	<?php
 	// Determine form action: if resultsPageUrl is specified, use it; otherwise use home URL
-	$form_action = $is_search_only_block ? esc_url($results_page_url) : esc_url(home_url('/'));
+	// $form_action = $is_search_only_block ? esc_url($results_page_url) : esc_url(home_url('/'));
+	$form_action = $is_search_only_block ? esc_url($results_page_url) : '';
 	?>
 	<form role="search" method="get" class="relevanssi-search-form" action="<?php echo $form_action; ?>">
 		<div class="search-input-group">
