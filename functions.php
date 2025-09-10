@@ -53,3 +53,18 @@ require get_template_directory() . '/inc/pub-state-issue-set.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+
+/**
+ * Debugging function to inspect the main WordPress query.
+ * This helps diagnose URL routing and 404 issues.
+ */
+add_action( 'parse_request', 'debug_my_search_request' );
+function debug_my_search_request( $wp ) {
+    // We only want to debug the specific URL that is failing.
+    if ( strpos( $_SERVER['REQUEST_URI'], '/publications/search/' ) !== false ) {
+        // Log the query variables that WordPress has parsed from the URL.
+        error_log('--- DEBUGGING /publications/search/ ---');
+        error_log( print_r( $wp->query_vars, true ) );
+        error_log('------------------------------------');
+    }
+}
