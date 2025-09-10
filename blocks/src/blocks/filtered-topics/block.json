@@ -56,7 +56,9 @@
       "default": "No topics found for this section."
     }
   },
+  "textdomain": "filtered-topics",
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",
-  "style": "file:./style-index.css"
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
 }
