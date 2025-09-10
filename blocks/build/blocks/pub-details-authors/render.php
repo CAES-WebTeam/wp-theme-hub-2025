@@ -1,4 +1,8 @@
 <?php
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 // Get the current post ID
 $post_id = get_the_ID();
@@ -98,10 +102,9 @@ if (!function_exists('process_people')) {
                 if ($entry_type === 'Custom') {
                     // Handle custom user entry - check both possible field names
                     $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
-                    $first_name = $custom_user['first_name'] ?? '';
-                    $last_name = $custom_user['last_name'] ?? '';
-                    // Handle both 'title' and 'titile' (typo)
-                    $title = $custom_user['title'] ?? $custom_user['titile'] ?? '';
+                    $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
+                    $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
+                    $title = sanitize_text_field($custom_user['title'] ?? $custom_user['titile'] ?? '');
                     $profile_url = '';
                 } else {
                     // Handle WordPress user selection (existing logic)
@@ -122,7 +125,8 @@ if (!function_exists('process_people')) {
                         }
                     }
 
-                    if ($user_id && is_numeric($user_id)) {
+                    if ($user_id && is_numeric($user_id) && $user_id > 0) {
+                        $display_name = get_the_author_meta('display_name', $user_id);
                         $first_name = get_the_author_meta('first_name', $user_id);
                         $last_name = get_the_author_meta('last_name', $user_id);
                         $profile_url = get_author_posts_url($user_id);
@@ -134,7 +138,7 @@ if (!function_exists('process_people')) {
 
                 // Only proceed if we have at least a name
                 if (!empty($first_name) || !empty($last_name)) {
-                    $full_name = trim("$first_name $last_name");
+                    $full_name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
 
                     if ($asSnippet) {
                         $names[] = $full_name;
