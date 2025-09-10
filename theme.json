@@ -613,6 +613,10 @@
         {
             "name": "taxonomy-event_caes_departments",
             "title": "Event CAES Departments Archive"
+        },
+        {
+            "name": "taxonomy-publication_series",
+            "title": "Publication Series Archive"
         }
     ]
 }
