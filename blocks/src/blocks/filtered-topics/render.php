@@ -30,6 +30,8 @@ if (!function_exists('caes_filtered_topics_get_current_post_type_context')) {
             return 'shorthand_story';
         } elseif (strpos($request_uri, '/events/') === 0) {
             return 'events';
+        } elseif (strpos($request_uri, '/news/') === 0) {
+            return 'post'; // Explicitly handle /news/ URLs as post context
         }
         
         if (is_singular()) {
