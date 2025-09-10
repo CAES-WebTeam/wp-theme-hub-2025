@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Resolves the URL conflict for the custom publications search page.
+ * This prevents a 404 error by telling the main WordPress query to ignore the 's'
+ * parameter, allowing the /publications/search/ page to load correctly.
+ */
+add_action( 'pre_get_posts', 'caes_hub_resolve_publication_search_conflict' );
+function caes_hub_resolve_publication_search_conflict( $query ) {
+    // We only want to modify the main query on the front-end of the site.
+    if ( ! is_admin() && $query->is_main_query() ) {
+
+        // Check if the 'pagename' query variable is exactly 'publications/search'.
+        // This is the condition we confirmed with the debug log.
+        if ( isset( $query->query_vars['pagename'] ) && $query->query_vars['pagename'] == 'publications/search' ) {
+            
+            // Unset the search parameter from the main query.
+            // This resolves the conflict and prevents the 404.
+            $query->set( 's', null );
+            
+            // Also explicitly tell WordPress this is not a search page context.
+            $query->set( 'is_search', false );
+        }
+    }
+}
+
 /** * Renders Relevanssi search results HTML using block syntax. 
  */
 if (! function_exists('caes_hub_render_relevanssi_search_results')) {
