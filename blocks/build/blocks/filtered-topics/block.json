@@ -1,0 +1,62 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/filtered-topics",
+  "version": "0.1.0",
+  "title": "Filtered Topics",
+  "category": "theme",
+  "icon": "tag",
+  "description": "Displays topics filtered by current post type context.",
+  "acf": {
+    "mode": "preview",
+    "renderTemplate": "./render.php"
+  },
+  "supports": {
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "textAlign": true
+    }
+  },
+  "attributes": {
+    "showHierarchy": {
+      "type": "boolean",
+      "default": false
+    },
+    "showPostCounts": {
+      "type": "boolean",
+      "default": false
+    },
+    "displayAsDropdown": {
+      "type": "boolean",
+      "default": false
+    },
+    "showHeading": {
+      "type": "boolean",
+      "default": true
+    },
+    "customHeading": {
+      "type": "string",
+      "default": "Topics"
+    },
+    "filterByContext": {
+      "type": "boolean",
+      "default": true
+    },
+    "emptyMessage": {
+      "type": "string",
+      "default": "No topics found for this section."
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}
