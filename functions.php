@@ -23,10 +23,10 @@ require get_template_directory() . '/inc/date-sync-tool.php';
 require get_template_directory() . '/inc/rss-support.php';
 
 // Publications PDF generation
-// require get_template_directory() . '/inc/publications-pdf/publications-pdf.php';
-// require get_template_directory() . '/inc/publications-pdf/pdf-queue.php';
-// require get_template_directory() . '/inc/publications-pdf/pdf-cron.php';
-// require get_template_directory() . '/inc/publications-pdf/pdf-admin.php';
+require get_template_directory() . '/inc/publications-pdf/publications-pdf.php';
+require get_template_directory() . '/inc/publications-pdf/pdf-queue.php';
+require get_template_directory() . '/inc/publications-pdf/pdf-cron.php';
+require get_template_directory() . '/inc/publications-pdf/pdf-admin.php';
 
 // Events
 require get_template_directory() . '/inc/events-support.php';
