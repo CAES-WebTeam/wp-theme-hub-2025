@@ -313,6 +313,12 @@ function caes_is_topic_active_from_meta($meta_array) {
  *
  * @return array A map of term_id to its meta data.
  */
+/**
+ * Optimized function to get all term meta for the 'topics' taxonomy
+ * and clean the ACF field keys by removing the taxonomy prefix.
+ *
+ * @return array A map of term_id to its meta data.
+ */
 function caes_get_all_term_meta() {
     global $wpdb;
     $taxonomy = CAES_TOPICS_TAXONOMY;
@@ -320,18 +326,20 @@ function caes_get_all_term_meta() {
     $prefix_len = strlen($prefix);
     $meta_data = [];
 
-    // This query is more efficient as it only targets terms from our specific taxonomy.
+    // This version uses a subquery for stability. It finds all meta fields
+    // that belong to terms within the 'topics' taxonomy.
     $sql = $wpdb->prepare("
-        SELECT tm.term_id, tm.meta_key, tm.meta_value
-        FROM {$wpdb->termmeta} AS tm
-        INNER JOIN {$wpdb->term_taxonomy} AS tt ON tm.term_id = tt.term_id
-        WHERE tt.taxonomy = %s AND tm.meta_key LIKE %s
-    ", $taxonomy, $wpdb->esc_like($prefix) . '%');
+        SELECT term_id, meta_key, meta_value
+        FROM {$wpdb->termmeta}
+        WHERE meta_key LIKE %s
+        AND term_id IN (SELECT term_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s)
+    ", $wpdb->esc_like($prefix) . '%', $taxonomy);
 
     $results = $wpdb->get_results($sql);
 
-    if (!is_array($results)) {
-        return $meta_data;
+    // If there are no results, return an empty array immediately.
+    if (empty($results)) {
+        return [];
     }
 
     foreach ($results as $result) {
