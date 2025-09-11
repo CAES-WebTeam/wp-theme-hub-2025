@@ -1,816 +1,455 @@
 <?php
 /**
- * Plugin Name: CAES Topics Import Tool
- * Description: Import and manage Topics taxonomy terms from CAES API endpoints
- * Version: 1.1
- * Author: Your Name
+ * Topics Taxonomy Manager
+ *
+ * This file creates an admin tool to manage and view topics data with a focus on
+ * performance and a clean, hierarchical display. It includes post counts and
+ * a status indicator based on the 'active' ACF field.
+ *
+ * @package CAESHUB
  */
 
-// Prevent direct access
+// Prevent direct file access.
 if (!defined('ABSPATH')) {
     exit;
 }
 
-class CAES_Topics_Import_Tool {
-    
-    public function __construct() {
-        add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('wp_ajax_caes_import_parent_terms', array($this, 'ajax_import_parent_terms'));
-        add_action('wp_ajax_caes_import_child_terms', array($this, 'ajax_import_child_terms'));
-        add_action('wp_ajax_caes_dry_run_status_import', array($this, 'ajax_dry_run_status_import'));
-        add_action('wp_ajax_caes_import_status', array($this, 'ajax_import_status'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+// =============================================================================
+// Security & Constants
+// =============================================================================
+define('CAES_TOPICS_CAPABILITY', 'manage_options');
+define('CAES_TOPICS_TAXONOMY', 'topics');
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v9'); // Cache key updated
+define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
+define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
+
+// =============================================================================
+// Admin Page Setup & Actions
+// =============================================================================
+
+/**
+ * Adds the Topics Manager submenu page.
+ */
+add_action('admin_menu', 'caes_add_topics_manager_page');
+function caes_add_topics_manager_page() {
+    add_submenu_page(
+        'caes-tools',
+        'Topics Manager',
+        'Topics Manager',
+        CAES_TOPICS_CAPABILITY,
+        'caes-topics-manager',
+        'caes_render_topics_manager_page'
+    );
+}
+
+/**
+ * Handles admin actions on admin_init, before headers are sent.
+ */
+add_action('admin_init', 'caes_handle_topics_admin_actions');
+function caes_handle_topics_admin_actions() {
+    if (!current_user_can(CAES_TOPICS_CAPABILITY) || !isset($_GET['page']) || $_GET['page'] !== 'caes-topics-manager') {
+        return;
     }
-    
-    /**
-     * Add admin menu under caes-tools
-     */
-    public function add_admin_menu() {
-        add_submenu_page(
-            'caes-tools', // Parent slug
-            'Topics Import Tool',
-            'Topics Import',
-            'manage_options',
-            'caes-topics-import',
-            array($this, 'admin_page')
-        );
+
+    // Handle Cache Refresh Action
+    if (isset($_GET['action']) && $_GET['action'] === 'refresh_cache' && isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_refresh_cache')) {
+        caes_clear_topics_cache();
+        wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager&message=cache-cleared'));
+        exit;
     }
-    
-    /**
-     * Enqueue admin scripts and styles
-     */
-    public function enqueue_scripts($hook) {
-        if ($hook !== 'caes-tools_page_caes-topics-import') {
-            return;
-        }
-        
-        wp_enqueue_script('jquery');
-        wp_localize_script('jquery', 'caes_ajax', array(
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('caes_topics_nonce')
-        ));
-    }
-    
-    /**
-     * Admin page HTML
-     */
-    public function admin_page() {
-        ?>
-        <div class="wrap">
-            <h1>CAES Topics Import Tool</h1>
-            
-            <div class="card" style="max-width: 800px;">
-                <h2>Step 1: Import Parent Terms</h2>
-                <p>Import parent terms from the Publications Keyword Types API.</p>
-                <p><strong>API Endpoint:</strong> https://secure.caes.uga.edu/rest/publications/getPubsKeywordTypes</p>
-                
-                <button type="button" id="import-parent-terms" class="button button-primary">
-                    Import Parent Terms
-                </button>
-                
-                <div id="parent-import-status" style="margin-top: 15px;"></div>
-            </div>
-            
-            <div class="card" style="max-width: 800px; margin-top: 20px;">
-                <h2>Step 2: Import Child Terms</h2>
-                <p>Import child terms and associate them with their parent terms.</p>
-                <p><strong>API Endpoint:</strong> https://secure.caes.uga.edu/rest/publications/getKeywords</p>
-                
-                <button type="button" id="import-child-terms" class="button button-primary">
-                    Import Child Terms
-                </button>
-                
-                <div id="child-import-status" style="margin-top: 15px;"></div>
-            </div>
-            
-            <div class="card" style="max-width: 800px; margin-top: 20px;">
-                <h2>Step 3: Import Active/Inactive Status</h2>
-                <p>Update topic terms with their active/inactive status from API data.</p>
-                <p>This step will check both parent and child terms and update their custom field status.</p>
-                
-                <div style="margin: 15px 0;">
-                    <button type="button" id="dry-run-status" class="button button-secondary">
-                        Dry Run (Preview Changes)
-                    </button>
-                    <button type="button" id="import-status" class="button button-primary" style="margin-left: 10px;">
-                        Import Status
-                    </button>
-                </div>
-                
-                <div id="status-import-results" style="margin-top: 15px;"></div>
-            </div>
-            
-            <div class="card" style="max-width: 800px; margin-top: 20px;">
-                <h2>Import Log</h2>
-                <div id="import-log" style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;"></div>
-                <button type="button" id="clear-log" class="button" style="margin-top: 10px;">Clear Log</button>
-            </div>
-        </div>
-        
-        <script type="text/javascript">
-        jQuery(document).ready(function($) {
-            
-            function logMessage(message) {
-                const timestamp = new Date().toLocaleTimeString();
-                $('#import-log').append('[' + timestamp + '] ' + message + '\n');
-                $('#import-log').scrollTop($('#import-log')[0].scrollHeight);
-            }
-            
-            $('#clear-log').click(function() {
-                $('#import-log').empty();
-            });
-            
-            $('#import-parent-terms').click(function() {
-                const button = $(this);
-                const status = $('#parent-import-status');
-                
-                button.prop('disabled', true).text('Importing...');
-                status.html('<div class="notice notice-info"><p>Importing parent terms...</p></div>');
-                logMessage('Starting parent terms import...');
-                
-                $.ajax({
-                    url: caes_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'caes_import_parent_terms',
-                        nonce: caes_ajax.nonce
-                    },
-                    success: function(response) {
-                        button.prop('disabled', false).text('Import Parent Terms');
-                        
-                        if (response.success) {
-                            status.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                            logMessage('SUCCESS: ' + response.data.message);
-                            if (response.data.details) {
-                                response.data.details.forEach(function(detail) {
-                                    logMessage('  - ' + detail);
-                                });
-                            }
-                        } else {
-                            status.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
-                            logMessage('ERROR: ' + response.data);
-                        }
-                    },
-                    error: function() {
-                        button.prop('disabled', false).text('Import Parent Terms');
-                        status.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
-                        logMessage('ERROR: Ajax request failed');
-                    }
-                });
-            });
-            
-            $('#import-child-terms').click(function() {
-                const button = $(this);
-                const status = $('#child-import-status');
-                
-                button.prop('disabled', true).text('Importing...');
-                status.html('<div class="notice notice-info"><p>Importing child terms...</p></div>');
-                logMessage('Starting child terms import...');
-                
-                $.ajax({
-                    url: caes_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'caes_import_child_terms',
-                        nonce: caes_ajax.nonce
-                    },
-                    success: function(response) {
-                        button.prop('disabled', false).text('Import Child Terms');
-                        
-                        if (response.success) {
-                            status.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                            logMessage('SUCCESS: ' + response.data.message);
-                            if (response.data.details) {
-                                response.data.details.forEach(function(detail) {
-                                    logMessage('  - ' + detail);
-                                });
-                            }
-                        } else {
-                            status.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
-                            logMessage('ERROR: ' + response.data);
-                        }
-                    },
-                    error: function() {
-                        button.prop('disabled', false).text('Import Child Terms');
-                        status.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
-                        logMessage('ERROR: Ajax request failed');
-                    }
-                });
-            });
-            
-            $('#dry-run-status').click(function() {
-                const button = $(this);
-                const results = $('#status-import-results');
-                
-                button.prop('disabled', true).text('Analyzing...');
-                results.html('<div class="notice notice-info"><p>Analyzing status changes (dry run)...</p></div>');
-                logMessage('Starting status import dry run...');
-                
-                $.ajax({
-                    url: caes_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'caes_dry_run_status_import',
-                        nonce: caes_ajax.nonce
-                    },
-                    success: function(response) {
-                        button.prop('disabled', false).text('Dry Run (Preview Changes)');
-                        
-                        if (response.success) {
-                            let resultHtml = '<div class="notice notice-success"><p>' + response.data.message + '</p></div>';
-                            
-                            if (response.data.changes && response.data.changes.length > 0) {
-                                resultHtml += '<div style="background: #fff; border: 1px solid #ddd; padding: 15px; margin-top: 10px; max-height: 300px; overflow-y: auto;">';
-                                resultHtml += '<strong>Proposed Changes:</strong><br>';
-                                response.data.changes.forEach(function(change) {
-                                    let statusColor = change.new_status === 'active' ? 'green' : 'red';
-                                    resultHtml += '<div style="margin: 5px 0; padding: 5px; background: #f9f9f9; border-left: 3px solid ' + statusColor + ';">';
-                                    resultHtml += '<strong>' + change.term_name + '</strong> (ID: ' + change.term_id + ')<br>';
-                                    resultHtml += 'Status: ' + change.current_status + ' → <strong style="color: ' + statusColor + ';">' + change.new_status + '</strong>';
-                                    resultHtml += '</div>';
-                                });
-                                resultHtml += '</div>';
-                            }
-                            
-                            results.html(resultHtml);
-                            logMessage('DRY RUN COMPLETED: ' + response.data.message);
-                            if (response.data.details) {
-                                response.data.details.forEach(function(detail) {
-                                    logMessage('  - ' + detail);
-                                });
-                            }
-                        } else {
-                            results.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
-                            logMessage('ERROR: ' + response.data);
-                        }
-                    },
-                    error: function() {
-                        button.prop('disabled', false).text('Dry Run (Preview Changes)');
-                        results.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
-                        logMessage('ERROR: Ajax request failed');
-                    }
-                });
-            });
-            
-            $('#import-status').click(function() {
-                const button = $(this);
-                const results = $('#status-import-results');
-                
-                button.prop('disabled', true).text('Importing...');
-                results.html('<div class="notice notice-info"><p>Importing status updates...</p></div>');
-                logMessage('Starting status import...');
-                
-                $.ajax({
-                    url: caes_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'caes_import_status',
-                        nonce: caes_ajax.nonce
-                    },
-                    success: function(response) {
-                        button.prop('disabled', false).text('Import Status');
-                        
-                        if (response.success) {
-                            results.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                            logMessage('SUCCESS: ' + response.data.message);
-                            if (response.data.details) {
-                                response.data.details.forEach(function(detail) {
-                                    logMessage('  - ' + detail);
-                                });
-                            }
-                        } else {
-                            results.html('<div class="notice notice-error"><p>' + response.data + '</p></div>');
-                            logMessage('ERROR: ' + response.data);
-                        }
-                    },
-                    error: function() {
-                        button.prop('disabled', false).text('Import Status');
-                        results.html('<div class="notice notice-error"><p>Ajax request failed</p></div>');
-                        logMessage('ERROR: Ajax request failed');
-                    }
-                });
-            });
-        });
-        </script>
-        
-        <style>
-        .card {
-            background: #fff;
-            border: 1px solid #ccd0d4;
-            border-radius: 4px;
-            padding: 20px;
-            box-shadow: 0 1px 1px rgba(0,0,0,.04);
-        }
-        .card h2 {
-            margin-top: 0;
-        }
-        #import-log {
-            white-space: pre-wrap;
-        }
-        </style>
-        <?php
-    }
-    
-    /**
-     * AJAX handler for importing parent terms
-     */
-    public function ajax_import_parent_terms() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'caes_topics_nonce')) {
-            wp_die('Security check failed');
-        }
-        
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
-        }
-        
-        try {
-            $api_url = 'https://secure.caes.uga.edu/rest/publications/getPubsKeywordTypes';
-            
-            // Fetch data from API
-            $response = wp_remote_get($api_url, array(
-                'timeout' => 30,
-                'headers' => array(
-                    'Accept' => 'application/json'
-                )
-            ));
-            
-            if (is_wp_error($response)) {
-                wp_send_json_error('API request failed: ' . $response->get_error_message());
-                return;
-            }
-            
-            $body = wp_remote_retrieve_body($response);
-            $data = json_decode($body, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                wp_send_json_error('Invalid JSON response from API');
-                return;
-            }
-            
-            if (!is_array($data)) {
-                wp_send_json_error('API did not return an array');
-                return;
-            }
-            
-            $imported_count = 0;
-            $updated_count = 0;
-            $details = array();
-            
-            foreach ($data as $item) {
-                $term_id = $item['ID'];
-                $term_label = sanitize_text_field($item['LABEL']);
-                
-                // Check if term already exists with this topic_id
-                $existing_terms = get_terms(array(
-                    'taxonomy' => 'topics',
-                    'hide_empty' => false,
-                    'meta_query' => array(
-                        array(
-                            'key' => 'topic_id',
-                            'value' => $term_id,
-                            'compare' => '='
-                        )
-                    )
-                ));
-                
-                if (!empty($existing_terms)) {
-                    // Update existing term
-                    $existing_term = $existing_terms[0];
-                    $updated = wp_update_term($existing_term->term_id, 'topics', array(
-                        'name' => $term_label
-                    ));
-                    
-                    if (!is_wp_error($updated)) {
-                        $updated_count++;
-                        $details[] = "Updated: {$term_label} (ID: {$term_id})";
-                    }
-                } else {
-                    // Create new term
-                    $created = wp_insert_term($term_label, 'topics');
-                    
-                    if (!is_wp_error($created)) {
-                        // Set the topic_id custom field
-                        update_term_meta($created['term_id'], 'topic_id', $term_id);
-                        $imported_count++;
-                        $details[] = "Created: {$term_label} (ID: {$term_id})";
-                    } else {
-                        $details[] = "Failed to create: {$term_label} - " . $created->get_error_message();
-                    }
-                }
-            }
-            
-            $message = "Import completed. Created: {$imported_count}, Updated: {$updated_count}";
-            
-            wp_send_json_success(array(
-                'message' => $message,
-                'details' => $details
-            ));
-            
-        } catch (Exception $e) {
-            wp_send_json_error('Import failed: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * AJAX handler for importing child terms
-     */
-    public function ajax_import_child_terms() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'caes_topics_nonce')) {
-            wp_die('Security check failed');
-        }
-        
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
-        }
-        
-        try {
-            $api_url = 'https://secure.caes.uga.edu/rest/publications/getKeywords';
-            
-            // Fetch data from API
-            $response = wp_remote_get($api_url, array(
-                'timeout' => 30,
-                'headers' => array(
-                    'Accept' => 'application/json'
-                )
-            ));
-            
-            if (is_wp_error($response)) {
-                wp_send_json_error('API request failed: ' . $response->get_error_message());
-                return;
-            }
-            
-            $body = wp_remote_retrieve_body($response);
-            $data = json_decode($body, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                wp_send_json_error('Invalid JSON response from API');
-                return;
-            }
-            
-            if (!is_array($data)) {
-                wp_send_json_error('API did not return an array');
-                return;
-            }
-            
-            $created_count = 0;
-            $updated_count = 0;
-            $skipped_count = 0;
-            $rearranged_count = 0;
-            $details = array();
-            
-            foreach ($data as $item) {
-                $child_id = $item['ID'];
-                $child_label = sanitize_text_field($item['LABEL']);
-                $parent_type_id = $item['TYPE_ID'];
-                
-                // Find the parent term with matching topic_id
-                $parent_terms = get_terms(array(
-                    'taxonomy' => 'topics',
-                    'hide_empty' => false,
-                    'meta_query' => array(
-                        array(
-                            'key' => 'topic_id',
-                            'value' => $parent_type_id,
-                            'compare' => '='
-                        )
-                    )
-                ));
-                
-                if (empty($parent_terms)) {
-                    $details[] = "Skipped {$child_label} (ID: {$child_id}): Parent with topic_id {$parent_type_id} not found";
-                    $skipped_count++;
-                    continue;
-                }
-                
-                $parent_term = $parent_terms[0];
-                $parent_term_id = $parent_term->term_id;
-                
-                // Check if child term already exists with this topic_id (unique identifier)
-                $existing_child_terms = get_terms(array(
-                    'taxonomy' => 'topics',
-                    'hide_empty' => false,
-                    'meta_query' => array(
-                        array(
-                            'key' => 'topic_id',
-                            'value' => $child_id,
-                            'compare' => '='
-                        )
-                    )
-                ));
-                
-                if (!empty($existing_child_terms)) {
-                    // Update existing child term (identified by unique topic_id)
-                    $existing_child = $existing_child_terms[0];
-                    $term_updated = false;
-                    
-                    // Update the term name if needed
-                    if ($existing_child->name !== $child_label) {
-                        $update_result = wp_update_term($existing_child->term_id, 'topics', array(
-                            'name' => $child_label
-                        ));
-                        if (!is_wp_error($update_result)) {
-                            $updated_count++;
-                            $term_updated = true;
-                        }
-                    }
-                    
-                    // Update type_id if needed (should match parent's topic_id)
-                    $current_type_id = get_term_meta($existing_child->term_id, 'type_id', true);
-                    if ($current_type_id != $parent_type_id) {
-                        update_term_meta($existing_child->term_id, 'type_id', $parent_type_id);
-                        $term_updated = true;
-                    }
-                    
-                    // Rearrange under correct parent if needed
-                    if ($existing_child->parent != $parent_term_id) {
-                        $rearrange_result = wp_update_term($existing_child->term_id, 'topics', array(
-                            'parent' => $parent_term_id
-                        ));
-                        if (!is_wp_error($rearrange_result)) {
-                            $rearranged_count++;
-                            $details[] = "Rearranged: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
-                        }
-                    } else if ($term_updated) {
-                        $details[] = "Updated: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
-                    }
-                    
-                } else {
-                    // Create new child term (duplicate names are OK under different parents)
-                    $created = wp_insert_term($child_label, 'topics', array(
-                        'parent' => $parent_term_id
-                    ));
-                    
-                    if (!is_wp_error($created)) {
-                        // Set both custom fields for child terms
-                        update_term_meta($created['term_id'], 'topic_id', $child_id); // Child's unique ID
-                        update_term_meta($created['term_id'], 'type_id', $parent_type_id); // Parent's topic_id
-                        $created_count++;
-                        $details[] = "Created: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
-                    } else {
-                        // Handle the case where term might exist with same name under same parent
-                        if ($created->get_error_code() === 'term_exists') {
-                            // Get the existing term and set its topic_id if it doesn't have one
-                            $existing_term_id = $created->get_error_data();
-                            $existing_topic_id = get_term_meta($existing_term_id, 'topic_id', true);
-                            
-                            if (empty($existing_topic_id)) {
-                                // This term exists but doesn't have proper IDs, so assign them
-                                update_term_meta($existing_term_id, 'topic_id', $child_id);
-                                update_term_meta($existing_term_id, 'type_id', $parent_type_id);
-                                $updated_count++;
-                                $details[] = "Assigned IDs to existing: {$child_label} (ID: {$child_id}) under {$parent_term->name}";
-                            } else {
-                                $details[] = "Conflict: {$child_label} already exists under {$parent_term->name} with different ID";
-                            }
-                        } else {
-                            $details[] = "Failed to create: {$child_label} (ID: {$child_id}) - " . $created->get_error_message();
-                        }
-                    }
-                }
-            }
-            
-            $message = "Import completed. Created: {$created_count}, Updated: {$updated_count}, Rearranged: {$rearranged_count}";
-            if ($skipped_count > 0) {
-                $message .= ", Skipped (no parent found): {$skipped_count}";
-            }
-            
-            wp_send_json_success(array(
-                'message' => $message,
-                'details' => $details
-            ));
-            
-        } catch (Exception $e) {
-            wp_send_json_error('Import failed: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * AJAX handler for dry run status import
-     */
-    public function ajax_dry_run_status_import() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'caes_topics_nonce')) {
-            wp_die('Security check failed');
-        }
-        
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
-        }
-        
-        try {
-            $status_data = $this->get_status_data_from_apis();
-            $changes = array();
-            $details = array();
-            
-            $will_activate = 0;
-            $will_deactivate = 0;
-            $no_change = 0;
-            $not_found_in_api = 0;
-            
-            // Get all existing terms
-            $existing_terms = get_terms(array(
-                'taxonomy' => 'topics',
-                'hide_empty' => false,
-            ));
-            
-            foreach ($existing_terms as $term) {
-                $topic_id = get_term_meta($term->term_id, 'topic_id', true);
-                $current_status = get_term_meta($term->term_id, 'active', true);
-                
-                // Default to active if no status is set
-                $current_status_display = empty($current_status) || $current_status === '1' || $current_status === 'yes' ? 'active' : 'inactive';
-                
-                if (empty($topic_id)) {
-                    $details[] = "Skipped {$term->name}: No topic_id found";
-                    continue;
-                }
-                
-                if (isset($status_data[$topic_id])) {
-                    $api_status = $status_data[$topic_id]['active'] ? 'active' : 'inactive';
-                    
-                    if ($current_status_display !== $api_status) {
-                        $changes[] = array(
-                            'term_id' => $term->term_id,
-                            'term_name' => $term->name,
-                            'topic_id' => $topic_id,
-                            'current_status' => $current_status_display,
-                            'new_status' => $api_status
-                        );
-                        
-                        if ($api_status === 'active') {
-                            $will_activate++;
-                        } else {
-                            $will_deactivate++;
-                        }
-                    } else {
-                        $no_change++;
-                    }
-                } else {
-                    $not_found_in_api++;
-                    $details[] = "Topic ID {$topic_id} ({$term->name}) not found in API data";
-                }
-            }
-            
-            $summary = "Analysis complete. Would activate: {$will_activate}, Would deactivate: {$will_deactivate}, No change needed: {$no_change}";
-            if ($not_found_in_api > 0) {
-                $summary .= ", Not found in API: {$not_found_in_api}";
-            }
-            
-            wp_send_json_success(array(
-                'message' => $summary,
-                'changes' => $changes,
-                'details' => $details
-            ));
-            
-        } catch (Exception $e) {
-            wp_send_json_error('Dry run failed: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * AJAX handler for importing status
-     */
-    public function ajax_import_status() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'caes_topics_nonce')) {
-            wp_die('Security check failed');
-        }
-        
-        // Check permissions
-        if (!current_user_can('manage_options')) {
-            wp_die('Insufficient permissions');
-        }
-        
-        try {
-            $status_data = $this->get_status_data_from_apis();
-            $details = array();
-            
-            $activated = 0;
-            $deactivated = 0;
-            $no_change = 0;
-            $not_found_in_api = 0;
-            
-            // Get all existing terms
-            $existing_terms = get_terms(array(
-                'taxonomy' => 'topics',
-                'hide_empty' => false,
-            ));
-            
-            foreach ($existing_terms as $term) {
-                $topic_id = get_term_meta($term->term_id, 'topic_id', true);
-                $current_status = get_term_meta($term->term_id, 'active', true);
-                
-                // Default to active if no status is set
-                $is_currently_active = empty($current_status) || $current_status === '1' || $current_status === 'yes';
-                
-                if (empty($topic_id)) {
-                    $details[] = "Skipped {$term->name}: No topic_id found";
-                    continue;
-                }
-                
-                if (isset($status_data[$topic_id])) {
-                    $should_be_active = $status_data[$topic_id]['active'];
-                    
-                    if ($is_currently_active !== $should_be_active) {
-                        $new_status = $should_be_active ? '1' : '0';
-                        update_term_meta($term->term_id, 'active', $new_status);
-                        
-                        if ($should_be_active) {
-                            $activated++;
-                            $details[] = "Activated: {$term->name} (ID: {$topic_id})";
-                        } else {
-                            $deactivated++;
-                            $details[] = "Deactivated: {$term->name} (ID: {$topic_id})";
-                        }
-                    } else {
-                        $no_change++;
-                    }
-                } else {
-                    $not_found_in_api++;
-                    $details[] = "Topic ID {$topic_id} ({$term->name}) not found in API data - no change made";
-                }
-            }
-            
-            // Clear the topics manager cache to reflect changes
-            delete_transient('caes_topics_data_v3_secure');
-            
-            $message = "Status import completed. Activated: {$activated}, Deactivated: {$deactivated}, No change needed: {$no_change}";
-            if ($not_found_in_api > 0) {
-                $message .= ", Not found in API: {$not_found_in_api}";
-            }
-            
-            wp_send_json_success(array(
-                'message' => $message,
-                'details' => $details
-            ));
-            
-        } catch (Exception $e) {
-            wp_send_json_error('Status import failed: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Get status data from both APIs
-     */
-    private function get_status_data_from_apis() {
-        $status_data = array();
-        
-        // Get parent terms status
-        $parent_response = wp_remote_get('https://secure.caes.uga.edu/rest/publications/getPubsKeywordTypes', array(
-            'timeout' => 30,
-            'headers' => array('Accept' => 'application/json')
-        ));
-        
-        if (!is_wp_error($parent_response)) {
-            $parent_body = wp_remote_retrieve_body($parent_response);
-            $parent_data = json_decode($parent_body, true);
-            
-            if (is_array($parent_data)) {
-                foreach ($parent_data as $item) {
-                    $topic_id = $item['ID'];
-                    $active = isset($item['ACTIVE']) ? (bool) $item['ACTIVE'] : true; // Default to active if not specified
-                    
-                    $status_data[$topic_id] = array(
-                        'active' => $active,
-                        'type' => 'parent',
-                        'label' => $item['LABEL']
-                    );
-                }
-            }
-        }
-        
-        // Get child terms status
-        $child_response = wp_remote_get('https://secure.caes.uga.edu/rest/publications/getKeywords', array(
-            'timeout' => 30,
-            'headers' => array('Accept' => 'application/json')
-        ));
-        
-        if (!is_wp_error($child_response)) {
-            $child_body = wp_remote_retrieve_body($child_response);
-            $child_data = json_decode($child_body, true);
-            
-            if (is_array($child_data)) {
-                foreach ($child_data as $item) {
-                    $topic_id = $item['ID'];
-                    $active = isset($item['ACTIVE']) ? (bool) $item['ACTIVE'] : true; // Default to active if not specified
-                    
-                    $status_data[$topic_id] = array(
-                        'active' => $active,
-                        'type' => 'child',
-                        'label' => $item['LABEL']
-                    );
-                }
-            }
-        }
-        
-        return $status_data;
+
+    // Handle API Sync Action
+    if (isset($_GET['action']) && $_GET['action'] === 'sync_status' && isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_sync_status')) {
+        $updated_count = caes_sync_topic_status_from_api();
+        wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager&message=sync-complete&updated=' . (int)$updated_count));
+        exit;
     }
 }
 
-// Initialize the plugin
-new CAES_Topics_Import_Tool();
+/**
+ * Renders the HTML for the Topics Manager page.
+ */
+function caes_render_topics_manager_page() {
+    if (!current_user_can(CAES_TOPICS_CAPABILITY)) {
+        wp_die(__('You do not have sufficient permissions to access this page.'), 403);
+    }
+
+    // Display admin notices
+    if (isset($_GET['message'])) {
+        if ($_GET['message'] === 'cache-cleared') {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Data cache has been cleared.</strong></p></div>';
+        }
+        if ($_GET['message'] === 'sync-complete' && isset($_GET['updated'])) {
+            $updated_count = (int)$_GET['updated'];
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Synchronization complete. ' . $updated_count . ' topics were updated.</strong></p></div>';
+        }
+    }
+
+    $data = caes_get_topics_data_with_cache();
+    $refresh_nonce = wp_create_nonce('caes_refresh_cache');
+    $sync_nonce = wp_create_nonce('caes_sync_status');
+    $refresh_url = add_query_arg(['action' => 'refresh_cache', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
+    $sync_url = add_query_arg(['action' => 'sync_status', '_wpnonce' => $sync_nonce], admin_url('admin.php?page=caes-topics-manager'));
+    
+    ?>
+    <div class="wrap">
+        <h1>
+            Topics Manager
+            <a href="<?php echo esc_url($refresh_url); ?>" class="page-title-action">Refresh Data</a>
+            <a href="<?php echo esc_url($sync_url); ?>" class="page-title-action">Sync Status from API</a>
+        </h1>
+
+        <div class="caes-summary-cards">
+            <div class="caes-summary-card">
+                <h3>Total Topics</h3>
+                <div class="number"><?php echo (int) $data['summary']['total_topics']; ?></div>
+            </div>
+            <div class="caes-summary-card">
+                <h3>Active Topics</h3>
+                <div class="number"><?php echo (int) $data['summary']['active_topics']; ?></div>
+            </div>
+            <div class="caes-summary-card">
+                <h3>Inactive Topics</h3>
+                <div class="number"><?php echo (int) $data['summary']['inactive_topics']; ?></div>
+            </div>
+        </div>
+
+        <h2 class="nav-tab-wrapper">
+            <a href="#hierarchy" class="nav-tab nav-tab-active">Hierarchy View</a>
+            <a href="#inactive" class="nav-tab">Inactive Items</a>
+        </h2>
+        
+        <div id="hierarchy" class="caes-tab-content active">
+            <?php caes_display_topics_hierarchy($data['hierarchy']); ?>
+        </div>
+
+        <div id="inactive" class="caes-tab-content">
+            <?php caes_display_topics_inactive($data['topics']); ?>
+        </div>
+    </div>
+    <style>
+        .caes-summary-cards { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .caes-summary-card { background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 20px; min-width: 200px; flex: 1; }
+        .caes-summary-card h3 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: #666; }
+        .caes-summary-card .number { font-size: 32px; font-weight: bold; color: #135e96; }
+        .caes-tab-content { display: none; margin-top: 20px; }
+        .caes-tab-content.active { display: block; }
+        .caes-topic-item { background: #fff; border: 1px solid #ccd0d4; margin-bottom: 10px; padding: 15px; border-radius: 4px; }
+        .caes-topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .caes-topic-name { font-weight: bold; font-size: 16px; }
+        .caes-topic-inactive { opacity: 0.6; background-color: #f9f9f9; }
+        .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .caes-status-active { background-color: #d4edda; color: #155724; }
+        .caes-status-inactive { background-color: #f8d7da; color: #721c24; }
+        .caes-counts { display: flex; gap: 20px; margin: 10px 0; flex-wrap: wrap; }
+        .caes-count-item { padding: 5px 10px; background-color: #f0f0f1; border-radius: 3px; font-size: 12px; }
+        .caes-counts a { color: #135e96; text-decoration: none; }
+        .caes-counts a:hover { text-decoration: underline; }
+    </style>
+    <script>
+        jQuery(document).ready(function($) {
+            $('.nav-tab').on('click', function(e) {
+                e.preventDefault();
+                var target = $(this).attr('href');
+                $('.nav-tab').removeClass('nav-tab-active');
+                $(this).addClass('nav-tab-active');
+                $('.caes-tab-content').removeClass('active');
+                $(target).addClass('active');
+            });
+        });
+    </script>
+    <?php
+}
+
+// =============================================================================
+// Data Synchronization
+// =============================================================================
+
+/**
+ * Fetches data from the API and updates the is_active status of all topics.
+ *
+ * @return int The number of topics updated.
+ */
+function caes_sync_topic_status_from_api() {
+    if (!function_exists('get_field') || !function_exists('update_field')) {
+        return 0; // ACF not active
+    }
+
+    $response = wp_remote_get(CAES_TOPICS_API_ENDPOINT);
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        return 0; // API request failed
+    }
+
+    $api_data = json_decode(wp_remote_retrieve_body($response), true);
+    if (empty($api_data) || !is_array($api_data)) {
+        return 0; // No data or invalid format
+    }
+
+    // Create a map of API data using their ID for quick lookup.
+    $api_map = [];
+    foreach ($api_data as $item) {
+        if (isset($item['ID'])) {
+            $api_map[(int)$item['ID']] = $item;
+        }
+    }
+
+    $all_terms = get_terms(['taxonomy' => CAES_TOPICS_TAXONOMY, 'hide_empty' => false]);
+    if (is_wp_error($all_terms) || empty($all_terms)) {
+        return 0;
+    }
+
+    $updated_count = 0;
+    foreach ($all_terms as $term) {
+        $term_ref = 'term_' . $term->term_id;
+        $topic_id = get_field('topic_id', $term_ref);
+
+        if ($topic_id && isset($api_map[$topic_id])) {
+            $api_item = $api_map[$topic_id];
+            $current_status = get_field('is_active', $term_ref);
+            $new_status = (bool)$api_item['IS_ACTIVE'];
+
+            // Only update if the status has changed to be efficient.
+            if ($current_status !== $new_status) {
+                update_field('is_active', $new_status, $term_ref);
+                // Also update the 'active' field if it exists to clean up old data
+                if (get_field('active', $term_ref) !== null) {
+                    update_field('active', $new_status, $term_ref);
+                }
+                $updated_count++;
+            }
+        }
+    }
+
+    // Clear the local cache to reflect changes immediately.
+    caes_clear_topics_cache();
+    
+    return $updated_count;
+}
+
+
+// =============================================================================
+// Data Retrieval & Caching
+// =============================================================================
+
+function caes_get_topics_data_with_cache() {
+    $data = get_transient(CAES_TOPICS_CACHE_KEY);
+    if (false === $data) {
+        $data = caes_generate_topics_data();
+        set_transient(CAES_TOPICS_CACHE_KEY, $data, CAES_TOPICS_CACHE_TTL);
+    }
+    return $data;
+}
+
+function caes_clear_topics_cache() {
+    delete_transient(CAES_TOPICS_CACHE_KEY);
+}
+
+function caes_generate_topics_data() {
+    if (!function_exists('get_fields')) {
+        return ['topics' => [], 'summary' => ['total_topics' => 'ACF not found'], 'hierarchy' => []];
+    }
+
+    $topics = get_terms(['taxonomy' => CAES_TOPICS_TAXONOMY, 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
+    if (is_wp_error($topics)) {
+        return ['topics' => [], 'summary' => [], 'hierarchy' => []];
+    }
+
+    $post_counts = caes_get_all_topic_post_counts();
+    $processed_topics = [];
+    $active_count = 0;
+    $inactive_count = 0;
+
+    foreach ($topics as $topic) {
+        $term_id = (int)$topic->term_id;
+        $meta = get_fields('term_' . $term_id);
+        $is_active = caes_is_topic_active_from_meta($meta);
+
+        if ($is_active) {
+            $active_count++;
+        } else {
+            $inactive_count++;
+        }
+
+        $processed_topics[$term_id] = [
+            'term'      => $topic,
+            'is_active' => $is_active,
+            'counts'    => $post_counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
+            'meta'      => $meta ?: []
+        ];
+    }
+
+    $hierarchy = caes_build_hierarchy($processed_topics);
+
+    return [
+        'topics'    => $processed_topics,
+        'summary'   => ['total_topics' => count($topics), 'active_topics' => $active_count, 'inactive_topics' => $inactive_count],
+        'hierarchy' => $hierarchy
+    ];
+}
+
+/**
+ * Standardizes the check for active status on the 'is_active' field.
+ */
+function caes_is_topic_active_from_meta($meta_array) {
+    if (!is_array($meta_array) || !isset($meta_array['is_active'])) {
+        // If 'is_active' doesn't exist, we can fallback to 'active' for legacy data, but default to true.
+        return isset($meta_array['active']) ? (bool)$meta_array['active'] : true;
+    }
+    return (bool)$meta_array['is_active'];
+}
+
+function caes_get_all_topic_post_counts() {
+    global $wpdb;
+    $post_types = ['post', 'publications', 'shorthand_story'];
+    $counts = [];
+
+    foreach ($post_types as $post_type) {
+        $sql = $wpdb->prepare("
+            SELECT tt.term_id, COUNT(p.ID) AS post_count
+            FROM {$wpdb->term_taxonomy} AS tt
+            INNER JOIN {$wpdb->term_relationships} AS tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
+            INNER JOIN {$wpdb->posts} AS p ON tr.object_id = p.ID
+            WHERE tt.taxonomy = %s AND p.post_type = %s AND p.post_status = 'publish'
+            GROUP BY tt.term_id
+        ", CAES_TOPICS_TAXONOMY, $post_type);
+        
+        $results = $wpdb->get_results($sql);
+        if (!is_array($results)) continue;
+
+        foreach ($results as $result) {
+            $term_id = (int)$result->term_id;
+            $counts[$term_id] = $counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0];
+            $counts[$term_id][$post_type] = (int)$result->post_count;
+        }
+    }
+    return $counts;
+}
+
+function caes_build_hierarchy($topics) {
+    $hierarchy = [];
+    $children_of = [];
+    foreach ($topics as $id => &$topic) {
+        $topic['children'] = [];
+        $children_of[$topic['term']->parent][] = &$topic;
+    }
+    unset($topic);
+
+    foreach ($topics as $id => &$topic) {
+        if (isset($children_of[$id])) {
+            $topic['children'] = $children_of[$id];
+        }
+    }
+    unset($topic);
+
+    return $children_of[0] ?? [];
+}
+
+// =============================================================================
+// Display Functions (No changes below this line)
+// =============================================================================
+
+function caes_display_topics_hierarchy($hierarchy, $level = 0) {
+    if (empty($hierarchy)) {
+        if ($level === 0) echo '<p>No topics found.</p>';
+        return;
+    }
+    
+    foreach ($hierarchy as $topic_data) {
+        $topic = $topic_data['term'];
+        $is_active = (bool)$topic_data['is_active'];
+        $counts = $topic_data['counts'];
+        $meta = $topic_data['meta'];
+        $indent = str_repeat('— ', $level);
+        $item_class = 'caes-topic-item' . ($is_active ? '' : ' caes-topic-inactive');
+        ?>
+        <div class="<?php echo esc_attr($item_class); ?>">
+            <div class="caes-topic-header">
+                <div class="caes-topic-name"><?php echo esc_html($indent . $topic->name); ?></div>
+                <div class="caes-status-badge <?php echo $is_active ? 'caes-status-active' : 'caes-status-inactive'; ?>">
+                    <?php echo $is_active ? 'Active' : 'Inactive'; ?>
+                </div>
+            </div>
+            
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $counts); ?></div>
+
+            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
+                <strong>Meta Data:</strong>
+                <?php if (empty($meta)): ?>
+                    <span style="font-style: italic;">(No meta data found)</span>
+                <?php else: ?>
+                    <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?></pre>
+                <?php endif; ?>
+            </div>
+            <div class="caes-topic-actions" style="margin-top: 10px;">
+                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
+            </div>
+        </div>
+        <?php
+        if (!empty($topic_data['children'])) {
+            caes_display_topics_hierarchy($topic_data['children'], $level + 1);
+        }
+    }
+}
+
+function caes_display_topics_inactive($topics_data) {
+    $inactive_topics = array_filter($topics_data, fn($data) => !(bool)$data['is_active']);
+
+    if (empty($inactive_topics)) {
+        echo '<p>No inactive topics found.</p>';
+        return;
+    }
+
+    foreach ($inactive_topics as $topic_data) {
+        $topic = $topic_data['term'];
+        $counts = $topic_data['counts'];
+        $meta = $topic_data['meta'];
+        ?>
+        <div class="caes-topic-item caes-topic-inactive">
+            <div class="caes-topic-header">
+                <div class="caes-topic-name"><?php echo esc_html($topic->name); ?></div>
+                <div class="caes-status-badge caes-status-inactive">Inactive</div>
+            </div>
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $counts); ?></div>
+            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
+                <strong>Meta Data:</strong>
+                <?php if (empty($meta)): ?>
+                    <span style="font-style: italic;">(No meta data found)</span>
+                <?php else: ?>
+                    <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?></pre>
+                <?php endif; ?>
+            </div>
+            <div class="caes-topic-actions" style="margin-top: 10px;">
+                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
+            </div>
+        </div>
+        <?php
+    }
+}
+
+function caes_render_post_counts($topic_slug, $counts) {
+    $post_types_map = [
+        'post'              => 'Stories',
+        'publications'      => 'Publications',
+        'shorthand_story'   => 'Features'
+    ];
+    $total_count = 0;
+
+    foreach ($post_types_map as $post_type => $label) {
+        $count = $counts[$post_type] ?? 0;
+        $total_count += $count;
+        $url = admin_url('edit.php?post_type=' . $post_type . '&' . CAES_TOPICS_TAXONOMY . '=' . $topic_slug);
+        
+        echo '<div class="caes-count-item">';
+        echo '<strong>' . esc_html($label) . ':</strong> ';
+        if ($count > 0) {
+            echo '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>';
+        } else {
+            echo esc_html($count);
+        }
+        echo '</div>';
+    }
+    
+    echo '<div class="caes-count-item">';
+    echo '<strong>Total:</strong> ' . esc_html($total_count);
+    echo '</div>';
+}
