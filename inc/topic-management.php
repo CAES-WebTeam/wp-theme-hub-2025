@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v12'); // Cache key updated for hierarchy filter
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v13'); // Cache key updated for parent labels
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -102,7 +102,8 @@ function caes_render_topics_manager_page() {
     $refresh_url = add_query_arg(['action' => 'refresh_cache', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
     $sync_url = add_query_arg(['action' => 'sync_status', '_wpnonce' => $sync_nonce], admin_url('admin.php?page=caes-topics-manager'));
     
-    // Filter the main hierarchy for active and inactive views
+    // Prepare data for display
+    $all_topics = $data['topics'] ?? [];
     $full_hierarchy = $data['hierarchy'] ?? [];
     $active_hierarchy = caes_filter_hierarchy_by_status($full_hierarchy, true);
     $inactive_hierarchy = caes_filter_hierarchy_by_status($full_hierarchy, false);
@@ -137,15 +138,15 @@ function caes_render_topics_manager_page() {
         </h2>
         
         <div id="hierarchy" class="caes-tab-content active">
-            <?php caes_display_topics_hierarchy($full_hierarchy); ?>
+            <?php caes_display_topics_hierarchy($full_hierarchy, $all_topics); ?>
         </div>
         
         <div id="active" class="caes-tab-content">
-            <?php caes_display_topics_hierarchy($active_hierarchy); ?>
+            <?php caes_display_topics_hierarchy($active_hierarchy, $all_topics); ?>
         </div>
 
         <div id="inactive" class="caes-tab-content">
-            <?php caes_display_topics_hierarchy($inactive_hierarchy); ?>
+            <?php caes_display_topics_hierarchy($inactive_hierarchy, $all_topics); ?>
         </div>
     </div>
     <style>
@@ -158,6 +159,7 @@ function caes_render_topics_manager_page() {
         .caes-topic-item { background: #fff; border: 1px solid #ccd0d4; margin-bottom: 10px; padding: 15px; border-radius: 4px; }
         .caes-topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .caes-topic-name { font-weight: bold; font-size: 16px; }
+        .caes-topic-parent { font-size: 12px; color: #555; margin-bottom: 10px; }
         .caes-topic-inactive { opacity: 0.7; background-color: #fefefe; }
         .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .caes-status-active { background-color: #d4edda; color: #155724; }
@@ -224,14 +226,6 @@ function caes_sync_topic_status_from_api() {
     return $updated_count;
 }
 
-/**
- * Recursively filters a hierarchy of topics based on their active status.
- * A topic is kept if it matches the status OR if it has a descendant that matches.
- *
- * @param array $nodes The array of topic nodes to filter.
- * @param bool  $is_active_status The status to filter for (true for active, false for inactive).
- * @return array The filtered hierarchy.
- */
 function caes_filter_hierarchy_by_status(array $nodes, bool $is_active_status) {
     $filtered_nodes = [];
     foreach ($nodes as $node) {
@@ -356,7 +350,7 @@ function caes_build_hierarchy(array $topics) {
 // Display Functions
 // =============================================================================
 
-function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
+function caes_display_topics_hierarchy(array $hierarchy, array $all_topics, $level = 0) {
     if (empty($hierarchy)) {
         if ($level === 0) echo '<p>No topics found matching the criteria.</p>';
         return;
@@ -366,6 +360,13 @@ function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
         $topic = $topic_data['term'];
         $is_active = (bool)$topic_data['is_active'];
         $item_class = 'caes-topic-item' . ($is_active ? '' : ' caes-topic-inactive');
+        $parent_id = (int)$topic->parent;
+        $parent_name = null;
+
+        if ($parent_id > 0 && isset($all_topics[$parent_id])) {
+            $parent_name = $all_topics[$parent_id]['term']->name;
+        }
+
         ?>
         <div class="<?php echo esc_attr($item_class); ?>">
             <div class="caes-topic-header">
@@ -374,6 +375,12 @@ function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
                     <?php echo $is_active ? 'Active' : 'Inactive'; ?>
                 </div>
             </div>
+
+            <?php if ($parent_name) : ?>
+                <div class="caes-topic-parent">
+                    <strong>Parent:</strong> <?php echo esc_html($parent_name); ?>
+                </div>
+            <?php endif; ?>
             
             <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
 
@@ -391,7 +398,7 @@ function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
         </div>
         <?php
         if (!empty($topic_data['children'])) {
-            caes_display_topics_hierarchy($topic_data['children'], $level + 1);
+            caes_display_topics_hierarchy($topic_data['children'], $all_topics, $level + 1);
         }
     }
 }
