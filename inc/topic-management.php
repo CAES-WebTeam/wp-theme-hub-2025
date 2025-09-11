@@ -3,8 +3,8 @@
  * Topics Taxonomy Manager
  *
  * This file creates an admin tool to manage and view topics data with a focus on
- * performance and a clean, hierarchical display. It includes post counts and
- * a status indicator based on the 'active' ACF field.
+ * performance and a clean, hierarchical display. It includes post counts,
+ * a status indicator, and a one-time sync with an external API.
  *
  * @package CAESHUB
  */
@@ -19,8 +19,9 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v8'); // Cache key updated for consistency fix
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v9');
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
+define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
 // =============================================================================
 // Admin Page Setup & Actions
@@ -42,17 +43,32 @@ function caes_add_topics_manager_page() {
 }
 
 /**
- * Handles the cache refresh action on admin_init, before headers are sent.
+ * Handles admin actions on admin_init, before headers are sent.
  */
-add_action('admin_init', 'caes_handle_topics_cache_refresh');
-function caes_handle_topics_cache_refresh() {
-    if (
-        isset($_GET['page']) && $_GET['page'] === 'caes-topics-manager' &&
-        isset($_GET['refresh']) && $_GET['refresh'] === '1' &&
-        isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_refresh_cache')
-    ) {
+add_action('admin_init', 'caes_handle_topics_admin_actions');
+function caes_handle_topics_admin_actions() {
+    if (!current_user_can(CAES_TOPICS_CAPABILITY) || !isset($_GET['page']) || $_GET['page'] !== 'caes-topics-manager') {
+        return;
+    }
+
+    // Handle Cache Refresh Action
+    if (isset($_GET['action']) && $_GET['action'] === 'refresh_cache' && isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_refresh_cache')) {
         caes_clear_topics_cache();
-        wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager'));
+        wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager&message=cache-cleared'));
+        exit;
+    }
+
+    // Handle API Sync Action
+    if (isset($_GET['action']) && $_GET['action'] === 'sync_status' && isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_sync_status')) {
+        $updated_count = caes_sync_topic_status_from_api();
+        $redirect_url = admin_url('admin.php?page=caes-topics-manager&message=sync-complete&updated=' . (int)$updated_count);
+        
+        // Handle potential errors from the sync function
+        if ($updated_count < 0) {
+            $redirect_url = admin_url('admin.php?page=caes-topics-manager&message=sync-error&code=' . abs($updated_count));
+        }
+        
+        wp_safe_redirect($redirect_url);
         exit;
     }
 }
@@ -65,29 +81,48 @@ function caes_render_topics_manager_page() {
         wp_die(__('You do not have sufficient permissions to access this page.'), 403);
     }
 
+    // Display admin notices
+    if (isset($_GET['message'])) {
+        if ($_GET['message'] === 'cache-cleared') {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Data cache has been cleared.</strong></p></div>';
+        } elseif ($_GET['message'] === 'sync-complete' && isset($_GET['updated'])) {
+            $updated_count = (int)$_GET['updated'];
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Synchronization complete. ' . $updated_count . ' topics were updated.</strong></p></div>';
+        } elseif ($_GET['message'] === 'sync-error') {
+            $error_code = isset($_GET['code']) ? (int)$_GET['code'] : 0;
+            $error_message = 'An unknown error occurred during synchronization.';
+            if ($error_code === 1) $error_message = '<strong>Sync Error:</strong> Could not reach the API endpoint. Please try again later.';
+            if ($error_code === 2) $error_message = '<strong>Sync Error:</strong> The API returned invalid data.';
+            echo '<div class="notice notice-error is-dismissible"><p>' . $error_message . '</p></div>';
+        }
+    }
+
     $data = caes_get_topics_data_with_cache();
     $refresh_nonce = wp_create_nonce('caes_refresh_cache');
-    $refresh_url = add_query_arg(['refresh' => '1', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
+    $sync_nonce = wp_create_nonce('caes_sync_status');
+    $refresh_url = add_query_arg(['action' => 'refresh_cache', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
+    $sync_url = add_query_arg(['action' => 'sync_status', '_wpnonce' => $sync_nonce], admin_url('admin.php?page=caes-topics-manager'));
     
     ?>
     <div class="wrap">
         <h1>
             Topics Manager
             <a href="<?php echo esc_url($refresh_url); ?>" class="page-title-action">Refresh Data</a>
+            <a href="<?php echo esc_url($sync_url); ?>" class="page-title-action">Sync Status from API</a>
         </h1>
 
         <div class="caes-summary-cards">
             <div class="caes-summary-card">
                 <h3>Total Topics</h3>
-                <div class="number"><?php echo (int) $data['summary']['total_topics']; ?></div>
+                <div class="number"><?php echo (int) ($data['summary']['total_topics'] ?? 0); ?></div>
             </div>
             <div class="caes-summary-card">
                 <h3>Active Topics</h3>
-                <div class="number"><?php echo (int) $data['summary']['active_topics']; ?></div>
+                <div class="number"><?php echo (int) ($data['summary']['active_topics'] ?? 0); ?></div>
             </div>
             <div class="caes-summary-card">
                 <h3>Inactive Topics</h3>
-                <div class="number"><?php echo (int) $data['summary']['inactive_topics']; ?></div>
+                <div class="number"><?php echo (int) ($data['summary']['inactive_topics'] ?? 0); ?></div>
             </div>
         </div>
 
@@ -97,14 +132,13 @@ function caes_render_topics_manager_page() {
         </h2>
         
         <div id="hierarchy" class="caes-tab-content active">
-            <?php caes_display_topics_hierarchy($data['hierarchy']); ?>
+            <?php caes_display_topics_hierarchy($data['hierarchy'] ?? []); ?>
         </div>
 
         <div id="inactive" class="caes-tab-content">
-            <?php caes_display_topics_inactive($data['topics']); ?>
+            <?php caes_display_topics_inactive($data['topics'] ?? []); ?>
         </div>
     </div>
-
     <style>
         .caes-summary-cards { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
         .caes-summary-card { background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 20px; min-width: 200px; flex: 1; }
@@ -115,7 +149,7 @@ function caes_render_topics_manager_page() {
         .caes-topic-item { background: #fff; border: 1px solid #ccd0d4; margin-bottom: 10px; padding: 15px; border-radius: 4px; }
         .caes-topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .caes-topic-name { font-weight: bold; font-size: 16px; }
-        .caes-topic-inactive { opacity: 0.6; background-color: #f9f9f9; }
+        .caes-topic-inactive { opacity: 0.7; background-color: #fefefe; }
         .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .caes-status-active { background-color: #d4edda; color: #155724; }
         .caes-status-inactive { background-color: #f8d7da; color: #721c24; }
@@ -140,6 +174,48 @@ function caes_render_topics_manager_page() {
 }
 
 // =============================================================================
+// Data Synchronization
+// =============================================================================
+
+function caes_sync_topic_status_from_api() {
+    if (!function_exists('update_field')) return -1; // ACF not active
+
+    $response = wp_remote_get(CAES_TOPICS_API_ENDPOINT, ['timeout' => 30]);
+    if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+        return -1; // API request failed
+    }
+
+    $api_data = json_decode(wp_remote_retrieve_body($response), true);
+    if (!is_array($api_data)) {
+        return -2; // No data or invalid format
+    }
+
+    $api_map = array_column($api_data, null, 'ID');
+    $all_terms = get_terms(['taxonomy' => CAES_TOPICS_TAXONOMY, 'hide_empty' => false]);
+    if (is_wp_error($all_terms)) return 0;
+
+    $updated_count = 0;
+    foreach ($all_terms as $term) {
+        $term_ref = 'term_' . $term->term_id;
+        $topic_id = (int)get_field('topic_id', $term_ref);
+
+        if ($topic_id > 0 && isset($api_map[$topic_id])) {
+            $api_item = $api_map[$topic_id];
+            $current_status = get_field('is_active', $term_ref);
+            $new_status = isset($api_item['IS_ACTIVE']) ? (bool)$api_item['IS_ACTIVE'] : false;
+
+            if ($current_status !== $new_status) {
+                update_field('is_active', $new_status, $term_ref);
+                $updated_count++;
+            }
+        }
+    }
+
+    caes_clear_topics_cache();
+    return $updated_count;
+}
+
+// =============================================================================
 // Data Retrieval & Caching
 // =============================================================================
 
@@ -158,19 +234,11 @@ function caes_clear_topics_cache() {
 
 function caes_generate_topics_data() {
     if (!function_exists('get_fields')) {
-        return ['topics' => [], 'summary' => ['total_topics' => 'ACF not found'], 'hierarchy' => []];
-    }
-
-    $topics = get_terms([
-        'taxonomy'   => CAES_TOPICS_TAXONOMY,
-        'hide_empty' => false,
-        'orderby'    => 'name',
-        'order'      => 'ASC'
-    ]);
-
-    if (is_wp_error($topics)) {
         return ['topics' => [], 'summary' => [], 'hierarchy' => []];
     }
+
+    $topics = get_terms(['taxonomy' => CAES_TOPICS_TAXONOMY, 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
+    if (is_wp_error($topics)) return ['topics' => [], 'summary' => [], 'hierarchy' => []];
 
     $post_counts = caes_get_all_topic_post_counts();
     $processed_topics = [];
@@ -182,99 +250,70 @@ function caes_generate_topics_data() {
         $meta = get_fields('term_' . $term_id);
         $is_active = caes_is_topic_active_from_meta($meta);
 
-        if ($is_active) {
-            $active_count++;
-        } else {
-            $inactive_count++;
-        }
+        if ($is_active) $active_count++;
+        else $inactive_count++;
 
         $processed_topics[$term_id] = [
             'term'      => $topic,
             'is_active' => $is_active,
-            'counts'    => $post_counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
+            'counts'    => $post_counts[$term_id] ?? [],
             'meta'      => $meta ?: []
         ];
     }
 
-    $hierarchy = caes_build_hierarchy($processed_topics);
-
     return [
         'topics'    => $processed_topics,
-        'summary'   => [
-            'total_topics'    => count($topics),
-            'active_topics'   => $active_count,
-            'inactive_topics' => $inactive_count
-        ],
-        'hierarchy' => $hierarchy
+        'summary'   => ['total_topics' => count($topics), 'active_topics' => $active_count, 'inactive_topics' => $inactive_count],
+        'hierarchy' => caes_build_hierarchy($processed_topics)
     ];
 }
 
-/**
- * Checks if a topic is active based on its meta data, checking for both
- * 'is_active' and 'active' keys for consistency.
- *
- * @param array|false $meta_array The term meta data array from ACF.
- * @return bool True if active, false otherwise.
- */
 function caes_is_topic_active_from_meta($meta_array) {
-    if (!is_array($meta_array)) {
-        return true; // Default to active if no meta fields exist.
-    }
-
-    // Check for 'is_active' first.
-    if (isset($meta_array['is_active'])) {
-        return (bool)$meta_array['is_active'];
-    }
-
-    // Fallback to checking for 'active'.
-    if (isset($meta_array['active'])) {
-        return (bool)$meta_array['active'];
-    }
-
-    // Default to active if neither key is found.
+    if (!is_array($meta_array)) return true;
+    if (isset($meta_array['is_active'])) return (bool)$meta_array['is_active'];
+    if (isset($meta_array['active'])) return (bool)$meta_array['active'];
     return true;
 }
-
 
 function caes_get_all_topic_post_counts() {
     global $wpdb;
     $post_types = ['post', 'publications', 'shorthand_story'];
     $counts = [];
 
-    foreach ($post_types as $post_type) {
-        $sql = $wpdb->prepare("
-            SELECT tt.term_id, COUNT(p.ID) AS post_count
-            FROM {$wpdb->term_taxonomy} AS tt
-            INNER JOIN {$wpdb->term_relationships} AS tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
-            INNER JOIN {$wpdb->posts} AS p ON tr.object_id = p.ID
-            WHERE tt.taxonomy = %s AND p.post_type = %s AND p.post_status = 'publish'
-            GROUP BY tt.term_id
-        ", CAES_TOPICS_TAXONOMY, $post_type);
-        
-        $results = $wpdb->get_results($sql);
-        if (!is_array($results)) continue;
+    $sql = $wpdb->prepare("
+        SELECT tt.term_id, p.post_type, COUNT(p.ID) AS post_count
+        FROM {$wpdb->term_taxonomy} AS tt
+        INNER JOIN {$wpdb->term_relationships} AS tr ON tt.term_taxonomy_id = tr.term_taxonomy_id
+        INNER JOIN {$wpdb->posts} AS p ON tr.object_id = p.ID
+        WHERE tt.taxonomy = %s AND p.post_type IN ('" . implode("','", array_map('esc_sql', $post_types)) . "') AND p.post_status = 'publish'
+        GROUP BY tt.term_id, p.post_type
+    ", CAES_TOPICS_TAXONOMY);
+    
+    $results = $wpdb->get_results($sql);
+    if (!$results) return [];
 
-        foreach ($results as $result) {
-            $term_id = (int)$result->term_id;
-            $counts[$term_id] = $counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0];
-            $counts[$term_id][$post_type] = (int)$result->post_count;
+    foreach ($results as $result) {
+        $term_id = (int)$result->term_id;
+        if (!isset($counts[$term_id])) {
+            $counts[$term_id] = array_fill_keys($post_types, 0);
         }
+        $counts[$term_id][$result->post_type] = (int)$result->post_count;
     }
     return $counts;
 }
 
-function caes_build_hierarchy($topics) {
+function caes_build_hierarchy(array $topics) {
     $hierarchy = [];
     $children_of = [];
-    foreach ($topics as $id => &$topic) {
+    foreach ($topics as &$topic) {
         $topic['children'] = [];
         $children_of[$topic['term']->parent][] = &$topic;
     }
     unset($topic);
 
-    foreach ($topics as $id => &$topic) {
-        if (isset($children_of[$id])) {
-            $topic['children'] = $children_of[$id];
+    foreach ($topics as &$topic) {
+        if (isset($children_of[$topic['term']->term_id])) {
+            $topic['children'] = $children_of[$topic['term']->term_id];
         }
     }
     unset($topic);
@@ -286,7 +325,7 @@ function caes_build_hierarchy($topics) {
 // Display Functions
 // =============================================================================
 
-function caes_display_topics_hierarchy($hierarchy, $level = 0) {
+function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
     if (empty($hierarchy)) {
         if ($level === 0) echo '<p>No topics found.</p>';
         return;
@@ -295,27 +334,24 @@ function caes_display_topics_hierarchy($hierarchy, $level = 0) {
     foreach ($hierarchy as $topic_data) {
         $topic = $topic_data['term'];
         $is_active = (bool)$topic_data['is_active'];
-        $counts = $topic_data['counts'];
-        $meta = $topic_data['meta'];
-        $indent = str_repeat('— ', $level);
         $item_class = 'caes-topic-item' . ($is_active ? '' : ' caes-topic-inactive');
         ?>
         <div class="<?php echo esc_attr($item_class); ?>">
             <div class="caes-topic-header">
-                <div class="caes-topic-name"><?php echo esc_html($indent . $topic->name); ?></div>
+                <div class="caes-topic-name"><?php echo esc_html(str_repeat('— ', $level) . $topic->name); ?></div>
                 <div class="caes-status-badge <?php echo $is_active ? 'caes-status-active' : 'caes-status-inactive'; ?>">
                     <?php echo $is_active ? 'Active' : 'Inactive'; ?>
                 </div>
             </div>
             
-            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $counts); ?></div>
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
 
             <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
                 <strong>Meta Data:</strong>
-                <?php if (empty($meta)): ?>
+                <?php if (empty($topic_data['meta'])): ?>
                     <span style="font-style: italic;">(No meta data found)</span>
                 <?php else: ?>
-                    <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?></pre>
+                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0;"><?php echo esc_html(json_encode($topic_data['meta'], JSON_PRETTY_PRINT)); ?></pre>
                 <?php endif; ?>
             </div>
             <div class="caes-topic-actions" style="margin-top: 10px;">
@@ -329,9 +365,8 @@ function caes_display_topics_hierarchy($hierarchy, $level = 0) {
     }
 }
 
-function caes_display_topics_inactive($topics_data) {
+function caes_display_topics_inactive(array $topics_data) {
     $inactive_topics = array_filter($topics_data, fn($data) => !(bool)$data['is_active']);
-
     if (empty($inactive_topics)) {
         echo '<p>No inactive topics found.</p>';
         return;
@@ -339,21 +374,19 @@ function caes_display_topics_inactive($topics_data) {
 
     foreach ($inactive_topics as $topic_data) {
         $topic = $topic_data['term'];
-        $counts = $topic_data['counts'];
-        $meta = $topic_data['meta'];
         ?>
         <div class="caes-topic-item caes-topic-inactive">
             <div class="caes-topic-header">
                 <div class="caes-topic-name"><?php echo esc_html($topic->name); ?></div>
                 <div class="caes-status-badge caes-status-inactive">Inactive</div>
             </div>
-            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $counts); ?></div>
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
             <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
                 <strong>Meta Data:</strong>
-                <?php if (empty($meta)): ?>
+                <?php if (empty($topic_data['meta'])): ?>
                     <span style="font-style: italic;">(No meta data found)</span>
                 <?php else: ?>
-                    <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?></pre>
+                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0;"><?php echo esc_html(json_encode($topic_data['meta'], JSON_PRETTY_PRINT)); ?></pre>
                 <?php endif; ?>
             </div>
             <div class="caes-topic-actions" style="margin-top: 10px;">
@@ -364,12 +397,8 @@ function caes_display_topics_inactive($topics_data) {
     }
 }
 
-function caes_render_post_counts($topic_slug, $counts) {
-    $post_types_map = [
-        'post'              => 'Stories',
-        'publications'      => 'Publications',
-        'shorthand_story'   => 'Features'
-    ];
+function caes_render_post_counts($topic_slug, array $counts) {
+    $post_types_map = ['post' => 'Stories', 'publications' => 'Publications', 'shorthand_story' => 'Features'];
     $total_count = 0;
 
     foreach ($post_types_map as $post_type => $label) {
@@ -379,15 +408,9 @@ function caes_render_post_counts($topic_slug, $counts) {
         
         echo '<div class="caes-count-item">';
         echo '<strong>' . esc_html($label) . ':</strong> ';
-        if ($count > 0) {
-            echo '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>';
-        } else {
-            echo esc_html($count);
-        }
+        echo ($count > 0) ? '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>' : esc_html($count);
         echo '</div>';
     }
     
-    echo '<div class="caes-count-item">';
-    echo '<strong>Total:</strong> ' . esc_html($total_count);
-    echo '</div>';
+    echo '<div class="caes-count-item"><strong>Total:</strong> ' . esc_html($total_count) . '</div>';
 }
