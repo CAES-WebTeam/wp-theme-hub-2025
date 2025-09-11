@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v7'); // Cache key updated
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v8'); // Cache key updated for consistency fix
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 
 // =============================================================================
@@ -156,13 +156,7 @@ function caes_clear_topics_cache() {
     delete_transient(CAES_TOPICS_CACHE_KEY);
 }
 
-/**
- * Generates the full topics data array using ACF's get_fields function.
- *
- * @return array The processed topics data.
- */
 function caes_generate_topics_data() {
-    // Ensure ACF function exists.
     if (!function_exists('get_fields')) {
         return ['topics' => [], 'summary' => ['total_topics' => 'ACF not found'], 'hierarchy' => []];
     }
@@ -185,10 +179,7 @@ function caes_generate_topics_data() {
 
     foreach ($topics as $topic) {
         $term_id = (int)$topic->term_id;
-        
-        // Use the official ACF function to get all fields for the term.
         $meta = get_fields('term_' . $term_id);
-        
         $is_active = caes_is_topic_active_from_meta($meta);
 
         if ($is_active) {
@@ -201,7 +192,7 @@ function caes_generate_topics_data() {
             'term'      => $topic,
             'is_active' => $is_active,
             'counts'    => $post_counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
-            'meta'      => $meta ?: [] // Ensure meta is always an array
+            'meta'      => $meta ?: []
         ];
     }
 
@@ -218,14 +209,32 @@ function caes_generate_topics_data() {
     ];
 }
 
+/**
+ * Checks if a topic is active based on its meta data, checking for both
+ * 'is_active' and 'active' keys for consistency.
+ *
+ * @param array|false $meta_array The term meta data array from ACF.
+ * @return bool True if active, false otherwise.
+ */
 function caes_is_topic_active_from_meta($meta_array) {
-    // If meta is not an array (e.g., get_fields returns false), assume active.
-    if (!is_array($meta_array) || !isset($meta_array['active'])) {
-        return true;
+    if (!is_array($meta_array)) {
+        return true; // Default to active if no meta fields exist.
     }
-    // ACF 'true/false' fields return a boolean true or false.
-    return (bool)$meta_array['active'];
+
+    // Check for 'is_active' first.
+    if (isset($meta_array['is_active'])) {
+        return (bool)$meta_array['is_active'];
+    }
+
+    // Fallback to checking for 'active'.
+    if (isset($meta_array['active'])) {
+        return (bool)$meta_array['active'];
+    }
+
+    // Default to active if neither key is found.
+    return true;
 }
+
 
 function caes_get_all_topic_post_counts() {
     global $wpdb;
