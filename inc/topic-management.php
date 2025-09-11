@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v10'); // Final version cache key
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v11'); // Cache key updated for new tab
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -127,11 +127,16 @@ function caes_render_topics_manager_page() {
 
         <h2 class="nav-tab-wrapper">
             <a href="#hierarchy" class="nav-tab nav-tab-active">Hierarchy View</a>
+            <a href="#active" class="nav-tab">Active Items</a>
             <a href="#inactive" class="nav-tab">Inactive Items</a>
         </h2>
         
         <div id="hierarchy" class="caes-tab-content active">
             <?php caes_display_topics_hierarchy($data['hierarchy'] ?? []); ?>
+        </div>
+        
+        <div id="active" class="caes-tab-content">
+            <?php caes_display_topics_active($data['topics'] ?? []); ?>
         </div>
 
         <div id="inactive" class="caes-tab-content">
@@ -361,6 +366,44 @@ function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
         if (!empty($topic_data['children'])) {
             caes_display_topics_hierarchy($topic_data['children'], $level + 1);
         }
+    }
+}
+
+/**
+ * Displays topics that are currently set to active.
+ *
+ * @param array $topics_data The flat list of processed topics.
+ */
+function caes_display_topics_active(array $topics_data) {
+    $active_topics = array_filter($topics_data, fn($data) => (bool)$data['is_active']);
+
+    if (empty($active_topics)) {
+        echo '<p>No active topics found.</p>';
+        return;
+    }
+
+    foreach ($active_topics as $topic_data) {
+        $topic = $topic_data['term'];
+        ?>
+        <div class="caes-topic-item">
+            <div class="caes-topic-header">
+                <div class="caes-topic-name"><?php echo esc_html($topic->name); ?></div>
+                <div class="caes-status-badge caes-status-active">Active</div>
+            </div>
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
+            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
+                <strong>Meta Data:</strong>
+                <?php if (empty($topic_data['meta'])): ?>
+                    <span style="font-style: italic;">(No meta data found)</span>
+                <?php else: ?>
+                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0;"><?php echo esc_html(json_encode($topic_data['meta'], JSON_PRETTY_PRINT)); ?></pre>
+                <?php endif; ?>
+            </div>
+            <div class="caes-topic-actions" style="margin-top: 10px;">
+                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
+            </div>
+        </div>
+        <?php
     }
 }
 
