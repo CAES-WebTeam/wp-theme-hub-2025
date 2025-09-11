@@ -38,17 +38,7 @@ require get_template_directory() . '/inc/topic-management.php';
 
 
 // Temp include
-require get_template_directory() . '/inc/release-date-migration.php';
-require get_template_directory() . '/inc/release-date-clear.php';
 require get_template_directory() . '/inc/detect-duplicates.php';
-require get_template_directory() . '/inc/link-users.php';
-require get_template_directory() . '/inc/pub-history-update.php';
-require get_template_directory() . '/inc/story-association-meta-tools.php';
-require get_template_directory() . '/inc/pub-main-import.php';
-// require get_template_directory() . '/inc/topic-term-fixer.php';
-require get_template_directory() . '/inc/retired-one-time-scripts/populate-user-ids-to-stories.php';
-require get_template_directory() . '/inc/status-unpublish.php';
-require get_template_directory() . '/inc/event-import-tool.php';
 require get_template_directory() . '/inc/pub-state-issue-set.php';
 
 // Plugin overrides
