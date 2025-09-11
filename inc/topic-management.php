@@ -20,11 +20,11 @@ if (!defined('ABSPATH')) {
 define('CAES_TOPICS_NONCE_ACTION', 'caes_topics_admin_action');
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v5'); // Cache key updated to force refresh
-define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS); // 15 minutes
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v6'); // Cache key updated
+define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 
 // =============================================================================
-// Admin Page Setup
+// Admin Page Setup & Actions
 // =============================================================================
 
 /**
@@ -33,7 +33,7 @@ define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS); // 15 minutes
 add_action('admin_menu', 'caes_add_topics_manager_page');
 function caes_add_topics_manager_page() {
     add_submenu_page(
-        'caes-tools', // Assuming a 'caes-tools' parent page exists.
+        'caes-tools',
         'Topics Manager',
         'Topics Manager',
         CAES_TOPICS_CAPABILITY,
@@ -43,20 +43,30 @@ function caes_add_topics_manager_page() {
 }
 
 /**
+ * Handles the cache refresh action on admin_init, before headers are sent.
+ */
+add_action('admin_init', 'caes_handle_topics_cache_refresh');
+function caes_handle_topics_cache_refresh() {
+    // Check if we are on the correct page and the refresh action is triggered.
+    if (
+        isset($_GET['page']) && $_GET['page'] === 'caes-topics-manager' &&
+        isset($_GET['refresh']) && $_GET['refresh'] === '1' &&
+        isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_refresh_cache')
+    ) {
+        caes_clear_topics_cache();
+        // Safely redirect back to the clean URL.
+        wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager'));
+        exit;
+    }
+}
+
+
+/**
  * Renders the HTML for the Topics Manager page.
  */
 function caes_render_topics_manager_page() {
-    // Security check.
     if (!current_user_can(CAES_TOPICS_CAPABILITY)) {
         wp_die(__('You do not have sufficient permissions to access this page.'), 403);
-    }
-
-    // Handle cache refresh.
-    if (isset($_GET['refresh']) && $_GET['refresh'] === '1' && isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_refresh_cache')) {
-        caes_clear_topics_cache();
-        // Redirect to clean the URL.
-        wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager'));
-        exit;
     }
 
     $data = caes_get_topics_data_with_cache();
@@ -139,34 +149,19 @@ function caes_render_topics_manager_page() {
 // Data Retrieval & Caching
 // =============================================================================
 
-/**
- * Retrieves topics data from cache or generates it and caches it.
- *
- * @return array The processed topics data.
- */
 function caes_get_topics_data_with_cache() {
     $data = get_transient(CAES_TOPICS_CACHE_KEY);
-
     if (false === $data) {
         $data = caes_generate_topics_data();
         set_transient(CAES_TOPICS_CACHE_KEY, $data, CAES_TOPICS_CACHE_TTL);
     }
-    
     return $data;
 }
 
-/**
- * Clears the topics data cache.
- */
 function caes_clear_topics_cache() {
     delete_transient(CAES_TOPICS_CACHE_KEY);
 }
 
-/**
- * Generates the full topics data array.
- *
- * @return array The processed topics data.
- */
 function caes_generate_topics_data() {
     $topics = get_terms([
         'taxonomy'   => CAES_TOPICS_TAXONOMY,
@@ -187,7 +182,7 @@ function caes_generate_topics_data() {
 
     foreach ($topics as $topic) {
         $term_id = (int)$topic->term_id;
-        $meta = isset($term_meta[$term_id]) ? $term_meta[$term_id] : [];
+        $meta = $term_meta[$term_id] ?? [];
         $is_active = caes_is_topic_active_from_meta($meta);
 
         if ($is_active) {
@@ -199,7 +194,7 @@ function caes_generate_topics_data() {
         $processed_topics[$term_id] = [
             'term'      => $topic,
             'is_active' => $is_active,
-            'counts'    => isset($post_counts[$term_id]) ? $post_counts[$term_id] : ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
+            'counts'    => $post_counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
             'meta'      => $meta
         ];
     }
@@ -217,27 +212,13 @@ function caes_generate_topics_data() {
     ];
 }
 
-/**
- * Checks if a topic is active based on its meta data.
- *
- * @param array $meta_array The term meta data array.
- * @return bool True if active, false otherwise.
- */
 function caes_is_topic_active_from_meta($meta_array) {
     if (!is_array($meta_array) || !isset($meta_array['active'])) {
         return true;
     }
-    
-    // ACF 'true/false' fields store '1' for true and '0' for false.
     return $meta_array['active'] === '1';
 }
 
-/**
- * Optimized function to get all term meta for the 'topics' taxonomy
- * and clean the ACF field keys by removing the taxonomy prefix.
- *
- * @return array A map of term_id to its meta data.
- */
 function caes_get_all_term_meta() {
     global $wpdb;
     $taxonomy = CAES_TOPICS_TAXONOMY;
@@ -260,9 +241,7 @@ function caes_get_all_term_meta() {
 
     foreach ($results as $result) {
         $term_id = (int)$result->term_id;
-        if (!isset($meta_data[$term_id])) {
-            $meta_data[$term_id] = [];
-        }
+        $meta_data[$term_id] = $meta_data[$term_id] ?? [];
         $clean_key = substr($result->meta_key, $prefix_len);
         $meta_data[$term_id][$clean_key] = $result->meta_value;
     }
@@ -270,11 +249,6 @@ function caes_get_all_term_meta() {
     return $meta_data;
 }
 
-/**
- * Optimized function to get post counts for all topics in minimal queries.
- *
- * @return array A map of term_id to its post counts.
- */
 function caes_get_all_topic_post_counts() {
     global $wpdb;
     $post_types = ['post', 'publications', 'shorthand_story'];
@@ -291,70 +265,43 @@ function caes_get_all_topic_post_counts() {
         ", CAES_TOPICS_TAXONOMY, $post_type);
         
         $results = $wpdb->get_results($sql);
-        if (!is_array($results)) {
-            continue;
-        }
+        if (!is_array($results)) continue;
 
         foreach ($results as $result) {
             $term_id = (int)$result->term_id;
-            if (!isset($counts[$term_id])) {
-                $counts[$term_id] = ['post' => 0, 'publications' => 0, 'shorthand_story' => 0];
-            }
+            $counts[$term_id] = $counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0];
             $counts[$term_id][$post_type] = (int)$result->post_count;
         }
     }
     return $counts;
 }
 
-/**
- * Builds a hierarchical array from a flat list of processed topics.
- *
- * @param array $topics The flat list of processed topics.
- * @return array The hierarchical array.
- */
 function caes_build_hierarchy($topics) {
     $hierarchy = [];
-    $parents = [];
-
-    foreach ($topics as $id => &$topic) { // Use reference to add children directly
-        $parent_id = (int)$topic['term']->parent;
+    $children_of = [];
+    foreach ($topics as $id => &$topic) {
         $topic['children'] = [];
-        if ($parent_id !== 0) {
-            $parents[$parent_id][] = $id;
-        }
+        $children_of[$topic['term']->parent][] = &$topic;
     }
-    unset($topic); // Unset reference
+    unset($topic);
 
     foreach ($topics as $id => &$topic) {
-        if (isset($parents[$id])) {
-            foreach ($parents[$id] as $child_id) {
-                $topic['children'][] = &$topics[$child_id];
-            }
-        }
-        if ((int)$topic['term']->parent === 0) {
-            $hierarchy[] = &$topic;
+        if (isset($children_of[$id])) {
+            $topic['children'] = $children_of[$id];
         }
     }
     unset($topic);
 
-    return $hierarchy;
+    return $children_of[0] ?? [];
 }
 
 // =============================================================================
 // Display Functions
 // =============================================================================
 
-/**
- * Displays the topics in a hierarchical list.
- *
- * @param array $hierarchy The hierarchical topics array.
- * @param int $level The current nesting level.
- */
 function caes_display_topics_hierarchy($hierarchy, $level = 0) {
     if (empty($hierarchy)) {
-        if ($level === 0) {
-            echo '<p>No topics found.</p>';
-        }
+        if ($level === 0) echo '<p>No topics found.</p>';
         return;
     }
     
@@ -364,33 +311,28 @@ function caes_display_topics_hierarchy($hierarchy, $level = 0) {
         $counts = $topic_data['counts'];
         $meta = $topic_data['meta'];
         $indent = str_repeat('— ', $level);
-
         $item_class = 'caes-topic-item' . ($is_active ? '' : ' caes-topic-inactive');
         ?>
         <div class="<?php echo esc_attr($item_class); ?>">
             <div class="caes-topic-header">
-                <div class="caes-topic-name">
-                    <?php echo esc_html($indent . $topic->name); ?>
-                </div>
+                <div class="caes-topic-name"><?php echo esc_html($indent . $topic->name); ?></div>
                 <div class="caes-status-badge <?php echo $is_active ? 'caes-status-active' : 'caes-status-inactive'; ?>">
                     <?php echo $is_active ? 'Active' : 'Inactive'; ?>
                 </div>
             </div>
             
-            <div class="caes-counts">
-                <?php caes_render_post_counts($topic->slug, $counts); ?>
-            </div>
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $counts); ?></div>
 
             <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
                 <strong>Meta Data:</strong>
                 <?php if (empty($meta)): ?>
                     <span style="font-style: italic;">(No meta data found)</span>
                 <?php else: ?>
-                    <?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?>
+                    <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?></pre>
                 <?php endif; ?>
             </div>
             <div class="caes-topic-actions" style="margin-top: 10px;">
-                <a href="<?php echo esc_url(admin_url('term.php?taxonomy=' . CAES_TOPICS_TAXONOMY . '&tag_ID=' . (int) $topic->term_id)); ?>" class="button button-small">Edit Topic</a>
+                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
             </div>
         </div>
         <?php
@@ -400,15 +342,8 @@ function caes_display_topics_hierarchy($hierarchy, $level = 0) {
     }
 }
 
-/**
- * Displays topics that are currently set to inactive.
- *
- * @param array $topics_data The flat list of processed topics.
- */
 function caes_display_topics_inactive($topics_data) {
-    $inactive_topics = array_filter($topics_data, function($data) {
-        return !(bool)$data['is_active'];
-    });
+    $inactive_topics = array_filter($topics_data, fn($data) => !(bool)$data['is_active']);
 
     if (empty($inactive_topics)) {
         echo '<p>No inactive topics found.</p>';
@@ -422,37 +357,26 @@ function caes_display_topics_inactive($topics_data) {
         ?>
         <div class="caes-topic-item caes-topic-inactive">
             <div class="caes-topic-header">
-                <div class="caes-topic-name">
-                    <?php echo esc_html($topic->name); ?>
-                </div>
+                <div class="caes-topic-name"><?php echo esc_html($topic->name); ?></div>
                 <div class="caes-status-badge caes-status-inactive">Inactive</div>
             </div>
-            <div class="caes-counts">
-                <?php caes_render_post_counts($topic->slug, $counts); ?>
-            </div>
-
+            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $counts); ?></div>
             <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
                 <strong>Meta Data:</strong>
                 <?php if (empty($meta)): ?>
                     <span style="font-style: italic;">(No meta data found)</span>
                 <?php else: ?>
-                    <?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?>
+                    <pre style="white-space: pre-wrap; word-break: break-all;"><?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?></pre>
                 <?php endif; ?>
             </div>
             <div class="caes-topic-actions" style="margin-top: 10px;">
-                <a href="<?php echo esc_url(admin_url('term.php?taxonomy=' . CAES_TOPICS_TAXONOMY . '&tag_ID=' . (int) $topic->term_id)); ?>" class="button button-small">Edit Topic</a>
+                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
             </div>
         </div>
         <?php
     }
 }
 
-/**
- * Renders the count items for various post types.
- *
- * @param string $topic_slug The slug of the topic.
- * @param array  $counts     An associative array of post type counts.
- */
 function caes_render_post_counts($topic_slug, $counts) {
     $post_types_map = [
         'post'              => 'Stories',
@@ -462,7 +386,7 @@ function caes_render_post_counts($topic_slug, $counts) {
     $total_count = 0;
 
     foreach ($post_types_map as $post_type => $label) {
-        $count = isset($counts[$post_type]) ? (int)$counts[$post_type] : 0;
+        $count = $counts[$post_type] ?? 0;
         $total_count += $count;
         $url = admin_url('edit.php?post_type=' . $post_type . '&' . CAES_TOPICS_TAXONOMY . '=' . $topic_slug);
         
