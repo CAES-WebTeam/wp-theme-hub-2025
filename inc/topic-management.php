@@ -4,8 +4,7 @@
  *
  * This file creates an admin tool to manage and view topics data with a focus on
  * performance and a clean, hierarchical display. It includes post counts,
- * a status indicator based on the 'active' ACF field, and a one-time sync
- * with an external API.
+ * a status indicator, and a one-time sync with an external API.
  *
  * @package CAESHUB
  */
@@ -20,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v14'); // Final version targeting 'active' field
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v15'); // Cache key updated for UI changes
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -87,11 +86,11 @@ function caes_render_topics_manager_page() {
             echo '<div class="notice notice-success is-dismissible"><p><strong>Data cache has been cleared. The view is now up-to-date.</strong></p></div>';
         } elseif ($_GET['message'] === 'sync-complete' && isset($_GET['updated'])) {
             $updated_count = (int)$_GET['updated'];
-            echo '<div class="notice notice-success is-dismissible"><p><strong>Synchronization complete. ' . $updated_count . ' topics were updated in the database. Please click "Refresh Data" to see the changes.</strong></p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Synchronization complete. ' . $updated_count . ' topics were updated. Click "Refresh Data" to see the changes.</strong></p></div>';
         } elseif ($_GET['message'] === 'sync-error') {
             $error_code = isset($_GET['code']) ? (int)$_GET['code'] : 0;
             $error_message = 'An unknown error occurred during synchronization.';
-            if ($error_code === 1) $error_message = '<strong>Sync Error:</strong> Could not reach the API endpoint. Please try again later.';
+            if ($error_code === 1) $error_message = '<strong>Sync Error:</strong> Could not reach the API endpoint.';
             if ($error_code === 2) $error_message = '<strong>Sync Error:</strong> The API returned invalid data.';
             echo '<div class="notice notice-error is-dismissible"><p>' . $error_message . '</p></div>';
         }
@@ -133,21 +132,21 @@ function caes_render_topics_manager_page() {
         </div>
 
         <h2 class="nav-tab-wrapper">
-            <a href="#hierarchy" class="nav-tab nav-tab-active">All Items (Hierarchy)</a>
-            <a href="#active" class="nav-tab">Active Items</a>
+            <a href="#active" class="nav-tab nav-tab-active">Active Items</a>
             <a href="#inactive" class="nav-tab">Inactive Items</a>
+            <a href="#all" class="nav-tab">All Items (Hierarchy)</a>
         </h2>
         
-        <div id="hierarchy" class="caes-tab-content active">
-            <?php caes_display_topics_hierarchy($full_hierarchy, $all_topics); ?>
-        </div>
-        
-        <div id="active" class="caes-tab-content">
+        <div id="active" class="caes-tab-content active">
             <?php caes_display_topics_hierarchy($active_hierarchy, $all_topics); ?>
         </div>
 
         <div id="inactive" class="caes-tab-content">
             <?php caes_display_topics_hierarchy($inactive_hierarchy, $all_topics); ?>
+        </div>
+
+        <div id="all" class="caes-tab-content">
+            <?php caes_display_topics_hierarchy($full_hierarchy, $all_topics); ?>
         </div>
     </div>
     <style>
@@ -158,14 +157,14 @@ function caes_render_topics_manager_page() {
         .caes-tab-content { display: none; margin-top: 20px; }
         .caes-tab-content.active { display: block; }
         .caes-topic-item { background: #fff; border: 1px solid #ccd0d4; margin-bottom: 10px; padding: 15px; border-radius: 4px; }
-        .caes-topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .caes-topic-name { font-weight: bold; font-size: 16px; }
-        .caes-topic-parent { font-size: 12px; color: #555; margin-bottom: 10px; }
+        .caes-topic-header { display: flex; justify-content: space-between; align-items: center; }
+        .caes-topic-name { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+        .caes-topic-parent { font-size: 14px; font-weight: bold; color: #135e96; margin-bottom: 12px; padding: 5px 8px; background-color: #f0f0f1; border-radius: 3px; display: inline-block; }
         .caes-topic-inactive { opacity: 0.7; background-color: #fefefe; }
         .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .caes-status-active { background-color: #d4edda; color: #155724; }
         .caes-status-inactive { background-color: #f8d7da; color: #721c24; }
-        .caes-counts { display: flex; gap: 20px; margin: 10px 0; flex-wrap: wrap; }
+        .caes-counts { display: flex; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
         .caes-count-item { padding: 5px 10px; background-color: #f0f0f1; border-radius: 3px; font-size: 12px; }
         .caes-counts a { color: #135e96; text-decoration: none; }
         .caes-counts a:hover { text-decoration: underline; }
@@ -189,9 +188,6 @@ function caes_render_topics_manager_page() {
 // Data Synchronization & Filtering
 // =============================================================================
 
-/**
- * Fetches data from the API and updates the 'active' field of all topics.
- */
 function caes_sync_topic_status_from_api() {
     if (!function_exists('update_field')) return -1;
 
@@ -216,11 +212,11 @@ function caes_sync_topic_status_from_api() {
 
         if ($topic_id > 0 && isset($api_map[$topic_id])) {
             $api_item = $api_map[$topic_id];
-            $current_status = get_field('active', $term_ref); // Read the 'active' field
+            $current_status = get_field('active', $term_ref);
             $new_status = isset($api_item['IS_ACTIVE']) ? (bool)$api_item['IS_ACTIVE'] : false;
 
             if ($current_status !== $new_status) {
-                update_field('active', $new_status, $term_ref); // UPDATE THE 'active' FIELD
+                update_field('active', $new_status, $term_ref);
                 $updated_count++;
             }
         }
@@ -297,17 +293,10 @@ function caes_generate_topics_data() {
     ];
 }
 
-/**
- * Determines a topic's status by ONLY looking at the 'active' field.
- */
 function caes_is_topic_active_from_meta($meta_array) {
-    if (!is_array($meta_array)) {
-        return true; // Default to active if no meta fields exist
-    }
-    // Only check for the 'active' field. Default to true if it's not present.
+    if (!is_array($meta_array)) return true;
     return isset($meta_array['active']) ? (bool)$meta_array['active'] : true;
 }
-
 
 function caes_get_all_topic_post_counts() {
     global $wpdb;
@@ -387,21 +376,13 @@ function caes_display_topics_hierarchy(array $hierarchy, array $all_topics, $lev
 
             <?php if ($parent_name) : ?>
                 <div class="caes-topic-parent">
-                    <strong>Parent:</strong> <?php echo esc_html($parent_name); ?>
+                    Parent: <?php echo esc_html($parent_name); ?>
                 </div>
             <?php endif; ?>
             
             <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
 
-            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
-                <strong>Meta Data:</strong>
-                <?php if (empty($topic_data['meta'])): ?>
-                    <span style="font-style: italic;">(No meta data found)</span>
-                <?php else: ?>
-                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0;"><?php echo esc_html(json_encode($topic_data['meta'], JSON_PRETTY_PRINT)); ?></pre>
-                <?php endif; ?>
-            </div>
-            <div class="caes-topic-actions" style="margin-top: 10px;">
+            <div class="caes-topic-actions" style="margin-top: 15px;">
                 <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
             </div>
         </div>
