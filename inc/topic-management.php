@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v11'); // Cache key updated for new tab
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v12'); // Cache key updated for hierarchy filter
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -102,6 +102,11 @@ function caes_render_topics_manager_page() {
     $refresh_url = add_query_arg(['action' => 'refresh_cache', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
     $sync_url = add_query_arg(['action' => 'sync_status', '_wpnonce' => $sync_nonce], admin_url('admin.php?page=caes-topics-manager'));
     
+    // Filter the main hierarchy for active and inactive views
+    $full_hierarchy = $data['hierarchy'] ?? [];
+    $active_hierarchy = caes_filter_hierarchy_by_status($full_hierarchy, true);
+    $inactive_hierarchy = caes_filter_hierarchy_by_status($full_hierarchy, false);
+
     ?>
     <div class="wrap">
         <h1>
@@ -126,21 +131,21 @@ function caes_render_topics_manager_page() {
         </div>
 
         <h2 class="nav-tab-wrapper">
-            <a href="#hierarchy" class="nav-tab nav-tab-active">Hierarchy View</a>
+            <a href="#hierarchy" class="nav-tab nav-tab-active">All Items (Hierarchy)</a>
             <a href="#active" class="nav-tab">Active Items</a>
             <a href="#inactive" class="nav-tab">Inactive Items</a>
         </h2>
         
         <div id="hierarchy" class="caes-tab-content active">
-            <?php caes_display_topics_hierarchy($data['hierarchy'] ?? []); ?>
+            <?php caes_display_topics_hierarchy($full_hierarchy); ?>
         </div>
         
         <div id="active" class="caes-tab-content">
-            <?php caes_display_topics_active($data['topics'] ?? []); ?>
+            <?php caes_display_topics_hierarchy($active_hierarchy); ?>
         </div>
 
         <div id="inactive" class="caes-tab-content">
-            <?php caes_display_topics_inactive($data['topics'] ?? []); ?>
+            <?php caes_display_topics_hierarchy($inactive_hierarchy); ?>
         </div>
     </div>
     <style>
@@ -178,7 +183,7 @@ function caes_render_topics_manager_page() {
 }
 
 // =============================================================================
-// Data Synchronization
+// Data Synchronization & Filtering
 // =============================================================================
 
 function caes_sync_topic_status_from_api() {
@@ -217,6 +222,28 @@ function caes_sync_topic_status_from_api() {
 
     caes_clear_topics_cache();
     return $updated_count;
+}
+
+/**
+ * Recursively filters a hierarchy of topics based on their active status.
+ * A topic is kept if it matches the status OR if it has a descendant that matches.
+ *
+ * @param array $nodes The array of topic nodes to filter.
+ * @param bool  $is_active_status The status to filter for (true for active, false for inactive).
+ * @return array The filtered hierarchy.
+ */
+function caes_filter_hierarchy_by_status(array $nodes, bool $is_active_status) {
+    $filtered_nodes = [];
+    foreach ($nodes as $node) {
+        $children = $node['children'] ?? [];
+        $filtered_children = caes_filter_hierarchy_by_status($children, $is_active_status);
+
+        if ((bool)$node['is_active'] === $is_active_status || !empty($filtered_children)) {
+            $node['children'] = $filtered_children;
+            $filtered_nodes[] = $node;
+        }
+    }
+    return $filtered_nodes;
 }
 
 // =============================================================================
@@ -331,7 +358,7 @@ function caes_build_hierarchy(array $topics) {
 
 function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
     if (empty($hierarchy)) {
-        if ($level === 0) echo '<p>No topics found.</p>';
+        if ($level === 0) echo '<p>No topics found matching the criteria.</p>';
         return;
     }
     
@@ -366,76 +393,6 @@ function caes_display_topics_hierarchy(array $hierarchy, $level = 0) {
         if (!empty($topic_data['children'])) {
             caes_display_topics_hierarchy($topic_data['children'], $level + 1);
         }
-    }
-}
-
-/**
- * Displays topics that are currently set to active.
- *
- * @param array $topics_data The flat list of processed topics.
- */
-function caes_display_topics_active(array $topics_data) {
-    $active_topics = array_filter($topics_data, fn($data) => (bool)$data['is_active']);
-
-    if (empty($active_topics)) {
-        echo '<p>No active topics found.</p>';
-        return;
-    }
-
-    foreach ($active_topics as $topic_data) {
-        $topic = $topic_data['term'];
-        ?>
-        <div class="caes-topic-item">
-            <div class="caes-topic-header">
-                <div class="caes-topic-name"><?php echo esc_html($topic->name); ?></div>
-                <div class="caes-status-badge caes-status-active">Active</div>
-            </div>
-            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
-            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
-                <strong>Meta Data:</strong>
-                <?php if (empty($topic_data['meta'])): ?>
-                    <span style="font-style: italic;">(No meta data found)</span>
-                <?php else: ?>
-                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0;"><?php echo esc_html(json_encode($topic_data['meta'], JSON_PRETTY_PRINT)); ?></pre>
-                <?php endif; ?>
-            </div>
-            <div class="caes-topic-actions" style="margin-top: 10px;">
-                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
-            </div>
-        </div>
-        <?php
-    }
-}
-
-function caes_display_topics_inactive(array $topics_data) {
-    $inactive_topics = array_filter($topics_data, fn($data) => !(bool)$data['is_active']);
-    if (empty($inactive_topics)) {
-        echo '<p>No inactive topics found.</p>';
-        return;
-    }
-
-    foreach ($inactive_topics as $topic_data) {
-        $topic = $topic_data['term'];
-        ?>
-        <div class="caes-topic-item caes-topic-inactive">
-            <div class="caes-topic-header">
-                <div class="caes-topic-name"><?php echo esc_html($topic->name); ?></div>
-                <div class="caes-status-badge caes-status-inactive">Inactive</div>
-            </div>
-            <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
-            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
-                <strong>Meta Data:</strong>
-                <?php if (empty($topic_data['meta'])): ?>
-                    <span style="font-style: italic;">(No meta data found)</span>
-                <?php else: ?>
-                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0;"><?php echo esc_html(json_encode($topic_data['meta'], JSON_PRETTY_PRINT)); ?></pre>
-                <?php endif; ?>
-            </div>
-            <div class="caes-topic-actions" style="margin-top: 10px;">
-                <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
-            </div>
-        </div>
-        <?php
     }
 }
 
