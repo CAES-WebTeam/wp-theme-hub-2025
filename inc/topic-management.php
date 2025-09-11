@@ -619,27 +619,41 @@ function caes_is_topic_active_from_meta($meta_array) {
         return true;
     }
     
+    // START ENHANCED DEBUG BLOCK
+    error_log('*** DEBUG: caes_is_topic_active_from_meta called ***');
+    error_log('Input meta array: ' . print_r($meta_array, true));
+    // END ENHANCED DEBUG BLOCK
+
     // Check various possible meta keys
     if (isset($meta_array['active'])) {
         $value = sanitize_text_field($meta_array['active']);
+        
         // Fix: Explicitly check for '0' or 0 to be considered inactive.
         if (in_array($value, array('0', 'no', 'false', 'inactive'), true)) {
+            error_log('*** DEBUG: active field value is ' . $value . '. Returning FALSE.');
             return false;
         }
-        return in_array($value, array('1', 'yes', 'true', 'active'), true);
+        $is_active = in_array($value, array('1', 'yes', 'true', 'active'), true);
+        error_log('*** DEBUG: active field value is ' . $value . '. Returning ' . ($is_active ? 'TRUE' : 'FALSE') . '.');
+        return $is_active;
     }
     
     if (isset($meta_array['status'])) {
         $value = sanitize_text_field($meta_array['status']);
-        return $value === 'active';
+        $is_active = $value === 'active';
+        error_log('*** DEBUG: status field value is ' . $value . '. Returning ' . ($is_active ? 'TRUE' : 'FALSE') . '.');
+        return $is_active;
     }
     
     if (isset($meta_array['inactive'])) {
         $value = sanitize_text_field($meta_array['inactive']);
-        return !in_array($value, array('1', 'yes', 'true'), true);
+        $is_active = !in_array($value, array('1', 'yes', 'true'), true);
+        error_log('*** DEBUG: inactive field value is ' . $value . '. Returning ' . ($is_active ? 'TRUE' : 'FALSE') . '.');
+        return $is_active;
     }
     
     // Default to active if no meta
+    error_log('*** DEBUG: No relevant meta key found. Returning default TRUE.');
     return true;
 }
 
