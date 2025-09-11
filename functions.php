@@ -45,7 +45,7 @@ require get_template_directory() . '/inc/link-users.php';
 require get_template_directory() . '/inc/pub-history-update.php';
 require get_template_directory() . '/inc/story-association-meta-tools.php';
 require get_template_directory() . '/inc/pub-main-import.php';
-require get_template_directory() . '/inc/topic-term-fixer.php';
+// require get_template_directory() . '/inc/topic-term-fixer.php';
 require get_template_directory() . '/inc/retired-one-time-scripts/populate-user-ids-to-stories.php';
 require get_template_directory() . '/inc/status-unpublish.php';
 require get_template_directory() . '/inc/event-import-tool.php';
