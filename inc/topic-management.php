@@ -418,15 +418,6 @@ function caes_build_topics_data() {
         if (!is_object($topic) || !isset($topic->term_id)) {
             continue;
         }
-
-        // START DEBUG BLOCK
-        if ($topic->name === 'Agricultural Development') {
-            error_log('Debugging Agricultural Development topic:');
-            error_log('Term ID: ' . (int) $topic->term_id);
-            error_log('Term Name: ' . $topic->name);
-            error_log('Associated meta data: ' . print_r($term_meta[(int) $topic->term_id] ?? 'none', true));
-        }
-        // END DEBUG BLOCK
         
         $term_id = (int) $topic->term_id;
         
@@ -631,6 +622,10 @@ function caes_is_topic_active_from_meta($meta_array) {
     // Check various possible meta keys
     if (isset($meta_array['active'])) {
         $value = sanitize_text_field($meta_array['active']);
+        // Fix: Explicitly check for '0' or 0 to be considered inactive.
+        if (in_array($value, array('0', 'no', 'false', 'inactive'), true)) {
+            return false;
+        }
         return in_array($value, array('1', 'yes', 'true', 'active'), true);
     }
     
@@ -777,7 +772,7 @@ function caes_display_topics_overview() {
             
             <div class="caes-counts">
                 <div class="caes-count-item">
-                    <strong>Posts:</strong> 
+                    <strong>Stories:</strong> 
                     <?php if ($counts['post'] ?? 0 > 0): ?>
                         <a href="<?php echo esc_url(admin_url('edit.php?post_type=post&topics=' . $topic->slug)); ?>">
                             <?php echo (int) ($counts['post'] ?? 0); ?>
@@ -797,7 +792,7 @@ function caes_display_topics_overview() {
                     <?php endif; ?>
                 </div>
                 <div class="caes-count-item">
-                    <strong>Stories:</strong> 
+                    <strong>Features:</strong> 
                     <?php if ($counts['shorthand_story'] ?? 0 > 0): ?>
                         <a href="<?php echo esc_url(admin_url('edit.php?post_type=shorthand_story&topics=' . $topic->slug)); ?>">
                             <?php echo (int) ($counts['shorthand_story'] ?? 0); ?>
@@ -882,7 +877,7 @@ function caes_display_topic_with_children_optimized($topic_data, $hierarchy, $le
         
         <div class="caes-counts">
             <div class="caes-count-item">
-                <strong>Posts:</strong> 
+                <strong>Stories:</strong> 
                 <?php if ($counts['post'] ?? 0 > 0): ?>
                     <a href="<?php echo esc_url(admin_url('edit.php?post_type=post&topics=' . $topic->slug)); ?>">
                         <?php echo (int) ($counts['post'] ?? 0); ?>
@@ -902,7 +897,7 @@ function caes_display_topic_with_children_optimized($topic_data, $hierarchy, $le
                 <?php endif; ?>
             </div>
             <div class="caes-count-item">
-                <strong>Stories:</strong> 
+                <strong>Features:</strong> 
                 <?php if ($counts['shorthand_story'] ?? 0 > 0): ?>
                     <a href="<?php echo esc_url(admin_url('edit.php?post_type=shorthand_story&topics=' . $topic->slug)); ?>">
                         <?php echo (int) ($counts['shorthand_story'] ?? 0); ?>
@@ -1027,7 +1022,7 @@ function caes_display_inactive_items() {
             
             <div class="caes-counts">
                 <div class="caes-count-item">
-                    <strong>Posts:</strong> 
+                    <strong>Stories:</strong> 
                     <?php if ($counts['post'] ?? 0 > 0): ?>
                         <a href="<?php echo esc_url(admin_url('edit.php?post_type=post&topics=' . $topic->slug)); ?>">
                             <?php echo (int) ($counts['post'] ?? 0); ?>
@@ -1047,7 +1042,7 @@ function caes_display_inactive_items() {
                     <?php endif; ?>
                 </div>
                 <div class="caes-count-item">
-                    <strong>Stories:</strong> 
+                    <strong>Features:</strong> 
                     <?php if ($counts['shorthand_story'] ?? 0 > 0): ?>
                         <a href="<?php echo esc_url(admin_url('edit.php?post_type=shorthand_story&topics=' . $topic->slug)); ?>">
                             <?php echo (int) ($counts['shorthand_story'] ?? 0); ?>
