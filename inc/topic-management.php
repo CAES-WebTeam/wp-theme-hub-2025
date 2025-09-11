@@ -4,7 +4,8 @@
  *
  * This file creates an admin tool to manage and view topics data with a focus on
  * performance and a clean, hierarchical display. It includes post counts,
- * a status indicator, and a one-time sync with an external API.
+ * a status indicator based on the 'active' ACF field, and a one-time sync
+ * with an external API.
  *
  * @package CAESHUB
  */
@@ -19,7 +20,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v13'); // Cache key updated for parent labels
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v14'); // Final version targeting 'active' field
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -188,6 +189,9 @@ function caes_render_topics_manager_page() {
 // Data Synchronization & Filtering
 // =============================================================================
 
+/**
+ * Fetches data from the API and updates the 'active' field of all topics.
+ */
 function caes_sync_topic_status_from_api() {
     if (!function_exists('update_field')) return -1;
 
@@ -212,11 +216,11 @@ function caes_sync_topic_status_from_api() {
 
         if ($topic_id > 0 && isset($api_map[$topic_id])) {
             $api_item = $api_map[$topic_id];
-            $current_status = get_field('is_active', $term_ref);
+            $current_status = get_field('active', $term_ref); // Read the 'active' field
             $new_status = isset($api_item['IS_ACTIVE']) ? (bool)$api_item['IS_ACTIVE'] : false;
 
             if ($current_status !== $new_status) {
-                update_field('is_active', $new_status, $term_ref);
+                update_field('active', $new_status, $term_ref); // UPDATE THE 'active' FIELD
                 $updated_count++;
             }
         }
@@ -293,12 +297,17 @@ function caes_generate_topics_data() {
     ];
 }
 
+/**
+ * Determines a topic's status by ONLY looking at the 'active' field.
+ */
 function caes_is_topic_active_from_meta($meta_array) {
-    if (!is_array($meta_array)) return true;
-    if (isset($meta_array['is_active'])) return (bool)$meta_array['is_active'];
-    if (isset($meta_array['active'])) return (bool)$meta_array['active'];
-    return true;
+    if (!is_array($meta_array)) {
+        return true; // Default to active if no meta fields exist
+    }
+    // Only check for the 'active' field. Default to true if it's not present.
+    return isset($meta_array['active']) ? (bool)$meta_array['active'] : true;
 }
+
 
 function caes_get_all_topic_post_counts() {
     global $wpdb;
