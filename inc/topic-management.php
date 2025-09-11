@@ -71,20 +71,16 @@ function caes_topics_manager_page() {
         </h1>
         
         <div id="caes-topics-dashboard">
-            <!-- Loading indicator -->
             <div id="caes-loading" style="display: none;">
                 <p>Loading topic data... <span class="spinner is-active"></span></p>
             </div>
             
-            <!-- Summary Cards -->
             <div class="caes-summary-cards">
                 <?php caes_display_summary_cards(); ?>
             </div>
             
-            <!-- Performance Info -->
             <?php caes_display_performance_info(); ?>
             
-            <!-- Tabs -->
             <h2 class="nav-tab-wrapper">
                 <a href="#overview" class="nav-tab nav-tab-active">Overview</a>
                 <a href="#hierarchy" class="nav-tab">Hierarchy View</a>
@@ -92,7 +88,6 @@ function caes_topics_manager_page() {
                 <a href="#inactive" class="nav-tab">Inactive Items</a>
             </h2>
             
-            <!-- Tab Content -->
             <div id="overview" class="caes-tab-content active">
                 <?php caes_display_topics_overview(); ?>
             </div>
@@ -110,7 +105,6 @@ function caes_topics_manager_page() {
             </div>
         </div>
         
-        <!-- Hidden nonce for AJAX -->
         <input type="hidden" id="caes-ajax-nonce" value="<?php echo esc_attr($ajax_nonce); ?>" />
     </div>
     
@@ -219,6 +213,15 @@ function caes_topics_manager_page() {
         font-size: 12px;
     }
     
+    .caes-counts a {
+        color: #135e96;
+        text-decoration: none;
+    }
+    
+    .caes-counts a:hover {
+        text-decoration: underline;
+    }
+    
     .caes-hierarchy {
         margin-left: 20px;
         border-left: 2px solid #ddd;
@@ -256,15 +259,6 @@ function caes_topics_manager_page() {
         margin-top: 10px;
         padding-top: 10px;
         border-top: 1px solid #ddd;
-    }
-    
-    .caes-counts a {
-        color: #135e96;
-        text-decoration: none;
-    }
-    
-    .caes-counts a:hover {
-        text-decoration: underline;
     }
     </style>
     
@@ -424,6 +418,15 @@ function caes_build_topics_data() {
         if (!is_object($topic) || !isset($topic->term_id)) {
             continue;
         }
+
+        // START DEBUG BLOCK
+        if ($topic->name === 'Agricultural Development') {
+            error_log('Debugging Agricultural Development topic:');
+            error_log('Term ID: ' . (int) $topic->term_id);
+            error_log('Term Name: ' . $topic->name);
+            error_log('Associated meta data: ' . print_r($term_meta[(int) $topic->term_id] ?? 'none', true));
+        }
+        // END DEBUG BLOCK
         
         $term_id = (int) $topic->term_id;
         
