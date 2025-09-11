@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v9');
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v10'); // Final version cache key
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -63,7 +63,6 @@ function caes_handle_topics_admin_actions() {
         $updated_count = caes_sync_topic_status_from_api();
         $redirect_url = admin_url('admin.php?page=caes-topics-manager&message=sync-complete&updated=' . (int)$updated_count);
         
-        // Handle potential errors from the sync function
         if ($updated_count < 0) {
             $redirect_url = admin_url('admin.php?page=caes-topics-manager&message=sync-error&code=' . abs($updated_count));
         }
@@ -84,10 +83,10 @@ function caes_render_topics_manager_page() {
     // Display admin notices
     if (isset($_GET['message'])) {
         if ($_GET['message'] === 'cache-cleared') {
-            echo '<div class="notice notice-success is-dismissible"><p><strong>Data cache has been cleared.</strong></p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Data cache has been cleared. The view is now up-to-date.</strong></p></div>';
         } elseif ($_GET['message'] === 'sync-complete' && isset($_GET['updated'])) {
             $updated_count = (int)$_GET['updated'];
-            echo '<div class="notice notice-success is-dismissible"><p><strong>Synchronization complete. ' . $updated_count . ' topics were updated.</strong></p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>Synchronization complete. ' . $updated_count . ' topics were updated in the database. Please click "Refresh Data" to see the changes.</strong></p></div>';
         } elseif ($_GET['message'] === 'sync-error') {
             $error_code = isset($_GET['code']) ? (int)$_GET['code'] : 0;
             $error_message = 'An unknown error occurred during synchronization.';
@@ -107,8 +106,8 @@ function caes_render_topics_manager_page() {
     <div class="wrap">
         <h1>
             Topics Manager
-            <a href="<?php echo esc_url($refresh_url); ?>" class="page-title-action">Refresh Data</a>
-            <a href="<?php echo esc_url($sync_url); ?>" class="page-title-action">Sync Status from API</a>
+            <a href="<?php echo esc_url($sync_url); ?>" class="page-title-action">1. Sync Status from API</a>
+            <a href="<?php echo esc_url($refresh_url); ?>" class="page-title-action">2. Refresh Data</a>
         </h1>
 
         <div class="caes-summary-cards">
@@ -178,16 +177,16 @@ function caes_render_topics_manager_page() {
 // =============================================================================
 
 function caes_sync_topic_status_from_api() {
-    if (!function_exists('update_field')) return -1; // ACF not active
+    if (!function_exists('update_field')) return -1;
 
     $response = wp_remote_get(CAES_TOPICS_API_ENDPOINT, ['timeout' => 30]);
     if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-        return -1; // API request failed
+        return -1;
     }
 
     $api_data = json_decode(wp_remote_retrieve_body($response), true);
     if (!is_array($api_data)) {
-        return -2; // No data or invalid format
+        return -2;
     }
 
     $api_map = array_column($api_data, null, 'ID');
