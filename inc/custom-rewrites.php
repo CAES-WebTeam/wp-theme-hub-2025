@@ -403,6 +403,36 @@ function custom_person_author_link($link, $author_id)
 add_filter('author_link', 'custom_person_author_link', 10, 2);
 
 // ===================================
+// QUERY & TEMPLATE LOGIC
+// ===================================
+
+/**
+ * Force a 404 page for topic archives that have no posts for the specified post type.
+ * This prevents empty archive pages from appearing, e.g., for /publications/topic/a-news-only-topic/.
+ */
+function caes_404_on_empty_topic_archives()
+{
+    // Only run this check on the front-end and for the main page query.
+    if (is_admin() || !is_main_query()) {
+        return;
+    }
+
+    // Check if we are on a 'topics' taxonomy archive page AND a post_type is explicitly set in the query.
+    // The rewrite rules in `custom_topic_rewrite_rules` ensure `post_type` is set.
+    if (is_tax('topics') && get_query_var('post_type')) {
+        // If the main query has no posts...
+        if (!have_posts()) {
+            // ...then tell WordPress this is a 404 page.
+            global $wp_query;
+            $wp_query->set_404();
+            status_header(404);
+            nocache_headers();
+        }
+    }
+}
+add_action('template_redirect', 'caes_404_on_empty_topic_archives');
+
+// ===================================
 // REDIRECTION RULES SECTION
 // ===================================
 
