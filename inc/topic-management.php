@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 define('CAES_TOPICS_NONCE_ACTION', 'caes_topics_admin_action');
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v4');
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v5'); // Cache key updated to force refresh
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS); // 15 minutes
 
 // =============================================================================
@@ -102,93 +102,23 @@ function caes_render_topics_manager_page() {
     </div>
 
     <style>
-        .caes-summary-cards {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .caes-summary-card {
-            background: #fff;
-            border: 1px solid #ccd0d4;
-            border-radius: 4px;
-            padding: 20px;
-            min-width: 200px;
-            flex: 1;
-        }
-        .caes-summary-card h3 {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            text-transform: uppercase;
-            color: #666;
-        }
-        .caes-summary-card .number {
-            font-size: 32px;
-            font-weight: bold;
-            color: #135e96;
-        }
-        .caes-tab-content {
-            display: none;
-            margin-top: 20px;
-        }
-        .caes-tab-content.active {
-            display: block;
-        }
-        .caes-topic-item {
-            background: #fff;
-            border: 1px solid #ccd0d4;
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 4px;
-        }
-        .caes-topic-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .caes-topic-name {
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .caes-topic-inactive {
-            opacity: 0.6;
-            background-color: #f9f9f9;
-        }
-        .caes-status-badge {
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .caes-status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .caes-status-inactive {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .caes-counts {
-            display: flex;
-            gap: 20px;
-            margin: 10px 0;
-            flex-wrap: wrap;
-        }
-        .caes-count-item {
-            padding: 5px 10px;
-            background-color: #f0f0f1;
-            border-radius: 3px;
-            font-size: 12px;
-        }
-        .caes-counts a {
-            color: #135e96;
-            text-decoration: none;
-        }
-        .caes-counts a:hover {
-            text-decoration: underline;
-        }
+        .caes-summary-cards { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .caes-summary-card { background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 20px; min-width: 200px; flex: 1; }
+        .caes-summary-card h3 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: #666; }
+        .caes-summary-card .number { font-size: 32px; font-weight: bold; color: #135e96; }
+        .caes-tab-content { display: none; margin-top: 20px; }
+        .caes-tab-content.active { display: block; }
+        .caes-topic-item { background: #fff; border: 1px solid #ccd0d4; margin-bottom: 10px; padding: 15px; border-radius: 4px; }
+        .caes-topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .caes-topic-name { font-weight: bold; font-size: 16px; }
+        .caes-topic-inactive { opacity: 0.6; background-color: #f9f9f9; }
+        .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .caes-status-active { background-color: #d4edda; color: #155724; }
+        .caes-status-inactive { background-color: #f8d7da; color: #721c24; }
+        .caes-counts { display: flex; gap: 20px; margin: 10px 0; flex-wrap: wrap; }
+        .caes-count-item { padding: 5px 10px; background-color: #f0f0f1; border-radius: 3px; font-size: 12px; }
+        .caes-counts a { color: #135e96; text-decoration: none; }
+        .caes-counts a:hover { text-decoration: underline; }
     </style>
     <script>
         jQuery(document).ready(function($) {
@@ -270,7 +200,7 @@ function caes_generate_topics_data() {
             'term'      => $topic,
             'is_active' => $is_active,
             'counts'    => isset($post_counts[$term_id]) ? $post_counts[$term_id] : ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
-            'meta'      => $meta // Pass the meta data to the processed data
+            'meta'      => $meta
         ];
     }
 
@@ -298,21 +228,10 @@ function caes_is_topic_active_from_meta($meta_array) {
         return true;
     }
     
-    $value = $meta_array['active'];
-    // ACF 'true/false' fields store '1' or '0'
-    if ($value === '0') {
-        return false;
-    }
-    
-    return true;
+    // ACF 'true/false' fields store '1' for true and '0' for false.
+    return $meta_array['active'] === '1';
 }
 
-/**
- * Optimized function to get all term meta for the 'topics' taxonomy
- * and clean the ACF field keys by removing the taxonomy prefix.
- *
- * @return array A map of term_id to its meta data.
- */
 /**
  * Optimized function to get all term meta for the 'topics' taxonomy
  * and clean the ACF field keys by removing the taxonomy prefix.
@@ -326,8 +245,6 @@ function caes_get_all_term_meta() {
     $prefix_len = strlen($prefix);
     $meta_data = [];
 
-    // This version uses a subquery for stability. It finds all meta fields
-    // that belong to terms within the 'topics' taxonomy.
     $sql = $wpdb->prepare("
         SELECT term_id, meta_key, meta_value
         FROM {$wpdb->termmeta}
@@ -337,7 +254,6 @@ function caes_get_all_term_meta() {
 
     $results = $wpdb->get_results($sql);
 
-    // If there are no results, return an empty array immediately.
     if (empty($results)) {
         return [];
     }
@@ -347,7 +263,6 @@ function caes_get_all_term_meta() {
         if (!isset($meta_data[$term_id])) {
             $meta_data[$term_id] = [];
         }
-        // Remove the 'topics_' prefix to get the clean field name (e.g., 'active').
         $clean_key = substr($result->meta_key, $prefix_len);
         $meta_data[$term_id][$clean_key] = $result->meta_value;
     }
@@ -401,23 +316,27 @@ function caes_build_hierarchy($topics) {
     $hierarchy = [];
     $parents = [];
 
-    foreach ($topics as $id => $topic) {
+    foreach ($topics as $id => &$topic) { // Use reference to add children directly
         $parent_id = (int)$topic['term']->parent;
-        $topics[$id]['children'] = [];
-        $parents[$parent_id][] = $id;
+        $topic['children'] = [];
+        if ($parent_id !== 0) {
+            $parents[$parent_id][] = $id;
+        }
     }
+    unset($topic); // Unset reference
 
-    foreach ($topics as $id => $topic) {
+    foreach ($topics as $id => &$topic) {
         if (isset($parents[$id])) {
             foreach ($parents[$id] as $child_id) {
-                $topics[$id]['children'][] = $topics[$child_id];
+                $topic['children'][] = &$topics[$child_id];
             }
         }
-        if ($topic['term']->parent === 0) {
-            $hierarchy[] = $topics[$id];
+        if ((int)$topic['term']->parent === 0) {
+            $hierarchy[] = &$topic;
         }
     }
-    
+    unset($topic);
+
     return $hierarchy;
 }
 
@@ -467,10 +386,10 @@ function caes_display_topics_hierarchy($hierarchy, $level = 0) {
                 <?php if (empty($meta)): ?>
                     <span style="font-style: italic;">(No meta data found)</span>
                 <?php else: ?>
-                    <?php echo esc_html(json_encode($meta)); ?>
+                    <?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?>
                 <?php endif; ?>
             </div>
-            <div class="caes-topic-actions">
+            <div class="caes-topic-actions" style="margin-top: 10px;">
                 <a href="<?php echo esc_url(admin_url('term.php?taxonomy=' . CAES_TOPICS_TAXONOMY . '&tag_ID=' . (int) $topic->term_id)); ?>" class="button button-small">Edit Topic</a>
             </div>
         </div>
@@ -517,10 +436,10 @@ function caes_display_topics_inactive($topics_data) {
                 <?php if (empty($meta)): ?>
                     <span style="font-style: italic;">(No meta data found)</span>
                 <?php else: ?>
-                    <?php echo esc_html(json_encode($meta)); ?>
+                    <?php echo esc_html(json_encode($meta, JSON_PRETTY_PRINT)); ?>
                 <?php endif; ?>
             </div>
-            <div class="caes-topic-actions">
+            <div class="caes-topic-actions" style="margin-top: 10px;">
                 <a href="<?php echo esc_url(admin_url('term.php?taxonomy=' . CAES_TOPICS_TAXONOMY . '&tag_ID=' . (int) $topic->term_id)); ?>" class="button button-small">Edit Topic</a>
             </div>
         </div>
