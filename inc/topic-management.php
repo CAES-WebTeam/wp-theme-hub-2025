@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v15'); // Cache key updated for UI changes
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v16'); // Cache key updated for new topic note
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -160,6 +160,7 @@ function caes_render_topics_manager_page() {
         .caes-topic-header { display: flex; justify-content: space-between; align-items: center; }
         .caes-topic-name { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
         .caes-topic-parent { font-size: 14px; font-weight: bold; color: #135e96; margin-bottom: 12px; padding: 5px 8px; background-color: #f0f0f1; border-radius: 3px; display: inline-block; }
+        .caes-topic-new-note { font-size: 12px; color: #787c82; margin-bottom: 15px; padding: 8px; background-color: #f0f6fc; border-left: 4px solid #72aee6; }
         .caes-topic-inactive { opacity: 0.7; background-color: #fefefe; }
         .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .caes-status-active { background-color: #d4edda; color: #155724; }
@@ -365,6 +366,8 @@ function caes_display_topics_hierarchy(array $hierarchy, array $all_topics, $lev
             $parent_name = $all_topics[$parent_id]['term']->name;
         }
 
+        $is_new_topic = empty($topic_data['meta']['topic_id']);
+
         ?>
         <div class="<?php echo esc_attr($item_class); ?>">
             <div class="caes-topic-header">
@@ -377,6 +380,12 @@ function caes_display_topics_hierarchy(array $hierarchy, array $all_topics, $lev
             <?php if ($parent_name) : ?>
                 <div class="caes-topic-parent">
                     Parent: <?php echo esc_html($parent_name); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($is_new_topic) : ?>
+                <div class="caes-topic-new-note">
+                    <strong>Note:</strong> This is a new topic and was not imported from the previous system.
                 </div>
             <?php endif; ?>
             
