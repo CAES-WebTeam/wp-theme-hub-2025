@@ -19,7 +19,6 @@ require get_template_directory() . '/inc/user-support.php';
 require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
 require get_template_directory() . '/inc/custom-rewrites.php';
-require get_template_directory() . '/inc/date-sync-tool.php';
 require get_template_directory() . '/inc/rss-support.php';
 
 // Publications PDF generation
