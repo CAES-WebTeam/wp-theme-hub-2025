@@ -17,10 +17,9 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 // Security & Constants
 // =============================================================================
-define('CAES_TOPICS_NONCE_ACTION', 'caes_topics_admin_action');
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v6'); // Cache key updated
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v7'); // Cache key updated
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 
 // =============================================================================
@@ -47,19 +46,16 @@ function caes_add_topics_manager_page() {
  */
 add_action('admin_init', 'caes_handle_topics_cache_refresh');
 function caes_handle_topics_cache_refresh() {
-    // Check if we are on the correct page and the refresh action is triggered.
     if (
         isset($_GET['page']) && $_GET['page'] === 'caes-topics-manager' &&
         isset($_GET['refresh']) && $_GET['refresh'] === '1' &&
         isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_refresh_cache')
     ) {
         caes_clear_topics_cache();
-        // Safely redirect back to the clean URL.
         wp_safe_redirect(admin_url('admin.php?page=caes-topics-manager'));
         exit;
     }
 }
-
 
 /**
  * Renders the HTML for the Topics Manager page.
@@ -72,8 +68,6 @@ function caes_render_topics_manager_page() {
     $data = caes_get_topics_data_with_cache();
     $refresh_nonce = wp_create_nonce('caes_refresh_cache');
     $refresh_url = add_query_arg(['refresh' => '1', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
-    $total_active = isset($data['summary']['active_topics']) ? (int)$data['summary']['active_topics'] : 0;
-    $total_inactive = isset($data['summary']['inactive_topics']) ? (int)$data['summary']['inactive_topics'] : 0;
     
     ?>
     <div class="wrap">
@@ -89,11 +83,11 @@ function caes_render_topics_manager_page() {
             </div>
             <div class="caes-summary-card">
                 <h3>Active Topics</h3>
-                <div class="number"><?php echo (int) $total_active; ?></div>
+                <div class="number"><?php echo (int) $data['summary']['active_topics']; ?></div>
             </div>
             <div class="caes-summary-card">
                 <h3>Inactive Topics</h3>
-                <div class="number"><?php echo (int) $total_inactive; ?></div>
+                <div class="number"><?php echo (int) $data['summary']['inactive_topics']; ?></div>
             </div>
         </div>
 
@@ -162,7 +156,17 @@ function caes_clear_topics_cache() {
     delete_transient(CAES_TOPICS_CACHE_KEY);
 }
 
+/**
+ * Generates the full topics data array using ACF's get_fields function.
+ *
+ * @return array The processed topics data.
+ */
 function caes_generate_topics_data() {
+    // Ensure ACF function exists.
+    if (!function_exists('get_fields')) {
+        return ['topics' => [], 'summary' => ['total_topics' => 'ACF not found'], 'hierarchy' => []];
+    }
+
     $topics = get_terms([
         'taxonomy'   => CAES_TOPICS_TAXONOMY,
         'hide_empty' => false,
@@ -174,7 +178,6 @@ function caes_generate_topics_data() {
         return ['topics' => [], 'summary' => [], 'hierarchy' => []];
     }
 
-    $term_meta = caes_get_all_term_meta();
     $post_counts = caes_get_all_topic_post_counts();
     $processed_topics = [];
     $active_count = 0;
@@ -182,7 +185,10 @@ function caes_generate_topics_data() {
 
     foreach ($topics as $topic) {
         $term_id = (int)$topic->term_id;
-        $meta = $term_meta[$term_id] ?? [];
+        
+        // Use the official ACF function to get all fields for the term.
+        $meta = get_fields('term_' . $term_id);
+        
         $is_active = caes_is_topic_active_from_meta($meta);
 
         if ($is_active) {
@@ -195,7 +201,7 @@ function caes_generate_topics_data() {
             'term'      => $topic,
             'is_active' => $is_active,
             'counts'    => $post_counts[$term_id] ?? ['post' => 0, 'publications' => 0, 'shorthand_story' => 0],
-            'meta'      => $meta
+            'meta'      => $meta ?: [] // Ensure meta is always an array
         ];
     }
 
@@ -213,40 +219,12 @@ function caes_generate_topics_data() {
 }
 
 function caes_is_topic_active_from_meta($meta_array) {
+    // If meta is not an array (e.g., get_fields returns false), assume active.
     if (!is_array($meta_array) || !isset($meta_array['active'])) {
         return true;
     }
-    return $meta_array['active'] === '1';
-}
-
-function caes_get_all_term_meta() {
-    global $wpdb;
-    $taxonomy = CAES_TOPICS_TAXONOMY;
-    $prefix = $taxonomy . '_';
-    $prefix_len = strlen($prefix);
-    $meta_data = [];
-
-    $sql = $wpdb->prepare("
-        SELECT term_id, meta_key, meta_value
-        FROM {$wpdb->termmeta}
-        WHERE meta_key LIKE %s
-        AND term_id IN (SELECT term_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s)
-    ", $wpdb->esc_like($prefix) . '%', $taxonomy);
-
-    $results = $wpdb->get_results($sql);
-
-    if (empty($results)) {
-        return [];
-    }
-
-    foreach ($results as $result) {
-        $term_id = (int)$result->term_id;
-        $meta_data[$term_id] = $meta_data[$term_id] ?? [];
-        $clean_key = substr($result->meta_key, $prefix_len);
-        $meta_data[$term_id][$clean_key] = $result->meta_value;
-    }
-
-    return $meta_data;
+    // ACF 'true/false' fields return a boolean true or false.
+    return (bool)$meta_array['active'];
 }
 
 function caes_get_all_topic_post_counts() {
