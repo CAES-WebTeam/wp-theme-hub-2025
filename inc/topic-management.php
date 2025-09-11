@@ -417,7 +417,7 @@ function caes_display_topics_hierarchy($hierarchy, $level = 0) {
         $topic = $topic_data['term'];
         $is_active = (bool)$topic_data['is_active'];
         $counts = $topic_data['counts'];
-        $meta = $topic_data['meta']; // Get the meta data
+        $meta = $topic_data['meta'];
         $indent = str_repeat('— ', $level);
 
         $item_class = 'caes-topic-item' . ($is_active ? '' : ' caes-topic-inactive');
@@ -470,4 +470,68 @@ function caes_display_topics_inactive($topics_data) {
         return;
     }
 
-    foreach ($inactive_topics as $topic_
+    foreach ($inactive_topics as $topic_data) {
+        $topic = $topic_data['term'];
+        $counts = $topic_data['counts'];
+        $meta = $topic_data['meta'];
+        ?>
+        <div class="caes-topic-item caes-topic-inactive">
+            <div class="caes-topic-header">
+                <div class="caes-topic-name">
+                    <?php echo esc_html($topic->name); ?>
+                </div>
+                <div class="caes-status-badge caes-status-inactive">Inactive</div>
+            </div>
+            <div class="caes-counts">
+                <?php caes_render_post_counts($topic->slug, $counts); ?>
+            </div>
+
+            <div class="caes-meta-data" style="font-family: monospace; font-size: 11px; margin-top: 10px; color: #555; background: #f7f7f7; padding: 5px; border-radius: 3px;">
+                <strong>Meta Data:</strong>
+                <?php if (empty($meta)): ?>
+                    <span style="font-style: italic;">(No meta data found)</span>
+                <?php else: ?>
+                    <?php echo esc_html(json_encode($meta)); ?>
+                <?php endif; ?>
+            </div>
+            <div class="caes-topic-actions">
+                <a href="<?php echo esc_url(admin_url('term.php?taxonomy=' . CAES_TOPICS_TAXONOMY . '&tag_ID=' . (int) $topic->term_id)); ?>" class="button button-small">Edit Topic</a>
+            </div>
+        </div>
+        <?php
+    }
+}
+
+/**
+ * Renders the count items for various post types.
+ *
+ * @param string $topic_slug The slug of the topic.
+ * @param array  $counts     An associative array of post type counts.
+ */
+function caes_render_post_counts($topic_slug, $counts) {
+    $post_types_map = [
+        'post'              => 'Stories',
+        'publications'      => 'Publications',
+        'shorthand_story'   => 'Features'
+    ];
+    $total_count = 0;
+
+    foreach ($post_types_map as $post_type => $label) {
+        $count = isset($counts[$post_type]) ? (int)$counts[$post_type] : 0;
+        $total_count += $count;
+        $url = admin_url('edit.php?post_type=' . $post_type . '&' . CAES_TOPICS_TAXONOMY . '=' . $topic_slug);
+        
+        echo '<div class="caes-count-item">';
+        echo '<strong>' . esc_html($label) . ':</strong> ';
+        if ($count > 0) {
+            echo '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>';
+        } else {
+            echo esc_html($count);
+        }
+        echo '</div>';
+    }
+    
+    echo '<div class="caes-count-item">';
+    echo '<strong>Total:</strong> ' . esc_html($total_count);
+    echo '</div>';
+}
