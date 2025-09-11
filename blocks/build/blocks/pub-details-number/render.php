@@ -18,12 +18,12 @@ if ($pubNumber) {
         case 'AP':
             $tooltip = 'This is an annual publication. Learn more by clicking the publication number.';
             $pubType = 'Annual Publication';
-            $description = 'Annual publications address a comprehensive issue and are updated each year. These are typically large handbooks or commodity reports.';
+            $description = 'An annual Extension publication provides timely, research-based information that is updated annually, such as spray guides for commercial fruit growers, or reports about UGA research trials on turfgrass, vegetables, and more.';
             break;
         case 'TP':
             $tooltip = 'This is a temporary publication. Learn more by clicking the publication number.';
             $pubType = 'Temporary Publication';
-            $description = 'Temporary publications are issue- or event-related and require immediate dissemination to the public. These are only available on the UGA Extension website for three months.';
+            $description = 'A temporary publication provides current-issue or event-related information that needs to be provided to the public immediately.';
             break;
         // Add more 2-character prefixes here if needed
         default:
@@ -31,17 +31,17 @@ if ($pubNumber) {
                 case 'B':
                     $tooltip = 'This is a bulletin. Learn more by clicking the publication number.';
                     $pubType = 'Bulletin';
-                    $description = 'Bulletins represent a major writing effort and cover a broad subject area. They address individual topics in a particular discipline for a specific commodity.';
+                    $description = 'A bulletin is an Extension publication that covers a broad subject area, such as native plants in Georgia or how to prepare your family for emergencies or natural disasters.';
                     break;
                 case 'C':
                     $tooltip = 'This is a circular. Learn more by clicking the publication number.';
                     $pubType = 'Circular';
-                    $description = 'Circulars are more focused than Bulletins and will discuss one subject in a limited form.';
+                    $description = 'A circular is an Extension publication that covers a single topic briefly but thoroughly.';
                     break;
                 default:
                     $tooltip = 'This is a general publication.';
                     $pubType = 'general publication';
-                    $description = 'This is where the text for this type will go.';
+                    $description = '';
                     break;
             }
             break;
