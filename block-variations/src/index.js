@@ -1,8 +1,9 @@
 import { registerBlockVariation } from '@wordpress/blocks';
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, CheckboxControl } from '@wordpress/components';
+import { PanelBody, SelectControl, CheckboxControl, Spinner } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { __ } from '@wordpress/i18n';
 
 /** Event Query Block Variation - START */
 
@@ -53,9 +54,6 @@ registerBlockVariation('core/query', {
       postType: 'publications',
       perPage: 4,
       offset: 0,
-      // Add attributes to store term selections
-      taxQueryInclude: [],
-      taxQueryExclude: [],
     },
   },
   isActive: ['namespace'],
@@ -71,33 +69,19 @@ registerBlockVariation('core/query', {
   ]
 });
 
-// Check if block is using our Publications variation
+
+// This section adds the Language filter specifically to the Publications variation
 const isPubsVariation = (props) => {
   const { attributes: { namespace } } = props;
   return namespace && namespace === publicationsVariation;
 };
 
-// Add Inspector Controls for filtering
 const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
   const { query } = attributes;
-  const { taxQueryInclude = [], taxQueryExclude = [] } = query;
-
-  // Fetch publication categories using the core data store
-  const pubCategories = useSelect((select) => {
-    return select('core').getEntityRecords('taxonomy', 'publication_category', { per_page: -1 });
-  }, []);
-
-  // Handlers to update attributes when checkboxes are changed
-  const toggleTerm = (termId, queryKey, currentTerms) => {
-    const newTerms = currentTerms.includes(termId)
-      ? currentTerms.filter(id => id !== termId)
-      : [...currentTerms, termId];
-    setAttributes({ query: { ...query, [queryKey]: newTerms } });
-  };
 
   return (
     <PanelBody title="Publication Feed Settings">
-      {/* Language Selector (existing) */}
+      {/* Language Selector */}
       <SelectControl
         label="Language"
         value={query.language}
@@ -110,36 +94,6 @@ const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
           setAttributes({ query: { ...query, language: value } })
         }
       />
-
-      {/* Include by Category */}
-      <div style={{ marginBottom: '16px' }}>
-        <strong>Include by Category</strong>
-        {!pubCategories && <p>Loading categories...</p>}
-        {pubCategories && pubCategories.length === 0 && <p>No categories found.</p>}
-        {pubCategories && pubCategories.map(term => (
-          <CheckboxControl
-            key={term.id}
-            label={term.name}
-            checked={taxQueryInclude.includes(term.id)}
-            onChange={() => toggleTerm(term.id, 'taxQueryInclude', taxQueryInclude)}
-          />
-        ))}
-      </div>
-
-      {/* Exclude by Category */}
-      <div>
-        <strong>Exclude by Category</strong>
-        {!pubCategories && <p>Loading categories...</p>}
-        {pubCategories && pubCategories.length === 0 && <p>No categories found.</p>}
-        {pubCategories && pubCategories.map(term => (
-          <CheckboxControl
-            key={term.id}
-            label={term.name}
-            checked={taxQueryExclude.includes(term.id)}
-            onChange={() => toggleTerm(term.id, 'taxQueryExclude', taxQueryExclude)}
-          />
-        ))}
-      </div>
     </PanelBody>
   );
 };
@@ -157,9 +111,10 @@ export const withPubVariationControls = (BlockEdit) => (props) => {
   );
 };
 
-addFilter('editor.BlockEdit', 'core/query', withPubVariationControls);
+addFilter('editor.BlockEdit', 'core/query/with-pub-controls', withPubVariationControls);
 
 /** Publications Query Block Variation - END */
+
 
 /** Stories Query Block Variation - START */
 
@@ -173,7 +128,7 @@ registerBlockVariation('core/query', {
   attributes: {
     namespace: storiesVariation,
     query: {
-      postType: 'post', 
+      postType: 'post',
       perPage: 4,
       offset: 0
     },
@@ -194,3 +149,131 @@ registerBlockVariation('core/query', {
 });
 
 /** Stories Query Block Variation - END */
+
+
+/** GENERIC TAXONOMY EXCLUSION CONTROLS - START */
+
+/**
+ * A component that renders exclusion filters for all taxonomies of a given post type.
+ */
+const TaxonomyExclusionFilters = ({ postType, attributes, setAttributes }) => {
+    // Get all taxonomies registered to the current post type
+    const taxonomies = useSelect(
+        (select) => select('core').getTaxonomies({ type: postType, per_page: -1 }),
+        [postType]
+    );
+
+    if (!taxonomies || taxonomies.length === 0) {
+        return null; // Don't render anything if no taxonomies are found
+    }
+
+    // Render a panel for each taxonomy
+    return (
+        <>
+            {taxonomies.map((taxonomy) => (
+                <TaxonomyTermSelector
+                    key={taxonomy.slug}
+                    taxonomy={taxonomy}
+                    attributes={attributes}
+                    setAttributes={setAttributes}
+                />
+            ))}
+        </>
+    );
+};
+
+/**
+ * A component that fetches and displays a checklist of terms for a single taxonomy.
+ */
+const TaxonomyTermSelector = ({ taxonomy, attributes, setAttributes }) => {
+    const { query } = attributes;
+    const { taxQueryExclude = {} } = query;
+    const excludedTerms = taxQueryExclude[taxonomy.slug] || [];
+
+    // Fetch all terms for the current taxonomy
+    const { terms, isLoading } = useSelect(
+        (select) => ({
+            terms: select('core').getEntityRecords('taxonomy', taxonomy.slug, { per_page: -1 }),
+            isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', taxonomy.slug, { per_page: -1 }]),
+        }),
+        [taxonomy.slug]
+    );
+
+    // Handler to update the block's attributes when a checkbox is toggled
+    const toggleTerm = (termId) => {
+        const newExcludedTerms = excludedTerms.includes(termId)
+            ? excludedTerms.filter((id) => id !== termId)
+            : [...excludedTerms, termId];
+
+        const newTaxQueryExclude = {
+            ...taxQueryExclude,
+            [taxonomy.slug]: newExcludedTerms,
+        };
+
+        // Clean up empty arrays from the object
+        if (newExcludedTerms.length === 0) {
+            delete newTaxQueryExclude[taxonomy.slug];
+        }
+
+        setAttributes({
+            query: { ...query, taxQueryExclude: newTaxQueryExclude },
+        });
+    };
+
+    if (!terms && !isLoading) {
+        return null; // Don't show panel if there are no terms
+    }
+
+    return (
+        <PanelBody title={`${taxonomy.name} - Exclusion Filter`}>
+            {isLoading && <Spinner />}
+            {!isLoading && terms && terms.length > 0 && (
+                terms.map((term) => (
+                    <CheckboxControl
+                        key={term.id}
+                        label={term.name}
+                        checked={excludedTerms.includes(term.id)}
+                        onChange={() => toggleTerm(term.id)}
+                    />
+                ))
+            )}
+        </PanelBody>
+    );
+};
+
+
+/**
+ * Higher-Order Component to add the taxonomy exclusion controls to the Query block's inspector.
+ */
+const withTaxonomyExclusionControls = (BlockEdit) => (props) => {
+    const { name, attributes } = props;
+
+    // Only apply to the core Query block
+    if (name !== 'core/query') {
+        return <BlockEdit {...props} />;
+    }
+
+    const postType = attributes.query.postType;
+
+    return (
+        <>
+            <BlockEdit {...props} />
+            <InspectorControls>
+                <TaxonomyExclusionFilters
+                    postType={postType}
+                    attributes={attributes}
+                    setAttributes={props.setAttributes}
+                />
+            </InspectorControls>
+        </>
+    );
+};
+
+// Apply the filter to the block editor
+addFilter(
+    'editor.BlockEdit',
+    'my-plugin/with-taxonomy-exclusion-controls',
+    withTaxonomyExclusionControls
+);
+
+/** GENERIC TAXONOMY EXCLUSION CONTROLS - END */
