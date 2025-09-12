@@ -198,8 +198,9 @@ const publicationsVariation = 'pubs-feed';
       postType: 'publications',
       perPage: 4,
       offset: 0,
-      // Add a specific attribute for this exclusion
-      taxQueryExcludePubs: []
+      taxQueryExcludePubs: [],
+      // Add a new attribute for sorting
+      orderByLatestUpdate: false
     }
   },
   isActive: ['namespace'],
@@ -226,7 +227,8 @@ const PubVariationControls = ({
     query
   } = attributes;
   const {
-    taxQueryExcludePubs = []
+    taxQueryExcludePubs = [],
+    orderByLatestUpdate = false
   } = query;
 
   // Fetch only 'publication_category' terms
@@ -253,9 +255,9 @@ const PubVariationControls = ({
     });
   };
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
       title: "Publication Feed Settings",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
         label: "Language",
         value: query.language,
         options: [{
@@ -274,7 +276,16 @@ const PubVariationControls = ({
             language: value
           }
         })
-      })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.ToggleControl, {
+        label: "Sort by latest update",
+        checked: orderByLatestUpdate,
+        onChange: value => setAttributes({
+          query: {
+            ...query,
+            orderByLatestUpdate: value
+          }
+        })
+      })]
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
       title: "Exclude Publication Categories",
       children: [isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Spinner, {}), !isLoading && terms && terms.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {

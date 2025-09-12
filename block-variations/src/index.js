@@ -1,7 +1,7 @@
 import { registerBlockVariation } from '@wordpress/blocks';
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, CheckboxControl, Spinner } from '@wordpress/components';
+import { PanelBody, SelectControl, CheckboxControl, Spinner, ToggleControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 /** Event Query Block Variation - START */
@@ -53,8 +53,9 @@ registerBlockVariation('core/query', {
       postType: 'publications',
       perPage: 4,
       offset: 0,
-      // Add a specific attribute for this exclusion
       taxQueryExcludePubs: [],
+      // Add a new attribute for sorting
+      orderByLatestUpdate: false,
     },
   },
   isActive: ['namespace'],
@@ -70,7 +71,6 @@ registerBlockVariation('core/query', {
   ]
 });
 
-
 // This section adds the inspector controls specifically to the Publications variation
 const isPubsVariation = (props) => {
   const { attributes: { namespace } } = props;
@@ -79,7 +79,7 @@ const isPubsVariation = (props) => {
 
 const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
   const { query } = attributes;
-  const { taxQueryExcludePubs = [] } = query;
+  const { taxQueryExcludePubs = [], orderByLatestUpdate = false } = query;
 
   // Fetch only 'publication_category' terms
   const { terms, isLoading } = useSelect((select) => ({
@@ -110,6 +110,14 @@ const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
           onChange={(value) =>
             setAttributes({ query: { ...query, language: value } })
           }
+        />
+        {/* Sort by Latest Update Toggle */}
+        <ToggleControl
+            label="Sort by latest update"
+            checked={orderByLatestUpdate}
+            onChange={(value) =>
+                setAttributes({ query: { ...query, orderByLatestUpdate: value } })
+            }
         />
       </PanelBody>
 
@@ -145,7 +153,6 @@ export const withPubVariationControls = (BlockEdit) => (props) => {
 addFilter('editor.BlockEdit', 'core/query/with-pub-controls', withPubVariationControls);
 
 /** Publications Query Block Variation - END */
-
 
 /** Stories Query Block Variation - START */
 

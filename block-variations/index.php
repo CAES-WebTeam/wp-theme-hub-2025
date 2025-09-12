@@ -76,6 +76,14 @@ function rest_pub_filters($args, $request)
         $args['tax_query'] = $tax_query;
     }
 
+    // --- NEW: Handle sorting by latest update ---
+    $order_by_update = $request->get_param('orderByLatestUpdate');
+    if ($order_by_update) {
+        $args['meta_key'] = '_publication_latest_revision_date';
+        $args['orderby'] = 'meta_value_num'; // Use numeric ordering
+        $args['order'] = 'DESC';
+    }
+
     return $args;
 }
 add_filter('rest_publications_query', 'rest_pub_filters', 10, 2);
@@ -136,6 +144,8 @@ function variations_query_filter($query, $block)
     if (isset($parsed_block['attrs']['namespace'])) {
         $namespace = $parsed_block['attrs']['namespace'];
 
+        // Inside the variations_query_filter function in index.php
+
         // For pubs-feed blocks
         if ('pubs-feed' === $namespace) {
             // Filter by language
@@ -157,6 +167,14 @@ function variations_query_filter($query, $block)
                     'terms'    => array_map('absint', $exclude_terms),
                     'operator' => 'NOT IN',
                 ];
+            }
+
+            // --- NEW: Handle sorting by latest update on the frontend ---
+            $order_by_update = $parsed_block['attrs']['query']['orderByLatestUpdate'] ?? false;
+            if ($order_by_update) {
+                $query['meta_key'] = '_publication_latest_revision_date';
+                $query['orderby'] = 'meta_value_num'; // Use numeric ordering
+                $query['order'] = 'DESC';
             }
 
             // Filter by author if on author archive

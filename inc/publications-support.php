@@ -932,3 +932,53 @@ function update_flat_author_ids_meta($post_id)
 
     update_post_meta($post_id, 'all_author_ids', $author_ids);
 }
+
+/**
+ * When a publication is saved, calculate and store the latest revision date
+ * in a separate, queryable meta field for performance.
+ */
+function update_latest_revision_date_on_save($post_id) {
+    // Only run this for the 'publications' post type.
+    if (get_post_type($post_id) !== 'publications') {
+        return;
+    }
+
+    // Ensure this is not an auto-save or revision.
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE || wp_is_post_revision($post_id)) {
+        return;
+    }
+
+    // Check if the 'history' field has a value.
+    if (have_rows('history', $post_id)) {
+        $latest_revision_date = 0;
+        $revision_status_keys = [4, 5, 6]; // The status keys we care about.
+
+        // Loop through the repeater rows.
+        while (have_rows('history', $post_id)) {
+            the_row();
+            $status = get_sub_field('status');
+            $date_str = get_sub_field('date'); // ACF returns date as Ymd string.
+
+            // Check if the status is one of the revision statuses.
+            if (in_array($status, $revision_status_keys) && !empty($date_str)) {
+                $current_date = (int) $date_str; // Convert '20230912' to 20230912
+                if ($current_date > $latest_revision_date) {
+                    $latest_revision_date = $current_date;
+                }
+            }
+        }
+
+        // Update the hidden meta field with the latest date found.
+        if ($latest_revision_date > 0) {
+            update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
+        } else {
+            // If no revision dates were found, delete the meta key to keep data clean.
+            delete_post_meta($post_id, '_publication_latest_revision_date');
+        }
+    } else {
+        // If the repeater is empty, ensure the meta key is deleted.
+        delete_post_meta($post_id, '_publication_latest_revision_date');
+    }
+}
+// Hook into ACF's save function.
+add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
