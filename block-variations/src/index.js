@@ -1,7 +1,8 @@
 import { registerBlockVariation } from '@wordpress/blocks';
 import { addFilter } from '@wordpress/hooks';
 import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, SelectControl, ToggleControl } from '@wordpress/components';
+import { PanelBody, SelectControl, CheckboxControl } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
 
 /** Event Query Block Variation - START */
 
