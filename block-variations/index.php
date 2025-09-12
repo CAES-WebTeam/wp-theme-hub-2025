@@ -56,13 +56,44 @@ add_filter('rest_events_query', 'rest_event_type', 10, 2);
 // Backend
 function rest_pub_language_orderby($args, $request)
 {
-
     // Handle language filter
     $lang = $request->get_param('language');
     if ($lang) {
         $args['meta_key'] = 'language';
         $args['meta_value'] = absint($lang);
     }
+
+    // --- NEW: Handle taxonomy filters ---
+    $tax_query = [];
+    $include_terms = $request->get_param('taxQueryInclude');
+    $exclude_terms = $request->get_param('taxQueryExclude');
+
+    if (!empty($include_terms)) {
+        $tax_query[] = [
+            'taxonomy' => 'publication_category',
+            'field'    => 'term_id',
+            'terms'    => $include_terms,
+            'operator' => 'IN',
+        ];
+    }
+
+    if (!empty($exclude_terms)) {
+        $tax_query[] = [
+            'taxonomy' => 'publication_category',
+            'field'    => 'term_id',
+            'terms'    => $exclude_terms,
+            'operator' => 'NOT IN',
+        ];
+    }
+
+    if (count($tax_query) > 1) {
+        $tax_query['relation'] = 'AND';
+    }
+
+    if (!empty($tax_query)) {
+        $args['tax_query'] = $tax_query;
+    }
+    // --- END NEW ---
 
     return $args;
 }
@@ -132,6 +163,28 @@ function variations_query_filter($query, $block)
                     'value' => $language_id,
                     'compare' => '='
                 );
+            }
+
+            // --- NEW: Handle taxonomy filters on the frontend ---
+            $include_terms = $parsed_block['attrs']['query']['taxQueryInclude'] ?? [];
+            $exclude_terms = $parsed_block['attrs']['query']['taxQueryExclude'] ?? [];
+
+            if (!empty($include_terms)) {
+                $tax_query[] = [
+                    'taxonomy' => 'publication_category',
+                    'field'    => 'term_id',
+                    'terms'    => $include_terms,
+                    'operator' => 'IN',
+                ];
+            }
+
+            if (!empty($exclude_terms)) {
+                $tax_query[] = [
+                    'taxonomy' => 'publication_category',
+                    'field'    => 'term_id',
+                    'terms'    => $exclude_terms,
+                    'operator' => 'NOT IN',
+                ];
             }
 
             // Filter by author if on author archive

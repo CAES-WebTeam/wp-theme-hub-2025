@@ -51,12 +51,14 @@ registerBlockVariation('core/query', {
     query: {
       postType: 'publications',
       perPage: 4,
-      offset: 0
+      offset: 0,
+      // Add attributes to store term selections
+      taxQueryInclude: [],
+      taxQueryExclude: [],
     },
   },
   isActive: ['namespace'],
   scope: ['inserter'],
-  // allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
   innerBlocks: [
     [
       'core/post-template',
@@ -74,13 +76,27 @@ const isPubsVariation = (props) => {
   return namespace && namespace === publicationsVariation;
 };
 
-// Add Inspector Controls for selecting language
+// Add Inspector Controls for filtering
 const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
   const { query } = attributes;
+  const { taxQueryInclude = [], taxQueryExclude = [] } = query;
+
+  // Fetch publication categories using the core data store
+  const pubCategories = useSelect((select) => {
+    return select('core').getEntityRecords('taxonomy', 'publication_category', { per_page: -1 });
+  }, []);
+
+  // Handlers to update attributes when checkboxes are changed
+  const toggleTerm = (termId, queryKey, currentTerms) => {
+    const newTerms = currentTerms.includes(termId)
+      ? currentTerms.filter(id => id !== termId)
+      : [...currentTerms, termId];
+    setAttributes({ query: { ...query, [queryKey]: newTerms } });
+  };
 
   return (
     <PanelBody title="Publication Feed Settings">
-      {/* Language Selector */}
+      {/* Language Selector (existing) */}
       <SelectControl
         label="Language"
         value={query.language}
@@ -93,6 +109,36 @@ const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
           setAttributes({ query: { ...query, language: value } })
         }
       />
+
+      {/* Include by Category */}
+      <div style={{ marginBottom: '16px' }}>
+        <strong>Include by Category</strong>
+        {!pubCategories && <p>Loading categories...</p>}
+        {pubCategories && pubCategories.length === 0 && <p>No categories found.</p>}
+        {pubCategories && pubCategories.map(term => (
+          <CheckboxControl
+            key={term.id}
+            label={term.name}
+            checked={taxQueryInclude.includes(term.id)}
+            onChange={() => toggleTerm(term.id, 'taxQueryInclude', taxQueryInclude)}
+          />
+        ))}
+      </div>
+
+      {/* Exclude by Category */}
+      <div>
+        <strong>Exclude by Category</strong>
+        {!pubCategories && <p>Loading categories...</p>}
+        {pubCategories && pubCategories.length === 0 && <p>No categories found.</p>}
+        {pubCategories && pubCategories.map(term => (
+          <CheckboxControl
+            key={term.id}
+            label={term.name}
+            checked={taxQueryExclude.includes(term.id)}
+            onChange={() => toggleTerm(term.id, 'taxQueryExclude', taxQueryExclude)}
+          />
+        ))}
+      </div>
     </PanelBody>
   );
 };

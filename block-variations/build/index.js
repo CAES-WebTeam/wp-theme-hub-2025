@@ -184,12 +184,14 @@ const publicationsVariation = 'pubs-feed';
     query: {
       postType: 'publications',
       perPage: 4,
-      offset: 0
+      offset: 0,
+      // Add attributes to store term selections
+      taxQueryInclude: [],
+      taxQueryExclude: []
     }
   },
   isActive: ['namespace'],
   scope: ['inserter'],
-  // allowedControls: ['inherit', 'postType', 'sticky', 'taxQuery', 'author', 'search', 'format', 'parents'],
   innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
 });
 
@@ -203,7 +205,7 @@ const isPubsVariation = props => {
   return namespace && namespace === publicationsVariation;
 };
 
-// Add Inspector Controls for selecting language
+// Add Inspector Controls for filtering
 const PubVariationControls = ({
   props: {
     attributes,
@@ -213,9 +215,31 @@ const PubVariationControls = ({
   const {
     query
   } = attributes;
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+  const {
+    taxQueryInclude = [],
+    taxQueryExclude = []
+  } = query;
+
+  // Fetch publication categories using the core data store
+  const pubCategories = useSelect(select => {
+    return select('core').getEntityRecords('taxonomy', 'publication_category', {
+      per_page: -1
+    });
+  }, []);
+
+  // Handlers to update attributes when checkboxes are changed
+  const toggleTerm = (termId, queryKey, currentTerms) => {
+    const newTerms = currentTerms.includes(termId) ? currentTerms.filter(id => id !== termId) : [...currentTerms, termId];
+    setAttributes({
+      query: {
+        ...query,
+        [queryKey]: newTerms
+      }
+    });
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
     title: "Publication Feed Settings",
-    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
       label: "Language",
       value: query.language,
       options: [{
@@ -234,7 +258,34 @@ const PubVariationControls = ({
           language: value
         }
       })
-    })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+      style: {
+        marginBottom: '16px'
+      },
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("strong", {
+        children: "Include by Category"
+      }), !pubCategories && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+        children: "Loading categories..."
+      }), pubCategories && pubCategories.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+        children: "No categories found."
+      }), pubCategories && pubCategories.map(term => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(CheckboxControl, {
+        label: term.name,
+        checked: taxQueryInclude.includes(term.id),
+        onChange: () => toggleTerm(term.id, 'taxQueryInclude', taxQueryInclude)
+      }, term.id))]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("strong", {
+        children: "Exclude by Category"
+      }), !pubCategories && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+        children: "Loading categories..."
+      }), pubCategories && pubCategories.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+        children: "No categories found."
+      }), pubCategories && pubCategories.map(term => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(CheckboxControl, {
+        label: term.name,
+        checked: taxQueryExclude.includes(term.id),
+        onChange: () => toggleTerm(term.id, 'taxQueryExclude', taxQueryExclude)
+      }, term.id))]
+    })]
   });
 };
 const withPubVariationControls = BlockEdit => props => {
