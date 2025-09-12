@@ -921,12 +921,20 @@ function update_flat_author_ids_meta($post_id)
     $author_ids = [];
 
     foreach ($authors as $author) {
-        // error_log("🔍 Author array: " . print_r($author, true));
+        // --- ADDED FIX ---
+        // First, check if the entire row is empty or invalid. If so, skip it.
+        // This prevents a fatal error on empty repeater rows.
+        if (empty($author) || !is_array($author)) {
+            continue;
+        }
+        // --- END FIX ---
 
+        // Now it's safe to check for the 'user' field within the row.
         if (!empty($author['user']) && is_numeric($author['user'])) {
             $author_ids[] = (int) $author['user'];
         } else {
-            error_log("⚠️ Invalid or missing 'user' field in author entry");
+            // This error log will now only trigger for rows that have content but are missing the user.
+            error_log("⚠️ Invalid or missing 'user' field in author entry for post ID: " . $post_id);
         }
     }
 
