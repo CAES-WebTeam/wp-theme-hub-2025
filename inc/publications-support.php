@@ -934,52 +934,78 @@ function update_flat_author_ids_meta($post_id)
 }
 
 /**
- * ========================================================================
- * ADVANCED DEBUGGING BLOCK - TEMPORARILY REPLACE THE OTHER FUNCTIONS
- * ========================================================================
+ * When a publication is saved, calculate and store the latest revision date
+ * in a separate, queryable meta field for performance.
+ *
+ * This version reads directly from the $_POST data to get the incoming values
+ * before they are saved to the database, making it reliable and portable.
  */
-
-// This function will run early during the save process to capture the raw data
-function caes_debug_acf_save_data($post_id) {
+function update_latest_revision_date_on_save($post_id) {
     // Only run for our post type and not on autosaves
     if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
         return;
     }
 
-    // Prepare a string to hold our debug information
-    $debug_output = '<h3>ACF SAVE DATA DEBUG</h3>';
-    $debug_output .= '<pre style="white-space: pre-wrap; word-break: break-all; background: #f1f1f1; padding: 10px; border: 1px solid #ccc;">';
+    // Use ACF's function to get the repeater field object by its NAME.
+    // This is the portable way to get the field's unique KEY.
+    $history_field_object = get_field_object('history', $post_id, false);
 
-    // 1. Check the raw $_POST['acf'] variable. This is what we expect to have data.
-    $debug_output .= '<h4>Raw $_POST[\'acf\'] variable:</h4>';
-    if (isset($_POST['acf'])) {
-        $debug_output .= esc_html(print_r($_POST['acf'], true));
+    // If we can't find the field object or its key, we can't proceed.
+    if (!$history_field_object || !isset($history_field_object['key'])) {
+        return;
+    }
+    $history_field_key = $history_field_object['key'];
+
+    // Check if the repeater data exists in the submitted POST data.
+    if (empty($_POST['acf']) || empty($_POST['acf'][$history_field_key])) {
+        delete_post_meta($post_id, '_publication_latest_revision_date');
+        return;
+    }
+
+    $history_rows = $_POST['acf'][$history_field_key];
+    $latest_revision_date = 0;
+    $revision_status_keys = [4, 5, 6]; // The revision statuses we care about.
+
+    // Loop through the submitted repeater data.
+    foreach ($history_rows as $row) {
+        // The subfield keys are fixed relative to the repeater.
+        // We can find them by looking at the repeater's subfield definitions.
+        $status_field_key = $history_field_object['sub_fields'][0]['key']; // Assumes 'status' is the first subfield
+        $date_field_key   = $history_field_object['sub_fields'][1]['key']; // Assumes 'date' is the second subfield
+
+        if (isset($row[$status_field_key], $row[$date_field_key])) {
+            $status   = (int) $row[$status_field_key];
+            $date_str = $row[$date_field_key];
+
+            if (in_array($status, $revision_status_keys) && !empty($date_str)) {
+                $current_date = (int) $date_str;
+                if ($current_date > $latest_revision_date) {
+                    $latest_revision_date = $current_date;
+                }
+            }
+        }
+    }
+
+    // Save the final calculated date to our hidden field.
+    if ($latest_revision_date > 0) {
+        update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
     } else {
-        $debug_output .= '<strong>$_POST[\'acf\'] was not set.</strong>';
-    }
-
-    // 2. Check what get_field_object('history') returns at this stage.
-    $history_object = get_field_object('history', $post_id, false);
-    $debug_output .= "\n\n<h4>get_field_object('history') result:</h4>";
-    if ($history_object) {
-        $debug_output .= esc_html(print_r($history_object, true));
-    } else {
-        $debug_output .= "<strong>get_field_object('history') returned false.</strong>";
-    }
-
-    $debug_output .= '</pre>';
-
-    // Store this information in a temporary variable that survives the page reload
-    set_transient('caes_acf_debug_output', $debug_output, 60);
-}
-// Run this hook very early to catch the data
-add_action('acf/save_post', 'caes_debug_acf_save_data', 5);
-
-// This function displays the temporary data as a big notice at the top of the editor screen
-function caes_display_acf_debug_notice() {
-    if ($output = get_transient('caes_acf_debug_output')) {
-        echo '<div class="notice notice-warning is-dismissible">' . $output . '</div>';
-        delete_transient('caes_acf_debug_output');
+        delete_post_meta($post_id, '_publication_latest_revision_date');
     }
 }
-add_action('admin_notices', 'caes_display_acf_debug_notice');
+add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
+
+/**
+ * RELIABLE DEBUGGER: Add the revision date to the post title in the admin list.
+ * This is a guaranteed way to see the result.
+ */
+function display_revision_date_in_admin_list($title, $id = null) {
+    if (is_admin() && get_post_type($id) === 'publications') {
+        $revision_date = get_post_meta($id, '_publication_latest_revision_date', true);
+        if ($revision_date) {
+            return $title . ' — [REVISION DATE: ' . $revision_date . ']';
+        }
+    }
+    return $title;
+}
+add_filter('the_title', 'display_revision_date_in_admin_list', 10, 2);
