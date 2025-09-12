@@ -461,3 +461,36 @@ function replace_placeholder_for_main_bg_featured_image($block_content, $block)
         esc_attr($alt)
     );
 }
+
+// Register 'Publication Categories' taxonomy for Publications
+function register_publication_categories_taxonomy()
+{
+    $labels = array(
+        'name'              => _x('Publication Categories', 'taxonomy general name'),
+        'singular_name'     => _x('Publication Category', 'taxonomy singular name'),
+        'search_items'      => __('Search Publication Categories'),
+        'all_items'         => __('All Publication Categories'),
+        'parent_item'       => __('Parent Publication Category'),
+        'parent_item_colon' => __('Parent Publication Category:'),
+        'edit_item'         => __('Edit Publication Category'),
+        'update_item'       => __('Update Publication Category'),
+        'add_new_item'      => __('Add New Publication Category'),
+        'new_item_name'     => __('New Publication Category Name'),
+        'menu_name'         => __('Publication Categories'),
+    );
+
+    $args = array(
+        'hierarchical'      => true, // Set to true to make it behave like categories
+        'labels'            => $labels,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'show_in_rest'      => true, // Ensures it's available in the block editor
+        'rewrite'           => array('slug' => 'publications/category', 'with_front' => false),
+    );
+
+    // The first parameter is the taxonomy's slug, the second is the post type it applies to.
+    register_taxonomy('publication_category', array('publications'), $args);
+}
+add_action('init', 'register_publication_categories_taxonomy');
