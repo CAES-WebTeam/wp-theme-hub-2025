@@ -1022,16 +1022,49 @@ function update_latest_revision_date_on_save($post_id) {
 add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 
 /**
- * RELIABLE DEBUGGER: Add the revision date to the post title in the admin list.
- * This is a guaranteed way to see the result.
+ * ========================================================================
+ * ADVANCED DEBUGGING: LOG UNEXPECTED UNPUBLISHING EVENTS
+ * ========================================================================
+ *
+ * This function hooks into WordPress's status change process to find out
+ * what is causing posts to unexpectedly become drafts.
  */
-function display_revision_date_in_admin_list($title, $id = null) {
-    if (is_admin() && get_post_type($id) === 'publications') {
-        $revision_date = get_post_meta($id, '_publication_latest_revision_date', true);
-        if ($revision_date) {
-            return $title . ' — [REVISION DATE: ' . $revision_date . ']';
+function caes_log_unexpected_unpublishing($new_status, $old_status, $post) {
+    // We only care about posts changing FROM 'publish' TO 'draft'.
+    if ('publish' === $old_status && 'draft' === $new_status) {
+        
+        // We only care about our specific post types.
+        if (!in_array($post->post_type, ['publications', 'post', 'shorthand_story'])) {
+            return;
         }
+
+        // Get the current user to see if it's a person or a cron job (cron will be user ID 0).
+        $user_id = get_current_user_id();
+        
+        // Generate a full backtrace to see the exact call stack.
+        // This is the most important part.
+        ob_start();
+        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10); // Limit to 10 levels deep.
+        $backtrace = ob_get_clean();
+
+        // Prepare the detailed log message.
+        $log_message = sprintf(
+            "ALERT: Post Unpublishing Detected!\n" .
+            "  - Post ID: %d\n" .
+            "  - Post Title: %s\n" .
+            "  - Post Type: %s\n" .
+            "  - Action performed by User ID: %d\n" .
+            "  - Call Stack (Backtrace):\n%s",
+            $post->ID,
+            $post->post_title,
+            $post->post_type,
+            $user_id,
+            $backtrace
+        );
+
+        // Write the message to the main PHP error log.
+        error_log($log_message);
     }
-    return $title;
 }
-add_filter('the_title', 'display_revision_date_in_admin_list', 10, 2);
+// Hook into the status transition with 3 arguments.
+add_action('transition_post_status', 'caes_log_unexpected_unpublishing', 10, 3);
