@@ -948,39 +948,42 @@ function update_latest_revision_date_on_save($post_id) {
         return;
     }
 
-    // Check if the 'history' field has a value.
+    // Check if the 'history' repeater field exists.
     if (have_rows('history', $post_id)) {
         $latest_revision_date = 0;
-        $revision_status_keys = [4, 5, 6]; // The status keys we care about.
+        // The revision statuses we need to check against.
+        $revision_status_keys = [4, 5, 6];
 
-        // Loop through the repeater rows.
+        // Loop through all rows in the 'history' repeater.
         while (have_rows('history', $post_id)) {
             the_row();
-            $status = get_sub_field('status');
-            $date_str = get_sub_field('date'); // ACF returns date as Ymd string.
+            // Get status and date, ensuring they are the correct type.
+            $status = (int) get_sub_field('status'); // Force the status to be an integer.
+            $date_str = get_sub_field('date');       // Date is already a string 'Ymd'.
 
-            // Check if the status is one of the revision statuses.
+            // Check if the current row's status is one we care about.
             if (in_array($status, $revision_status_keys) && !empty($date_str)) {
-                $current_date = (int) $date_str; // Convert '20230912' to 20230912
+                $current_date = (int) $date_str;
+                // If this row's date is later than any we've found so far, update it.
                 if ($current_date > $latest_revision_date) {
                     $latest_revision_date = $current_date;
                 }
             }
         }
 
-        // Update the hidden meta field with the latest date found.
+        // If we found a valid revision date, save it to our hidden field.
         if ($latest_revision_date > 0) {
             update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
         } else {
-            // If no revision dates were found, delete the meta key to keep data clean.
+            // If no valid revision statuses were found, delete the meta key.
             delete_post_meta($post_id, '_publication_latest_revision_date');
         }
     } else {
-        // If the repeater is empty, ensure the meta key is deleted.
+        // If the entire 'history' field is empty, delete the meta key.
         delete_post_meta($post_id, '_publication_latest_revision_date');
     }
 }
-// Hook into ACF's save function.
+// Hook into ACF's save function with a standard priority.
 add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 
 /**
