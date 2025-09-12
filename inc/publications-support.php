@@ -936,6 +936,9 @@ function update_flat_author_ids_meta($post_id)
 /**
  * When a publication is saved, calculate and store the latest revision date
  * in a separate, queryable meta field for performance.
+ *
+ * This version reads directly from the $_POST data because acf/save_post
+ * runs before the new values are saved to the database.
  */
 function update_latest_revision_date_on_save($post_id) {
     // Only run this for the 'publications' post type.
@@ -948,42 +951,47 @@ function update_latest_revision_date_on_save($post_id) {
         return;
     }
 
-    // Check if the 'history' repeater field exists.
-    if (have_rows('history', $post_id)) {
-        $latest_revision_date = 0;
-        // The revision statuses we need to check against.
-        $revision_status_keys = [4, 5, 6];
+    // Check if ACF data was submitted. The 'history' field key must be correct.
+    // To find the field key, edit the 'history' field in ACF and look for the key (e.g., field_60a...).
+    $history_field_key = 'field_60a7c5d0e8f9a'; // <--- IMPORTANT: REPLACE WITH YOUR ACTUAL FIELD KEY
+    if (empty($_POST['acf']) || empty($_POST['acf'][$history_field_key])) {
+        // If the repeater is empty or not present, delete the meta key and exit.
+        delete_post_meta($post_id, '_publication_latest_revision_date');
+        return;
+    }
 
-        // Loop through all rows in the 'history' repeater.
-        while (have_rows('history', $post_id)) {
-            the_row();
-            // Get status and date, ensuring they are the correct type.
-            $status = (int) get_sub_field('status'); // Force the status to be an integer.
-            $date_str = get_sub_field('date');       // Date is already a string 'Ymd'.
+    $history_rows = $_POST['acf'][$history_field_key];
+    $latest_revision_date = 0;
+    $revision_status_keys = [4, 5, 6]; // The statuses we care about.
+
+    // Loop through the submitted repeater rows.
+    foreach ($history_rows as $row) {
+        // Subfield keys must also be correct.
+        $status_field_key = 'field_60a7c5e4e8f9b'; // <--- REPLACE WITH YOUR 'status' SUBFIELD KEY
+        $date_field_key = 'field_60a7c5f8e8f9c';   // <--- REPLACE WITH YOUR 'date' SUBFIELD KEY
+
+        if (isset($row[$status_field_key], $row[$date_field_key])) {
+            $status = (int) $row[$status_field_key];
+            $date_str = $row[$date_field_key];
 
             // Check if the current row's status is one we care about.
             if (in_array($status, $revision_status_keys) && !empty($date_str)) {
                 $current_date = (int) $date_str;
-                // If this row's date is later than any we've found so far, update it.
                 if ($current_date > $latest_revision_date) {
                     $latest_revision_date = $current_date;
                 }
             }
         }
+    }
 
-        // If we found a valid revision date, save it to our hidden field.
-        if ($latest_revision_date > 0) {
-            update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
-        } else {
-            // If no valid revision statuses were found, delete the meta key.
-            delete_post_meta($post_id, '_publication_latest_revision_date');
-        }
+    // If we found a valid revision date, save it.
+    if ($latest_revision_date > 0) {
+        update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
     } else {
-        // If the entire 'history' field is empty, delete the meta key.
+        // If no valid revision statuses were found, delete the meta key.
         delete_post_meta($post_id, '_publication_latest_revision_date');
     }
 }
-// Hook into ACF's save function with a standard priority.
 add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 
 /**
