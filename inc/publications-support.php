@@ -908,36 +908,54 @@ add_shortcode('publication_results', 'shortcode_publication_results');
 add_action('acf/save_post', 'update_flat_author_ids_meta', 20);
 function update_flat_author_ids_meta($post_id)
 {
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-    if (!in_array(get_post_type($post_id), ['publications', 'post', 'shorthand_story'])) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    if (!in_array(get_post_type($post_id), ['publications', 'post', 'shorthand_story'])) {
+        return;
+    }
 
-    // Get ACF repeater field called 'authors'
-    $authors = get_field('authors', $post_id);
+    // Get the ACF field object for 'authors' to find its key dynamically.
+    $authors_field_object = get_field_object('authors', $post_id, false);
 
-    if (!$authors || !is_array($authors)) {
+    // If we can't find the field object or its key, we can't proceed.
+    if (!$authors_field_object || !isset($authors_field_object['key'])) {
+        return;
+    }
+    $authors_field_key = $authors_field_object['key'];
+
+    // Check if the repeater data exists in the submitted POST data.
+    if (empty($_POST['acf']) || empty($_POST['acf'][$authors_field_key])) {
         delete_post_meta($post_id, 'all_author_ids');
         return;
     }
+
+    $author_rows = $_POST['acf'][$authors_field_key];
     $author_ids = [];
 
-    foreach ($authors as $author) {
-        // --- ADDED FIX ---
-        // First, check if the entire row is empty or invalid. If so, skip it.
-        // This prevents a fatal error on empty repeater rows.
-        if (empty($author) || !is_array($author)) {
-            continue;
-        }
-        // --- END FIX ---
-
-        // Now it's safe to check for the 'user' field within the row.
-        if (!empty($author['user']) && is_numeric($author['user'])) {
-            $author_ids[] = (int) $author['user'];
-        } else {
-            // This error log will now only trigger for rows that have content but are missing the user.
-            error_log("⚠️ Invalid or missing 'user' field in author entry for post ID: " . $post_id);
+    // Find the subfield key for the 'user' field dynamically.
+    $user_sub_field_key = '';
+    foreach ($authors_field_object['sub_fields'] as $sub_field) {
+        if ($sub_field['name'] === 'user') {
+            $user_sub_field_key = $sub_field['key'];
+            break;
         }
     }
 
+    // If we couldn't find the 'user' subfield, we can't proceed.
+    if (empty($user_sub_field_key)) {
+        return;
+    }
+
+    // Loop through the submitted repeater data.
+    foreach ($author_rows as $row) {
+        // Check if the user subfield exists in the row, has a value, and is numeric.
+        if (isset($row[$user_sub_field_key]) && is_numeric($row[$user_sub_field_key])) {
+            $author_ids[] = (int) $row[$user_sub_field_key];
+        }
+    }
+
+    // Save the final array of valid author IDs.
     update_post_meta($post_id, 'all_author_ids', $author_ids);
 }
 
