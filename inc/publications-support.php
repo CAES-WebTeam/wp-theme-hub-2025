@@ -937,8 +937,8 @@ function update_flat_author_ids_meta($post_id)
  * When a publication is saved, calculate and store the latest revision date
  * in a separate, queryable meta field for performance.
  *
- * This version reads directly from the $_POST data because acf/save_post
- * runs before the new values are saved to the database.
+ * This version is portable and does not use hardcoded field keys. It dynamically
+ * finds the field keys from the field names.
  */
 function update_latest_revision_date_on_save($post_id) {
     // Only run this for the 'publications' post type.
@@ -951,9 +951,22 @@ function update_latest_revision_date_on_save($post_id) {
         return;
     }
 
-    // Check if ACF data was submitted. The 'history' field key must be correct.
-    // To find the field key, edit the 'history' field in ACF and look for the key (e.g., field_60a...).
-    $history_field_key = 'field_60a7c5d0e8f9a'; // <--- IMPORTANT: REPLACE WITH YOUR ACTUAL FIELD KEY
+    // Get the field objects using their names to find their keys dynamically.
+    $history_field = get_field_object('history', $post_id, false);
+    $status_sub_field = get_field_object('status', $post_id, false);
+    $date_sub_field = get_field_object('date', $post_id, false);
+
+    // If we can't find the main repeater field, exit.
+    if (!$history_field) {
+        return;
+    }
+
+    // Get the keys from the field objects.
+    $history_field_key = $history_field['key'];
+    $status_field_key = $status_sub_field['key'];
+    $date_field_key = $date_sub_field['key'];
+
+    // Check if ACF data was submitted.
     if (empty($_POST['acf']) || empty($_POST['acf'][$history_field_key])) {
         // If the repeater is empty or not present, delete the meta key and exit.
         delete_post_meta($post_id, '_publication_latest_revision_date');
@@ -962,14 +975,10 @@ function update_latest_revision_date_on_save($post_id) {
 
     $history_rows = $_POST['acf'][$history_field_key];
     $latest_revision_date = 0;
-    $revision_status_keys = [4, 5, 6]; // The statuses we care about.
+    $revision_status_keys = [4, 5, 6]; // The revision statuses we care about.
 
     // Loop through the submitted repeater rows.
     foreach ($history_rows as $row) {
-        // Subfield keys must also be correct.
-        $status_field_key = 'field_60a7c5e4e8f9b'; // <--- REPLACE WITH YOUR 'status' SUBFIELD KEY
-        $date_field_key = 'field_60a7c5f8e8f9c';   // <--- REPLACE WITH YOUR 'date' SUBFIELD KEY
-
         if (isset($row[$status_field_key], $row[$date_field_key])) {
             $status = (int) $row[$status_field_key];
             $date_str = $row[$date_field_key];
