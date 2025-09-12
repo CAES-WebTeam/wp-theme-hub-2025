@@ -934,102 +934,52 @@ function update_flat_author_ids_meta($post_id)
 }
 
 /**
- * When a publication is saved, calculate and store the latest revision date
- * in a separate, queryable meta field for performance.
- *
- * This version is portable and does not use hardcoded field keys. It dynamically
- * finds the field keys from the field names.
+ * ========================================================================
+ * ADVANCED DEBUGGING BLOCK - TEMPORARILY REPLACE THE OTHER FUNCTIONS
+ * ========================================================================
  */
-function update_latest_revision_date_on_save($post_id) {
-    // Only run this for the 'publications' post type.
-    if (get_post_type($post_id) !== 'publications') {
+
+// This function will run early during the save process to capture the raw data
+function caes_debug_acf_save_data($post_id) {
+    // Only run for our post type and not on autosaves
+    if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
         return;
     }
 
-    // Ensure this is not an auto-save or revision.
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE || wp_is_post_revision($post_id)) {
-        return;
-    }
+    // Prepare a string to hold our debug information
+    $debug_output = '<h3>ACF SAVE DATA DEBUG</h3>';
+    $debug_output .= '<pre style="white-space: pre-wrap; word-break: break-all; background: #f1f1f1; padding: 10px; border: 1px solid #ccc;">';
 
-    // Get the field objects using their names to find their keys dynamically.
-    $history_field = get_field_object('history', $post_id, false);
-    $status_sub_field = get_field_object('status', $post_id, false);
-    $date_sub_field = get_field_object('date', $post_id, false);
-
-    // If we can't find the main repeater field, exit.
-    if (!$history_field) {
-        return;
-    }
-
-    // Get the keys from the field objects.
-    $history_field_key = $history_field['key'];
-    $status_field_key = $status_sub_field['key'];
-    $date_field_key = $date_sub_field['key'];
-
-    // Check if ACF data was submitted.
-    if (empty($_POST['acf']) || empty($_POST['acf'][$history_field_key])) {
-        // If the repeater is empty or not present, delete the meta key and exit.
-        delete_post_meta($post_id, '_publication_latest_revision_date');
-        return;
-    }
-
-    $history_rows = $_POST['acf'][$history_field_key];
-    $latest_revision_date = 0;
-    $revision_status_keys = [4, 5, 6]; // The revision statuses we care about.
-
-    // Loop through the submitted repeater rows.
-    foreach ($history_rows as $row) {
-        if (isset($row[$status_field_key], $row[$date_field_key])) {
-            $status = (int) $row[$status_field_key];
-            $date_str = $row[$date_field_key];
-
-            // Check if the current row's status is one we care about.
-            if (in_array($status, $revision_status_keys) && !empty($date_str)) {
-                $current_date = (int) $date_str;
-                if ($current_date > $latest_revision_date) {
-                    $latest_revision_date = $current_date;
-                }
-            }
-        }
-    }
-
-    // If we found a valid revision date, save it.
-    if ($latest_revision_date > 0) {
-        update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
+    // 1. Check the raw $_POST['acf'] variable. This is what we expect to have data.
+    $debug_output .= '<h4>Raw $_POST[\'acf\'] variable:</h4>';
+    if (isset($_POST['acf'])) {
+        $debug_output .= esc_html(print_r($_POST['acf'], true));
     } else {
-        // If no valid revision statuses were found, delete the meta key.
-        delete_post_meta($post_id, '_publication_latest_revision_date');
+        $debug_output .= '<strong>$_POST[\'acf\'] was not set.</strong>';
     }
-}
-add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 
-/**
- * DEBUGGING: Display the value of the hidden revision date field in the editor.
- *
- * This adds a metabox to the 'publications' editor screen showing the raw
- * value of '_publication_latest_revision_date'.
- * You can remove this function once debugging is complete.
- */
-function display_revision_date_metabox() {
-    add_meta_box(
-        'debug_revision_date',
-        'DEBUG: Latest Revision Date',
-        'render_revision_date_metabox_content',
-        'publications', // Show only on 'publications' post type
-        'side',
-        'high'
-    );
-}
-function render_revision_date_metabox_content($post) {
-    $latest_revision_date = get_post_meta($post->ID, '_publication_latest_revision_date', true);
-
-    if (!empty($latest_revision_date)) {
-        echo '<p><strong>Saved Value:</strong></p>';
-        echo '<p><code>' . esc_html($latest_revision_date) . '</code></p>';
-        echo '<p><small>This is the Ymd formatted date used for sorting. For example, September 12, 2025 is 20250912.</small></p>';
+    // 2. Check what get_field_object('history') returns at this stage.
+    $history_object = get_field_object('history', $post_id, false);
+    $debug_output .= "\n\n<h4>get_field_object('history') result:</h4>";
+    if ($history_object) {
+        $debug_output .= esc_html(print_r($history_object, true));
     } else {
-        echo '<p>No revision date has been calculated and saved for this publication yet.</p>';
-        echo '<p><small>Please add a history row with a revision status and click "Update".</small></p>';
+        $debug_output .= "<strong>get_field_object('history') returned false.</strong>";
+    }
+
+    $debug_output .= '</pre>';
+
+    // Store this information in a temporary variable that survives the page reload
+    set_transient('caes_acf_debug_output', $debug_output, 60);
+}
+// Run this hook very early to catch the data
+add_action('acf/save_post', 'caes_debug_acf_save_data', 5);
+
+// This function displays the temporary data as a big notice at the top of the editor screen
+function caes_display_acf_debug_notice() {
+    if ($output = get_transient('caes_acf_debug_output')) {
+        echo '<div class="notice notice-warning is-dismissible">' . $output . '</div>';
+        delete_transient('caes_acf_debug_output');
     }
 }
-add_action('add_meta_boxes', 'display_revision_date_metabox');
+add_action('admin_notices', 'caes_display_acf_debug_notice');
