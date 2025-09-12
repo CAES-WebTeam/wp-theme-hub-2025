@@ -52,16 +52,6 @@ module.exports = window["wp"]["hooks"];
 
 /***/ }),
 
-/***/ "@wordpress/i18n":
-/*!******************************!*\
-  !*** external ["wp","i18n"] ***!
-  \******************************/
-/***/ ((module) => {
-
-module.exports = window["wp"]["i18n"];
-
-/***/ }),
-
 /***/ "react/jsx-runtime":
 /*!**********************************!*\
   !*** external "ReactJSXRuntime" ***!
@@ -160,11 +150,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__);
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
 /* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
-/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__);
-
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__);
 
 
 
@@ -210,7 +197,9 @@ const publicationsVariation = 'pubs-feed';
     query: {
       postType: 'publications',
       perPage: 4,
-      offset: 0
+      offset: 0,
+      // Add a specific attribute for this exclusion
+      taxQueryExcludePubs: []
     }
   },
   isActive: ['namespace'],
@@ -218,7 +207,7 @@ const publicationsVariation = 'pubs-feed';
   innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
 });
 
-// This section adds the Language filter specifically to the Publications variation
+// This section adds the inspector controls specifically to the Publications variation
 const isPubsVariation = props => {
   const {
     attributes: {
@@ -236,40 +225,78 @@ const PubVariationControls = ({
   const {
     query
   } = attributes;
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
-    title: "Publication Feed Settings",
-    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
-      label: "Language",
-      value: query.language,
-      options: [{
-        value: '',
-        label: ''
-      }, {
-        value: '1',
-        label: 'English'
-      }, {
-        value: '2',
-        label: 'Spanish'
-      }],
-      onChange: value => setAttributes({
-        query: {
-          ...query,
-          language: value
-        }
+  const {
+    taxQueryExcludePubs = []
+  } = query;
+
+  // Fetch only 'publication_category' terms
+  const {
+    terms,
+    isLoading
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => ({
+    terms: select('core').getEntityRecords('taxonomy', 'publication_category', {
+      per_page: -1
+    }),
+    isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', 'publication_category', {
+      per_page: -1
+    }])
+  }), []);
+
+  // Handler to update attributes when checkboxes are changed
+  const toggleTerm = termId => {
+    const newExcludedTerms = taxQueryExcludePubs.includes(termId) ? taxQueryExcludePubs.filter(id => id !== termId) : [...taxQueryExcludePubs, termId];
+    setAttributes({
+      query: {
+        ...query,
+        taxQueryExcludePubs: newExcludedTerms
+      }
+    });
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+      title: "Publication Feed Settings",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
+        label: "Language",
+        value: query.language,
+        options: [{
+          value: '',
+          label: ''
+        }, {
+          value: '1',
+          label: 'English'
+        }, {
+          value: '2',
+          label: 'Spanish'
+        }],
+        onChange: value => setAttributes({
+          query: {
+            ...query,
+            language: value
+          }
+        })
       })
-    })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+      title: "Exclude Publication Categories",
+      children: [isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Spinner, {}), !isLoading && terms && terms.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+        children: "No categories found."
+      }), !isLoading && terms && terms.map(term => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.CheckboxControl, {
+        label: term.name,
+        checked: taxQueryExcludePubs.includes(term.id),
+        onChange: () => toggleTerm(term.id)
+      }, term.id))]
+    })]
   });
 };
 const withPubVariationControls = BlockEdit => props => {
-  return isPubsVariation(props) ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(BlockEdit, {
+  return isPubsVariation(props) ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(BlockEdit, {
       ...props
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(PubVariationControls, {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(PubVariationControls, {
         props: props
       })
     })]
-  }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(BlockEdit, {
+  }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(BlockEdit, {
     ...props
   });
 };
@@ -300,130 +327,6 @@ const storiesVariation = 'stories-feed'; // Define a unique namespace for your s
 });
 
 /** Stories Query Block Variation - END */
-
-/** GENERIC TAXONOMY EXCLUSION CONTROLS - START */
-
-/**
- * A component that renders exclusion filters for all taxonomies of a given post type.
- */
-const TaxonomyExclusionFilters = ({
-  postType,
-  attributes,
-  setAttributes
-}) => {
-  // Get all taxonomies registered to the current post type
-  const taxonomies = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => select('core').getTaxonomies({
-    type: postType,
-    per_page: -1
-  }), [postType]);
-  if (!taxonomies || taxonomies.length === 0) {
-    return null; // Don't render anything if no taxonomies are found
-  }
-
-  // Render a panel for each taxonomy
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
-    children: taxonomies.map(taxonomy => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(TaxonomyTermSelector, {
-      taxonomy: taxonomy,
-      attributes: attributes,
-      setAttributes: setAttributes
-    }, taxonomy.slug))
-  });
-};
-
-/**
- * A component that fetches and displays a checklist of terms for a single taxonomy.
- */
-const TaxonomyTermSelector = ({
-  taxonomy,
-  attributes,
-  setAttributes
-}) => {
-  const {
-    query
-  } = attributes;
-  const {
-    taxQueryExclude = {}
-  } = query;
-  const excludedTerms = taxQueryExclude[taxonomy.slug] || [];
-
-  // Fetch all terms for the current taxonomy
-  const {
-    terms,
-    isLoading
-  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => ({
-    terms: select('core').getEntityRecords('taxonomy', taxonomy.slug, {
-      per_page: -1
-    }),
-    isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', taxonomy.slug, {
-      per_page: -1
-    }])
-  }), [taxonomy.slug]);
-
-  // Handler to update the block's attributes when a checkbox is toggled
-  const toggleTerm = termId => {
-    const newExcludedTerms = excludedTerms.includes(termId) ? excludedTerms.filter(id => id !== termId) : [...excludedTerms, termId];
-    const newTaxQueryExclude = {
-      ...taxQueryExclude,
-      [taxonomy.slug]: newExcludedTerms
-    };
-
-    // Clean up empty arrays from the object
-    if (newExcludedTerms.length === 0) {
-      delete newTaxQueryExclude[taxonomy.slug];
-    }
-    setAttributes({
-      query: {
-        ...query,
-        taxQueryExclude: newTaxQueryExclude
-      }
-    });
-  };
-  if (!terms && !isLoading) {
-    return null; // Don't show panel if there are no terms
-  }
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
-    title: `${taxonomy.name} - Exclusion Filter`,
-    children: [isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Spinner, {}), !isLoading && terms && terms.length > 0 && terms.map(term => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.CheckboxControl, {
-      label: term.name,
-      checked: excludedTerms.includes(term.id),
-      onChange: () => toggleTerm(term.id)
-    }, term.id))]
-  });
-};
-
-/**
- * Higher-Order Component to add the taxonomy exclusion controls to the Query block's inspector.
- */
-const withTaxonomyExclusionControls = BlockEdit => props => {
-  const {
-    name,
-    attributes
-  } = props;
-
-  // Only apply to the core Query block
-  if (name !== 'core/query') {
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(BlockEdit, {
-      ...props
-    });
-  }
-  const postType = attributes.query.postType;
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(BlockEdit, {
-      ...props
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_2__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(TaxonomyExclusionFilters, {
-        postType: postType,
-        attributes: attributes,
-        setAttributes: props.setAttributes
-      })
-    })]
-  });
-};
-
-// Apply the filter to the block editor
-(0,_wordpress_hooks__WEBPACK_IMPORTED_MODULE_1__.addFilter)('editor.BlockEdit', 'my-plugin/with-taxonomy-exclusion-controls', withTaxonomyExclusionControls);
-
-/** GENERIC TAXONOMY EXCLUSION CONTROLS - END */
 })();
 
 /******/ })()

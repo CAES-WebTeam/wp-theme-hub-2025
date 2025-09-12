@@ -53,8 +53,8 @@ add_filter('rest_events_query', 'rest_event_type', 10, 2);
 /*** END EVENTS */
 
 /*** START PUBLICATIONS */
-// Backend
-function rest_pub_language_orderby($args, $request)
+// Backend filter for the editor
+function rest_pub_filters($args, $request)
 {
     // Handle language filter
     $lang = $request->get_param('language');
@@ -63,42 +63,25 @@ function rest_pub_language_orderby($args, $request)
         $args['meta_value'] = absint($lang);
     }
 
-    // --- NEW: Handle taxonomy filters ---
-    $tax_query = [];
-    $include_terms = $request->get_param('taxQueryInclude');
-    $exclude_terms = $request->get_param('taxQueryExclude');
-
-    if (!empty($include_terms)) {
-        $tax_query[] = [
-            'taxonomy' => 'publication_category',
-            'field'    => 'term_id',
-            'terms'    => $include_terms,
-            'operator' => 'IN',
-        ];
-    }
-
+    // Handle exclude by 'publication_category'
+    $exclude_terms = $request->get_param('taxQueryExcludePubs');
     if (!empty($exclude_terms)) {
+        $tax_query = $args['tax_query'] ?? [];
         $tax_query[] = [
             'taxonomy' => 'publication_category',
             'field'    => 'term_id',
             'terms'    => $exclude_terms,
             'operator' => 'NOT IN',
         ];
-    }
-
-    if (count($tax_query) > 1) {
-        $tax_query['relation'] = 'AND';
-    }
-
-    if (!empty($tax_query)) {
         $args['tax_query'] = $tax_query;
     }
-    // --- END NEW ---
 
     return $args;
 }
-add_filter('rest_publications_query', 'rest_pub_language_orderby', 10, 2);
+add_filter('rest_publications_query', 'rest_pub_filters', 10, 2);
+
 /*** END PUBLICATIONS */
+
 
 /*** FRONT END */
 
@@ -146,8 +129,8 @@ function variations_query_filter($query, $block)
 
     $query['post_status'] = 'publish';
 
-    $meta_query = [];
-    $tax_query = [];
+    $meta_query = $query['meta_query'] ?? [];
+    $tax_query = $query['tax_query'] ?? [];
 
     // Handle blocks WITH namespace (your variations)
     if (isset($parsed_block['attrs']['namespace'])) {
@@ -165,24 +148,13 @@ function variations_query_filter($query, $block)
                 );
             }
 
-            // --- NEW: Handle taxonomy filters on the frontend ---
-            $include_terms = $parsed_block['attrs']['query']['taxQueryInclude'] ?? [];
-            $exclude_terms = $parsed_block['attrs']['query']['taxQueryExclude'] ?? [];
-
-            if (!empty($include_terms)) {
-                $tax_query[] = [
-                    'taxonomy' => 'publication_category',
-                    'field'    => 'term_id',
-                    'terms'    => $include_terms,
-                    'operator' => 'IN',
-                ];
-            }
-
+            // Exclude by 'publication_category'
+            $exclude_terms = $parsed_block['attrs']['query']['taxQueryExcludePubs'] ?? [];
             if (!empty($exclude_terms)) {
                 $tax_query[] = [
                     'taxonomy' => 'publication_category',
                     'field'    => 'term_id',
-                    'terms'    => $exclude_terms,
+                    'terms'    => array_map('absint', $exclude_terms),
                     'operator' => 'NOT IN',
                 ];
             }
@@ -273,54 +245,29 @@ function variations_query_filter($query, $block)
 
     // Apply meta query if we have conditions
     if (!empty($meta_query)) {
-        if (count($meta_query) > 1) {
-            $meta_query['relation'] = 'AND';
+        if (!isset($query['meta_query'])) {
+            $query['meta_query'] = [];
         }
-        // Merge with existing meta_query if it exists
-        if (isset($query['meta_query'])) {
-            $query['meta_query'] = array_merge($query['meta_query'], $meta_query);
-            if (count($query['meta_query']) > 1 && !isset($query['meta_query']['relation'])) {
-                $query['meta_query']['relation'] = 'AND';
-            }
-        } else {
-            $query['meta_query'] = $meta_query;
+        $query['meta_query'] = array_merge($query['meta_query'], $meta_query);
+        if (count($query['meta_query']) > 1 && !isset($query['meta_query']['relation'])) {
+            $query['meta_query']['relation'] = 'AND';
         }
     }
 
-    // Apply tax query if we have conditions - IMPROVED HANDLING
+    // Apply tax query if we have conditions
     if (!empty($tax_query)) {
-        // Handle existing tax_query properly
-        if (isset($query['tax_query']) && is_array($query['tax_query'])) {
-            // If there's already a tax_query, merge them
-            $existing_tax_query = $query['tax_query'];
-
-            // Remove relation if it exists to add it back properly
-            if (isset($existing_tax_query['relation'])) {
-                $relation = $existing_tax_query['relation'];
-                unset($existing_tax_query['relation']);
-            } else {
-                $relation = 'AND';
-            }
-
-            // Merge the arrays
-            $merged_tax_query = array_merge($existing_tax_query, $tax_query);
-
-            // Add relation if we have multiple conditions
-            if (count($merged_tax_query) > 1) {
-                $merged_tax_query['relation'] = $relation;
-            }
-
-            $query['tax_query'] = $merged_tax_query;
-        } else {
-            // No existing tax_query, just set ours
-            if (count($tax_query) > 1) {
-                $tax_query['relation'] = 'AND';
-            }
-            $query['tax_query'] = $tax_query;
+        if (!isset($query['tax_query'])) {
+            $query['tax_query'] = [];
+        }
+        $query['tax_query'] = array_merge($query['tax_query'], $tax_query);
+        if (count($query['tax_query']) > 1 && !isset($query['tax_query']['relation'])) {
+            $query['tax_query']['relation'] = 'AND';
         }
     }
+
     return $query;
 }
+
 
 add_filter('pre_render_block', 'variations_pre_render_block', 10, 2);
 add_filter('query_loop_block_query_vars', 'variations_query_filter', 99, 2);
@@ -406,5 +353,3 @@ function add_custom_query_vars($valid_vars)
     return $valid_vars;
 }
 add_filter('rest_query_vars', 'add_custom_query_vars');
-
-/** END FRONT END */
