@@ -982,3 +982,34 @@ function update_latest_revision_date_on_save($post_id) {
 }
 // Hook into ACF's save function.
 add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
+
+/**
+ * DEBUGGING: Display the value of the hidden revision date field in the editor.
+ *
+ * This adds a metabox to the 'publications' editor screen showing the raw
+ * value of '_publication_latest_revision_date'.
+ * You can remove this function once debugging is complete.
+ */
+function display_revision_date_metabox() {
+    add_meta_box(
+        'debug_revision_date',
+        'DEBUG: Latest Revision Date',
+        'render_revision_date_metabox_content',
+        'publications', // Show only on 'publications' post type
+        'side',
+        'high'
+    );
+}
+function render_revision_date_metabox_content($post) {
+    $latest_revision_date = get_post_meta($post->ID, '_publication_latest_revision_date', true);
+
+    if (!empty($latest_revision_date)) {
+        echo '<p><strong>Saved Value:</strong></p>';
+        echo '<p><code>' . esc_html($latest_revision_date) . '</code></p>';
+        echo '<p><small>This is the Ymd formatted date used for sorting. For example, September 12, 2025 is 20250912.</small></p>';
+    } else {
+        echo '<p>No revision date has been calculated and saved for this publication yet.</p>';
+        echo '<p><small>Please add a history row with a revision status and click "Update".</small></p>';
+    }
+}
+add_action('add_meta_boxes', 'display_revision_date_metabox');
