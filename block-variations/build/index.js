@@ -199,103 +199,99 @@ const publicationsVariation = 'pubs-feed';
       perPage: 4,
       offset: 0,
       taxQueryExcludePubs: [],
-      // Add a new attribute for sorting
-      orderByLatestUpdate: false
+      orderByLatestUpdate: false,
+      orderByLatestPublishDate: false // --- ADDED: New attribute
     }
   },
   isActive: ['namespace'],
   scope: ['inserter'],
   innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
 });
-
-// This section adds the inspector controls specifically to the Publications variation
-const isPubsVariation = props => {
-  const {
-    attributes: {
-      namespace
-    }
-  } = props;
-  return namespace && namespace === publicationsVariation;
-};
+const isPubsVariation = ({
+  attributes: {
+    namespace
+  }
+}) => namespace === publicationsVariation;
 const PubVariationControls = ({
   props: {
-    attributes,
+    attributes: {
+      query
+    },
     setAttributes
   }
 }) => {
   const {
-    query
-  } = attributes;
-  const {
-    taxQueryExcludePubs = [],
-    orderByLatestUpdate = false
+    taxQueryExcludePubs,
+    orderByLatestUpdate,
+    orderByLatestPublishDate
   } = query;
-
-  // Fetch only 'publication_category' terms
   const {
     terms,
     isLoading
-  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => ({
-    terms: select('core').getEntityRecords('taxonomy', 'publication_category', {
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => {
+    const {
+      getEntityRecords
+    } = select('core');
+    const taxonomy = 'publication_type';
+    const query = {
       per_page: -1
-    }),
-    isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', 'publication_category', {
-      per_page: -1
-    }])
-  }), []);
-
-  // Handler to update attributes when checkboxes are changed
+    };
+    return {
+      terms: getEntityRecords('taxonomy', taxonomy, query),
+      isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', taxonomy, query])
+    };
+  }, []);
   const toggleTerm = termId => {
-    const newExcludedTerms = taxQueryExcludePubs.includes(termId) ? taxQueryExcludePubs.filter(id => id !== termId) : [...taxQueryExcludePubs, termId];
+    const newTaxQuery = taxQueryExcludePubs.includes(termId) ? taxQueryExcludePubs.filter(id => id !== termId) : [...taxQueryExcludePubs, termId];
     setAttributes({
       query: {
         ...query,
-        taxQueryExcludePubs: newExcludedTerms
+        taxQueryExcludePubs: newTaxQuery
       }
     });
   };
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
-      title: "Publication Feed Settings",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.SelectControl, {
-        label: "Language",
-        value: query.language,
-        options: [{
-          value: '',
-          label: ''
-        }, {
-          value: '1',
-          label: 'English'
-        }, {
-          value: '2',
-          label: 'Spanish'
-        }],
-        onChange: value => setAttributes({
-          query: {
-            ...query,
-            language: value
-          }
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.ToggleControl, {
+
+  // --- MODIFIED: Mutual exclusivity logic for toggles ---
+  const handleUpdateToggle = isChecked => {
+    setAttributes({
+      query: {
+        ...query,
+        orderByLatestUpdate: isChecked,
+        orderByLatestPublishDate: isChecked ? false : orderByLatestPublishDate // If checked, turn the other off
+      }
+    });
+  };
+  const handlePublishToggle = isChecked => {
+    setAttributes({
+      query: {
+        ...query,
+        orderByLatestPublishDate: isChecked,
+        orderByLatestUpdate: isChecked ? false : orderByLatestUpdate // If checked, turn the other off
+      }
+    });
+  };
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
+      title: "Publication Filters",
+      initialOpen: true,
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.ToggleControl, {
         label: "Sort by latest update",
         checked: orderByLatestUpdate,
-        onChange: value => setAttributes({
-          query: {
-            ...query,
-            orderByLatestUpdate: value
-          }
-        })
-      })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.PanelBody, {
-      title: "Exclude Publication Categories",
-      children: [isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Spinner, {}), !isLoading && terms && terms.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
+        onChange: handleUpdateToggle
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.ToggleControl, {
+        label: "Sort by latest publish date",
+        checked: orderByLatestPublishDate,
+        onChange: handlePublishToggle
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("hr", {}), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("strong", {
+        children: "Exclude Publication Types"
+      }), isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.Spinner, {}), !isLoading && terms && terms.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)("p", {
         children: "No categories found."
       }), !isLoading && terms && terms.map(term => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_3__.CheckboxControl, {
         label: term.name,
         checked: taxQueryExcludePubs.includes(term.id),
         onChange: () => toggleTerm(term.id)
       }, term.id))]
-    })]
+    })
   });
 };
 const withPubVariationControls = BlockEdit => props => {
@@ -334,7 +330,7 @@ const storiesVariation = 'stories-feed'; // Define a unique namespace for your s
   },
   isActive: ['namespace'],
   scope: ['inserter'],
-  innerBlocks: [['core/post-template', {}, [['core/post-title'], ['core/post-date'], ['core/post-excerpt']]]]
+  innerBlocks: [['core/post-template', {}, [['core/post-title']]]]
 });
 
 /** Stories Query Block Variation - END */

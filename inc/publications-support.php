@@ -1032,50 +1032,56 @@ function update_latest_revision_date_on_save($post_id) {
 }
 add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 
+// --- NEW FUNCTION TO ADD ---
 /**
- * ========================================================================
- * ADVANCED DEBUGGING: LOG UNEXPECTED UNPUBLISHING EVENTS
- * ========================================================================
- *
- * This function hooks into WordPress's status change process to find out
- * what is causing posts to unexpectedly become drafts.
+ * When a publication is saved, calculate and store the latest "Published" date.
  */
-function caes_log_unexpected_unpublishing($new_status, $old_status, $post) {
-    // We only care about posts changing FROM 'publish' TO 'draft'.
-    if ('publish' === $old_status && 'draft' === $new_status) {
-        
-        // We only care about our specific post types.
-        if (!in_array($post->post_type, ['publications', 'post', 'shorthand_story'])) {
-            return;
+function update_latest_publish_date_on_save($post_id) {
+    // Only run for publications and not on autosaves
+    if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
+        return;
+    }
+
+    $history_field_object = get_field_object('history', $post_id, false);
+
+    if (!$history_field_object || !isset($history_field_object['key'])) {
+        return;
+    }
+    $history_field_key = $history_field_object['key'];
+
+    // If there's no history data submitted, delete the meta field.
+    if (empty($_POST['acf']) || empty($_POST['acf'][$history_field_key])) {
+        delete_post_meta($post_id, '_publication_latest_publish_date');
+        return;
+    }
+
+    $history_rows = $_POST['acf'][$history_field_key];
+    $latest_publish_date = 0;
+    $publish_status_key = [2]; // The "Published" status.
+
+    foreach ($history_rows as $row) {
+        $status_field_key = $history_field_object['sub_fields'][0]['key'];
+        $date_field_key   = $history_field_object['sub_fields'][1]['key'];
+
+        if (isset($row[$status_field_key], $row[$date_field_key])) {
+            $status   = (int) $row[$status_field_key];
+            $date_str = $row[$date_field_key];
+
+            // Check if the status is "Published" and a date exists.
+            if (in_array($status, $publish_status_key) && !empty($date_str)) {
+                $current_date = (int) $date_str;
+                if ($current_date > $latest_publish_date) {
+                    $latest_publish_date = $current_date;
+                }
+            }
         }
+    }
 
-        // Get the current user to see if it's a person or a cron job (cron will be user ID 0).
-        $user_id = get_current_user_id();
-        
-        // Generate a full backtrace to see the exact call stack.
-        // This is the most important part.
-        ob_start();
-        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10); // Limit to 10 levels deep.
-        $backtrace = ob_get_clean();
-
-        // Prepare the detailed log message.
-        $log_message = sprintf(
-            "ALERT: Post Unpublishing Detected!\n" .
-            "  - Post ID: %d\n" .
-            "  - Post Title: %s\n" .
-            "  - Post Type: %s\n" .
-            "  - Action performed by User ID: %d\n" .
-            "  - Call Stack (Backtrace):\n%s",
-            $post->ID,
-            $post->post_title,
-            $post->post_type,
-            $user_id,
-            $backtrace
-        );
-
-        // Write the message to the main PHP error log.
-        error_log($log_message);
+    // Save the final calculated date to our new hidden field.
+    if ($latest_publish_date > 0) {
+        update_post_meta($post_id, '_publication_latest_publish_date', $latest_publish_date);
+    } else {
+        delete_post_meta($post_id, '_publication_latest_publish_date');
     }
 }
-// Hook into the status transition with 3 arguments.
-add_action('transition_post_status', 'caes_log_unexpected_unpublishing', 10, 3);
+add_action('acf/save_post', 'update_latest_publish_date_on_save', 20);

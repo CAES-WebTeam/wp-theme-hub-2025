@@ -76,13 +76,16 @@ function rest_pub_filters($args, $request)
         $args['tax_query'] = $tax_query;
     }
 
-    // --- NEW: Handle sorting by latest update ---
-    $order_by_update = $request->get_param('orderByLatestUpdate');
-    if ($order_by_update) {
+    if (isset($request['orderByLatestPublishDate']) && $request['orderByLatestPublishDate'] == true) {
+        $args['meta_key'] = '_publication_latest_publish_date';
+        $args['orderby'] = 'meta_value_num';
+        $args['order'] = 'DESC';
+    } elseif (isset($request['orderByLatestUpdate']) && $request['orderByLatestUpdate'] == true) {
         $args['meta_key'] = '_publication_latest_revision_date';
-        $args['orderby'] = 'meta_value_num'; // Use numeric ordering
+        $args['orderby'] = 'meta_value_num';
         $args['order'] = 'DESC';
     }
+
 
     return $args;
 }
@@ -169,11 +172,15 @@ function variations_query_filter($query, $block)
                 ];
             }
 
-            // --- NEW: Handle sorting by latest update on the frontend ---
-            $order_by_update = $parsed_block['attrs']['query']['orderByLatestUpdate'] ?? false;
-            if ($order_by_update) {
+            // --- ADD THIS BLOCK ---
+            // Sorting Logic for Publications Feed
+            if (!empty($parsed_block['attrs']['query']['orderByLatestPublishDate'])) {
+                $query['meta_key'] = '_publication_latest_publish_date';
+                $query['orderby'] = 'meta_value_num';
+                $query['order'] = 'DESC';
+            } elseif (!empty($parsed_block['attrs']['query']['orderByLatestUpdate'])) {
                 $query['meta_key'] = '_publication_latest_revision_date';
-                $query['orderby'] = 'meta_value_num'; // Use numeric ordering
+                $query['orderby'] = 'meta_value_num';
                 $query['order'] = 'DESC';
             }
 

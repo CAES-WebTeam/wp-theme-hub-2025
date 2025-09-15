@@ -54,8 +54,8 @@ registerBlockVariation('core/query', {
       perPage: 4,
       offset: 0,
       taxQueryExcludePubs: [],
-      // Add a new attribute for sorting
       orderByLatestUpdate: false,
+      orderByLatestPublishDate: false, // --- ADDED: New attribute
     },
   },
   isActive: ['namespace'],
@@ -71,57 +71,64 @@ registerBlockVariation('core/query', {
   ]
 });
 
-// This section adds the inspector controls specifically to the Publications variation
-const isPubsVariation = (props) => {
-  const { attributes: { namespace } } = props;
-  return namespace && namespace === publicationsVariation;
-};
+const isPubsVariation = ({ attributes: { namespace } }) => namespace === publicationsVariation;
 
-const PubVariationControls = ({ props: { attributes, setAttributes } }) => {
-  const { query } = attributes;
-  const { taxQueryExcludePubs = [], orderByLatestUpdate = false } = query;
+const PubVariationControls = ({ props: { attributes: { query }, setAttributes } }) => {
+  const { taxQueryExcludePubs, orderByLatestUpdate, orderByLatestPublishDate } = query;
 
-  // Fetch only 'publication_category' terms
-  const { terms, isLoading } = useSelect((select) => ({
-      terms: select('core').getEntityRecords('taxonomy', 'publication_category', { per_page: -1 }),
-      isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', 'publication_category', { per_page: -1 }]),
-  }), []);
+  const { terms, isLoading } = useSelect(select => {
+    const { getEntityRecords } = select('core');
+    const taxonomy = 'publication_type';
+    const query = { per_page: -1 };
+    return {
+      terms: getEntityRecords('taxonomy', taxonomy, query),
+      isLoading: !select('core').hasFinishedResolution('getEntityRecords', ['taxonomy', taxonomy, query]),
+    };
+  }, []);
 
-  // Handler to update attributes when checkboxes are changed
-  const toggleTerm = (termId) => {
-    const newExcludedTerms = taxQueryExcludePubs.includes(termId)
+  const toggleTerm = termId => {
+    const newTaxQuery = taxQueryExcludePubs.includes(termId)
       ? taxQueryExcludePubs.filter(id => id !== termId)
       : [...taxQueryExcludePubs, termId];
-    setAttributes({ query: { ...query, taxQueryExcludePubs: newExcludedTerms } });
+    setAttributes({ query: { ...query, taxQueryExcludePubs: newTaxQuery } });
+  };
+
+  // --- MODIFIED: Mutual exclusivity logic for toggles ---
+  const handleUpdateToggle = (isChecked) => {
+    setAttributes({
+      query: {
+        ...query,
+        orderByLatestUpdate: isChecked,
+        orderByLatestPublishDate: isChecked ? false : orderByLatestPublishDate, // If checked, turn the other off
+      }
+    });
+  };
+
+  const handlePublishToggle = (isChecked) => {
+    setAttributes({
+      query: {
+        ...query,
+        orderByLatestPublishDate: isChecked,
+        orderByLatestUpdate: isChecked ? false : orderByLatestUpdate, // If checked, turn the other off
+      }
+    });
   };
 
   return (
     <>
-      <PanelBody title="Publication Feed Settings">
-        {/* Language Selector */}
-        <SelectControl
-          label="Language"
-          value={query.language}
-          options={[
-            { value: '', label: '' },
-            { value: '1', label: 'English' },
-            { value: '2', label: 'Spanish' }
-          ]}
-          onChange={(value) =>
-            setAttributes({ query: { ...query, language: value } })
-          }
-        />
-        {/* Sort by Latest Update Toggle */}
+      <PanelBody title="Publication Filters" initialOpen={true}>
         <ToggleControl
-            label="Sort by latest update"
-            checked={orderByLatestUpdate}
-            onChange={(value) =>
-                setAttributes({ query: { ...query, orderByLatestUpdate: value } })
-            }
+          label="Sort by latest update"
+          checked={orderByLatestUpdate}
+          onChange={handleUpdateToggle}
         />
-      </PanelBody>
-
-      <PanelBody title="Exclude Publication Categories">
+        <ToggleControl
+          label="Sort by latest publish date"
+          checked={orderByLatestPublishDate}
+          onChange={handlePublishToggle}
+        />
+        <hr />
+        <strong>Exclude Publication Types</strong>
         {isLoading && <Spinner />}
         {!isLoading && terms && terms.length === 0 && <p>No categories found.</p>}
         {!isLoading && terms && terms.map(term => (
@@ -178,9 +185,7 @@ registerBlockVariation('core/query', {
       'core/post-template',
       {},
       [
-        ['core/post-title'],
-        ['core/post-date'],
-        ['core/post-excerpt']
+        ['core/post-title']
       ],
     ]
   ]
