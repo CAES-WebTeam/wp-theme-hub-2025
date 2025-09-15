@@ -38,6 +38,7 @@ require get_template_directory() . '/inc/topic-management.php';
 
 // Temp include
 require get_template_directory() . '/inc/detect-duplicates.php';
+require get_template_directory() . '/inc/pub-sunset-tool.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
