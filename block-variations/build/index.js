@@ -232,7 +232,7 @@ const PubVariationControls = ({
     const {
       getEntityRecords
     } = select('core');
-    const taxonomy = 'publication_type';
+    const taxonomy = 'publication_category';
     const query = {
       per_page: -1
     };

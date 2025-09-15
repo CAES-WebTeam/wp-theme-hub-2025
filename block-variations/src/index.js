@@ -78,7 +78,7 @@ const PubVariationControls = ({ props: { attributes: { query }, setAttributes } 
 
   const { terms, isLoading } = useSelect(select => {
     const { getEntityRecords } = select('core');
-    const taxonomy = 'publication_type';
+    const taxonomy = 'publication_category';
     const query = { per_page: -1 };
     return {
       terms: getEntityRecords('taxonomy', taxonomy, query),
