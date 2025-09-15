@@ -953,14 +953,13 @@ add_action('admin_footer-post.php', 'add_expired_to_post_status_dropdown');
  * Returns true if the event has passed (day after the last event date)
  */
 function is_event_expired($post_id) {
-    // Use WordPress's native get_post_meta() for reliability in cron jobs.
-    $date_type = get_post_meta($post_id, 'event_date_type', true);
+    $date_type = get_field('event_date_type', $post_id);
     $last_event_date = null;
     
     if ($date_type === 'single') {
         // For single events, check end_date first, then start_date
-        $end_date = get_post_meta($post_id, 'end_date', true);
-        $start_date = get_post_meta($post_id, 'start_date', true);
+        $end_date = get_field('end_date', $post_id);
+        $start_date = get_field('start_date', $post_id);
         
         if (!empty($end_date)) {
             $last_event_date = $end_date;
@@ -969,17 +968,16 @@ function is_event_expired($post_id) {
         }
         
     } elseif ($date_type === 'multi') {
-        // For multi-day events, we need to manually loop through the repeater meta.
-        $row_count = (int) get_post_meta($post_id, 'date_and_time', true);
+        // For multi events, find the latest date
+        $multi_dates = get_field('date_and_time', $post_id);
         
-        if ($row_count > 0) {
+        if (!empty($multi_dates) && is_array($multi_dates)) {
             $latest_date = null;
             
-            for ($i = 0; $i < $row_count; $i++) {
-                $date_entry = get_post_meta($post_id, 'date_and_time_' . $i . '_start_date_copy', true);
-                if (!empty($date_entry)) {
-                    if ($latest_date === null || $date_entry > $latest_date) {
-                        $latest_date = $date_entry;
+            foreach ($multi_dates as $date_entry) {
+                if (!empty($date_entry['start_date_copy'])) {
+                    if ($latest_date === null || $date_entry['start_date_copy'] > $latest_date) {
+                        $latest_date = $date_entry['start_date_copy'];
                     }
                 }
             }
@@ -988,26 +986,25 @@ function is_event_expired($post_id) {
         }
     }
     
-    // If no valid date was found, do not expire the event.
+    // If no date found, don't expire
     if (empty($last_event_date)) {
         return false;
     }
     
-    // Convert ACF date format (Ymd) to a DateTime object for comparison.
+    // Convert ACF date format (Ymd) to DateTime and add 1 day
     $date_object = DateTime::createFromFormat('Ymd', $last_event_date);
     if (!$date_object) {
         return false;
     }
     
-    // An event expires the day AFTER it ends.
+    // Add one day to get expiry date
     $date_object->add(new DateInterval('P1D'));
-    $expiry_date_str = $date_object->format('Y-m-d');
+    $expiry_date = $date_object->format('Y-m-d');
     
-    // Get today's date based on the WordPress timezone for an accurate comparison.
-    $today_str = (new DateTime('now', new DateTimeZone(wp_timezone_string())))->format('Y-m-d');
+    // Compare with today's date
+    $today = date('Y-m-d');
     
-    // The event is expired if today's date is on or after the expiry date.
-    return $today_str >= $expiry_date_str;
+    return $today >= $expiry_date;
 }
 
 /**
