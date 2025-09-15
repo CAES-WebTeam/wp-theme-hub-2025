@@ -1428,3 +1428,120 @@ function preserve_calendars_before_save() {
         }
     }
 }
+
+/**
+ * ========================================================================
+ * ADVANCED DEBUGGING: EVENT EXPIRATION TEST TOOL
+ * ========================================================================
+ */
+
+// 1. Add a new submenu page under "Events"
+add_action('admin_menu', 'caes_add_event_expiration_test_page');
+function caes_add_event_expiration_test_page() {
+    add_submenu_page(
+        'edit.php?post_type=events',
+        'Event Expiration Test',
+        'Expiration Test',
+        'manage_options',
+        'event-expiration-test',
+        'caes_render_event_expiration_test_page'
+    );
+}
+
+// 2. Render the content for the test page
+function caes_render_event_expiration_test_page() {
+    ?>
+    <div class="wrap">
+        <h1>Event Expiration Comprehensive Debugger</h1>
+        <p>This tool simulates the daily cron job that expires old events. It will not make any changes to your events.</p>
+        <p>It checks all "Published" and "Pending" events and shows the data used by the <code>is_event_expired()</code> function to determine if an event should be expired.</p>
+
+        <form method="post">
+            <?php wp_nonce_field('caes_run_expiration_test_nonce'); ?>
+            <input type="hidden" name="caes_run_expiration_test" value="1">
+            <p><input type="submit" class="button button-primary" value="Run Expiration Test"></p>
+        </form>
+
+        <hr>
+
+        <?php
+        // 3. If the form was submitted, run the test
+        if (isset($_POST['caes_run_expiration_test']) && check_admin_referer('caes_run_expiration_test_nonce')) {
+            caes_run_expiration_debug_test();
+        }
+        ?>
+    </div>
+    <?php
+}
+
+// 4. The main debugging test function
+function caes_run_expiration_debug_test() {
+    echo '<h2>Test Results:</h2>';
+
+    $events = get_posts(array(
+        'post_type'      => 'events',
+        'posts_per_page' => -1,
+        'post_status'    => ['publish', 'pending'],
+        'orderby'        => 'ID',
+        'order'          => 'DESC'
+    ));
+
+    if (empty($events)) {
+        echo '<p>No published or pending events found to test.</p>';
+        return;
+    }
+
+    echo '<p>Found ' . count($events) . ' events to check. Today\'s date for comparison is: <strong>' . date('Y-m-d') . '</strong></p>';
+    echo '<table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">';
+    echo '<thead><tr><th style="width: 25%;">Event Title (ID)</th><th style="width: 45%;">Data Check</th><th>Decision</th></tr></thead>';
+    echo '<tbody>';
+
+    foreach ($events as $event) {
+        $event_id = $event->ID;
+
+        // --- Start capturing output for this event ---
+        ob_start();
+
+        echo '<strong>Event Date Type:</strong> ';
+        $date_type = get_post_meta($event_id, 'event_date_type', true);
+        echo '<code>' . ($date_type ? $date_type : 'Not Set') . '</code><br>';
+
+        if ($date_type === 'single') {
+            $end_date = get_post_meta($event_id, 'end_date', true);
+            $start_date = get_post_meta($event_id, 'start_date', true);
+            echo '<strong>End Date Found:</strong> <code>' . ($end_date ? $end_date : 'Not Set') . '</code><br>';
+            echo '<strong>Start Date Found:</strong> <code>' . ($start_date ? $start_date : 'Not Set') . '</code><br>';
+        } elseif ($date_type === 'multi') {
+            $row_count = (int) get_post_meta($event_id, 'date_and_time', true);
+            echo '<strong>Multi-Day Rows:</strong> <code>' . $row_count . '</code><br>';
+            if ($row_count > 0) {
+                echo '<ul>';
+                for ($i = 0; $i < $row_count; $i++) {
+                    $date_entry = get_post_meta($event_id, 'date_and_time_' . $i . '_start_date_copy', true);
+                    echo '<li>Row ' . $i . ' Date: <code>' . ($date_entry ? $date_entry : 'Not Set') . '</code></li>';
+                }
+                echo '</ul>';
+            }
+        }
+
+        $data_check_output = ob_get_clean();
+        // --- End capturing output ---
+        
+        // Now, get the final decision from the function
+        $is_expired = is_event_expired($event_id);
+
+        echo '<tr>';
+        echo '<td><a href="' . get_edit_post_link($event_id) . '">' . esc_html($event->post_title) . '</a> (' . $event_id . ')</td>';
+        echo '<td>' . $data_check_output . '</td>';
+        
+        if ($is_expired) {
+            echo '<td style="background-color: #f8d7da; color: #721c24;"><strong>Expired</strong></td>';
+        } else {
+            echo '<td style="background-color: #d4edda; color: #155724;">Not Expired</td>';
+        }
+        
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+}
