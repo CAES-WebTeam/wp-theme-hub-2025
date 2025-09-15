@@ -52,17 +52,28 @@ function unpublish_expired_publications_callback()
 
     // Query publications with sunset_date on or before today
     $query = new WP_Query([
-        'post_type'   => 'publications',
-        'meta_key'    => 'sunset_date',
-        'meta_value'  => $today,
-        'meta_compare' => '<=',
-        'post_status' => 'publish',
-        'posts_per_page' => -1, // Retrieve all matching posts
+        'post_type'      => 'publications',
+        'meta_key'       => 'sunset_date',
+        'meta_value'     => $today,
+        'meta_compare'   => '<=',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
     ]);
 
     if ($query->have_posts()) {
         foreach ($query->posts as $post) {
-            // Unpublish each post by setting its status to 'draft'
+            // --- ADDED SAFETY CHECK ---
+            // Before unpublishing, double-check that the sunset date meta field is not empty.
+            // This prevents errors if a post is somehow included in the query incorrectly.
+            $sunset_date = get_post_meta($post->ID, 'sunset_date', true);
+            if (empty($sunset_date)) {
+                // Log an error if this happens, as it would be unexpected behavior.
+                error_log("CRON ANOMALY: Post ID {$post->ID} was targeted for unpublishing but has no sunset date.");
+                continue; // Skip to the next post.
+            }
+            // --- END SAFETY CHECK ---
+
+            // Unpublish the post by setting its status to 'draft'
             wp_update_post([
                 'ID'          => $post->ID,
                 'post_status' => 'draft',
