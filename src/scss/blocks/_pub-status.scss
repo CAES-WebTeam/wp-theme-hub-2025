@@ -34,7 +34,7 @@
     &.revised {
         background-color: var(--wp--preset--color--olympic);
         color: var(--wp--preset--color--base);
-        min-width: 72px;
+        min-width: 80px;
 
         &::before {
             background-image: url('../images/pencil.svg');
