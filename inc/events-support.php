@@ -953,13 +953,14 @@ add_action('admin_footer-post.php', 'add_expired_to_post_status_dropdown');
  * Returns true if the event has passed (day after the last event date)
  */
 function is_event_expired($post_id) {
-    $date_type = get_field('event_date_type', $post_id);
+    // Use WordPress's native get_post_meta() for reliability in cron jobs.
+    $date_type = get_post_meta($post_id, 'event_date_type', true);
     $last_event_date = null;
     
     if ($date_type === 'single') {
         // For single events, check end_date first, then start_date
-        $end_date = get_field('end_date', $post_id);
-        $start_date = get_field('start_date', $post_id);
+        $end_date = get_post_meta($post_id, 'end_date', true);
+        $start_date = get_post_meta($post_id, 'start_date', true);
         
         if (!empty($end_date)) {
             $last_event_date = $end_date;
@@ -968,16 +969,17 @@ function is_event_expired($post_id) {
         }
         
     } elseif ($date_type === 'multi') {
-        // For multi events, find the latest date
-        $multi_dates = get_field('date_and_time', $post_id);
+        // For multi-day events, we need to manually loop through the repeater meta.
+        $row_count = (int) get_post_meta($post_id, 'date_and_time', true);
         
-        if (!empty($multi_dates) && is_array($multi_dates)) {
+        if ($row_count > 0) {
             $latest_date = null;
             
-            foreach ($multi_dates as $date_entry) {
-                if (!empty($date_entry['start_date_copy'])) {
-                    if ($latest_date === null || $date_entry['start_date_copy'] > $latest_date) {
-                        $latest_date = $date_entry['start_date_copy'];
+            for ($i = 0; $i < $row_count; $i++) {
+                $date_entry = get_post_meta($post_id, 'date_and_time_' . $i . '_start_date_copy', true);
+                if (!empty($date_entry)) {
+                    if ($latest_date === null || $date_entry > $latest_date) {
+                        $latest_date = $date_entry;
                     }
                 }
             }
@@ -986,25 +988,26 @@ function is_event_expired($post_id) {
         }
     }
     
-    // If no date found, don't expire
+    // If no valid date was found, do not expire the event.
     if (empty($last_event_date)) {
         return false;
     }
     
-    // Convert ACF date format (Ymd) to DateTime and add 1 day
+    // Convert ACF date format (Ymd) to a DateTime object for comparison.
     $date_object = DateTime::createFromFormat('Ymd', $last_event_date);
     if (!$date_object) {
         return false;
     }
     
-    // Add one day to get expiry date
+    // An event expires the day AFTER it ends.
     $date_object->add(new DateInterval('P1D'));
-    $expiry_date = $date_object->format('Y-m-d');
+    $expiry_date_str = $date_object->format('Y-m-d');
     
-    // Compare with today's date
-    $today = date('Y-m-d');
+    // Get today's date based on the WordPress timezone for an accurate comparison.
+    $today_str = (new DateTime('now', new DateTimeZone(wp_timezone_string())))->format('Y-m-d');
     
-    return $today >= $expiry_date;
+    // The event is expired if today's date is on or after the expiry date.
+    return $today_str >= $expiry_date_str;
 }
 
 /**
@@ -1089,59 +1092,32 @@ add_action('init', 'schedule_expire_events_cron');
 /**
  * Function that runs daily to expire old events
  */
-/**
- * Function that runs daily to expire old events (DEBUGGING VERSION)
- */
 function expire_old_events() {
-    // Start of the log for this run
-    error_log("== EVENT EXPIRATION CRON: STARTING RUN ==");
-
-    // Get all published or pending events
+    // Get all published events
     $events = get_posts(array(
-        'post_type'      => 'events',
+        'post_type' => 'events',
         'posts_per_page' => -1,
-        'post_status'    => ['publish', 'pending'], // Check both statuses
-        'fields'         => 'ids'
+        'post_status' => 'publish',
+        'fields' => 'ids'
     ));
-    
-    if (empty($events)) {
-        error_log("CRON LOG: No published or pending events found to check. Ending run.");
-        return;
-    }
-
-    error_log("CRON LOG: Found " . count($events) . " events to check.");
     
     $expired_count = 0;
     
     foreach ($events as $event_id) {
-        error_log("--- Checking Event ID: {$event_id} ---");
-
-        // 1. Attempt to get date with ACF's get_field()
-        $end_date_acf = get_field('end_date', $event_id);
-        error_log("  -> Step 1 (ACF): get_field('end_date') returned: " . ($end_date_acf ? $end_date_acf : 'NULL or EMPTY'));
-
-        // 2. Attempt to get date with WordPress's get_post_meta()
-        $end_date_meta = get_post_meta($event_id, 'end_date', true);
-        error_log("  -> Step 2 (WP): get_post_meta('end_date') returned: " . ($end_date_meta ? $end_date_meta : 'NULL or EMPTY'));
-        
-        // 3. Use the most reliable value for the check
-        $end_date_to_check = !empty($end_date_meta) ? $end_date_meta : $end_date_acf;
-
         if (is_event_expired($event_id)) {
-            // 4. If expired, update the status
+            // Change status to expired
             wp_update_post(array(
                 'ID' => $event_id,
                 'post_status' => 'expired'
             ));
-            error_log("  -> RESULT: Event is EXPIRED. Status changed to 'expired'.");
             $expired_count++;
-        } else {
-            error_log("  -> RESULT: Event is NOT expired. No action taken.");
         }
     }
     
-    error_log("CRON LOG: Finished run. Expired {$expired_count} events.");
-    error_log("== EVENT EXPIRATION CRON: END OF RUN ==");
+    // Log the results
+    if ($expired_count > 0) {
+        error_log("Expired {$expired_count} events on " . date('Y-m-d H:i:s'));
+    }
 }
 add_action('expire_old_events', 'expire_old_events');
 
