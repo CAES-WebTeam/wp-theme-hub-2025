@@ -1089,32 +1089,59 @@ add_action('init', 'schedule_expire_events_cron');
 /**
  * Function that runs daily to expire old events
  */
+/**
+ * Function that runs daily to expire old events (DEBUGGING VERSION)
+ */
 function expire_old_events() {
-    // Get all published events
+    // Start of the log for this run
+    error_log("== EVENT EXPIRATION CRON: STARTING RUN ==");
+
+    // Get all published or pending events
     $events = get_posts(array(
-        'post_type' => 'events',
+        'post_type'      => 'events',
         'posts_per_page' => -1,
-        'post_status' => 'publish',
-        'fields' => 'ids'
+        'post_status'    => ['publish', 'pending'], // Check both statuses
+        'fields'         => 'ids'
     ));
+    
+    if (empty($events)) {
+        error_log("CRON LOG: No published or pending events found to check. Ending run.");
+        return;
+    }
+
+    error_log("CRON LOG: Found " . count($events) . " events to check.");
     
     $expired_count = 0;
     
     foreach ($events as $event_id) {
+        error_log("--- Checking Event ID: {$event_id} ---");
+
+        // 1. Attempt to get date with ACF's get_field()
+        $end_date_acf = get_field('end_date', $event_id);
+        error_log("  -> Step 1 (ACF): get_field('end_date') returned: " . ($end_date_acf ? $end_date_acf : 'NULL or EMPTY'));
+
+        // 2. Attempt to get date with WordPress's get_post_meta()
+        $end_date_meta = get_post_meta($event_id, 'end_date', true);
+        error_log("  -> Step 2 (WP): get_post_meta('end_date') returned: " . ($end_date_meta ? $end_date_meta : 'NULL or EMPTY'));
+        
+        // 3. Use the most reliable value for the check
+        $end_date_to_check = !empty($end_date_meta) ? $end_date_meta : $end_date_acf;
+
         if (is_event_expired($event_id)) {
-            // Change status to expired
+            // 4. If expired, update the status
             wp_update_post(array(
                 'ID' => $event_id,
                 'post_status' => 'expired'
             ));
+            error_log("  -> RESULT: Event is EXPIRED. Status changed to 'expired'.");
             $expired_count++;
+        } else {
+            error_log("  -> RESULT: Event is NOT expired. No action taken.");
         }
     }
     
-    // Log the results
-    if ($expired_count > 0) {
-        error_log("Expired {$expired_count} events on " . date('Y-m-d H:i:s'));
-    }
+    error_log("CRON LOG: Finished run. Expired {$expired_count} events.");
+    error_log("== EVENT EXPIRATION CRON: END OF RUN ==");
 }
 add_action('expire_old_events', 'expire_old_events');
 
