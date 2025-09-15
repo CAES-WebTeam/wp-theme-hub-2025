@@ -43,29 +43,29 @@ require get_template_directory() . '/inc/pub-sunset-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 
+
 /**
  * ========================================================================
- * FINAL ONE-TIME SCRIPT: Backfill '_publication_latest_revision_date'
+ * COMBINED ONE-TIME SCRIPT: Backfill Revision and Publish Dates
  * ========================================================================
  *
- * This version uses a direct database query ($wpdb) to bypass ACF's
- * functions, which can be unreliable in this context. This is the most
- * robust method for a one-time bulk update.
+ * This script iterates through all existing 'publications' and calculates
+ * BOTH the latest revision date and the latest publish date from the
+ * 'history' ACF repeater, saving each to its own meta field.
  *
  * TO RUN:
- * 1. Replace the old script with this one in your theme's functions.php.
+ * 1. Add this code to your theme's functions.php file.
  * 2. Log in as an administrator.
- * 3. Visit: https://yourdomain.com/?update_revision_dates=true
+ * 3. Visit: https://yourdomain.com/?update_publication_dates=true
  * 4. Review the detailed on-screen report.
  * 5. *** CRITICAL: REMOVE THIS CODE AFTER YOU HAVE RUN IT ONCE. ***
  */
 add_action('wp_loaded', function () {
-    // 1. Security Check
-    if (!isset($_GET['update_revision_dates']) || !current_user_can('manage_options')) {
+    // 1. Security Check: Use a new, more descriptive query variable.
+    if (!isset($_GET['update_publication_dates']) || !current_user_can('manage_options')) {
         return;
     }
 
-    // Bring the global WordPress database object into scope.
     global $wpdb;
 
     // 2. Query for all published publication IDs.
@@ -78,10 +78,10 @@ add_action('wp_loaded', function () {
         wp_die('<h1>Update Report</h1><p>No publications were found to process.</p>');
     }
 
-    $updated_count = 0;
-    $skipped_count = 0;
-    $report_html = '<h1>Publication Revision Date Update Report (Direct DB Method)</h1>';
-    $report_html .= "<p>Found a total of <strong>{$total_found}</strong> publications to check.</p>";
+    $revision_updated_count = 0;
+    $publish_updated_count = 0;
+    $report_html = '<h1>Publication Dates Update Report (Revision & Publish)</h1>';
+    $report_html .= "<p>Found <strong>{$total_found}</strong> publications to check.</p>";
     $report_html .= '<ul style="font-family: monospace; line-height: 1.6;">';
 
     // 3. Loop through each publication ID.
@@ -89,33 +89,23 @@ add_action('wp_loaded', function () {
         $title = esc_html(get_the_title($post_id));
         $report_html .= "<li><strong>Checking:</strong> \"{$title}\" (ID: {$post_id})";
 
-        // Skip if the meta key already has a non-empty value.
-        if (!empty(get_post_meta($post_id, '_publication_latest_revision_date', true))) {
-            $skipped_count++;
-            $report_html .= " - <span style='color: orange;'>SKIPPED (Already has a date)</span></li>";
-            continue;
-        }
-
-        // 4. Directly query the postmeta table for the repeater field rows.
-        // ACF repeater data is stored with keys like 'history_0_status', 'history_1_date', etc.
+        // Directly query the postmeta table for the repeater field rows.
         $meta_rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT meta_key, meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key LIKE %s",
                 $post_id,
-                'history_%' // The wildcard finds all sub-fields of the 'history' repeater
+                'history_%'
             )
         );
 
         if (empty($meta_rows)) {
-            $skipped_count++;
-            $report_html .= " - <span style='color: red;'>SKIPPED (No 'history' meta found in DB)</span></li>";
+            $report_html .= " - <span style='color: red;'>SKIPPED (No 'history' meta found)</span></li>";
             continue;
         }
 
-        // 5. Reconstruct the repeater data and find the latest date.
+        // Reconstruct the repeater data from the meta rows.
         $history_data = [];
         foreach ($meta_rows as $meta_row) {
-            // Extracts the row index (0, 1, 2...) and field name (status, date)
             if (preg_match('/^history_(\d+)_(.*)$/', $meta_row->meta_key, $matches)) {
                 $row_index = $matches[1];
                 $field_name = $matches[2];
@@ -124,39 +114,61 @@ add_action('wp_loaded', function () {
         }
         
         $latest_revision_date = 0;
-        $revision_status_keys = [4, 5, 6]; // The statuses we care about.
+        $latest_publish_date = 0;
 
+        $revision_status_keys = [4, 5, 6]; // Revised, Updated, Republished
+        $publish_status_key = [2];         // Published
+
+        // Loop through the history to find the latest date for EACH category.
         if (!empty($history_data)) {
             foreach ($history_data as $row) {
                 $status   = isset($row['status']) ? (int) $row['status'] : 0;
                 $date_str = isset($row['date']) ? $row['date'] : '';
 
-                if (in_array($status, $revision_status_keys) && !empty($date_str)) {
-                    $current_date = (int) $date_str; // Stored as Ymd
-                    if ($current_date > $latest_revision_date) {
+                if (!empty($date_str)) {
+                    $current_date = (int) $date_str;
+
+                    // Check for latest revision date
+                    if (in_array($status, $revision_status_keys) && $current_date > $latest_revision_date) {
                         $latest_revision_date = $current_date;
+                    }
+
+                    // Check for latest publish date
+                    if (in_array($status, $publish_status_key) && $current_date > $latest_publish_date) {
+                        $latest_publish_date = $current_date;
                     }
                 }
             }
         }
 
-        // 6. Save the new date to the post meta.
+        $report_html .= "<ul>";
+
+        // Save the LATEST REVISION date if found
         if ($latest_revision_date > 0) {
             update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
-            $updated_count++;
-            $report_html .= " - <span style='color: green;'>UPDATED with date: {$latest_revision_date}</span></li>";
+            $revision_updated_count++;
+            $report_html .= "<li><span style='color: green;'>Updated Revision Date:</span> {$latest_revision_date}</li>";
         } else {
-            $skipped_count++;
-            $report_html .= " - <span style='color: red;'>SKIPPED (No valid history dates found after checking DB)</span></li>";
+            $report_html .= "<li><span style='color: orange;'>No new revision date found.</span></li>";
         }
+
+        // Save the LATEST PUBLISH date if found
+        if ($latest_publish_date > 0) {
+            update_post_meta($post_id, '_publication_latest_publish_date', $latest_publish_date);
+            $publish_updated_count++;
+            $report_html .= "<li><span style='color: green;'>Updated Publish Date:</span> {$latest_publish_date}</li>";
+        } else {
+            $report_html .= "<li><span style='color: orange;'>No new publish date found.</span></li>";
+        }
+        
+        $report_html .= "</ul></li>";
     }
 
     $report_html .= '</ul>';
     $report_html .= '<h2>Summary</h2>';
-    $report_html .= "<p><strong>{$updated_count}</strong> publications were successfully updated.</p>";
-    $report_html .= "<p><strong>{$skipped_count}</strong> publications were skipped.</p>";
+    $report_html .= "<p><strong>{$revision_updated_count}</strong> publications had their 'latest revision date' updated.</p>";
+    $report_html .= "<p><strong>{$publish_updated_count}</strong> publications had their 'latest publish date' updated.</p>";
     $report_html .= '<p style="font-weight: bold; color: red;">Action complete. Please remove this script from your functions.php file now.</p>';
 
-    // 7. Display the final report and stop execution.
     wp_die($report_html);
 });
