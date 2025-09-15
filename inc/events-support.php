@@ -953,58 +953,41 @@ add_action('admin_footer-post.php', 'add_expired_to_post_status_dropdown');
  * Returns true if the event has passed (day after the last event date)
  */
 function is_event_expired($post_id) {
-    $date_type = get_field('event_date_type', $post_id);
+    // Since 'event_date_type' no longer exists, we will directly check for the date fields.
+    // This logic assumes all events follow the simple start/end date format.
     $last_event_date = null;
+
+    // Use WordPress's native get_post_meta() for reliability in all contexts.
+    $end_date = get_post_meta($post_id, 'end_date', true);
+    $start_date = get_post_meta($post_id, 'start_date', true);
     
-    if ($date_type === 'single') {
-        // For single events, check end_date first, then start_date
-        $end_date = get_field('end_date', $post_id);
-        $start_date = get_field('start_date', $post_id);
-        
-        if (!empty($end_date)) {
-            $last_event_date = $end_date;
-        } elseif (!empty($start_date)) {
-            $last_event_date = $start_date;
-        }
-        
-    } elseif ($date_type === 'multi') {
-        // For multi events, find the latest date
-        $multi_dates = get_field('date_and_time', $post_id);
-        
-        if (!empty($multi_dates) && is_array($multi_dates)) {
-            $latest_date = null;
-            
-            foreach ($multi_dates as $date_entry) {
-                if (!empty($date_entry['start_date_copy'])) {
-                    if ($latest_date === null || $date_entry['start_date_copy'] > $latest_date) {
-                        $latest_date = $date_entry['start_date_copy'];
-                    }
-                }
-            }
-            
-            $last_event_date = $latest_date;
-        }
+    // Prioritize the end_date if it exists, otherwise fall back to the start_date.
+    if (!empty($end_date)) {
+        $last_event_date = $end_date;
+    } elseif (!empty($start_date)) {
+        $last_event_date = $start_date;
     }
     
-    // If no date found, don't expire
+    // If no date was found at all, we cannot expire the event.
     if (empty($last_event_date)) {
         return false;
     }
     
-    // Convert ACF date format (Ymd) to DateTime and add 1 day
+    // Convert the date from 'Ymd' format to a DateTime object for comparison.
     $date_object = DateTime::createFromFormat('Ymd', $last_event_date);
     if (!$date_object) {
-        return false;
+        return false; // Stop if the date format is invalid.
     }
     
-    // Add one day to get expiry date
+    // An event officially expires the day AFTER its last day.
     $date_object->add(new DateInterval('P1D'));
-    $expiry_date = $date_object->format('Y-m-d');
+    $expiry_date_str = $date_object->format('Y-m-d');
     
-    // Compare with today's date
-    $today = date('Y-m-d');
+    // Get today's date based on the WordPress timezone for an accurate comparison.
+    $today_str = (new DateTime('now', new DateTimeZone(wp_timezone_string())))->format('Y-m-d');
     
-    return $today >= $expiry_date;
+    // The event is expired if today's date is on or after the expiry date.
+    return $today_str >= $expiry_date_str;
 }
 
 /**
