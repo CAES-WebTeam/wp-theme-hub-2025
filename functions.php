@@ -43,26 +43,24 @@ require get_template_directory() . '/inc/pub-sunset-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 
-
 /**
  * ========================================================================
- * COMBINED ONE-TIME SCRIPT: Backfill Revision and Publish Dates
+ * DIAGNOSTIC SCRIPT: Verify Raw DB Values and Backfill Dates
  * ========================================================================
  *
- * This script iterates through all existing 'publications' and calculates
- * BOTH the latest revision date and the latest publish date from the
- * 'history' ACF repeater, saving each to its own meta field.
+ * This script shows the EXACT raw values stored in the postmeta database
+ * for each history entry before calculating and saving the revision and
+ * publish dates. This is to verify the source of any partial dates.
  *
  * TO RUN:
- * 1. Add this code to your theme's functions.php file.
- * 2. Log in as an administrator.
- * 3. Visit: https://yourdomain.com/?update_publication_dates=true
- * 4. Review the detailed on-screen report.
- * 5. *** CRITICAL: REMOVE THIS CODE AFTER YOU HAVE RUN IT ONCE. ***
+ * 1. Replace the old script with this one.
+ * 2. Log in as an administrator and visit: https://yourdomain.com/?verify_publication_dates=true
+ * 3. Review the detailed on-screen report.
+ * 4. *** CRITICAL: REMOVE THIS CODE AFTER YOU HAVE RUN IT ONCE. ***
  */
 add_action('wp_loaded', function () {
-    // 1. Security Check: Use a new, more descriptive query variable.
-    if (!isset($_GET['update_publication_dates']) || !current_user_can('manage_options')) {
+    // 1. Security Check
+    if (!isset($_GET['verify_publication_dates']) || !current_user_can('manage_options')) {
         return;
     }
 
@@ -73,15 +71,11 @@ add_action('wp_loaded', function () {
         "SELECT ID FROM {$wpdb->posts} WHERE post_type = 'publications' AND post_status = 'publish'"
     );
 
-    $total_found = count($post_ids);
     if (empty($post_ids)) {
         wp_die('<h1>Update Report</h1><p>No publications were found to process.</p>');
     }
 
-    $revision_updated_count = 0;
-    $publish_updated_count = 0;
-    $report_html = '<h1>Publication Dates Update Report (Revision & Publish)</h1>';
-    $report_html .= "<p>Found <strong>{$total_found}</strong> publications to check.</p>";
+    $report_html = '<h1>Publication Dates - Raw Database Verification & Update</h1>';
     $report_html .= '<ul style="font-family: monospace; line-height: 1.6;">';
 
     // 3. Loop through each publication ID.
@@ -89,7 +83,7 @@ add_action('wp_loaded', function () {
         $title = esc_html(get_the_title($post_id));
         $report_html .= "<li><strong>Checking:</strong> \"{$title}\" (ID: {$post_id})";
 
-        // Directly query the postmeta table for the repeater field rows.
+        // 4. Directly query the postmeta table for the repeater field rows.
         $meta_rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT meta_key, meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key LIKE %s",
@@ -103,37 +97,36 @@ add_action('wp_loaded', function () {
             continue;
         }
 
-        // Reconstruct the repeater data from the meta rows.
+        // --- NEW: Verification Section ---
+        $report_html .= "<div style='margin-left: 20px; font-size: 12px; background: #f1f1f1; padding: 10px; border: 1px solid #ccc;'>";
+        $report_html .= "<strong>Raw Database Values Found:</strong><pre>";
         $history_data = [];
         foreach ($meta_rows as $meta_row) {
+            // Print the raw meta key and value for verification
+            $report_html .= esc_html($meta_row->meta_key) . " => '" . esc_html($meta_row->meta_value) . "'\n";
+            // Reconstruct the data for processing
             if (preg_match('/^history_(\d+)_(.*)$/', $meta_row->meta_key, $matches)) {
-                $row_index = $matches[1];
-                $field_name = $matches[2];
-                $history_data[$row_index][$field_name] = $meta_row->meta_value;
+                $history_data[$matches[1]][$matches[2]] = $meta_row->meta_value;
             }
         }
-        
+        $report_html .= "</pre></div>";
+        // --- End Verification Section ---
+
         $latest_revision_date = 0;
         $latest_publish_date = 0;
+        $revision_status_keys = [4, 5, 6];
+        $publish_status_key = [2];
 
-        $revision_status_keys = [4, 5, 6]; // Revised, Updated, Republished
-        $publish_status_key = [2];         // Published
-
-        // Loop through the history to find the latest date for EACH category.
         if (!empty($history_data)) {
             foreach ($history_data as $row) {
-                $status   = isset($row['status']) ? (int) $row['status'] : 0;
+                $status = isset($row['status']) ? (int) $row['status'] : 0;
                 $date_str = isset($row['date']) ? $row['date'] : '';
 
                 if (!empty($date_str)) {
                     $current_date = (int) $date_str;
-
-                    // Check for latest revision date
                     if (in_array($status, $revision_status_keys) && $current_date > $latest_revision_date) {
                         $latest_revision_date = $current_date;
                     }
-
-                    // Check for latest publish date
                     if (in_array($status, $publish_status_key) && $current_date > $latest_publish_date) {
                         $latest_publish_date = $current_date;
                     }
@@ -141,34 +134,27 @@ add_action('wp_loaded', function () {
             }
         }
 
-        $report_html .= "<ul>";
-
-        // Save the LATEST REVISION date if found
+        // 6. Report on and save the calculated dates.
+        $report_html .= "<div style='margin-left: 20px;'>";
         if ($latest_revision_date > 0) {
             update_post_meta($post_id, '_publication_latest_revision_date', $latest_revision_date);
-            $revision_updated_count++;
-            $report_html .= "<li><span style='color: green;'>Updated Revision Date:</span> {$latest_revision_date}</li>";
+            $report_html .= "↳ <span style='color: green;'>Calculated & Saved Revision Date:</span> {$latest_revision_date}<br/>";
         } else {
-            $report_html .= "<li><span style='color: orange;'>No new revision date found.</span></li>";
+            $report_html .= "↳ <span style='color: orange;'>No valid revision date was calculated.</span><br/>";
         }
 
-        // Save the LATEST PUBLISH date if found
         if ($latest_publish_date > 0) {
             update_post_meta($post_id, '_publication_latest_publish_date', $latest_publish_date);
-            $publish_updated_count++;
-            $report_html .= "<li><span style='color: green;'>Updated Publish Date:</span> {$latest_publish_date}</li>";
+            $report_html .= "↳ <span style='color: green;'>Calculated & Saved Publish Date:</span> {$latest_publish_date}";
         } else {
-            $report_html .= "<li><span style='color: orange;'>No new publish date found.</span></li>";
+            $report_html .= "↳ <span style='color: orange;'>No valid publish date was calculated.</span>";
         }
-        
-        $report_html .= "</ul></li>";
+        $report_html .= "</div></li>";
     }
 
     $report_html .= '</ul>';
-    $report_html .= '<h2>Summary</h2>';
-    $report_html .= "<p><strong>{$revision_updated_count}</strong> publications had their 'latest revision date' updated.</p>";
-    $report_html .= "<p><strong>{$publish_updated_count}</strong> publications had their 'latest publish date' updated.</p>";
-    $report_html .= '<p style="font-weight: bold; color: red;">Action complete. Please remove this script from your functions.php file now.</p>';
+    $report_html .= '<h2>Action Complete</h2>';
+    $report_html .= '<p style="font-weight: bold; color: red;">You can now see the raw database values above. Please remove this script from your functions.php file now.</p>';
 
     wp_die($report_html);
 });
