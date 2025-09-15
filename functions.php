@@ -45,17 +45,17 @@ require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php'
 
 /**
  * ========================================================================
- * DIAGNOSTIC SCRIPT: Verify Raw DB Values and Backfill Dates
+ * FINAL CORRECTED SCRIPT: Verify Raw DB Values and Backfill Dates
  * ========================================================================
  *
- * This script shows the EXACT raw values stored in the postmeta database
- * for each history entry before calculating and saving the revision and
- * publish dates. This is to verify the source of any partial dates.
+ * CORRECTION: This version fixes a critical bug where (int) casting was
+ * only reading the year from a full 'YYYY-MM-DD' date string. It now
+ * correctly parses the full date, ensuring accurate sorting.
  *
  * TO RUN:
  * 1. Replace the old script with this one.
  * 2. Log in as an administrator and visit: https://yourdomain.com/?verify_publication_dates=true
- * 3. Review the detailed on-screen report.
+ * 3. Review the corrected on-screen report.
  * 4. *** CRITICAL: REMOVE THIS CODE AFTER YOU HAVE RUN IT ONCE. ***
  */
 add_action('wp_loaded', function () {
@@ -75,7 +75,7 @@ add_action('wp_loaded', function () {
         wp_die('<h1>Update Report</h1><p>No publications were found to process.</p>');
     }
 
-    $report_html = '<h1>Publication Dates - Raw Database Verification & Update</h1>';
+    $report_html = '<h1>Publication Dates - Raw Database Verification & Update (Corrected)</h1>';
     $report_html .= '<ul style="font-family: monospace; line-height: 1.6;">';
 
     // 3. Loop through each publication ID.
@@ -97,14 +97,12 @@ add_action('wp_loaded', function () {
             continue;
         }
 
-        // --- NEW: Verification Section ---
+        // --- Verification Section ---
         $report_html .= "<div style='margin-left: 20px; font-size: 12px; background: #f1f1f1; padding: 10px; border: 1px solid #ccc;'>";
         $report_html .= "<strong>Raw Database Values Found:</strong><pre>";
         $history_data = [];
         foreach ($meta_rows as $meta_row) {
-            // Print the raw meta key and value for verification
             $report_html .= esc_html($meta_row->meta_key) . " => '" . esc_html($meta_row->meta_value) . "'\n";
-            // Reconstruct the data for processing
             if (preg_match('/^history_(\d+)_(.*)$/', $meta_row->meta_key, $matches)) {
                 $history_data[$matches[1]][$matches[2]] = $meta_row->meta_value;
             }
@@ -123,7 +121,12 @@ add_action('wp_loaded', function () {
                 $date_str = isset($row['date']) ? $row['date'] : '';
 
                 if (!empty($date_str)) {
-                    $current_date = (int) $date_str;
+                    // *** THE FIX: Properly convert the date string to a numeric YYYYMMDD format. ***
+                    // 1. Remove all non-numeric characters.
+                    $numeric_date_str = preg_replace('/[^0-9]/', '', $date_str);
+                    // 2. Take the first 8 characters (the date part) and convert to an integer.
+                    $current_date = (int) substr($numeric_date_str, 0, 8);
+
                     if (in_array($status, $revision_status_keys) && $current_date > $latest_revision_date) {
                         $latest_revision_date = $current_date;
                     }
@@ -154,7 +157,7 @@ add_action('wp_loaded', function () {
 
     $report_html .= '</ul>';
     $report_html .= '<h2>Action Complete</h2>';
-    $report_html .= '<p style="font-weight: bold; color: red;">You can now see the raw database values above. Please remove this script from your functions.php file now.</p>';
+    $report_html .= '<p style="font-weight: bold; color: red;">You can now see the corrected values above. Please remove this script from your functions.php file now.</p>';
 
     wp_die($report_html);
 });
