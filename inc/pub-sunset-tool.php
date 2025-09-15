@@ -14,7 +14,7 @@ function pub_sunset_tool_add_admin_page() {
         'caes-tools',                         // Parent slug
         'Publication Sunset Tool',            // Page title
         'Pub Sunset Tool',                    // Menu title
-        'manage_options',                     // Capability required: Ensures only Admins can see this.
+        'manage_options',                     // Capability required
         'pub-sunset-tool',                    // Menu slug
         'pub_sunset_tool_render_page'         // Function to render the page
     );
@@ -30,7 +30,7 @@ function pub_sunset_tool_render_page() {
         <p>This tool helps you manage publications related to the automated "Sunset Date" unpublishing feature.</p>
 
         <?php
-        // Process the manual run action only if the form was submitted and the nonce is valid.
+        // Handle the manual run of the unpublish script if the button was clicked.
         if (isset($_POST['pub_run_unpublish_script']) && check_admin_referer('pub_run_unpublish_nonce')) {
             $unpublished_count = pub_sunset_tool_run_script_manually();
             echo '<div class="notice notice-success is-dismissible"><p>Successfully ran the unpublishing script. <strong>' . absint($unpublished_count) . '</strong> publications were moved to draft.</p></div>';
@@ -41,7 +41,7 @@ function pub_sunset_tool_render_page() {
             <h2 class="title">Manually Run Unpublish Script</h2>
             <p>This will immediately run the function that unpublishes all published posts whose "Sunset Date" is in the past. This is useful for testing or if you believe the automated cron job has missed something.</p>
             <form method="post" action="">
-                <?php wp_nonce_field('pub_run_unpublish_nonce'); // Security: Generate the nonce token. ?>
+                <?php wp_nonce_field('pub_run_unpublish_nonce'); ?>
                 <input type="hidden" name="pub_run_unpublish_script" value="1">
                 <input type="submit" class="button button-primary" value="Run Unpublish Script Now" onclick="return confirm('Are you sure you want to run the unpublish script? This will immediately move any expired publications to draft status.');">
             </form>
@@ -64,15 +64,23 @@ function pub_sunset_tool_render_page() {
 function pub_sunset_tool_display_publications_list() {
     $paged = isset($_GET['paged']) ? absint($_GET['paged']) : 1;
 
+    // --- UPDATED QUERY ---
+    // This query now finds posts where the sunset_date key either does not exist OR it exists but is empty.
     $query = new WP_Query([
         'post_type'      => 'publications',
         'posts_per_page' => 20,
         'paged'          => $paged,
         'post_status'    => ['publish', 'draft', 'pending', 'future', 'private'],
         'meta_query'     => [
+            'relation' => 'OR', // <-- Key change: Use OR logic
             [
                 'key'     => 'sunset_date',
-                'compare' => 'NOT EXISTS',
+                'compare' => 'NOT EXISTS', // Condition 1: The key does not exist
+            ],
+            [
+                'key'     => 'sunset_date',
+                'value'   => '',             // Condition 2: The key exists but its value is an empty string
+                'compare' => '=',
             ],
         ],
     ]);
@@ -140,7 +148,6 @@ function pub_sunset_tool_run_script_manually() {
 
     if ($query->have_posts()) {
         foreach ($query->posts as $post) {
-            // Security: Final safety check to ensure the post has a sunset date.
             $sunset_date = get_post_meta($post->ID, 'sunset_date', true);
             if (empty($sunset_date)) {
                 continue;
