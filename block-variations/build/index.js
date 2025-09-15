@@ -221,7 +221,7 @@ const PubVariationControls = ({
   }
 }) => {
   const {
-    taxQueryExcludePubs,
+    taxQueryExcludePubs = [],
     orderByLatestUpdate,
     orderByLatestPublishDate
   } = query;

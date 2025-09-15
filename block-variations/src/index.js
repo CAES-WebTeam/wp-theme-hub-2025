@@ -74,7 +74,7 @@ registerBlockVariation('core/query', {
 const isPubsVariation = ({ attributes: { namespace } }) => namespace === publicationsVariation;
 
 const PubVariationControls = ({ props: { attributes: { query }, setAttributes } }) => {
-  const { taxQueryExcludePubs, orderByLatestUpdate, orderByLatestPublishDate } = query;
+  const { taxQueryExcludePubs = [], orderByLatestUpdate, orderByLatestPublishDate } = query;
 
   const { terms, isLoading } = useSelect(select => {
     const { getEntityRecords } = select('core');
