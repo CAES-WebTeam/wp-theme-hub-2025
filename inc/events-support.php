@@ -1414,7 +1414,7 @@ function preserve_calendars_before_save() {
 
 /**
  * ========================================================================
- * ADVANCED DEBUGGING: EVENT EXPIRATION TEST TOOL
+ * ADVANCED DEBUGGING: EVENT EXPIRATION TEST & TRIGGER TOOL
  * ========================================================================
  */
 
@@ -1423,41 +1423,62 @@ add_action('admin_menu', 'caes_add_event_expiration_test_page');
 function caes_add_event_expiration_test_page() {
     add_submenu_page(
         'edit.php?post_type=events',
-        'Event Expiration Test',
-        'Expiration Test',
+        'Event Expiration Tool',
+        'Expiration Tool',
         'manage_options',
-        'event-expiration-test',
-        'caes_render_event_expiration_test_page'
+        'event-expiration-tool',
+        'caes_render_event_expiration_tool_page'
     );
 }
 
-// 2. Render the content for the test page
-function caes_render_event_expiration_test_page() {
+// 2. Render the content for the tool page
+function caes_render_event_expiration_tool_page() {
     ?>
     <div class="wrap">
-        <h1>Event Expiration Comprehensive Debugger</h1>
-        <p>This tool simulates the daily cron job that expires old events. It will not make any changes to your events.</p>
-        <p>It checks all "Published" and "Pending" events and shows the data used by the <code>is_event_expired()</code> function to determine if an event should be expired.</p>
+        <h1>Event Expiration Tool & Debugger</h1>
+        <p>This tool helps you test and manually run the daily script that moves past events to an "expired" status.</p>
 
-        <form method="post">
-            <?php wp_nonce_field('caes_run_expiration_test_nonce'); ?>
-            <input type="hidden" name="caes_run_expiration_test" value="1">
-            <p><input type="submit" class="button button-primary" value="Run Expiration Test"></p>
-        </form>
+        <?php
+        // Handle the MANUAL RUN if the button was clicked
+        if (isset($_POST['caes_run_expiration_script_now']) && check_admin_referer('caes_run_expiration_script_nonce')) {
+            $expired_count = caes_run_expiration_script_manually();
+            echo '<div class="notice notice-success is-dismissible"><p>Successfully ran the expiration script. <strong>' . absint($expired_count) . '</strong> events were moved to "Expired" status.</p></div>';
+        }
+        ?>
+
+        <div class="card">
+            <h2 class="title">Manually Run Expiration Script</h2>
+            <p>This will immediately run the expiration script on all "Published" and "Pending" events. This is the same action the automated daily cron job performs.</p>
+            <form method="post">
+                <?php wp_nonce_field('caes_run_expiration_script_nonce'); ?>
+                <input type="hidden" name="caes_run_expiration_script_now" value="1">
+                <input type="submit" class="button button-primary" value="Run Expiration Script Now" onclick="return confirm('Are you sure you want to run the expiration script? This will immediately change the status of any past events to EXPIRED.');">
+            </form>
+        </div>
 
         <hr>
 
-        <?php
-        // 3. If the form was submitted, run the test
-        if (isset($_POST['caes_run_expiration_test']) && check_admin_referer('caes_run_expiration_test_nonce')) {
-            caes_run_expiration_debug_test();
-        }
-        ?>
+        <div class="card">
+            <h2 class="title">Run a "Dry Run" Debugging Test</h2>
+            <p>This will simulate the expiration check without making any changes to your events. Use this to see which events the script *would* expire if it were run.</p>
+            <form method="post">
+                <?php wp_nonce_field('caes_run_expiration_test_nonce'); ?>
+                <input type="hidden" name="caes_run_expiration_test" value="1">
+                <p><input type="submit" class="button button-secondary" value="Run Debugging Test"></p>
+            </form>
+
+            <?php
+            // If the debug test form was submitted, show the results
+            if (isset($_POST['caes_run_expiration_test']) && check_admin_referer('caes_run_expiration_test_nonce')) {
+                caes_run_expiration_debug_test();
+            }
+            ?>
+        </div>
     </div>
     <?php
 }
 
-// 4. The main debugging test function
+// 3. The main debugging test function (no changes to database)
 function caes_run_expiration_debug_test() {
     echo '<h2>Test Results:</h2>';
 
@@ -1481,36 +1502,21 @@ function caes_run_expiration_debug_test() {
 
     foreach ($events as $event) {
         $event_id = $event->ID;
+        
+        $last_event_date = null;
+        $end_date = get_post_meta($event_id, 'end_date', true);
+        $start_date = get_post_meta($event_id, 'start_date', true);
 
-        // --- Start capturing output for this event ---
-        ob_start();
-
-        echo '<strong>Event Date Type:</strong> ';
-        $date_type = get_post_meta($event_id, 'event_date_type', true);
-        echo '<code>' . ($date_type ? $date_type : 'Not Set') . '</code><br>';
-
-        if ($date_type === 'single') {
-            $end_date = get_post_meta($event_id, 'end_date', true);
-            $start_date = get_post_meta($event_id, 'start_date', true);
-            echo '<strong>End Date Found:</strong> <code>' . ($end_date ? $end_date : 'Not Set') . '</code><br>';
-            echo '<strong>Start Date Found:</strong> <code>' . ($start_date ? $start_date : 'Not Set') . '</code><br>';
-        } elseif ($date_type === 'multi') {
-            $row_count = (int) get_post_meta($event_id, 'date_and_time', true);
-            echo '<strong>Multi-Day Rows:</strong> <code>' . $row_count . '</code><br>';
-            if ($row_count > 0) {
-                echo '<ul>';
-                for ($i = 0; $i < $row_count; $i++) {
-                    $date_entry = get_post_meta($event_id, 'date_and_time_' . $i . '_start_date_copy', true);
-                    echo '<li>Row ' . $i . ' Date: <code>' . ($date_entry ? $date_entry : 'Not Set') . '</code></li>';
-                }
-                echo '</ul>';
-            }
+        if (!empty($end_date)) {
+            $last_event_date = $end_date;
+        } elseif (!empty($start_date)) {
+            $last_event_date = $start_date;
         }
 
-        $data_check_output = ob_get_clean();
-        // --- End capturing output ---
+        $data_check_output = '<strong>End Date Found:</strong> <code>' . ($end_date ? $end_date : 'Not Set') . '</code><br>';
+        $data_check_output .= '<strong>Start Date Found:</strong> <code>' . ($start_date ? $start_date : 'Not Set') . '</code><br>';
+        $data_check_output .= '<strong>Date Used for Check:</strong> <code>' . ($last_event_date ? $last_event_date : 'None') . '</code>';
         
-        // Now, get the final decision from the function
         $is_expired = is_event_expired($event_id);
 
         echo '<tr>';
@@ -1518,13 +1524,42 @@ function caes_run_expiration_debug_test() {
         echo '<td>' . $data_check_output . '</td>';
         
         if ($is_expired) {
-            echo '<td style="background-color: #f8d7da; color: #721c24;"><strong>Expired</strong></td>';
+            echo '<td style="background-color: #f8d7da; color: #721c24;"><strong>Will Expire</strong></td>';
         } else {
-            echo '<td style="background-color: #d4edda; color: #155724;">Not Expired</td>';
+            echo '<td style="background-color: #d4edda; color: #155724;">Will Not Expire</td>';
         }
         
         echo '</tr>';
     }
 
     echo '</tbody></table>';
+}
+
+/**
+ * 4. NEW Function to MANUALLY run the expiration and return a count.
+ * This function makes actual changes to the database.
+ *
+ * @return int The number of posts that were expired.
+ */
+function caes_run_expiration_script_manually() {
+    $expired_count = 0;
+    
+    $events = get_posts(array(
+        'post_type'      => 'events',
+        'posts_per_page' => -1,
+        'post_status'    => ['publish', 'pending'],
+        'fields'         => 'ids'
+    ));
+    
+    foreach ($events as $event_id) {
+        if (is_event_expired($event_id)) {
+            wp_update_post(array(
+                'ID' => $event_id,
+                'post_status' => 'expired'
+            ));
+            $expired_count++;
+        }
+    }
+    
+    return $expired_count;
 }
