@@ -3,6 +3,7 @@
     font-size: var(--wp--preset--font-size--small);
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     border-radius: 3px;
     box-shadow: var(--wp--preset--shadow--small);
 
@@ -24,7 +25,7 @@
     &.new {
         background-color: var(--wp--preset--color--bulldog-red);
         color: var(--wp--preset--color--base);
-        min-width: 50px;
+        min-width: 60px;
         
         &::before {
             background-image: url('../images/star.svg');
