@@ -566,6 +566,15 @@ figcaption a {
     }
 }
 
+// More print overrides
+
+@media print {
+    .caes-hub-content-bottom-meta .wp-block-columns>.wp-block-column:first-child {
+        display: none;
+    }
+}
+
+
 /* Additional Styles */
 
 @import 'blocks/_custom-block-styles.scss';
