@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Block render callback for the Print Button.
  *
@@ -35,7 +36,9 @@ if ($post_type === 'publications') {
 
     // If we found any valid PDF URL, change the print action to use our custom JS function.
     if (!is_null($final_pdf_url)) {
-        $print_action = "printPdf('" . esc_js($final_pdf_url) . "')";
+        // Force the URL to be protocol-relative and then add HTTPS
+        $secure_pdf_url = 'https:' . str_replace(['http:', 'https:'], '', $final_pdf_url);
+        $print_action = "printPdf('" . esc_js($secure_pdf_url) . "')";
     }
 }
 
@@ -78,15 +81,16 @@ $publication_number = get_field('publication_number', $post_id);
 <?php endif; ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?>>
-    <button class="caes-hub-action-print__button" 
-            onclick="<?php echo $print_action; // This is now dynamic ?>"
-            data-page-title="<?php echo esc_attr($page_title); ?>"
-            data-page-url="<?php echo esc_attr($path_url); ?>"
-            data-content-type="<?php echo esc_attr($post_type); ?>"
-            <?php if ($publication_number): ?>
-            data-publication-number="<?php echo esc_attr($publication_number); ?>"
-            <?php endif; ?>
-            data-action-type="print">
+    <button class="caes-hub-action-print__button"
+        onclick="<?php echo $print_action; // This is now dynamic 
+                    ?>"
+        data-page-title="<?php echo esc_attr($page_title); ?>"
+        data-page-url="<?php echo esc_attr($path_url); ?>"
+        data-content-type="<?php echo esc_attr($post_type); ?>"
+        <?php if ($publication_number): ?>
+        data-publication-number="<?php echo esc_attr($publication_number); ?>"
+        <?php endif; ?>
+        data-action-type="print">
         <span class="label">Print</span>
     </button>
 </div>
