@@ -1085,3 +1085,43 @@ function update_latest_publish_date_on_save($post_id) {
     }
 }
 add_action('acf/save_post', 'update_latest_publish_date_on_save', 20);
+
+/**
+ * Automatically sorts publication series archives by the numeric part of the 'publication_number' field.
+ *
+ * This function hooks into the main WordPress query and applies custom sorting
+ * only on the front-end for 'publication_series' taxonomy archives.
+ *
+ * @param WP_Query $query The main WP_Query object.
+ */
+function custom_sort_publication_series_archives( $query ) {
+    // We only want to run this on the front-end, for the main query, on a publication series archive.
+    if ( ! is_admin() && $query->is_main_query() && $query->is_tax('publication_series') ) {
+
+        // Set the meta key to ensure the postmeta table is joined correctly.
+        $query->set('meta_key', 'publication_number');
+
+        // Add a temporary filter to modify the SQL's ORDER BY clause.
+        add_filter( 'posts_orderby', 'custom_series_numeric_orderby', 10, 2 );
+    }
+}
+add_action( 'pre_get_posts', 'custom_sort_publication_series_archives' );
+
+/**
+ * Helper function to apply the custom SQL sorting logic.
+ *
+ * @param string   $orderby The original ORDER BY clause.
+ * @param WP_Query $query   The WP_Query object (unused here, but required by the filter).
+ * @return string The modified ORDER BY clause.
+ */
+function custom_series_numeric_orderby( $orderby, $query ) {
+    global $wpdb;
+
+    // Remove this filter immediately so it doesn't affect other queries.
+    remove_filter( current_filter(), __FUNCTION__, 10 );
+
+    // Sort by the number after the last dash in the 'publication_number' field.
+    $orderby = "CAST(SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, '-', -1) AS UNSIGNED) ASC";
+
+    return $orderby;
+}
