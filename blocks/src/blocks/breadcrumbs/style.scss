@@ -85,3 +85,12 @@
 		}
 	}
 }
+
+// Print styles
+@media print {
+	.wp-block-caes-hub-breadcrumbs {
+		.breadcrumb-list {
+			display: none;
+		}
+	}
+}

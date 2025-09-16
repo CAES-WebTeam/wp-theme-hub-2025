@@ -56,11 +56,14 @@
             border-left: 1px solid rgba(0, 0, 0, 0.3);
             padding: 0.4rem 0;
             position: relative;
+
             &.active>a {
                 font-weight: bold;
             }
+
             &.active {
                 border-left: 1px solid transparent;
+
                 &::before {
                     content: "➤";
                     color: var(--wp--preset--color--bulldog-red);
@@ -193,5 +196,13 @@
 @media (max-width: 768px) {
     .toc-scroll-wrapper {
         max-height: none;
+    }
+}
+
+// Print styles
+@media print {
+    .wp-block-caes-hub-toc-new {
+        padding: 0 !important;
+        background-color: transparent !important;
     }
 }

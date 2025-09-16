@@ -114,6 +114,17 @@ figcaption a {
     }
 }
 
+// Print view
+@media print {
+    .wp-block-columns.caes-hub-pub-columns {
+        .caes-hub-pub-columns-nav-stack {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            flex-direction: row;
+        }
+    }
+}
+
 
 @media screen and (max-width: 1150px) {
 
@@ -217,6 +228,7 @@ figcaption a {
     }
 
     .caes-hub-main-wrapper {
+        margin-block-start: 0 !important;
         padding: 0 !important;
         position: unset !important;
     }

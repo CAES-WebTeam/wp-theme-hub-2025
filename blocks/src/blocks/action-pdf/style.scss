@@ -35,3 +35,12 @@
         }
     }
 }
+
+// Print styles
+@media print {
+    .wp-block-caes-hub-action-pdf {
+        a.button-link {
+            display: none;
+        }
+    }
+}
