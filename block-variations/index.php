@@ -233,6 +233,21 @@ function variations_query_filter($query, $block)
             $query['post_type'] = ['post', 'shorthand_story'];
             unset($query['postType']);
 
+            // Exclude "Feed the Future Peanut Lab" topic ---
+            // First, find the term we want to exclude.
+            $peanut_lab_term = get_term_by('name', 'Feed the Future Peanut Lab', 'topics');
+
+            // Check if the term exists and if we are NOT on its specific archive page.
+            if ($peanut_lab_term && !is_tax('topics', $peanut_lab_term->term_id)) {
+                // Add a tax query to exclude posts from this term.
+                $tax_query[] = [
+                    'taxonomy' => 'topics',
+                    'field'    => 'term_id',
+                    'terms'    => $peanut_lab_term->term_id,
+                    'operator' => 'NOT IN',
+                ];
+            }
+            
             // Filter by author (expert OR author) if on author archive
             if (is_author()) {
                 $author_id = get_queried_object_id();
