@@ -564,6 +564,17 @@ figcaption a {
     }
 }
 
+/* Content bottom meta */
+
+@media print {
+    .caes-hub-content-bottom-meta {
+        padding: 0 !important;
+        .wp-block-columns > .wp-block-column:empty {
+            display: none !important;
+        }
+    }
+}
+
 
 /* Additional Styles */
 
