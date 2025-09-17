@@ -830,3 +830,45 @@ function protect_soft_publish_status($data, $postarr) {
     return $data;
 }
 add_filter('wp_insert_post_data', 'protect_soft_publish_status', 10, 2);
+
+/**
+ * Add a comprehensive set of favicon links to the theme head.
+ * This function is tailored to a specific list of icon files and includes
+ * the browserconfig.xml for Microsoft tiles.
+ */
+function my_theme_add_favicon_final() {
+    // Define the path to your favicons folder
+    $favicon_path = get_template_directory_uri() . '/assets/images/favicons/';
+
+    // -- Standard & PNG Favicons --
+    echo '';
+    echo '<link rel="icon" type="image/x-icon" href="' . esc_url($favicon_path . 'favicon.ico') . '">';
+    echo '<link rel="icon" type="image/png" sizes="16x16" href="' . esc_url($favicon_path . 'favicon-16x16.png') . '">';
+    echo '<link rel="icon" type="image/png" sizes="32x32" href="' . esc_url($favicon_path . 'favicon-32x32.png') . '">';
+    echo '<link rel="icon" type="image/png" sizes="96x96" href="' . esc_url($favicon_path . 'favicon-96x96.png') . '">';
+    echo '<link rel="icon" type="image/png" sizes="128x128" href="' . esc_url($favicon_path . 'favicon-128.png') . '">';
+    echo '<link rel="icon" type="image/png" sizes="196x196" href="' . esc_url($favicon_path . 'favicon-196x196.png') . '">';
+
+    // -- Apple Touch Icons --
+    echo '';
+    echo '<link rel="apple-touch-icon" sizes="57x57" href="' . esc_url($favicon_path . 'apple-touch-icon-57x57.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="60x60" href="' . esc_url($favicon_path . 'apple-touch-icon-60x60.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="72x72" href="' . esc_url($favicon_path . 'apple-touch-icon-72x72.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="76x76" href="' . esc_url($favicon_path . 'apple-touch-icon-76x76.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="114x114" href="' . esc_url($favicon_path . 'apple-touch-icon-114x114.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="120x120" href="' . esc_url($favicon_path . 'apple-touch-icon-120x120.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="144x144" href="' . esc_url($favicon_path . 'apple-touch-icon-144x144.png') . '">';
+    echo '<link rel="apple-touch-icon" sizes="152x152" href="' . esc_url($favicon_path . 'apple-touch-icon-152x152.png') . '">';
+
+    // -- Microsoft Tile Icons & Theme Color --
+    echo '';
+    echo '<meta name="msapplication-TileColor" content="#004E60">';
+    echo '<meta name="msapplication-TileImage" content="' . esc_url($favicon_path . 'mstile-144x144.png') . '">';
+    echo '<meta name="theme-color" content="#004E60">';
+    
+    // Link to browserconfig.xml
+    echo '<meta name="msapplication-config" content="' . esc_url($favicon_path . 'ieconfig.xml') . '">';
+}
+
+// Hook the function into the wp_head action
+add_action('wp_head', 'my_theme_add_favicon_final');
