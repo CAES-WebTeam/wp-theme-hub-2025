@@ -118,12 +118,18 @@ figcaption a {
 @media print {
     .caes-hub-pub-columns {
         margin-top: 0 !important;
+
         .wp-block-column[style*="flex-basis:250px"] {
             display: none !important;
         }
     }
+
     .caes-hub-pub-columns-nav-stack {
         display: none !important;
+    }
+
+    .caes-hub-pub-disclaimer .wp-block-columns .wp-block-column:first-child {
+        flex-basis: 33.3% !important;
     }
 }
 
