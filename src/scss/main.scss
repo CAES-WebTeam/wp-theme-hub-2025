@@ -116,6 +116,12 @@ figcaption a {
 
 // Print view
 @media print {
+    .caes-hub-pub-columns {
+        margin-top: 0 !important;
+        .wp-block-column[style*="flex-basis:250px"] {
+            display: none !important;
+        }
+    }
     .caes-hub-pub-columns-nav-stack {
         display: none !important;
     }
