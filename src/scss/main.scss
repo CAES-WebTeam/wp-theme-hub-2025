@@ -116,7 +116,7 @@ figcaption a {
 
 // Print view
 @media print {
-    .wp-block-columns.caes-hub-pub-columns:has(.caes-hub-pub-columns-nav-stack) {
+    .wp-block-columns.caes-hub-pub-columns:has(> .caes-hub-pub-columns-nav-stack) {
         display: none;
     }
 }
