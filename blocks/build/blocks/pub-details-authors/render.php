@@ -98,6 +98,7 @@ if (!function_exists('process_people')) {
                 $last_name = '';
                 $title = '';
                 $profile_url = '';
+                $display_name = ''; // FIX: Initialize display_name for each person.
 
                 if ($entry_type === 'Custom') {
                     // Handle custom user entry - check both possible field names
