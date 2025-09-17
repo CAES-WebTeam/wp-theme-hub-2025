@@ -116,10 +116,8 @@ figcaption a {
 
 // Print view
 @media print {
-    .wp-block-columns.caes-hub-pub-columns {
-        .caes-hub-pub-columns-nav-stack {
-            display: none !important;
-        }
+    .wp-block-columns.caes-hub-pub-columns:has(.caes-hub-pub-columns-nav-stack) {
+        display: none;
     }
 }
 
@@ -569,7 +567,9 @@ figcaption a {
 @media print {
     .caes-hub-content-bottom-meta {
         padding: 0 !important;
-        .wp-block-columns > .wp-block-column:empty {
+        margin: 1rem !important;
+
+        .wp-block-columns>.wp-block-column:empty {
             display: none !important;
         }
     }
