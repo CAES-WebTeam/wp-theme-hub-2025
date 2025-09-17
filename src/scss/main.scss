@@ -131,6 +131,10 @@ figcaption a {
     .caes-hub-pub-disclaimer .wp-block-columns .wp-block-column:first-child {
         flex-basis: 25% !important;
     }
+
+    .caes-hub-pub-disclaimer .wp-block-columns .wp-block-column:last-child {
+        flex-basis: 65% !important;
+    }
 }
 
 
