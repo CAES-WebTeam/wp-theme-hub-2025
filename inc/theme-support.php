@@ -868,6 +868,10 @@ function my_theme_add_favicon_final() {
     
     // Link to browserconfig.xml
     echo '<meta name="msapplication-config" content="' . esc_url($favicon_path . 'ieconfig.xml') . '">';
+
+    // App name for when saved to home screen on mobile devices
+    echo '<meta name="application-name" content="' . esc_attr($site_name) . '">';
+    echo '<meta name="apple-mobile-web-app-title" content="' . esc_attr($site_name) . '">';
 }
 
 // Hook the function into the wp_head action
