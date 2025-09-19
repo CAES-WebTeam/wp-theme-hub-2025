@@ -925,7 +925,8 @@ function generate_publication_pdf_file($post_id)
         $file_url = $upload_dir['baseurl'] . $cache_subdir . $filename;
 
         // Initialize MYPDF object.
-        $pdf = new MYPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        // $pdf = new MYPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf = new MYPDF('P', 'mm', 'LETTER', true, 'UTF-8', false);
         $pdf->setPublicationTitleForFooter($publication_title);
         $pdf->setPublicationNumberForFooter($publication_number);
         $pdf->setPostId($post_id);
