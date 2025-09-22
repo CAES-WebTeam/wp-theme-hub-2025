@@ -9,7 +9,8 @@ if (!defined('ABSPATH')) {
 }
 
 // Include the PDF generation utility and queue functions
-require_once get_template_directory() . '/inc/publications-pdf/publications-pdf.php'; // The modified PDF generation logic
+// require_once get_template_directory() . '/inc/publications-pdf/publications-pdf.php'; // The modified PDF generation logic
+require_once get_template_directory() . '/inc/publications-pdf/publications-pdf-mpdf.php'; // The mPDF version
 require_once get_template_directory() . '/inc/publications-pdf/pdf-queue.php';   // The queue functions
 
 /**
