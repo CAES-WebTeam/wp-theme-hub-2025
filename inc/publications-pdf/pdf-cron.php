@@ -65,7 +65,9 @@ function process_pdf_generation_queue() {
         update_pdf_queue_status($queue_item_id, 'processing', 'Started PDF generation.');
 
         // Attempt to generate the PDF file
-        $pdf_url = generate_publication_pdf_file($post_id); // This is our modified function
+        // $pdf_url = generate_publication_pdf_file($post_id); // This is our modified function
+        // Use the mPDF version
+        $pdf_url = generate_publication_pdf_file_mpdf($post_id);
 
         if ($pdf_url) {
             // Update ACF field with the PDF URL

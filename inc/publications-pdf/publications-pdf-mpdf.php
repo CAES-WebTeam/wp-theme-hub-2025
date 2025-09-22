@@ -1,0 +1,471 @@
+<?php
+// ===================
+// PUBLICATION DYNAMIC PDF GENERATION UTILITY - mPDF VERSION
+// This file contains the logic for generating a PDF using mPDF instead of TCPDF.
+// ===================
+
+require_once get_template_directory() . '/vendor/autoload.php';
+use Mpdf\Mpdf;
+use Mpdf\HTMLParserMode;
+
+// Reuse your existing helper functions (these don't need TCPDF)
+// Keep: normalize_hyphens_for_pdf, format_publication_number_for_display, get_latest_published_date
+
+function normalize_hyphens_for_pdf($content)
+{
+    $replacements = [
+        'Ã¢â‚¬' => '-',        
+        'ÃƒÂ¢Ã¢â€šÂ¬' => '-',     
+        "\u{2010}" => '-',
+    ];
+    $content = str_replace(array_keys($replacements), array_values($replacements), $content);
+    return $content;
+}
+
+function format_publication_number_for_display($publication_number)
+{
+    $originalPubNumber = $publication_number;
+    $displayPubNumber = $originalPubNumber;
+    $pubType = '';
+
+    if ($originalPubNumber) {
+        $prefix = strtoupper(substr($originalPubNumber, 0, 2));
+        $firstChar = strtoupper(substr($originalPubNumber, 0, 1));
+
+        switch ($prefix) {
+            case 'AP':
+                $pubType = 'Annual Publication';
+                $displayPubNumber = substr($originalPubNumber, 2);
+                break;
+            case 'TP':
+                $pubType = 'Temporary Publication';
+                $displayPubNumber = substr($originalPubNumber, 2);
+                break;
+            default:
+                switch ($firstChar) {
+                    case 'B':
+                        $pubType = 'Bulletin';
+                        $displayPubNumber = substr($originalPubNumber, 1);
+                        break;
+                    case 'C':
+                        $pubType = 'Circular';
+                        $displayPubNumber = substr($originalPubNumber, 1);
+                        break;
+                    default:
+                        $pubType = 'Publication';
+                        break;
+                }
+                break;
+        }
+    }
+
+    $displayPubNumber = trim($displayPubNumber);
+    $formatted_pub_number_string = '';
+    if (!empty($pubType) && !empty($displayPubNumber)) {
+        $formatted_pub_number_string = $pubType . ' ' . $displayPubNumber;
+    } elseif (!empty($displayPubNumber)) {
+        $formatted_pub_number_string = $displayPubNumber;
+    }
+
+    return $formatted_pub_number_string;
+}
+
+function get_latest_published_date($post_id)
+{
+    $history = get_field('history', $post_id);
+    $published_statuses = [2, 4, 5, 6];
+    
+    $latest_date = '';
+    $latest_status = 0;
+    $latest_timestamp = 0;
+
+    if ($history && is_array($history)) {
+        foreach ($history as $item) {
+            $status = isset($item['status']) ? intval($item['status']) : 0;
+            $date = isset($item['date']) ? $item['date'] : '';
+
+            if (in_array($status, $published_statuses) && !empty($date)) {
+                $timestamp = strtotime($date);
+                if ($timestamp > $latest_timestamp) {
+                    $latest_timestamp = $timestamp;
+                    $latest_date = $date;
+                    $latest_status = $status;
+                }
+            }
+        }
+    }
+
+    return [
+        'date' => $latest_date,
+        'status' => $latest_status
+    ];
+}
+
+// Enhanced table and content processing for mPDF
+function process_content_for_mpdf($content)
+{
+    // Normalize hyphens first
+    $content = normalize_hyphens_for_pdf($content);
+    
+    // Process images - much simpler with mPDF
+    $content = preg_replace_callback(
+        '/<img([^>]*)>/i',
+        function ($matches) {
+            $img_attributes = $matches[1];
+            
+            // Remove existing width/height attributes
+            $img_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $img_attributes);
+            $img_attributes = preg_replace('/\s*width\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $img_attributes);
+            $img_attributes = preg_replace('/\s*height\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $img_attributes);
+            
+            // Add responsive styling
+            $img_attributes .= ' style="max-width: 70%; height: auto; display: block; margin: 15px auto;"';
+            
+            return '<img' . $img_attributes . '>';
+        },
+        $content
+    );
+    
+    // Process figure captions - much easier with mPDF
+    $content = preg_replace_callback(
+        '/<figcaption([^>]*)>(.*?)<\/figcaption>/is',
+        function ($matches) {
+            $caption_attributes = $matches[1];
+            $caption_content = $matches[2];
+            
+            return '<div class="figure-caption" style="text-align: center; font-weight: bold; font-size: 11px; margin: 10px 0 5px 0;">' . $caption_content . '</div>';
+        },
+        $content
+    );
+    
+    // Handle table captions
+    $content = preg_replace_callback(
+        '/<table([^>]*?)>(.*?)<\/table>/is',
+        function ($matches) {
+            $table_attrs = $matches[1];
+            $table_content = $matches[2];
+            
+            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_content, $caption_matches)) {
+                $caption_content = trim($caption_matches[1]);
+                $clean_table_content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_content);
+                $clean_table = '<table' . $table_attrs . '>' . $clean_table_content . '</table>';
+                $caption_p = '<div class="table-caption" style="font-weight: bold; text-align: center; margin: 10px 0 5px 0; font-size: 11px;">' . $caption_content . '</div>';
+                return $caption_p . $clean_table;
+            }
+            
+            return $matches[0];
+        },
+        $content
+    );
+    
+    return $content;
+}
+
+// Get CSS for mPDF - much cleaner than TCPDF preprocessing
+function get_mpdf_styles()
+{
+    return '
+        body { 
+            font-family: "Georgia", serif; 
+            font-size: 12px; 
+            line-height: 1.4; 
+        }
+        
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            margin: 8px 0; 
+            page-break-inside: avoid; 
+        }
+        
+        table th, table td { 
+            border: 1px solid #333333; 
+            padding: 4px 6px; 
+            text-align: left; 
+            vertical-align: top; 
+            font-size: 10px; 
+            word-wrap: break-word; 
+        }
+        
+        table th { 
+            background-color: #e8e8e8; 
+            font-weight: bold; 
+        }
+        
+        .figure-caption, .table-caption { 
+            font-weight: bold; 
+            text-align: center; 
+            font-size: 11px; 
+            line-height: 1.4; 
+        }
+        
+        .page-break { 
+            page-break-before: always; 
+        }
+    ';
+}
+
+// Generate regular footer HTML for content pages
+function generate_regular_footer_html($post_id, $publication_title, $publication_number)
+{
+    $formatted_pub_number_string = format_publication_number_for_display($publication_number);
+    $footer_text_prefix = 'UGA Cooperative Extension ';
+    $left_content = $footer_text_prefix . $formatted_pub_number_string . ' | <strong>' . $publication_title . '</strong>';
+    
+    return '
+    <table width="100%" style="font-size: 8px; font-family: Georgia;">
+        <tr>
+            <td style="text-align: left; width: 85%;">' . $left_content . '</td>
+            <td style="text-align: right; width: 15%;">{PAGENO}</td>
+        </tr>
+    </table>';
+}
+
+// Generate special last page footer HTML
+function generate_last_page_footer_html($post_id, $publication_number)
+{
+    $formatted_pub_number_string = format_publication_number_for_display($publication_number);
+    $latest_published_info = get_latest_published_date($post_id);
+    
+    $status_labels = [
+        1 => 'Unpublished/Removed',
+        2 => 'Published',
+        4 => 'Published with Minor Revisions',
+        5 => 'Published with Major Revisions',
+        6 => 'Published with Full Review',
+        7 => 'Historic/Archived',
+        8 => 'In Review for Minor Revisions',
+        9 => 'In Review for Major Revisions',
+        10 => 'In Review'
+    ];
+    
+    $publish_history_text = '';
+    if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
+        $status_label = isset($status_labels[$latest_published_info['status']]) ? $status_labels[$latest_published_info['status']] : 'Published';
+        $publish_history_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
+    }
+    
+    $permalink_url = get_permalink($post_id);
+    $permalink_text = '';
+    if (!empty($permalink_url)) {
+        $permalink_text = 'The permalink for this UGA Extension publication is <a href="' . esc_url($permalink_url) . '">' . esc_html($permalink_url) . '</a>';
+    }
+    
+    $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
+    
+    return '
+    <div style="font-size: 7px; text-align: center; margin-bottom: 8px;">' . $permalink_text . '</div>
+    <hr style="border: 0; border-top: 1px solid #000; margin: 2px 0;">
+    <table width="100%" style="font-size: 8px; font-family: Georgia; margin: 2px 0;">
+        <tr>
+            <td style="text-align: left; width: 50%; font-weight: bold;">' . $formatted_pub_number_string . '</td>
+            <td style="text-align: right; width: 50%;">' . $publish_history_text . '</td>
+        </tr>
+    </table>
+    <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0 2px 0;">
+    <div style="font-size: 7px; text-align: left; line-height: 1.4;">' . $footer_paragraph . '</div>';
+}
+
+/**
+ * Generates a PDF version of a publication using mPDF
+ */
+function generate_publication_pdf_file_mpdf($post_id)
+{
+    try {
+        // Retrieve and validate post
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'publications') {
+            error_log('mPDF Generation: Invalid post or post type for ID: ' . $post_id);
+            return false;
+        }
+
+        // Gather all the data (same as TCPDF version)
+        $publication_title = $post->post_title;
+        $publication_number = get_field('publication_number', $post_id);
+        
+        if (empty($publication_number)) {
+            error_log('mPDF Generation: No publication number found for post ID: ' . $post_id);
+            $publication_number = 'publication-' . $post_id;
+        }
+
+        // Get authors data
+        $authors_data = get_field('authors', $post_id, false);
+        $author_names = [];
+        $author_lines = [];
+        
+        if ($authors_data) {
+            foreach ($authors_data as $item) {
+                $user_id = null;
+                if (isset($item['user']) && !empty($item['user'])) {
+                    $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
+                }
+                
+                if (empty($user_id) && is_array($item)) {
+                    foreach ($item as $key => $value) {
+                        if (is_numeric($value) && $value > 0) {
+                            $user_id = $value;
+                            break;
+                        }
+                    }
+                }
+
+                if ($user_id && is_numeric($user_id)) {
+                    $first_name = get_the_author_meta('first_name', $user_id);
+                    $last_name = get_the_author_meta('last_name', $user_id);
+                    $author_title = get_the_author_meta('title', $user_id);
+
+                    if ($first_name || $last_name) {
+                        $full_name = trim("$first_name $last_name");
+                        $author_names[] = $full_name;
+                        $author_line = '<strong>' . esc_html($full_name) . '</strong>';
+                        if (!empty($author_title)) {
+                            $author_line .= ', ' . esc_html($author_title);
+                        }
+                        $author_lines[] = $author_line;
+                    }
+                }
+            }
+        }
+        
+        $formatted_authors = implode(', ', $author_names);
+        
+        // Get topics for keywords
+        $topics_terms = get_the_terms($post_id, 'topics');
+        $keyword_terms = [];
+        if ($topics_terms && !is_wp_error($topics_terms)) {
+            foreach ($topics_terms as $term) {
+                $keyword_terms[] = $term->name;
+            }
+        }
+        $formatted_keywords = implode(', ', $keyword_terms);
+        if (empty($formatted_keywords)) {
+            $formatted_keywords = 'Expert Resource';
+        }
+
+        // Get featured image
+        $featured_image_url = '';
+        if (has_post_thumbnail($post_id)) {
+            $featured_image_id = get_post_thumbnail_id($post_id);
+            $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
+            if ($featured_image_array) {
+                $featured_image_url = $featured_image_array[0];
+            }
+        }
+
+        $latest_published_info = get_latest_published_date($post_id);
+        $latest_published_date = $latest_published_info['date'];
+
+        // File path setup (same as TCPDF)
+        $upload_dir = wp_upload_dir();
+        $cache_subdir = '/generated-pub-pdfs/';
+        $cache_dir_path = $upload_dir['basedir'] . $cache_subdir;
+        if (!file_exists($cache_dir_path)) {
+            wp_mkdir_p($cache_dir_path);
+        }
+
+        $filename = sanitize_file_name($publication_number . '.pdf');
+        $file_path = $cache_dir_path . $filename;
+        $file_url = $upload_dir['baseurl'] . $cache_subdir . $filename;
+
+        // Initialize mPDF
+        $mpdf = new Mpdf([
+            'format' => 'Letter',
+            'orientation' => 'P',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => 15,
+            'margin_bottom' => 20,
+            'margin_header' => 0,
+            'margin_footer' => 10,
+            'default_font' => 'Georgia'
+        ]);
+
+        // Set metadata
+        $mpdf->SetCreator('UGA Extension');
+        $mpdf->SetAuthor($formatted_authors);
+        $mpdf->SetTitle($publication_title);
+        $mpdf->SetKeywords($formatted_keywords);
+        $mpdf->SetSubject('ADA Compliant Publication');
+
+        // Add custom styles
+        $css = get_mpdf_styles();
+        $mpdf->WriteHTML($css, HTMLParserMode::HEADER_CSS);
+
+        // COVER PAGE - No header/footer
+        $mpdf->SetHTMLHeader('');
+        $mpdf->SetHTMLFooter('');
+
+        // Build cover page HTML
+        $cover_html = '<div>';
+        
+        // Featured image if exists
+        if (!empty($featured_image_url)) {
+            $cover_html .= '<img src="' . $featured_image_url . '" style="width: 100%; height: auto; margin-bottom: 20px;">';
+        }
+
+        // Extension logo
+        $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
+        if (file_exists($extension_logo_path)) {
+            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px;">';
+        }
+
+        // Title
+        $cover_html .= '<h1 style="font-size: 24px; font-weight: bold; margin: 20px 0 10px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
+
+        // Authors
+        if (!empty($author_lines)) {
+            $cover_html .= '<div style="margin: 10px 0; line-height: 1.3;">' . implode('<br>', $author_lines) . '</div>';
+        }
+
+        // Publication date and number
+        if (!empty($latest_published_date)) {
+            $formatted_pub_number = format_publication_number_for_display($publication_number);
+            $date_text = '';
+            if (!empty($formatted_pub_number)) {
+                $date_text = $formatted_pub_number . ' published on ' . esc_html($latest_published_date);
+            } else {
+                $date_text = 'Published on ' . esc_html($latest_published_date);
+            }
+            $cover_html .= '<div style="margin: 15px 0; font-size: 11px;">' . $date_text . '</div>';
+        }
+
+        $cover_html .= '</div>';
+
+        $mpdf->WriteHTML($cover_html);
+
+        // CONTENT PAGES - With regular footer
+        $mpdf->AddPage();
+        
+        // Set regular footer for content pages
+        $regular_footer = generate_regular_footer_html($post_id, $publication_title, $publication_number);
+        $mpdf->SetHTMLFooter($regular_footer);
+
+        // Process and add main content
+        $post_content = $post->post_content;
+        if (is_array($post_content)) {
+            $post_content = implode('', $post_content);
+        } elseif (is_object($post_content)) {
+            $post_content = json_encode($post_content);
+        }
+
+        $processed_content = process_content_for_mpdf($post_content);
+        $mpdf->WriteHTML($processed_content);
+
+        // LAST PAGE - Add special footer
+        // Force a new page for the special footer
+        $mpdf->WriteHTML('<div class="page-break"></div>');
+        
+        // Set special last page footer
+        $last_page_footer = generate_last_page_footer_html($post_id, $publication_number);
+        $mpdf->SetHTMLFooter($last_page_footer);
+
+        // Save the PDF
+        $mpdf->Output($file_path, 'F');
+
+        return $file_url;
+
+    } catch (Exception $e) {
+        error_log('mPDF Generation Error for Post ID ' . $post_id . ': ' . $e->getMessage());
+        return false;
+    }
+}

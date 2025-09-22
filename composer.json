@@ -1,0 +1,13 @@
+{
+    "name": "uga-caes/wp-theme-hub-2025",
+    "description": "This is the official WordPress theme of the UGA CAES Field Report website.",
+    "type": "project",
+    "authors": [
+        {
+            "name": "CAES Web Team"
+        }
+    ],
+    "require": {
+        "mpdf/mpdf": "^8.2"
+    }
+}
