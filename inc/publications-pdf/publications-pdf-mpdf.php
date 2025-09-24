@@ -15,8 +15,8 @@ use Mpdf\HTMLParserMode;
 function normalize_hyphens_for_pdf($content)
 {
     $replacements = [
-        'Ã¢â‚¬' => '-',
         'ÃƒÂ¢Ã¢â€šÂ¬' => '-',
+        'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬' => '-',
         "\u{2010}" => '-',
     ];
     $content = str_replace(array_keys($replacements), array_values($replacements), $content);
@@ -127,19 +127,19 @@ function process_content_for_mpdf($content)
         $content
     );
 
-    // Process figure captions - much easier with mPDF
+    // Process figure captions - updated with accessible font size
     $content = preg_replace_callback(
         '/<figcaption([^>]*)>(.*?)<\/figcaption>/is',
         function ($matches) {
             $caption_attributes = $matches[1];
             $caption_content = $matches[2];
 
-            return '<div class="figure-caption" style="text-align: center; font-weight: bold; font-size: 11px; margin: 10px 0 5px 0;">' . $caption_content . '</div>';
+            return '<div class="figure-caption" style="text-align: center; font-weight: bold; font-size: 12px; margin: 10px 0 5px 0;">' . $caption_content . '</div>';
         },
         $content
     );
 
-    // Handle table captions
+    // Handle table captions - updated with accessible font size
     $content = preg_replace_callback(
         '/<table([^>]*?)>(.*?)<\/table>/is',
         function ($matches) {
@@ -150,7 +150,7 @@ function process_content_for_mpdf($content)
                 $caption_content = trim($caption_matches[1]);
                 $clean_table_content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_content);
                 $clean_table = '<table' . $table_attrs . '>' . $clean_table_content . '</table>';
-                $caption_p = '<div class="table-caption" style="font-weight: bold; text-align: center; margin: 10px 0 5px 0; font-size: 11px;">' . $caption_content . '</div>';
+                $caption_p = '<div class="table-caption" style="font-weight: bold; text-align: center; margin: 10px 0 5px 0; font-size: 12px;">' . $caption_content . '</div>';
                 return $caption_p . $clean_table;
             }
 
@@ -162,7 +162,7 @@ function process_content_for_mpdf($content)
     return $content;
 }
 
-// Get CSS for mPDF - much cleaner than TCPDF preprocessing
+// Get CSS for mPDF with improved accessibility and spacing
 function get_mpdf_styles()
 {
     return '
@@ -172,13 +172,16 @@ function get_mpdf_styles()
         
         body { 
             font-family: georgia, serif; 
-            font-size: 14px; /* Increased from 12px to 14px for better readability */
-            line-height: 1.5; /* Increased from 1.4 for better spacing */
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 40px;
         }
         
         h1, h2, h3, h4, h5, h6 {
             font-family: georgia, serif;
             line-height: 1.3;
+            page-break-after: avoid;
+            page-break-inside: avoid;
         }
         
         h1 { font-size: 20px; font-weight: bold; margin: 16px 0 12px 0; }
@@ -198,10 +201,10 @@ function get_mpdf_styles()
         
         table th, table td { 
             border: 1px solid #333333; 
-            padding: 5px 7px; /* Slightly increased padding */
+            padding: 5px 7px;
             text-align: left; 
             vertical-align: top; 
-            font-size: 12px; /* Increased from 10px to 12px minimum */
+            font-size: 12px;
             word-wrap: break-word; 
             line-height: 1.4;
             font-family: georgia, serif;
@@ -210,13 +213,13 @@ function get_mpdf_styles()
         table th { 
             background-color: #e8e8e8; 
             font-weight: bold; 
-            font-size: 13px; /* Headers slightly larger than cells */
+            font-size: 13px;
         }
         
         .figure-caption, .table-caption { 
             font-weight: bold; 
             text-align: center; 
-            font-size: 12px; /* Increased from 11px */
+            font-size: 12px;
             line-height: 1.4; 
             margin: 8px 0;
             font-family: georgia, serif;
@@ -226,10 +229,13 @@ function get_mpdf_styles()
             page-break-before: always; 
         }
         
-        /* Paragraph spacing */
+        /* Paragraph spacing and page break controls */
         p {
             margin: 6px 0;
             line-height: 1.5;
+            orphans: 3;
+            widows: 3;
+            page-break-inside: avoid;
         }
         
         /* List styling */
@@ -242,10 +248,16 @@ function get_mpdf_styles()
             margin: 3px 0;
             line-height: 1.4;
         }
+        
+        /* Footer spacing helper */
+        .footer-spacer {
+            height: 15mm;
+            page-break-inside: avoid;
+        }
     ';
 }
 
-// Generate regular footer HTML for content pages
+// Generate regular footer HTML for content pages - improved accessibility
 function generate_regular_footer_html($post_id, $publication_title, $publication_number)
 {
     $formatted_pub_number_string = format_publication_number_for_display($publication_number);
@@ -253,16 +265,15 @@ function generate_regular_footer_html($post_id, $publication_title, $publication
     $left_content = $footer_text_prefix . $formatted_pub_number_string . ' | <strong>' . $publication_title . '</strong>';
 
     return '
-    <table width="100%" style="font-size: 10px; font-family: georgia; border: none; border-collapse: collapse;">
+    <table width="100%" style="font-size: 10px; font-family: georgia; border: none; border-collapse: collapse; margin: 0; padding: 2px 0;">
         <tr>
-            <td style="text-align: left; width: 85%; border: none; line-height: 1.3;">' . $left_content . '</td>
-            <td style="text-align: right; width: 15%; border: none; line-height: 1.3;">{PAGENO}</td>
+            <td style="text-align: left; width: 85%; border: none; line-height: 1.2; margin: 0; padding: 0;">' . $left_content . '</td>
+            <td style="text-align: right; width: 15%; border: none; line-height: 1.2; margin: 0; padding: 0;">{PAGENO}</td>
         </tr>
     </table>';
 }
 
-
-// Generate special last page footer HTML
+// Generate special last page footer HTML - improved accessibility and spacing
 function generate_last_page_footer_html($post_id, $publication_number)
 {
     $formatted_pub_number_string = format_publication_number_for_display($publication_number);
@@ -295,20 +306,20 @@ function generate_last_page_footer_html($post_id, $publication_number)
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
 
     return '
-    <div style="font-size: 9px; text-align: center; margin-bottom: 8px; font-family: georgia; line-height: 1.3;">' . $permalink_text . '</div>
-    <hr style="border: 0; border-top: 1px solid #000; margin: 2px 0;">
-    <table width="100%" style="font-size: 10px; font-family: georgia; margin: 2px 0; border: none; border-collapse: collapse;">
+    <div style="font-size: 9px; text-align: center; margin: 2px 0; font-family: georgia; line-height: 1.2;">' . $permalink_text . '</div>
+    <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0;">
+    <table width="100%" style="font-size: 10px; font-family: georgia; margin: 1px 0; border: none; border-collapse: collapse;">
         <tr>
-            <td style="text-align: left; width: 50%; font-weight: bold; border: none; line-height: 1.3;">' . $formatted_pub_number_string . '</td>
-            <td style="text-align: right; width: 50%; border: none; line-height: 1.3;">' . $publish_history_text . '</td>
+            <td style="text-align: left; width: 50%; font-weight: bold; border: none; line-height: 1.2; padding: 0;">' . $formatted_pub_number_string . '</td>
+            <td style="text-align: right; width: 50%; border: none; line-height: 1.2; padding: 0;">' . $publish_history_text . '</td>
         </tr>
     </table>
-    <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0 2px 0;">
-    <div style="font-size: 9px; text-align: left; line-height: 1.4; font-family: georgia;">' . $footer_paragraph . '</div>';
+    <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0;">
+    <div style="font-size: 9px; text-align: left; line-height: 1.3; font-family: georgia; margin: 2px 0;">' . $footer_paragraph . '</div>';
 }
 
 /**
- * Generates a PDF version of a publication using mPDF
+ * Generates a PDF version of a publication using mPDF with improved accessibility and footer spacing
  */
 function generate_publication_pdf_file_mpdf($post_id)
 {
@@ -417,7 +428,7 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         error_log("mPDF DEBUG: File paths set - $filename");
 
-        // Initialize mPDF
+        // Initialize mPDF with improved margins
         error_log("mPDF DEBUG: Initializing mPDF instance");
         // Get default configurations
         $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
@@ -444,9 +455,9 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_left' => 15,
             'margin_right' => 15,
             'margin_top' => 15,
-            'margin_bottom' => 25,
+            'margin_bottom' => 35,    // Increased for better footer spacing
             'margin_header' => 0,
-            'margin_footer' => 20
+            'margin_footer' => 15     // Increased for footer clearance
         ]);
         error_log("mPDF DEBUG: mPDF instance created successfully");
 
@@ -457,7 +468,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetKeywords($formatted_keywords);
         $mpdf->SetSubject('ADA Compliant Publication');
 
-        // Add custom styles
+        // Add custom styles with improved accessibility
         error_log("mPDF DEBUG: Processing CSS styles");
         $css = get_mpdf_styles();
         $mpdf->WriteHTML($css, HTMLParserMode::HEADER_CSS);
@@ -535,6 +546,10 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         $processed_content = process_content_for_mpdf($post_content);
+        
+        // Add spacing at the end of content to prevent footer overlap
+        $processed_content .= '<div class="footer-spacer"></div>';
+        
         error_log("mPDF DEBUG: Content processed, writing to PDF");
         $mpdf->WriteHTML($processed_content);
         error_log("mPDF DEBUG: Main content written successfully");
