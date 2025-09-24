@@ -154,14 +154,14 @@ function get_mpdf_styles()
 {
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
-        body { font-family: "uga-serif", serif; font-size: 13px; line-height: 1.6; color: #333; }
+        body { font-family: "georgia", serif; font-size: 13px; line-height: 1.6; color: #333; }
         .cover-page { text-align: center; }
         .cover-logo { width: 200px; margin-bottom: 40px; }
         .cover-title { font-size: 32px; font-weight: bold; color: #000; margin: 20px 0; line-height: 1.3; }
         .cover-authors { font-size: 18px; color: #555; margin: 20px 0; }
         .cover-published-date { font-size: 14px; color: #777; margin-top: 40px; }
         
-        h1, h2, h3, h4, h5, h6 { font-family: "uga-sans", sans-serif; color: #000; }
+        h1, h2, h3, h4, h5, h6 { font-family: "georgia", serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
         h2 { font-size: 20px; font-weight: bold; margin: 22px 0 10px 0; }
         h3 { font-size: 18px; font-weight: bold; margin: 20px 0 8px 0; }
