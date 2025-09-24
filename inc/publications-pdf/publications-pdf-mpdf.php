@@ -249,16 +249,16 @@ function generate_last_page_footer_html($post_id, $publication_number)
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
 
     return '
-    <div style="font-size: 9px; text-align: center; padding-bottom: 15px; font-family: georgia; line-height: 1.2;">' . $permalink_text . '</div>
+    <div style="font-size: 10px; text-align: center; padding-bottom: 15px; font-family: georgia; line-height: 1.2;">' . $permalink_text . '</div>
     <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0;">
-    <table width="100%" style="font-size: 10px; font-family: georgia; margin: 1px 0; border: none; border-collapse: collapse;">
+    <table width="100%" style="font-size: 11px; font-family: georgia; margin: 1px 0; border: none; border-collapse: collapse;">
         <tr>
             <td style="text-align: left; width: 50%; font-weight: bold; border: none; line-height: 1.2; padding: 0;">' . $formatted_pub_number_string . '</td>
             <td style="text-align: right; width: 50%; border: none; line-height: 1.2; padding: 0;">' . $publish_history_text . '</td>
         </tr>
     </table>
     <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0;">
-    <div style="font-size: 9px; text-align: left; line-height: 1.3; font-family: georgia; margin: 2px 0;">' . $footer_paragraph . '</div>';
+    <div style="font-size: 10px; text-align: left; line-height: 1.3; font-family: georgia; margin: 2px 0;">' . $footer_paragraph . '</div>';
 }
 
 /**
