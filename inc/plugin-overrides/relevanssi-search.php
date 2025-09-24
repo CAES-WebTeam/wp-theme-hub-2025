@@ -98,16 +98,35 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             // error_log('RENDER: Added language meta_query: key=language, value=' . $language_id . ', compare==');
         }
 
+        // Initialize tax_query to handle multiple conditions.
+		$tax_query = array(
+			'relation' => 'AND',
+		);
+
+		// Exclude posts from the "Feed the Future Peanut Lab" topic from all search results.
+		$peanut_lab_term = get_term_by('name', 'Feed the Future Peanut Lab', 'topics');
+		if ($peanut_lab_term && !is_wp_error($peanut_lab_term)) {
+			$tax_query[] = array(
+				'taxonomy' => 'topics',
+				'field'    => 'term_id',
+				'terms'    => array($peanut_lab_term->term_id),
+				'operator' => 'NOT IN',
+			);
+		}
+
         if (! empty($topic_terms) && $topic_terms[0] !== '') {
-            $args['tax_query'] = array(
-                array(
-                    'taxonomy' => $taxonomy_slug,
-                    'field'    => 'slug',
-                    'terms'    => $topic_terms,
-                    'operator' => 'IN',
-                ),
-            );
+            $tax_query[] = array(
+				'taxonomy' => $taxonomy_slug,
+				'field'    => 'slug',
+				'terms'    => $topic_terms,
+				'operator' => 'IN',
+			);
         }
+
+		// Add the tax_query to the main arguments array if there are any conditions.
+		if (count($tax_query) > 1) {
+			$args['tax_query'] = $tax_query;
+		}
 
         // Handle author filtering using ACF fields (WordPress-native optimized approach)
         // Note: author_ids will be empty if showAuthorFilter toggle is disabled
