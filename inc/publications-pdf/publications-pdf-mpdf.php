@@ -172,47 +172,75 @@ function get_mpdf_styles()
         
         body { 
             font-family: georgia, serif; 
-            font-size: 12px; 
-            line-height: 1.4; 
+            font-size: 14px; /* Increased from 12px to 14px for better readability */
+            line-height: 1.5; /* Increased from 1.4 for better spacing */
         }
         
         h1, h2, h3, h4, h5, h6 {
             font-family: georgia, serif;
+            line-height: 1.3;
         }
+        
+        h1 { font-size: 20px; font-weight: bold; margin: 16px 0 12px 0; }
+        h2 { font-size: 18px; font-weight: bold; margin: 14px 0 10px 0; }
+        h3 { font-size: 16px; font-weight: bold; margin: 12px 0 8px 0; }
+        h4 { font-size: 15px; font-weight: bold; margin: 10px 0 6px 0; }
+        h5 { font-size: 14px; font-weight: bold; margin: 8px 0 4px 0; }
+        h6 { font-size: 13px; font-weight: bold; margin: 8px 0 4px 0; }
         
         table { 
             border-collapse: collapse; 
             width: 100%; 
-            margin: 8px 0; 
+            margin: 10px 0; 
             page-break-inside: avoid; 
             font-family: georgia, serif;
         }
         
         table th, table td { 
             border: 1px solid #333333; 
-            padding: 4px 6px; 
+            padding: 5px 7px; /* Slightly increased padding */
             text-align: left; 
             vertical-align: top; 
-            font-size: 10px; 
+            font-size: 12px; /* Increased from 10px to 12px minimum */
             word-wrap: break-word; 
+            line-height: 1.4;
             font-family: georgia, serif;
         }
         
         table th { 
             background-color: #e8e8e8; 
             font-weight: bold; 
+            font-size: 13px; /* Headers slightly larger than cells */
         }
         
         .figure-caption, .table-caption { 
             font-weight: bold; 
             text-align: center; 
-            font-size: 11px; 
+            font-size: 12px; /* Increased from 11px */
             line-height: 1.4; 
+            margin: 8px 0;
             font-family: georgia, serif;
         }
         
         .page-break { 
             page-break-before: always; 
+        }
+        
+        /* Paragraph spacing */
+        p {
+            margin: 6px 0;
+            line-height: 1.5;
+        }
+        
+        /* List styling */
+        ul, ol {
+            margin: 6px 0;
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 3px 0;
+            line-height: 1.4;
         }
     ';
 }
@@ -225,13 +253,14 @@ function generate_regular_footer_html($post_id, $publication_title, $publication
     $left_content = $footer_text_prefix . $formatted_pub_number_string . ' | <strong>' . $publication_title . '</strong>';
 
     return '
-    <table width="100%" style="font-size: 8px; font-family: georgia; border: none; border-collapse: collapse;">
+    <table width="100%" style="font-size: 10px; font-family: georgia; border: none; border-collapse: collapse;">
         <tr>
-            <td style="text-align: left; width: 85%; border: none;">' . $left_content . '</td>
-            <td style="text-align: right; width: 15%; border: none;">{PAGENO}</td>
+            <td style="text-align: left; width: 85%; border: none; line-height: 1.3;">' . $left_content . '</td>
+            <td style="text-align: right; width: 15%; border: none; line-height: 1.3;">{PAGENO}</td>
         </tr>
     </table>';
 }
+
 
 // Generate special last page footer HTML
 function generate_last_page_footer_html($post_id, $publication_number)
@@ -266,16 +295,16 @@ function generate_last_page_footer_html($post_id, $publication_number)
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
 
     return '
-    <div style="font-size: 7px; text-align: center; margin-bottom: 8px; font-family: georgia;">' . $permalink_text . '</div>
+    <div style="font-size: 9px; text-align: center; margin-bottom: 8px; font-family: georgia; line-height: 1.3;">' . $permalink_text . '</div>
     <hr style="border: 0; border-top: 1px solid #000; margin: 2px 0;">
-    <table width="100%" style="font-size: 8px; font-family: georgia; margin: 2px 0; border: none; border-collapse: collapse;">
+    <table width="100%" style="font-size: 10px; font-family: georgia; margin: 2px 0; border: none; border-collapse: collapse;">
         <tr>
-            <td style="text-align: left; width: 50%; font-weight: bold; border: none;">' . $formatted_pub_number_string . '</td>
-            <td style="text-align: right; width: 50%; border: none;">' . $publish_history_text . '</td>
+            <td style="text-align: left; width: 50%; font-weight: bold; border: none; line-height: 1.3;">' . $formatted_pub_number_string . '</td>
+            <td style="text-align: right; width: 50%; border: none; line-height: 1.3;">' . $publish_history_text . '</td>
         </tr>
     </table>
     <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0 2px 0;">
-    <div style="font-size: 7px; text-align: left; line-height: 1.4; font-family: georgia;">' . $footer_paragraph . '</div>';
+    <div style="font-size: 9px; text-align: left; line-height: 1.4; font-family: georgia;">' . $footer_paragraph . '</div>';
 }
 
 /**
