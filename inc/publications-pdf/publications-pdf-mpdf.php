@@ -4,7 +4,6 @@
 // This file contains the logic for generating a PDF using mPDF instead of TCPDF.
 // ===================
 
-require_once get_template_directory() . '/vendor/autoload.php';
 use Mpdf\Mpdf;
 use Mpdf\HTMLParserMode;
 
@@ -165,10 +164,18 @@ function process_content_for_mpdf($content)
 function get_mpdf_styles()
 {
     return '
+        * { 
+            font-family: Georgia, serif !important; 
+        }
+        
         body { 
-            font-family: "Georgia", serif; 
+            font-family: Georgia, serif; 
             font-size: 12px; 
             line-height: 1.4; 
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: Georgia, serif;
         }
         
         table { 
@@ -176,6 +183,7 @@ function get_mpdf_styles()
             width: 100%; 
             margin: 8px 0; 
             page-break-inside: avoid; 
+            font-family: Georgia, serif;
         }
         
         table th, table td { 
@@ -185,6 +193,7 @@ function get_mpdf_styles()
             vertical-align: top; 
             font-size: 10px; 
             word-wrap: break-word; 
+            font-family: Georgia, serif;
         }
         
         table th { 
@@ -197,6 +206,7 @@ function get_mpdf_styles()
             text-align: center; 
             font-size: 11px; 
             line-height: 1.4; 
+            font-family: Georgia, serif;
         }
         
         .page-break { 
@@ -213,10 +223,10 @@ function generate_regular_footer_html($post_id, $publication_title, $publication
     $left_content = $footer_text_prefix . $formatted_pub_number_string . ' | <strong>' . $publication_title . '</strong>';
     
     return '
-    <table width="100%" style="font-size: 8px; font-family: Georgia;">
+    <table width="100%" style="font-size: 8px; font-family: Georgia; border: none; border-collapse: collapse;">
         <tr>
-            <td style="text-align: left; width: 85%;">' . $left_content . '</td>
-            <td style="text-align: right; width: 15%;">{PAGENO}</td>
+            <td style="text-align: left; width: 85%; border: none;">' . $left_content . '</td>
+            <td style="text-align: right; width: 15%; border: none;">{PAGENO}</td>
         </tr>
     </table>';
 }
@@ -254,16 +264,16 @@ function generate_last_page_footer_html($post_id, $publication_number)
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
     
     return '
-    <div style="font-size: 7px; text-align: center; margin-bottom: 8px;">' . $permalink_text . '</div>
+    <div style="font-size: 7px; text-align: center; margin-bottom: 8px; font-family: Georgia;">' . $permalink_text . '</div>
     <hr style="border: 0; border-top: 1px solid #000; margin: 2px 0;">
-    <table width="100%" style="font-size: 8px; font-family: Georgia; margin: 2px 0;">
+    <table width="100%" style="font-size: 8px; font-family: Georgia; margin: 2px 0; border: none; border-collapse: collapse;">
         <tr>
-            <td style="text-align: left; width: 50%; font-weight: bold;">' . $formatted_pub_number_string . '</td>
-            <td style="text-align: right; width: 50%;">' . $publish_history_text . '</td>
+            <td style="text-align: left; width: 50%; font-weight: bold; border: none;">' . $formatted_pub_number_string . '</td>
+            <td style="text-align: right; width: 50%; border: none;">' . $publish_history_text . '</td>
         </tr>
     </table>
     <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0 2px 0;">
-    <div style="font-size: 7px; text-align: left; line-height: 1.4;">' . $footer_paragraph . '</div>';
+    <div style="font-size: 7px; text-align: left; line-height: 1.4; font-family: Georgia;">' . $footer_paragraph . '</div>';
 }
 
 /**
@@ -398,9 +408,12 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Build cover page HTML
         $cover_html = '<div>';
         
-        // Featured image if exists
+        // Featured image if exists - full bleed to edges
         if (!empty($featured_image_url)) {
-            $cover_html .= '<img src="' . $featured_image_url . '" style="width: 100%; height: auto; margin-bottom: 20px;">';
+            $cover_html .= '<div style="position: absolute; top: -15mm; left: -15mm; width: calc(100% + 30mm); margin: 0; padding: 0;"><img src="' . $featured_image_url . '" style="width: 100%; height: auto; display: block;"></div>';
+            $cover_html .= '<div style="margin-top: 200px;">'; // Push content down after full-bleed image
+        } else {
+            $cover_html .= '<div style="margin-top: 30px;">';
         }
 
         // Extension logo
@@ -429,7 +442,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             $cover_html .= '<div style="margin: 15px 0; font-size: 11px;">' . $date_text . '</div>';
         }
 
-        $cover_html .= '</div>';
+        $cover_html .= '</div></div>';
 
         $mpdf->WriteHTML($cover_html);
 
