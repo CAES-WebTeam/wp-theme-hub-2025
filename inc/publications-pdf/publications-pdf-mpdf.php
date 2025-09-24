@@ -192,6 +192,10 @@ function get_mpdf_styles()
         .image-caption-wrapper.center .wp-caption-text {
             text-align: center; /* Center caption text only when wrapper is centered */
         }
+
+        figure.wp-block-image {
+            margin-bottom: 25px;
+        }
     ';
     return $styles;
 }
@@ -245,7 +249,7 @@ function generate_last_page_footer_html($post_id, $publication_number)
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
 
     return '
-    <div style="font-size: 9px; text-align: center; margin: 2px 0 20px 0; font-family: georgia; line-height: 1.2;">' . $permalink_text . '</div>
+    <div style="font-size: 9px; text-align: center; padding-bottom: 15px; font-family: georgia; line-height: 1.2;">' . $permalink_text . '</div>
     <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0;">
     <table width="100%" style="font-size: 10px; font-family: georgia; margin: 1px 0; border: none; border-collapse: collapse;">
         <tr>
