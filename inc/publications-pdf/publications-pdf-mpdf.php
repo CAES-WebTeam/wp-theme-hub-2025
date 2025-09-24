@@ -184,12 +184,12 @@ function get_mpdf_styles()
             page-break-inside: avoid;
         }
         
-        h1 { font-size: 20px; font-weight: bold; margin: 16px 0 12px 0; }
-        h2 { font-size: 18px; font-weight: bold; margin: 14px 0 10px 0; }
-        h3 { font-size: 16px; font-weight: bold; margin: 12px 0 8px 0; }
-        h4 { font-size: 15px; font-weight: bold; margin: 10px 0 6px 0; }
-        h5 { font-size: 14px; font-weight: bold; margin: 8px 0 4px 0; }
-        h6 { font-size: 13px; font-weight: bold; margin: 8px 0 4px 0; }
+        h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
+        h2 { font-size: 20px; font-weight: bold; margin: 22px 0 10px 0; }
+        h3 { font-size: 18px; font-weight: bold; margin: 20px 0 8px 0; }
+        h4 { font-size: 16px; font-weight: bold; margin: 18px 0 6px 0; }
+        h5 { font-size: 15px; font-weight: bold; margin: 16px 0 4px 0; }
+        h6 { font-size: 14px; font-weight: bold; margin: 14px 0 4px 0; }
         
         table { 
             border-collapse: collapse; 
@@ -546,10 +546,10 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         $processed_content = process_content_for_mpdf($post_content);
-        
+
         // Add spacing at the end of content to prevent footer overlap
         $processed_content .= '<div class="footer-spacer"></div>';
-        
+
         error_log("mPDF DEBUG: Content processed, writing to PDF");
         $mpdf->WriteHTML($processed_content);
         error_log("mPDF DEBUG: Main content written successfully");
