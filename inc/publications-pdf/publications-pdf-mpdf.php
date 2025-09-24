@@ -154,7 +154,7 @@ function get_mpdf_styles()
 {
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
-        body { font-family: "georgia", serif; font-size: 13px; line-height: 1.6; color: #333; }
+        body { font-family: "georgia", serif; font-size: 13px; line-height: 1.6; color: #000; }
         
         h1, h2, h3, h4, h5, h6 { font-family: "georgia", serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
@@ -185,7 +185,7 @@ function get_mpdf_styles()
         }
         .wp-caption-text {
             font-size: 12px;
-            color: #555;
+            color: #000;
             line-height: 1.4;
             text-align: left; /* Default text alignment */
         }
