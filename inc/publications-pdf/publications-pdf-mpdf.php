@@ -155,11 +155,6 @@ function get_mpdf_styles()
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
         body { font-family: "georgia", serif; font-size: 13px; line-height: 1.6; color: #333; }
-        .cover-page { text-align: center; }
-        .cover-logo { width: 200px; margin-bottom: 40px; }
-        .cover-title { font-size: 32px; font-weight: bold; color: #000; margin: 20px 0; line-height: 1.3; }
-        .cover-authors { font-size: 18px; color: #555; margin: 20px 0; }
-        .cover-published-date { font-size: 14px; color: #777; margin-top: 40px; }
         
         h1, h2, h3, h4, h5, h6 { font-family: "georgia", serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
@@ -441,11 +436,11 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         // Title
-        $cover_html .= '<h1 style="font-size: 24px; font-weight: bold; margin: 20px 0 10px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
+        $cover_html .= '<h1 style="font-size: 32px; font-weight: bold; margin: 20px 0 20px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
 
         // Authors
         if (!empty($author_lines)) {
-            $cover_html .= '<div style="margin: 10px 0; line-height: 1.3;">' . implode('<br>', $author_lines) . '</div>';
+            $cover_html .= '<div style="margin: 10px 0; line-height: 1.3; font-size: 18px;">' . implode('<br>', $author_lines) . '</div>';
         }
 
         // Publication date and number
