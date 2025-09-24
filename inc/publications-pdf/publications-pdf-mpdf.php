@@ -282,12 +282,16 @@ function generate_last_page_footer_html($post_id, $publication_number)
 function generate_publication_pdf_file_mpdf($post_id)
 {
     try {
+        error_log("mPDF DEBUG: Starting PDF generation for post ID: $post_id");
+        
         // Retrieve and validate post
         $post = get_post($post_id);
         if (!$post || $post->post_type !== 'publications') {
             error_log('mPDF Generation: Invalid post or post type for ID: ' . $post_id);
             return false;
         }
+        
+        error_log("mPDF DEBUG: Post validated successfully");
 
         // Gather all the data (same as TCPDF version)
         $publication_title = $post->post_title;
@@ -338,6 +342,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
         
         $formatted_authors = implode(', ', $author_names);
+        error_log("mPDF DEBUG: Authors processed - found " . count($author_names) . " authors");
         
         // Get topics for keywords
         $topics_terms = get_the_terms($post_id, 'topics');
@@ -364,6 +369,8 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         $latest_published_info = get_latest_published_date($post_id);
         $latest_published_date = $latest_published_info['date'];
+        
+        error_log("mPDF DEBUG: All data gathering complete");
 
         // File path setup (same as TCPDF)
         $upload_dir = wp_upload_dir();
@@ -376,8 +383,11 @@ function generate_publication_pdf_file_mpdf($post_id)
         $filename = sanitize_file_name($publication_number . '.pdf');
         $file_path = $cache_dir_path . $filename;
         $file_url = $upload_dir['baseurl'] . $cache_subdir . $filename;
+        
+        error_log("mPDF DEBUG: File paths set - $filename");
 
         // Initialize mPDF
+        error_log("mPDF DEBUG: Initializing mPDF instance");
         $mpdf = new Mpdf([
             'format' => 'Letter',
             'orientation' => 'P',
@@ -389,6 +399,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_footer' => 10,
             'default_font' => 'Georgia'
         ]);
+        error_log("mPDF DEBUG: mPDF instance created successfully");
 
         // Set metadata
         $mpdf->SetCreator('UGA Extension');
@@ -398,10 +409,13 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetSubject('ADA Compliant Publication');
 
         // Add custom styles
+        error_log("mPDF DEBUG: Processing CSS styles");
         $css = get_mpdf_styles();
         $mpdf->WriteHTML($css, HTMLParserMode::HEADER_CSS);
+        error_log("mPDF DEBUG: CSS styles applied");
 
         // COVER PAGE - No header/footer
+        error_log("mPDF DEBUG: Starting cover page generation");
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
 
@@ -444,16 +458,21 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         $cover_html .= '</div></div>';
 
+        error_log("mPDF DEBUG: Cover HTML built, writing to PDF");
         $mpdf->WriteHTML($cover_html);
+        error_log("mPDF DEBUG: Cover page written successfully");
 
         // CONTENT PAGES - With regular footer
+        error_log("mPDF DEBUG: Starting content pages setup");
         $mpdf->AddPage();
         
         // Set regular footer for content pages
         $regular_footer = generate_regular_footer_html($post_id, $publication_title, $publication_number);
         $mpdf->SetHTMLFooter($regular_footer);
+        error_log("mPDF DEBUG: Regular footer set");
 
         // Process and add main content
+        error_log("mPDF DEBUG: Processing post content");
         $post_content = $post->post_content;
         if (is_array($post_content)) {
             $post_content = implode('', $post_content);
@@ -462,19 +481,26 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         $processed_content = process_content_for_mpdf($post_content);
+        error_log("mPDF DEBUG: Content processed, writing to PDF");
         $mpdf->WriteHTML($processed_content);
+        error_log("mPDF DEBUG: Main content written successfully");
 
         // LAST PAGE - Add special footer
         // Force a new page for the special footer
+        error_log("mPDF DEBUG: Creating last page with special footer");
         $mpdf->WriteHTML('<div class="page-break"></div>');
         
         // Set special last page footer
         $last_page_footer = generate_last_page_footer_html($post_id, $publication_number);
         $mpdf->SetHTMLFooter($last_page_footer);
+        error_log("mPDF DEBUG: Last page footer set");
 
         // Save the PDF
+        error_log("mPDF DEBUG: Starting PDF output to file: $file_path");
         $mpdf->Output($file_path, 'F');
+        error_log("mPDF DEBUG: PDF successfully saved to file");
 
+        error_log("mPDF DEBUG: PDF generation completed successfully for post ID: $post_id");
         return $file_url;
 
     } catch (Exception $e) {
