@@ -421,15 +421,29 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
 
-        // Build cover page HTML
-        $cover_html = '<div>';
-        
-        // Featured image if exists - full bleed to edges
+        // Handle full-bleed cover image differently
         if (!empty($featured_image_url)) {
-            $cover_html .= '<div style="position: absolute; top: -15mm; left: -15mm; width: calc(100% + 30mm); margin: 0; padding: 0;"><img src="' . $featured_image_url . '" style="width: 100%; height: auto; display: block;"></div>';
-            $cover_html .= '<div style="margin-top: 200px;">'; // Push content down after full-bleed image
+            // For full-bleed image, temporarily remove margins
+            $mpdf->SetMargins(0, 0, 0);
+            
+            // Get image dimensions to calculate proper height
+            list($img_width, $img_height) = getimagesize($featured_image_url);
+            $page_width_mm = 216; // Letter width in mm
+            $scaled_height_mm = ($img_height / $img_width) * $page_width_mm;
+            
+            // Add full-width image
+            $cover_html = '<img src="' . $featured_image_url . '" style="width: 100%; height: auto; display: block; margin: 0; padding: 0;">';
+            $mpdf->WriteHTML($cover_html);
+            
+            // Reset margins for content
+            $mpdf->SetMargins(15, 15, 15);
+            
+            // Add content section with proper top margin
+            $content_top_margin = max(50, ($scaled_height_mm - 100)); // Dynamic margin based on image height
+            $cover_html = '<div style="margin-top: ' . $content_top_margin . 'mm;">';
         } else {
-            $cover_html .= '<div style="margin-top: 30px;">';
+            // No featured image - start content normally
+            $cover_html = '<div style="margin-top: 30px;">';
         }
 
         // Extension logo
