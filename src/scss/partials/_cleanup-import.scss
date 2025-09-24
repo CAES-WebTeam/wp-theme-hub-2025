@@ -547,7 +547,7 @@ figure.image:not(.wp-block-image) {
 
     .entry-content {
         clear: both;
-        figure:not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
+        figure:not(.wp-block-embed):not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
             max-width: 600px;
             margin: 0 auto;
             display: table;
