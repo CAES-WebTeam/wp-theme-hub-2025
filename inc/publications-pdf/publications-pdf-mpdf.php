@@ -15,8 +15,8 @@ use Mpdf\HTMLParserMode;
 function normalize_hyphens_for_pdf($content)
 {
     $replacements = [
-        'Ã¢â‚¬' => '-',        
-        'ÃƒÂ¢Ã¢â€šÂ¬' => '-',     
+        'Ã¢â‚¬' => '-',
+        'ÃƒÂ¢Ã¢â€šÂ¬' => '-',
         "\u{2010}" => '-',
     ];
     $content = str_replace(array_keys($replacements), array_values($replacements), $content);
@@ -75,7 +75,7 @@ function get_latest_published_date($post_id)
 {
     $history = get_field('history', $post_id);
     $published_statuses = [2, 4, 5, 6];
-    
+
     $latest_date = '';
     $latest_status = 0;
     $latest_timestamp = 0;
@@ -107,45 +107,45 @@ function process_content_for_mpdf($content)
 {
     // Normalize hyphens first
     $content = normalize_hyphens_for_pdf($content);
-    
+
     // Process images - much simpler with mPDF
     $content = preg_replace_callback(
         '/<img([^>]*)>/i',
         function ($matches) {
             $img_attributes = $matches[1];
-            
+
             // Remove existing width/height attributes
             $img_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $img_attributes);
             $img_attributes = preg_replace('/\s*width\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $img_attributes);
             $img_attributes = preg_replace('/\s*height\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $img_attributes);
-            
+
             // Add responsive styling
             $img_attributes .= ' style="max-width: 70%; height: auto; display: block; margin: 15px auto;"';
-            
+
             return '<img' . $img_attributes . '>';
         },
         $content
     );
-    
+
     // Process figure captions - much easier with mPDF
     $content = preg_replace_callback(
         '/<figcaption([^>]*)>(.*?)<\/figcaption>/is',
         function ($matches) {
             $caption_attributes = $matches[1];
             $caption_content = $matches[2];
-            
+
             return '<div class="figure-caption" style="text-align: center; font-weight: bold; font-size: 11px; margin: 10px 0 5px 0;">' . $caption_content . '</div>';
         },
         $content
     );
-    
+
     // Handle table captions
     $content = preg_replace_callback(
         '/<table([^>]*?)>(.*?)<\/table>/is',
         function ($matches) {
             $table_attrs = $matches[1];
             $table_content = $matches[2];
-            
+
             if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_content, $caption_matches)) {
                 $caption_content = trim($caption_matches[1]);
                 $clean_table_content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_content);
@@ -153,12 +153,12 @@ function process_content_for_mpdf($content)
                 $caption_p = '<div class="table-caption" style="font-weight: bold; text-align: center; margin: 10px 0 5px 0; font-size: 11px;">' . $caption_content . '</div>';
                 return $caption_p . $clean_table;
             }
-            
+
             return $matches[0];
         },
         $content
     );
-    
+
     return $content;
 }
 
@@ -167,17 +167,17 @@ function get_mpdf_styles()
 {
     return '
         * { 
-            font-family: Georgia, serif !important; 
+            font-family: georgia, serif; 
         }
         
         body { 
-            font-family: Georgia, serif; 
+            font-family: georgia, serif; 
             font-size: 12px; 
             line-height: 1.4; 
         }
         
         h1, h2, h3, h4, h5, h6 {
-            font-family: Georgia, serif;
+            font-family: georgia, serif;
         }
         
         table { 
@@ -185,7 +185,7 @@ function get_mpdf_styles()
             width: 100%; 
             margin: 8px 0; 
             page-break-inside: avoid; 
-            font-family: Georgia, serif;
+            font-family: georgia, serif;
         }
         
         table th, table td { 
@@ -195,7 +195,7 @@ function get_mpdf_styles()
             vertical-align: top; 
             font-size: 10px; 
             word-wrap: break-word; 
-            font-family: Georgia, serif;
+            font-family: georgia, serif;
         }
         
         table th { 
@@ -208,7 +208,7 @@ function get_mpdf_styles()
             text-align: center; 
             font-size: 11px; 
             line-height: 1.4; 
-            font-family: Georgia, serif;
+            font-family: georgia, serif;
         }
         
         .page-break { 
@@ -223,9 +223,9 @@ function generate_regular_footer_html($post_id, $publication_title, $publication
     $formatted_pub_number_string = format_publication_number_for_display($publication_number);
     $footer_text_prefix = 'UGA Cooperative Extension ';
     $left_content = $footer_text_prefix . $formatted_pub_number_string . ' | <strong>' . $publication_title . '</strong>';
-    
+
     return '
-    <table width="100%" style="font-size: 8px; font-family: Georgia; border: none; border-collapse: collapse;">
+    <table width="100%" style="font-size: 8px; font-family: georgia; border: none; border-collapse: collapse;">
         <tr>
             <td style="text-align: left; width: 85%; border: none;">' . $left_content . '</td>
             <td style="text-align: right; width: 15%; border: none;">{PAGENO}</td>
@@ -238,7 +238,7 @@ function generate_last_page_footer_html($post_id, $publication_number)
 {
     $formatted_pub_number_string = format_publication_number_for_display($publication_number);
     $latest_published_info = get_latest_published_date($post_id);
-    
+
     $status_labels = [
         1 => 'Unpublished/Removed',
         2 => 'Published',
@@ -250,32 +250,32 @@ function generate_last_page_footer_html($post_id, $publication_number)
         9 => 'In Review for Major Revisions',
         10 => 'In Review'
     ];
-    
+
     $publish_history_text = '';
     if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
         $status_label = isset($status_labels[$latest_published_info['status']]) ? $status_labels[$latest_published_info['status']] : 'Published';
         $publish_history_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
     }
-    
+
     $permalink_url = get_permalink($post_id);
     $permalink_text = '';
     if (!empty($permalink_url)) {
         $permalink_text = 'The permalink for this UGA Extension publication is <a href="' . esc_url($permalink_url) . '">' . esc_html($permalink_url) . '</a>';
     }
-    
+
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
-    
+
     return '
-    <div style="font-size: 7px; text-align: center; margin-bottom: 8px; font-family: Georgia;">' . $permalink_text . '</div>
+    <div style="font-size: 7px; text-align: center; margin-bottom: 8px; font-family: georgia;">' . $permalink_text . '</div>
     <hr style="border: 0; border-top: 1px solid #000; margin: 2px 0;">
-    <table width="100%" style="font-size: 8px; font-family: Georgia; margin: 2px 0; border: none; border-collapse: collapse;">
+    <table width="100%" style="font-size: 8px; font-family: georgia; margin: 2px 0; border: none; border-collapse: collapse;">
         <tr>
             <td style="text-align: left; width: 50%; font-weight: bold; border: none;">' . $formatted_pub_number_string . '</td>
             <td style="text-align: right; width: 50%; border: none;">' . $publish_history_text . '</td>
         </tr>
     </table>
     <hr style="border: 0; border-top: 1px solid #000; margin: 1px 0 2px 0;">
-    <div style="font-size: 7px; text-align: left; line-height: 1.4; font-family: Georgia;">' . $footer_paragraph . '</div>';
+    <div style="font-size: 7px; text-align: left; line-height: 1.4; font-family: georgia;">' . $footer_paragraph . '</div>';
 }
 
 /**
@@ -285,20 +285,20 @@ function generate_publication_pdf_file_mpdf($post_id)
 {
     try {
         error_log("mPDF DEBUG: Starting PDF generation for post ID: $post_id");
-        
+
         // Retrieve and validate post
         $post = get_post($post_id);
         if (!$post || $post->post_type !== 'publications') {
             error_log('mPDF Generation: Invalid post or post type for ID: ' . $post_id);
             return false;
         }
-        
+
         error_log("mPDF DEBUG: Post validated successfully");
 
         // Gather all the data (same as TCPDF version)
         $publication_title = $post->post_title;
         $publication_number = get_field('publication_number', $post_id);
-        
+
         if (empty($publication_number)) {
             error_log('mPDF Generation: No publication number found for post ID: ' . $post_id);
             $publication_number = 'publication-' . $post_id;
@@ -308,14 +308,14 @@ function generate_publication_pdf_file_mpdf($post_id)
         $authors_data = get_field('authors', $post_id, false);
         $author_names = [];
         $author_lines = [];
-        
+
         if ($authors_data) {
             foreach ($authors_data as $item) {
                 $user_id = null;
                 if (isset($item['user']) && !empty($item['user'])) {
                     $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
                 }
-                
+
                 if (empty($user_id) && is_array($item)) {
                     foreach ($item as $key => $value) {
                         if (is_numeric($value) && $value > 0) {
@@ -342,10 +342,10 @@ function generate_publication_pdf_file_mpdf($post_id)
                 }
             }
         }
-        
+
         $formatted_authors = implode(', ', $author_names);
         error_log("mPDF DEBUG: Authors processed - found " . count($author_names) . " authors");
-        
+
         // Get topics for keywords
         $topics_terms = get_the_terms($post_id, 'topics');
         $keyword_terms = [];
@@ -371,7 +371,7 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         $latest_published_info = get_latest_published_date($post_id);
         $latest_published_date = $latest_published_info['date'];
-        
+
         error_log("mPDF DEBUG: All data gathering complete");
 
         // File path setup (same as TCPDF)
@@ -385,12 +385,31 @@ function generate_publication_pdf_file_mpdf($post_id)
         $filename = sanitize_file_name($publication_number . '.pdf');
         $file_path = $cache_dir_path . $filename;
         $file_url = $upload_dir['baseurl'] . $cache_subdir . $filename;
-        
+
         error_log("mPDF DEBUG: File paths set - $filename");
 
         // Initialize mPDF
         error_log("mPDF DEBUG: Initializing mPDF instance");
+        // Get default configurations
+        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+        $fontDirs = $defaultConfig['fontDir'];
+
+        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+        $fontData = $defaultFontConfig['fontdata'];
+
         $mpdf = new Mpdf([
+            'fontDir' => array_merge($fontDirs, [
+                get_template_directory() . '/assets/fonts',
+            ]),
+            'fontdata' => $fontData + [
+                'georgia' => [
+                    'R' => 'Georgia.ttf',
+                    'B' => 'Georgia-Bold.ttf',
+                    'I' => 'Georgia-Italic.ttf',
+                    'BI' => 'Georgia-Bold-Italic.ttf'
+                ]
+            ],
+            'default_font' => 'georgia',
             'format' => 'Letter',
             'orientation' => 'P',
             'margin_left' => 15,
@@ -398,8 +417,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_top' => 15,
             'margin_bottom' => 20,
             'margin_header' => 0,
-            'margin_footer' => 10,
-            'default_font' => 'Georgia'
+            'margin_footer' => 10
         ]);
         error_log("mPDF DEBUG: mPDF instance created successfully");
 
@@ -459,7 +477,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         $cover_html .= '</div>';
-        
+
         // Close the additional div for the featured image case
         if (!empty($featured_image_url)) {
             $cover_html .= '</div>';
@@ -472,7 +490,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // CONTENT PAGES - With regular footer
         error_log("mPDF DEBUG: Starting content pages setup");
         $mpdf->AddPage();
-        
+
         // Set regular footer for content pages
         $regular_footer = generate_regular_footer_html($post_id, $publication_title, $publication_number);
         $mpdf->SetHTMLFooter($regular_footer);
@@ -496,7 +514,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Force a new page for the special footer
         error_log("mPDF DEBUG: Creating last page with special footer");
         $mpdf->WriteHTML('<div class="page-break"></div>');
-        
+
         // Set special last page footer
         $last_page_footer = generate_last_page_footer_html($post_id, $publication_number);
         $mpdf->SetHTMLFooter($last_page_footer);
@@ -509,7 +527,6 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         error_log("mPDF DEBUG: PDF generation completed successfully for post ID: $post_id");
         return $file_url;
-
     } catch (Exception $e) {
         error_log('mPDF Generation Error for Post ID ' . $post_id . ': ' . $e->getMessage());
         return false;
