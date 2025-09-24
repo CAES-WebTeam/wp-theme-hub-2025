@@ -108,7 +108,7 @@ function process_content_for_mpdf($content)
     // This revised function intelligently identifies legacy image containers
     // by their structure: a div containing an image followed by loose caption text.
     $content = preg_replace_callback(
-         '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">.*?(<img[^>]+>)(.*?)<\/div>/is',
+        '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">.*?(<img[^>]+>)(.*?)<\/div>/is',
         function ($matches) {
             $alignment_class = $matches[1];
             // Normalize WordPress alignment classes
@@ -282,6 +282,10 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         // Gather all the data (same as TCPDF version)
         $publication_title = $post->post_title;
+        $subtitle = get_post_meta($post_id, 'subtitle', true);
+        if (!empty($subtitle)) {
+            $publication_title .= ': ' . $subtitle;
+        }
         $publication_number = get_field('publication_number', $post_id);
 
         if (empty($publication_number)) {
