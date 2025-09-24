@@ -444,9 +444,9 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_left' => 15,
             'margin_right' => 15,
             'margin_top' => 15,
-            'margin_bottom' => 20,
+            'margin_bottom' => 25,
             'margin_header' => 0,
-            'margin_footer' => 10
+            'margin_footer' => 20
         ]);
         error_log("mPDF DEBUG: mPDF instance created successfully");
 
