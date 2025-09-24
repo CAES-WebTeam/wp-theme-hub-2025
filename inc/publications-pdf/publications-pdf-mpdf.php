@@ -15,9 +15,9 @@ use Mpdf\HTMLParserMode;
 function normalize_hyphens_for_pdf($content)
 {
     $replacements = [
-        'ÃƒÂ¢Ã¢â€šÂ¬' => '-',
-        'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬' => '-',
-        "\u{2010}" => '-',
+        "\u{2010}" => '-', // Hyphen
+        "\u{2013}" => '-', // En Dash (replaces 'ÃƒÂ¢Ã¢â€šÂ¬')
+        "\u{2014}" => '-', // Em Dash (replaces 'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬')
     ];
     $content = str_replace(array_keys($replacements), array_values($replacements), $content);
     return $content;
