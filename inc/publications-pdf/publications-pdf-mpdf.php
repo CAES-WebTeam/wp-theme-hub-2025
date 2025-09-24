@@ -440,7 +440,7 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         // Authors
         if (!empty($author_lines)) {
-            $cover_html .= '<div style="margin: 10px 0; line-height: 1.3; font-size: 18px;">' . implode('<br>', $author_lines) . '</div>';
+            $cover_html .= '<div style="margin: 10px 0; line-height: 1.3; font-size: 16px;">' . implode('<br>', $author_lines) . '</div>';
         }
 
         // Publication date and number
@@ -452,7 +452,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             } else {
                 $date_text = 'Published on ' . esc_html($latest_published_date);
             }
-            $cover_html .= '<div style="margin: 15px 0; font-size: 11px;">' . $date_text . '</div>';
+            $cover_html .= '<div style="margin: 15px 0; font-size: 14px;">' . $date_text . '</div>';
         }
 
         $cover_html .= '</div>';
