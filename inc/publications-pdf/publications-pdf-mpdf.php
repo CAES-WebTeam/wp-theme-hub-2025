@@ -4,6 +4,8 @@
 // This file contains the logic for generating a PDF using mPDF instead of TCPDF.
 // ===================
 
+require_once get_template_directory() . '/vendor/autoload.php';
+
 use Mpdf\Mpdf;
 use Mpdf\HTMLParserMode;
 
