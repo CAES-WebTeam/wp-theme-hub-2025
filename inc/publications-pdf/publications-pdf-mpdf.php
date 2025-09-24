@@ -421,29 +421,14 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
 
-        // Handle full-bleed cover image with mPDF's Image method
+        // Simple HTML approach that works with mPDF
         if (!empty($featured_image_url)) {
-            // Use mPDF's direct image positioning for true full-bleed
-            list($img_width, $img_height) = getimagesize($featured_image_url);
-            $page_width_mm = 216; // US Letter width
-            $page_height_mm = 279; // US Letter height
-            
-            // Calculate image height to maintain aspect ratio
-            $scaled_height_mm = ($img_height / $img_width) * $page_width_mm;
-            
-            // Place image with absolute positioning - true edge to edge
-            $mpdf->Image($featured_image_url, 0, 0, $page_width_mm, $scaled_height_mm, '', '', '', false, 300, '', false, false, 0, false, false, false);
-            
-            // Set normal margins for text content
-            $mpdf->SetMargins(15, 15, 15);
-            
-            // Calculate where to start text content
-            $text_start_y = $scaled_height_mm + 10; // 10mm gap after image
-            
-            // Position content after the image
-            $cover_html = '<div style="margin-top: ' . $text_start_y . 'mm;">';
+            $cover_html = '
+            <div style="text-align: center; margin: 0 -15mm;">
+                <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none;">
+            </div>
+            <div style="margin-top: 15mm;">';
         } else {
-            // Normal setup without featured image
             $cover_html = '<div style="margin-top: 30px;">';
         }
 
