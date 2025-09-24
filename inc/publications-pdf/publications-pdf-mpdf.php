@@ -424,7 +424,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Simple HTML approach that works with mPDF
         if (!empty($featured_image_url)) {
             $cover_html = '
-            <div style="text-align: center; margin: 0 -15mm;">
+            <div style="text-align: center; margin: -15mm -15mm 0 -15mm;">
                 <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none;">
             </div>
             <div style="margin-top: 15mm;">';
