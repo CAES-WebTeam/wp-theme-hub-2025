@@ -132,7 +132,7 @@ function process_content_for_mpdf($content)
             }
 
             // Rebuild the HTML into our new, correct structure.
-            $html = '<div class="image-caption-wrapper ' . $alignment_class . '" style="width: ' . $width . 'px; margin-bottom: 25px;">';
+            $html = '<div class="image-caption-wrapper ' . $alignment_class . '" style="width: ' . $width . 'margin-top: 15px; margin-bottom: 15px;">';
             // We add the image and then wrap the loose text in a paragraph tag for proper styling and wrapping.
             $html .= $image_tag;
             $html .= '<p class="wp-caption-text">' . $caption_text . '</p>';
@@ -173,7 +173,8 @@ function get_mpdf_styles()
 
         /* Styles for Image and Caption Alignment */
         .image-caption-wrapper {
-            margin-bottom: 25px; /* Space below caption */
+            margin-top: 15px; /* Space above the image-caption block */
+            margin-bottom: 15px; /* Space below caption */
         }
         .image-caption-wrapper.center {
             text-align: center; /* Center the caption text */
@@ -194,7 +195,8 @@ function get_mpdf_styles()
         }
 
         figure.wp-block-image {
-            margin-bottom: 25px;
+            margin-top: 15px;
+            margin-bottom: 15px;
         }
     ';
     return $styles;
