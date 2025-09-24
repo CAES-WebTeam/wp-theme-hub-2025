@@ -105,59 +105,46 @@ function get_latest_published_date($post_id)
 // Enhanced table and content processing for mPDF
 function process_content_for_mpdf($content)
 {
-    // Normalize hyphens first
-    $content = normalize_hyphens_for_pdf($content);
-
-    // Process images - much simpler with mPDF
+    // This revised function intelligently identifies legacy image containers
+    // by their structure: a div containing an image followed by loose caption text.
     $content = preg_replace_callback(
-        '/<img([^>]*)>/i',
+        '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">\s*(<img[^>]+>)(.*?)<\/div>/is',
         function ($matches) {
-            $img_attributes = $matches[1];
-
-            // Remove existing width/height attributes
-            $img_attributes = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $img_attributes);
-            $img_attributes = preg_replace('/\s*width\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $img_attributes);
-            $img_attributes = preg_replace('/\s*height\s*=\s*["\']?[^"\'\s>]+["\']?/', '', $img_attributes);
-
-            // Add responsive styling
-            $img_attributes .= ' style="max-width: 70%; height: auto; display: block; margin: 15px auto;"';
-
-            return '<img' . $img_attributes . '>';
-        },
-        $content
-    );
-
-    // Process figure captions - updated with accessible font size
-    $content = preg_replace_callback(
-        '/<figcaption([^>]*)>(.*?)<\/figcaption>/is',
-        function ($matches) {
-            $caption_attributes = $matches[1];
-            $caption_content = $matches[2];
-
-            return '<div class="figure-caption" style="text-align: center; font-weight: bold; font-size: 12px; margin: 10px 0 5px 0;">' . $caption_content . '</div>';
-        },
-        $content
-    );
-
-    // Handle table captions - updated with accessible font size
-    $content = preg_replace_callback(
-        '/<table([^>]*?)>(.*?)<\/table>/is',
-        function ($matches) {
-            $table_attrs = $matches[1];
-            $table_content = $matches[2];
-
-            if (preg_match('/<caption[^>]*>(.*?)<\/caption>/is', $table_content, $caption_matches)) {
-                $caption_content = trim($caption_matches[1]);
-                $clean_table_content = preg_replace('/<caption[^>]*>.*?<\/caption>/is', '', $table_content);
-                $clean_table = '<table' . $table_attrs . '>' . $clean_table_content . '</table>';
-                $caption_p = '<div class="table-caption" style="font-weight: bold; text-align: center; margin: 10px 0 5px 0; font-size: 12px;">' . $caption_content . '</div>';
-                return $caption_p . $clean_table;
+            $alignment_class = $matches[1];
+            // Normalize WordPress alignment classes
+            if ($alignment_class == 'alignleft' || $alignment_class == 'left') {
+                $alignment_class = 'left';
+            } elseif ($alignment_class == 'alignright' || $alignment_class == 'right') {
+                $alignment_class = 'right';
+            } else {
+                $alignment_class = 'center';
             }
 
-            return $matches[0];
+            $width = $matches[2];
+            $image_tag = $matches[3];
+            // The caption is any text that follows the image inside the div.
+            $caption_text = trim(strip_tags($matches[4], '<a><em><strong><i><b>'));
+
+            // SAFETY CHECK: If there's no caption text, it's likely just a layout div.
+            // In that case, we return the original HTML to avoid breaking anything.
+            if (empty($caption_text)) {
+                return $matches[0];
+            }
+
+            // Rebuild the HTML into our new, correct structure.
+            $html = '<div class="image-caption-wrapper ' . $alignment_class . '" style="width: ' . $width . 'px;">';
+            // We add the image and then wrap the loose text in a paragraph tag for proper styling and wrapping.
+            $html .= $image_tag;
+            $html .= '<p class="wp-caption-text">' . $caption_text . '</p>';
+            $html .= '</div>';
+
+            return $html;
         },
         $content
     );
+
+    // Clean up any empty paragraphs that might have been left behind.
+    $content = str_replace(['<p></p>', '<p>&nbsp;</p>'], '', $content);
 
     return $content;
 }
@@ -165,96 +152,53 @@ function process_content_for_mpdf($content)
 // Get CSS for mPDF with improved accessibility and spacing
 function get_mpdf_styles()
 {
-    return '
-        * { 
-            font-family: georgia, serif; 
-        }
+    // Increased font sizes for cover page elements and added image alignment styles.
+    $styles = '
+        body { font-family: "uga-serif", serif; font-size: 13px; line-height: 1.6; color: #333; }
+        .cover-page { text-align: center; }
+        .cover-logo { width: 200px; margin-bottom: 40px; }
+        .cover-title { font-size: 32px; font-weight: bold; color: #000; margin: 20px 0; line-height: 1.3; }
+        .cover-authors { font-size: 18px; color: #555; margin: 20px 0; }
+        .cover-published-date { font-size: 14px; color: #777; margin-top: 40px; }
         
-        body { 
-            font-family: georgia, serif; 
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 40px;
-        }
-        
-        h1, h2, h3, h4, h5, h6 {
-            font-family: georgia, serif;
-            line-height: 1.3;
-            page-break-after: avoid;
-            page-break-inside: avoid;
-        }
-        
+        h1, h2, h3, h4, h5, h6 { font-family: "uga-sans", sans-serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
         h2 { font-size: 20px; font-weight: bold; margin: 22px 0 10px 0; }
         h3 { font-size: 18px; font-weight: bold; margin: 20px 0 8px 0; }
         h4 { font-size: 16px; font-weight: bold; margin: 18px 0 6px 0; }
         h5 { font-size: 15px; font-weight: bold; margin: 16px 0 4px 0; }
         h6 { font-size: 14px; font-weight: bold; margin: 14px 0 4px 0; }
-        
-        table { 
-            border-collapse: collapse; 
-            width: 100%; 
-            margin: 10px 0; 
-            page-break-inside: avoid; 
-            font-family: georgia, serif;
+
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+        table th { background-color: #f2f2f2; font-weight: bold; font-size: 13px; }
+
+        .footer-spacer { height: 50px; }
+        .page-break { page-break-before: always; }
+
+        /* Styles for Image and Caption Alignment */
+        .image-caption-wrapper {
+            margin-bottom: 15px; /* Space below caption */
         }
-        
-        table th, table td { 
-            border: 1px solid #333333; 
-            padding: 5px 7px;
-            text-align: left; 
-            vertical-align: top; 
+        .image-caption-wrapper.center {
+            text-align: center; /* Center the caption text */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .image-caption-wrapper img {
+            margin-bottom: 5px; /* Space between image and caption */
+        }
+        .wp-caption-text {
             font-size: 12px;
-            word-wrap: break-word; 
+            color: #555;
             line-height: 1.4;
-            font-family: georgia, serif;
+            text-align: left; /* Default text alignment */
         }
-        
-        table th { 
-            background-color: #e8e8e8; 
-            font-weight: bold; 
-            font-size: 13px;
-        }
-        
-        .figure-caption, .table-caption { 
-            font-weight: bold; 
-            text-align: center; 
-            font-size: 12px;
-            line-height: 1.4; 
-            margin: 8px 0;
-            font-family: georgia, serif;
-        }
-        
-        .page-break { 
-            page-break-before: always; 
-        }
-        
-        /* Paragraph spacing and page break controls */
-        p {
-            margin: 6px 0;
-            line-height: 1.5;
-            orphans: 3;
-            widows: 3;
-            page-break-inside: avoid;
-        }
-        
-        /* List styling */
-        ul, ol {
-            margin: 6px 0;
-            padding-left: 20px;
-        }
-        
-        li {
-            margin: 3px 0;
-            line-height: 1.4;
-        }
-        
-        /* Footer spacing helper */
-        .footer-spacer {
-            height: 15mm;
-            page-break-inside: avoid;
+        .image-caption-wrapper.center .wp-caption-text {
+            text-align: center; /* Center caption text only when wrapper is centered */
         }
     ';
+    return $styles;
 }
 
 // Generate regular footer HTML for content pages - improved accessibility
