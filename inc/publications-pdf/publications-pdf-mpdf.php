@@ -108,7 +108,7 @@ function process_content_for_mpdf($content)
     // This revised function intelligently identifies legacy image containers
     // by their structure: a div containing an image followed by loose caption text.
     $content = preg_replace_callback(
-        '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">\s*(<img[^>]+>)(.*?)<\/div>/is',
+         '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">.*?(<img[^>]+>)(.*?)<\/div>/is',
         function ($matches) {
             $alignment_class = $matches[1];
             // Normalize WordPress alignment classes
