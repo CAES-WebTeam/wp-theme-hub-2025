@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Filtered Topics Block Render Template
  */
@@ -21,9 +22,10 @@ $wrapper_attributes = get_block_wrapper_attributes([
  * Determine the current post type context
  */
 if (!function_exists('caes_filtered_topics_get_current_post_type_context')) {
-    function caes_filtered_topics_get_current_post_type_context() {
+    function caes_filtered_topics_get_current_post_type_context()
+    {
         $request_uri = $_SERVER['REQUEST_URI'];
-        
+
         if (strpos($request_uri, '/publications/') === 0) {
             return 'publications';
         } elseif (strpos($request_uri, '/shorthand-story/') === 0) {
@@ -33,7 +35,7 @@ if (!function_exists('caes_filtered_topics_get_current_post_type_context')) {
         } elseif (strpos($request_uri, '/news/') === 0) {
             return 'post'; // Explicitly handle /news/ URLs as post context
         }
-        
+
         if (is_singular()) {
             return get_post_type();
         } elseif (is_post_type_archive()) {
@@ -47,7 +49,7 @@ if (!function_exists('caes_filtered_topics_get_current_post_type_context')) {
                 return 'events';
             }
         }
-        
+
         return 'post';
     }
 }
@@ -56,7 +58,8 @@ if (!function_exists('caes_filtered_topics_get_current_post_type_context')) {
  * Get post count for a specific term and post type
  */
 if (!function_exists('caes_filtered_topics_get_term_post_count')) {
-    function caes_filtered_topics_get_term_post_count($term_id, $post_type) {
+    function caes_filtered_topics_get_term_post_count($term_id, $post_type)
+    {
         $posts = get_posts(array(
             'post_type' => $post_type,
             'post_status' => 'publish',
@@ -70,7 +73,7 @@ if (!function_exists('caes_filtered_topics_get_term_post_count')) {
                 ),
             ),
         ));
-        
+
         return count($posts);
     }
 }
@@ -79,23 +82,24 @@ if (!function_exists('caes_filtered_topics_get_term_post_count')) {
  * Get terms with posts including necessary parent terms for hierarchy
  */
 if (!function_exists('caes_filtered_topics_get_terms_with_hierarchy')) {
-    function caes_filtered_topics_get_terms_with_hierarchy($post_ids) {
+    function caes_filtered_topics_get_terms_with_hierarchy($post_ids)
+    {
         // First get terms that are directly associated with posts
         $direct_terms = get_terms(array(
             'taxonomy' => 'topics',
             'hide_empty' => true,
             'object_ids' => $post_ids
         ));
-        
+
         if (empty($direct_terms) || is_wp_error($direct_terms)) {
             return array();
         }
-        
+
         // Collect all term IDs including parents
         $all_term_ids = array();
         foreach ($direct_terms as $term) {
             $all_term_ids[] = $term->term_id;
-            
+
             // Add all parent terms
             $parent_id = $term->parent;
             while ($parent_id != 0) {
@@ -106,7 +110,7 @@ if (!function_exists('caes_filtered_topics_get_terms_with_hierarchy')) {
                 $parent_id = $parent_term->parent;
             }
         }
-        
+
         // Get all terms including parents
         if (!empty($all_term_ids)) {
             return get_terms(array(
@@ -115,7 +119,7 @@ if (!function_exists('caes_filtered_topics_get_terms_with_hierarchy')) {
                 'hide_empty' => false // Important: include parents even if they have no direct posts
             ));
         }
-        
+
         return array();
     }
 }
@@ -124,14 +128,15 @@ if (!function_exists('caes_filtered_topics_get_terms_with_hierarchy')) {
  * Build hierarchical terms list
  */
 if (!function_exists('caes_filtered_topics_build_hierarchical_list')) {
-    function caes_filtered_topics_build_hierarchical_list($terms, $post_type, $show_post_counts, $parent = 0) {
+    function caes_filtered_topics_build_hierarchical_list($terms, $post_type, $show_post_counts, $parent = 0)
+    {
         $html = '';
-        
+
         foreach ($terms as $term) {
             if ($term->parent == $parent) {
                 $post_count = caes_filtered_topics_get_term_post_count($term->term_id, $post_type);
                 $term_link = get_term_link($term);
-                
+
                 // Only show terms that have posts OR have children with posts
                 $has_children = false;
                 foreach ($terms as $potential_child) {
@@ -140,25 +145,25 @@ if (!function_exists('caes_filtered_topics_build_hierarchical_list')) {
                         break;
                     }
                 }
-                
+
                 if ($post_count > 0 || $has_children) {
                     $html .= '<li class="topic-item topic-item-' . $term->term_id . '">';
                     $html .= '<a href="' . esc_url($term_link) . '">' . esc_html($term->name) . '</a>';
                     if ($show_post_counts && $post_count > 0) {
                         $html .= ' <span class="post-count">(' . $post_count . ')</span>';
                     }
-                    
+
                     // Check for children
                     $children = caes_filtered_topics_build_hierarchical_list($terms, $post_type, $show_post_counts, $term->term_id);
                     if ($children) {
                         $html .= '<ul class="topic-children">' . $children . '</ul>';
                     }
-                    
+
                     $html .= '</li>';
                 }
             }
         }
-        
+
         return $html;
     }
 }
@@ -175,19 +180,33 @@ if ($current_post_type && $current_post_type !== 'post') {
         'numberposts' => -1,
         'fields' => 'ids'
     ));
-    
+
     if (empty($post_ids)) {
         $terms = array();
     } else {
         // Use the new function that includes parent terms
         $terms = caes_filtered_topics_get_terms_with_hierarchy($post_ids);
     }
+    // Exclude the "Feed the Future Peanut Lab" topic.
+    $peanut_lab_term = get_term_by('name', 'Feed the Future Peanut Lab', 'topics');
+    if ($peanut_lab_term && !is_wp_error($peanut_lab_term) && !empty($terms)) {
+        $terms = array_filter($terms, function ($term) use ($peanut_lab_term) {
+            return $term->term_id !== $peanut_lab_term->term_id;
+        });
+    }
 } else {
+    // Exclude the "Feed the Future Peanut Lab" topic.
+    $exclude_args = array();
+    $peanut_lab_term = get_term_by('name', 'Feed the Future Peanut Lab', 'topics');
+    if ($peanut_lab_term && !is_wp_error($peanut_lab_term)) {
+        $exclude_args['exclude'] = array($peanut_lab_term->term_id);
+    }
+
     // Show all terms (news/general context)
-    $terms = get_terms(array(
+    $terms = get_terms(array_merge(array(
         'taxonomy' => 'topics',
         'hide_empty' => true
-    ));
+    ), $exclude_args));
 }
 
 ?>
@@ -196,26 +215,25 @@ if ($current_post_type && $current_post_type !== 'post') {
     <?php if ($show_heading && !empty($custom_heading)): ?>
         <h3 class="topics-heading"><?php echo esc_html($custom_heading); ?></h3>
     <?php endif; ?>
-    
+
     <?php if (empty($terms) || is_wp_error($terms)): ?>
         <p class="topics-empty-message"><?php echo esc_html($empty_message); ?></p>
     <?php else: ?>
-        
+
         <?php if ($display_as_dropdown): ?>
             <!-- Dropdown Display -->
             <div class="topics-dropdown-wrapper">
                 <label class="screen-reader-text" for="topics-dropdown-<?php echo uniqid(); ?>">
                     <?php echo esc_html($custom_heading); ?>
                 </label>
-                <select 
-                    name="topics-dropdown" 
-                    id="topics-dropdown-<?php echo uniqid(); ?>" 
+                <select
+                    name="topics-dropdown"
+                    id="topics-dropdown-<?php echo uniqid(); ?>"
                     onchange="if(this.value) location.href=this.value;"
-                    class="topics-dropdown"
-                >
+                    class="topics-dropdown">
                     <option value="">Select <?php echo esc_html($custom_heading); ?></option>
                     <?php foreach ($terms as $term): ?>
-                        <?php 
+                        <?php
                         $post_count = $show_post_counts ? caes_filtered_topics_get_term_post_count($term->term_id, $current_post_type ?: 'post') : 0;
                         if ($post_count > 0): // Only show in dropdown if it has posts
                             $term_link = get_term_link($term);
@@ -230,7 +248,7 @@ if ($current_post_type && $current_post_type !== 'post') {
                     <?php endforeach; ?>
                 </select>
             </div>
-            
+
         <?php else: ?>
             <!-- List Display -->
             <ul class="topics-list<?php echo $show_hierarchy ? ' topics-hierarchical' : ''; ?>">
@@ -238,7 +256,7 @@ if ($current_post_type && $current_post_type !== 'post') {
                     <?php echo caes_filtered_topics_build_hierarchical_list($terms, $current_post_type ?: 'post', $show_post_counts); ?>
                 <?php else: ?>
                     <?php foreach ($terms as $term): ?>
-                        <?php 
+                        <?php
                         $post_count = caes_filtered_topics_get_term_post_count($term->term_id, $current_post_type ?: 'post');
                         if ($post_count > 0): // Only show if it has posts
                             $term_link = get_term_link($term);
@@ -256,6 +274,6 @@ if ($current_post_type && $current_post_type !== 'post') {
                 <?php endif; ?>
             </ul>
         <?php endif; ?>
-        
+
     <?php endif; ?>
 </div>
