@@ -132,7 +132,7 @@ function process_content_for_mpdf($content)
             }
 
             // Rebuild the HTML into our new, correct structure.
-            $html = '<div class="image-caption-wrapper ' . $alignment_class . '" style="width: ' . $width . 'px;">';
+            $html = '<div class="image-caption-wrapper ' . $alignment_class . '" style="width: ' . $width . 'px; margin-bottom: 15px;">';
             // We add the image and then wrap the loose text in a paragraph tag for proper styling and wrapping.
             $html .= $image_tag;
             $html .= '<p class="wp-caption-text">' . $caption_text . '</p>';
