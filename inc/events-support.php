@@ -1565,24 +1565,37 @@ function caes_run_expiration_script_manually() {
 }
 
 /**
- * Syncs the ACF 'featured_image' field with the native WordPress thumbnail.
- * This ensures that alt text and other metadata are correctly associated with the post.
+ * Syncs the ACF 'featured_image' with the native WordPress thumbnail.
  *
- * @param int $post_id The ID of the post being saved.
+ * This function runs with a late priority on the 'save_post_events' hook to ensure
+ * it executes AFTER other plugins or theme functions (like the approval workflow),
+ * preventing the thumbnail ID from being overwritten.
+ *
+ * @param int     $post_id The ID of the post being saved.
+ * @param WP_Post $post    The post object.
  */
-function sync_acf_featured_image_to_thumbnail($post_id) {
+function final_sync_acf_image_to_thumbnail( $post_id, $post ) {
     
-    // Get the image array from your ACF field.
-    $image_array = get_field('featured_image', $post_id);
-    
-    // If an image is selected in the ACF field...
-    if ( !empty($image_array) && isset($image_array['id']) ) {
-        // ...set it as the post's featured image (thumbnail).
-        set_post_thumbnail($post_id, $image_array['id']);
-    } else {
-        // ...otherwise, if the ACF field is empty, remove the featured image.
-        delete_post_thumbnail($post_id);
+    // Bail out if this is an autosave or a revision.
+    if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE || wp_is_post_revision($post_id) ) {
+        return;
+    }
+
+    // Check for the ACF field and get the image data.
+    if ( function_exists('get_field') ) {
+        $image_array = get_field('featured_image', $post_id, false); // false to get raw ID
+        
+        // Check if we have an image ID from ACF.
+        $image_id = is_array($image_array) ? $image_array['id'] : $image_array;
+
+        if ( !empty($image_id) && is_numeric($image_id) ) {
+            // Update the post meta for the thumbnail. This is a direct and reliable way.
+            update_post_meta($post_id, '_thumbnail_id', $image_id);
+        } else {
+            // If the ACF field is cleared, remove the thumbnail link as well.
+            delete_post_meta($post_id, '_thumbnail_id');
+        }
     }
 }
-// Run this function after ACF has saved its data. Priority 20 ensures it runs late.
-add_action('acf/save_post', 'sync_acf_featured_image_to_thumbnail', 20);
+// Use the specific 'save_post_events' hook and run at priority 99 to ensure it runs last.
+add_action( 'save_post_events', 'final_sync_acf_image_to_thumbnail', 99, 2 );
