@@ -1344,7 +1344,7 @@ function debug_acf_field_filtering() {
  * PROPER FIX: Restore calendar values AFTER ACF finishes processing
  * Priority 20 ensures this runs AFTER all ACF internal processing
  */
-// add_action('acf/save_post', 'restore_calendar_values_after_acf', 20);
+add_action('acf/save_post', 'restore_calendar_values_after_acf', 20);
 
 function restore_calendar_values_after_acf($post_id) {
     // Only for events
