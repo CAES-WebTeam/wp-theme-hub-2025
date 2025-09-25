@@ -1563,3 +1563,26 @@ function caes_run_expiration_script_manually() {
     
     return $expired_count;
 }
+
+/**
+ * Syncs the ACF 'featured_image' field with the native WordPress thumbnail.
+ * This ensures that alt text and other metadata are correctly associated with the post.
+ *
+ * @param int $post_id The ID of the post being saved.
+ */
+function sync_acf_featured_image_to_thumbnail($post_id) {
+    
+    // Get the image array from your ACF field.
+    $image_array = get_field('featured_image', $post_id);
+    
+    // If an image is selected in the ACF field...
+    if ( !empty($image_array) && isset($image_array['id']) ) {
+        // ...set it as the post's featured image (thumbnail).
+        set_post_thumbnail($post_id, $image_array['id']);
+    } else {
+        // ...otherwise, if the ACF field is empty, remove the featured image.
+        delete_post_thumbnail($post_id);
+    }
+}
+// Run this function after ACF has saved its data. Priority 20 ensures it runs late.
+add_action('acf/save_post', 'sync_acf_featured_image_to_thumbnail', 20);
