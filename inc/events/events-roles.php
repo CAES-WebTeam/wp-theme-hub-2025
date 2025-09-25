@@ -213,6 +213,105 @@ function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
     return $caps;
 }
 
+// Hide admin menu items from Event Approvers
+add_action('admin_menu', 'hide_admin_menus_from_event_approvers', 999);
+
+function hide_admin_menus_from_event_approvers() {
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+    
+    // Only apply to Event Approvers
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
+        // Remove post types they shouldn't see
+        remove_menu_page('edit.php'); // Posts
+        remove_menu_page('edit.php?post_type=page'); // Pages  
+        remove_menu_page('edit.php?post_type=publication'); // Publications
+        remove_menu_page('upload.php'); // Media (they can still edit via events)
+        
+        // Remove other admin sections
+        remove_menu_page('themes.php'); // Themes
+        remove_menu_page('plugins.php'); // Plugins
+        remove_menu_page('users.php'); // Users
+        remove_menu_page('tools.php'); // Tools
+        remove_menu_page('options-general.php'); // Settings
+        
+        // Remove dashboard widgets they shouldn't see
+        remove_meta_box('dashboard_right_now', 'dashboard', 'normal');
+        remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');
+        remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');
+        remove_meta_box('dashboard_plugins', 'dashboard', 'normal');
+    }
+}
+
+// Restrict post type access in admin
+add_action('load-edit.php', 'restrict_post_type_access_for_event_approvers');
+add_action('load-post.php', 'restrict_post_type_access_for_event_approvers');
+add_action('load-post-new.php', 'restrict_post_type_access_for_event_approvers');
+
+function restrict_post_type_access_for_event_approvers() {
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+    
+    // Only apply to Event Approvers
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
+        global $typenow;
+        
+        // Allow access only to events
+        $allowed_post_types = array('events');
+        
+        if (!in_array($typenow, $allowed_post_types)) {
+            wp_die('You do not have permission to access this area.');
+        }
+    }
+}
+
+// Hide other post types from the admin bar "New" menu
+add_action('admin_bar_menu', 'hide_admin_bar_new_items_for_event_approvers', 999);
+
+function hide_admin_bar_new_items_for_event_approvers($wp_admin_bar) {
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+    
+    // Only apply to Event Approvers
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
+        $wp_admin_bar->remove_node('new-post');
+        $wp_admin_bar->remove_node('new-page');
+        $wp_admin_bar->remove_node('new-publication');
+        $wp_admin_bar->remove_node('new-media');
+    }
+}
+
+// Redirect Event Approvers if they try to access restricted areas directly
+add_action('current_screen', 'redirect_event_approvers_from_restricted_areas');
+
+function redirect_event_approvers_from_restricted_areas($current_screen) {
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+    
+    // Only apply to Event Approvers
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
+        $restricted_screens = array(
+            'edit-post',
+            'post',
+            'edit-page', 
+            'page',
+            'edit-publication',
+            'publication',
+            'upload',
+            'themes',
+            'plugins',
+            'users',
+            'tools',
+            'options-general'
+        );
+        
+        if (in_array($current_screen->id, $restricted_screens)) {
+            wp_redirect(admin_url('edit.php?post_type=events'));
+            exit;
+        }
+    }
+}
+
 // ----------------------------------------------------------------------
 // Optional: Cleanup
 // Remove the roles on theme deactivation to keep the database clean.
