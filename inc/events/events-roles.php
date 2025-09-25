@@ -117,6 +117,9 @@ function register_event_custom_roles()
             $approver_role->add_cap('delete_private_events');
             $approver_role->add_cap('read_private_events');
             $approver_role->add_cap('upload_files');
+            $approver_role->add_cap('edit_posts');           // Can edit posts (includes attachments)
+            $approver_role->add_cap('edit_others_posts');    // Can edit others' posts/attachments
+            $approver_role->add_cap('edit_published_posts'); // Can edit published attachments
         }
     }
 
@@ -153,37 +156,38 @@ function register_event_custom_roles()
 add_action('show_user_profile', 'add_calendar_permissions_fields');
 add_action('edit_user_profile', 'add_calendar_permissions_fields');
 
-function add_calendar_permissions_fields($user) {
+function add_calendar_permissions_fields($user)
+{
     // Only show for users with event-related roles
     $user_roles = (array) $user->roles;
     $event_roles = array('event_submitter', 'event_approver', 'administrator', 'editor');
-    
+
     if (!array_intersect($user_roles, $event_roles)) {
         return;
     }
-    
+
     // Get all calendars
     $calendars = get_terms(array(
         'taxonomy' => 'event_caes_departments',
         'hide_empty' => false,
     ));
-    
+
     if (is_wp_error($calendars) || empty($calendars)) {
         return;
     }
-    
+
     // Get current permissions
     $submit_permissions = get_user_meta($user->ID, 'calendar_submit_permissions', true);
     $approve_permissions = get_user_meta($user->ID, 'calendar_approve_permissions', true);
-    
+
     if (!is_array($submit_permissions)) {
         $submit_permissions = array();
     }
     if (!is_array($approve_permissions)) {
         $approve_permissions = array();
     }
-    
-    ?>
+
+?>
     <h3><?php _e('Event Calendar Permissions', 'caes-hub'); ?></h3>
     <table class="form-table">
         <tr>
@@ -191,7 +195,7 @@ function add_calendar_permissions_fields($user) {
             <td>
                 <fieldset>
                     <legend class="screen-reader-text"><?php _e('Calendar Permissions', 'caes-hub'); ?></legend>
-                    
+
                     <table style="border-collapse: collapse; width: 100%;">
                         <thead>
                             <tr>
@@ -202,27 +206,27 @@ function add_calendar_permissions_fields($user) {
                         </thead>
                         <tbody>
                             <?php foreach ($calendars as $calendar): ?>
-                            <tr>
-                                <td style="padding: 8px; border-bottom: 1px solid #eee;">
-                                    <strong><?php echo esc_html($calendar->name); ?></strong>
-                                </td>
-                                <td style="text-align: center; padding: 8px; border-bottom: 1px solid #eee;">
-                                    <input type="checkbox" 
-                                           name="calendar_submit_permissions[]" 
-                                           value="<?php echo esc_attr($calendar->term_id); ?>"
-                                           <?php checked(in_array($calendar->term_id, $submit_permissions)); ?> />
-                                </td>
-                                <td style="text-align: center; padding: 8px; border-bottom: 1px solid #eee;">
-                                    <input type="checkbox" 
-                                           name="calendar_approve_permissions[]" 
-                                           value="<?php echo esc_attr($calendar->term_id); ?>"
-                                           <?php checked(in_array($calendar->term_id, $approve_permissions)); ?> />
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                                        <strong><?php echo esc_html($calendar->name); ?></strong>
+                                    </td>
+                                    <td style="text-align: center; padding: 8px; border-bottom: 1px solid #eee;">
+                                        <input type="checkbox"
+                                            name="calendar_submit_permissions[]"
+                                            value="<?php echo esc_attr($calendar->term_id); ?>"
+                                            <?php checked(in_array($calendar->term_id, $submit_permissions)); ?> />
+                                    </td>
+                                    <td style="text-align: center; padding: 8px; border-bottom: 1px solid #eee;">
+                                        <input type="checkbox"
+                                            name="calendar_approve_permissions[]"
+                                            value="<?php echo esc_attr($calendar->term_id); ?>"
+                                            <?php checked(in_array($calendar->term_id, $approve_permissions)); ?> />
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    
+
                     <p class="description">
                         <?php _e('Select which calendars this user can submit events to and/or approve events for.', 'caes-hub'); ?>
                     </p>
@@ -230,25 +234,26 @@ function add_calendar_permissions_fields($user) {
             </td>
         </tr>
     </table>
-    <?php
+<?php
 }
 
 // Save calendar permissions
 add_action('personal_options_update', 'save_calendar_permissions_fields');
 add_action('edit_user_profile_update', 'save_calendar_permissions_fields');
 
-function save_calendar_permissions_fields($user_id) {
+function save_calendar_permissions_fields($user_id)
+{
     if (!current_user_can('edit_user', $user_id)) {
         return;
     }
-    
+
     // Save submit permissions
-    $submit_permissions = isset($_POST['calendar_submit_permissions']) ? 
+    $submit_permissions = isset($_POST['calendar_submit_permissions']) ?
         array_map('intval', $_POST['calendar_submit_permissions']) : array();
     update_user_meta($user_id, 'calendar_submit_permissions', $submit_permissions);
-    
+
     // Save approve permissions  
-    $approve_permissions = isset($_POST['calendar_approve_permissions']) ? 
+    $approve_permissions = isset($_POST['calendar_approve_permissions']) ?
         array_map('intval', $_POST['calendar_approve_permissions']) : array();
     update_user_meta($user_id, 'calendar_approve_permissions', $approve_permissions);
 }
@@ -256,93 +261,96 @@ function save_calendar_permissions_fields($user_id) {
 /**
  * Helper function to check if user can submit to a calendar
  */
-function user_can_submit_to_calendar($user_id, $calendar_term_id) {
+function user_can_submit_to_calendar($user_id, $calendar_term_id)
+{
     $user = get_userdata($user_id);
     if (!$user) {
         return false;
     }
-    
+
     $user_roles = (array) $user->roles;
-    
+
     // Admins and editors can submit to all calendars
     if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
         return true;
     }
-    
+
     // Check user's specific permissions
     $submit_permissions = get_user_meta($user_id, 'calendar_submit_permissions', true);
     if (!is_array($submit_permissions)) {
         $submit_permissions = array();
     }
-    
+
     return in_array($calendar_term_id, $submit_permissions);
 }
 
 /**
  * Helper function to check if user can approve a calendar
  */
-function user_can_approve_calendar($user_id, $calendar_term_id) {
+function user_can_approve_calendar($user_id, $calendar_term_id)
+{
     $user = get_userdata($user_id);
     if (!$user) {
         // error_log("DEBUG user_can_approve_calendar: User ID $user_id not found");
         return false;
     }
-    
+
     $user_roles = (array) $user->roles;
     // error_log("DEBUG user_can_approve_calendar: User $user_id roles: " . implode(', ', $user_roles));
-    
+
     // Admins and editors can approve all calendars
     if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
         // error_log("DEBUG user_can_approve_calendar: User $user_id is admin/editor - APPROVED");
         return true;
     }
-    
+
     // Check user's specific approve permissions
     $approve_permissions = get_user_meta($user_id, 'calendar_approve_permissions', true);
     if (!is_array($approve_permissions)) {
         $approve_permissions = array();
     }
-    
+
     // error_log("DEBUG user_can_approve_calendar: User $user_id approve permissions: " . print_r($approve_permissions, true));
     // error_log("DEBUG user_can_approve_calendar: Checking calendar term ID: $calendar_term_id");
-    
+
     $can_approve = in_array($calendar_term_id, $approve_permissions);
     // error_log("DEBUG user_can_approve_calendar: Can approve result: " . ($can_approve ? 'YES' : 'NO'));
-    
+
     return $can_approve;
 }
 
 /**
  * Get all calendars a user can submit to
  */
-function get_user_submit_calendars($user_id) {
+function get_user_submit_calendars($user_id)
+{
     $user = get_userdata($user_id);
     if (!$user) {
         return array();
     }
-    
+
     $user_roles = (array) $user->roles;
-    
+
     // Get all calendars
     $all_calendars = get_terms(array(
         'taxonomy' => 'event_caes_departments',
         'hide_empty' => false,
     ));
-    
+
     if (is_wp_error($all_calendars)) {
         return array();
     }
-    
+
     // Admins and editors can submit to all calendars
     if (in_array('administrator', $user_roles) || in_array('editor', $user_roles)) {
         return wp_list_pluck($all_calendars, 'term_id');
     }
-    
+
     // For other users, check their permissions
     $submit_permissions = get_user_meta($user_id, 'calendar_submit_permissions', true);
     if (!is_array($submit_permissions)) {
         $submit_permissions = array();
     }
-    
+
     return $submit_permissions;
 }
