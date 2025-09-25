@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v19'); // Cache key updated for parent topics feature
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v20'); // Cache key updated for collapsible parent topics
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -193,8 +193,10 @@ function caes_render_topics_manager_page() {
         /* Parent topics styles */
         .caes-parent-topic-item { background: #fff; border: 1px solid #2271b1; margin-bottom: 20px; padding: 15px; border-radius: 4px; }
         .caes-children-count { font-size: 14px; color: #666; font-weight: normal; margin-left: 10px; }
-        .caes-children-list { margin-top: 15px; }
-        .caes-children-list h4 { margin: 0 0 10px 0; font-size: 14px; color: #333; }
+        .caes-children-summary { margin-top: 15px; }
+        .caes-toggle-children { display: flex; align-items: center; gap: 8px; }
+        .caes-children-summary-text { font-size: 12px; color: #666; font-weight: normal; }
+        .caes-children-list { margin-top: 15px; padding-top: 15px; border-top: 1px solid #e9ecef; }
         .caes-children-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
         .caes-child-topic { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 3px; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
         .caes-child-active { border-left: 4px solid #28a745; }
@@ -264,6 +266,23 @@ function caes_render_topics_manager_page() {
                 } else {
                     $content.slideDown();
                     $button.text('Hide Content Comparison');
+                }
+            });
+            
+            // Handle children topics toggle
+            $('.caes-toggle-children').on('click', function(e) {
+                e.preventDefault();
+                var target = '#' + $(this).data('target');
+                var $button = $(this);
+                var $content = $(target);
+                var $toggleText = $button.find('.caes-toggle-text');
+                
+                if ($content.is(':visible')) {
+                    $content.slideUp();
+                    $toggleText.text('Show Children');
+                } else {
+                    $content.slideDown();
+                    $toggleText.text('Hide Children');
                 }
             });
         });
@@ -497,12 +516,23 @@ function caes_display_parent_topics(array $parent_topics, array $all_topics) {
         return;
     }
     
-    foreach ($parent_topics as $parent_info) {
+    foreach ($parent_topics as $parent_id => $parent_info) {
         $parent_data = $parent_info['parent_data'];
         $parent_term = $parent_data['term'];
         $children = $parent_info['children'];
         $is_active = (bool)$parent_data['is_active'];
         $item_class = 'caes-parent-topic-item' . ($is_active ? '' : ' caes-topic-inactive');
+        
+        // Count active/inactive children
+        $active_children = 0;
+        $inactive_children = 0;
+        foreach ($children as $child_data) {
+            if ($child_data['is_active']) {
+                $active_children++;
+            } else {
+                $inactive_children++;
+            }
+        }
         
         // Get parent's own parent if it exists
         $grandparent_name = null;
@@ -511,6 +541,7 @@ function caes_display_parent_topics(array $parent_topics, array $all_topics) {
         }
         
         $is_new_topic = empty($parent_data['meta']['topic_id']);
+        $children_id = 'children-' . $parent_id;
         
         ?>
         <div class="<?php echo esc_attr($item_class); ?>">
@@ -538,8 +569,16 @@ function caes_display_parent_topics(array $parent_topics, array $all_topics) {
             
             <div class="caes-counts"><?php caes_render_post_counts($parent_term->slug, $parent_data['counts']); ?></div>
             
-            <div class="caes-children-list">
-                <h4>Children Topics:</h4>
+            <div class="caes-children-summary">
+                <button class="caes-toggle-children button button-secondary" data-target="<?php echo esc_attr($children_id); ?>">
+                    <span class="caes-toggle-text">Show Children</span>
+                    <span class="caes-children-summary-text">
+                        (<?php echo $active_children; ?> active, <?php echo $inactive_children; ?> inactive)
+                    </span>
+                </button>
+            </div>
+            
+            <div id="<?php echo esc_attr($children_id); ?>" class="caes-children-list" style="display: none;">
                 <div class="caes-children-grid">
                     <?php foreach ($children as $child_data) : 
                         $child_term = $child_data['term'];
