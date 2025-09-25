@@ -165,3 +165,93 @@ function debug_acf_image_update($value, $post_id, $field) {
     
     return $value;
 }
+
+add_action('admin_footer', 'debug_alt_text_clearing');
+
+function debug_alt_text_clearing() {
+    global $typenow, $pagenow;
+    
+    if ($typenow === 'events' && in_array($pagenow, ['post.php', 'post-new.php'])) {
+        ?>
+        <script>
+        jQuery(document).ready(function($) {
+            console.log('Alt text debugging active');
+            
+            // Monitor when media modals open
+            $(document).on('DOMNodeInserted', function(e) {
+                if ($(e.target).hasClass('media-modal') || $(e.target).find('.media-modal').length) {
+                    console.log('Media modal detected, setting up field monitoring');
+                    
+                    setTimeout(function() {
+                        // Find alt text field
+                        var $altField = $('.attachment-details input[data-setting="alt"], input[name="attachments[alt]"], .setting.alt input');
+                        
+                        if ($altField.length) {
+                            console.log('Found alt field:', $altField);
+                            console.log('Initial value:', $altField.val());
+                            
+                            // Monitor changes to this field
+                            $altField.on('change input', function() {
+                                console.log('Alt field changed to:', $(this).val());
+                            });
+                            
+                            // Watch for field being cleared
+                            var originalVal = $altField.val();
+                            var checkCount = 0;
+                            var checkInterval = setInterval(function() {
+                                var currentVal = $altField.val();
+                                checkCount++;
+                                
+                                if (currentVal !== originalVal) {
+                                    console.log('ALT TEXT CHANGED! From "' + originalVal + '" to "' + currentVal + '" after ' + (checkCount * 100) + 'ms');
+                                    clearInterval(checkInterval);
+                                    
+                                    // Try to trace what cleared it
+                                    console.trace('Alt text was cleared');
+                                }
+                                
+                                if (checkCount > 50) { // Stop after 5 seconds
+                                    clearInterval(checkInterval);
+                                }
+                            }, 100);
+                        }
+                    }, 500);
+                }
+            });
+            
+            // Also monitor ACF image modals
+            if (typeof acf !== 'undefined') {
+                acf.addAction('ready', function() {
+                    console.log('ACF ready - monitoring image fields');
+                });
+                
+                // Monitor when ACF image modal opens
+                $(document).on('click', '.acf-image-uploader .edit-image', function() {
+                    console.log('ACF image edit clicked');
+                    
+                    setTimeout(function() {
+                        var $modal = $('.media-modal:visible');
+                        if ($modal.length) {
+                            console.log('ACF modal is open, monitoring alt field');
+                            
+                            var $altField = $modal.find('input[data-setting="alt"]');
+                            if ($altField.length) {
+                                console.log('ACF modal alt field found:', $altField.val());
+                                
+                                // Watch this field too
+                                setTimeout(function() {
+                                    if ($altField.val() === '') {
+                                        console.log('ACF modal alt field was cleared!');
+                                        console.trace();
+                                    }
+                                }, 1000);
+                            }
+                        }
+                    }, 1000);
+                });
+            }
+        });
+        </script>
+        <?php
+    }
+}
