@@ -1566,44 +1566,55 @@ function caes_run_expiration_script_manually() {
 
 /**
  * ===================================================================
- * FINAL DIAGNOSTIC: Is the Image Alt Text actually being saved?
+ * FINAL FIX: Sync Thumbnail and Force Save Alt Text
  * ===================================================================
- * This hook fires specifically when an attachment's metadata is updated.
- * It will tell us if the alt text from the media modal is ever received by WordPress.
+ * This function solves the issue by bypassing the JavaScript conflict.
+ * It runs when the event is saved, takes the alt text from the ACF image data,
+ * and directly saves it to the image in the Media Library using PHP.
+ *
+ * @param int     $post_id The ID of the post being saved.
+ * @param WP_Post $post    The post object.
  */
-function debug_check_attachment_save( $attachment_id ) {
+function final_sync_and_save_alt_text( $post_id, $post ) {
     
-    // Check the data that was sent in the request
-    // WordPress puts attachment changes in the 'changes' array in the POST data.
-    $changes = isset($_POST['changes']) ? $_POST['changes'] : null;
-
-    // Log the raw data received for this attachment ID
-    error_log("--- Fired 'edit_attachment' for Attachment ID: {$attachment_id} ---");
-    error_log("Data received in \$_POST['changes']: " . print_r($changes, true));
-    error_log("-------------------------------------------\n");
-
-}
-add_action( 'edit_attachment', 'debug_check_attachment_save' );
-
-/**
- * ===================================================================
- * THE REQUIRED FIX (Keep this active)
- * ===================================================================
- * This function remains essential to ensure the theme and WordPress core
- * are in sync.
- */
-function final_sync_acf_image_to_thumbnail( $post_id, $post ) {
-    if ( ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) || wp_is_post_revision($post_id) ) {
+    // Bail out if this is an autosave, a revision, or not the 'events' post type.
+    if ( ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) || wp_is_post_revision($post_id) || $post->post_type !== 'events' ) {
         return;
     }
+
+    // Check if ACF's get_field function exists.
     if ( function_exists('get_field') ) {
-        $image_array = get_field('featured_image', $post_id, false);
-        $image_id = is_array($image_array) ? $image_array['id'] : $image_array;
-        if ( !empty($image_id) && is_numeric($image_id) ) {
-            update_post_meta($post_id, '_thumbnail_id', $image_id);
+        
+        // Get the entire image array from your ACF field.
+        $image_array = get_field('featured_image', $post_id, false); // 'false' is crucial to get the raw array
+        
+        if ( !empty($image_array) ) {
+            
+            // Ensure we have an array with an ID, as expected.
+            if ( is_array($image_array) && isset($image_array['id']) ) {
+                $image_id = $image_array['id'];
+
+                // 1. SYNC THE THUMBNAIL (Essential for theme compatibility)
+                update_post_meta($post_id, '_thumbnail_id', $image_id);
+
+                // 2. FORCE SAVE THE ALT TEXT (The Fix)
+                // Check if the alt text from the ACF field is available.
+                if ( isset($image_array['alt']) ) {
+                    $alt_text = $image_array['alt'];
+                    // Get the current alt text from the media library.
+                    $current_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
+                    
+                    // Only update if the alt text has changed, to be efficient.
+                    if ($alt_text !== $current_alt) {
+                        update_post_meta($image_id, '_wp_attachment_image_alt', $alt_text);
+                    }
+                }
+            }
         } else {
+            // If the ACF field is cleared, remove the thumbnail link.
             delete_post_meta($post_id, '_thumbnail_id');
         }
     }
 }
-add_action( 'save_post_events', 'final_sync_acf_image_to_thumbnail', 99, 2 );
+// Use the specific 'save_post_events' hook and run at priority 99 to ensure it runs last.
+add_action( 'save_post_events', 'final_sync_and_save_alt_text', 99, 2 );
