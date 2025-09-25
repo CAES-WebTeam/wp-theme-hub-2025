@@ -494,10 +494,10 @@ function filter_calendar_checkboxes_js() {
         var isOriginalAuthor = <?php echo json_encode($is_original_author); ?>;
         var currentUserId = <?php echo $current_user_id; ?>;
         
-        console.log('Calendar permissions for user ' + currentUserId + ':');
-        console.log('- Can submit to:', allowedSubmitCalendars);
-        console.log('- Can approve:', allowedApproveCalendars);
-        console.log('- Is original author:', isOriginalAuthor);
+        // console.log('Calendar permissions for user ' + currentUserId + ':');
+        // console.log('- Can submit to:', allowedSubmitCalendars);
+        // console.log('- Can approve:', allowedApproveCalendars);
+        // console.log('- Is original author:', isOriginalAuthor);
         
         // Function to disable/enable calendar checkboxes based on permissions
         function setupCalendarPermissions() {
@@ -509,11 +509,11 @@ function filter_calendar_checkboxes_js() {
             }
             
             if ($calendarField.length === 0) {
-                console.log('Calendar field not found');
+                // console.log('Calendar field not found');
                 return;
             }
             
-            console.log('Found calendar field:', $calendarField);
+            // console.log('Found calendar field:', $calendarField);
             
             // Add explanatory text
             var $existingNotice = $calendarField.find('.calendar-permission-notice');
@@ -558,7 +558,7 @@ function filter_calendar_checkboxes_js() {
                     return false;
                 });
                 
-                console.log('Completely disabled calendar field for non-author');
+                // console.log('Completely disabled calendar field for non-author');
             } else {
                 // For original authors, handle permission-based disabling
                 $calendarField.find('input[type="checkbox"]').each(function() {
@@ -591,7 +591,7 @@ function filter_calendar_checkboxes_js() {
                             $checkbox.prop('checked', false);
                         }
                         
-                        console.log('Disabled calendar option for author:', value);
+                        // console.log('Disabled calendar option for author:', value);
                     } else {
                         // Make sure it's enabled and styled normally
                         $checkbox.prop('disabled', false);
@@ -600,7 +600,7 @@ function filter_calendar_checkboxes_js() {
                             'cursor': 'pointer'
                         });
                         
-                        console.log('Enabled calendar option for author:', value);
+                        // console.log('Enabled calendar option for author:', value);
                     }
                 });
             }
@@ -1316,21 +1316,21 @@ function debug_acf_field_filtering() {
     if ($typenow === 'events' && in_array($pagenow, ['post.php', 'post-new.php']) && current_user_can('administrator')) {
         ?>
         <script>
-        console.log('ACF Field Debug - Current User ID:', <?php echo get_current_user_id(); ?>);
-        console.log('ACF Field Debug - User Roles:', <?php echo json_encode(wp_get_current_user()->roles); ?>);
+        // console.log('ACF Field Debug - Current User ID:', <?php echo get_current_user_id(); ?>);
+        // console.log('ACF Field Debug - User Roles:', <?php echo json_encode(wp_get_current_user()->roles); ?>);
         
         // Log when ACF field loads
         if (typeof acf !== 'undefined') {
             acf.addAction('ready', function() {
                 var field = acf.getField('field_caes_department'); // Replace with your actual field key
                 if (field) {
-                    console.log('ACF Field found:', field);
-                    console.log('ACF Field choices:', field.get('choices'));
+                    // console.log('ACF Field found:', field);
+                    // console.log('ACF Field choices:', field.get('choices'));
                 } else {
                     console.log('ACF Field not found - trying alternative selectors');
                     // Try to find by name
                     jQuery('[data-name="caes_department"]').each(function() {
-                        console.log('Found ACF field element:', this);
+                        // console.log('Found ACF field element:', this);
                     });
                 }
             });
@@ -1563,58 +1563,3 @@ function caes_run_expiration_script_manually() {
     
     return $expired_count;
 }
-
-/**
- * ===================================================================
- * FINAL FIX: Sync Thumbnail and Force Save Alt Text
- * ===================================================================
- * This function solves the issue by bypassing the JavaScript conflict.
- * It runs when the event is saved, takes the alt text from the ACF image data,
- * and directly saves it to the image in the Media Library using PHP.
- *
- * @param int     $post_id The ID of the post being saved.
- * @param WP_Post $post    The post object.
- */
-function final_sync_and_save_alt_text( $post_id, $post ) {
-    
-    // Bail out if this is an autosave, a revision, or not the 'events' post type.
-    if ( ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) || wp_is_post_revision($post_id) || $post->post_type !== 'events' ) {
-        return;
-    }
-
-    // Check if ACF's get_field function exists.
-    if ( function_exists('get_field') ) {
-        
-        // Get the entire image array from your ACF field.
-        $image_array = get_field('featured_image', $post_id, false); // 'false' is crucial to get the raw array
-        
-        if ( !empty($image_array) ) {
-            
-            // Ensure we have an array with an ID, as expected.
-            if ( is_array($image_array) && isset($image_array['id']) ) {
-                $image_id = $image_array['id'];
-
-                // 1. SYNC THE THUMBNAIL (Essential for theme compatibility)
-                update_post_meta($post_id, '_thumbnail_id', $image_id);
-
-                // 2. FORCE SAVE THE ALT TEXT (The Fix)
-                // Check if the alt text from the ACF field is available.
-                if ( isset($image_array['alt']) ) {
-                    $alt_text = $image_array['alt'];
-                    // Get the current alt text from the media library.
-                    $current_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
-                    
-                    // Only update if the alt text has changed, to be efficient.
-                    if ($alt_text !== $current_alt) {
-                        update_post_meta($image_id, '_wp_attachment_image_alt', $alt_text);
-                    }
-                }
-            }
-        } else {
-            // If the ACF field is cleared, remove the thumbnail link.
-            delete_post_meta($post_id, '_thumbnail_id');
-        }
-    }
-}
-// Use the specific 'save_post_events' hook and run at priority 99 to ensure it runs last.
-add_action( 'save_post_events', 'final_sync_and_save_alt_text', 99, 2 );
