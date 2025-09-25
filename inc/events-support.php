@@ -72,7 +72,7 @@ function update_departments_taxonomy_from_acf($post_id)
     // Update the post's event_caes_departments taxonomy with the selected term IDs
     wp_set_post_terms($post_id, $acf_department_terms, 'event_caes_departments');
 }
-// add_action('save_post', 'update_departments_taxonomy_from_acf', 20);
+add_action('save_post', 'update_departments_taxonomy_from_acf', 20);
 
 // Function to remove the series taxonomy meta box and featured image from the events post type
 function remove_events_metaboxes()
@@ -1344,7 +1344,7 @@ function debug_acf_field_filtering() {
  * PROPER FIX: Restore calendar values AFTER ACF finishes processing
  * Priority 20 ensures this runs AFTER all ACF internal processing
  */
-add_action('acf/save_post', 'restore_calendar_values_after_acf', 20);
+// add_action('acf/save_post', 'restore_calendar_values_after_acf', 20);
 
 function restore_calendar_values_after_acf($post_id) {
     // Only for events
