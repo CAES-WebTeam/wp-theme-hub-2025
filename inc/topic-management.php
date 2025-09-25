@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v17'); // Cache key updated for duplicates feature
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v18'); // Cache key updated for content comparison feature
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -182,7 +182,7 @@ function caes_render_topics_manager_page() {
         
         /* Duplicate-specific styles */
         .caes-duplicate-group { background: #fff; border: 1px solid #dc7e00; margin-bottom: 20px; border-radius: 4px; overflow: hidden; }
-        .caes-duplicate-group-header { background-color: #fef7e6; padding: 15px; border-bottom: 1px solid #dc7e00; }
+        .caes-duplicate-group-header { background-color: #fef7e6; padding: 15px; border-bottom: 1px solid #dc7e00; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .caes-duplicate-group-title { font-size: 18px; font-weight: bold; color: #dc7e00; margin: 0; }
         .caes-duplicate-group-count { font-size: 14px; color: #666; margin: 5px 0 0 0; }
         .caes-duplicate-item { padding: 15px; border-bottom: 1px solid #f0f0f1; background: #fff; }
@@ -192,6 +192,29 @@ function caes_render_topics_manager_page() {
         .caes-duplicate-badge { background-color: #dc7e00; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; }
         .caes-duplicate-id { font-size: 12px; color: #666; margin-left: 10px; }
         .caes-no-duplicates { text-align: center; padding: 40px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; color: #666; }
+        
+        /* Content Comparison styles */
+        .caes-content-comparison { background-color: #f8f9fa; border-top: 1px solid #dc7e00; padding: 20px; }
+        .caes-content-comparison-header { margin-bottom: 20px; }
+        .caes-content-comparison-header h4 { margin: 0 0 5px 0; color: #dc7e00; }
+        .caes-content-comparison-header p { margin: 0; font-size: 14px; color: #666; }
+        .caes-content-analysis-section { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px; }
+        .caes-content-analysis-title { margin: 0 0 15px 0; font-size: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .caes-content-analysis-summary { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .caes-analysis-stat { padding: 5px 10px; background-color: #f0f0f1; border-radius: 3px; font-size: 12px; }
+        .caes-stat-shared { background-color: #fff3cd; color: #856404; }
+        .caes-stat-unique { background-color: #d1ecf1; color: #0c5460; }
+        .caes-shared-content, .caes-unique-content { margin-bottom: 15px; }
+        .caes-shared-content h6, .caes-unique-content h6 { margin: 0 0 10px 0; font-size: 14px; color: #333; }
+        .caes-post-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 3px; }
+        .caes-post-item { padding: 8px 12px; border-bottom: 1px solid #f0f0f1; display: flex; justify-content: space-between; align-items: center; }
+        .caes-post-item:last-child { border-bottom: none; }
+        .caes-post-item a { text-decoration: none; color: #135e96; font-weight: 500; }
+        .caes-post-item a:hover { text-decoration: underline; }
+        .caes-post-date { font-size: 11px; color: #666; }
+        .caes-shared-post { background-color: #fff3cd; }
+        .caes-unique-post { background-color: #d1ecf1; }
+        .caes-toggle-content-comparison { margin-top: 10px; }
     </style>
     <script>
         jQuery(document).ready(function($) {
@@ -202,6 +225,22 @@ function caes_render_topics_manager_page() {
                 $(this).addClass('nav-tab-active');
                 $('.caes-tab-content').removeClass('active');
                 $(target).addClass('active');
+            });
+            
+            // Handle content comparison toggle
+            $('.caes-toggle-content-comparison').on('click', function(e) {
+                e.preventDefault();
+                var target = '#' + $(this).data('target');
+                var $button = $(this);
+                var $content = $(target);
+                
+                if ($content.is(':visible')) {
+                    $content.slideUp();
+                    $button.text('Show Content Comparison');
+                } else {
+                    $content.slideDown();
+                    $button.text('Hide Content Comparison');
+                }
             });
         });
     </script>
@@ -471,11 +510,15 @@ function caes_display_duplicates(array $duplicates, array $all_topics) {
     
     foreach ($duplicates as $name_key => $duplicate_group) {
         $example_name = $duplicate_group[0]['term']->name;
+        $group_id = 'duplicate-group-' . sanitize_title($name_key);
         ?>
         <div class="caes-duplicate-group">
             <div class="caes-duplicate-group-header">
                 <h3 class="caes-duplicate-group-title"><?php echo esc_html($example_name); ?></h3>
                 <p class="caes-duplicate-group-count"><?php echo count($duplicate_group); ?> duplicates found</p>
+                <button class="button button-secondary caes-toggle-content-comparison" data-target="<?php echo esc_attr($group_id); ?>">
+                    Show Content Comparison
+                </button>
             </div>
             
             <?php foreach ($duplicate_group as $topic_data) : 
@@ -518,9 +561,190 @@ function caes_display_duplicates(array $duplicates, array $all_topics) {
                     </div>
                 </div>
             <?php endforeach; ?>
+            
+            <!-- Content Comparison Section -->
+            <div id="<?php echo esc_attr($group_id); ?>" class="caes-content-comparison" style="display: none;">
+                <div class="caes-content-comparison-header">
+                    <h4>Content Analysis</h4>
+                    <p>This shows which content is unique to each duplicate and which content is shared.</p>
+                </div>
+                <?php caes_display_duplicate_content_analysis($duplicate_group); ?>
+            </div>
         </div>
         <?php
     }
+}
+
+/**
+ * Display content analysis for duplicate terms
+ */
+function caes_display_duplicate_content_analysis(array $duplicate_group) {
+    $post_types = ['post' => 'Stories', 'publications' => 'Publications', 'shorthand_story' => 'Features'];
+    $term_posts = [];
+    
+    // Get all posts for each duplicate term
+    foreach ($duplicate_group as $index => $topic_data) {
+        $term_id = $topic_data['term']->term_id;
+        $term_posts[$index] = caes_get_posts_for_term($term_id);
+    }
+    
+    foreach ($post_types as $post_type => $label) {
+        $analysis = caes_analyze_duplicate_content($term_posts, $post_type);
+        
+        if ($analysis['total_posts'] == 0) {
+            continue; // Skip if no posts of this type
+        }
+        
+        ?>
+        <div class="caes-content-analysis-section">
+            <h5 class="caes-content-analysis-title"><?php echo esc_html($label); ?> Analysis</h5>
+            
+            <div class="caes-content-analysis-summary">
+                <span class="caes-analysis-stat">
+                    <strong>Total <?php echo esc_html($label); ?>:</strong> <?php echo $analysis['total_posts']; ?>
+                </span>
+                <span class="caes-analysis-stat caes-stat-shared">
+                    <strong>Shared:</strong> <?php echo $analysis['shared_count']; ?>
+                </span>
+                <span class="caes-analysis-stat caes-stat-unique">
+                    <strong>Unique:</strong> <?php echo $analysis['unique_count']; ?>
+                </span>
+            </div>
+            
+            <?php if (!empty($analysis['shared_posts'])) : ?>
+                <div class="caes-shared-content">
+                    <h6>Content Tagged with BOTH Terms (<?php echo count($analysis['shared_posts']); ?> items)</h6>
+                    <div class="caes-post-list">
+                        <?php foreach ($analysis['shared_posts'] as $post) : ?>
+                            <div class="caes-post-item caes-shared-post">
+                                <a href="<?php echo esc_url(get_edit_post_link($post->ID)); ?>" target="_blank">
+                                    <?php echo esc_html($post->post_title); ?>
+                                </a>
+                                <span class="caes-post-date">(<?php echo get_the_date('M j, Y', $post); ?>)</span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <?php foreach ($duplicate_group as $index => $topic_data) : 
+                if (empty($analysis['unique_posts'][$index])) continue;
+                ?>
+                <div class="caes-unique-content">
+                    <h6>Content ONLY in "<?php echo esc_html($topic_data['term']->name); ?>" (<?php echo count($analysis['unique_posts'][$index]); ?> items)</h6>
+                    <div class="caes-post-list">
+                        <?php foreach ($analysis['unique_posts'][$index] as $post) : ?>
+                            <div class="caes-post-item caes-unique-post">
+                                <a href="<?php echo esc_url(get_edit_post_link($post->ID)); ?>" target="_blank">
+                                    <?php echo esc_html($post->post_title); ?>
+                                </a>
+                                <span class="caes-post-date">(<?php echo get_the_date('M j, Y', $post); ?>)</span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php
+    }
+}
+
+/**
+ * Get all posts for a specific term
+ */
+function caes_get_posts_for_term($term_id) {
+    $post_types = ['post', 'publications', 'shorthand_story'];
+    $all_posts = [];
+    
+    foreach ($post_types as $post_type) {
+        $posts = get_posts([
+            'post_type' => $post_type,
+            'post_status' => 'publish',
+            'posts_per_page' => -1,
+            'tax_query' => [
+                [
+                    'taxonomy' => CAES_TOPICS_TAXONOMY,
+                    'field' => 'term_id',
+                    'terms' => $term_id,
+                ],
+            ],
+        ]);
+        
+        foreach ($posts as $post) {
+            $all_posts[$post_type][] = $post;
+        }
+    }
+    
+    return $all_posts;
+}
+
+/**
+ * Analyze content overlap between duplicate terms for a specific post type
+ */
+function caes_analyze_duplicate_content($term_posts, $post_type) {
+    $all_post_ids = [];
+    $term_post_ids = [];
+    
+    // Collect all post IDs for this post type from all terms
+    foreach ($term_posts as $index => $posts_by_type) {
+        $term_post_ids[$index] = [];
+        if (isset($posts_by_type[$post_type])) {
+            foreach ($posts_by_type[$post_type] as $post) {
+                $post_id = $post->ID;
+                $all_post_ids[$post_id] = $post;
+                $term_post_ids[$index][] = $post_id;
+            }
+        }
+    }
+    
+    if (empty($all_post_ids)) {
+        return [
+            'total_posts' => 0,
+            'shared_count' => 0,
+            'unique_count' => 0,
+            'shared_posts' => [],
+            'unique_posts' => [],
+        ];
+    }
+    
+    // Find shared posts (posts that appear in multiple terms)
+    $shared_post_ids = [];
+    $unique_posts = [];
+    
+    foreach ($all_post_ids as $post_id => $post_obj) {
+        $appears_in_terms = [];
+        foreach ($term_post_ids as $term_index => $post_ids) {
+            if (in_array($post_id, $post_ids)) {
+                $appears_in_terms[] = $term_index;
+            }
+        }
+        
+        if (count($appears_in_terms) > 1) {
+            // Shared post
+            $shared_post_ids[] = $post_id;
+        } else {
+            // Unique to one term
+            $unique_posts[$appears_in_terms[0]][] = $post_obj;
+        }
+    }
+    
+    $shared_posts = [];
+    foreach ($shared_post_ids as $post_id) {
+        $shared_posts[] = $all_post_ids[$post_id];
+    }
+    
+    $unique_count = 0;
+    foreach ($unique_posts as $posts) {
+        $unique_count += count($posts);
+    }
+    
+    return [
+        'total_posts' => count($all_post_ids),
+        'shared_count' => count($shared_posts),
+        'unique_count' => $unique_count,
+        'shared_posts' => $shared_posts,
+        'unique_posts' => $unique_posts,
+    ];
 }
 
 function caes_render_post_counts($topic_slug, array $counts) {
