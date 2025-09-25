@@ -70,6 +70,12 @@ function caes_handle_topics_admin_actions() {
         wp_safe_redirect($redirect_url);
         exit;
     }
+
+    // Handle CSV Export Action
+    if (isset($_GET['action']) && $_GET['action'] === 'export_csv' && isset($_GET['_wpnonce']) && wp_verify_nonce($_GET['_wpnonce'], 'caes_export_csv')) {
+        caes_export_topics_csv();
+        exit;
+    }
 }
 
 /**
@@ -99,8 +105,10 @@ function caes_render_topics_manager_page() {
     $data = caes_get_topics_data_with_cache();
     $refresh_nonce = wp_create_nonce('caes_refresh_cache');
     $sync_nonce = wp_create_nonce('caes_sync_status');
+    $export_nonce = wp_create_nonce('caes_export_csv');
     $refresh_url = add_query_arg(['action' => 'refresh_cache', '_wpnonce' => $refresh_nonce], admin_url('admin.php?page=caes-topics-manager'));
     $sync_url = add_query_arg(['action' => 'sync_status', '_wpnonce' => $sync_nonce], admin_url('admin.php?page=caes-topics-manager'));
+    $export_url = add_query_arg(['action' => 'export_csv', '_wpnonce' => $export_nonce], admin_url('admin.php?page=caes-topics-manager'));
     
     // Prepare data for display
     $all_topics = $data['topics'] ?? [];
@@ -116,6 +124,7 @@ function caes_render_topics_manager_page() {
             Topics Manager
             <a href="<?php echo esc_url($sync_url); ?>" class="page-title-action">1. Sync Status from API</a>
             <a href="<?php echo esc_url($refresh_url); ?>" class="page-title-action">2. Refresh Data</a>
+            <a href="<?php echo esc_url($export_url); ?>" class="page-title-action">Export CSV</a>
         </h1>
 
         <div class="caes-summary-cards">
@@ -332,6 +341,133 @@ function caes_sync_topic_status_from_api() {
 
     caes_clear_topics_cache();
     return $updated_count;
+}
+
+/**
+ * Export topics data as CSV
+ */
+function caes_export_topics_csv() {
+    if (!current_user_can(CAES_TOPICS_CAPABILITY)) {
+        wp_die(__('You do not have sufficient permissions to perform this action.'), 403);
+    }
+
+    // Generate topics data
+    $data = caes_generate_topics_data();
+    $topics = $data['topics'] ?? [];
+
+    if (empty($topics)) {
+        wp_die(__('No topics found to export.'), 400);
+    }
+
+    // Set headers for CSV download
+    $filename = 'topics-export-' . date('Y-m-d-H-i-s') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    // Create output stream
+    $output = fopen('php://output', 'w');
+
+    // Add CSV headers
+    $headers = [
+        'Term ID',
+        'Term Name',
+        'Term Slug',
+        'Parent Term Name',
+        'Status',
+        'Stories Count',
+        'Publications Count',
+        'Features Count',
+        'Total Posts',
+        'New Topic',
+        'Topic ID (Legacy)',
+        'Hierarchy Level'
+    ];
+    fputcsv($output, $headers);
+
+    // Sort topics by name for consistent export
+    uasort($topics, function($a, $b) {
+        return strcmp($a['term']->name, $b['term']->name);
+    });
+
+    // Add data rows
+    foreach ($topics as $topic_data) {
+        $term = $topic_data['term'];
+        $is_active = $topic_data['is_active'];
+        $counts = $topic_data['counts'];
+        $meta = $topic_data['meta'];
+
+        // Get parent name
+        $parent_name = '';
+        if ($term->parent > 0) {
+            foreach ($topics as $potential_parent) {
+                if ($potential_parent['term']->term_id == $term->parent) {
+                    $parent_name = $potential_parent['term']->name;
+                    break;
+                }
+            }
+            // Fallback if parent not found in current topics array
+            if (empty($parent_name)) {
+                $parent_term = get_term($term->parent);
+                $parent_name = ($parent_term && !is_wp_error($parent_term)) ? $parent_term->name : 'Unknown Parent';
+            }
+        }
+
+        // Calculate hierarchy level
+        $level = caes_calculate_term_hierarchy_level($term->term_id, $topics);
+
+        // Prepare row data
+        $row = [
+            $term->term_id,
+            $term->name,
+            $term->slug,
+            $parent_name,
+            $is_active ? 'Active' : 'Inactive',
+            $counts['post'] ?? 0,
+            $counts['publications'] ?? 0,
+            $counts['shorthand_story'] ?? 0,
+            array_sum($counts),
+            empty($meta['topic_id']) ? 'Yes' : 'No',
+            $meta['topic_id'] ?? '',
+            $level
+        ];
+
+        fputcsv($output, $row);
+    }
+
+    fclose($output);
+}
+
+/**
+ * Calculate the hierarchy level for a term (0 = root, 1 = first level child, etc.)
+ */
+function caes_calculate_term_hierarchy_level($term_id, $topics) {
+    $level = 0;
+    $current_term_id = $term_id;
+    
+    // Traverse up the hierarchy
+    while ($current_term_id > 0) {
+        $parent_id = 0;
+        foreach ($topics as $topic_data) {
+            if ($topic_data['term']->term_id == $current_term_id) {
+                $parent_id = $topic_data['term']->parent;
+                break;
+            }
+        }
+        
+        if ($parent_id > 0) {
+            $level++;
+            $current_term_id = $parent_id;
+        } else {
+            break;
+        }
+        
+        // Safety check to prevent infinite loops
+        if ($level > 10) break;
+    }
+    
+    return $level;
 }
 
 function caes_filter_hierarchy_by_status(array $nodes, bool $is_active_status) {
