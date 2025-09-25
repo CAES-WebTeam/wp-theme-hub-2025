@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v16'); // Cache key updated for new topic note
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v17'); // Cache key updated for duplicates feature
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -107,6 +107,7 @@ function caes_render_topics_manager_page() {
     $full_hierarchy = $data['hierarchy'] ?? [];
     $active_hierarchy = caes_filter_hierarchy_by_status($full_hierarchy, true);
     $inactive_hierarchy = caes_filter_hierarchy_by_status($full_hierarchy, false);
+    $duplicates = $data['duplicates'] ?? [];
 
     ?>
     <div class="wrap">
@@ -129,11 +130,16 @@ function caes_render_topics_manager_page() {
                 <h3>Inactive Topics</h3>
                 <div class="number"><?php echo (int) ($data['summary']['inactive_topics'] ?? 0); ?></div>
             </div>
+            <div class="caes-summary-card">
+                <h3>Duplicate Groups</h3>
+                <div class="number"><?php echo (int) ($data['summary']['duplicate_groups'] ?? 0); ?></div>
+            </div>
         </div>
 
         <h2 class="nav-tab-wrapper">
             <a href="#active" class="nav-tab nav-tab-active">Active Items</a>
             <a href="#inactive" class="nav-tab">Inactive Items</a>
+            <a href="#duplicates" class="nav-tab">Duplicates <?php if ($data['summary']['duplicate_groups'] > 0) echo '<span class="caes-duplicate-badge">' . $data['summary']['duplicate_groups'] . '</span>'; ?></a>
             <a href="#all" class="nav-tab">All Items (Hierarchy)</a>
         </h2>
         
@@ -143,6 +149,10 @@ function caes_render_topics_manager_page() {
 
         <div id="inactive" class="caes-tab-content">
             <?php caes_display_topics_hierarchy($inactive_hierarchy, $all_topics); ?>
+        </div>
+
+        <div id="duplicates" class="caes-tab-content">
+            <?php caes_display_duplicates($duplicates, $all_topics); ?>
         </div>
 
         <div id="all" class="caes-tab-content">
@@ -169,6 +179,19 @@ function caes_render_topics_manager_page() {
         .caes-count-item { padding: 5px 10px; background-color: #f0f0f1; border-radius: 3px; font-size: 12px; }
         .caes-counts a { color: #135e96; text-decoration: none; }
         .caes-counts a:hover { text-decoration: underline; }
+        
+        /* Duplicate-specific styles */
+        .caes-duplicate-group { background: #fff; border: 1px solid #dc7e00; margin-bottom: 20px; border-radius: 4px; overflow: hidden; }
+        .caes-duplicate-group-header { background-color: #fef7e6; padding: 15px; border-bottom: 1px solid #dc7e00; }
+        .caes-duplicate-group-title { font-size: 18px; font-weight: bold; color: #dc7e00; margin: 0; }
+        .caes-duplicate-group-count { font-size: 14px; color: #666; margin: 5px 0 0 0; }
+        .caes-duplicate-item { padding: 15px; border-bottom: 1px solid #f0f0f1; background: #fff; }
+        .caes-duplicate-item:last-child { border-bottom: none; }
+        .caes-duplicate-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .caes-duplicate-item-details { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .caes-duplicate-badge { background-color: #dc7e00; color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .caes-duplicate-id { font-size: 12px; color: #666; margin-left: 10px; }
+        .caes-no-duplicates { text-align: center; padding: 40px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; color: #666; }
     </style>
     <script>
         jQuery(document).ready(function($) {
@@ -260,11 +283,11 @@ function caes_clear_topics_cache() {
 
 function caes_generate_topics_data() {
     if (!function_exists('get_fields')) {
-        return ['topics' => [], 'summary' => [], 'hierarchy' => []];
+        return ['topics' => [], 'summary' => [], 'hierarchy' => [], 'duplicates' => []];
     }
 
     $topics = get_terms(['taxonomy' => CAES_TOPICS_TAXONOMY, 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC']);
-    if (is_wp_error($topics)) return ['topics' => [], 'summary' => [], 'hierarchy' => []];
+    if (is_wp_error($topics)) return ['topics' => [], 'summary' => [], 'hierarchy' => [], 'duplicates' => []];
 
     $post_counts = caes_get_all_topic_post_counts();
     $processed_topics = [];
@@ -287,10 +310,19 @@ function caes_generate_topics_data() {
         ];
     }
 
+    // Find duplicates
+    $duplicates = caes_find_duplicates($processed_topics);
+
     return [
         'topics'    => $processed_topics,
-        'summary'   => ['total_topics' => count($topics), 'active_topics' => $active_count, 'inactive_topics' => $inactive_count],
-        'hierarchy' => caes_build_hierarchy($processed_topics)
+        'summary'   => [
+            'total_topics' => count($topics), 
+            'active_topics' => $active_count, 
+            'inactive_topics' => $inactive_count,
+            'duplicate_groups' => count($duplicates)
+        ],
+        'hierarchy' => caes_build_hierarchy($processed_topics),
+        'duplicates' => $duplicates
     ];
 }
 
@@ -343,6 +375,29 @@ function caes_build_hierarchy(array $topics) {
     unset($topic);
 
     return $children_of[0] ?? [];
+}
+
+/**
+ * Find duplicate terms by name (case-insensitive)
+ */
+function caes_find_duplicates(array $topics) {
+    $name_groups = [];
+    
+    // Group topics by name (case-insensitive)
+    foreach ($topics as $topic_data) {
+        $name_key = strtolower(trim($topic_data['term']->name));
+        $name_groups[$name_key][] = $topic_data;
+    }
+    
+    // Filter to only groups with more than one item
+    $duplicates = [];
+    foreach ($name_groups as $name_key => $group) {
+        if (count($group) > 1) {
+            $duplicates[$name_key] = $group;
+        }
+    }
+    
+    return $duplicates;
 }
 
 // =============================================================================
@@ -399,6 +454,72 @@ function caes_display_topics_hierarchy(array $hierarchy, array $all_topics, $lev
         if (!empty($topic_data['children'])) {
             caes_display_topics_hierarchy($topic_data['children'], $all_topics, $level + 1);
         }
+    }
+}
+
+/**
+ * Display duplicate groups
+ */
+function caes_display_duplicates(array $duplicates, array $all_topics) {
+    if (empty($duplicates)) {
+        echo '<div class="caes-no-duplicates">';
+        echo '<h3>No Duplicate Topics Found</h3>';
+        echo '<p>Great! All your topics have unique names.</p>';
+        echo '</div>';
+        return;
+    }
+    
+    foreach ($duplicates as $name_key => $duplicate_group) {
+        $example_name = $duplicate_group[0]['term']->name;
+        ?>
+        <div class="caes-duplicate-group">
+            <div class="caes-duplicate-group-header">
+                <h3 class="caes-duplicate-group-title"><?php echo esc_html($example_name); ?></h3>
+                <p class="caes-duplicate-group-count"><?php echo count($duplicate_group); ?> duplicates found</p>
+            </div>
+            
+            <?php foreach ($duplicate_group as $topic_data) : 
+                $topic = $topic_data['term'];
+                $is_active = (bool)$topic_data['is_active'];
+                $parent_id = (int)$topic->parent;
+                $parent_name = 'None (Root Level)';
+                
+                if ($parent_id > 0 && isset($all_topics[$parent_id])) {
+                    $parent_name = $all_topics[$parent_id]['term']->name;
+                }
+                
+                $is_new_topic = empty($topic_data['meta']['topic_id']);
+                ?>
+                <div class="caes-duplicate-item">
+                    <div class="caes-duplicate-item-header">
+                        <div>
+                            <strong><?php echo esc_html($topic->name); ?></strong>
+                            <span class="caes-duplicate-id">(ID: <?php echo $topic->term_id; ?>)</span>
+                        </div>
+                        <div class="caes-status-badge <?php echo $is_active ? 'caes-status-active' : 'caes-status-inactive'; ?>">
+                            <?php echo $is_active ? 'Active' : 'Inactive'; ?>
+                        </div>
+                    </div>
+                    
+                    <div class="caes-duplicate-item-details">
+                        <div class="caes-topic-parent">
+                            Parent: <?php echo esc_html($parent_name); ?>
+                        </div>
+                        
+                        <?php if ($is_new_topic) : ?>
+                            <span class="caes-duplicate-badge">New Topic</span>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="caes-counts"><?php caes_render_post_counts($topic->slug, $topic_data['counts']); ?></div>
+                    
+                    <div class="caes-topic-actions" style="margin-top: 15px;">
+                        <a href="<?php echo esc_url(get_edit_term_link($topic->term_id, CAES_TOPICS_TAXONOMY)); ?>" class="button button-small">Edit Topic</a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php
     }
 }
 
