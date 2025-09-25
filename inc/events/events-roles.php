@@ -117,9 +117,6 @@ function register_event_custom_roles()
             $approver_role->add_cap('delete_private_events');
             $approver_role->add_cap('read_private_events');
             $approver_role->add_cap('upload_files');
-            $approver_role->add_cap('edit_posts');           // Can edit posts (includes attachments)
-            $approver_role->add_cap('edit_others_posts');    // Can edit others' posts/attachments
-            $approver_role->add_cap('edit_published_posts'); // Can edit published attachments
         }
     }
 
@@ -138,6 +135,82 @@ function register_event_custom_roles()
         $editor_role->add_cap('delete_private_events');
         $editor_role->add_cap('delete_published_events');
     }
+}
+
+// Add targeted attachment editing for Event Approvers
+add_filter('map_meta_cap', 'allow_event_approver_attachment_editing', 10, 4);
+
+function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
+    // Only apply to edit_post capability for attachments
+    if ($cap !== 'edit_post' || empty($args) || !isset($args[0])) {
+        return $caps;
+    }
+    
+    $post_id = $args[0];
+    $post = get_post($post_id);
+    
+    // Only apply to attachment posts
+    if (!$post || $post->post_type !== 'attachment') {
+        return $caps;
+    }
+    
+    $user = get_userdata($user_id);
+    if (!$user) {
+        return $caps;
+    }
+    
+    $user_roles = (array) $user->roles;
+    
+    // Only apply to Event Approvers (admins/editors already have access)
+    if (!in_array('event_approver', $user_roles)) {
+        return $caps;
+    }
+    
+    // Check multiple ways this attachment might be used in events
+    $events_using_attachment = get_posts(array(
+        'post_type' => 'events',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'meta_query' => array(
+            'relation' => 'OR',
+            // Method 1: Direct ID match
+            array(
+                'key' => 'featured_image',
+                'value' => $post_id,
+                'compare' => '='
+            ),
+            // Method 2: Array format match (for ACF arrays)
+            array(
+                'key' => 'featured_image',
+                'value' => '"' . $post_id . '"',
+                'compare' => 'LIKE'
+            ),
+            // Method 3: Serialized format match  
+            array(
+                'key' => 'featured_image',
+                'value' => 'i:' . $post_id . ';',
+                'compare' => 'LIKE'
+            )
+        )
+    ));
+    
+    if (!empty($events_using_attachment)) {
+        foreach ($events_using_attachment as $event_id) {
+            // Check if user can approve any calendar for this event
+            $event_calendars = get_the_terms($event_id, 'event_caes_departments');
+            if ($event_calendars && !is_wp_error($event_calendars)) {
+                foreach ($event_calendars as $calendar) {
+                    if (user_can_approve_calendar($user_id, $calendar->term_id)) {
+                        // User can approve this event, so allow attachment editing
+                        return array();
+                    }
+                }
+            }
+        }
+    }
+    
+    // If we get here, user shouldn't be able to edit this attachment
+    return $caps;
 }
 
 // ----------------------------------------------------------------------
