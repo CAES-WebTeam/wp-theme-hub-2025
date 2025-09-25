@@ -188,7 +188,7 @@ function set_acf_post_title_and_notify($post_id)
 		}
 	}
 }
-add_action('acf/save_post', 'set_acf_post_title_and_notify', 20);
+// add_action('acf/save_post', 'set_acf_post_title_and_notify', 20);
 
 // Hook into 'event's post publish and send out emails
 function send_events_publish_emails($post_id)

@@ -12,7 +12,7 @@
  */
 
 // Hook into 'save_post' to handle event submissions and approval logic.
-// add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
+add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
 
 /**
  * Handles the event submission and approval process.
@@ -100,7 +100,7 @@ function handle_event_submission_and_approval($post_id, $post, $update) {
                 ));
                 
                 // Re-add the hook
-                // add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
+                add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
                 
                 // Add admin notice for the user
                 set_transient('event_calendar_required_' . $current_user_id, 'You must select at least one calendar before submitting your event for approval.', 30);
@@ -152,7 +152,7 @@ function handle_event_submission_and_approval($post_id, $post, $update) {
         update_post_meta($post_id, '_submitted_for_approval', true);
         
         // Re-add the hook
-        // add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
+        add_action('save_post', 'handle_event_submission_and_approval', 10, 3);
         
         // Send notification to approvers
         $calendar_approvers = get_event_approvers_for_post($post_id);
