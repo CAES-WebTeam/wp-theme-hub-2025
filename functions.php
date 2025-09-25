@@ -175,80 +175,94 @@ function debug_alt_text_clearing() {
         ?>
         <script>
         jQuery(document).ready(function($) {
-            console.log('Alt text debugging active');
+            console.log('Updated alt text debugging active');
             
-            // Monitor when media modals open
-            $(document).on('DOMNodeInserted', function(e) {
-                if ($(e.target).hasClass('media-modal') || $(e.target).find('.media-modal').length) {
-                    console.log('Media modal detected, setting up field monitoring');
-                    
-                    setTimeout(function() {
-                        // Find alt text field
-                        var $altField = $('.attachment-details input[data-setting="alt"], input[name="attachments[alt]"], .setting.alt input');
-                        
-                        if ($altField.length) {
-                            console.log('Found alt field:', $altField);
-                            console.log('Initial value:', $altField.val());
-                            
-                            // Monitor changes to this field
-                            $altField.on('change input', function() {
-                                console.log('Alt field changed to:', $(this).val());
-                            });
-                            
-                            // Watch for field being cleared
-                            var originalVal = $altField.val();
-                            var checkCount = 0;
-                            var checkInterval = setInterval(function() {
-                                var currentVal = $altField.val();
-                                checkCount++;
-                                
-                                if (currentVal !== originalVal) {
-                                    console.log('ALT TEXT CHANGED! From "' + originalVal + '" to "' + currentVal + '" after ' + (checkCount * 100) + 'ms');
-                                    clearInterval(checkInterval);
-                                    
-                                    // Try to trace what cleared it
-                                    console.trace('Alt text was cleared');
-                                }
-                                
-                                if (checkCount > 50) { // Stop after 5 seconds
-                                    clearInterval(checkInterval);
-                                }
-                            }, 100);
-                        }
-                    }, 500);
-                }
-            });
-            
-            // Also monitor ACF image modals
-            if (typeof acf !== 'undefined') {
-                acf.addAction('ready', function() {
-                    console.log('ACF ready - monitoring image fields');
-                });
+            // Monitor all clicks that might open media modals
+            $(document).on('click', '*', function(e) {
+                var $target = $(e.target);
+                var $closest = $target.closest('.acf-image-uploader, .media-button, .edit-image');
                 
-                // Monitor when ACF image modal opens
-                $(document).on('click', '.acf-image-uploader .edit-image', function() {
-                    console.log('ACF image edit clicked');
+                if ($closest.length) {
+                    console.log('Potential media modal trigger clicked:', $target);
+                    console.log('Closest match:', $closest);
                     
+                    // Wait for modal to appear
                     setTimeout(function() {
                         var $modal = $('.media-modal:visible');
                         if ($modal.length) {
-                            console.log('ACF modal is open, monitoring alt field');
-                            
-                            var $altField = $modal.find('input[data-setting="alt"]');
-                            if ($altField.length) {
-                                console.log('ACF modal alt field found:', $altField.val());
-                                
-                                // Watch this field too
-                                setTimeout(function() {
-                                    if ($altField.val() === '') {
-                                        console.log('ACF modal alt field was cleared!');
-                                        console.trace();
-                                    }
-                                }, 1000);
-                            }
+                            console.log('Modal found after click');
+                            monitorModal($modal);
+                        } else {
+                            console.log('No modal found after click');
                         }
                     }, 1000);
+                }
+            });
+            
+            // Monitor for modal appearance using MutationObserver
+            var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes) {
+                        $(mutation.addedNodes).each(function() {
+                            if ($(this).hasClass('media-modal') || $(this).find('.media-modal').length) {
+                                console.log('Media modal detected via MutationObserver');
+                                var $modal = $(this).hasClass('media-modal') ? $(this) : $(this).find('.media-modal');
+                                monitorModal($modal);
+                            }
+                        });
+                    }
                 });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+            
+            function monitorModal($modal) {
+                console.log('Monitoring modal:', $modal);
+                
+                setTimeout(function() {
+                    // Try multiple selectors for alt field
+                    var altSelectors = [
+                        'input[data-setting="alt"]',
+                        '.setting.alt input',
+                        'input[name*="alt"]',
+                        '.attachment-details input[data-setting="alt"]'
+                    ];
+                    
+                    var $altField = null;
+                    for (var i = 0; i < altSelectors.length; i++) {
+                        $altField = $modal.find(altSelectors[i]);
+                        if ($altField.length) {
+                            console.log('Found alt field with selector:', altSelectors[i]);
+                            break;
+                        }
+                    }
+                    
+                    if ($altField && $altField.length) {
+                        var initialValue = $altField.val();
+                        console.log('Alt field initial value: "' + initialValue + '"');
+                        
+                        // Check if it gets cleared
+                        var checkInterval = setInterval(function() {
+                            var currentValue = $altField.val();
+                            if (currentValue !== initialValue && initialValue !== '') {
+                                console.log('🚨 ALT TEXT CLEARED! From "' + initialValue + '" to "' + currentValue + '"');
+                                console.trace('Stack trace of alt text clearing');
+                                clearInterval(checkInterval);
+                            }
+                        }, 100);
+                        
+                        // Stop checking after 10 seconds
+                        setTimeout(function() {
+                            clearInterval(checkInterval);
+                        }, 10000);
+                    } else {
+                        console.log('No alt field found in modal');
+                        console.log('Modal HTML:', $modal.html().substring(0, 500) + '...');
+                    }
+                }, 500);
             }
         });
         </script>
