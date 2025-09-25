@@ -618,6 +618,40 @@ function caes_display_parent_topics(array $parent_topics, array $all_topics) {
         <?php
     }
 }
+
+/**
+ * Get content breakdown text for display
+ */
+function caes_get_content_breakdown(array $counts) {
+    $post_types_map = ['post' => 'stories', 'publications' => 'publications', 'shorthand_story' => 'features'];
+    $breakdown_parts = [];
+    $total = 0;
+    
+    foreach ($post_types_map as $post_type => $label) {
+        $count = $counts[$post_type] ?? 0;
+        $total += $count;
+        if ($count > 0) {
+            $breakdown_parts[] = $count . ' ' . $label;
+        }
+    }
+    
+    if (empty($breakdown_parts)) {
+        return '(no content)';
+    }
+    
+    $breakdown_text = '(' . implode(', ', $breakdown_parts) . ')';
+    
+    // Add total if there are multiple types
+    if (count($breakdown_parts) > 1) {
+        $breakdown_text = '(' . implode(', ', $breakdown_parts) . ' - ' . $total . ' total)';
+    }
+    
+    return $breakdown_text;
+}
+
+/**
+ * Find duplicate terms by name (case-insensitive)
+ */
 function caes_find_duplicates(array $topics) {
     $name_groups = [];
     
