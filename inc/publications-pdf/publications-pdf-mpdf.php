@@ -154,7 +154,7 @@ function get_mpdf_styles()
 {
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
-        body { font-family: "georgia", serif; font-size: 13px; line-height: 1.6; color: #000; }
+        body { font-family: "georgia", serif; font-size: 16px; line-height: 1.6; color: #000; }
         
         h1, h2, h3, h4, h5, h6 { font-family: "georgia", serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
@@ -166,7 +166,7 @@ function get_mpdf_styles()
 
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
         table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
-        table th { background-color: #f2f2f2; font-weight: bold; font-size: 13px; }
+        table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
 
         .footer-spacer { height: 50px; }
         .page-break { page-break-before: always; }
