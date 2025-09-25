@@ -117,7 +117,6 @@ function register_event_custom_roles()
             $approver_role->add_cap('delete_private_events');
             $approver_role->add_cap('read_private_events');
             $approver_role->add_cap('upload_files');
-            $approver_role->add_cap('edit_others_posts');
         }
     }
 
