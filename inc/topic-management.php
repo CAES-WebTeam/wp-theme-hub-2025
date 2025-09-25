@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 define('CAES_TOPICS_CAPABILITY', 'manage_options');
 define('CAES_TOPICS_TAXONOMY', 'topics');
-define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v20'); // Cache key updated for collapsible parent topics
+define('CAES_TOPICS_CACHE_KEY', 'caes_topics_data_cache_v21'); // Cache key updated for clearer content type breakdowns
 define('CAES_TOPICS_CACHE_TTL', 15 * MINUTE_IN_SECONDS);
 define('CAES_TOPICS_API_ENDPOINT', 'https://secure.caes.uga.edu/rest/publications/getKeywords');
 
@@ -185,7 +185,9 @@ function caes_render_topics_manager_page() {
         .caes-status-badge { padding: 4px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .caes-status-active { background-color: #d4edda; color: #155724; }
         .caes-status-inactive { background-color: #f8d7da; color: #721c24; }
-        .caes-counts { display: flex; gap: 20px; margin-top: 15px; flex-wrap: wrap; }
+        .caes-counts { margin-top: 15px; }
+        .caes-counts-header { font-size: 13px; color: #666; margin-bottom: 8px; }
+        .caes-counts-items { display: flex; gap: 20px; flex-wrap: wrap; }
         .caes-count-item { padding: 5px 10px; background-color: #f0f0f1; border-radius: 3px; font-size: 12px; }
         .caes-counts a { color: #135e96; text-decoration: none; }
         .caes-counts a:hover { text-decoration: underline; }
@@ -202,7 +204,7 @@ function caes_render_topics_manager_page() {
         .caes-child-active { border-left: 4px solid #28a745; }
         .caes-child-inactive { border-left: 4px solid #dc3545; opacity: 0.8; }
         .caes-child-name { flex: 1; }
-        .caes-child-posts { font-size: 12px; color: #666; font-weight: normal; }
+        .caes-child-breakdown { font-size: 12px; color: #666; font-weight: normal; margin-top: 3px; }
         .caes-child-status { display: flex; gap: 8px; align-items: center; }
         .caes-status-small { padding: 2px 6px; font-size: 10px; }
         
@@ -567,7 +569,14 @@ function caes_display_parent_topics(array $parent_topics, array $all_topics) {
                 </div>
             <?php endif; ?>
             
-            <div class="caes-counts"><?php caes_render_post_counts($parent_term->slug, $parent_data['counts']); ?></div>
+            <div class="caes-counts">
+                <div class="caes-counts-header">
+                    <strong>Content tagged directly to this parent topic:</strong>
+                </div>
+                <div class="caes-counts-items">
+                    <?php caes_render_post_counts($parent_term->slug, $parent_data['counts']); ?>
+                </div>
+            </div>
             
             <div class="caes-children-summary">
                 <button class="caes-toggle-children button button-secondary" data-target="<?php echo esc_attr($children_id); ?>">
@@ -583,12 +592,13 @@ function caes_display_parent_topics(array $parent_topics, array $all_topics) {
                     <?php foreach ($children as $child_data) : 
                         $child_term = $child_data['term'];
                         $child_is_active = (bool)$child_data['is_active'];
-                        $child_total_posts = array_sum($child_data['counts']);
+                        $child_counts = $child_data['counts'];
+                        $child_breakdown = caes_get_content_breakdown($child_counts);
                     ?>
                         <div class="caes-child-topic <?php echo $child_is_active ? 'caes-child-active' : 'caes-child-inactive'; ?>">
                             <div class="caes-child-name">
                                 <strong><?php echo esc_html($child_term->name); ?></strong>
-                                <span class="caes-child-posts">(<?php echo $child_total_posts; ?> posts)</span>
+                                <div class="caes-child-breakdown"><?php echo esc_html($child_breakdown); ?></div>
                             </div>
                             <div class="caes-child-status">
                                 <span class="caes-status-badge caes-status-small <?php echo $child_is_active ? 'caes-status-active' : 'caes-status-inactive'; ?>">
