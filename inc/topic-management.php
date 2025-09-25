@@ -629,9 +629,18 @@ function caes_display_duplicate_content_analysis(array $duplicate_group) {
             
             <?php foreach ($duplicate_group as $index => $topic_data) : 
                 if (empty($analysis['unique_posts'][$index])) continue;
+                
+                // Get parent information for this specific term
+                $parent_id = (int)$topic_data['term']->parent;
+                $parent_info = '';
+                if ($parent_id > 0 && isset($all_topics[$parent_id])) {
+                    $parent_info = ' (Parent: ' . $all_topics[$parent_id]['term']->name . ')';
+                } else {
+                    $parent_info = ' (Root Level)';
+                }
                 ?>
                 <div class="caes-unique-content">
-                    <h6>Content ONLY in "<?php echo esc_html($topic_data['term']->name); ?>" (<?php echo count($analysis['unique_posts'][$index]); ?> items)</h6>
+                    <h6>Content ONLY in "<?php echo esc_html($topic_data['term']->name); ?>"<?php echo esc_html($parent_info); ?> (<?php echo count($analysis['unique_posts'][$index]); ?> items)</h6>
                     <div class="caes-post-list">
                         <?php foreach ($analysis['unique_posts'][$index] as $post) : ?>
                             <div class="caes-post-item caes-unique-post">
