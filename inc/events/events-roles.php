@@ -140,32 +140,33 @@ function register_event_custom_roles()
 // Add targeted attachment editing for Event Approvers
 add_filter('map_meta_cap', 'allow_event_approver_attachment_editing', 10, 4);
 
-function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
+function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args)
+{
     // Only apply to edit_post capability for attachments
     if ($cap !== 'edit_post' || empty($args) || !isset($args[0])) {
         return $caps;
     }
-    
+
     $post_id = $args[0];
     $post = get_post($post_id);
-    
+
     // Only apply to attachment posts
     if (!$post || $post->post_type !== 'attachment') {
         return $caps;
     }
-    
+
     $user = get_userdata($user_id);
     if (!$user) {
         return $caps;
     }
-    
+
     $user_roles = (array) $user->roles;
-    
+
     // Only apply to Event Approvers (admins/editors already have access)
     if (!in_array('event_approver', $user_roles)) {
         return $caps;
     }
-    
+
     // Check multiple ways this attachment might be used in events
     $events_using_attachment = get_posts(array(
         'post_type' => 'events',
@@ -193,7 +194,7 @@ function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
             )
         )
     ));
-    
+
     if (!empty($events_using_attachment)) {
         foreach ($events_using_attachment as $event_id) {
             // Check if user can approve any calendar for this event
@@ -208,7 +209,7 @@ function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
             }
         }
     }
-    
+
     // If we get here, user shouldn't be able to edit this attachment
     return $caps;
 }
@@ -217,37 +218,27 @@ function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
 add_action('admin_menu', 'hide_admin_menus_from_event_approvers', 999);
 
 // Replace the hide_admin_menus_from_event_approvers function with this whitelist approach
-function hide_admin_menus_from_event_approvers() {
+function hide_admin_menus_from_event_approvers()
+{
     $current_user = wp_get_current_user();
     $user_roles = (array) $current_user->roles;
-    
+
     // Only apply to Event Approvers
     if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
-        
-        // Get all menu items
-        global $menu, $submenu;
-        
-        // Define what they CAN see (whitelist)
-        $allowed_menus = array(
-            'index.php',                    // Dashboard
-            'edit.php?post_type=events',    // Events
-            'profile.php'                   // Profile (so they can edit their own profile)
-        );
-        
-        // Remove all menu items except the allowed ones
-        foreach ($menu as $key => $menu_item) {
-            $menu_file = $menu_item[2];
-            
-            if (!in_array($menu_file, $allowed_menus)) {
-                remove_menu_page($menu_file);
-            }
-        }
-        
-        // Remove unwanted dashboard widgets
-        remove_meta_box('dashboard_right_now', 'dashboard', 'normal');
-        remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');
-        remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');
-        remove_meta_box('dashboard_plugins', 'dashboard', 'normal');
+
+        // Remove specific items they definitely shouldn't see
+        remove_menu_page('edit.php'); // Posts
+        remove_menu_page('edit.php?post_type=page'); // Pages
+        remove_menu_page('edit.php?post_type=publication'); // Publications  
+        remove_menu_page('edit.php?post_type=shorthand_story'); // Shorthand Story
+        remove_menu_page('edit-comments.php'); // Comments
+        remove_menu_page('themes.php'); // Themes
+        remove_menu_page('plugins.php'); // Plugins
+        remove_menu_page('users.php'); // Users
+        remove_menu_page('tools.php'); // Tools
+        remove_menu_page('options-general.php'); // Settings
+
+        // Keep upload.php (Media Library) but restrict it via the attachment editing function
     }
 }
 
@@ -256,17 +247,18 @@ add_action('load-edit.php', 'restrict_post_type_access_for_event_approvers');
 add_action('load-post.php', 'restrict_post_type_access_for_event_approvers');
 add_action('load-post-new.php', 'restrict_post_type_access_for_event_approvers');
 
-function restrict_post_type_access_for_event_approvers() {
+function restrict_post_type_access_for_event_approvers()
+{
     $current_user = wp_get_current_user();
     $user_roles = (array) $current_user->roles;
-    
+
     // Only apply to Event Approvers
     if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
         global $typenow;
-        
-        // Allow access only to events
-        $allowed_post_types = array('events');
-        
+
+        // Allow access to events and attachments (media library)
+        $allowed_post_types = array('events', 'attachment');
+
         if (!in_array($typenow, $allowed_post_types)) {
             wp_die('You do not have permission to access this area.');
         }
@@ -276,46 +268,70 @@ function restrict_post_type_access_for_event_approvers() {
 // Hide other post types from the admin bar "New" menu
 add_action('admin_bar_menu', 'hide_admin_bar_new_items_for_event_approvers', 999);
 
-function hide_admin_bar_new_items_for_event_approvers($wp_admin_bar) {
+function hide_admin_bar_new_items_for_event_approvers($wp_admin_bar)
+{
     $current_user = wp_get_current_user();
     $user_roles = (array) $current_user->roles;
-    
-    // Only apply to Event Approvers
-    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {    
-        $nodes = $wp_admin_bar->get_nodes();
-        foreach ($nodes as $node) {
-            if (strpos($node->id, 'new-') === 0 && $node->id !== 'new-events') {
-                $wp_admin_bar->remove_node($node->id);
-            }
-        }
+
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
+        // Only remove specific "new" items, keep the structure
+        $wp_admin_bar->remove_node('new-post');
+        $wp_admin_bar->remove_node('new-page');
+        $wp_admin_bar->remove_node('new-publication');
+        $wp_admin_bar->remove_node('new-shorthand_story');
+
+        // Remove problematic admin bar items
+        $wp_admin_bar->remove_node('search'); // Admin Search
     }
 }
 
 // Redirect Event Approvers if they try to access restricted areas directly
 add_action('current_screen', 'redirect_event_approvers_from_restricted_areas');
 
-function redirect_event_approvers_from_restricted_areas($current_screen) {
+function redirect_event_approvers_from_restricted_areas($current_screen)
+{
     $current_user = wp_get_current_user();
     $user_roles = (array) $current_user->roles;
-    
-    // Only apply to Event Approvers
+
     if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
-        
-        // Define allowed screens (whitelist)
-        $allowed_screens = array(
-            'dashboard',
-            'events',
-            'edit-events', 
-            'profile',
-            'profile-network' // For multisite
+
+        $restricted_screens = array(
+            'edit-post',
+            'post',
+            'edit-page',
+            'page',
+            'edit-publication',
+            'publication',
+            'edit-shorthand_story',
+            'shorthand_story',
+            'edit-comments',
+            'themes',
+            'plugins',
+            'users',
+            'tools',
+            'options-general'
         );
-        
-        // If current screen is not in allowed list, redirect to events
-        if (!in_array($current_screen->id, $allowed_screens)) {
+
+        if (in_array($current_screen->id, $restricted_screens)) {
             wp_redirect(admin_url('edit.php?post_type=events'));
             exit;
         }
     }
+}
+
+add_filter('get_edit_post_link', 'filter_frontend_edit_links_for_event_approvers', 10, 3);
+function filter_frontend_edit_links_for_event_approvers($link, $post_id, $context)
+{
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
+        $post = get_post($post_id);
+        if ($post && $post->post_type !== 'events') {
+            return null; // Remove edit link for non-events
+        }
+    }
+    return $link;
 }
 
 // ----------------------------------------------------------------------
