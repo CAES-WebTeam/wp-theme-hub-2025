@@ -50,6 +50,24 @@ function rest_event_type($args, $request)
 }
 add_filter('rest_events_query', 'rest_event_type', 10, 2);
 
+// Ensure events are chronologically ordered on archive pages
+function ensure_events_chronological_order($query) {
+    // Only apply to main query on event-related archive pages
+    if (!is_admin() && $query->is_main_query()) {
+        // Check if this is an events archive (taxonomy or post type archive)
+        if (is_post_type_archive('events') || 
+            is_tax('event_caes_departments') || 
+            (isset($query->query_vars['post_type']) && $query->query_vars['post_type'] === 'events')) {
+            
+            $query->set('meta_key', 'start_date');
+            $query->set('orderby', 'meta_value');
+            $query->set('order', 'ASC');
+            $query->set('meta_type', 'DATE');
+        }
+    }
+}
+add_action('pre_get_posts', 'ensure_events_chronological_order');
+
 /*** END EVENTS */
 
 /*** START PUBLICATIONS */
@@ -393,3 +411,4 @@ function add_custom_query_vars($valid_vars)
     return $valid_vars;
 }
 add_filter('rest_query_vars', 'add_custom_query_vars');
+
