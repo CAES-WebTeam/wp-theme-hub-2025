@@ -237,6 +237,8 @@ function hide_admin_menus_from_event_approvers()
         remove_menu_page('users.php'); // Users
         remove_menu_page('tools.php'); // Tools
         remove_menu_page('options-general.php'); // Settings
+        remove_menu_page('visualizer'); // Visualizer plugin
+        remove_menu_page('wpseo_dashboard'); // Yoast SEO
 
         // Keep upload.php (Media Library) but restrict it via the attachment editing function
     }
@@ -301,7 +303,7 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'edit-page',
             'page',
             'edit-publication',
-            'publication',
+            'publications',
             'edit-shorthand_story',
             'shorthand_story',
             'edit-comments',
@@ -309,7 +311,7 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'plugins',
             'users',
             'tools',
-            'options-general'
+            'options-general',
         );
 
         if (in_array($current_screen->id, $restricted_screens)) {
