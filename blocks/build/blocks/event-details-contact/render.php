@@ -24,7 +24,14 @@ if ( $contact_type ) {
         // Ensure a user is selected
         if ( $user ) {
             $user_name  = $user['display_name'];
-            $user_phone = get_user_meta( $user['ID'], 'phone', true ); // Assuming phone is stored in user meta
+            
+            // Try to get phone from ACF field first
+            $user_phone = get_field('field_67d99c97cfca5', 'user_' . $user['ID']);
+            
+            // If ACF field is empty, fall back to user meta
+            if (empty($user_phone)) {
+                $user_phone = get_user_meta( $user['ID'], 'phone', true );
+            }
             
             // Try to get email from ACF field first
             $user_email = get_field('field_uga_email_custom', 'user_' . $user['ID']);
@@ -37,7 +44,9 @@ if ( $contact_type ) {
             // Display the default contact information
             echo '<div class="event-details-content">';
             echo esc_html( $user_name ) . '<br>';
-            if ($user_phone) {
+            
+            // Check if phone is valid and doesn't contain problematic strings
+            if ($user_phone && !strpos($user_phone, 'placeholder')) {
                 echo esc_html( $user_phone ) . '<br>';
             }
             
@@ -70,7 +79,11 @@ if ( $contact_type ) {
             // Display the custom contact information
             echo '<div class="event-details-content">';
             echo esc_html( $custom_name ) . '<br>';
-            echo esc_html( $custom_phone ) . '<br>';
+            
+            // Check if phone is valid and doesn't contain problematic strings
+            if ($custom_phone && !strpos($custom_phone, 'placeholder')) {
+                echo esc_html( $custom_phone ) . '<br>';
+            }
             
             // Check if email is valid and doesn't contain problematic strings
             if ($custom_email && !strpos($custom_email, 'placeholder')) {
