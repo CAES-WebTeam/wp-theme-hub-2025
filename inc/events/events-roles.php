@@ -575,3 +575,66 @@ function get_user_submit_calendars($user_id)
 
     return $submit_permissions;
 }
+
+// Remove dashboard widgets for Event roles
+add_action('wp_dashboard_setup', 'customize_dashboard_widgets_for_event_roles');
+
+function customize_dashboard_widgets_for_event_roles() {
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+    
+    // Apply to both Event Approvers and Event Submitters
+    if ((in_array('event_approver', $user_roles) || in_array('event_submitter', $user_roles)) 
+        && !in_array('administrator', $user_roles)) {
+        
+        // Remove all default dashboard widgets
+        remove_meta_box('dashboard_right_now', 'dashboard', 'normal');           // At a Glance
+        remove_meta_box('dashboard_activity', 'dashboard', 'normal');            // Activity
+        remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');     // Recent Comments
+        remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');      // Incoming Links
+        remove_meta_box('dashboard_plugins', 'dashboard', 'normal');             // Plugins
+        remove_meta_box('dashboard_quick_press', 'dashboard', 'side');           // Quick Draft
+        remove_meta_box('dashboard_recent_drafts', 'dashboard', 'side');         // Recent Drafts
+        remove_meta_box('dashboard_primary', 'dashboard', 'side');               // WordPress Events and News
+        remove_meta_box('dashboard_secondary', 'dashboard', 'side');             // Other WordPress News
+        remove_meta_box('dashboard_site_health', 'dashboard', 'normal');         // Site Health Status
+        
+        // Remove plugin widgets that might be present
+        remove_meta_box('wpseo-dashboard-overview', 'dashboard', 'normal');      // Yoast SEO
+        remove_meta_box('rg_forms_dashboard', 'dashboard', 'normal');            // Gravity Forms
+        remove_meta_box('wordfence_activity_report_widget', 'dashboard', 'normal'); // Wordfence
+        
+        // Add a custom welcome widget instead
+        wp_add_dashboard_widget(
+            'events_welcome_widget',
+            'Welcome to Events Management',
+            'display_events_welcome_widget'
+        );
+    }
+}
+
+// Custom welcome widget content
+function display_events_welcome_widget() {
+    $current_user = wp_get_current_user();
+    $user_roles = (array) $current_user->roles;
+    
+    echo '<div style="padding: 10px;">';
+    echo '<h4>Welcome, ' . esc_html($current_user->display_name) . '!</h4>';
+    
+    if (in_array('event_approver', $user_roles)) {
+        echo '<p>You can:</p>';
+        echo '<ul>';
+        echo '<li><a href="' . admin_url('edit.php?post_type=events&post_status=pending') . '">Review pending events</a></li>';
+        echo '<li><a href="' . admin_url('edit.php?post_type=events') . '">Manage all events</a></li>';
+        echo '<li><a href="' . admin_url('post-new.php?post_type=events') . '">Create new event</a></li>';
+        echo '</ul>';
+    } elseif (in_array('event_submitter', $user_roles)) {
+        echo '<p>You can:</p>';
+        echo '<ul>';
+        echo '<li><a href="' . admin_url('post-new.php?post_type=events') . '">Submit new event</a></li>';
+        echo '<li><a href="' . admin_url('edit.php?post_type=events&author=' . $current_user->ID) . '">View your events</a></li>';
+        echo '</ul>';
+    }
+    
+    echo '</div>';
+}
