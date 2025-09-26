@@ -241,7 +241,9 @@ function hide_admin_menus_from_event_approvers()
         remove_menu_page('wpseo_dashboard'); // Yoast SEO
         remove_menu_page('wpseo_redirects'); // Yoast SEO Redirects
         remove_menu_page('wpseo_workouts'); // Yoast SEO Tools
-        remove_menu_page('relevanssi_admin_search');
+
+        // Submenu items under Dashboard
+        remove_submenu_page('index.php', 'relevanssi_admin_search');
 
         // Keep upload.php (Media Library) but restrict it via the attachment editing function
     }
@@ -334,10 +336,7 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'toplevel_page_visualizer',
             'visualizer_page_visualizer-settings',
             'visualizer_page_visualizer-library',
-            'visualizer_page_visualizer-pro',
-
-            // Relevanssi
-            'relevanssi_admin_search',
+            'visualizer_page_visualizer-pro'
         );
 
         if (in_array($current_screen->id, $restricted_screens)) {
