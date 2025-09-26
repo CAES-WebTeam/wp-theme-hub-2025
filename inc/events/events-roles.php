@@ -305,7 +305,7 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'edit-page',
             'page',
             'edit-publication',
-            'publications',
+            'publication',
             'edit-shorthand_story',
             'shorthand_story',
             'edit-comments',
@@ -314,6 +314,26 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'users',
             'tools',
             'options-general',
+
+            // Yoast SEO
+            'toplevel_page_wpseo_dashboard',
+            'seo_page_wpseo_titles',
+            'seo_page_wpseo_social',
+            'seo_page_wpseo_xml',
+            'seo_page_wpseo_advanced',
+            'seo_page_wpseo_tools',
+            'seo_page_wpseo_search_console',
+            'seo_page_wpseo_workouts',
+            'seo_page_wpseo_integrations',
+            'seo_page_wpseo_licenses',
+            'seo_page_wpseo_redirects',
+            'seo_page_wpseo_crawl_optimization',
+
+            // Visualizer
+            'toplevel_page_visualizer',
+            'visualizer_page_visualizer-settings',
+            'visualizer_page_visualizer-library',
+            'visualizer_page_visualizer-pro',
         );
 
         if (in_array($current_screen->id, $restricted_screens)) {
