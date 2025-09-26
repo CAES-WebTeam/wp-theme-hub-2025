@@ -229,7 +229,7 @@ function hide_admin_menus_from_event_approvers()
         // Remove specific items they definitely shouldn't see
         remove_menu_page('edit.php'); // Posts
         remove_menu_page('edit.php?post_type=page'); // Pages
-        remove_menu_page('edit.php?post_type=publication'); // Publications  
+        remove_menu_page('edit.php?post_type=publications'); // Publications  
         remove_menu_page('edit.php?post_type=shorthand_story'); // Shorthand Story
         remove_menu_page('edit-comments.php'); // Comments
         remove_menu_page('themes.php'); // Themes
@@ -305,7 +305,7 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'edit-page',
             'page',
             'edit-publication',
-            'publication',
+            'publications',
             'edit-shorthand_story',
             'shorthand_story',
             'edit-comments',
