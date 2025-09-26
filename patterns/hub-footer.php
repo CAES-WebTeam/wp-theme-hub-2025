@@ -53,7 +53,7 @@
 <p><a href="https://www.caes.uga.edu/accessibility.html">Accessibility Policy</a></p>
 <!-- /wp:paragraph -->
 <!-- wp:paragraph -->
-<p><a href="https://brand.caes.uga.edu/web-digital/#artificial-intelligence" data-type="link" data-id="https://brand.caes.uga.edu/web-digital/#artificial-intelligence">CAES AI Guidelines</a></p>
+<p><a href="https://brand.caes.uga.edu/web-digital/#artificial-intelligence" data-type="link" data-id="https://brand.caes.uga.edu/web-digital/#artificial-intelligence">AI Guidelines</a></p>
 <!-- /wp:paragraph -->
 </div>
 <!-- /wp:group --></div>
