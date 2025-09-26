@@ -24,8 +24,15 @@ if ( $contact_type ) {
         // Ensure a user is selected
         if ( $user ) {
             $user_name  = $user['display_name'];
-            $user_email = $user['user_email'];
             $user_phone = get_user_meta( $user['ID'], 'phone', true ); // Assuming phone is stored in user meta
+            
+            // Try to get email from ACF field first
+            $user_email = get_field('field_uga_email_custom', 'user_' . $user['ID']);
+            
+            // If ACF field is empty, fall back to user email
+            if (empty($user_email)) {
+                $user_email = $user['user_email'];
+            }
 
             // Display the default contact information
             echo '<div class="event-details-content">';
@@ -33,8 +40,18 @@ if ( $contact_type ) {
             if ($user_phone) {
                 echo esc_html( $user_phone ) . '<br>';
             }
-            if ($user_email) {
-                echo '<a href="mailto:' . esc_attr( $user_email ) . '">' . esc_html( $user_email ) . '</a>';
+            
+            // Check if email is valid and doesn't contain problematic strings
+            if ($user_email && !strpos($user_email, 'placeholder')) {
+                // Check if email domain contains "spoofed"
+                $email_parts = explode('@', $user_email);
+                if (count($email_parts) === 2) {
+                    $domain = $email_parts[1];
+                    // If domain doesn't contain "spoofed", display the email
+                    if (strpos($domain, 'spoofed') === false) {
+                        echo '<a href="mailto:' . esc_attr( $user_email ) . '">' . esc_html( $user_email ) . '</a>';
+                    }
+                }
             }
             echo '</div>';
         }
@@ -54,7 +71,19 @@ if ( $contact_type ) {
             echo '<div class="event-details-content">';
             echo esc_html( $custom_name ) . '<br>';
             echo esc_html( $custom_phone ) . '<br>';
-            echo '<a href="mailto:' . esc_attr( $custom_email ) . '">' . esc_html( $custom_email ) . '</a>';
+            
+            // Check if email is valid and doesn't contain problematic strings
+            if ($custom_email && !strpos($custom_email, 'placeholder')) {
+                // Check if email domain contains "spoofed"
+                $email_parts = explode('@', $custom_email);
+                if (count($email_parts) === 2) {
+                    $domain = $email_parts[1];
+                    // If domain doesn't contain "spoofed", display the email
+                    if (strpos($domain, 'spoofed') === false) {
+                        echo '<a href="mailto:' . esc_attr( $custom_email ) . '">' . esc_html( $custom_email ) . '</a>';
+                    }
+                }
+            }
             echo '</div>';
         }
     }
