@@ -33,16 +33,20 @@
 
 <!-- wp:paragraph -->
 <p><a href="https://www.caes.uga.edu/about/administration.html">Administration</a></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><a href="https://www.caes.uga.edu/about/jobs.html">Jobs</a></p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->
 
 <!-- wp:group {"style":{"spacing":{"blockGap":"0","padding":{"left":"var:preset|spacing|40"}},"border":{"top":{"width":"0px","style":"none"},"right":{"width":"0px","style":"none"},"bottom":{"width":"0px","style":"none"},"left":{"color":"#ffffffb3","width":"1px"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group" style="border-top-style:none;border-top-width:0px;border-right-style:none;border-right-width:0px;border-bottom-style:none;border-bottom-width:0px;border-left-color:#ffffffb3;border-left-width:1px;padding-left:var(--wp--preset--spacing--40)"><!-- wp:paragraph -->
-<p><a href="https://www.caes.uga.edu/about/jobs.html">Jobs</a></p>
+<p><a href="https://www.caes.uga.edu/about/personnel.html">Personnel Directory</a></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph -->
-<p><a href="https://www.caes.uga.edu/about/personnel.html">Personnel Directory</a></p>
+<p><a href="https://brand.caes.uga.edu/web-digital/#artificial-intelligence" data-type="link" data-id="https://brand.caes.uga.edu/web-digital/#artificial-intelligence">CAES AI Guidelines</a></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph -->
