@@ -42,3 +42,7 @@ if ( file_exists( $events_dir . 'events-approval-admin.php' ) ) {
 if ( file_exists( $events_dir . 'events-frontend-queries.php' ) ) {
     require_once( $events_dir . 'events-frontend-queries.php' );
 }
+
+if ( file_exists( $events_dir . 'events-rest-api.php' ) ) {
+    require_once( $events_dir . 'events-rest-api.php' );
+}
