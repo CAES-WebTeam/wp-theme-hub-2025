@@ -304,7 +304,7 @@ function redirect_event_approvers_from_restricted_areas($current_screen)
             'post',
             'edit-page',
             'page',
-            'edit-publication',
+            'edit-publications',
             'publications',
             'edit-shorthand_story',
             'shorthand_story',
