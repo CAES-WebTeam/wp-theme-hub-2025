@@ -216,26 +216,34 @@ function allow_event_approver_attachment_editing($caps, $cap, $user_id, $args) {
 // Hide admin menu items from Event Approvers
 add_action('admin_menu', 'hide_admin_menus_from_event_approvers', 999);
 
+// Replace the hide_admin_menus_from_event_approvers function with this whitelist approach
 function hide_admin_menus_from_event_approvers() {
     $current_user = wp_get_current_user();
     $user_roles = (array) $current_user->roles;
     
     // Only apply to Event Approvers
     if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
-        // Remove post types they shouldn't see
-        remove_menu_page('edit.php'); // Posts
-        remove_menu_page('edit.php?post_type=page'); // Pages  
-        remove_menu_page('edit.php?post_type=publication'); // Publications
-        remove_menu_page('upload.php'); // Media (they can still edit via events)
         
-        // Remove other admin sections
-        remove_menu_page('themes.php'); // Themes
-        remove_menu_page('plugins.php'); // Plugins
-        remove_menu_page('users.php'); // Users
-        remove_menu_page('tools.php'); // Tools
-        remove_menu_page('options-general.php'); // Settings
+        // Get all menu items
+        global $menu, $submenu;
         
-        // Remove dashboard widgets they shouldn't see
+        // Define what they CAN see (whitelist)
+        $allowed_menus = array(
+            'index.php',                    // Dashboard
+            'edit.php?post_type=events',    // Events
+            'profile.php'                   // Profile (so they can edit their own profile)
+        );
+        
+        // Remove all menu items except the allowed ones
+        foreach ($menu as $key => $menu_item) {
+            $menu_file = $menu_item[2];
+            
+            if (!in_array($menu_file, $allowed_menus)) {
+                remove_menu_page($menu_file);
+            }
+        }
+        
+        // Remove unwanted dashboard widgets
         remove_meta_box('dashboard_right_now', 'dashboard', 'normal');
         remove_meta_box('dashboard_recent_comments', 'dashboard', 'normal');
         remove_meta_box('dashboard_incoming_links', 'dashboard', 'normal');
@@ -273,11 +281,13 @@ function hide_admin_bar_new_items_for_event_approvers($wp_admin_bar) {
     $user_roles = (array) $current_user->roles;
     
     // Only apply to Event Approvers
-    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
-        $wp_admin_bar->remove_node('new-post');
-        $wp_admin_bar->remove_node('new-page');
-        $wp_admin_bar->remove_node('new-publication');
-        $wp_admin_bar->remove_node('new-media');
+    if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {    
+        $nodes = $wp_admin_bar->get_nodes();
+        foreach ($nodes as $node) {
+            if (strpos($node->id, 'new-') === 0 && $node->id !== 'new-events') {
+                $wp_admin_bar->remove_node($node->id);
+            }
+        }
     }
 }
 
@@ -290,22 +300,18 @@ function redirect_event_approvers_from_restricted_areas($current_screen) {
     
     // Only apply to Event Approvers
     if (in_array('event_approver', $user_roles) && !in_array('administrator', $user_roles)) {
-        $restricted_screens = array(
-            'edit-post',
-            'post',
-            'edit-page', 
-            'page',
-            'edit-publication',
-            'publication',
-            'upload',
-            'themes',
-            'plugins',
-            'users',
-            'tools',
-            'options-general'
+        
+        // Define allowed screens (whitelist)
+        $allowed_screens = array(
+            'dashboard',
+            'events',
+            'edit-events', 
+            'profile',
+            'profile-network' // For multisite
         );
         
-        if (in_array($current_screen->id, $restricted_screens)) {
+        // If current screen is not in allowed list, redirect to events
+        if (!in_array($current_screen->id, $allowed_screens)) {
             wp_redirect(admin_url('edit.php?post_type=events'));
             exit;
         }
