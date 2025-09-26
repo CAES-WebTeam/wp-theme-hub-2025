@@ -239,6 +239,8 @@ function hide_admin_menus_from_event_approvers()
         remove_menu_page('options-general.php'); // Settings
         remove_menu_page('visualizer'); // Visualizer plugin
         remove_menu_page('wpseo_dashboard'); // Yoast SEO
+        remove_menu_page('wpseo_redirects.php'); // Yoast SEO Redirects
+        remove_menu_page('wpseo_workouts.php'); // Yoast SEO Tools
 
         // Keep upload.php (Media Library) but restrict it via the attachment editing function
     }
