@@ -564,7 +564,6 @@ figure.image:not(.wp-block-image) {
 // Mobile
 
 @media (max-width: 600px) {
-    .classic-content-wrapper {
         .single-publications {
             .entry-content {
                 figure:not(.wp-block-embed):not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
@@ -572,5 +571,4 @@ figure.image:not(.wp-block-image) {
                 }
             }
         }
-    }
 }
