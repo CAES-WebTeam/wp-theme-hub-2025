@@ -567,7 +567,7 @@ figure.image:not(.wp-block-image) {
     .single-publications {
         .entry-content {
             figure:not(.wp-block-embed):not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
-                max-width: 100%;
+                max-width: 100% !important;
             }
         }
     }
