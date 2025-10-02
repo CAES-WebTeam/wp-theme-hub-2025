@@ -22,7 +22,7 @@
 	$content .= '</main><!-- /wp:group -->';
 	
 	// Add Related Content section
-	$content .= '<!-- wp:group {"metadata":{"name":"caes-hub-content-footer"},"className":"caes-hub-content-footer","style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"elements":{"link":{"color":{"text":"var:preset|color|base"}}}},"backgroundColor":"olympic","textColor":"base","layout":{"type":"default"}} -->
+	$content .= '<!-- wp:group {"metadata":{"name":"caes-hub-content-footer"},"className":"caes-hub-content-footer","style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"elements":{"link":{"color":{"text":"var:preset|color|base"}}}},"backgroundColor":"olympic","textColor":"base","layout":{"type":"constrained","contentSize":"1400px"}} -->
 <div class="wp-block-group caes-hub-content-footer has-base-color has-olympic-background-color has-text-color has-background has-link-color" style="padding-top:var(--wp--preset--spacing--50);padding-right:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50);padding-left:var(--wp--preset--spacing--50)"><!-- wp:heading {"className":"is-style-caes-hub-section-heading"} -->
 <h2 class="wp-block-heading is-style-caes-hub-section-heading">Related Content</h2>
 <!-- /wp:heading -->
