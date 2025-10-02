@@ -513,6 +513,7 @@ figure.image:not(.wp-block-image):not(.align-left):not(.align-right):not(.align-
 }
 
 figure.image:not(.wp-block-image) {
+
     &.image-center,
     &.align-center {
         display: table;
@@ -547,12 +548,28 @@ figure.image:not(.wp-block-image) {
 
     .entry-content {
         clear: both;
+
         figure:not(.wp-block-embed):not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
             max-width: 600px;
             margin: 0 auto;
             display: table;
+
             img {
                 width: 100%;
+            }
+        }
+    }
+}
+
+// Mobile
+
+@media (max-width: 600px) {
+    .classic-content-wrapper {
+        .single-publications {
+            .entry-content {
+                figure:not(.wp-block-embed):not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
+                    max-width: 100%;
+                }
             }
         }
     }
