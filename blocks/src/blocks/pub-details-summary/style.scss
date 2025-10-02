@@ -1,5 +1,5 @@
 .wp-block-caes-hub-pub-details-summary {
-    & > p {
+    &>p {
         margin-top: 0;
     }
 
@@ -7,16 +7,19 @@
         background-color: var(--wp--preset--color--olympic);
         color: var(--wp--preset--color--base);
         border-radius: 20rem;
-        padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+        padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
         text-decoration: none;
-        display: inline-flex; 
+        display: inline-flex;
         align-content: center;
         flex-wrap: wrap;
         line-height: 1;
         gap: var(--wp--preset--spacing--20);
         border: 1px solid var(--wp--preset--color--olympic);
-        font-size: var(--wp--preset--font-size--normal);
         transition: all 0.3s ease-in-out;
+        font-size: 1.3rem;
+        justify-content: center;
+        text-align: center;
+
         &::before {
             content: "";
             display: inline-block;
@@ -29,20 +32,24 @@
             transition: all 0.3s ease-in-out;
         }
 
-        &:hover, &:focus {
+        &:hover,
+        &:focus {
             background-color: var(--wp--preset--color--base);
             color: var(--wp--preset--color--olympic);
             border: 1px solid var(--wp--preset--color--olympic);
+
             &::before {
                 background-color: var(--wp--preset--color--olympic);
             }
         }
     }
-};
+}
+
+;
 
 // Print styles
 @media print {
-    .wp-block-caes-hub-pub-details-summary{
+    .wp-block-caes-hub-pub-details-summary {
         a.button-link {
             display: none;
         }
