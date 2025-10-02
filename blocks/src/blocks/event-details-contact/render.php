@@ -1,105 +1,110 @@
 <?php
+// Get block attributes
+$word_limit = isset($block['wordLimit']) ? (int) $block['wordLimit'] : 0;
+$show_featured_image = isset($block['showFeaturedImage']) ? $block['showFeaturedImage'] : false;
+$conditional_display = isset($block['conditionalDisplay']) ? $block['conditionalDisplay'] : false;
+
 // Get the current post ID
 $post_id = get_the_ID();
-$fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
-$fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
+$post_type = get_post_type($post_id);
 
-// Generate inline style if font size is set
-$style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
+// Check conditional display
+$is_conditional_summary = false;
+if ($conditional_display) {
+    $post_content = get_post_field('post_content', $post_id);
+    $post_content = trim(wp_strip_all_tags($post_content));
 
-echo '<div ' . get_block_wrapper_attributes() . '>';
-echo '<h3 class="event-details-title"' . $style . '>Contact</h3>';
+    // If content is not empty, don't display this block
+    if (!empty($post_content)) {
+        return;
+    }
+    $is_conditional_summary = true; // Track that this is a conditional display
+}
 
-// Check if contact_type exists
-$contact_type = get_field( 'contact_type', $post_id );
+// Get the summary
+$summary = get_field('summary', $post_id);
 
-if ( $contact_type ) {
+// If no summary, don't display anything
+if (empty($summary)) {
+    return;
+}
 
-    // Check if contact type is 'default' or 'custom'
-    if ( $contact_type === 'default' ) {
+// Start building output
+$output = '';
 
-        // Get the user field (ACF user field returns an array)
-        $user = get_field( 'contact', $post_id );
+// Add featured image if enabled
+if ($show_featured_image && has_post_thumbnail($post_id)) {
+    $featured_image = get_the_post_thumbnail($post_id, 'full', array(
+        'style' => 'width: 100%; height: auto; display: block; margin-bottom: 1rem;'
+    ));
+    $output .= $featured_image;
+}
 
-        // Ensure a user is selected
-        if ( $user ) {
-            $user_name  = $user['display_name'];
-            
-            // Try to get phone from ACF field first
-            $user_phone = get_field('field_67d99c97cfca5', 'user_' . $user['ID']);
-            
-            // If ACF field is empty, fall back to user meta
-            if (empty($user_phone)) {
-                $user_phone = get_user_meta( $user['ID'], 'phone', true );
-            }
-            
-            // Try to get email from ACF field first
-            $user_email = get_field('field_uga_email_custom', 'user_' . $user['ID']);
-            
-            // If ACF field is empty, fall back to user email
-            if (empty($user_email)) {
-                $user_email = $user['user_email'];
-            }
+// Process summary based on word limit
+if ($word_limit > 0) {
+    // Strip tags for word count
+    $stripped = wp_strip_all_tags($summary);
+    $words = explode(' ', $stripped);
 
-            // Display the default contact information
-            echo '<div class="event-details-content">';
-            echo esc_html( $user_name ) . '<br>';
-            
-            // Check if phone is valid and doesn't contain problematic strings
-            if ($user_phone && !strpos($user_phone, 'placeholder')) {
-                echo esc_html( $user_phone ) . '<br>';
-            }
-            
-            // Check if email is valid and doesn't contain problematic strings
-            if ($user_email && !strpos($user_email, 'placeholder')) {
-                // Check if email domain contains "spoofed"
-                $email_parts = explode('@', $user_email);
-                if (count($email_parts) === 2) {
-                    $domain = $email_parts[1];
-                    // If domain doesn't contain "spoofed", display the email
-                    if (strpos($domain, 'spoofed') === false) {
-                        echo '<a href="mailto:' . esc_attr( $user_email ) . '">' . esc_html( $user_email ) . '</a>';
-                    }
-                }
-            }
-            echo '</div>';
-        }
+    if (count($words) > $word_limit) {
+        $summary = implode(' ', array_slice($words, 0, $word_limit)) . '…';
+        // Escape output to avoid broken HTML
+        $output .= esc_html($summary);
+    } else {
+        $output .= wp_kses_post($summary);
+    }
+} else {
+    $output .= wp_kses_post($summary);
+}
 
-    } elseif ( $contact_type === 'custom' ) {
+// Check for PDF if this is a conditional summary display
+$final_pdf_url = null;
+$pdf_source_type = null;
 
-        // Get custom contact fields
-        $custom_contact = get_field( 'custom_contact', $post_id );
+if ($is_conditional_summary && $post_type === 'publications') {
+    // 1. Try to get a manually uploaded PDF (from the 'pdf' ACF field)
+    $manual_pdf_attachment = get_field('pdf', $post_id);
 
-        // Ensure custom contact fields are set
-        if ( $custom_contact ) {
-            $custom_name  = $custom_contact['contact_name'];
-            $custom_email = $custom_contact['contact_email'];
-            $custom_phone = $custom_contact['contact_phone'];
+    if (is_array($manual_pdf_attachment) && !empty($manual_pdf_attachment['url'])) {
+        $final_pdf_url = $manual_pdf_attachment['url'];
+        $pdf_source_type = 'manual';
+    } elseif (is_string($manual_pdf_attachment) && filter_var($manual_pdf_attachment, FILTER_VALIDATE_URL)) {
+        $final_pdf_url = $manual_pdf_attachment;
+        $pdf_source_type = 'manual';
+    }
 
-            // Display the custom contact information
-            echo '<div class="event-details-content">';
-            echo esc_html( $custom_name ) . '<br>';
-            
-            // Check if phone is valid and doesn't contain problematic strings
-            if ($custom_phone && !strpos($custom_phone, 'placeholder')) {
-                echo esc_html( $custom_phone ) . '<br>';
-            }
-            
-            // Check if email is valid and doesn't contain problematic strings
-            if ($custom_email && !strpos($custom_email, 'placeholder')) {
-                // Check if email domain contains "spoofed"
-                $email_parts = explode('@', $custom_email);
-                if (count($email_parts) === 2) {
-                    $domain = $email_parts[1];
-                    // If domain doesn't contain "spoofed", display the email
-                    if (strpos($domain, 'spoofed') === false) {
-                        echo '<a href="mailto:' . esc_attr( $custom_email ) . '">' . esc_html( $custom_email ) . '</a>';
-                    }
-                }
-            }
-            echo '</div>';
+    // 2. If no manual PDF found, try to get the generated PDF (from the 'pdf_download_url' ACF field)
+    if (is_null($final_pdf_url)) {
+        $generated_pdf_url = get_field('pdf_download_url', $post_id);
+        if (is_string($generated_pdf_url) && filter_var($generated_pdf_url, FILTER_VALIDATE_URL)) {
+            $final_pdf_url = $generated_pdf_url;
+            $pdf_source_type = 'generated';
         }
     }
 }
-echo '</div>';
-?>
+
+// Add PDF button if available
+if (!is_null($final_pdf_url)) {
+    // Get additional data for tracking
+    $publication_title = get_the_title($post_id);
+    $publication_number = get_field('publication_number', $post_id);
+    $path_url = wp_make_link_relative(get_permalink($post_id));
+    $pdf_filename = basename(parse_url($final_pdf_url, PHP_URL_PATH));
+
+    $output .= '<div style="margin-top: 1.5rem;">';
+    $output .= '<a class="button-link"';
+    $output .= 'href="' . esc_url($final_pdf_url) . '" ';
+    $output .= 'data-pdf-url="' . esc_attr($final_pdf_url) . '" ';
+    $output .= 'data-publication-number="' . esc_attr($publication_number) . '" ';
+    $output .= 'data-publication-title="' . esc_attr($publication_title) . '" ';
+    $output .= 'data-publication-url="' . esc_attr($path_url) . '" ';
+    $output .= 'data-pdf-filename="' . esc_attr($pdf_filename) . '" ';
+    $output .= 'data-pdf-source="' . esc_attr($pdf_source_type) . '" ';
+    $output .= 'data-action-type="pdf_download">';
+    $output .= '<span class="label">Download Full PDF</span>';
+    $output .= '</a>';
+    $output .= '</div>';
+}
+
+// Output the final result
+echo '<div ' . get_block_wrapper_attributes() . '>' . $output . '</div>';
