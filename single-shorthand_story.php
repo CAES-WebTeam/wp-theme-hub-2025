@@ -21,6 +21,10 @@
 	$content .= '</div>';
 	$content .= '</main><!-- /wp:group -->';
 	
+	// Wrap Related Content and Footer in a group with no gap
+	$content .= '<!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+<div class="wp-block-group">';
+	
 	// Add Related Content section
 	$content .= '<!-- wp:group {"metadata":{"name":"caes-hub-content-footer"},"className":"caes-hub-content-footer","style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"elements":{"link":{"color":{"text":"var:preset|color|base"}}}},"backgroundColor":"olympic","textColor":"base","layout":{"type":"constrained","contentSize":"1400px"}} -->
 <div class="wp-block-group caes-hub-content-footer has-base-color has-olympic-background-color has-text-color has-background has-link-color" style="padding-top:var(--wp--preset--spacing--50);padding-right:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--50);padding-left:var(--wp--preset--spacing--50)"><!-- wp:heading {"className":"is-style-caes-hub-section-heading"} -->
@@ -53,7 +57,13 @@
 <!-- /wp:group -->';
 	
 	// Add footer template part
-	$content .= '<!-- wp:template-part {"slug":"footer","theme":"wp-theme-hub-2025"} /--></div><!-- /wp:column --></div><!-- /wp:columns -->';
+	$content .= '<!-- wp:template-part {"slug":"footer","theme":"wp-theme-hub-2025"} /-->';
+	
+	// Close wrapper group
+	$content .= '</div><!-- /wp:group -->';
+	
+	// Close column and columns
+	$content .= '</div><!-- /wp:column --></div><!-- /wp:columns -->';
 
 	$final_content = do_blocks($content);
 
