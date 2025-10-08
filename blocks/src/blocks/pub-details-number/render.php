@@ -23,7 +23,12 @@ if ($pubNumber) {
         case 'TP':
             $tooltip = 'This is a temporary publication. Learn more by clicking the publication number.';
             $pubType = 'Temporary Publication';
-            $description = 'A temporary publication provides current-issue or event-related information that needs to be provided to the public immediately.';
+            $description = 'A temporary publication provides current-issue or event-related information that needs to be provided to the public immediately. Examples include articles on how to report farm losses after a hurricane or what "forever chemicals" are and how to mitigate your risk. ';
+            break;
+        case 'SB':
+            $tooltip = 'This is a special bulletin. Learn more by clicking the publication number.';
+            $pubType = 'Special Bulletin';
+            $description = 'A special bulletin often is an Extension resource that is book-length and/or highly technical to serve a specific audience\'s needs. Our most popular example is the Georgia Pest Management Handbook, with editions for residents and commercial use.';
             break;
         // Add more 2-character prefixes here if needed
         default:
@@ -41,7 +46,7 @@ if ($pubNumber) {
                 default:
                     $tooltip = 'This is a general publication.';
                     $pubType = 'general publication';
-                    $description = '';
+                    $description = 'An Extension publication is a resource that provides research-based information about various topics of interest to the public.';
                     break;
             }
             break;
