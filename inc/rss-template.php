@@ -116,41 +116,64 @@ do_action('rss_tag_pre', 'rss2');
 				// Priority 1: Try Yoast meta description
 				$yoast_meta_desc = get_post_meta($post_id, '_yoast_wpseo_metadesc', true);
 				if (!empty($yoast_meta_desc)) {
-					$description = wp_strip_all_tags($yoast_meta_desc);
-					$description = trim($description);
-				} else {
-					// Priority 2: Try excerpt first
+					// Check if it contains unprocessed Yoast variables (like %%excerpt%%)
+					if (strpos($yoast_meta_desc, '%%') !== false) {
+						// Has unprocessed variables - try to replace %%excerpt%% specifically
+						if (strpos($yoast_meta_desc, '%%excerpt%%') !== false) {
+							$excerpt = get_the_excerpt($post_id);
+							if (!empty($excerpt)) {
+								// Replace %%excerpt%% with actual excerpt
+								$yoast_meta_desc = str_replace('%%excerpt%%', $excerpt, $yoast_meta_desc);
+							}
+						}
+
+						// After replacement, check if there are still unprocessed variables
+						if (strpos($yoast_meta_desc, '%%') === false) {
+							// All variables processed, use it
+							$description = wp_strip_all_tags($yoast_meta_desc);
+							$description = trim($description);
+						}
+						// If still has %% variables, leave $description empty to fall through
+					} else {
+						// No variables, use Yoast description as is
+						$description = wp_strip_all_tags($yoast_meta_desc);
+						$description = trim($description);
+					}
+				}
+
+				// Priority 2: Try excerpt (if Yoast didn't work)
+				if (empty($description)) {
 					$excerpt = get_the_excerpt($post_id);
 					if (!empty($excerpt)) {
 						$description = wp_strip_all_tags($excerpt);
 						$description = trim($description);
 					}
+				}
 
-					// Priority 3: For publications, try ACF summary field (if excerpt didn't work)
-					if (empty($description) && $post_type === 'publications') {
-						$summary = get_field('summary', $post_id);
-						if (!empty($summary)) {
-							$description = wp_strip_all_tags($summary);
-							$description = trim($description);
-						}
+				// Priority 3: For publications, try ACF summary field (if excerpt didn't work)
+				if (empty($description) && $post_type === 'publications') {
+					$summary = get_field('summary', $post_id);
+					if (!empty($summary)) {
+						$description = wp_strip_all_tags($summary);
+						$description = trim($description);
 					}
+				}
 
-					// Priority 4: Use beginning of post content (if still no description)
-					if (empty($description)) {
-						$content = get_post_field('post_content', $post_id);
-						if (!empty($content)) {
-							// Strip HTML tags and shortcodes
-							$content = wp_strip_all_tags(strip_shortcodes($content));
-							// Remove extra whitespace and line breaks
-							$content = preg_replace('/\s+/', ' ', $content);
-							$content = trim($content);
+				// Priority 4: Use beginning of post content (if still no description)
+				if (empty($description)) {
+					$content = get_post_field('post_content', $post_id);
+					if (!empty($content)) {
+						// Strip HTML tags and shortcodes
+						$content = wp_strip_all_tags(strip_shortcodes($content));
+						// Remove extra whitespace and line breaks
+						$content = preg_replace('/\s+/', ' ', $content);
+						$content = trim($content);
 
-							// Truncate to reasonable length for RSS description (around 160-200 characters)
-							if (strlen($content) > 200) {
-								$description = substr($content, 0, 197) . '...';
-							} else {
-								$description = $content;
-							}
+						// Truncate to reasonable length for RSS description (around 160-200 characters)
+						if (strlen($content) > 200) {
+							$description = substr($content, 0, 197) . '...';
+						} else {
+							$description = $content;
 						}
 					}
 				}

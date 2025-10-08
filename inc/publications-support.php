@@ -1152,6 +1152,7 @@ function custom_series_alphanumeric_orderby( $orderby, $query ) {
  * @param string         $taxonomy  The taxonomy name.
  * @return array|WP_Error The filtered list of terms.
  */
+
 function caes_hub_exclude_department_topics_from_publications($terms, $post_id, $taxonomy) {
     // Bail out early if it's not the right context.
     if (!is_singular('publications') || $taxonomy !== 'topics' || is_admin()) {
@@ -1164,14 +1165,20 @@ function caes_hub_exclude_department_topics_from_publications($terms, $post_id, 
     // Only run the database queries if our static variable hasn't been populated yet.
     if ($exclude_ids === null) {
         $exclude_ids = []; 
-        $department_term = get_term_by('name', 'Departments', 'topics');
         
-        if ($department_term) {
-            $exclude_ids = [$department_term->term_id];
-            $child_term_ids = get_term_children($department_term->term_id, 'topics');
+        // Terms to exclude (parent terms)
+        $terms_to_exclude = ['Departments', 'Departments and Units'];
+        
+        foreach ($terms_to_exclude as $term_name) {
+            $department_term = get_term_by('name', $term_name, 'topics');
             
-            if (!is_wp_error($child_term_ids) && !empty($child_term_ids)) {
-                $exclude_ids = array_merge($exclude_ids, $child_term_ids);
+            if ($department_term) {
+                $exclude_ids[] = $department_term->term_id;
+                $child_term_ids = get_term_children($department_term->term_id, 'topics');
+                
+                if (!is_wp_error($child_term_ids) && !empty($child_term_ids)) {
+                    $exclude_ids = array_merge($exclude_ids, $child_term_ids);
+                }
             }
         }
     }
