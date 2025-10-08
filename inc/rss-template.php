@@ -120,10 +120,16 @@ do_action('rss_tag_pre', 'rss2');
 					if (strpos($yoast_meta_desc, '%%') !== false) {
 						// Has unprocessed variables - try to replace %%excerpt%% specifically
 						if (strpos($yoast_meta_desc, '%%excerpt%%') !== false) {
-							$excerpt = get_the_excerpt($post_id);
-							if (!empty($excerpt)) {
-								// Replace %%excerpt%% with actual excerpt
-								$yoast_meta_desc = str_replace('%%excerpt%%', $excerpt, $yoast_meta_desc);
+							// Check for MANUAL excerpt only (not auto-generated)
+							$post_obj = get_post($post_id);
+							$manual_excerpt = $post_obj->post_excerpt;
+
+							if (!empty($manual_excerpt)) {
+								// Replace %%excerpt%% with actual manual excerpt
+								$yoast_meta_desc = str_replace('%%excerpt%%', $manual_excerpt, $yoast_meta_desc);
+							} else {
+								// No manual excerpt - remove %%excerpt%% entirely
+								$yoast_meta_desc = str_replace('%%excerpt%%', '', $yoast_meta_desc);
 							}
 						}
 
