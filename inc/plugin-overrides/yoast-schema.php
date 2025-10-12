@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
  * For debugging: pretty-prints the Yoast schema in the page source.
  * It's recommended to remove this on a live site.
  */
-// add_filter( 'yoast_seo_development_mode', '__return_true' );
+add_filter( 'yoast_seo_development_mode', '__return_true' );
 
 
 /**
