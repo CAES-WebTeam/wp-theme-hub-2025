@@ -168,14 +168,14 @@ function update_article_authors($data, $context) {
     return $data;
 }
 
-add_filter('wpseo_schema_graph_pieces', 'remove_default_author', 12, 2);
-function remove_default_author($pieces, $context)
-{
-    $authors = get_field('authors', $context->id);
-    if (!$authors || !is_array($authors)) return $pieces;
+// add_filter('wpseo_schema_graph_pieces', 'remove_default_author', 12, 2);
+// function remove_default_author($pieces, $context)
+// {
+//     $authors = get_field('authors', $context->id);
+//     if (!$authors || !is_array($authors)) return $pieces;
 
-    return array_filter($pieces, function ($piece) {
-        $class = get_class($piece);
-        return strpos($class, 'Author') === false || strpos($class, 'ACF_Author') !== false;
-    });
-}
+//     return array_filter($pieces, function ($piece) {
+//         $class = get_class($piece);
+//         return strpos($class, 'Author') === false || strpos($class, 'ACF_Author') !== false;
+//     });
+// }
