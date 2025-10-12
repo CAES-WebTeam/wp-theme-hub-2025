@@ -8,6 +8,8 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+add_filter( 'yoast_seo_development_mode', '__return_true' );
+
 
 /**
  * For debugging: pretty-prints the Yoast schema in the page source.
