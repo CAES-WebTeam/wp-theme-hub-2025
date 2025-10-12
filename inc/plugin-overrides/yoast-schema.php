@@ -1,51 +1,56 @@
 <?php
+
 /**
  * Add ACF Authors to Yoast SEO Schema
  */
 
 if (!defined('ABSPATH')) exit;
 
-class ACF_Author_Person {
-    
+class ACF_Author_Person
+{
+
     public $context;
     private $author_data;
     private $index;
-    
-    public function __construct($context, $author_data, $index) {
+
+    public function __construct($context, $author_data, $index)
+    {
         $this->context = $context;
         $this->author_data = $author_data;
         $this->index = $index;
     }
-    
-    public function is_needed() {
+
+    public function is_needed()
+    {
         return true; // Always try to generate
     }
-    
-    public function generate() {
+
+    public function generate()
+    {
         $canonical = $this->context->canonical ?: get_permalink($this->context->id);
-        
+
         $entry_type = $this->author_data['type'] ?? '';
         $user_id = null;
         $first_name = '';
         $last_name = '';
         $display_name = '';
         $profile_url = '';
-        
+
         // Custom entry
         if ($entry_type === 'Custom') {
             $custom = $this->author_data['custom_user'] ?? $this->author_data['custom'] ?? [];
             $first_name = $custom['first_name'] ?? '';
             $last_name = $custom['last_name'] ?? '';
-        } 
+        }
         // WordPress user
         else {
             // Get user ID
             if (isset($this->author_data['user'])) {
-                $user_id = is_array($this->author_data['user']) ? 
-                    ($this->author_data['user']['ID'] ?? $this->author_data['user']) : 
+                $user_id = is_array($this->author_data['user']) ?
+                    ($this->author_data['user']['ID'] ?? $this->author_data['user']) :
                     $this->author_data['user'];
             }
-            
+
             // Fallback: find any numeric value
             if (!$user_id && is_array($this->author_data)) {
                 foreach ($this->author_data as $val) {
@@ -55,7 +60,7 @@ class ACF_Author_Person {
                     }
                 }
             }
-            
+
             if ($user_id) {
                 $display_name = get_the_author_meta('display_name', $user_id) ?: '';
                 $first_name = get_the_author_meta('first_name', $user_id) ?: '';
@@ -63,61 +68,114 @@ class ACF_Author_Person {
                 $profile_url = get_author_posts_url($user_id);
             }
         }
-        
+
         $name = $display_name ?: trim($first_name . ' ' . $last_name);
-        
+
         if (!$name) {
             return false;
         }
-        
+
         $data = [
             '@type' => 'Person',
             '@id' => $canonical . '#/schema/person/author-' . $this->index,
             'name' => $name,
         ];
-        
+
         if ($profile_url) $data['url'] = $profile_url;
         if ($first_name) $data['givenName'] = $first_name;
         if ($last_name) $data['familyName'] = $last_name;
-        
+
         return $data;
     }
 }
 
 add_filter('wpseo_schema_graph_pieces', 'add_acf_author_pieces', 11, 2);
-function add_acf_author_pieces($pieces, $context) {
+function add_acf_author_pieces($pieces, $context)
+{
     $authors = get_field('authors', $context->id);
     if (!$authors || !is_array($authors)) return $pieces;
-    
+
     foreach ($authors as $index => $author) {
         $pieces[] = new ACF_Author_Person($context, $author, $index);
     }
-    
+
     return $pieces;
 }
 
 add_filter('wpseo_schema_article', 'update_article_authors', 10, 2);
-function update_article_authors($data, $context) {
+function update_article_authors($data, $context)
+{
     $authors = get_field('authors', $context->id);
-    if (!$authors || !is_array($authors)) return $data;
-    
+    if (!$authors || !is_array($authors)) {
+        return $data;
+    }
+
     $canonical = $context->canonical ?: get_permalink($context->id);
     $refs = [];
-    
+
     foreach ($authors as $index => $author) {
-        $refs[] = ['@id' => $canonical . '#/schema/person/author-' . $index];
+        // --- Start: Added validation logic ---
+        $entry_type = $author['type'] ?? '';
+        $user_id = null;
+        $first_name = '';
+        $last_name = '';
+        $display_name = '';
+
+        // Custom entry
+        if ($entry_type === 'Custom') {
+            $custom = $author['custom_user'] ?? $author['custom'] ?? [];
+            $first_name = $custom['first_name'] ?? '';
+            $last_name = $custom['last_name'] ?? '';
+        }
+        // WordPress user
+        else {
+            if (isset($author['user'])) {
+                $user_id = is_array($author['user']) ?
+                    ($author['user']['ID'] ?? $author['user']) :
+                    $author['user'];
+            }
+
+            if (!$user_id && is_array($author)) {
+                foreach ($author as $val) {
+                    if (is_numeric($val) && $val > 0) {
+                        $user_id = $val;
+                        break;
+                    }
+                }
+            }
+
+            if ($user_id) {
+                $display_name = get_the_author_meta('display_name', $user_id) ?: '';
+                $first_name = get_the_author_meta('first_name', $user_id) ?: '';
+                $last_name = get_the_author_meta('last_name', $user_id) ?: '';
+            }
+        }
+
+        $name = $display_name ?: trim($first_name . ' ' . $last_name);
+        // --- End: Added validation logic ---
+
+        // Only add the reference if a name was successfully determined.
+        if ($name) {
+            $refs[] = ['@id' => $canonical . '#/schema/person/author-' . $index];
+        }
     }
-    
+
+    // Do not modify the author data if no valid custom authors were found.
+    if (empty($refs)) {
+        return $data;
+    }
+
     $data['author'] = count($refs) === 1 ? $refs[0] : $refs;
     return $data;
 }
 
 add_filter('wpseo_schema_graph_pieces', 'remove_default_author', 12, 2);
-function remove_default_author($pieces, $context) {
+function remove_default_author($pieces, $context)
+{
     $authors = get_field('authors', $context->id);
     if (!$authors || !is_array($authors)) return $pieces;
-    
-    return array_filter($pieces, function($piece) {
+
+    return array_filter($pieces, function ($piece) {
         $class = get_class($piece);
         return strpos($class, 'Author') === false || strpos($class, 'ACF_Author') !== false;
     });
