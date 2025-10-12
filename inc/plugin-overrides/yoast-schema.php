@@ -1,153 +1,135 @@
 <?php
+/**
+ * Map ACF Authors to Yoast SEO Schema
+ * 
+ * This code maps the custom ACF 'authors' repeater field to proper Schema.org markup
+ * Handles both WordPress users and custom entries
+ */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+// Prevent direct access
+if (!defined('ABSPATH')) {
+    exit;
 }
 
 /**
- * Modify Yoast SEO schema to add custom field data.
- * This function acts as a router for different post types.
+ * Add custom authors to Yoast SEO Article schema
  *
- * @param array $graph The schema graph array.
- * @return array The modified schema graph.
+ * @param array $data The Schema Article data.
+ * @param WP_Post $post The post object.
+ * @return array Modified schema data.
  */
-function my_theme_modify_yoast_schema( $graph ) {
-    // Ensure we're on a single post and have a graph to work with.
-    if ( ! is_singular() || ! is_array( $graph ) ) {
-        return $graph;
-    }
+add_filter('wpseo_schema_article', 'add_custom_authors_to_schema', 10, 2);
 
-    $post_type = get_post_type();
-
-    // Route to the correct handler based on post type.
-    switch ( $post_type ) {
-        case 'publications':
-        case 'post':
-            $graph = my_theme_add_post_authors_to_schema( $graph );
-            break;
-    }
-
-    return $graph;
-}
-add_filter( 'wpseo_schema_graph', 'my_theme_modify_yoast_schema', 99, 1 );
-
-/**
- * Replaces the default author with authors from an ACF repeater field for 'post' post types.
- *
- * @param array $graph The schema graph array.
- * @return array The modified schema graph.
- */
-function my_theme_add_post_authors_to_schema( $graph ) {
-    $post_id = get_the_ID();
-    $authors = get_field( 'authors', $post_id );
-
-    if ( empty( $authors ) ) {
-        return $graph;
-    }
-
-    $author_schema_pieces = my_theme_generate_person_schema( $authors );
-
-    if ( empty( $author_schema_pieces ) ) {
-        return $graph;
-    }
-
-    // --- THIS IS THE CORRECTED PART --- //
-    // Find the main Article piece in the graph.
-    // It could be 'NewsArticle', 'BlogPosting', or a generic 'Article'.
-    $article_piece = find_schema_piece_by_type( $graph, 'NewsArticle' );
-    if ( ! $article_piece ) {
-        $article_piece = find_schema_piece_by_type( $graph, 'BlogPosting' );
-    }
-    if ( ! $article_piece ) {
-        $article_piece = find_schema_piece_by_type( $graph, 'Article' );
-    }
-    // --- END CORRECTION --- //
-
-    if ( $article_piece ) {
-        $author_references = [];
-        foreach ( $author_schema_pieces as $person ) {
-            $author_references[] = [ '@id' => $person['@id'] ];
+function add_custom_authors_to_schema($data, $post) {
+    // Get ACF authors field
+    $authors = get_field('authors', $post->ID);
+    
+    // If we have custom authors, process them
+    if (!empty($authors) && is_array($authors)) {
+        $author_schemas = [];
+        
+        foreach ($authors as $item) {
+            $person_data = get_person_schema_data($item);
+            
+            if (!empty($person_data)) {
+                $author_schemas[] = $person_data;
+            }
         }
-
-        $article_piece['author'] = $author_references;
-        $graph['@graph'] = array_merge( $graph['@graph'], $author_schema_pieces );
+        
+        // If we have author schemas, replace the default author
+        if (!empty($author_schemas)) {
+            if (count($author_schemas) === 1) {
+                // Single author - use object directly
+                $data['author'] = $author_schemas[0];
+            } else {
+                // Multiple authors - use array
+                $data['author'] = $author_schemas;
+            }
+        }
     }
-
-    return $graph;
+    
+    return $data;
 }
 
 /**
- * Converts an ACF repeater field of people into an array of 'Person' schema objects.
+ * Generate Schema.org Person data from ACF author item
  *
- * @param array $people_data The raw data from the ACF repeater field.
- * @return array An array of schema-compliant 'Person' objects.
+ * @param array $item Single author item from ACF repeater.
+ * @return array|null Schema Person data or null if invalid.
  */
-function my_theme_generate_person_schema( $people_data ) {
-    $schema_pieces = [];
-
-    if ( ! is_array( $people_data ) ) {
-        return $schema_pieces;
+function get_person_schema_data($item) {
+    if (empty($item)) {
+        return null;
     }
-
-    foreach ( $people_data as $item ) {
-        $entry_type = $item['type'] ?? '';
-        $full_name = '';
-        $title = '';
-        $profile_url = '';
-
-        if ( $entry_type === 'Custom' ) {
-            $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
-            $first_name = sanitize_text_field( $custom_user['first_name'] ?? '' );
-            $last_name = sanitize_text_field( $custom_user['last_name'] ?? '' );
-            $full_name = trim( "$first_name $last_name" );
-            $title = sanitize_text_field( $custom_user['title'] ?? $custom_user['titile'] ?? '' );
-            $profile_url = site_url( '/person/' ) . sanitize_title( $full_name ) . '#person';
-
-        } else { // WordPress User
+    
+    $entry_type = $item['type'] ?? '';
+    $first_name = '';
+    $last_name = '';
+    $display_name = '';
+    $profile_url = '';
+    
+    if ($entry_type === 'Custom') {
+        // Handle custom user entry
+        $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
+        $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
+        $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
+        
+        // Build full name for custom entries
+        $display_name = trim("$first_name $last_name");
+        
+    } else {
+        // Handle WordPress user selection
+        $user_id = null;
+        
+        // Check for 'user' key
+        if (isset($item['user']) && !empty($item['user'])) {
             $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-            if ( $user_id && is_numeric( $user_id ) && $user_id > 0 ) {
-                $full_name = get_the_author_meta( 'display_name', $user_id );
-                $profile_url = get_author_posts_url( $user_id );
-                $public_title = get_field( 'public_friendly_title', 'user_' . $user_id );
-                $regular_title = get_the_author_meta( 'title', $user_id );
-                $title = !empty( $public_title ) ? $public_title : $regular_title;
+        }
+        
+        // Fallback: check for numeric values
+        if (empty($user_id) && is_array($item)) {
+            foreach ($item as $key => $value) {
+                if (is_numeric($value) && $value > 0) {
+                    $user_id = $value;
+                    break;
+                }
             }
         }
-
-        if ( ! empty( $full_name ) ) {
-            $person_schema = [
-                '@type' => 'Person',
-                '@id'   => $profile_url,
-                'name'  => esc_html( $full_name ),
-                'url'   => esc_url( $profile_url )
-            ];
-
-            if ( ! empty( $title ) ) {
-                $person_schema['jobTitle'] = esc_html( $title );
-            }
-
-            $schema_pieces[] = $person_schema;
+        
+        if ($user_id && is_numeric($user_id) && $user_id > 0) {
+            $display_name = get_the_author_meta('display_name', $user_id);
+            $first_name = get_the_author_meta('first_name', $user_id);
+            $last_name = get_the_author_meta('last_name', $user_id);
+            $profile_url = get_author_posts_url($user_id);
         }
     }
-
-    return $schema_pieces;
-}
-
-/**
- * Helper function to find a specific piece in the Yoast schema graph by its @type.
- *
- * @param array  &$graph The schema graph array (passed by reference).
- * @param string $type   The @type to search for (e.g., 'Article', 'WebPage').
- * @return array|null    A reference to the piece if found, otherwise null.
- */
-function &find_schema_piece_by_type( &$graph, $type ) {
-    $found_piece = null;
-    foreach ( $graph['@graph'] as &$piece ) {
-        if ( ( is_string( $piece['@type'] ) && $piece['@type'] === $type ) ||
-             ( is_array( $piece['@type'] ) && in_array( $type, $piece['@type'] ) ) ) {
-            $found_piece = &$piece;
-            return $found_piece;
-        }
+    
+    // Only create schema if we have a name
+    if (empty($display_name) && (empty($first_name) && empty($last_name))) {
+        return null;
     }
-    return $found_piece;
+    
+    // Use display_name if available, otherwise construct from first/last
+    $full_name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
+    
+    // Build the Person schema
+    $person_schema = [
+        '@type' => 'Person',
+        'name' => $full_name,
+    ];
+    
+    // Add URL if available (for WordPress users)
+    if (!empty($profile_url)) {
+        $person_schema['url'] = $profile_url;
+    }
+    
+    // Add given/family name if available
+    if (!empty($first_name)) {
+        $person_schema['givenName'] = $first_name;
+    }
+    if (!empty($last_name)) {
+        $person_schema['familyName'] = $last_name;
+    }
+    
+    return $person_schema;
 }
