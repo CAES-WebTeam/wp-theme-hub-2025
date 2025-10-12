@@ -1,181 +1,180 @@
 <?php
-
 /**
- * Add ACF Authors to Yoast SEO Schema
+ * Yoast SEO & ACF Repeater Authors Integration
+ *
+ * This file completely replaces the default Yoast author schema with authors
+ * from an ACF repeater field named 'authors'.
+ *
+ * @version 2.0
  */
 
-if (!defined('ABSPATH')) exit;
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-class ACF_Author_Person
-{
+/**
+ * Main class to manage the integration.
+ */
+final class CAES_ACF_Yoast_Authors {
 
-    public $context;
-    private $author_data;
-    private $index;
+    /**
+     * The post context provided by Yoast.
+     * @var object
+     */
+    private $context;
 
-    public function __construct($context, $author_data, $index)
-    {
-        $this->context = $context;
-        $this->author_data = $author_data;
-        $this->index = $index;
+    /**
+     * A processed list of valid authors found in the ACF field.
+     * @var array
+     */
+    private $valid_authors = [];
+
+    /**
+     * Initializes the hooks.
+     */
+    public function __construct() {
+        // Run our logic before other filters.
+        add_action('wpseo_frontend_presenters', [$this, 'init']);
     }
 
-    public function is_needed()
-    {
-        return true; // Always try to generate
+    /**
+     * Sets up the context and processes authors for the current page.
+     * This runs once before any schema filters.
+     *
+     * @param array $presenters The array of Yoast presenters.
+     */
+    public function init($presenters) {
+        // Find the post context from the presenters.
+        foreach ($presenters as $presenter) {
+            if (isset($presenter->context)) {
+                $this->context = $presenter->context;
+                break;
+            }
+        }
+
+        if (!$this->context || !isset($this->context->id)) {
+            return;
+        }
+
+        $this->process_authors();
+
+        // If we found valid ACF authors, activate our schema modifications.
+        if (!empty($this->valid_authors)) {
+            add_filter('wpseo_schema_graph_pieces', [$this, 'remove_default_author_piece'], 11, 2);
+            add_filter('wpseo_schema_graph_pieces', [$this, 'add_custom_author_pieces'], 12, 2);
+            add_filter('wpseo_schema_article', [$this, 'update_article_author_references'], 11, 2);
+        }
     }
 
-    public function generate()
-    {
-        $canonical = $this->context->canonical ?: get_permalink($this->context->id);
-        $author = $this->author_data; // Use a simpler variable name
+    /**
+     * Fetches authors from ACF and processes them into a clean, validated list.
+     */
+    private function process_authors() {
+        $authors_raw = get_field('authors', $this->context->id);
 
-        $entry_type = $author['type'] ?? '';
-        $user_id = null;
-        $first_name = '';
-        $last_name = '';
-        $display_name = '';
-        $profile_url = '';
-
-        // Custom entry
-        if ($entry_type === 'Custom') {
-            $custom = $author['custom_user'] ?? $author['custom'] ?? [];
-            $first_name = $custom['first_name'] ?? '';
-            $last_name = $custom['last_name'] ?? '';
-        }
-        // WordPress user
-        else {
-            // --- START: CORRECTED USER LOOKUP LOGIC ---
-            // (Copied from render.php)
-            if (isset($author['user']) && !empty($author['user'])) {
-                $user_id = is_array($author['user']) ? ($author['user']['ID'] ?? null) : $author['user'];
-            }
-
-            if (empty($user_id) && is_array($author)) {
-                foreach ($author as $key => $value) {
-                    if (is_numeric($value) && $value > 0) {
-                        $user_id = $value;
-                        break;
-                    }
-                }
-            }
-            // --- END: CORRECTED USER LOOKUP LOGIC ---
-
-            if ($user_id && is_numeric($user_id) && $user_id > 0) {
-                $display_name = get_the_author_meta('display_name', $user_id);
-                $first_name = get_the_author_meta('first_name', $user_id);
-                $last_name = get_the_author_meta('last_name', $user_id);
-                $profile_url = get_author_posts_url($user_id);
-            }
+        if (empty($authors_raw) || !is_array($authors_raw)) {
+            return;
         }
 
-        $name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
+        foreach ($authors_raw as $index => $author_data) {
+            $author_details = $this->get_author_details($author_data);
 
-        if (!$name) {
-            return false;
+            // Only add authors who have a valid name.
+            if (!empty($author_details['name'])) {
+                $author_details['@id'] = $this->context->canonical . '#/schema/person/author-' . $index;
+                $this->valid_authors[] = $author_details;
+            }
         }
+    }
 
-        $data = [
-            '@type' => 'Person',
-            '@id'   => $canonical . '#/schema/person/author-' . $this->index,
-            'name'  => $name,
+    /**
+     * Takes a single row from the ACF repeater and returns a structured array of author details.
+     *
+     * @param array $author_data The raw data from an ACF repeater row.
+     * @return array A structured array with name, URL, etc.
+     */
+    private function get_author_details($author_data) {
+        $details = [
+            'name'       => '',
+            'givenName'  => '',
+            'familyName' => '',
+            'url'        => '',
         ];
 
-        if ($profile_url) $data['url'] = $profile_url;
-        if ($first_name) $data['givenName'] = $first_name;
-        if ($last_name) $data['familyName'] = $last_name;
-
-        return $data;
-    }
-}
-
-add_filter('wpseo_schema_graph_pieces', 'add_acf_author_pieces', 11, 2);
-function add_acf_author_pieces($pieces, $context)
-{
-    $authors = get_field('authors', $context->id);
-    if (!$authors || !is_array($authors)) return $pieces;
-
-    // --- DEBUGGING LINE ---
-    error_log('ACF Authors Data for Post ' . $context->id . ': ' . print_r($authors, true));
-
-    foreach ($authors as $index => $author) {
-        $pieces[] = new ACF_Author_Person($context, $author, $index);
-    }
-
-    return $pieces;
-}
-
-add_filter('wpseo_schema_article', 'update_article_authors', 10, 2);
-function update_article_authors($data, $context) {
-    $authors = get_field('authors', $context->id);
-    if (!$authors || !is_array($authors)) {
-        return $data;
-    }
-
-    $canonical = $context->canonical ?: get_permalink($context->id);
-    $refs = [];
-
-    foreach ($authors as $index => $author) {
-        // --- Start: Validation Logic ---
-        // This logic is now mirrored from your generate() function
-        $name = '';
-        $entry_type = $author['type'] ?? '';
+        $entry_type = $author_data['type'] ?? 'User';
 
         if ($entry_type === 'Custom') {
-            $custom = $author['custom_user'] ?? $author['custom'] ?? [];
-            $first_name = $custom['first_name'] ?? '';
-            $last_name = $custom['last_name'] ?? '';
-            $name = trim($first_name . ' ' . $last_name);
+            $custom = $author_data['custom_user'] ?? $author_data['custom'] ?? [];
+            $details['givenName'] = $custom['first_name'] ?? '';
+            $details['familyName'] = $custom['last_name'] ?? '';
         } else {
             $user_id = null;
-            if (isset($author['user'])) {
-                $user_id = is_array($author['user']) ? ($author['user']['ID'] ?? null) : $author['user'];
-            }
-
-            if (empty($user_id) && is_array($author)) {
-                foreach ($author as $value) {
-                    if (is_numeric($value) && $value > 0) {
-                        $user_id = $value;
-                        break;
-                    }
-                }
+            if (!empty($author_data['user'])) {
+                $user_id = is_array($author_data['user']) ? ($author_data['user']['ID'] ?? null) : $author_data['user'];
             }
             
-            if ($user_id) {
-                $display_name = get_the_author_meta('display_name', $user_id);
-                if ($display_name) {
-                    $name = $display_name;
-                } else {
-                    $first_name = get_the_author_meta('first_name', $user_id);
-                    $last_name = get_the_author_meta('last_name', $user_id);
-                    $name = trim($first_name . ' ' . $last_name);
-                }
+            if ($user_id && is_numeric($user_id)) {
+                $details['name']       = get_the_author_meta('display_name', $user_id);
+                $details['givenName']  = get_the_author_meta('first_name', $user_id);
+                $details['familyName'] = get_the_author_meta('last_name', $user_id);
+                $details['url']        = get_author_posts_url($user_id);
             }
         }
-        // --- End: Validation Logic ---
-
-        // Only add the reference if a name was found.
-        if (!empty($name)) {
-            $refs[] = ['@id' => $canonical . '#/schema/person/author-' . $index];
+        
+        // If display name is not set, construct it from first/last name.
+        if (empty($details['name'])) {
+            $details['name'] = trim($details['givenName'] . ' ' . $details['familyName']);
         }
+        
+        return $details;
     }
 
-    if (empty($refs)) {
-        return $data; // Return original data if no valid authors were found
+    /**
+     * STEP 1: Removes Yoast's default Author schema piece.
+     */
+    public function remove_default_author_piece($pieces, $context) {
+        return array_filter($pieces, function ($piece) {
+            return !is_a($piece, 'Yoast\WP\SEO\Generators\Schema\Author');
+        });
     }
 
-    $data['author'] = count($refs) === 1 ? $refs[0] : $refs;
-    return $data;
+    /**
+     * STEP 2: Adds our valid ACF authors as new Person schema pieces.
+     */
+    public function add_custom_author_pieces($pieces, $context) {
+        foreach ($this->valid_authors as $author) {
+            $schema_piece = [
+                '@type' => 'Person',
+                '@id'   => $author['@id'],
+                'name'  => $author['name'],
+            ];
+            
+            if (!empty($author['givenName']))  $schema_piece['givenName']  = $author['givenName'];
+            if (!empty($author['familyName'])) $schema_piece['familyName'] = $author['familyName'];
+            if (!empty($author['url']))        $schema_piece['url']        = $author['url'];
+            
+            $pieces[] = $schema_piece;
+        }
+        return $pieces;
+    }
+
+    /**
+     * STEP 3: Updates the Article schema to reference our new Person pieces.
+     */
+    public function update_article_author_references($data, $context) {
+        $author_refs = array_map(function ($author) {
+            return ['@id' => $author['@id']];
+        }, $this->valid_authors);
+
+        if (count($author_refs) === 1) {
+            $data['author'] = $author_refs[0];
+        } else {
+            $data['author'] = $author_refs;
+        }
+        
+        return $data;
+    }
 }
 
-// add_filter('wpseo_schema_graph_pieces', 'remove_default_author', 12, 2);
-// function remove_default_author($pieces, $context)
-// {
-//     $authors = get_field('authors', $context->id);
-//     if (!$authors || !is_array($authors)) return $pieces;
-
-//     return array_filter($pieces, function ($piece) {
-//         $class = get_class($piece);
-//         return strpos($class, 'Author') === false || strpos($class, 'ACF_Author') !== false;
-//     });
-// }
+// Instantiate the class to start the process.
+new CAES_ACF_Yoast_Authors();
