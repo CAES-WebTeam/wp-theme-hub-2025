@@ -28,8 +28,9 @@ class ACF_Author_Person
     public function generate()
     {
         $canonical = $this->context->canonical ?: get_permalink($this->context->id);
+        $author = $this->author_data; // Use a simpler variable name
 
-        $entry_type = $this->author_data['type'] ?? '';
+        $entry_type = $author['type'] ?? '';
         $user_id = null;
         $first_name = '';
         $last_name = '';
@@ -38,38 +39,37 @@ class ACF_Author_Person
 
         // Custom entry
         if ($entry_type === 'Custom') {
-            $custom = $this->author_data['custom_user'] ?? $this->author_data['custom'] ?? [];
+            $custom = $author['custom_user'] ?? $author['custom'] ?? [];
             $first_name = $custom['first_name'] ?? '';
             $last_name = $custom['last_name'] ?? '';
         }
         // WordPress user
         else {
-            // Get user ID
-            if (isset($this->author_data['user'])) {
-                $user_id = is_array($this->author_data['user']) ?
-                    ($this->author_data['user']['ID'] ?? $this->author_data['user']) :
-                    $this->author_data['user'];
+            // --- START: CORRECTED USER LOOKUP LOGIC ---
+            // (Copied from render.php)
+            if (isset($author['user']) && !empty($author['user'])) {
+                $user_id = is_array($author['user']) ? ($author['user']['ID'] ?? null) : $author['user'];
             }
 
-            // Fallback: find any numeric value
-            if (!$user_id && is_array($this->author_data)) {
-                foreach ($this->author_data as $val) {
-                    if (is_numeric($val) && $val > 0) {
-                        $user_id = $val;
+            if (empty($user_id) && is_array($author)) {
+                foreach ($author as $key => $value) {
+                    if (is_numeric($value) && $value > 0) {
+                        $user_id = $value;
                         break;
                     }
                 }
             }
+            // --- END: CORRECTED USER LOOKUP LOGIC ---
 
-            if ($user_id) {
-                $display_name = get_the_author_meta('display_name', $user_id) ?: '';
-                $first_name = get_the_author_meta('first_name', $user_id) ?: '';
-                $last_name = get_the_author_meta('last_name', $user_id) ?: '';
+            if ($user_id && is_numeric($user_id) && $user_id > 0) {
+                $display_name = get_the_author_meta('display_name', $user_id);
+                $first_name = get_the_author_meta('first_name', $user_id);
+                $last_name = get_the_author_meta('last_name', $user_id);
                 $profile_url = get_author_posts_url($user_id);
             }
         }
 
-        $name = $display_name ?: trim($first_name . ' ' . $last_name);
+        $name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
 
         if (!$name) {
             return false;
@@ -77,8 +77,8 @@ class ACF_Author_Person
 
         $data = [
             '@type' => 'Person',
-            '@id' => $canonical . '#/schema/person/author-' . $this->index,
-            'name' => $name,
+            '@id'   => $canonical . '#/schema/person/author-' . $this->index,
+            'name'  => $name,
         ];
 
         if ($profile_url) $data['url'] = $profile_url;
