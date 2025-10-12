@@ -8,6 +8,7 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
 add_filter( 'yoast_seo_development_mode', '__return_true' );
 
 
@@ -89,3 +90,44 @@ function caes_add_acf_authors_to_yoast_schema( $data ) {
 }
 
 add_filter( 'wpseo_schema_article', 'caes_add_acf_authors_to_yoast_schema', 11, 1 );
+
+
+/**
+ * 2. Removes the default author's 'Person' object from the main graph.
+ *
+ * This function runs after your function above. It finds the default author
+ * (like "caeswp") that Yoast adds as a separate piece and removes it.
+ *
+ * @param array $data The entire schema graph data array.
+ * @return array The modified schema graph data.
+ */
+function caes_remove_default_author_piece($data) {
+    if (!is_singular() || !isset($data['@graph']) || empty(get_field('authors'))) {
+        return $data;
+    }
+
+    $default_author_id = null;
+    $post_author_id = get_post_field('post_author', get_the_ID());
+    $default_author_name = get_the_author_meta('display_name', $post_author_id);
+
+    // Find the @id of the default author's Person object.
+    foreach ($data['@graph'] as $key => $piece) {
+        if (isset($piece['@type']) && $piece['@type'] === 'Person' && isset($piece['name']) && $piece['name'] === $default_author_name) {
+            $default_author_id = $piece['@id'];
+            break;
+        }
+    }
+
+    // If we found it, filter it out of the graph.
+    if ($default_author_id !== null) {
+        $data['@graph'] = array_filter($data['@graph'], function($piece) use ($default_author_id) {
+            return !isset($piece['@id']) || $piece['@id'] !== $default_author_id;
+        });
+
+        // Re-index the array to prevent JSON errors.
+        $data['@graph'] = array_values($data['@graph']);
+    }
+
+    return $data;
+}
+add_filter('wpseo_schema_data', 'caes_remove_default_author_piece', 99, 1);
