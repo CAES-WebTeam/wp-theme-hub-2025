@@ -95,6 +95,9 @@ function add_acf_author_pieces($pieces, $context)
     $authors = get_field('authors', $context->id);
     if (!$authors || !is_array($authors)) return $pieces;
 
+    // --- DEBUGGING LINE ---
+    error_log('ACF Authors Data for Post ' . $context->id . ': ' . print_r($authors, true));
+
     foreach ($authors as $index => $author) {
         $pieces[] = new ACF_Author_Person($context, $author, $index);
     }
