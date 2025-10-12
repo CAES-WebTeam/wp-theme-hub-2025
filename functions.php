@@ -42,3 +42,4 @@ require get_template_directory() . '/inc/pub-sunset-tool.php';
 
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+require get_template_directory() . '/inc/plugin-overrides/yoast-schema.php';
