@@ -12,6 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array The modified schema graph.
  */
 
+/**
+ * Modify Yoast SEO schema to add custom field data.
+ * This function acts as a router for different post types.
+ *
+ * @param array $graph The schema graph array.
+ * @return array The modified schema graph.
+ */
 function my_theme_modify_yoast_schema( $graph ) {
     // Ensure we're on a single post and have a graph to work with.
     if ( ! is_singular() || ! is_array( $graph ) ) {
@@ -22,9 +29,16 @@ function my_theme_modify_yoast_schema( $graph ) {
 
     // Route to the correct handler based on post type.
     switch ( $post_type ) {
+        // --- THIS IS THE CHANGE --- //
+        // This now handles both 'publications' and 'post' post types.
+        case 'publications':
         case 'post':
             $graph = my_theme_add_post_authors_to_schema( $graph );
             break;
+        // You can add more cases here for other CPTs
+        // case 'your_custom_post_type':
+        //     $graph = my_theme_add_artists_to_schema( $graph );
+        //     break;
     }
 
     return $graph;
