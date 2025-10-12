@@ -52,6 +52,39 @@ function add_custom_authors_to_schema($data, $post) {
 }
 
 /**
+ * Remove default Person piece from schema graph when custom authors are present
+ * This prevents the WordPress post author from appearing as a separate Person entity
+ *
+ * @param array $graph The Schema graph array.
+ * @param WP_Post $post The post object.
+ * @return array Modified graph.
+ */
+add_filter('wpseo_schema_graph', 'remove_default_person_for_custom_authors', 11, 2);
+
+function remove_default_person_for_custom_authors($graph, $post) {
+    // Check if this post has custom authors
+    $authors = get_field('authors', $post->ID);
+    
+    if (!empty($authors) && is_array($authors)) {
+        // Remove the default Person piece from the graph
+        foreach ($graph as $key => $piece) {
+            if (isset($piece['@type']) && $piece['@type'] === 'Person') {
+                // Check if this is the default author (not one of our custom authors)
+                // The default person usually has an @id like #/schema/person/...
+                if (isset($piece['@id']) && strpos($piece['@id'], '#/schema/person/') !== false) {
+                    unset($graph[$key]);
+                }
+            }
+        }
+        
+        // Re-index the array to maintain clean JSON output
+        $graph = array_values($graph);
+    }
+    
+    return $graph;
+}
+
+/**
  * Generate Schema.org Person data from ACF author item
  *
  * @param array $item Single author item from ACF repeater.
