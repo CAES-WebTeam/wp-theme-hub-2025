@@ -1,16 +1,8 @@
 <?php
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit; // Exit if accessed directly.
 }
-
-/**
- * Modify Yoast SEO schema to add custom field data.
- * This function acts as a router for different post types.
- *
- * @param array $graph The schema graph array.
- * @return array The modified schema graph.
- */
 
 /**
  * Modify Yoast SEO schema to add custom field data.
@@ -29,21 +21,15 @@ function my_theme_modify_yoast_schema( $graph ) {
 
     // Route to the correct handler based on post type.
     switch ( $post_type ) {
-        // --- THIS IS THE CHANGE --- //
-        // This now handles both 'publications' and 'post' post types.
         case 'publications':
         case 'post':
             $graph = my_theme_add_post_authors_to_schema( $graph );
             break;
-        // You can add more cases here for other CPTs
-        // case 'your_custom_post_type':
-        //     $graph = my_theme_add_artists_to_schema( $graph );
-        //     break;
     }
 
     return $graph;
 }
-add_filter( 'wpseo_schema_graph', 'my_theme_modify_yoast_schema', 11, 1 );
+add_filter( 'wpseo_schema_graph', 'my_theme_modify_yoast_schema', 99, 1 );
 
 /**
  * Replaces the default author with authors from an ACF repeater field for 'post' post types.
@@ -55,34 +41,35 @@ function my_theme_add_post_authors_to_schema( $graph ) {
     $post_id = get_the_ID();
     $authors = get_field( 'authors', $post_id );
 
-    // If there are no authors in our custom field, leave the schema as is.
     if ( empty( $authors ) ) {
         return $graph;
     }
 
-    // Generate an array of 'Person' schema pieces from our ACF data.
     $author_schema_pieces = my_theme_generate_person_schema( $authors );
 
     if ( empty( $author_schema_pieces ) ) {
         return $graph;
     }
 
-    // Find the main Article piece in the graph so we can modify it.
-    // We pass a reference (&) so our changes stick.
-    $article_piece = find_schema_piece_by_type( $graph, 'Article' );
+    // --- THIS IS THE CORRECTED PART --- //
+    // Find the main Article piece in the graph.
+    // It could be 'NewsArticle', 'BlogPosting', or a generic 'Article'.
+    $article_piece = find_schema_piece_by_type( $graph, 'NewsArticle' );
+    if ( ! $article_piece ) {
+        $article_piece = find_schema_piece_by_type( $graph, 'BlogPosting' );
+    }
+    if ( ! $article_piece ) {
+        $article_piece = find_schema_piece_by_type( $graph, 'Article' );
+    }
+    // --- END CORRECTION --- //
 
     if ( $article_piece ) {
-        // Create an array of references to our new Person objects.
-        // This is how schema pieces are linked together.
         $author_references = [];
         foreach ( $author_schema_pieces as $person ) {
             $author_references[] = [ '@id' => $person['@id'] ];
         }
 
-        // Replace the default author with our array of author references.
         $article_piece['author'] = $author_references;
-
-        // Add our new 'Person' schema pieces to the main graph.
         $graph['@graph'] = array_merge( $graph['@graph'], $author_schema_pieces );
     }
 
@@ -91,7 +78,6 @@ function my_theme_add_post_authors_to_schema( $graph ) {
 
 /**
  * Converts an ACF repeater field of people into an array of 'Person' schema objects.
- * This is adapted from the logic in your render.php file.
  *
  * @param array $people_data The raw data from the ACF repeater field.
  * @return array An array of schema-compliant 'Person' objects.
@@ -115,7 +101,6 @@ function my_theme_generate_person_schema( $people_data ) {
             $last_name = sanitize_text_field( $custom_user['last_name'] ?? '' );
             $full_name = trim( "$first_name $last_name" );
             $title = sanitize_text_field( $custom_user['title'] ?? $custom_user['titile'] ?? '' );
-            // For custom users, we create a URL-based ID.
             $profile_url = site_url( '/person/' ) . sanitize_title( $full_name ) . '#person';
 
         } else { // WordPress User
@@ -129,11 +114,10 @@ function my_theme_generate_person_schema( $people_data ) {
             }
         }
 
-        // Only proceed if we successfully got a name.
         if ( ! empty( $full_name ) ) {
             $person_schema = [
                 '@type' => 'Person',
-                '@id'   => $profile_url, // A unique ID is crucial for linking.
+                '@id'   => $profile_url,
                 'name'  => esc_html( $full_name ),
                 'url'   => esc_url( $profile_url )
             ];
@@ -141,8 +125,6 @@ function my_theme_generate_person_schema( $people_data ) {
             if ( ! empty( $title ) ) {
                 $person_schema['jobTitle'] = esc_html( $title );
             }
-            
-            // You could also add 'sameAs' for social media links if you have them.
 
             $schema_pieces[] = $person_schema;
         }
@@ -159,14 +141,13 @@ function my_theme_generate_person_schema( $people_data ) {
  * @return array|null    A reference to the piece if found, otherwise null.
  */
 function &find_schema_piece_by_type( &$graph, $type ) {
-    $found_piece = null; // Use a variable to hold the reference.
+    $found_piece = null;
     foreach ( $graph['@graph'] as &$piece ) {
-        // The @type can be a string or an array of strings.
-        if ( ( is_string( $piece['@type'] ) && $piece['@type'] === $type ) || 
+        if ( ( is_string( $piece['@type'] ) && $piece['@type'] === $type ) ||
              ( is_array( $piece['@type'] ) && in_array( $type, $piece['@type'] ) ) ) {
             $found_piece = &$piece;
             return $found_piece;
         }
     }
-    return $found_piece; // Will be null if not found.
+    return $found_piece;
 }
