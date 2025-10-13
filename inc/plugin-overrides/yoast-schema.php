@@ -208,8 +208,24 @@ add_filter( 'wpseo_meta_author', 'caes_change_meta_author_tag', 10, 2 );
 
 
 /**
- * BACKUP METHOD: Manually add author meta tag if Yoast doesn't output it.
- * Only runs if Yoast's meta tag isn't present.
+ * Remove Yoast's default author meta tag so we can add our own.
+ * This ensures we have full control over the author meta tag output.
+ *
+ * @param array $presenters The array of presenters that output meta tags.
+ * @return array The filtered array without the author presenter.
+ */
+function caes_remove_yoast_author_meta_tag( $presenters ) {
+    return array_filter( $presenters, function( $presenter ) {
+        return ! $presenter instanceof \Yoast\WP\SEO\Presenters\Meta_Author_Presenter;
+    });
+}
+
+add_filter( 'wpseo_frontend_presenters', 'caes_remove_yoast_author_meta_tag' );
+
+
+/**
+ * Add our custom author meta tag for all posts with ACF authors.
+ * This outputs the meta tag directly, bypassing Yoast's conditional logic.
  */
 function caes_add_author_meta_tag_manually() {
     // Only on singular posts/pages
@@ -254,10 +270,8 @@ function caes_add_author_meta_tag_manually() {
     // Output the meta tag if we have authors
     if ( ! empty($author_names) ) {
         $authors_string = esc_attr( implode(', ', $author_names) );
-        echo '<meta name="author" content="' . $authors_string . '" />' . "\n";
+        echo '<meta name="author" content="' . $authors_string . '" class="yoast-seo-meta-tag" />' . "\n";
     }
 }
 
-// Use wp_head with low priority so it runs after Yoast
-// Comment this out if the filter above works
-add_action( 'wp_head', 'caes_add_author_meta_tag_manually', 99 );
+add_action( 'wp_head', 'caes_add_author_meta_tag_manually', 1 );
