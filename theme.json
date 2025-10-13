@@ -619,8 +619,8 @@
             "title": "Publication Series Archive"
         },
         {
-            "name": "single-full-width",
-            "title": "Single Full Width"
+            "name": "full-width",
+            "title": "Full Width"
         }
     ]
 }
