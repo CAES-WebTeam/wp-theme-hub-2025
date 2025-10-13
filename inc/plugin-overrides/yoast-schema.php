@@ -91,11 +91,6 @@ function caes_add_acf_authors_to_yoast_schema( $data ) {
 
 add_filter( 'wpseo_schema_article', 'caes_add_acf_authors_to_yoast_schema', 11, 1 );
 
-
-/**
- * OPTION 1: Removes the default author's 'Person' object from the main graph.
- * More robust version with better debugging and filtering logic.
- */
 function caes_remove_default_author_piece($data) {
     // Early returns - only process on singular posts with ACF authors
     if (!is_singular()) {
@@ -148,4 +143,3 @@ function caes_remove_default_author_piece($data) {
     return $data;
 }
 add_filter('wpseo_schema_data', 'caes_remove_default_author_piece', 99, 1);
-
