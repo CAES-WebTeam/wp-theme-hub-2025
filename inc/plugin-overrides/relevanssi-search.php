@@ -450,3 +450,40 @@ function caes_hub_enqueue_ajax_url()
     // Do nothing - we'll add the AJAX URL directly in render.php 
 }
 add_action('wp_enqueue_scripts', 'caes_hub_enqueue_ajax_url');
+
+/**
+ * Add author names from ACF repeater to Relevanssi searchable content.
+ * This allows searching by author name without Relevanssi Premium.
+ */
+add_filter('relevanssi_content_to_index', 'caes_hub_add_authors_to_relevanssi_index', 10, 2);
+function caes_hub_add_authors_to_relevanssi_index($content, $post) {
+    // Only process post types that have authors
+    $post_types_with_authors = array('post', 'shorthand_story', 'publication', 'page');
+    if (!in_array($post->post_type, $post_types_with_authors)) {
+        return $content;
+    }
+    
+    $author_names = array();
+    
+    // Loop through all possible author positions (0-9 based on your code)
+    for ($i = 0; $i <= 9; $i++) {
+        $author_user_id = get_field("authors_{$i}_user", $post->ID);
+        
+        if ($author_user_id) {
+            $user = get_userdata($author_user_id);
+            if ($user) {
+                // Add display name and user login for better matching
+                $author_names[] = $user->display_name;
+                $author_names[] = $user->first_name . ' ' . $user->last_name;
+            }
+        }
+    }
+    
+    // Append author names to the content that will be indexed
+    if (!empty($author_names)) {
+        $author_names = array_filter(array_unique($author_names)); // Remove duplicates and empty values
+        $content .= ' ' . implode(' ', $author_names);
+    }
+    
+    return $content;
+}
