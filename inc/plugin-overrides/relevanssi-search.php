@@ -739,46 +739,115 @@ function caes_hub_debug_post_in_search()
 }
 
 /**
- * Boost author names in Relevanssi search results
- * This makes posts BY an author rank higher than posts that just mention the name
+ * Debug Relevanssi search process in detail
+ * Shows what's matching and why for each result
  */
-add_filter('relevanssi_match', 'caes_hub_boost_author_matches');
-function caes_hub_boost_author_matches($match) {
-    // Get the search query
+add_filter('relevanssi_hits_filter', 'caes_hub_debug_relevanssi_search');
+function caes_hub_debug_relevanssi_search($hits) {
     global $wp_query;
-    if (isset($wp_query->query_vars['s'])) {
-        $search_terms = strtolower($wp_query->query_vars['s']);
+    
+    if (!isset($wp_query->query_vars['s']) || empty($wp_query->query_vars['s'])) {
+        return $hits;
+    }
+    
+    $search_query = $wp_query->query_vars['s'];
+    
+    error_log('========================================');
+    error_log('RELEVANSSI SEARCH DEBUG for query: "' . $search_query . '"');
+    error_log('Total hits returned: ' . count($hits[0]));
+    error_log('========================================');
+    
+    $result_num = 0;
+    foreach ($hits[0] as $hit) {
+        $result_num++;
+        $post_id = $hit->ID;
+        $post_title = get_the_title($post_id);
+        $post_type = get_post_type($post_id);
         
-        // Get the post being matched
-        $post_id = $match->doc;
+        error_log('');
+        error_log('RESULT #' . $result_num . ': Post ID ' . $post_id);
+        error_log('  Title: "' . $post_title . '"');
+        error_log('  Type: ' . $post_type);
+        error_log('  Relevance Weight: ' . (isset($hit->relevance_score) ? $hit->relevance_score : 'N/A'));
         
-        // Check if any author matches the search
+        // Check what fields matched (if available in hit object)
+        if (isset($hit->title_hits)) {
+            error_log('  Title hits: ' . $hit->title_hits);
+        }
+        if (isset($hit->content_hits)) {
+            error_log('  Content hits: ' . $hit->content_hits);
+        }
+        if (isset($hit->tag_hits)) {
+            error_log('  Tag hits: ' . $hit->tag_hits);
+        }
+        if (isset($hit->category_hits)) {
+            error_log('  Category hits: ' . $hit->category_hits);
+        }
+        if (isset($hit->taxonomy_hits)) {
+            error_log('  Taxonomy hits: ' . $hit->taxonomy_hits);
+        }
+        if (isset($hit->comment_hits)) {
+            error_log('  Comment hits: ' . $hit->comment_hits);
+        }
+        if (isset($hit->customfield_hits)) {
+            error_log('  Custom field hits: ' . $hit->customfield_hits);
+        }
+        
+        // Check authors on this post
+        error_log('  Authors:');
+        $has_author = false;
         for ($i = 0; $i <= 9; $i++) {
             $author_user_id = get_field("authors_{$i}_user", $post_id);
             
             if ($author_user_id) {
+                $has_author = true;
                 $user = get_userdata($author_user_id);
                 if ($user) {
-                    $display_name = strtolower($user->display_name);
-                    $full_name = strtolower(trim($user->first_name . ' ' . $user->last_name));
+                    $display_name = $user->display_name;
+                    $full_name = trim($user->first_name . ' ' . $user->last_name);
+                    error_log('    Position ' . $i . ': "' . $display_name . '" / "' . $full_name . '"');
                     
-                    // If the search closely matches an author name, MASSIVELY boost the score
-                    if (stripos($display_name, $search_terms) !== false || 
-                        stripos($full_name, $search_terms) !== false ||
-                        stripos($search_terms, $display_name) !== false ||
-                        stripos($search_terms, $full_name) !== false) {
-                        
-                        // Multiply the weight by 50 to push authored posts to the top
-                        $match->weight = $match->weight * 50;
-                        
-                        error_log('RELEVANSSI BOOST: Post ID ' . $post_id . ' boosted 50x because author "' . $user->display_name . '" matches search "' . $search_terms . '"');
-                        break;
+                    // Check if this author matches the search
+                    if (stripos($display_name, $search_query) !== false || 
+                        stripos($full_name, $search_query) !== false ||
+                        stripos($search_query, $display_name) !== false ||
+                        stripos($search_query, $full_name) !== false) {
+                        error_log('      *** AUTHOR MATCHES SEARCH QUERY ***');
                     }
                 }
             }
         }
+        
+        if (!$has_author) {
+            error_log('    (No authors found)');
+        }
+        
+        // Show a snippet of where "berg" or "alison" appears in content
+        if (stripos($search_query, 'berg') !== false || stripos($search_query, 'alison') !== false) {
+            $post = get_post($post_id);
+            $content = $post->post_content;
+            
+            if (stripos($content, 'berg') !== false) {
+                // Find context around "berg"
+                $pos = stripos($content, 'berg');
+                $start = max(0, $pos - 50);
+                $snippet = substr($content, $start, 150);
+                error_log('  Content contains "berg": ...' . $snippet . '...');
+            }
+            
+            if (stripos($content, 'alison') !== false) {
+                // Find context around "alison"
+                $pos = stripos($content, 'alison');
+                $start = max(0, $pos - 50);
+                $snippet = substr($content, $start, 150);
+                error_log('  Content contains "alison": ...' . $snippet . '...');
+            }
+        }
     }
     
-    return $match;
+    error_log('========================================');
+    error_log('END RELEVANSSI SEARCH DEBUG');
+    error_log('========================================');
+    
+    return $hits;
 }
-
