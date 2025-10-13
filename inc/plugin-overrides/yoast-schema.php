@@ -93,41 +93,59 @@ add_filter( 'wpseo_schema_article', 'caes_add_acf_authors_to_yoast_schema', 11, 
 
 
 /**
- * 2. Removes the default author's 'Person' object from the main graph.
- *
- * This function runs after your function above. It finds the default author
- * (like "caeswp") that Yoast adds as a separate piece and removes it.
- *
- * @param array $data The entire schema graph data array.
- * @return array The modified schema graph data.
+ * OPTION 1: Removes the default author's 'Person' object from the main graph.
+ * More robust version with better debugging and filtering logic.
  */
 function caes_remove_default_author_piece($data) {
-    if (!is_singular() || !isset($data['@graph']) || empty(get_field('authors'))) {
+    // Early returns - only process on singular posts with ACF authors
+    if (!is_singular()) {
+        return $data;
+    }
+    
+    if (!isset($data['@graph']) || !is_array($data['@graph'])) {
+        return $data;
+    }
+    
+    // Check if we have custom authors - if not, keep default behavior
+    $custom_authors = get_field('authors');
+    if (empty($custom_authors)) {
         return $data;
     }
 
-    $default_author_id = null;
+    // Get the default WordPress author info
     $post_author_id = get_post_field('post_author', get_the_ID());
+    if (!$post_author_id) {
+        return $data;
+    }
+    
     $default_author_name = get_the_author_meta('display_name', $post_author_id);
+    
+    // Debug log (remove after testing)
+    error_log('Looking for author to remove: ' . $default_author_name);
 
-    // Find the @id of the default author's Person object.
-    foreach ($data['@graph'] as $key => $piece) {
-        if (isset($piece['@type']) && $piece['@type'] === 'Person' && isset($piece['name']) && $piece['name'] === $default_author_name) {
-            $default_author_id = $piece['@id'];
-            break;
+    // Find and remove the default author Person object
+    $filtered_graph = [];
+    foreach ($data['@graph'] as $piece) {
+        $should_keep = true;
+        
+        // Check if this is a Person type
+        if (isset($piece['@type']) && $piece['@type'] === 'Person') {
+            // Check if the name matches our default author
+            if (isset($piece['name']) && $piece['name'] === $default_author_name) {
+                // This is the default author - don't keep it
+                $should_keep = false;
+                error_log('Removing Person object: ' . $piece['name'] . ' with ID: ' . ($piece['@id'] ?? 'no-id'));
+            }
+        }
+        
+        if ($should_keep) {
+            $filtered_graph[] = $piece;
         }
     }
-
-    // If we found it, filter it out of the graph.
-    if ($default_author_id !== null) {
-        $data['@graph'] = array_filter($data['@graph'], function($piece) use ($default_author_id) {
-            return !isset($piece['@id']) || $piece['@id'] !== $default_author_id;
-        });
-
-        // Re-index the array to prevent JSON errors.
-        $data['@graph'] = array_values($data['@graph']);
-    }
-
+    
+    $data['@graph'] = $filtered_graph;
+    
     return $data;
 }
 add_filter('wpseo_schema_data', 'caes_remove_default_author_piece', 99, 1);
+
