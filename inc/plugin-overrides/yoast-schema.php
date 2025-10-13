@@ -13,6 +13,32 @@ add_filter( 'yoast_seo_development_mode', '__return_true' );
 
 
 /**
+ * Enable Article schema for the shorthand_story post type.
+ * By default, Yoast only outputs Article schema for standard posts.
+ *
+ * @param array $post_types The current list of post types that get Article schema.
+ * @return array The modified list of post types.
+ */
+function caes_add_article_schema_to_custom_post_types( $post_types ) {
+    $post_types[] = 'shorthand_story';
+    return $post_types;
+}
+
+add_filter( 'wpseo_schema_article_post_types', 'caes_add_article_schema_to_custom_post_types' );
+
+
+/**
+ * Ensure the shorthand_story post type supports authors.
+ * This is required for Yoast to output Article schema.
+ */
+function caes_add_author_support_to_custom_post_types() {
+    add_post_type_support( 'shorthand_story', 'author' );
+}
+
+add_action( 'init', 'caes_add_author_support_to_custom_post_types' );
+
+
+/**
  * Modifies the Yoast SEO schema to include multiple authors from the 'authors' ACF repeater field.
  * This function handles both WordPress Users and Custom manual entries.
  *
