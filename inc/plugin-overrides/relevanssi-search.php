@@ -848,36 +848,17 @@ function caes_hub_debug_relevanssi_search($hits)
 add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20);
 function caes_hub_prioritize_author_results($hits)
 {
-    error_log('PRIORITIZE FUNCTION CALLED!');
+    // Get search query from REQUEST instead of $wp_query
+    $search_query = '';
     
-    global $wp_query;
-    
-    error_log('PRIORITIZE: Checking $wp_query...');
-    
-    if (!isset($wp_query)) {
-        error_log('PRIORITIZE: ERROR - $wp_query not set!');
-        return $hits;
+    if (isset($_GET['s']) && !empty($_GET['s'])) {
+        $search_query = sanitize_text_field(wp_unslash($_GET['s']));
+    } elseif (isset($_POST['s']) && !empty($_POST['s'])) {
+        $search_query = sanitize_text_field(wp_unslash($_POST['s']));
     }
-    
-    error_log('PRIORITIZE: $wp_query exists');
-    
-    if (!isset($wp_query->query_vars)) {
-        error_log('PRIORITIZE: ERROR - $wp_query->query_vars not set!');
-        return $hits;
-    }
-    
-    error_log('PRIORITIZE: query_vars exists');
-    
-    if (!isset($wp_query->query_vars['s'])) {
-        error_log('PRIORITIZE: ERROR - search query "s" not set in query_vars!');
-        return $hits;
-    }
-    
-    $search_query = $wp_query->query_vars['s'];
-    error_log('PRIORITIZE: Search query from $wp_query: "' . $search_query . '"');
     
     if (empty($search_query)) {
-        error_log('PRIORITIZE: ERROR - search query is empty!');
+        error_log('PRIORITIZE: No search query found in request, skipping');
         return $hits;
     }
     
@@ -893,8 +874,7 @@ function caes_hub_prioritize_author_results($hits)
         return $hits;
     }
     
-    error_log('PRIORITIZE: This looks like a name search, continuing...');
-    error_log('PRIORITIZE: Processing ' . count($hits[0]) . ' hits');
+    error_log('PRIORITIZE: Looks like a name, processing ' . count($hits[0]) . ' hits');
 
     // Separate results into authored vs. mentioned
     $authored_posts = array();
@@ -904,7 +884,6 @@ function caes_hub_prioritize_author_results($hits)
         $post_id = $hit->ID;
         $is_authored = false;
 
-        // Check if search matches any author on this post
         for ($i = 0; $i <= 9; $i++) {
             $author_user_id = get_post_meta($post_id, "authors_{$i}_user", true);
 
@@ -921,7 +900,6 @@ function caes_hub_prioritize_author_results($hits)
                         stripos($full_name, $search_query) !== false
                     ) {
                         $is_authored = true;
-                        error_log('PRIORITIZE: Post ' . $post_id . ' MATCHED author');
                         break;
                     }
                 }
@@ -939,9 +917,11 @@ function caes_hub_prioritize_author_results($hits)
 
     $reordered = array_merge($authored_posts, $other_posts);
     
-    $first_five = array_slice($reordered, 0, 5);
-    $first_five_ids = array_map(function($h) { return $h->ID; }, $first_five);
-    error_log('PRIORITIZE: Reordered - first 5 IDs: ' . implode(', ', $first_five_ids));
+    if (!empty($reordered)) {
+        $first_five = array_slice($reordered, 0, 5);
+        $first_five_ids = array_map(function($h) { return $h->ID; }, $first_five);
+        error_log('PRIORITIZE: First 5 after reorder: ' . implode(', ', $first_five_ids));
+    }
 
     return array($reordered);
 }
