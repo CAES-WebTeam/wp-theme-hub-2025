@@ -667,3 +667,73 @@ function caes_hub_debug_specific_user()
     
     error_log('========================================');
 }
+
+/**
+ * Debug helper: Check why a specific post appears in search results
+ * Add ?debug_post_search=60618 to see full details
+ */
+add_action('wp', 'caes_hub_debug_post_in_search');
+function caes_hub_debug_post_in_search()
+{
+    if (!isset($_GET['debug_post_search']) || !current_user_can('manage_options')) {
+        return;
+    }
+
+    $post_id = intval($_GET['debug_post_search']);
+    $post = get_post($post_id);
+    
+    if (!$post) {
+        error_log('Post ID ' . $post_id . ' not found');
+        return;
+    }
+
+    error_log('========================================');
+    error_log('WHY IS THIS POST IN SEARCH RESULTS?');
+    error_log('Post ID: ' . $post_id);
+    error_log('Title: ' . $post->post_title);
+    error_log('Post Type: ' . $post->post_type);
+    error_log('========================================');
+
+    // Check all author positions
+    error_log('AUTHORS IN ACF FIELDS:');
+    $has_authors = false;
+    for ($i = 0; $i <= 9; $i++) {
+        $author_user_id = get_field("authors_{$i}_user", $post_id);
+        
+        if ($author_user_id) {
+            $has_authors = true;
+            $user = get_userdata($author_user_id);
+            if ($user) {
+                error_log('  Position ' . $i . ': User ID ' . $author_user_id . ' - "' . $user->display_name . '" (First: "' . $user->first_name . '", Last: "' . $user->last_name . '")');
+            }
+        }
+    }
+    
+    if (!$has_authors) {
+        error_log('  NO AUTHORS FOUND in ACF fields');
+    }
+
+    // Check if "Berg" or "Alison" appears in content
+    error_log('');
+    error_log('CHECKING CONTENT FOR "BERG" OR "ALISON":');
+    $content = $post->post_content;
+    $excerpt = $post->post_excerpt;
+    
+    if (stripos($content, 'berg') !== false) {
+        error_log('  "berg" found in post_content');
+    }
+    if (stripos($content, 'alison') !== false) {
+        error_log('  "alison" found in post_content');
+    }
+    if (stripos($excerpt, 'berg') !== false) {
+        error_log('  "berg" found in post_excerpt');
+    }
+    if (stripos($excerpt, 'alison') !== false) {
+        error_log('  "alison" found in post_excerpt');
+    }
+    if (!stripos($content, 'berg') && !stripos($content, 'alison') && !stripos($excerpt, 'berg') && !stripos($excerpt, 'alison')) {
+        error_log('  "berg" and "alison" NOT found in content or excerpt');
+    }
+
+    error_log('========================================');
+}
