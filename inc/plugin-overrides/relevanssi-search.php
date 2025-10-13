@@ -845,7 +845,7 @@ function caes_hub_debug_relevanssi_search($hits)
  * Boost posts where the searched name matches an actual author
  * This pushes authored posts to the top of search results
  */
-add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results');
+add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20); // Higher priority runs after debug
 function caes_hub_prioritize_author_results($hits)
 {
     global $wp_query;
@@ -855,12 +855,19 @@ function caes_hub_prioritize_author_results($hits)
     }
 
     $search_query = strtolower($wp_query->query_vars['s']);
+    
+    error_log('PRIORITIZE: Starting with search query: "' . $search_query . '"');
 
     // Check if search looks like a person's name (2-3 words)
     $words = explode(' ', trim($search_query));
+    error_log('PRIORITIZE: Word count: ' . count($words));
+    
     if (count($words) < 2 || count($words) > 3) {
+        error_log('PRIORITIZE: Not a name search (wrong word count), skipping reorder');
         return $hits; // Not a name search, don't modify
     }
+    
+    error_log('PRIORITIZE: Looks like a name search, processing ' . count($hits[0]) . ' hits');
 
     // Separate results into authored vs. mentioned
     $authored_posts = array();
@@ -887,8 +894,8 @@ function caes_hub_prioritize_author_results($hits)
                         stripos($search_query, $full_name) !== false ||
                         stripos($full_name, $search_query) !== false
                     ) {
-
                         $is_authored = true;
+                        error_log('PRIORITIZE: Post ' . $post_id . ' IS authored by matching user');
                         break;
                     }
                 }
@@ -902,8 +909,12 @@ function caes_hub_prioritize_author_results($hits)
         }
     }
 
+    error_log('PRIORITIZE: Found ' . count($authored_posts) . ' authored posts, ' . count($other_posts) . ' other posts');
+
     // Put authored posts first, maintaining their relative order
     $reordered = array_merge($authored_posts, $other_posts);
+    
+    error_log('PRIORITIZE: Reordered. First 5 post IDs: ' . implode(', ', array_map(function($hit) { return $hit->ID; }, array_slice($reordered, 0, 5))));
 
     return array($reordered);
 }
