@@ -482,7 +482,7 @@ function caes_hub_add_authors_to_relevanssi_index($content, $post)
 
 /**
  * Prioritize posts where the searched name matches an actual author.
- * Pushes authored posts to the top of search results for name searches.
+ * Optimized version with caching to reduce database queries.
  */
 add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20);
 function caes_hub_prioritize_author_results($hits)
@@ -507,7 +507,31 @@ function caes_hub_prioritize_author_results($hits)
         return $hits;
     }
 
-    // Separate results into authored vs. mentioned
+    // Extract all post IDs to batch-fetch author data
+    $post_ids = array_map(function($hit) {
+        return $hit->ID;
+    }, $hits[0]);
+    
+    // Batch-fetch all author meta for all posts at once
+    $author_cache = array();
+    foreach ($post_ids as $post_id) {
+        for ($i = 0; $i <= 9; $i++) {
+            $author_user_id = get_post_meta($post_id, "authors_{$i}_user", true);
+            if ($author_user_id) {
+                if (!isset($author_cache[$author_user_id])) {
+                    $user = get_userdata($author_user_id);
+                    if ($user) {
+                        $author_cache[$author_user_id] = array(
+                            'display_name' => strtolower($user->display_name),
+                            'full_name' => strtolower(trim($user->first_name . ' ' . $user->last_name))
+                        );
+                    }
+                }
+            }
+        }
+    }
+    
+    // Now check each hit using the cached author data
     $authored_posts = array();
     $other_posts = array();
 
@@ -518,21 +542,17 @@ function caes_hub_prioritize_author_results($hits)
         for ($i = 0; $i <= 9; $i++) {
             $author_user_id = get_post_meta($post_id, "authors_{$i}_user", true);
 
-            if ($author_user_id) {
-                $user = get_userdata($author_user_id);
-                if ($user) {
-                    $display_name = strtolower($user->display_name);
-                    $full_name = strtolower(trim($user->first_name . ' ' . $user->last_name));
-
-                    if (
-                        stripos($search_query, $display_name) !== false ||
-                        stripos($display_name, $search_query) !== false ||
-                        stripos($search_query, $full_name) !== false ||
-                        stripos($full_name, $search_query) !== false
-                    ) {
-                        $is_authored = true;
-                        break;
-                    }
+            if ($author_user_id && isset($author_cache[$author_user_id])) {
+                $author_data = $author_cache[$author_user_id];
+                
+                if (
+                    stripos($search_query, $author_data['display_name']) !== false ||
+                    stripos($author_data['display_name'], $search_query) !== false ||
+                    stripos($search_query, $author_data['full_name']) !== false ||
+                    stripos($author_data['full_name'], $search_query) !== false
+                ) {
+                    $is_authored = true;
+                    break;
                 }
             }
         }
