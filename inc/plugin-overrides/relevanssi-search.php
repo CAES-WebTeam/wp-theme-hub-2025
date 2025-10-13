@@ -848,6 +848,8 @@ function caes_hub_debug_relevanssi_search($hits)
 add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20); // Higher priority runs after debug
 function caes_hub_prioritize_author_results($hits)
 {
+    error_log('PRIORITIZE FUNCTION CALLED!');
+    
     global $wp_query;
 
     if (!isset($wp_query->query_vars['s']) || empty($wp_query->query_vars['s'])) {
