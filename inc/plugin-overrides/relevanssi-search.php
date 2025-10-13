@@ -470,54 +470,41 @@ add_action('wp_enqueue_scripts', 'caes_hub_enqueue_ajax_url');
 
 /**
  * Add author names from ACF repeater to Relevanssi searchable content.
- * This allows searching by author name without Relevanssi Premium.
+ * Uses get_post_meta instead of get_field for better compatibility during indexing
  */
 add_filter('relevanssi_content_to_index', 'caes_hub_add_authors_to_relevanssi_index', 10, 2);
 function caes_hub_add_authors_to_relevanssi_index($content, $post)
 {
     // Only process post types that have authors
-    $post_types_with_authors = array('post', 'shorthand_story', 'publication', 'page');
+    $post_types_with_authors = array('post', 'shorthand_story', 'publications', 'page');
     if (!in_array($post->post_type, $post_types_with_authors)) {
         return $content;
     }
 
     $author_names = array();
-    $found_authors = array(); // For debugging
 
-    // Loop through all possible author positions (0-9 based on your code)
+    // Loop through all possible author positions (0-9)
     for ($i = 0; $i <= 9; $i++) {
-        $author_user_id = get_field("authors_{$i}_user", $post->ID);
-
+        // Use get_post_meta instead of get_field for better indexing compatibility
+        $author_user_id = get_post_meta($post->ID, "authors_{$i}_user", true);
+        
         if ($author_user_id) {
             $user = get_userdata($author_user_id);
             if ($user) {
-                // Add display name and user login for better matching
+                // Add display name and full name
                 $author_names[] = $user->display_name;
-                $author_names[] = $user->first_name . ' ' . $user->last_name;
-
-                // Track for debugging
-                $found_authors[] = array(
-                    'position' => $i,
-                    'user_id' => $author_user_id,
-                    'display_name' => $user->display_name,
-                    'full_name' => $user->first_name . ' ' . $user->last_name
-                );
+                $author_names[] = trim($user->first_name . ' ' . $user->last_name);
             }
         }
     }
 
-    // Debug logging
-    if (!empty($found_authors)) {
-        error_log('RELEVANSSI INDEX: Post ID ' . $post->ID . ' (' . $post->post_title . ')');
-        error_log('  Post Type: ' . $post->post_type);
-        error_log('  Authors found: ' . print_r($found_authors, true));
-        error_log('  Author names being indexed: ' . implode(', ', array_unique($author_names)));
-    }
-
     // Append author names to the content that will be indexed
     if (!empty($author_names)) {
-        $author_names = array_filter(array_unique($author_names)); // Remove duplicates and empty values
+        $author_names = array_filter(array_unique($author_names));
         $content .= ' ' . implode(' ', $author_names);
+        
+        // Log when indexing authors (you can remove this later)
+        error_log('INDEXING AUTHORS for Post ID ' . $post->ID . ': ' . implode(', ', $author_names));
     }
 
     return $content;
