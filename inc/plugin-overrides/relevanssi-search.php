@@ -845,31 +845,56 @@ function caes_hub_debug_relevanssi_search($hits)
  * Boost posts where the searched name matches an actual author
  * This pushes authored posts to the top of search results
  */
-add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20); // Higher priority runs after debug
+add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20);
 function caes_hub_prioritize_author_results($hits)
 {
     error_log('PRIORITIZE FUNCTION CALLED!');
     
     global $wp_query;
-
-    if (!isset($wp_query->query_vars['s']) || empty($wp_query->query_vars['s'])) {
+    
+    error_log('PRIORITIZE: Checking $wp_query...');
+    
+    if (!isset($wp_query)) {
+        error_log('PRIORITIZE: ERROR - $wp_query not set!');
         return $hits;
     }
-
-    $search_query = strtolower($wp_query->query_vars['s']);
     
-    error_log('PRIORITIZE: Starting with search query: "' . $search_query . '"');
+    error_log('PRIORITIZE: $wp_query exists');
+    
+    if (!isset($wp_query->query_vars)) {
+        error_log('PRIORITIZE: ERROR - $wp_query->query_vars not set!');
+        return $hits;
+    }
+    
+    error_log('PRIORITIZE: query_vars exists');
+    
+    if (!isset($wp_query->query_vars['s'])) {
+        error_log('PRIORITIZE: ERROR - search query "s" not set in query_vars!');
+        return $hits;
+    }
+    
+    $search_query = $wp_query->query_vars['s'];
+    error_log('PRIORITIZE: Search query from $wp_query: "' . $search_query . '"');
+    
+    if (empty($search_query)) {
+        error_log('PRIORITIZE: ERROR - search query is empty!');
+        return $hits;
+    }
+    
+    $search_query = strtolower($search_query);
+    error_log('PRIORITIZE: Processing search: "' . $search_query . '"');
 
     // Check if search looks like a person's name (2-3 words)
     $words = explode(' ', trim($search_query));
     error_log('PRIORITIZE: Word count: ' . count($words));
     
     if (count($words) < 2 || count($words) > 3) {
-        error_log('PRIORITIZE: Not a name search (wrong word count), skipping reorder');
-        return $hits; // Not a name search, don't modify
+        error_log('PRIORITIZE: Not a name search, skipping');
+        return $hits;
     }
     
-    error_log('PRIORITIZE: Looks like a name search, processing ' . count($hits[0]) . ' hits');
+    error_log('PRIORITIZE: This looks like a name search, continuing...');
+    error_log('PRIORITIZE: Processing ' . count($hits[0]) . ' hits');
 
     // Separate results into authored vs. mentioned
     $authored_posts = array();
@@ -889,7 +914,6 @@ function caes_hub_prioritize_author_results($hits)
                     $display_name = strtolower($user->display_name);
                     $full_name = strtolower(trim($user->first_name . ' ' . $user->last_name));
 
-                    // Check for match
                     if (
                         stripos($search_query, $display_name) !== false ||
                         stripos($display_name, $search_query) !== false ||
@@ -897,7 +921,7 @@ function caes_hub_prioritize_author_results($hits)
                         stripos($full_name, $search_query) !== false
                     ) {
                         $is_authored = true;
-                        error_log('PRIORITIZE: Post ' . $post_id . ' IS authored by matching user');
+                        error_log('PRIORITIZE: Post ' . $post_id . ' MATCHED author');
                         break;
                     }
                 }
@@ -911,12 +935,13 @@ function caes_hub_prioritize_author_results($hits)
         }
     }
 
-    error_log('PRIORITIZE: Found ' . count($authored_posts) . ' authored posts, ' . count($other_posts) . ' other posts');
+    error_log('PRIORITIZE: Found ' . count($authored_posts) . ' authored, ' . count($other_posts) . ' other');
 
-    // Put authored posts first, maintaining their relative order
     $reordered = array_merge($authored_posts, $other_posts);
     
-    error_log('PRIORITIZE: Reordered. First 5 post IDs: ' . implode(', ', array_map(function($hit) { return $hit->ID; }, array_slice($reordered, 0, 5))));
+    $first_five = array_slice($reordered, 0, 5);
+    $first_five_ids = array_map(function($h) { return $h->ID; }, $first_five);
+    error_log('PRIORITIZE: Reordered - first 5 IDs: ' . implode(', ', $first_five_ids));
 
     return array($reordered);
 }
