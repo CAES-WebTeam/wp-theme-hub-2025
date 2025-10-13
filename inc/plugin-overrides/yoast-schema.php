@@ -147,9 +147,10 @@ add_filter( 'wpseo_schema_graph_pieces', 'caes_remove_default_author_from_graph'
  * This changes the <meta name="author" content="..."> tag in the HTML head.
  *
  * @param string $author The author name from Yoast.
+ * @param object $presentation The presentation object (available in Yoast 19.3+).
  * @return string The modified author name(s).
  */
-function caes_change_meta_author_tag( $author ) {
+function caes_change_meta_author_tag( $author, $presentation = null ) {
     
     // Only modify on singular posts
     if ( ! is_singular() ) {
@@ -203,4 +204,60 @@ function caes_change_meta_author_tag( $author ) {
     return $author;
 }
 
-add_filter( 'wpseo_meta_author', 'caes_change_meta_author_tag', 10, 1 );
+add_filter( 'wpseo_meta_author', 'caes_change_meta_author_tag', 10, 2 );
+
+
+/**
+ * BACKUP METHOD: Manually add author meta tag if Yoast doesn't output it.
+ * Only runs if Yoast's meta tag isn't present.
+ */
+function caes_add_author_meta_tag_manually() {
+    // Only on singular posts/pages
+    if ( ! is_singular() ) {
+        return;
+    }
+    
+    // Get ACF authors
+    $authors = get_field('authors');
+    if ( empty($authors) ) {
+        return;
+    }
+    
+    // Build author names
+    $author_names = [];
+    
+    foreach ( $authors as $author_row ) {
+        $entry_type = $author_row['type'] ?? '';
+        
+        if ( $entry_type === 'Custom' ) {
+            $custom_user = $author_row['custom_user'] ?? $author_row['custom'] ?? [];
+            $first_name = $custom_user['first_name'] ?? '';
+            $last_name = $custom_user['last_name'] ?? '';
+            $full_name = trim("$first_name $last_name");
+            
+            if ( ! empty($full_name) ) {
+                $author_names[] = $full_name;
+            }
+        } else {
+            $user_data = $author_row['user'] ?? null;
+            $user_id = is_array($user_data) ? ($user_data['ID'] ?? null) : $user_data;
+            
+            if ( $user_id && is_numeric($user_id) ) {
+                $display_name = get_the_author_meta('display_name', $user_id);
+                if ( ! empty($display_name) ) {
+                    $author_names[] = $display_name;
+                }
+            }
+        }
+    }
+    
+    // Output the meta tag if we have authors
+    if ( ! empty($author_names) ) {
+        $authors_string = esc_attr( implode(', ', $author_names) );
+        echo '<meta name="author" content="' . $authors_string . '" />' . "\n";
+    }
+}
+
+// Use wp_head with low priority so it runs after Yoast
+// Comment this out if the filter above works
+add_action( 'wp_head', 'caes_add_author_meta_tag_manually', 99 );
