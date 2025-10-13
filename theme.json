@@ -620,7 +620,8 @@
         },
         {
             "name": "full-width",
-            "title": "Full Width"
+            "title": "Full Width",
+            "postTypes": ["post"]
         }
     ]
 }
