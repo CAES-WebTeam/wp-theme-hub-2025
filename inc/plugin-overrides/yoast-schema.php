@@ -143,3 +143,10 @@ function caes_remove_default_author_piece($data) {
     return $data;
 }
 add_filter('wpseo_schema_data', 'caes_remove_default_author_piece', 99, 1);
+
+function test_if_filter_runs($data) {
+    error_log('=== SCHEMA FILTER IS RUNNING ===');
+    error_log('Graph pieces: ' . count($data['@graph'] ?? []));
+    return $data;
+}
+add_filter('wpseo_schema_data', 'test_if_filter_runs', 98, 1);
