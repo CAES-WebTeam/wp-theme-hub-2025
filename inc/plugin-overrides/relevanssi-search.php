@@ -5,21 +5,22 @@
  * This prevents a 404 error by telling the main WordPress query to ignore the 's'
  * parameter, allowing the /publications/search/ page to load correctly.
  */
-add_action( 'pre_get_posts', 'caes_hub_resolve_publication_search_conflict' );
-function caes_hub_resolve_publication_search_conflict( $query ) {
+add_action('pre_get_posts', 'caes_hub_resolve_publication_search_conflict');
+function caes_hub_resolve_publication_search_conflict($query)
+{
     // We only want to modify the main query on the front-end of the site.
-    if ( ! is_admin() && $query->is_main_query() ) {
+    if (! is_admin() && $query->is_main_query()) {
 
         // Check if the 'pagename' query variable is exactly 'publications/search'.
         // This is the condition we confirmed with the debug log.
-        if ( isset( $query->query_vars['pagename'] ) && $query->query_vars['pagename'] == 'publications/search' ) {
-            
+        if (isset($query->query_vars['pagename']) && $query->query_vars['pagename'] == 'publications/search') {
+
             // Unset the search parameter from the main query.
             // This resolves the conflict and prevents the 404.
-            $query->set( 's', null );
-            
+            $query->set('s', null);
+
             // Also explicitly tell WordPress this is not a search page context.
-            $query->set( 'is_search', false );
+            $query->set('is_search', false);
         }
     }
 }
@@ -29,11 +30,19 @@ function caes_hub_resolve_publication_search_conflict( $query ) {
 if (! function_exists('caes_hub_render_relevanssi_search_results')) {
     function caes_hub_render_relevanssi_search_results($search_query, $orderby, $order, $post_type, $taxonomy_slug, $topic_terms, $paged = 1, $allowed_post_types_from_block = array(), $author_ids = array(), $language = '') // Add language parameter
     {
-        // error_log('RENDER: caes_hub_render_relevanssi_search_results function called.');
-        // error_log('RENDER: Incoming Params: s=' . $search_query . ', orderby=' . $orderby . ', order=' . $order . ', post_type=' . $post_type . ', taxonomy_slug=' . $taxonomy_slug . ', topic_terms=' . print_r($topic_terms, true) . ', paged=' . $paged);
-        // error_log('RENDER: allowed_post_types_from_block: ' . print_r($allowed_post_types_from_block, true));
-        // error_log('RENDER: author_ids: ' . print_r($author_ids, true)); // DEBUG author IDs
-        // error_log('RENDER: language: ' . $language); // DEBUG language
+
+        // Add this debug block at the very start
+        if (!empty($search_query)) {
+            error_log('========================================');
+            error_log('SEARCH QUERY: "' . $search_query . '"');
+            error_log('  orderby: ' . $orderby);
+            error_log('  order: ' . $order);
+            error_log('  post_type: ' . $post_type);
+            error_log('  paged: ' . $paged);
+            error_log('  author_ids filter: ' . print_r($author_ids, true));
+            error_log('  language filter: ' . $language);
+            error_log('========================================');
+        }
 
         $args = array(
             's'              => $search_query,
@@ -99,34 +108,34 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
         }
 
         // Initialize tax_query to handle multiple conditions.
-		$tax_query = array(
-			'relation' => 'AND',
-		);
+        $tax_query = array(
+            'relation' => 'AND',
+        );
 
-		// Exclude posts from the "Feed the Future Peanut Lab" topic from all search results.
-		$peanut_lab_term = get_term_by('name', 'Feed the Future Peanut Lab', 'topics');
-		if ($peanut_lab_term && !is_wp_error($peanut_lab_term)) {
-			$tax_query[] = array(
-				'taxonomy' => 'topics',
-				'field'    => 'term_id',
-				'terms'    => array($peanut_lab_term->term_id),
-				'operator' => 'NOT IN',
-			);
-		}
+        // Exclude posts from the "Feed the Future Peanut Lab" topic from all search results.
+        $peanut_lab_term = get_term_by('name', 'Feed the Future Peanut Lab', 'topics');
+        if ($peanut_lab_term && !is_wp_error($peanut_lab_term)) {
+            $tax_query[] = array(
+                'taxonomy' => 'topics',
+                'field'    => 'term_id',
+                'terms'    => array($peanut_lab_term->term_id),
+                'operator' => 'NOT IN',
+            );
+        }
 
         if (! empty($topic_terms) && $topic_terms[0] !== '') {
             $tax_query[] = array(
-				'taxonomy' => $taxonomy_slug,
-				'field'    => 'slug',
-				'terms'    => $topic_terms,
-				'operator' => 'IN',
-			);
+                'taxonomy' => $taxonomy_slug,
+                'field'    => 'slug',
+                'terms'    => $topic_terms,
+                'operator' => 'IN',
+            );
         }
 
-		// Add the tax_query to the main arguments array if there are any conditions.
-		if (count($tax_query) > 1) {
-			$args['tax_query'] = $tax_query;
-		}
+        // Add the tax_query to the main arguments array if there are any conditions.
+        if (count($tax_query) > 1) {
+            $args['tax_query'] = $tax_query;
+        }
 
         // Handle author filtering using ACF fields (WordPress-native optimized approach)
         // Note: author_ids will be empty if showAuthorFilter toggle is disabled
@@ -186,11 +195,19 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
         // error_log('RENDER: Final WP_Query Args: ' . print_r($args, true));
 
         if (function_exists('relevanssi_do_query')) {
-            // error_log('RENDER: Relevanssi is active. Preparing WP_Query for relevanssi_do_query.');
             $query = new WP_Query($args);
             relevanssi_do_query($query);
+
+            // Debug the results
+            error_log('SEARCH RESULTS: Found ' . $query->found_posts . ' posts for query "' . $search_query . '"');
+            if ($query->have_posts()) {
+                $result_titles = array();
+                foreach ($query->posts as $result_post) {
+                    $result_titles[] = 'ID ' . $result_post->ID . ': "' . $result_post->post_title . '" (' . $result_post->post_type . ')';
+                }
+                error_log('  Results: ' . implode(' | ', $result_titles));
+            }
         } else {
-            // error_log('RENDER: Relevanssi not active. Using standard WP_Query.');
             $query = new WP_Query($args);
         }
 
@@ -456,34 +473,126 @@ add_action('wp_enqueue_scripts', 'caes_hub_enqueue_ajax_url');
  * This allows searching by author name without Relevanssi Premium.
  */
 add_filter('relevanssi_content_to_index', 'caes_hub_add_authors_to_relevanssi_index', 10, 2);
-function caes_hub_add_authors_to_relevanssi_index($content, $post) {
+function caes_hub_add_authors_to_relevanssi_index($content, $post)
+{
     // Only process post types that have authors
     $post_types_with_authors = array('post', 'shorthand_story', 'publication', 'page');
     if (!in_array($post->post_type, $post_types_with_authors)) {
         return $content;
     }
-    
+
     $author_names = array();
-    
+    $found_authors = array(); // For debugging
+
     // Loop through all possible author positions (0-9 based on your code)
     for ($i = 0; $i <= 9; $i++) {
         $author_user_id = get_field("authors_{$i}_user", $post->ID);
-        
+
         if ($author_user_id) {
             $user = get_userdata($author_user_id);
             if ($user) {
                 // Add display name and user login for better matching
                 $author_names[] = $user->display_name;
                 $author_names[] = $user->first_name . ' ' . $user->last_name;
+
+                // Track for debugging
+                $found_authors[] = array(
+                    'position' => $i,
+                    'user_id' => $author_user_id,
+                    'display_name' => $user->display_name,
+                    'full_name' => $user->first_name . ' ' . $user->last_name
+                );
             }
         }
     }
-    
+
+    // Debug logging
+    if (!empty($found_authors)) {
+        error_log('RELEVANSSI INDEX: Post ID ' . $post->ID . ' (' . $post->post_title . ')');
+        error_log('  Post Type: ' . $post->post_type);
+        error_log('  Authors found: ' . print_r($found_authors, true));
+        error_log('  Author names being indexed: ' . implode(', ', array_unique($author_names)));
+    }
+
     // Append author names to the content that will be indexed
     if (!empty($author_names)) {
         $author_names = array_filter(array_unique($author_names)); // Remove duplicates and empty values
         $content .= ' ' . implode(' ', $author_names);
     }
-    
+
     return $content;
+}
+
+/**
+ * Debug helper: Check what posts are associated with a specific author name
+ * Add ?debug_author=Alison+Berg to any page URL to see results
+ */
+add_action('wp', 'caes_hub_debug_author_posts');
+function caes_hub_debug_author_posts()
+{
+    if (!isset($_GET['debug_author']) || !current_user_can('manage_options')) {
+        return;
+    }
+
+    $search_name = sanitize_text_field(wp_unslash($_GET['debug_author']));
+    error_log('========================================');
+    error_log('AUTHOR DEBUG: Searching for posts by "' . $search_name . '"');
+    error_log('========================================');
+
+    // Get all users matching the name
+    $users = get_users(array(
+        'search' => '*' . $search_name . '*',
+        'search_columns' => array('display_name', 'user_login', 'user_email')
+    ));
+
+    error_log('Found ' . count($users) . ' matching users:');
+    foreach ($users as $user) {
+        error_log('  - User ID: ' . $user->ID . ' | Display Name: ' . $user->display_name . ' | Login: ' . $user->login);
+    }
+
+    if (empty($users)) {
+        error_log('No users found matching "' . $search_name . '"');
+        return;
+    }
+
+    // Check posts for each user
+    foreach ($users as $user) {
+        error_log('Checking posts for User ID ' . $user->ID . ' (' . $user->display_name . '):');
+
+        $post_ids_found = array();
+
+        // Check all posts with this user in any author position
+        for ($i = 0; $i <= 9; $i++) {
+            $meta_query = array(
+                'key' => "authors_{$i}_user",
+                'value' => $user->ID,
+                'compare' => '='
+            );
+
+            $posts = get_posts(array(
+                'post_type' => array('post', 'shorthand_story', 'publication', 'page'),
+                'posts_per_page' => -1,
+                'post_status' => 'publish',
+                'meta_query' => array($meta_query),
+                'fields' => 'ids'
+            ));
+
+            if (!empty($posts)) {
+                error_log('  Found ' . count($posts) . ' posts with author at position ' . $i);
+                $post_ids_found = array_merge($post_ids_found, $posts);
+            }
+        }
+
+        $post_ids_found = array_unique($post_ids_found);
+        error_log('  TOTAL: ' . count($post_ids_found) . ' unique posts for this author');
+
+        if (!empty($post_ids_found)) {
+            foreach ($post_ids_found as $post_id) {
+                $post = get_post($post_id);
+                error_log('    - Post ID ' . $post_id . ': "' . $post->post_title . '" (' . $post->post_type . ')');
+            }
+        }
+    }
+
+    error_log('========================================');
 }
