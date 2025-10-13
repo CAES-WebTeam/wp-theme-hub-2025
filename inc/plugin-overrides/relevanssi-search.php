@@ -851,3 +851,12 @@ function caes_hub_debug_relevanssi_search($hits) {
     
     return $hits;
 }
+
+/**
+ * TEMPORARY: Test if our indexing filter is actually being called
+ */
+add_filter('relevanssi_content_to_index', 'caes_hub_test_indexing_filter', 5, 2);
+function caes_hub_test_indexing_filter($content, $post) {
+    error_log('INDEXING TEST: Filter called for Post ID ' . $post->ID . ' (' . $post->post_type . ')');
+    return $content;
+}
