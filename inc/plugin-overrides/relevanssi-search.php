@@ -487,7 +487,7 @@ function caes_hub_add_authors_to_relevanssi_index($content, $post)
     for ($i = 0; $i <= 9; $i++) {
         // Use get_post_meta instead of get_field for better indexing compatibility
         $author_user_id = get_post_meta($post->ID, "authors_{$i}_user", true);
-        
+
         if ($author_user_id) {
             $user = get_userdata($author_user_id);
             if ($user) {
@@ -502,7 +502,7 @@ function caes_hub_add_authors_to_relevanssi_index($content, $post)
     if (!empty($author_names)) {
         $author_names = array_filter(array_unique($author_names));
         $content .= ' ' . implode(' ', $author_names);
-        
+
         // Log when indexing authors (you can remove this later)
         error_log('INDEXING AUTHORS for Post ID ' . $post->ID . ': ' . implode(', ', $author_names));
     }
@@ -615,11 +615,11 @@ function caes_hub_debug_specific_user()
     error_log('Email: ' . $user->user_email);
     error_log('Nicename: ' . $user->user_nicename);
     error_log('========================================');
-    
+
     // Now check what posts this user is linked to
     error_log('Checking posts where this user is an author...');
     $post_ids_found = array();
-    
+
     for ($i = 0; $i <= 9; $i++) {
         $posts = get_posts(array(
             'post_type' => array('post', 'shorthand_story', 'publication', 'page'),
@@ -634,16 +634,16 @@ function caes_hub_debug_specific_user()
             ),
             'fields' => 'ids'
         ));
-        
+
         if (!empty($posts)) {
             error_log('  Found ' . count($posts) . ' posts at position ' . $i);
             $post_ids_found = array_merge($post_ids_found, $posts);
         }
     }
-    
+
     $post_ids_found = array_unique($post_ids_found);
     error_log('TOTAL: ' . count($post_ids_found) . ' posts with this author');
-    
+
     if (!empty($post_ids_found)) {
         error_log('Sample posts (first 5):');
         foreach (array_slice($post_ids_found, 0, 5) as $post_id) {
@@ -651,7 +651,7 @@ function caes_hub_debug_specific_user()
             error_log('  - ID ' . $post_id . ': "' . $post->post_title . '"');
         }
     }
-    
+
     error_log('========================================');
 }
 
@@ -668,7 +668,7 @@ function caes_hub_debug_post_in_search()
 
     $post_id = intval($_GET['debug_post_search']);
     $post = get_post($post_id);
-    
+
     if (!$post) {
         error_log('Post ID ' . $post_id . ' not found');
         return;
@@ -686,7 +686,7 @@ function caes_hub_debug_post_in_search()
     $has_authors = false;
     for ($i = 0; $i <= 9; $i++) {
         $author_user_id = get_field("authors_{$i}_user", $post_id);
-        
+
         if ($author_user_id) {
             $has_authors = true;
             $user = get_userdata($author_user_id);
@@ -695,7 +695,7 @@ function caes_hub_debug_post_in_search()
             }
         }
     }
-    
+
     if (!$has_authors) {
         error_log('  NO AUTHORS FOUND in ACF fields');
     }
@@ -705,7 +705,7 @@ function caes_hub_debug_post_in_search()
     error_log('CHECKING CONTENT FOR "BERG" OR "ALISON":');
     $content = $post->post_content;
     $excerpt = $post->post_excerpt;
-    
+
     if (stripos($content, 'berg') !== false) {
         error_log('  "berg" found in post_content');
     }
@@ -730,33 +730,34 @@ function caes_hub_debug_post_in_search()
  * Shows what's matching and why for each result
  */
 add_filter('relevanssi_hits_filter', 'caes_hub_debug_relevanssi_search');
-function caes_hub_debug_relevanssi_search($hits) {
+function caes_hub_debug_relevanssi_search($hits)
+{
     global $wp_query;
-    
+
     if (!isset($wp_query->query_vars['s']) || empty($wp_query->query_vars['s'])) {
         return $hits;
     }
-    
+
     $search_query = $wp_query->query_vars['s'];
-    
+
     error_log('========================================');
     error_log('RELEVANSSI SEARCH DEBUG for query: "' . $search_query . '"');
     error_log('Total hits returned: ' . count($hits[0]));
     error_log('========================================');
-    
+
     $result_num = 0;
     foreach ($hits[0] as $hit) {
         $result_num++;
         $post_id = $hit->ID;
         $post_title = get_the_title($post_id);
         $post_type = get_post_type($post_id);
-        
+
         error_log('');
         error_log('RESULT #' . $result_num . ': Post ID ' . $post_id);
         error_log('  Title: "' . $post_title . '"');
         error_log('  Type: ' . $post_type);
         error_log('  Relevance Weight: ' . (isset($hit->relevance_score) ? $hit->relevance_score : 'N/A'));
-        
+
         // Check what fields matched (if available in hit object)
         if (isset($hit->title_hits)) {
             error_log('  Title hits: ' . $hit->title_hits);
@@ -779,13 +780,12 @@ function caes_hub_debug_relevanssi_search($hits) {
         if (isset($hit->customfield_hits)) {
             error_log('  Custom field hits: ' . $hit->customfield_hits);
         }
-        
         // Check authors on this post
         error_log('  Authors:');
         $has_author = false;
         for ($i = 0; $i <= 9; $i++) {
-            $author_user_id = get_field("authors_{$i}_user", $post_id);
-            
+            $author_user_id = get_post_meta($post_id, "authors_{$i}_user", true);  // ← NOW CONSISTENT
+
             if ($author_user_id) {
                 $has_author = true;
                 $user = get_userdata($author_user_id);
@@ -793,27 +793,29 @@ function caes_hub_debug_relevanssi_search($hits) {
                     $display_name = $user->display_name;
                     $full_name = trim($user->first_name . ' ' . $user->last_name);
                     error_log('    Position ' . $i . ': "' . $display_name . '" / "' . $full_name . '"');
-                    
+
                     // Check if this author matches the search
-                    if (stripos($display_name, $search_query) !== false || 
+                    if (
+                        stripos($display_name, $search_query) !== false ||
                         stripos($full_name, $search_query) !== false ||
                         stripos($search_query, $display_name) !== false ||
-                        stripos($search_query, $full_name) !== false) {
+                        stripos($search_query, $full_name) !== false
+                    ) {
                         error_log('      *** AUTHOR MATCHES SEARCH QUERY ***');
                     }
                 }
             }
         }
-        
+
         if (!$has_author) {
             error_log('    (No authors found)');
         }
-        
+
         // Show a snippet of where "berg" or "alison" appears in content
         if (stripos($search_query, 'berg') !== false || stripos($search_query, 'alison') !== false) {
             $post = get_post($post_id);
             $content = $post->post_content;
-            
+
             if (stripos($content, 'berg') !== false) {
                 // Find context around "berg"
                 $pos = stripos($content, 'berg');
@@ -821,7 +823,7 @@ function caes_hub_debug_relevanssi_search($hits) {
                 $snippet = substr($content, $start, 150);
                 error_log('  Content contains "berg": ...' . $snippet . '...');
             }
-            
+
             if (stripos($content, 'alison') !== false) {
                 // Find context around "alison"
                 $pos = stripos($content, 'alison');
@@ -831,29 +833,77 @@ function caes_hub_debug_relevanssi_search($hits) {
             }
         }
     }
-    
+
     error_log('========================================');
     error_log('END RELEVANSSI SEARCH DEBUG');
     error_log('========================================');
-    
+
     return $hits;
 }
 
 /**
- * TEMPORARY: Test if our indexing filter is actually being called
+ * Boost posts where the searched name matches an actual author
+ * This pushes authored posts to the top of search results
  */
-add_filter('relevanssi_content_to_index', 'caes_hub_test_indexing_filter', 5, 2);
-function caes_hub_test_indexing_filter($content, $post) {
-    error_log('INDEXING TEST: Filter called for Post ID ' . $post->ID . ' (' . $post->post_type . ')');
-    return $content;
-}
+add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results');
+function caes_hub_prioritize_author_results($hits)
+{
+    global $wp_query;
 
-/**
- * SIMPLE TEST: Add static text to see if filter works at all
- */
-add_filter('relevanssi_content_to_index', 'caes_hub_simple_test', 10, 2);
-function caes_hub_simple_test($content, $post) {
-    // Add a simple test phrase to every post
-    $content .= ' RELEVANSSI_TEST_PHRASE_123';
-    return $content;
+    if (!isset($wp_query->query_vars['s']) || empty($wp_query->query_vars['s'])) {
+        return $hits;
+    }
+
+    $search_query = strtolower($wp_query->query_vars['s']);
+
+    // Check if search looks like a person's name (2-3 words)
+    $words = explode(' ', trim($search_query));
+    if (count($words) < 2 || count($words) > 3) {
+        return $hits; // Not a name search, don't modify
+    }
+
+    // Separate results into authored vs. mentioned
+    $authored_posts = array();
+    $other_posts = array();
+
+    foreach ($hits[0] as $hit) {
+        $post_id = $hit->ID;
+        $is_authored = false;
+
+        // Check if search matches any author on this post
+        for ($i = 0; $i <= 9; $i++) {
+            $author_user_id = get_post_meta($post_id, "authors_{$i}_user", true);
+
+            if ($author_user_id) {
+                $user = get_userdata($author_user_id);
+                if ($user) {
+                    $display_name = strtolower($user->display_name);
+                    $full_name = strtolower(trim($user->first_name . ' ' . $user->last_name));
+
+                    // Check for match
+                    if (
+                        stripos($search_query, $display_name) !== false ||
+                        stripos($display_name, $search_query) !== false ||
+                        stripos($search_query, $full_name) !== false ||
+                        stripos($full_name, $search_query) !== false
+                    ) {
+
+                        $is_authored = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($is_authored) {
+            $authored_posts[] = $hit;
+        } else {
+            $other_posts[] = $hit;
+        }
+    }
+
+    // Put authored posts first, maintaining their relative order
+    $reordered = array_merge($authored_posts, $other_posts);
+
+    return array($reordered);
 }
