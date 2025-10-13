@@ -9,14 +9,6 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// DIAGNOSTIC TEST #1: This should show in admin if plugin is loaded
-add_action('admin_notices', function() {
-    echo '<div class="notice notice-success"><p>Custom Yoast Schema Plugin is LOADED</p></div>';
-});
-
-// DIAGNOSTIC TEST #2: Log when plugin file is loaded
-error_log('=== YOAST SCHEMA PLUGIN FILE LOADED ===');
-
 add_filter( 'yoast_seo_development_mode', '__return_true' );
 
 
@@ -28,11 +20,9 @@ add_filter( 'yoast_seo_development_mode', '__return_true' );
  * @return array The modified Schema Article data.
  */
 function caes_add_acf_authors_to_yoast_schema( $data ) {
-    error_log('=== ARTICLE SCHEMA FUNCTION CALLED ===');
     
     // Get the 'authors' repeater field for the current post.
     $authors = get_field('authors');
-    error_log('ACF Authors found: ' . (is_array($authors) ? count($authors) : '0'));
 
     // Proceed only if the repeater field has data.
     if ( $authors ) {
@@ -57,7 +47,6 @@ function caes_add_acf_authors_to_yoast_schema( $data ) {
                         '@type' => 'Person',
                         'name'  => $full_name,
                     ];
-                    error_log('Added custom author: ' . $full_name);
                 }
             } 
             // Otherwise, handle it as a WordPress User entry.
@@ -75,7 +64,6 @@ function caes_add_acf_authors_to_yoast_schema( $data ) {
                         'name'  => $display_name,
                         'url'   => $profile_url,
                     ];
-                    error_log('Added WP user author: ' . $display_name);
                 }
             }
 
@@ -88,7 +76,6 @@ function caes_add_acf_authors_to_yoast_schema( $data ) {
         // If we have authors, replace the default 'author' data with our new array.
         if ( ! empty($authors_schema) ) {
             $data['author'] = $authors_schema;
-            error_log('Replaced author schema with ' . count($authors_schema) . ' authors');
         }
     }
 
@@ -99,90 +86,31 @@ add_filter( 'wpseo_schema_article', 'caes_add_acf_authors_to_yoast_schema', 11, 
 
 
 /**
- * Test function to see if schema data filter runs
+ * Remove the default Author/Person piece from the schema graph when we have custom ACF authors.
+ * This is the proper Yoast way to prevent schema pieces from being output.
+ *
+ * @param array $pieces The array of schema piece generators.
+ * @param \Yoast\WP\SEO\Context\Meta_Tags_Context $context The context object.
+ * @return array The filtered array of schema pieces.
  */
-function test_if_filter_runs($data) {
-    error_log('=== WPSEO_SCHEMA_DATA FILTER IS RUNNING ===');
-    error_log('Current URL: ' . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : 'unknown'));
-    error_log('Is singular: ' . (is_singular() ? 'YES' : 'NO'));
-    error_log('Post ID: ' . get_the_ID());
-    error_log('Graph pieces: ' . count($data['@graph'] ?? []));
+function caes_remove_default_author_from_graph( $pieces, $context ) {
     
-    // Log all piece types in the graph
-    if (isset($data['@graph'])) {
-        foreach ($data['@graph'] as $index => $piece) {
-            $type = $piece['@type'] ?? 'unknown';
-            $name = $piece['name'] ?? '';
-            error_log("  Piece $index: Type=$type, Name=$name");
-        }
+    // Only filter on singular posts/pages
+    if ( ! is_singular() ) {
+        return $pieces;
     }
     
-    return $data;
-}
-add_filter('wpseo_schema_data', 'test_if_filter_runs', 10, 1);
-
-
-/**
- * Removes the default author's 'Person' object from the main graph.
- */
-function caes_remove_default_author_piece($data) {
-    error_log('=== REMOVE AUTHOR FUNCTION CALLED ===');
-    
-    // Early returns - only process on singular posts with ACF authors
-    if (!is_singular()) {
-        error_log('Not singular, exiting');
-        return $data;
-    }
-    
-    if (!isset($data['@graph']) || !is_array($data['@graph'])) {
-        error_log('No graph array, exiting');
-        return $data;
-    }
-    
-    // Check if we have custom authors - if not, keep default behavior
+    // Check if we have custom ACF authors
     $custom_authors = get_field('authors');
-    if (empty($custom_authors)) {
-        error_log('No custom authors found, exiting');
-        return $data;
-    }
-
-    // Get the default WordPress author info
-    $post_author_id = get_post_field('post_author', get_the_ID());
-    if (!$post_author_id) {
-        error_log('No post author ID, exiting');
-        return $data;
+    if ( empty($custom_authors) ) {
+        return $pieces;
     }
     
-    $default_author_name = get_the_author_meta('display_name', $post_author_id);
-    error_log('Looking for author to remove: ' . $default_author_name);
-
-    // Find and remove the default author Person object
-    $filtered_graph = [];
-    $removed_count = 0;
-    
-    foreach ($data['@graph'] as $piece) {
-        $should_keep = true;
-        
-        // Check if this is a Person type
-        if (isset($piece['@type']) && $piece['@type'] === 'Person') {
-            error_log('Found Person: ' . ($piece['name'] ?? 'no-name'));
-            // Check if the name matches our default author
-            if (isset($piece['name']) && $piece['name'] === $default_author_name) {
-                // This is the default author - don't keep it
-                $should_keep = false;
-                $removed_count++;
-                error_log('  -> REMOVING this Person!');
-            }
-        }
-        
-        if ($should_keep) {
-            $filtered_graph[] = $piece;
-        }
-    }
-    
-    error_log("Removed $removed_count Person objects");
-    $data['@graph'] = $filtered_graph;
-    
-    return $data;
+    // Remove the Author piece (which generates the Person schema for the post author)
+    return array_filter( $pieces, function( $piece ) {
+        // Remove if it's an Author piece
+        return ! $piece instanceof \Yoast\WP\SEO\Generators\Schema\Author;
+    });
 }
-add_filter('wpseo_schema_data', 'caes_remove_default_author_piece', 99, 1);
+
+add_filter( 'wpseo_schema_graph_pieces', 'caes_remove_default_author_from_graph', 11, 2 );
