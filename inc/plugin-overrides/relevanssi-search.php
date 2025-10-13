@@ -31,19 +31,6 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
     function caes_hub_render_relevanssi_search_results($search_query, $orderby, $order, $post_type, $taxonomy_slug, $topic_terms, $paged = 1, $allowed_post_types_from_block = array(), $author_ids = array(), $language = '') // Add language parameter
     {
 
-        // Add this debug block at the very start
-        if (!empty($search_query)) {
-            error_log('========================================');
-            error_log('SEARCH QUERY: "' . $search_query . '"');
-            error_log('  orderby: ' . $orderby);
-            error_log('  order: ' . $order);
-            error_log('  post_type: ' . $post_type);
-            error_log('  paged: ' . $paged);
-            error_log('  author_ids filter: ' . print_r($author_ids, true));
-            error_log('  language filter: ' . $language);
-            error_log('========================================');
-        }
-
         $args = array(
             's'              => $search_query,
             'posts_per_page' => 10,
@@ -198,15 +185,6 @@ if (! function_exists('caes_hub_render_relevanssi_search_results')) {
             $query = new WP_Query($args);
             relevanssi_do_query($query);
 
-            // Debug the results
-            error_log('SEARCH RESULTS: Found ' . $query->found_posts . ' posts for query "' . $search_query . '"');
-            if ($query->have_posts()) {
-                $result_titles = array();
-                foreach ($query->posts as $result_post) {
-                    $result_titles[] = 'ID ' . $result_post->ID . ': "' . $result_post->post_title . '" (' . $result_post->post_type . ')';
-                }
-                error_log('  Results: ' . implode(' | ', $result_titles));
-            }
         } else {
             $query = new WP_Query($args);
         }
@@ -470,12 +448,11 @@ add_action('wp_enqueue_scripts', 'caes_hub_enqueue_ajax_url');
 
 /**
  * Add author names from ACF repeater to Relevanssi searchable content.
- * Uses get_post_meta instead of get_field for better compatibility during indexing
+ * This allows searching by author name without Relevanssi Premium.
  */
 add_filter('relevanssi_content_to_index', 'caes_hub_add_authors_to_relevanssi_index', 10, 2);
 function caes_hub_add_authors_to_relevanssi_index($content, $post)
 {
-    // Only process post types that have authors
     $post_types_with_authors = array('post', 'shorthand_story', 'publications', 'page');
     if (!in_array($post->post_type, $post_types_with_authors)) {
         return $content;
@@ -483,372 +460,33 @@ function caes_hub_add_authors_to_relevanssi_index($content, $post)
 
     $author_names = array();
 
-    // Loop through all possible author positions (0-9)
     for ($i = 0; $i <= 9; $i++) {
-        // Use get_post_meta instead of get_field for better indexing compatibility
         $author_user_id = get_post_meta($post->ID, "authors_{$i}_user", true);
 
         if ($author_user_id) {
             $user = get_userdata($author_user_id);
             if ($user) {
-                // Add display name and full name
                 $author_names[] = $user->display_name;
                 $author_names[] = trim($user->first_name . ' ' . $user->last_name);
             }
         }
     }
 
-    // Append author names to the content that will be indexed
     if (!empty($author_names)) {
         $author_names = array_filter(array_unique($author_names));
         $content .= ' ' . implode(' ', $author_names);
-
-        // Log when indexing authors (you can remove this later)
-        error_log('INDEXING AUTHORS for Post ID ' . $post->ID . ': ' . implode(', ', $author_names));
     }
 
     return $content;
 }
 
 /**
- * Debug helper: Check what posts are associated with a specific author name
- * Add ?debug_author=Alison+Berg to any page URL to see results
- */
-add_action('wp', 'caes_hub_debug_author_posts');
-function caes_hub_debug_author_posts()
-{
-    if (!isset($_GET['debug_author']) || !current_user_can('manage_options')) {
-        return;
-    }
-
-    $search_name = sanitize_text_field(wp_unslash($_GET['debug_author']));
-    error_log('========================================');
-    error_log('AUTHOR DEBUG: Searching for posts by "' . $search_name . '"');
-    error_log('========================================');
-
-    // Get all users matching the name
-    $users = get_users(array(
-        'search' => '*' . $search_name . '*',
-        'search_columns' => array('display_name', 'user_login', 'user_email')
-    ));
-
-    error_log('Found ' . count($users) . ' matching users:');
-    foreach ($users as $user) {
-        error_log('  - User ID: ' . $user->ID . ' | Display Name: ' . $user->display_name . ' | Login: ' . $user->login);
-    }
-
-    if (empty($users)) {
-        error_log('No users found matching "' . $search_name . '"');
-        return;
-    }
-
-    // Check posts for each user
-    foreach ($users as $user) {
-        error_log('Checking posts for User ID ' . $user->ID . ' (' . $user->display_name . '):');
-
-        $post_ids_found = array();
-
-        // Check all posts with this user in any author position
-        for ($i = 0; $i <= 9; $i++) {
-            $meta_query = array(
-                'key' => "authors_{$i}_user",
-                'value' => $user->ID,
-                'compare' => '='
-            );
-
-            $posts = get_posts(array(
-                'post_type' => array('post', 'shorthand_story', 'publication', 'page'),
-                'posts_per_page' => -1,
-                'post_status' => 'publish',
-                'meta_query' => array($meta_query),
-                'fields' => 'ids'
-            ));
-
-            if (!empty($posts)) {
-                error_log('  Found ' . count($posts) . ' posts with author at position ' . $i);
-                $post_ids_found = array_merge($post_ids_found, $posts);
-            }
-        }
-
-        $post_ids_found = array_unique($post_ids_found);
-        error_log('  TOTAL: ' . count($post_ids_found) . ' unique posts for this author');
-
-        if (!empty($post_ids_found)) {
-            foreach ($post_ids_found as $post_id) {
-                $post = get_post($post_id);
-                error_log('    - Post ID ' . $post_id . ': "' . $post->post_title . '" (' . $post->post_type . ')');
-            }
-        }
-    }
-
-    error_log('========================================');
-}
-
-/**
- * Debug helper: Check a specific user by login name
- * Add ?debug_user=aliberg to see that user's details
- */
-add_action('wp', 'caes_hub_debug_specific_user');
-function caes_hub_debug_specific_user()
-{
-    if (!isset($_GET['debug_user']) || !current_user_can('manage_options')) {
-        return;
-    }
-
-    $user_login = sanitize_text_field(wp_unslash($_GET['debug_user']));
-    $user = get_user_by('login', $user_login);
-
-    if (!$user) {
-        error_log('User with login "' . $user_login . '" not found');
-        return;
-    }
-
-    error_log('========================================');
-    error_log('USER DEBUG for login: ' . $user_login);
-    error_log('========================================');
-    error_log('User ID: ' . $user->ID);
-    error_log('User Login: ' . $user->user_login);
-    error_log('Display Name: ' . $user->display_name);
-    error_log('First Name: "' . $user->first_name . '"');
-    error_log('Last Name: "' . $user->last_name . '"');
-    error_log('Full Name (First + Last): "' . trim($user->first_name . ' ' . $user->last_name) . '"');
-    error_log('Email: ' . $user->user_email);
-    error_log('Nicename: ' . $user->user_nicename);
-    error_log('========================================');
-
-    // Now check what posts this user is linked to
-    error_log('Checking posts where this user is an author...');
-    $post_ids_found = array();
-
-    for ($i = 0; $i <= 9; $i++) {
-        $posts = get_posts(array(
-            'post_type' => array('post', 'shorthand_story', 'publication', 'page'),
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'meta_query' => array(
-                array(
-                    'key' => "authors_{$i}_user",
-                    'value' => $user->ID,
-                    'compare' => '='
-                )
-            ),
-            'fields' => 'ids'
-        ));
-
-        if (!empty($posts)) {
-            error_log('  Found ' . count($posts) . ' posts at position ' . $i);
-            $post_ids_found = array_merge($post_ids_found, $posts);
-        }
-    }
-
-    $post_ids_found = array_unique($post_ids_found);
-    error_log('TOTAL: ' . count($post_ids_found) . ' posts with this author');
-
-    if (!empty($post_ids_found)) {
-        error_log('Sample posts (first 5):');
-        foreach (array_slice($post_ids_found, 0, 5) as $post_id) {
-            $post = get_post($post_id);
-            error_log('  - ID ' . $post_id . ': "' . $post->post_title . '"');
-        }
-    }
-
-    error_log('========================================');
-}
-
-/**
- * Debug helper: Check why a specific post appears in search results
- * Add ?debug_post_search=60618 to see full details
- */
-add_action('wp', 'caes_hub_debug_post_in_search');
-function caes_hub_debug_post_in_search()
-{
-    if (!isset($_GET['debug_post_search']) || !current_user_can('manage_options')) {
-        return;
-    }
-
-    $post_id = intval($_GET['debug_post_search']);
-    $post = get_post($post_id);
-
-    if (!$post) {
-        error_log('Post ID ' . $post_id . ' not found');
-        return;
-    }
-
-    error_log('========================================');
-    error_log('WHY IS THIS POST IN SEARCH RESULTS?');
-    error_log('Post ID: ' . $post_id);
-    error_log('Title: ' . $post->post_title);
-    error_log('Post Type: ' . $post->post_type);
-    error_log('========================================');
-
-    // Check all author positions
-    error_log('AUTHORS IN ACF FIELDS:');
-    $has_authors = false;
-    for ($i = 0; $i <= 9; $i++) {
-        $author_user_id = get_field("authors_{$i}_user", $post_id);
-
-        if ($author_user_id) {
-            $has_authors = true;
-            $user = get_userdata($author_user_id);
-            if ($user) {
-                error_log('  Position ' . $i . ': User ID ' . $author_user_id . ' - "' . $user->display_name . '" (First: "' . $user->first_name . '", Last: "' . $user->last_name . '")');
-            }
-        }
-    }
-
-    if (!$has_authors) {
-        error_log('  NO AUTHORS FOUND in ACF fields');
-    }
-
-    // Check if "Berg" or "Alison" appears in content
-    error_log('');
-    error_log('CHECKING CONTENT FOR "BERG" OR "ALISON":');
-    $content = $post->post_content;
-    $excerpt = $post->post_excerpt;
-
-    if (stripos($content, 'berg') !== false) {
-        error_log('  "berg" found in post_content');
-    }
-    if (stripos($content, 'alison') !== false) {
-        error_log('  "alison" found in post_content');
-    }
-    if (stripos($excerpt, 'berg') !== false) {
-        error_log('  "berg" found in post_excerpt');
-    }
-    if (stripos($excerpt, 'alison') !== false) {
-        error_log('  "alison" found in post_excerpt');
-    }
-    if (!stripos($content, 'berg') && !stripos($content, 'alison') && !stripos($excerpt, 'berg') && !stripos($excerpt, 'alison')) {
-        error_log('  "berg" and "alison" NOT found in content or excerpt');
-    }
-
-    error_log('========================================');
-}
-
-/**
- * Debug Relevanssi search process in detail
- * Shows what's matching and why for each result
- */
-add_filter('relevanssi_hits_filter', 'caes_hub_debug_relevanssi_search');
-function caes_hub_debug_relevanssi_search($hits)
-{
-    global $wp_query;
-
-    if (!isset($wp_query->query_vars['s']) || empty($wp_query->query_vars['s'])) {
-        return $hits;
-    }
-
-    $search_query = $wp_query->query_vars['s'];
-
-    error_log('========================================');
-    error_log('RELEVANSSI SEARCH DEBUG for query: "' . $search_query . '"');
-    error_log('Total hits returned: ' . count($hits[0]));
-    error_log('========================================');
-
-    $result_num = 0;
-    foreach ($hits[0] as $hit) {
-        $result_num++;
-        $post_id = $hit->ID;
-        $post_title = get_the_title($post_id);
-        $post_type = get_post_type($post_id);
-
-        error_log('');
-        error_log('RESULT #' . $result_num . ': Post ID ' . $post_id);
-        error_log('  Title: "' . $post_title . '"');
-        error_log('  Type: ' . $post_type);
-        error_log('  Relevance Weight: ' . (isset($hit->relevance_score) ? $hit->relevance_score : 'N/A'));
-
-        // Check what fields matched (if available in hit object)
-        if (isset($hit->title_hits)) {
-            error_log('  Title hits: ' . $hit->title_hits);
-        }
-        if (isset($hit->content_hits)) {
-            error_log('  Content hits: ' . $hit->content_hits);
-        }
-        if (isset($hit->tag_hits)) {
-            error_log('  Tag hits: ' . $hit->tag_hits);
-        }
-        if (isset($hit->category_hits)) {
-            error_log('  Category hits: ' . $hit->category_hits);
-        }
-        if (isset($hit->taxonomy_hits)) {
-            error_log('  Taxonomy hits: ' . $hit->taxonomy_hits);
-        }
-        if (isset($hit->comment_hits)) {
-            error_log('  Comment hits: ' . $hit->comment_hits);
-        }
-        if (isset($hit->customfield_hits)) {
-            error_log('  Custom field hits: ' . $hit->customfield_hits);
-        }
-        // Check authors on this post
-        error_log('  Authors:');
-        $has_author = false;
-        for ($i = 0; $i <= 9; $i++) {
-            $author_user_id = get_post_meta($post_id, "authors_{$i}_user", true);  // ← NOW CONSISTENT
-
-            if ($author_user_id) {
-                $has_author = true;
-                $user = get_userdata($author_user_id);
-                if ($user) {
-                    $display_name = $user->display_name;
-                    $full_name = trim($user->first_name . ' ' . $user->last_name);
-                    error_log('    Position ' . $i . ': "' . $display_name . '" / "' . $full_name . '"');
-
-                    // Check if this author matches the search
-                    if (
-                        stripos($display_name, $search_query) !== false ||
-                        stripos($full_name, $search_query) !== false ||
-                        stripos($search_query, $display_name) !== false ||
-                        stripos($search_query, $full_name) !== false
-                    ) {
-                        error_log('      *** AUTHOR MATCHES SEARCH QUERY ***');
-                    }
-                }
-            }
-        }
-
-        if (!$has_author) {
-            error_log('    (No authors found)');
-        }
-
-        // Show a snippet of where "berg" or "alison" appears in content
-        if (stripos($search_query, 'berg') !== false || stripos($search_query, 'alison') !== false) {
-            $post = get_post($post_id);
-            $content = $post->post_content;
-
-            if (stripos($content, 'berg') !== false) {
-                // Find context around "berg"
-                $pos = stripos($content, 'berg');
-                $start = max(0, $pos - 50);
-                $snippet = substr($content, $start, 150);
-                error_log('  Content contains "berg": ...' . $snippet . '...');
-            }
-
-            if (stripos($content, 'alison') !== false) {
-                // Find context around "alison"
-                $pos = stripos($content, 'alison');
-                $start = max(0, $pos - 50);
-                $snippet = substr($content, $start, 150);
-                error_log('  Content contains "alison": ...' . $snippet . '...');
-            }
-        }
-    }
-
-    error_log('========================================');
-    error_log('END RELEVANSSI SEARCH DEBUG');
-    error_log('========================================');
-
-    return $hits;
-}
-
-/**
- * Boost posts where the searched name matches an actual author
- * This pushes authored posts to the top of search results
+ * Prioritize posts where the searched name matches an actual author.
+ * Pushes authored posts to the top of search results for name searches.
  */
 add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_author_results', 20);
 function caes_hub_prioritize_author_results($hits)
 {
-    // Get search query from REQUEST instead of $wp_query
     $search_query = '';
     
     if (isset($_GET['s']) && !empty($_GET['s'])) {
@@ -858,23 +496,16 @@ function caes_hub_prioritize_author_results($hits)
     }
     
     if (empty($search_query)) {
-        error_log('PRIORITIZE: No search query found in request, skipping');
         return $hits;
     }
     
     $search_query = strtolower($search_query);
-    error_log('PRIORITIZE: Processing search: "' . $search_query . '"');
 
     // Check if search looks like a person's name (2-3 words)
     $words = explode(' ', trim($search_query));
-    error_log('PRIORITIZE: Word count: ' . count($words));
-    
     if (count($words) < 2 || count($words) > 3) {
-        error_log('PRIORITIZE: Not a name search, skipping');
         return $hits;
     }
-    
-    error_log('PRIORITIZE: Looks like a name, processing ' . count($hits[0]) . ' hits');
 
     // Separate results into authored vs. mentioned
     $authored_posts = array();
@@ -913,15 +544,8 @@ function caes_hub_prioritize_author_results($hits)
         }
     }
 
-    error_log('PRIORITIZE: Found ' . count($authored_posts) . ' authored, ' . count($other_posts) . ' other');
-
+    // Put authored posts first, then other matches
     $reordered = array_merge($authored_posts, $other_posts);
-    
-    if (!empty($reordered)) {
-        $first_five = array_slice($reordered, 0, 5);
-        $first_five_ids = array_map(function($h) { return $h->ID; }, $first_five);
-        error_log('PRIORITIZE: First 5 after reorder: ' . implode(', ', $first_five_ids));
-    }
 
     return array($reordered);
 }
