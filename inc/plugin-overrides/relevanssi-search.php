@@ -737,3 +737,48 @@ function caes_hub_debug_post_in_search()
 
     error_log('========================================');
 }
+
+/**
+ * Boost author names in Relevanssi search results
+ * This makes posts BY an author rank higher than posts that just mention the name
+ */
+add_filter('relevanssi_match', 'caes_hub_boost_author_matches');
+function caes_hub_boost_author_matches($match) {
+    // Get the search query
+    global $wp_query;
+    if (isset($wp_query->query_vars['s'])) {
+        $search_terms = strtolower($wp_query->query_vars['s']);
+        
+        // Get the post being matched
+        $post_id = $match->doc;
+        
+        // Check if any author matches the search
+        for ($i = 0; $i <= 9; $i++) {
+            $author_user_id = get_field("authors_{$i}_user", $post_id);
+            
+            if ($author_user_id) {
+                $user = get_userdata($author_user_id);
+                if ($user) {
+                    $display_name = strtolower($user->display_name);
+                    $full_name = strtolower(trim($user->first_name . ' ' . $user->last_name));
+                    
+                    // If the search closely matches an author name, MASSIVELY boost the score
+                    if (stripos($display_name, $search_terms) !== false || 
+                        stripos($full_name, $search_terms) !== false ||
+                        stripos($search_terms, $display_name) !== false ||
+                        stripos($search_terms, $full_name) !== false) {
+                        
+                        // Multiply the weight by 50 to push authored posts to the top
+                        $match->weight = $match->weight * 50;
+                        
+                        error_log('RELEVANSSI BOOST: Post ID ' . $post_id . ' boosted 50x because author "' . $user->display_name . '" matches search "' . $search_terms . '"');
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    return $match;
+}
+
