@@ -114,3 +114,67 @@ function caes_remove_default_author_from_graph( $pieces, $context ) {
 }
 
 add_filter( 'wpseo_schema_graph_pieces', 'caes_remove_default_author_from_graph', 11, 2 );
+
+
+/**
+ * Replace the default author meta tag with multiple authors from ACF.
+ * This changes the <meta name="author" content="..."> tag in the HTML head.
+ *
+ * @param string $author The author name from Yoast.
+ * @return string The modified author name(s).
+ */
+function caes_change_meta_author_tag( $author ) {
+    
+    // Only modify on singular posts
+    if ( ! is_singular() ) {
+        return $author;
+    }
+    
+    // Get the ACF authors
+    $authors = get_field('authors');
+    
+    // If no ACF authors, return the default
+    if ( empty($authors) ) {
+        return $author;
+    }
+    
+    // Build an array of author names
+    $author_names = [];
+    
+    foreach ( $authors as $author_row ) {
+        $entry_type = $author_row['type'] ?? '';
+        
+        // Handle Custom entries
+        if ( $entry_type === 'Custom' ) {
+            $custom_user = $author_row['custom_user'] ?? $author_row['custom'] ?? [];
+            $first_name = $custom_user['first_name'] ?? '';
+            $last_name = $custom_user['last_name'] ?? '';
+            $full_name = trim("$first_name $last_name");
+            
+            if ( ! empty($full_name) ) {
+                $author_names[] = $full_name;
+            }
+        } 
+        // Handle WordPress User entries
+        else {
+            $user_data = $author_row['user'] ?? null;
+            $user_id = is_array($user_data) ? ($user_data['ID'] ?? null) : $user_data;
+            
+            if ( $user_id && is_numeric($user_id) ) {
+                $display_name = get_the_author_meta('display_name', $user_id);
+                if ( ! empty($display_name) ) {
+                    $author_names[] = $display_name;
+                }
+            }
+        }
+    }
+    
+    // Join multiple authors with commas
+    if ( ! empty($author_names) ) {
+        return implode(', ', $author_names);
+    }
+    
+    return $author;
+}
+
+add_filter( 'wpseo_meta_author', 'caes_change_meta_author_tag', 10, 1 );
