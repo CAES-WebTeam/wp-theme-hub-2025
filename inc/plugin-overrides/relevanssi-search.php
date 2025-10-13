@@ -549,3 +549,74 @@ function caes_hub_prioritize_author_results($hits)
 
     return array($reordered);
 }
+
+/**
+ * Prioritize publications that belong to the searched publication series.
+ * Pushes publications in the matching series to the top of search results.
+ */
+add_filter('relevanssi_hits_filter', 'caes_hub_prioritize_series_results', 30);
+function caes_hub_prioritize_series_results($hits)
+{
+    // Get search query from REQUEST
+    $search_query = '';
+    
+    if (isset($_GET['s']) && !empty($_GET['s'])) {
+        $search_query = sanitize_text_field(wp_unslash($_GET['s']));
+    } elseif (isset($_POST['s']) && !empty($_POST['s'])) {
+        $search_query = sanitize_text_field(wp_unslash($_POST['s']));
+    }
+    
+    if (empty($search_query)) {
+        return $hits;
+    }
+    
+    // Search for publication_series terms that match the query
+    $matching_terms = get_terms(array(
+        'taxonomy' => 'publication_series',
+        'hide_empty' => true,
+        'search' => $search_query,
+    ));
+    
+    // If no matching series found, don't modify results
+    if (empty($matching_terms) || is_wp_error($matching_terms)) {
+        return $hits;
+    }
+    
+    // Get the IDs of matching terms
+    $matching_term_ids = array_map(function($term) {
+        return $term->term_id;
+    }, $matching_terms);
+    
+    // Separate results into series publications vs. others
+    $series_posts = array();
+    $other_posts = array();
+    
+    foreach ($hits[0] as $hit) {
+        $post_id = $hit->ID;
+        $is_in_series = false;
+        
+        // Check if this post has any of the matching series terms
+        $post_terms = wp_get_post_terms($post_id, 'publication_series', array('fields' => 'ids'));
+        
+        if (!is_wp_error($post_terms) && !empty($post_terms)) {
+            // Check if any of the post's terms match our search
+            foreach ($matching_term_ids as $term_id) {
+                if (in_array($term_id, $post_terms)) {
+                    $is_in_series = true;
+                    break;
+                }
+            }
+        }
+        
+        if ($is_in_series) {
+            $series_posts[] = $hit;
+        } else {
+            $other_posts[] = $hit;
+        }
+    }
+    
+    // Put series publications first, then other matches
+    $reordered = array_merge($series_posts, $other_posts);
+    
+    return array($reordered);
+}
