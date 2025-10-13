@@ -596,3 +596,74 @@ function caes_hub_debug_author_posts()
 
     error_log('========================================');
 }
+
+/**
+ * Debug helper: Check a specific user by login name
+ * Add ?debug_user=aliberg to see that user's details
+ */
+add_action('wp', 'caes_hub_debug_specific_user');
+function caes_hub_debug_specific_user()
+{
+    if (!isset($_GET['debug_user']) || !current_user_can('manage_options')) {
+        return;
+    }
+
+    $user_login = sanitize_text_field(wp_unslash($_GET['debug_user']));
+    $user = get_user_by('login', $user_login);
+
+    if (!$user) {
+        error_log('User with login "' . $user_login . '" not found');
+        return;
+    }
+
+    error_log('========================================');
+    error_log('USER DEBUG for login: ' . $user_login);
+    error_log('========================================');
+    error_log('User ID: ' . $user->ID);
+    error_log('User Login: ' . $user->user_login);
+    error_log('Display Name: ' . $user->display_name);
+    error_log('First Name: "' . $user->first_name . '"');
+    error_log('Last Name: "' . $user->last_name . '"');
+    error_log('Full Name (First + Last): "' . trim($user->first_name . ' ' . $user->last_name) . '"');
+    error_log('Email: ' . $user->user_email);
+    error_log('Nicename: ' . $user->user_nicename);
+    error_log('========================================');
+    
+    // Now check what posts this user is linked to
+    error_log('Checking posts where this user is an author...');
+    $post_ids_found = array();
+    
+    for ($i = 0; $i <= 9; $i++) {
+        $posts = get_posts(array(
+            'post_type' => array('post', 'shorthand_story', 'publication', 'page'),
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'meta_query' => array(
+                array(
+                    'key' => "authors_{$i}_user",
+                    'value' => $user->ID,
+                    'compare' => '='
+                )
+            ),
+            'fields' => 'ids'
+        ));
+        
+        if (!empty($posts)) {
+            error_log('  Found ' . count($posts) . ' posts at position ' . $i);
+            $post_ids_found = array_merge($post_ids_found, $posts);
+        }
+    }
+    
+    $post_ids_found = array_unique($post_ids_found);
+    error_log('TOTAL: ' . count($post_ids_found) . ' posts with this author');
+    
+    if (!empty($post_ids_found)) {
+        error_log('Sample posts (first 5):');
+        foreach (array_slice($post_ids_found, 0, 5) as $post_id) {
+            $post = get_post($post_id);
+            error_log('  - ID ' . $post_id . ': "' . $post->post_title . '"');
+        }
+    }
+    
+    error_log('========================================');
+}
