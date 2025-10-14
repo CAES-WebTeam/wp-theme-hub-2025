@@ -29,8 +29,11 @@ if ($post_type === 'publications') {
     }
 }
 
-// Only display the button if a valid PDF URL was found
-if (!is_null($final_pdf_url)) {
+// Check if PDF download is disabled
+$disable_pdf_download = get_field('disable_pdf_download', $post_id);
+
+// Only display the button if a valid PDF URL was found AND the download is not disabled
+if (!is_null($final_pdf_url) && !$disable_pdf_download) {
     // Get additional data for tracking
     $publication_title = get_the_title($post_id);
     $publication_number = get_field('publication_number', $post_id); // Get the ACF publication number
