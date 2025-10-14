@@ -94,8 +94,11 @@ if ($is_conditional_summary && $post_type === 'publications') {
 $output .= 'Final PDF URL: ' . ($final_pdf_url ? 'FOUND' : 'NOT FOUND');
 $output .= ' -->';
 
-// Add PDF button if available
-if (!is_null($final_pdf_url)) {
+// Check if PDF download is disabled
+$disable_pdf_download = get_field('disable_pdf_download', $post_id);
+
+// Add PDF button if available AND not disabled
+if (!is_null($final_pdf_url) && !$disable_pdf_download) {
     $publication_title = get_the_title($post_id);
     $publication_number = get_field('publication_number', $post_id);
     $path_url = wp_make_link_relative(get_permalink($post_id));
