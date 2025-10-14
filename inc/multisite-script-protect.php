@@ -29,10 +29,10 @@ class CustomAdminPlugin {
     public function add_admin_menu() {
         add_submenu_page(
             'caes-tools',                    // Parent slug - points to CAES Tools
-            'Custom Admin Settings',         // Page title
-            'Custom Admin',                  // Menu title
+            'Script Protect Settings',         // Page title
+            'Script Protect',                  // Menu title
             'manage_options',
-            'custom-admin-settings',
+            'script-protect-settings',
             array($this, 'settings_page')
         );
     }
