@@ -20,7 +20,7 @@ require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
 require get_template_directory() . '/inc/custom-rewrites.php';
 require get_template_directory() . '/inc/rss-support.php';
-require get_template_directory() . '/inc/multisite-script-protection.php';
+require get_template_directory() . '/inc/multisite-script-protect.php';
 
 // Publications PDF generation
 require get_template_directory() . '/inc/publications-pdf/publications-pdf-mpdf.php';
