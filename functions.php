@@ -5,14 +5,35 @@
  *  Custom functions, support, custom post types and more.
  */
 
+/**
+ * Normalize search queries for known short acronyms.
+ * Converts variations without hyphens/proper casing to standard format.
+ */
+function caes_hub_normalize_search_query($query) {
+    $query = trim($query);
+    
+    // Map of search variations to standardized format
+    $normalizations = array(
+        '4h'  => '4-H',
+        '4-h' => '4-H',
+        '4 h' => '4-H',
+        // Add more as needed
+    );
+    
+    $query_lower = strtolower($query);
+    if (isset($normalizations[$query_lower])) {
+        return $normalizations[$query_lower];
+    }
+    
+    return $query;
+}
+
 /*------------------------------------*\
 	Load files
 \*------------------------------------*/
 
 require get_template_directory() . '/inc/theme-support.php';
 require get_template_directory() . '/inc/post-types.php';
-require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
-require get_template_directory() . '/inc/plugin-overrides/yoast-schema.php';
 require get_template_directory() . '/inc/blocks.php';
 require get_template_directory() . '/inc/acf.php';
 require get_template_directory() . '/inc/caes-tools.php';
@@ -43,7 +64,11 @@ require get_template_directory() . '/inc/topic-management.php';
 require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/pub-sunset-tool.php';
 
+// Plugin overrides
+require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+require get_template_directory() . '/inc/plugin-overrides/yoast-schema.php';
 
+// Need to remove below soonish
 add_action('transition_post_status', 'log_post_status_change_detailed', 10, 3);
 function log_post_status_change_detailed($new_status, $old_status, $post) {
     if ($old_status != $new_status) {
