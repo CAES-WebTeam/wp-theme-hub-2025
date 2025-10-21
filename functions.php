@@ -5,28 +5,6 @@
  *  Custom functions, support, custom post types and more.
  */
 
-/**
- * Normalize search queries for known short acronyms.
- * Converts variations without hyphens/proper casing to standard format.
- */
-function caes_hub_normalize_search_query($query) {
-    $query = trim($query);
-    
-    // Map of search variations to standardized format
-    $normalizations = array(
-        '4h'  => '4-H',
-        '4-h' => '4-H',
-        '4 h' => '4-H',
-        // Add more as needed
-    );
-    
-    $query_lower = strtolower($query);
-    if (isset($normalizations[$query_lower])) {
-        return $normalizations[$query_lower];
-    }
-    
-    return $query;
-}
 
 /*------------------------------------*\
 	Load files
