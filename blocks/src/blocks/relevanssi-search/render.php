@@ -1,15 +1,5 @@
 <?php
 
-// DEBUG: Log all search attempts
-if (isset($_GET['s'])) {
-    error_log('=== SEARCH DEBUG ===');
-    error_log('Original $_GET[s]: "' . $_GET['s'] . '"');
-    
-    $test_normalize = caes_hub_normalize_search_query($_GET['s']);
-    error_log('After normalization: "' . $test_normalize . '"');
-    error_log('Function exists: ' . (function_exists('caes_hub_normalize_search_query') ? 'YES' : 'NO'));
-}
-
 /**
  * PHP: Server-side rendering for the Relevanssi Search Filters block.
  *
