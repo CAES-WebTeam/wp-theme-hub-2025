@@ -349,7 +349,10 @@ function caes_hub_handle_relevanssi_ajax_search()
     // error_log('AJAX: show_language_filter: ' . ($show_language_filter ? 'true' : 'false'));
 
     $ajax_s = isset($_POST['s']) ? sanitize_text_field(wp_unslash($_POST['s'])) : '';
-    $ajax_s = caes_hub_normalize_search_query($ajax_s); // Normalize known acronyms
+    error_log('AJAX BEFORE normalize: "' . $ajax_s . '"');
+    $ajax_s = caes_hub_normalize_search_query($ajax_s);
+    error_log('AJAX AFTER normalize: "' . $ajax_s . '"');
+
     $ajax_orderby     = isset($_POST['orderby']) ? sanitize_text_field(wp_unslash($_POST['orderby'])) : '';
     $ajax_order       = isset($_POST['order']) ? sanitize_text_field(wp_unslash($_POST['order'])) : '';
     $ajax_post_type   = isset($_POST['post_type']) ? sanitize_text_field(wp_unslash($_POST['post_type'])) : '';
