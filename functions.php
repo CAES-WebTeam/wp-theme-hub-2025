@@ -11,6 +11,8 @@
 
 require get_template_directory() . '/inc/theme-support.php';
 require get_template_directory() . '/inc/post-types.php';
+require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
+require get_template_directory() . '/inc/plugin-overrides/yoast-schema.php';
 require get_template_directory() . '/inc/blocks.php';
 require get_template_directory() . '/inc/acf.php';
 require get_template_directory() . '/inc/caes-tools.php';
@@ -40,10 +42,6 @@ require get_template_directory() . '/inc/topic-management.php';
 // Temp include
 require get_template_directory() . '/inc/detect-duplicates.php';
 require get_template_directory() . '/inc/pub-sunset-tool.php';
-
-// Plugin overrides
-require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
-require get_template_directory() . '/inc/plugin-overrides/yoast-schema.php';
 
 
 add_action('transition_post_status', 'log_post_status_change_detailed', 10, 3);
