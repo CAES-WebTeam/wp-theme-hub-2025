@@ -26,6 +26,7 @@ $is_search_only_block = !empty($results_page_url);
 // Get current search query and filter parameters from the URL.
 // Use $_GET directly since get_search_query() might be empty due to our 404 fix
 $current_search_query = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : get_search_query();
+$current_search_query = caes_hub_normalize_search_query($current_search_query);
 $current_orderby      = isset($_GET['orderby']) ? sanitize_text_field(wp_unslash($_GET['orderby'])) : '';
 $current_order        = isset($_GET['order']) ? sanitize_text_field(wp_unslash($_GET['order'])) : '';
 

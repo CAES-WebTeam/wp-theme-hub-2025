@@ -1,1 +1,649 @@
-(()=>{"use strict";var e,s={7341:()=>{const e=window.wp.blocks,s=window.wp.i18n,l=window.wp.blockEditor,o=window.wp.components,t=window.wp.data,a=window.wp.element,n=window.ReactJSXRuntime,r=JSON.parse('{"UU":"caes-hub/relevanssi-search"}');(0,e.registerBlockType)(r.UU,{edit:function({attributes:e,setAttributes:r}){const{showDateSort:i,showPostTypeFilter:h,showTopicFilter:c,showAuthorFilter:u,showLanguageFilter:d,showHeading:b,showButton:g,buttonText:p,buttonUrl:_,postTypes:x,taxonomySlug:w,headingColor:f,headingAlignment:C,customHeading:m,resultsPageUrl:T}=e,j=(0,l.useBlockProps)(),[v,y]=(0,a.useState)([]),k=x.includes("publications"),S=(0,t.useSelect)((e=>{const{getPostTypes:s}=e("core"),l=s({per_page:-1});return l?l.filter((e=>e.viewable&&"attachment"!==e.slug&&"wp_block"!==e.slug&&"wp_template"!==e.slug&&"wp_template_part"!==e.slug&&"wp_navigation"!==e.slug&&"wp_global_styles"!==e.slug)):[]}),[]);return(0,a.useEffect)((()=>{S.length>0&&y(S)}),[S]),(0,n.jsxs)("div",{...j,children:[(0,n.jsxs)(l.InspectorControls,{children:[(0,n.jsxs)(o.PanelBody,{title:(0,s.__)("Results Page Settings","caes-hub"),children:[(0,n.jsx)(o.TextControl,{label:(0,s.__)("Results Page URL","caes-hub"),value:T,onChange:e=>r({resultsPageUrl:e}),help:(0,s.__)("Optional: Enter a URL to redirect search submissions to another page with the full search results. Leave blank to show results on the same page.","caes-hub"),placeholder:(0,s.__)("e.g., /search-results/","caes-hub")}),T&&(0,n.jsxs)("p",{className:"description",style:{marginTop:"10px",padding:"10px",backgroundColor:"#f0f6fc",border:"1px solid #c3c4c7",borderRadius:"4px"},children:[(0,n.jsx)("strong",{children:(0,s.__)("How it works:","caes-hub")}),(0,n.jsx)("br",{}),(0,s.__)('When specified, this block becomes a "search-only" form that redirects to the results page. The target page should also have this block configured with all desired filters enabled.',"caes-hub")]})]}),(0,n.jsxs)(o.PanelBody,{title:(0,s.__)("Heading Settings","caes-hub"),children:[(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Heading","caes-hub"),checked:b,onChange:e=>r({showHeading:e}),help:b?(0,s.__)("Heading will be displayed above the search form.","caes-hub"):(0,s.__)("Heading will be hidden.","caes-hub")}),b&&(0,n.jsxs)(n.Fragment,{children:[(0,n.jsx)(o.SelectControl,{label:(0,s.__)("Text Alignment","caes-hub"),value:C,onChange:e=>r({headingAlignment:e}),options:[{label:(0,s.__)("Left","caes-hub"),value:"left"},{label:(0,s.__)("Center","caes-hub"),value:"center"},{label:(0,s.__)("Right","caes-hub"),value:"right"}]}),(0,n.jsx)(o.TextControl,{label:(0,s.__)("Custom Heading Text","caes-hub"),value:m,onChange:e=>r({customHeading:e}),help:(0,s.__)('Leave blank to use default text ("Search" or "Search results for: [query]")',"caes-hub"),placeholder:(0,s.__)("e.g., Search Expert Resources","caes-hub")})]})]}),b&&(0,n.jsx)(l.PanelColorSettings,{title:(0,s.__)("Heading Color","caes-hub"),colorSettings:[{value:f,onChange:e=>r({headingColor:e}),label:(0,s.__)("Text Color","caes-hub")}]}),(0,n.jsxs)(o.PanelBody,{title:(0,s.__)("Button Settings","caes-hub"),children:[(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Button","caes-hub"),checked:g,onChange:e=>r({showButton:e}),help:g?(0,s.__)("A custom button will be displayed next to the filters.","caes-hub"):(0,s.__)("No additional button will be shown.","caes-hub")}),g&&(0,n.jsxs)(n.Fragment,{children:[(0,n.jsx)(o.TextControl,{label:(0,s.__)("Button Text","caes-hub"),value:p,onChange:e=>r({buttonText:e}),help:(0,s.__)("Enter the text to display on the button.","caes-hub"),placeholder:(0,s.__)("e.g., Advanced Search","caes-hub")}),(0,n.jsx)(o.TextControl,{label:(0,s.__)("Button URL","caes-hub"),value:_,onChange:e=>r({buttonUrl:e}),help:(0,s.__)("Enter the URL the button should link to.","caes-hub"),placeholder:(0,s.__)("e.g., /advanced-search/","caes-hub")})]})]}),(0,n.jsxs)(o.PanelBody,{title:(0,s.__)("Search Filter Settings","caes-hub"),children:[(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Date Sorting","caes-hub"),checked:i,onChange:e=>r({showDateSort:e}),help:i?(0,s.__)("Date sorting dropdown will be visible.","caes-hub"):(0,s.__)("Date sorting dropdown will be hidden.","caes-hub")}),(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Post Type Filter","caes-hub"),checked:h,onChange:e=>r({showPostTypeFilter:e}),help:h?(0,s.__)("Post type filter dropdown will be visible.","caes-hub"):(0,s.__)("Post type filter dropdown will be hidden.","caes-hub")}),h&&v.length>0&&(0,n.jsxs)("div",{style:{marginTop:"15px",borderTop:"1px solid #eee",paddingTop:"15px"},children:[(0,n.jsx)("p",{style:{fontWeight:"bold"},children:(0,s.__)("Select Post Types to Filter:","caes-hub")}),v.map((e=>(0,n.jsx)(o.CheckboxControl,{label:e.labels.singular_name||e.slug,checked:x.includes(e.slug),onChange:s=>{const l=s?[...x,e.slug]:x.filter((s=>s!==e.slug));r({postTypes:l})}},e.slug))),(0,n.jsx)("p",{className:"description",children:(0,s.__)("Selected post types will appear in the filter dropdown.","caes-hub")})]}),(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Topics Taxonomy Filter","caes-hub"),checked:c,onChange:e=>r({showTopicFilter:e}),help:c?(0,s.__)("Topics taxonomy filter (checkboxes) will be visible.","caes-hub"):(0,s.__)("Topics taxonomy filter (checkboxes) will be hidden.","caes-hub")}),c&&(0,n.jsx)(o.TextControl,{label:(0,s.__)("Custom Taxonomy Slug for Topics","caes-hub"),value:w,onChange:e=>r({taxonomySlug:e}),help:(0,s.__)('Enter the slug of your custom taxonomy (e.g., "topics").',"caes-hub")}),(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Author Filter","caes-hub"),checked:u,onChange:e=>r({showAuthorFilter:e}),help:u?(0,s.__)("Author filter dropdown will be visible.","caes-hub"):(0,s.__)("Author filter dropdown will be hidden.","caes-hub")}),k&&(0,n.jsx)(o.ToggleControl,{label:(0,s.__)("Show Language Filter","caes-hub"),checked:d,onChange:e=>r({showLanguageFilter:e}),help:d?(0,s.__)('Language filter (checkboxes) will be visible for publications. Uses ACF custom field "language".',"caes-hub"):(0,s.__)("Language filter (checkboxes) will be hidden.","caes-hub")})]})]}),(0,n.jsxs)("div",{className:"caes-hub-relevanssi-search-filters-editor",children:[(0,n.jsx)("p",{children:(0,s.__)("Relevanssi Search Filters Block","caes-hub")}),(0,n.jsx)("p",{children:(0,s.__)("Configure sorting and filtering options in the block settings sidebar.","caes-hub")}),T&&(0,n.jsxs)("p",{style:{backgroundColor:"#f0f6fc",padding:"10px",border:"1px solid #c3c4c7",borderRadius:"4px",marginTop:"10px"},children:[(0,n.jsx)("strong",{children:(0,s.__)("Search-only mode:","caes-hub")})," ",(0,s.__)("Redirects to","caes-hub")," ",T]}),!b&&(0,n.jsxs)("p",{style:{backgroundColor:"#fff3cd",padding:"10px",border:"1px solid #ffd60a",borderRadius:"4px",marginTop:"10px"},children:[(0,n.jsx)("strong",{children:(0,s.__)("Note:","caes-hub")})," ",(0,s.__)("Heading is hidden","caes-hub")]}),g&&(0,n.jsxs)("p",{style:{backgroundColor:"#d1ecf1",padding:"10px",border:"1px solid #bee5eb",borderRadius:"4px",marginTop:"10px"},children:[(0,n.jsx)("strong",{children:(0,s.__)("Button enabled:","caes-hub")})," ",p||(0,s.__)("(No text set)","caes-hub")," → ",_||(0,s.__)("(No URL set)","caes-hub")]}),i&&(0,n.jsxs)("p",{children:[" - ",(0,s.__)("Date Sorting Enabled","caes-hub")]}),h&&(0,n.jsxs)("p",{children:[" - ",(0,s.__)("Post Type Filter Enabled","caes-hub")]}),c&&(0,n.jsxs)("p",{children:[" - ",(0,s.__)("Topics Filter Enabled (Checkboxes, Taxonomy: ","caes-hub"),w,")"]}),u&&(0,n.jsxs)("p",{children:[" - ",(0,s.__)("Author Filter Enabled","caes-hub")]}),k&&d&&(0,n.jsxs)("p",{children:[" - ",(0,s.__)("Language Filter Enabled (Checkboxes, ACF Field: language)","caes-hub")]})]})]})}})}},l={};function o(e){var t=l[e];if(void 0!==t)return t.exports;var a=l[e]={exports:{}};return s[e](a,a.exports,o),a.exports}o.m=s,e=[],o.O=(s,l,t,a)=>{if(!l){var n=1/0;for(c=0;c<e.length;c++){for(var[l,t,a]=e[c],r=!0,i=0;i<l.length;i++)(!1&a||n>=a)&&Object.keys(o.O).every((e=>o.O[e](l[i])))?l.splice(i--,1):(r=!1,a<n&&(n=a));if(r){e.splice(c--,1);var h=t();void 0!==h&&(s=h)}}return s}a=a||0;for(var c=e.length;c>0&&e[c-1][2]>a;c--)e[c]=e[c-1];e[c]=[l,t,a]},o.o=(e,s)=>Object.prototype.hasOwnProperty.call(e,s),(()=>{var e={2092:0,3188:0};o.O.j=s=>0===e[s];var s=(s,l)=>{var t,a,[n,r,i]=l,h=0;if(n.some((s=>0!==e[s]))){for(t in r)o.o(r,t)&&(o.m[t]=r[t]);if(i)var c=i(o)}for(s&&s(l);h<n.length;h++)a=n[h],o.o(e,a)&&e[a]&&e[a][0](),e[a]=0;return o.O(c)},l=globalThis.webpackChunktheme_blocks=globalThis.webpackChunktheme_blocks||[];l.forEach(s.bind(null,0)),l.push=s.bind(null,l.push.bind(l))})();var t=o.O(void 0,[3188],(()=>o(7341)));t=o.O(t)})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/blocks/relevanssi-search/edit.js":
+/*!**********************************************!*\
+  !*** ./src/blocks/relevanssi-search/edit.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Edit)
+/* harmony export */ });
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/relevanssi-search/editor.scss");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__);
+/**
+ * WordPress dependencies
+ */
+
+
+
+
+
+
+
+/**
+ * Internal dependencies
+ */
+
+
+/**
+ * The edit function describes the structure of your block in the editor.
+ * This can be thought of as the render method for the client-side.
+ *
+ * @see https://developer.wordpress.org/block-editor/developers/block-api/block-edit-save/#edit
+ *
+ * @param {Object}   props               Properties passed to the function.
+ * @param {Object}   props.attributes    Block attributes.
+ * @param {Function} props.setAttributes Function to set block attributes.
+ *
+ * @return {WPElement} Element to render.
+ */
+
+function Edit({
+  attributes,
+  setAttributes
+}) {
+  const {
+    showDateSort,
+    showPostTypeFilter,
+    showTopicFilter,
+    showAuthorFilter,
+    showLanguageFilter,
+    showHeading,
+    showButton,
+    buttonText,
+    buttonUrl,
+    postTypes,
+    taxonomySlug,
+    headingColor,
+    headingAlignment,
+    customHeading,
+    resultsPageUrl
+  } = attributes;
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
+
+  // State to hold available post types for the checkbox list
+  const [availablePostTypes, setAvailablePostTypes] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useState)([]);
+
+  // Check if publications post type is selected
+  const isPublicationsSelected = postTypes.includes('publications');
+
+  // Fetch all public post types using @wordpress/data
+  const fetchedPostTypes = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => {
+    const {
+      getPostTypes
+    } = select('core');
+    const postTypes = getPostTypes({
+      per_page: -1
+    }); // Fetch all post types
+
+    if (!postTypes) {
+      return [];
+    }
+
+    // Filter out built-in post types that are not typically searchable or useful for filtering
+    return postTypes.filter(postType => postType.viewable && postType.slug !== 'attachment' && postType.slug !== 'wp_block' && postType.slug !== 'wp_template' && postType.slug !== 'wp_template_part' && postType.slug !== 'wp_navigation' && postType.slug !== 'wp_global_styles');
+  }, []);
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useEffect)(() => {
+    if (fetchedPostTypes.length > 0) {
+      setAvailablePostTypes(fetchedPostTypes);
+    }
+  }, [fetchedPostTypes]);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+    ...blockProps,
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Results Page Settings', 'caes-hub'),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Results Page URL', 'caes-hub'),
+          value: resultsPageUrl,
+          onChange: value => setAttributes({
+            resultsPageUrl: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Optional: Enter a URL to redirect search submissions to another page with the full search results. Leave blank to show results on the same page.', 'caes-hub'),
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('e.g., /search-results/', 'caes-hub')
+        }), resultsPageUrl && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+          className: "description",
+          style: {
+            marginTop: '10px',
+            padding: '10px',
+            backgroundColor: '#f0f6fc',
+            border: '1px solid #c3c4c7',
+            borderRadius: '4px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('How it works:', 'caes-hub')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("br", {}), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('When specified, this block becomes a "search-only" form that redirects to the results page. The target page should also have this block configured with all desired filters enabled.', 'caes-hub')]
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading Settings', 'caes-hub'),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Heading', 'caes-hub'),
+          checked: showHeading,
+          onChange: value => setAttributes({
+            showHeading: value
+          }),
+          help: showHeading ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading will be displayed above the search form.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading will be hidden.', 'caes-hub')
+        }), showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Text Alignment', 'caes-hub'),
+            value: headingAlignment,
+            onChange: value => setAttributes({
+              headingAlignment: value
+            }),
+            options: [{
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Left', 'caes-hub'),
+              value: 'left'
+            }, {
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Center', 'caes-hub'),
+              value: 'center'
+            }, {
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Right', 'caes-hub'),
+              value: 'right'
+            }]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Custom Heading Text', 'caes-hub'),
+            value: customHeading,
+            onChange: value => setAttributes({
+              customHeading: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Leave blank to use default text ("Search" or "Search results for: [query]")', 'caes-hub'),
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('e.g., Search Expert Resources', 'caes-hub')
+          })]
+        })]
+      }), showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.PanelColorSettings, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading Color', 'caes-hub'),
+        colorSettings: [{
+          value: headingColor,
+          onChange: value => setAttributes({
+            headingColor: value
+          }),
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Text Color', 'caes-hub')
+        }]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Button Settings', 'caes-hub'),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Button', 'caes-hub'),
+          checked: showButton,
+          onChange: value => setAttributes({
+            showButton: value
+          }),
+          help: showButton ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('A custom button will be displayed next to the filters.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No additional button will be shown.', 'caes-hub')
+        }), showButton && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Button Text', 'caes-hub'),
+            value: buttonText,
+            onChange: value => setAttributes({
+              buttonText: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enter the text to display on the button.', 'caes-hub'),
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('e.g., Advanced Search', 'caes-hub')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Button URL', 'caes-hub'),
+            value: buttonUrl,
+            onChange: value => setAttributes({
+              buttonUrl: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enter the URL the button should link to.', 'caes-hub'),
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('e.g., /advanced-search/', 'caes-hub')
+          })]
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Search Filter Settings', 'caes-hub'),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Date Sorting', 'caes-hub'),
+          checked: showDateSort,
+          onChange: value => setAttributes({
+            showDateSort: value
+          }),
+          help: showDateSort ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Date sorting dropdown will be visible.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Date sorting dropdown will be hidden.', 'caes-hub')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Post Type Filter', 'caes-hub'),
+          checked: showPostTypeFilter,
+          onChange: value => setAttributes({
+            showPostTypeFilter: value
+          }),
+          help: showPostTypeFilter ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Post type filter dropdown will be visible.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Post type filter dropdown will be hidden.', 'caes-hub')
+        }), showPostTypeFilter && availablePostTypes.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            marginTop: '15px',
+            borderTop: '1px solid #eee',
+            paddingTop: '15px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+            style: {
+              fontWeight: 'bold'
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Post Types to Filter:', 'caes-hub')
+          }), availablePostTypes.map(postType => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.CheckboxControl, {
+            label: postType.labels.singular_name || postType.slug,
+            checked: postTypes.includes(postType.slug),
+            onChange: isChecked => {
+              const newPostTypes = isChecked ? [...postTypes, postType.slug] : postTypes.filter(slug => slug !== postType.slug);
+              setAttributes({
+                postTypes: newPostTypes
+              });
+            }
+          }, postType.slug)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+            className: "description",
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Selected post types will appear in the filter dropdown.', 'caes-hub')
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Topics Taxonomy Filter', 'caes-hub'),
+          checked: showTopicFilter,
+          onChange: value => setAttributes({
+            showTopicFilter: value
+          }),
+          help: showTopicFilter ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Topics taxonomy filter (checkboxes) will be visible.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Topics taxonomy filter (checkboxes) will be hidden.', 'caes-hub')
+        }), showTopicFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Custom Taxonomy Slug for Topics', 'caes-hub'),
+          value: taxonomySlug,
+          onChange: value => setAttributes({
+            taxonomySlug: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enter the slug of your custom taxonomy (e.g., "topics").', 'caes-hub')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Author Filter', 'caes-hub'),
+          checked: showAuthorFilter,
+          onChange: value => setAttributes({
+            showAuthorFilter: value
+          }),
+          help: showAuthorFilter ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Author filter dropdown will be visible.', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Author filter dropdown will be hidden.', 'caes-hub')
+        }), isPublicationsSelected && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show Language Filter', 'caes-hub'),
+          checked: showLanguageFilter,
+          onChange: value => setAttributes({
+            showLanguageFilter: value
+          }),
+          help: showLanguageFilter ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Language filter (checkboxes) will be visible for publications. Uses ACF custom field "language".', 'caes-hub') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Language filter (checkboxes) will be hidden.', 'caes-hub')
+        })]
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+      className: "caes-hub-relevanssi-search-filters-editor",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Relevanssi Search Filters Block', 'caes-hub')
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Configure sorting and filtering options in the block settings sidebar.', 'caes-hub')
+      }), resultsPageUrl && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        style: {
+          backgroundColor: '#f0f6fc',
+          padding: '10px',
+          border: '1px solid #c3c4c7',
+          borderRadius: '4px',
+          marginTop: '10px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Search-only mode:', 'caes-hub')
+        }), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Redirects to', 'caes-hub'), " ", resultsPageUrl]
+      }), !showHeading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        style: {
+          backgroundColor: '#fff3cd',
+          padding: '10px',
+          border: '1px solid #ffd60a',
+          borderRadius: '4px',
+          marginTop: '10px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Note:', 'caes-hub')
+        }), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading is hidden', 'caes-hub')]
+      }), showButton && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        style: {
+          backgroundColor: '#d1ecf1',
+          padding: '10px',
+          border: '1px solid #bee5eb',
+          borderRadius: '4px',
+          marginTop: '10px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Button enabled:', 'caes-hub')
+        }), " ", buttonText || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('(No text set)', 'caes-hub'), " \u2192 ", buttonUrl || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('(No URL set)', 'caes-hub')]
+      }), showDateSort && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Date Sorting Enabled', 'caes-hub')]
+      }), showPostTypeFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Post Type Filter Enabled', 'caes-hub')]
+      }), showTopicFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Topics Filter Enabled (Checkboxes, Taxonomy: ', 'caes-hub'), taxonomySlug, ")"]
+      }), showAuthorFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Author Filter Enabled', 'caes-hub')]
+      }), isPublicationsSelected && showLanguageFilter && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+        children: [" - ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Language Filter Enabled (Checkboxes, ACF Field: language)', 'caes-hub')]
+      })]
+    })]
+  });
+}
+
+/***/ }),
+
+/***/ "./src/blocks/relevanssi-search/index.js":
+/*!***********************************************!*\
+  !*** ./src/blocks/relevanssi-search/index.js ***!
+  \***********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/relevanssi-search/style.scss");
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/relevanssi-search/edit.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./block.json */ "./src/blocks/relevanssi-search/block.json");
+/**
+ * Registers a new block provided a unique name and an object defining its behavior.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
+ */
+
+
+/**
+ * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
+ * All files containing `style` keyword are bundled together. The code used
+ * gets applied both to the front of your site and to the editor.
+ *
+ * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
+ */
+
+
+/**
+ * Internal dependencies
+ */
+
+
+
+/**
+ * Every block starts by registering a new block type definition.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
+ */
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_3__.name, {
+  /**
+   * @see ./edit.js
+   */
+  edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"]
+});
+
+/***/ }),
+
+/***/ "./src/blocks/relevanssi-search/editor.scss":
+/*!**************************************************!*\
+  !*** ./src/blocks/relevanssi-search/editor.scss ***!
+  \**************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "./src/blocks/relevanssi-search/style.scss":
+/*!*************************************************!*\
+  !*** ./src/blocks/relevanssi-search/style.scss ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "react/jsx-runtime":
+/*!**********************************!*\
+  !*** external "ReactJSXRuntime" ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["ReactJSXRuntime"];
+
+/***/ }),
+
+/***/ "@wordpress/block-editor":
+/*!*************************************!*\
+  !*** external ["wp","blockEditor"] ***!
+  \*************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blockEditor"];
+
+/***/ }),
+
+/***/ "@wordpress/blocks":
+/*!********************************!*\
+  !*** external ["wp","blocks"] ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blocks"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/data":
+/*!******************************!*\
+  !*** external ["wp","data"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["data"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./src/blocks/relevanssi-search/block.json":
+/*!*************************************************!*\
+  !*** ./src/blocks/relevanssi-search/block.json ***!
+  \*************************************************/
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/relevanssi-search","version":"1.0.0","title":"CAES Hub Relevanssi Search","category":"widgets","icon":"search","description":"A custom block for Relevanssi search with advanced sorting and filtering options by date, post type, and custom taxonomy.","supports":{"html":false,"spacing":{"margin":true,"padding":true}},"attributes":{"showDateSort":{"type":"boolean","default":true},"showPostTypeFilter":{"type":"boolean","default":true},"showTopicFilter":{"type":"boolean","default":true},"showAuthorFilter":{"type":"boolean","default":true},"showLanguageFilter":{"type":"boolean","default":false},"showHeading":{"type":"boolean","default":true},"showButton":{"type":"boolean","default":false},"buttonText":{"type":"string","default":""},"buttonUrl":{"type":"string","default":""},"postTypes":{"type":"array","default":["post","page"],"items":{"type":"string"}},"taxonomySlug":{"type":"string","default":"category"},"headingColor":{"type":"string","default":""},"headingAlignment":{"type":"string","default":"left"},"customHeading":{"type":"string","default":""},"resultsPageUrl":{"type":"string","default":""}},"textdomain":"caes-hub","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js","render":"file:./render.php"}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/relevanssi-search/index": 0,
+/******/ 			"blocks/relevanssi-search/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunktheme_blocks"] = globalThis["webpackChunktheme_blocks"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/relevanssi-search/style-index"], () => (__webpack_require__("./src/blocks/relevanssi-search/index.js")))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=index.js.map
