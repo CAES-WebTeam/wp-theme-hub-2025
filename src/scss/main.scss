@@ -240,6 +240,8 @@ figcaption a {
 
     &.caes-hub-main-bg-lake-herrick-bg {
         background-image: url('../images/placeholder-bg-1-lake-herrick-big.jpg' );
+        background-size: contain;
+        background-position: center;
     }
 
 }
