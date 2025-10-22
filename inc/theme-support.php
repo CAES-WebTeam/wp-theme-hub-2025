@@ -414,22 +414,21 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
         return $html;
     }
 
-    // DEBUG: Log what's happening
-    error_log('=== PLACEHOLDER DEBUG ===');
-    error_log('Post ID: ' . $post_id);
-    error_log('is_author(): ' . (is_author() ? 'YES' : 'NO'));
+    // DEBUG: Add visible debug info
+    $debug = '<!-- PLACEHOLDER DEBUG: ';
+    $debug .= 'Post ID: ' . $post_id . ' | ';
+    $debug .= 'is_author(): ' . (is_author() ? 'YES' : 'NO') . ' | ';
     
     global $wp_query;
-    error_log('is_author from wp_query: ' . (isset($wp_query->query_vars['author']) || (is_object($wp_query) && $wp_query->is_author) ? 'YES' : 'NO'));
-    error_log('Current URL: ' . $_SERVER['REQUEST_URI']);
-    error_log('========================');
+    $debug .= 'is_author wp_query: ' . (isset($wp_query->query_vars['author']) || (is_object($wp_query) && $wp_query->is_author) ? 'YES' : 'NO') . ' | ';
+    $debug .= 'URL: ' . $_SERVER['REQUEST_URI'];
+    $debug .= ' -->';
 
     // Check if we're on an author archive page
     if (is_author() || (isset($wp_query->query_vars['author']) || (is_object($wp_query) && $wp_query->is_author))) {
         $url = get_template_directory_uri() . '/assets/images/placeholder-bg-1-lake-herrick-big.jpg';
         $alt = get_the_title($post_id);
-        error_log('USING LAKE HERRICK IMAGE');
-        return sprintf(
+        return $debug . sprintf(
             '<img src="%s" alt="%s" class="wp-post-image" />',
             esc_url($url),
             esc_attr($alt)
@@ -452,9 +451,7 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
     $url  = get_template_directory_uri() . '/assets/images/' . $file;
     $alt  = get_the_title($post_id);
 
-    error_log('USING RANDOM IMAGE: ' . $file);
-
-    return sprintf(
+    return $debug . sprintf(
         '<img src="%s" alt="%s" class="wp-post-image" />',
         esc_url($url),
         esc_attr($alt)
