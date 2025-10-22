@@ -114,6 +114,9 @@ figcaption a {
             padding-bottom: 0 !important;
         }
     }
+}
+
+@media screen and (max-width: 1400px) {
     // Profile columns
     .wp-block-columns.caes-hub-profile-columns {
         flex-wrap: wrap !important;
