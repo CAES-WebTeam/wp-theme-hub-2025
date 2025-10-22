@@ -414,23 +414,11 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
         return $html;
     }
 
-    // Check if we're on a person/author page by URL pattern
-    $request_uri = $_SERVER['REQUEST_URI'];
-    if (preg_match('#^/person/\d+/#', $request_uri)) {
-        $url = get_template_directory_uri() . '/assets/images/placeholder-bg-1-lake-herrick-big.jpg';
-        $alt = get_the_title($post_id);
-        return sprintf(
-            '<img src="%s" alt="%s" class="wp-post-image" />',
-            esc_url($url),
-            esc_attr($alt)
-        );
-    }
-
-    // Array of placeholder filenames for other contexts
+    // Array of placeholder filenames
     $placeholders = [
         'placeholder-bg-1-athens.jpg',
         'placeholder-bg-2-hedges.jpg',
-        'placeholder-bg-1-lake-herrick-big.jpg',
+        'placeholder-bg-1-lake-herrick.jpg',
         'placeholder-bg-2-olympic.jpg',
         'placeholder-bg-1-hedges.jpg',
         'placeholder-bg-2-lake-herrick.jpg',
