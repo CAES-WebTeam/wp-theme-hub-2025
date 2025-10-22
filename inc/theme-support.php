@@ -414,21 +414,11 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
         return $html;
     }
 
-    // DEBUG: Add visible debug info
-    $debug = '<!-- PLACEHOLDER DEBUG: ';
-    $debug .= 'Post ID: ' . $post_id . ' | ';
-    $debug .= 'is_author(): ' . (is_author() ? 'YES' : 'NO') . ' | ';
-    
-    global $wp_query;
-    $debug .= 'is_author wp_query: ' . (isset($wp_query->query_vars['author']) || (is_object($wp_query) && $wp_query->is_author) ? 'YES' : 'NO') . ' | ';
-    $debug .= 'URL: ' . $_SERVER['REQUEST_URI'];
-    $debug .= ' -->';
-
-    // Check if we're on an author archive page
-    if (is_author() || (isset($wp_query->query_vars['author']) || (is_object($wp_query) && $wp_query->is_author))) {
+    // Check if we're on an author archive page using the main query
+    if (is_author()) {
         $url = get_template_directory_uri() . '/assets/images/placeholder-bg-1-lake-herrick-big.jpg';
         $alt = get_the_title($post_id);
-        return $debug . sprintf(
+        return sprintf(
             '<img src="%s" alt="%s" class="wp-post-image" />',
             esc_url($url),
             esc_attr($alt)
@@ -451,20 +441,12 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
     $url  = get_template_directory_uri() . '/assets/images/' . $file;
     $alt  = get_the_title($post_id);
 
-    return $debug . sprintf(
+    return sprintf(
         '<img src="%s" alt="%s" class="wp-post-image" />',
         esc_url($url),
         esc_attr($alt)
     );
 }
-
-function show_current_post_type() {
-    global $post;
-    if ($post) {
-        echo '<!-- Current Post Type: ' . get_post_type($post->ID) . ' | Post ID: ' . $post->ID . ' -->';
-    }
-}
-add_action('wp_head', 'show_current_post_type');
 
 // Add Google Tag Manager code to the head (only for non-logged-in users and non-local domains)
 function add_gtm_head_block_theme()
