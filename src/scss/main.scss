@@ -232,6 +232,12 @@ figcaption a {
     &.caes-hub-main-bg-short {
         height: 50vh;
     }
+
+    &.caes-hub-main-bg-no-blur .caes-hub-main-bg-f-img  img {
+        filter: none;
+        transform: none;
+    }
+
 }
 
 // Print view

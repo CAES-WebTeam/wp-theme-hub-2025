@@ -414,7 +414,18 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
         return $html;
     }
 
-    // Array of placeholder filenames
+    // Use specific image for author/profile pages
+    if (is_author()) {
+        $url = get_template_directory_uri() . '/assets/images/placeholder-bg-1-lake-herrick-big.jpg';
+        $alt = get_the_title($post_id);
+        return sprintf(
+            '<img src="%s" alt="%s" class="wp-post-image" />',
+            esc_url($url),
+            esc_attr($alt)
+        );
+    }
+
+    // Array of placeholder filenames for other contexts
     $placeholders = [
         'placeholder-bg-1-athens.jpg',
         'placeholder-bg-2-hedges.jpg',
