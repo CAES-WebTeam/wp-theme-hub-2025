@@ -430,7 +430,7 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
     $placeholders = [
         'placeholder-bg-1-athens.jpg',
         'placeholder-bg-2-hedges.jpg',
-        'placeholder-bg-1-lake-herrick.jpg',
+        'placeholder-bg-1-lake-herrick-big.jpg',
         'placeholder-bg-2-olympic.jpg',
         'placeholder-bg-1-hedges.jpg',
         'placeholder-bg-2-lake-herrick.jpg',
