@@ -414,8 +414,9 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
         return $html;
     }
 
-    // Check if we're on an author archive page using the main query
-    if (is_author()) {
+    // Check if we're on a person/author page by URL pattern
+    $request_uri = $_SERVER['REQUEST_URI'];
+    if (preg_match('#^/person/\d+/#', $request_uri)) {
         $url = get_template_directory_uri() . '/assets/images/placeholder-bg-1-lake-herrick-big.jpg';
         $alt = get_the_title($post_id);
         return sprintf(
