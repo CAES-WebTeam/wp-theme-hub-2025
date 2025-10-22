@@ -101,6 +101,7 @@ figcaption a {
 }
 
 @media screen and (max-width: 1300px) {
+    // Pub columns
     .wp-block-columns.caes-hub-pub-columns {
         flex-wrap: wrap !important;
 
@@ -111,6 +112,17 @@ figcaption a {
         .caes-hub-pub-columns-nav-stack {
             padding-top: 0 !important;
             padding-bottom: 0 !important;
+        }
+    }
+    // Profile columns
+    .wp-block-columns.caes-hub-profile-columns {
+        flex-wrap: wrap !important;
+        &>.wp-block-column {
+            flex-basis: 100% !important;
+        }
+        // second column
+        &>.wp-block-column:nth-child(2) {
+            order: -1;
         }
     }
 }
