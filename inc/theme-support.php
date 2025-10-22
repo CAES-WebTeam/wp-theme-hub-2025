@@ -458,6 +458,14 @@ function caes_random_placeholder_if_no_thumbnail($html, $post_id, $post_thumbnai
     );
 }
 
+function show_current_post_type() {
+    global $post;
+    if ($post) {
+        echo '<!-- Current Post Type: ' . get_post_type($post->ID) . ' | Post ID: ' . $post->ID . ' -->';
+    }
+}
+add_action('wp_head', 'show_current_post_type');
+
 // Add Google Tag Manager code to the head (only for non-logged-in users and non-local domains)
 function add_gtm_head_block_theme()
 {
