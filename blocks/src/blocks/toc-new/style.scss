@@ -47,10 +47,10 @@
         color: var(--wp--preset--color--contrast);
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        margin-top: var(--wp--preset--spacing--50) !important;
-        margin-bottom: var(--wp--preset--spacing--30) !important;
+        margin-top: var(--wp--preset--spacing--30) !important;
+        margin-bottom: var(--wp--preset--spacing--20) !important;
         padding-top: var(--wp--preset--spacing--40);
-        border-top: 2px solid rgba(0, 0, 0, 0.15);
+        // border-top: 2px solid rgba(0, 0, 0, 0.15);
         padding-left: 0 !important;
         
         &::before {
