@@ -57,6 +57,11 @@ foreach ($pages as $page_num => $page_content) {
             continue;
         }
         
+        // Skip template literals and other code-like headings
+        if (strpos($text, '${') !== false || strpos($text, 'plant.') !== false) {
+            continue;
+        }
+        
         $id = generate_unique_id($text, $used_ids);
         
         $headings_data[] = [
