@@ -275,8 +275,7 @@ window.addEventListener('load', function () {
   function observeHeadings() {
     if (!originalHeadingMap || !stickyHeadingMap || !headingsInDom) return;
     const observer = new IntersectionObserver(entries => {
-      let activeSet = false;
-      const isAtTop = window.scrollY < 100;
+      const isAtTop = window.scrollY < 50;
       if (isAtTop && enableTopAnchor && currentPage === 1) {
         document.querySelectorAll('.wp-block-caes-hub-toc-new li.toc-current-page').forEach(item => {
           item.classList.remove('active');
@@ -294,31 +293,45 @@ window.addEventListener('load', function () {
         }
         return;
       }
+
+      // Find the topmost visible heading
+      let topmostEntry = null;
+      let topmostY = Infinity;
       entries.forEach(entry => {
-        const id = entry.target.id;
-        if (originalHeadingMap.has(id) && stickyHeadingMap.has(id)) {
-          const originalTocItem = originalHeadingMap.get(id);
-          const stickyTocItem = stickyHeadingMap.get(id);
-          if (entry.isIntersecting && !activeSet) {
-            document.querySelectorAll('.wp-block-caes-hub-toc-new li.toc-current-page').forEach(item => {
-              item.classList.remove('active');
-            });
-            if (enablePopout) {
-              document.querySelectorAll('.sticky-toc li.toc-current-page').forEach(item => {
-                item.classList.remove('active');
-              });
-            }
-            originalTocItem.classList.add('active');
-            if (enablePopout) {
-              stickyTocItem.classList.add('active');
-            }
-            activeSet = true;
+        if (entry.isIntersecting) {
+          const rect = entry.target.getBoundingClientRect();
+          if (rect.top < topmostY && rect.top >= 0) {
+            topmostY = rect.top;
+            topmostEntry = entry;
           }
         }
       });
+      if (topmostEntry) {
+        const id = topmostEntry.target.id;
+        if (originalHeadingMap.has(id) && stickyHeadingMap.has(id)) {
+          const originalTocItem = originalHeadingMap.get(id);
+          const stickyTocItem = stickyHeadingMap.get(id);
+
+          // Remove active from all items
+          document.querySelectorAll('.wp-block-caes-hub-toc-new li.toc-current-page').forEach(item => {
+            item.classList.remove('active');
+          });
+          if (enablePopout) {
+            document.querySelectorAll('.sticky-toc li.toc-current-page').forEach(item => {
+              item.classList.remove('active');
+            });
+          }
+
+          // Add active to the topmost visible heading
+          originalTocItem.classList.add('active');
+          if (enablePopout) {
+            stickyTocItem.classList.add('active');
+          }
+        }
+      }
     }, {
-      rootMargin: '0px 0px -80% 0px',
-      threshold: 0.1
+      rootMargin: '-80px 0px -60% 0px',
+      threshold: [0, 0.1, 0.5, 1]
     });
     headingsInDom.forEach(heading => observer.observe(heading));
   }
