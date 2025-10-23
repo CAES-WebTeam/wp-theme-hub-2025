@@ -220,6 +220,13 @@ add_action('init', 'custom_topic_rewrite_rules');
  */
 function custom_publications_rewrite_rules()
 {
+    // Handle paginated publications
+    add_rewrite_rule(
+        '^publications/([A-Za-z0-9-]+)/([^/]+)/([0-9]+)/?$',
+        'index.php?post_type=publications&name=$matches[2]&page=$matches[3]',
+        'top'
+    );
+
     // Publication posts rule: e.g. /publications/C1037-23-SP/some-publication/
     add_rewrite_rule(
         '^publications/([A-Za-z0-9-]+)/([^/]+)/?$',
