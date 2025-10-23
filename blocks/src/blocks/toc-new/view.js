@@ -11,28 +11,12 @@ window.addEventListener('load', function () {
     const enablePopout = tocWrapper.dataset.popout === "true" || tocWrapper.dataset.popout === "1";
     const enableTopAnchor = tocWrapper.dataset.topOfContentAnchor === "true" || tocWrapper.dataset.topOfContentAnchor === "1";
     const anchorLinkText = tocWrapper.dataset.anchorLinkText || "Top of Content";
+    const currentPage = parseInt(tocWrapper.dataset.currentPage) || 1;
+    const totalPages = parseInt(tocWrapper.dataset.totalPages) || 1;
+    const headingsData = JSON.parse(tocWrapper.dataset.headings || '[]');
 
-    const headings = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2')).filter(heading => heading.textContent !== title);
-
-    function slugify(text) {
-        return text.toString().trim().toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w\-]+/g, '')
-            .replace(/\-\-+/g, '-')
-            .replace(/^-+/, '')
-            .replace(/-+$/, '');
-    }
-
-    function generateUniqueID(baseID, usedIDs) {
-        let uniqueID = baseID;
-        let count = 2;
-        while (usedIDs.has(uniqueID)) {
-            uniqueID = `${baseID}-${count}`;
-            count++;
-        }
-        usedIDs.add(uniqueID);
-        return uniqueID;
-    }
+    // Get base URL for building page links
+    const baseUrl = window.location.pathname.replace(/\/\d+\/?$/, '');
 
     function createList(isSublist = false) {
         if (isSublist) {
@@ -48,23 +32,30 @@ window.addEventListener('load', function () {
         return ul;
     }
 
-    function buildTOCs(headings) {
-        if (headings.length === 0) return;
+    function buildTOCs(headingsData) {
+        if (headingsData.length === 0) return;
 
-        const usedIDs = new Set();
         const tocList = createList();
         const stickyTocList = createList();
         const originalHeadingMap = new Map();
         const stickyHeadingMap = new Map();
 
-        if (enableTopAnchor && headings.length > 0) {
+        // Add "Top of Content" anchor if enabled
+        if (enableTopAnchor && headingsData.length > 0) {
             const topAnchorId = 'top-of-page';
 
             const topListItem = document.createElement('li');
             const topLink = document.createElement('a');
             topLink.textContent = anchorLinkText;
-            topLink.href = `#${topAnchorId}`;
+            topLink.href = currentPage === 1 ? `#${topAnchorId}` : baseUrl;
             topListItem.appendChild(topLink);
+
+            if (currentPage !== 1) {
+                const pageIndicator = document.createElement('span');
+                pageIndicator.className = 'toc-page-indicator';
+                pageIndicator.textContent = 'Page 1';
+                topListItem.appendChild(pageIndicator);
+            }
 
             const stickyTopItem = topListItem.cloneNode(true);
 
@@ -79,20 +70,38 @@ window.addEventListener('load', function () {
         let stickyCurrentList = stickyTocList;
         let lastLevel = 2;
 
-        headings.forEach(heading => {
-            const level = parseInt(heading.tagName.substring(1), 10);
-            const baseID = slugify(heading.textContent);
-            const uniqueID = generateUniqueID(baseID, usedIDs);
-            heading.id = uniqueID;
+        headingsData.forEach(heading => {
+            const { text, level, id, page } = heading;
+            const isOnCurrentPage = page === currentPage;
 
             const listItem = document.createElement('li');
             const link = document.createElement('a');
-            link.textContent = heading.textContent;
-            link.href = `#${uniqueID}`;
+            link.textContent = text;
+            
+            // Build the correct URL
+            if (isOnCurrentPage) {
+                link.href = `#${id}`;
+            } else {
+                const pageUrl = page === 1 ? baseUrl : `${baseUrl}/${page}`;
+                link.href = `${pageUrl}#${id}`;
+            }
+
             listItem.appendChild(link);
+
+            // Add page indicator for headings on other pages
+            if (!isOnCurrentPage && totalPages > 1) {
+                const pageIndicator = document.createElement('span');
+                pageIndicator.className = 'toc-page-indicator';
+                pageIndicator.textContent = `Page ${page}`;
+                listItem.appendChild(pageIndicator);
+                listItem.classList.add('toc-other-page');
+            } else if (isOnCurrentPage) {
+                listItem.classList.add('toc-current-page');
+            }
 
             const stickyItem = listItem.cloneNode(true);
 
+            // Handle nesting for subheadings
             if (level === 2) {
                 currentList = tocList;
                 stickyCurrentList = stickyTocList;
@@ -109,8 +118,11 @@ window.addEventListener('load', function () {
             currentList.appendChild(listItem);
             stickyCurrentList.appendChild(stickyItem);
 
-            originalHeadingMap.set(uniqueID, listItem);
-            stickyHeadingMap.set(uniqueID, stickyItem);
+            // Only track headings on current page for active highlighting
+            if (isOnCurrentPage) {
+                originalHeadingMap.set(id, listItem);
+                stickyHeadingMap.set(id, stickyItem);
+            }
 
             lastLevel = level;
         });
@@ -144,22 +156,29 @@ window.addEventListener('load', function () {
         return { stickyTOC: null, originalHeadingMap, stickyHeadingMap };
     }
 
-    const { stickyTOC, originalHeadingMap, stickyHeadingMap } = buildTOCs(headings) || {};
+    const { stickyTOC, originalHeadingMap, stickyHeadingMap } = buildTOCs(headingsData) || {};
 
     function enableSmoothScroll() {
         document.addEventListener('click', function (event) {
             if (event.target.tagName === 'A' && event.target.hash) {
-                event.preventDefault();
                 const targetID = event.target.hash.substring(1);
 
-                if (targetID === 'top-of-page') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    return;
-                }
+                // Only prevent default for same-page anchors
+                const linkUrl = new URL(event.target.href);
+                const currentUrl = new URL(window.location.href);
+                
+                if (linkUrl.pathname === currentUrl.pathname) {
+                    event.preventDefault();
+                    
+                    if (targetID === 'top-of-page') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
+                    }
 
-                const targetElement = document.getElementById(targetID);
-                if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const targetElement = document.getElementById(targetID);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
                 }
             }
         });
@@ -184,19 +203,44 @@ window.addEventListener('load', function () {
     }
     window.addEventListener('scroll', handleScroll);
 
+    function assignHeadingIDs() {
+        // Get all headings currently in the DOM (current page only)
+        const headingsInDom = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2'))
+            .filter(heading => heading.textContent !== title);
+
+        // Match DOM headings with our headings data and assign IDs
+        let dataIndex = 0;
+        headingsInDom.forEach(domHeading => {
+            // Find matching heading in data for current page
+            while (dataIndex < headingsData.length) {
+                const data = headingsData[dataIndex];
+                if (data.page === currentPage && data.text === domHeading.textContent.trim()) {
+                    domHeading.id = data.id;
+                    dataIndex++;
+                    break;
+                }
+                dataIndex++;
+            }
+        });
+
+        return headingsInDom;
+    }
+
+    const headingsInDom = assignHeadingIDs();
+
     function observeHeadings() {
-        if (!originalHeadingMap || !stickyHeadingMap) return;
+        if (!originalHeadingMap || !stickyHeadingMap || !headingsInDom) return;
 
         const observer = new IntersectionObserver(entries => {
             let activeSet = false;
             const isAtTop = window.scrollY < 100;
 
-            if (isAtTop && enableTopAnchor) {
-                document.querySelectorAll('.wp-block-caes-hub-toc-new li').forEach(item => {
+            if (isAtTop && enableTopAnchor && currentPage === 1) {
+                document.querySelectorAll('.wp-block-caes-hub-toc-new li.toc-current-page').forEach(item => {
                     item.classList.remove('active');
                 });
                 if (enablePopout) {
-                    document.querySelectorAll('.sticky-toc li').forEach(item => {
+                    document.querySelectorAll('.sticky-toc li.toc-current-page').forEach(item => {
                         item.classList.remove('active');
                     });
                 }
@@ -216,11 +260,11 @@ window.addEventListener('load', function () {
                     const stickyTocItem = stickyHeadingMap.get(id);
 
                     if (entry.isIntersecting && !activeSet) {
-                        document.querySelectorAll('.wp-block-caes-hub-toc-new li').forEach(item => {
+                        document.querySelectorAll('.wp-block-caes-hub-toc-new li.toc-current-page').forEach(item => {
                             item.classList.remove('active');
                         });
                         if (enablePopout) {
-                            document.querySelectorAll('.sticky-toc li').forEach(item => {
+                            document.querySelectorAll('.sticky-toc li.toc-current-page').forEach(item => {
                                 item.classList.remove('active');
                             });
                         }
@@ -238,7 +282,7 @@ window.addEventListener('load', function () {
             threshold: 0.1
         });
 
-        headings.forEach(heading => observer.observe(heading));
+        headingsInDom.forEach(heading => observer.observe(heading));
     }
 
     observeHeadings();

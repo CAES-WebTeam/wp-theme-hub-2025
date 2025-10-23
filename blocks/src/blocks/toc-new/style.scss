@@ -39,6 +39,38 @@
         margin-bottom: 0;
     }
 
+    /* Page indicator styles */
+    .toc-page-indicator {
+        display: inline-block;
+        margin-left: 0.5em;
+        padding: 0.15em 0.5em;
+        font-size: 0.75em;
+        font-weight: 600;
+        color: #666;
+        background-color: #f0f0f0;
+        border-radius: 3px;
+        white-space: nowrap;
+    }
+
+    .toc-other-page > a {
+        opacity: 0.65;
+    }
+
+    .toc-other-page > a:hover {
+        opacity: 1;
+    }
+
+    .toc-current-page > a {
+        opacity: 1;
+    }
+
+    /* Visual divider between pages */
+    .toc-other-page:first-of-type {
+        margin-top: var(--wp--preset--spacing--40);
+        padding-top: var(--wp--preset--spacing--40);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
     &.is-style-caes-hub-style-2 {
 
         h2,
@@ -85,6 +117,26 @@
             padding-left: var(--wp--preset--spacing--40);
             display: block;
             line-height: 1.2;
+        }
+
+        /* Page indicator in style-2 */
+        .toc-page-indicator {
+            background-color: rgba(0, 0, 0, 0.08);
+            font-size: 0.7em;
+        }
+
+        /* Current page visual indicator */
+        .toc-current-page {
+            border-left-color: var(--wp--preset--color--bulldog-red);
+            border-left-width: 2px;
+        }
+
+        .toc-other-page {
+            opacity: 0.7;
+            
+            &:hover {
+                opacity: 1;
+            }
         }
     }
 }
@@ -140,8 +192,6 @@
             }
 
             &.active {
-
-
                 &::before {
                     content: '\279E\00A0\00A0';
                     color: var(--wp--preset--color--bulldog-red);
@@ -170,6 +220,39 @@
                 }
             }
         }
+    }
+
+    /* Sticky TOC page indicators */
+    .toc-page-indicator {
+        display: inline-block;
+        margin-left: 0.4em;
+        padding: 0.15em 0.4em;
+        font-size: 0.7em;
+        font-weight: 600;
+        color: #666;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 2px;
+        white-space: nowrap;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .toc-other-page > a {
+        opacity: 0.65;
+    }
+
+    .toc-other-page > a:hover {
+        opacity: 1;
+    }
+
+    .toc-current-page > a {
+        opacity: 1;
+    }
+
+    /* Visual divider in sticky TOC */
+    .toc-other-page:first-of-type {
+        margin-top: var(--wp--preset--spacing--30);
+        padding-top: var(--wp--preset--spacing--30);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
     }
 }
 
@@ -204,5 +287,10 @@
     .wp-block-caes-hub-toc-new {
         padding: 0 !important;
         background-color: transparent !important;
+        
+        /* Hide page indicators in print */
+        .toc-page-indicator {
+            display: none;
+        }
     }
 }
