@@ -49,15 +49,25 @@ window.addEventListener('load', function () {
             topLink.textContent = anchorLinkText;
             topLink.href = currentPage === 1 ? `#${topAnchorId}` : baseUrl;
             topListItem.appendChild(topLink);
-            topListItem.classList.add('toc-top-anchor', 'toc-current-page'); // Added toc-current-page class
+            topListItem.classList.add('toc-top-anchor');
+            
+            // Top anchor is only on page 1
+            if (currentPage === 1) {
+                topListItem.classList.add('toc-current-page');
+            } else {
+                topListItem.classList.add('toc-other-page');
+            }
 
             const stickyTopItem = topListItem.cloneNode(true);
 
             tocList.appendChild(topListItem);
             stickyTocList.appendChild(stickyTopItem);
 
-            originalHeadingMap.set(topAnchorId, topListItem);
-            stickyHeadingMap.set(topAnchorId, stickyTopItem);
+            // Only track for active highlighting if on page 1
+            if (currentPage === 1) {
+                originalHeadingMap.set(topAnchorId, topListItem);
+                stickyHeadingMap.set(topAnchorId, stickyTopItem);
+            }
         }
 
         // Group headings by page
