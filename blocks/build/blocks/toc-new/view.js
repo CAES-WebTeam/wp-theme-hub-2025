@@ -47,7 +47,8 @@ window.addEventListener('load', function () {
       topLink.textContent = anchorLinkText;
       topLink.href = currentPage === 1 ? `#${topAnchorId}` : baseUrl;
       topListItem.appendChild(topLink);
-      topListItem.classList.add('toc-top-anchor');
+      topListItem.classList.add('toc-top-anchor', 'toc-current-page'); // Added toc-current-page class
+
       const stickyTopItem = topListItem.cloneNode(true);
       tocList.appendChild(topListItem);
       stickyTocList.appendChild(stickyTopItem);
