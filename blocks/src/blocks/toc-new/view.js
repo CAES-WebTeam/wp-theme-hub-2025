@@ -262,6 +262,23 @@ window.addEventListener('load', function () {
 
     const headingsInDom = assignHeadingIDs();
 
+    // Handle initial scroll to hash if present in URL
+    function scrollToHashIfPresent() {
+        const hash = window.location.hash;
+        if (hash) {
+            const targetId = hash.substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                // Small delay to ensure layout is complete
+                setTimeout(() => {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }
+    }
+    scrollToHashIfPresent();
+
     function observeHeadings() {
         if (!originalHeadingMap || !stickyHeadingMap || !headingsInDom) return;
 
