@@ -39,21 +39,27 @@
         margin-bottom: 0;
     }
 
-    /* Page indicator styles */
-    .toc-page-indicator {
-        display: inline-block;
-        margin-left: 0.5em;
-        padding: 0.15em 0.5em;
-        font-size: 0.75em;
-        font-weight: 600;
-        color: #666;
-        background-color: #f0f0f0;
-        border-radius: 3px;
-        white-space: nowrap;
+    /* Page header styling */
+    .toc-page-header {
+        list-style: none !important;
+        font-weight: 700;
+        font-size: 0.85em;
+        color: var(--wp--preset--color--contrast);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: var(--wp--preset--spacing--50) !important;
+        margin-bottom: var(--wp--preset--spacing--30) !important;
+        padding-top: var(--wp--preset--spacing--40);
+        border-top: 2px solid rgba(0, 0, 0, 0.15);
+        padding-left: 0 !important;
+        
+        &::before {
+            content: none !important;
+        }
     }
 
     .toc-other-page > a {
-        opacity: 0.65;
+        opacity: 0.7;
     }
 
     .toc-other-page > a:hover {
@@ -62,13 +68,6 @@
 
     .toc-current-page > a {
         opacity: 1;
-    }
-
-    /* Visual divider between pages */
-    .toc-other-page:first-of-type {
-        margin-top: var(--wp--preset--spacing--40);
-        padding-top: var(--wp--preset--spacing--40);
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     &.is-style-caes-hub-style-2 {
@@ -119,10 +118,12 @@
             line-height: 1.2;
         }
 
-        /* Page indicator in style-2 */
-        .toc-page-indicator {
-            background-color: rgba(0, 0, 0, 0.08);
-            font-size: 0.7em;
+        /* Page header in style-2 */
+        .toc-page-header {
+            border-left: none !important;
+            padding-left: var(--wp--preset--spacing--40) !important;
+            font-size: 0.8em;
+            opacity: 0.8;
         }
 
         /* Current page visual indicator */
@@ -132,7 +133,7 @@
         }
 
         .toc-other-page {
-            opacity: 0.7;
+            opacity: 0.65;
             
             &:hover {
                 opacity: 1;
@@ -222,22 +223,26 @@
         }
     }
 
-    /* Sticky TOC page indicators */
-    .toc-page-indicator {
-        display: inline-block;
-        margin-left: 0.4em;
-        padding: 0.15em 0.4em;
-        font-size: 0.7em;
-        font-weight: 600;
-        color: #666;
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 2px;
-        white-space: nowrap;
-        border: 1px solid rgba(0, 0, 0, 0.1);
+    /* Page header in sticky TOC */
+    .toc-page-header {
+        list-style: none !important;
+        font-weight: 700;
+        font-size: 0.75em;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: var(--wp--preset--spacing--40) !important;
+        margin-bottom: var(--wp--preset--spacing--20) !important;
+        padding-top: var(--wp--preset--spacing--30);
+        border-top: 1px solid rgba(0, 0, 0, 0.15);
+        padding-left: 0 !important;
+        
+        &::before {
+            content: none !important;
+        }
     }
 
     .toc-other-page > a {
-        opacity: 0.65;
+        opacity: 0.7;
     }
 
     .toc-other-page > a:hover {
@@ -246,13 +251,6 @@
 
     .toc-current-page > a {
         opacity: 1;
-    }
-
-    /* Visual divider in sticky TOC */
-    .toc-other-page:first-of-type {
-        margin-top: var(--wp--preset--spacing--30);
-        padding-top: var(--wp--preset--spacing--30);
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
     }
 }
 

@@ -49,13 +49,7 @@ window.addEventListener('load', function () {
             topLink.textContent = anchorLinkText;
             topLink.href = currentPage === 1 ? `#${topAnchorId}` : baseUrl;
             topListItem.appendChild(topLink);
-
-            if (currentPage !== 1) {
-                const pageIndicator = document.createElement('span');
-                pageIndicator.className = 'toc-page-indicator';
-                pageIndicator.textContent = 'Page 1';
-                topListItem.appendChild(pageIndicator);
-            }
+            topListItem.classList.add('toc-top-anchor');
 
             const stickyTopItem = topListItem.cloneNode(true);
 
@@ -66,65 +60,101 @@ window.addEventListener('load', function () {
             stickyHeadingMap.set(topAnchorId, stickyTopItem);
         }
 
-        let currentList = tocList;
-        let stickyCurrentList = stickyTocList;
-        let lastLevel = 2;
-
+        // Group headings by page
+        const headingsByPage = {};
         headingsData.forEach(heading => {
-            const { text, level, id, page } = heading;
-            const isOnCurrentPage = page === currentPage;
+            if (!headingsByPage[heading.page]) {
+                headingsByPage[heading.page] = [];
+            }
+            headingsByPage[heading.page].push(heading);
+        });
 
-            const listItem = document.createElement('li');
-            const link = document.createElement('a');
-            link.textContent = text;
-            
-            // Build the correct URL
-            if (isOnCurrentPage) {
-                link.href = `#${id}`;
-            } else {
-                const pageUrl = page === 1 ? baseUrl : `${baseUrl}/${page}`;
-                link.href = `${pageUrl}#${id}`;
+        // Build TOC for each page
+        Object.keys(headingsByPage).sort((a, b) => parseInt(a) - parseInt(b)).forEach(pageNum => {
+            const pageNumber = parseInt(pageNum);
+            const pageHeadings = headingsByPage[pageNum];
+
+            // Add page header if there are multiple pages and this isn't page 1
+            if (totalPages > 1 && pageNumber > 1) {
+                const pageHeader = document.createElement('li');
+                pageHeader.className = 'toc-page-header';
+                pageHeader.textContent = `Page ${pageNumber}`;
+                
+                const stickyPageHeader = pageHeader.cloneNode(true);
+                
+                tocList.appendChild(pageHeader);
+                stickyTocList.appendChild(stickyPageHeader);
             }
 
-            listItem.appendChild(link);
+            let currentList = tocList;
+            let stickyCurrentList = stickyTocList;
+            let lastLevel = 2;
+            let lastH2Item = null;
+            let lastStickyH2Item = null;
 
-            // Add page indicator for headings on other pages
-            if (!isOnCurrentPage && totalPages > 1) {
-                const pageIndicator = document.createElement('span');
-                pageIndicator.className = 'toc-page-indicator';
-                pageIndicator.textContent = `Page ${page}`;
-                listItem.appendChild(pageIndicator);
-                listItem.classList.add('toc-other-page');
-            } else if (isOnCurrentPage) {
-                listItem.classList.add('toc-current-page');
-            }
+            pageHeadings.forEach((heading, idx) => {
+                const { text, level, id, page } = heading;
+                const isOnCurrentPage = page === currentPage;
 
-            const stickyItem = listItem.cloneNode(true);
+                const listItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.textContent = text;
+                
+                // Build the correct URL
+                if (isOnCurrentPage) {
+                    link.href = `#${id}`;
+                } else {
+                    const pageUrl = page === 1 ? baseUrl : `${baseUrl}/${page}`;
+                    link.href = `${pageUrl}#${id}`;
+                }
 
-            // Handle nesting for subheadings
-            if (level === 2) {
-                currentList = tocList;
-                stickyCurrentList = stickyTocList;
-            } else if (level > lastLevel) {
-                const newList = createList(true);
-                currentList.lastElementChild?.appendChild(newList);
-                currentList = newList;
+                listItem.appendChild(link);
 
-                const newStickyList = createList(true);
-                stickyCurrentList.lastElementChild?.appendChild(newStickyList);
-                stickyCurrentList = newStickyList;
-            }
+                // Mark items by page
+                if (isOnCurrentPage) {
+                    listItem.classList.add('toc-current-page');
+                } else {
+                    listItem.classList.add('toc-other-page');
+                }
 
-            currentList.appendChild(listItem);
-            stickyCurrentList.appendChild(stickyItem);
+                const stickyItem = listItem.cloneNode(true);
 
-            // Only track headings on current page for active highlighting
-            if (isOnCurrentPage) {
-                originalHeadingMap.set(id, listItem);
-                stickyHeadingMap.set(id, stickyItem);
-            }
+                // Handle nesting based on heading level
+                if (level === 2) {
+                    // H2 always goes at top level
+                    tocList.appendChild(listItem);
+                    stickyTocList.appendChild(stickyItem);
+                    lastH2Item = listItem;
+                    lastStickyH2Item = stickyItem;
+                } else {
+                    // H3+ goes nested under the last H2
+                    if (lastH2Item) {
+                        let nestedList = lastH2Item.querySelector('ul');
+                        if (!nestedList) {
+                            nestedList = createList(true);
+                            lastH2Item.appendChild(nestedList);
+                        }
+                        nestedList.appendChild(listItem);
+                    }
+                    
+                    if (lastStickyH2Item) {
+                        let stickyNestedList = lastStickyH2Item.querySelector('ul');
+                        if (!stickyNestedList) {
+                            stickyNestedList = createList(true);
+                            lastStickyH2Item.appendChild(stickyNestedList);
+                        }
+                        stickyNestedList.appendChild(stickyItem);
+                    }
+                }
 
-            lastLevel = level;
+                // Only track headings on current page for active highlighting
+                if (isOnCurrentPage) {
+                    originalHeadingMap.set(id, listItem);
+                    stickyHeadingMap.set(id, stickyItem);
+                }
+
+                lastLevel = level;
+            });
         });
 
         // Wrap list in a scrollable container
@@ -206,7 +236,11 @@ window.addEventListener('load', function () {
     function assignHeadingIDs() {
         // Get all headings currently in the DOM (current page only)
         const headingsInDom = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2'))
-            .filter(heading => heading.textContent !== title);
+            .filter(heading => {
+                const text = heading.textContent.trim();
+                // Filter out TOC title and any template literals
+                return text !== title && !text.includes('${') && !text.includes('plant.');
+            });
 
         // Match DOM headings with our headings data and assign IDs
         let dataIndex = 0;
