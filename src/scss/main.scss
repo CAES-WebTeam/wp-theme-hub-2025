@@ -131,6 +131,10 @@ figcaption a {
         &>.wp-block-column:nth-child(2) {
             order: -1;
         }
+
+        &.caes-hub-profile-columns-info {
+            padding: var(--wp--preset--spacing--40) !important;
+        }
     }
 }
 
