@@ -61,6 +61,11 @@ wp.blocks.registerBlockStyle( 'core/separator', {
 })
 
 wp.blocks.registerBlockStyle( 'core/separator', {
+  name: 'caes-hub-partial-thick-underline',
+  label: 'Partial Width Thick Underline'
+})
+
+wp.blocks.registerBlockStyle( 'core/separator', {
   name: 'caes-hub-contrast-underline-thick',
   label: 'Thick Contrast Underline'
 })
