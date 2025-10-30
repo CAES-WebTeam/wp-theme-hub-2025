@@ -24,7 +24,7 @@ if ($full_height) {
     $figure_styles[] = 'width: 100%';
     $figure_styles[] = 'height: 100%';
 } else {
-    $figure_styles[] = 'width: ' . esc_attr($width . $width_unit);
+    $figure_styles[] = 'max-width: ' . esc_attr($width . $width_unit);
 }
 
 // Generate inline styles for the image

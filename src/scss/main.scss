@@ -101,6 +101,7 @@ figcaption a {
 }
 
 @media screen and (max-width: 1300px) {
+
     // Pub columns
     .wp-block-columns.caes-hub-pub-columns {
         flex-wrap: wrap !important;
@@ -117,12 +118,15 @@ figcaption a {
 }
 
 @media screen and (max-width: 1250px) {
+
     // Profile columns
     .wp-block-columns.caes-hub-profile-columns {
         flex-wrap: wrap !important;
+
         &>.wp-block-column {
             flex-basis: 100% !important;
         }
+
         // second column
         &>.wp-block-column:nth-child(2) {
             order: -1;
@@ -248,15 +252,16 @@ figcaption a {
         height: 50vh;
     }
 
-    &.caes-hub-main-bg-no-blur .caes-hub-main-bg-f-img  img {
+    &.caes-hub-main-bg-no-blur .caes-hub-main-bg-f-img img {
         filter: none;
         transform: none;
     }
 
     &.caes-hub-main-bg-lake-herrick-bg {
-        background-image: url('../images/placeholder-bg-1-lake-herrick-big.jpg' );
-        background-size: contain;
-        background-position: center;
+        background-image: url('../images/placeholder-bg-1-lake-herrick-big.jpg');
+        background-size: cover;
+        background-position: 50%;
+        background-repeat: no-repeat;
     }
 
 }
