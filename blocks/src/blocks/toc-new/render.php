@@ -52,6 +52,9 @@ foreach ($pages as $page_num => $page_content) {
         $level = (int) substr($match[1], 1); // Extract number from h2, h3, etc.
         $text = strip_tags($match[2]);
         
+        // Decode HTML entities (like &ldquo; &rdquo; etc.)
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
         // Skip if this is the TOC heading itself
         if ($text === $title) {
             continue;

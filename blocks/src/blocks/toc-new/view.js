@@ -243,6 +243,16 @@ window.addEventListener('load', function () {
     }
     window.addEventListener('scroll', handleScroll);
 
+    function normalizeText(text) {
+        // Normalize quotes and special characters for matching
+        return text
+            .replace(/[\u2018\u2019]/g, "'")  // ' ' → '
+            .replace(/[\u201C\u201D]/g, '"')  // " " → "
+            .replace(/\u2013/g, '-')          // – → -
+            .replace(/\u2014/g, '--')         // — → --
+            .trim();
+    }
+
     function assignHeadingIDs() {
         // Get all headings currently in the DOM (current page only)
         const headingsInDom = Array.from(postContent.querySelectorAll(showSubheadings ? 'h2, h3, h4, h5, h6' : 'h2'))
@@ -257,10 +267,12 @@ window.addEventListener('load', function () {
 
         // Match DOM headings with our headings data and assign IDs
         headingsInDom.forEach(domHeading => {
-            const headingText = domHeading.textContent.trim();
+            const headingText = normalizeText(domHeading.textContent);
             
             // Find matching heading in current page data
-            const matchingData = currentPageHeadings.find(data => data.text === headingText);
+            const matchingData = currentPageHeadings.find(data => 
+                normalizeText(data.text) === headingText
+            );
             
             if (matchingData) {
                 domHeading.id = matchingData.id;
