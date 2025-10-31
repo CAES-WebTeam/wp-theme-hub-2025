@@ -246,18 +246,17 @@ window.addEventListener('load', function () {
       return text !== title && !text.includes('${') && !text.includes('plant.');
     });
 
+    // Get headings data for current page only
+    const currentPageHeadings = headingsData.filter(h => h.page === currentPage);
+
     // Match DOM headings with our headings data and assign IDs
-    let dataIndex = 0;
     headingsInDom.forEach(domHeading => {
-      // Find matching heading in data for current page
-      while (dataIndex < headingsData.length) {
-        const data = headingsData[dataIndex];
-        if (data.page === currentPage && data.text === domHeading.textContent.trim()) {
-          domHeading.id = data.id;
-          dataIndex++;
-          break;
-        }
-        dataIndex++;
+      const headingText = domHeading.textContent.trim();
+
+      // Find matching heading in current page data
+      const matchingData = currentPageHeadings.find(data => data.text === headingText);
+      if (matchingData) {
+        domHeading.id = matchingData.id;
       }
     });
     return headingsInDom;
