@@ -159,7 +159,8 @@
                 padding-left: 0 !important;
 
                 &:hover {
-                    color: var(--wp--preset--color--bulldog-red);
+                    // color: var(--wp--preset--color--bulldog-red);
+                    text-decoration: underline;
                 }
             }
         }
@@ -178,7 +179,8 @@
                 color: var(--wp--preset--color--contrast);
 
                 &:hover {
-                    color: var(--wp--preset--color--bulldog-red);
+                    // color: var(--wp--preset--color--bulldog-red);
+                    text-decoration: underline;
                 }
             }
         }
@@ -290,7 +292,8 @@
             transition: color 0.2s ease;
 
             &:hover {
-                color: var(--wp--preset--color--bulldog-red);
+                // color: var(--wp--preset--color--bulldog-red);
+                text-decoration: underline;
             }
         }
     }
