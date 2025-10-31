@@ -69,22 +69,32 @@
         }
     }
 
-    /* Headings on other pages - use lighter color and font style */
+    /* First page header after top anchor needs spacing */
+    .toc-top-anchor + .toc-page-header {
+        margin-top: var(--wp--preset--spacing--50) !important;
+        padding-top: var(--wp--preset--spacing--40);
+        border-top: 2px solid rgba(0, 0, 0, 0.15);
+    }
+
+    /* Very first item if it's a page header */
+    ul > .toc-page-header:first-child {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0 !important;
+    }
+
+    /* Headings on other pages */
     .toc-other-page > a {
         color: #666;
-        font-style: italic;
-        text-decoration: none;
     }
 
     .toc-other-page > a:hover {
         color: var(--wp--preset--color--caes-red, #BA0C2F);
-        text-decoration: underline;
     }
 
-    /* Headings on current page - full contrast */
+    /* Headings on current page */
     .toc-current-page > a {
         color: var(--wp--preset--color--contrast);
-        font-weight: 500;
     }
 
     .toc-current-page > a:hover {
@@ -157,24 +167,11 @@
         .toc-current-page {
             border-left-color: var(--wp--preset--color--bulldog-red);
             border-left-width: 2px;
-
-            a {
-                font-weight: 500;
-            }
         }
 
-        /* Other page items - lighter border and italic */
+        /* Other page items */
         .toc-other-page {
             border-left-color: rgba(0, 0, 0, 0.15);
-
-            a {
-                color: #666;
-                font-style: italic;
-
-                &:hover {
-                    color: var(--wp--preset--color--bulldog-red);
-                }
-            }
         }
     }
 }
@@ -277,6 +274,13 @@
             content: none !important;
         }
 
+        /* First page header shouldn't have top border/padding */
+        &:first-of-type {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0 !important;
+        }
+
         a {
             color: inherit;
             text-decoration: none;
@@ -292,18 +296,15 @@
     /* Sticky TOC - other page items */
     .toc-other-page > a {
         color: #777;
-        font-style: italic;
     }
 
     .toc-other-page > a:hover {
         color: var(--wp--preset--color--bulldog-red);
-        text-decoration: underline;
     }
 
     /* Sticky TOC - current page items */
     .toc-current-page > a {
         color: var(--wp--preset--color--contrast);
-        font-weight: 500;
     }
 
     .toc-current-page > a:hover {

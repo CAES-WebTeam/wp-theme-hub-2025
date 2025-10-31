@@ -84,14 +84,14 @@ window.addEventListener('load', function () {
             const pageNumber = parseInt(pageNum);
             const pageHeadings = headingsByPage[pageNum];
 
-            // Add page header if there are multiple pages and this isn't page 1
-            if (totalPages > 1 && pageNumber > 1) {
+            // Add page header if there are multiple pages
+            if (totalPages > 1) {
                 const pageHeader = document.createElement('li');
                 pageHeader.className = 'toc-page-header';
                 
                 const pageLink = document.createElement('a');
                 pageLink.textContent = `Page ${pageNumber}`;
-                pageLink.href = `${baseUrl}/${pageNumber}`;
+                pageLink.href = pageNumber === 1 ? baseUrl : `${baseUrl}/${pageNumber}`;
                 pageHeader.appendChild(pageLink);
                 
                 const stickyPageHeader = pageHeader.cloneNode(true);
