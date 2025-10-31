@@ -132,12 +132,12 @@
         /* Page header in style-2 */
         .toc-page-header {
             border-left: none !important;
-            padding-left: var(--wp--preset--spacing--40) !important;
+            // padding-left: var(--wp--preset--spacing--40) !important;
             font-size: 0.8em;
             opacity: 0.8;
 
             a {
-                padding-left: 0;
+                padding-left: 0 !important;
 
                 &:hover {
                     color: var(--wp--preset--color--bulldog-red);
