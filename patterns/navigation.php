@@ -13,8 +13,8 @@
 <!-- wp:caes-hub/field-report-nav-flyout {"style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"color":{"background":"#f4f1ef"}}} -->
 <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|70"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|30"}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group"><!-- wp:image {"width":150} -->
-<figure class="wp-block-image is-resized"><img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/almanac.png'); ?>" alt="Almanac" width="150"/></figure>
+<div class="wp-block-group"><!-- wp:image {"width":180,"linkDestination":"custom","href":"/features/2025-almanac/"} -->
+<figure class="wp-block-image is-resized"><a href="/features/2025-almanac/"><img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/almanac.png'); ?>" alt="Almanac" width="180"/></a></figure>
 <!-- /wp:image -->
 
 <!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"constrained"}} -->
