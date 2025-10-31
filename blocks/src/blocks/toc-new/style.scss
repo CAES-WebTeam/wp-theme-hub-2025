@@ -151,6 +151,7 @@
         .toc-page-header {
             border-left: none !important;
             font-size: 0.8em;
+            padding: var(--wp--preset--spacing--40) 0 0 0;
 
             a {
                 padding-left: 0 !important;
@@ -295,7 +296,7 @@
     /* Very first item if it's a page header */
     ul > .toc-page-header:first-child {
         border-top: none;
-        padding-top: 0;
+        padding-top: 0 !important;
         margin-top: 0 !important;
     }
 
