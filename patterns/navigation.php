@@ -10,7 +10,7 @@
 <!-- wp:caes-hub/field-report-navigation {"blockId":"field-report-nav-1f42c7d7-51ef-4dfe-bd9f-08e07a810db4","hoverDelay":200,"style":{"color":{"background":"#f4f1ef"}}} -->
 
 <!-- wp:caes-hub/field-report-nav-item {"linkText":"Stories","linkUrl":"/news","hasFlyout":true,"flyoutId":"field-report-nav-1f42c7d7-51ef-4dfe-bd9f-08e07a810db4-flyout-5fa4ede8-35a6-45e1-a326-d59ace785b0f"} -->
-<!-- wp:caes-hub/field-report-nav-flyout {"style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"color":{"background":"#f4f1ef"}}} -->
+<!-- wp:caes-hub/field-report-nav-flyout {"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60","left":"var:preset|spacing|60","right":"var:preset|spacing|60"}},"color":{"background":"#f4f1ef"}}} -->
 <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|70"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|30"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:image {"width":180,"linkDestination":"custom","href":"/features/2025-almanac/"} -->
