@@ -87,7 +87,8 @@
     }
 
     .toc-other-page > a:hover {
-        color: var(--wp--preset--color--caes-red, #BA0C2F);
+        // color: var(--wp--preset--color--caes-red, #BA0C2F);
+        text-decoration: underline;
     }
 
     /* Headings on current page */
@@ -96,7 +97,8 @@
     }
 
     .toc-current-page > a:hover {
-        color: var(--wp--preset--color--caes-red, #BA0C2F);
+        // color: var(--wp--preset--color--caes-red, #BA0C2F);
+        text-decoration: underline;
     }
 
     &.is-style-caes-hub-style-2 {
@@ -311,7 +313,8 @@
     }
 
     .toc-other-page > a:hover {
-        color: var(--wp--preset--color--bulldog-red);
+        // color: var(--wp--preset--color--bulldog-red);
+        text-decoration: underline;
     }
 
     /* Sticky TOC - current page items */
@@ -320,7 +323,8 @@
     }
 
     .toc-current-page > a:hover {
-        color: var(--wp--preset--color--bulldog-red);
+        // color: var(--wp--preset--color--bulldog-red);
+        text-decoration: underline;
     }
 }
 
