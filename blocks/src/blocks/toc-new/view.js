@@ -88,7 +88,11 @@ window.addEventListener('load', function () {
             if (totalPages > 1 && pageNumber > 1) {
                 const pageHeader = document.createElement('li');
                 pageHeader.className = 'toc-page-header';
-                pageHeader.textContent = `Page ${pageNumber}`;
+                
+                const pageLink = document.createElement('a');
+                pageLink.textContent = `Page ${pageNumber}`;
+                pageLink.href = `${baseUrl}/${pageNumber}`;
+                pageHeader.appendChild(pageLink);
                 
                 const stickyPageHeader = pageHeader.cloneNode(true);
                 
