@@ -14,7 +14,7 @@
 <!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|70"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|30"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:image {"width":150} -->
-<figure class="wp-block-image is-resized"><img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/almanac.png'); ?>" alt="Annual Almanac Magazine Cover" width="150"/></figure>
+<figure class="wp-block-image is-resized"><img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/almanac.png'); ?>" alt="Almanac" width="150"/></figure>
 <!-- /wp:image -->
 
 <!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"constrained"}} -->
