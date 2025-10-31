@@ -40,6 +40,22 @@ window.addEventListener('load', function () {
         const originalHeadingMap = new Map();
         const stickyHeadingMap = new Map();
 
+        // Add Page 1 header first if there are multiple pages
+        if (totalPages > 1) {
+            const page1Header = document.createElement('li');
+            page1Header.className = 'toc-page-header';
+            
+            const page1Link = document.createElement('a');
+            page1Link.textContent = 'Page 1';
+            page1Link.href = baseUrl;
+            page1Header.appendChild(page1Link);
+            
+            const stickyPage1Header = page1Header.cloneNode(true);
+            
+            tocList.appendChild(page1Header);
+            stickyTocList.appendChild(stickyPage1Header);
+        }
+
         // Add "Top of Content" anchor if enabled
         if (enableTopAnchor && headingsData.length > 0) {
             const topAnchorId = 'top-of-page';
@@ -84,14 +100,14 @@ window.addEventListener('load', function () {
             const pageNumber = parseInt(pageNum);
             const pageHeadings = headingsByPage[pageNum];
 
-            // Add page header if there are multiple pages
-            if (totalPages > 1) {
+            // Add page header for pages 2+ (page 1 was already added)
+            if (totalPages > 1 && pageNumber > 1) {
                 const pageHeader = document.createElement('li');
                 pageHeader.className = 'toc-page-header';
                 
                 const pageLink = document.createElement('a');
                 pageLink.textContent = `Page ${pageNumber}`;
-                pageLink.href = pageNumber === 1 ? baseUrl : `${baseUrl}/${pageNumber}`;
+                pageLink.href = `${baseUrl}/${pageNumber}`;
                 pageHeader.appendChild(pageLink);
                 
                 const stickyPageHeader = pageHeader.cloneNode(true);
