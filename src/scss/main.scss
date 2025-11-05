@@ -539,6 +539,12 @@ figcaption a {
     }
 }
 
+.icon-before-space-30 {
+    &::before {
+        margin-right: var(--wp--preset--spacing--30);
+    }
+}
+
 /* Helper Classes */
 
 .sr-only {
