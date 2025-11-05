@@ -232,24 +232,48 @@
                     ]
                 },
                 {
-					"fontFace": [
-						{
-							"fontFamily": "Oswald",
-							"fontStyle": "light",
-							"fontWeight": "300",
-							"src": "file:./assets/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs169vgURoZAaRliE.woff2"
-						},
-						{
-							"fontFamily": "Oswald",
-							"fontStyle": "normal",
-							"fontWeight": "500",
-							"src": "file:./assets/fonts/TK3_WkUHHAIjg75cFRf3bXL8LICs18NvgURoZAaRliE.woff2"
-						}
-					],
-					"fontFamily": "Oswald, sans-serif",
-					"name": "Oswald",
-					"slug": "oswald"
-				}
+                    "fontFace": [
+                        {
+                            "fontFamily": "Oswald",
+                            "fontStyle": "normal",
+                            "fontWeight": "200",
+                            "src": "file:./assets/fonts/Oswald-ExtraLight.woff2"
+                        },
+                        {
+                            "fontFamily": "Oswald",
+                            "fontStyle": "normal",
+                            "fontWeight": "300",
+                            "src": "file:./assets/fonts/Oswald-Light.woff2"
+                        },
+                        {
+                            "fontFamily": "Oswald",
+                            "fontStyle": "normal",
+                            "fontWeight": "400",
+                            "src": "file:./assets/fonts/Oswald-Regular.woff2"
+                        },
+                        {
+                            "fontFamily": "Oswald",
+                            "fontStyle": "normal",
+                            "fontWeight": "500",
+                            "src": "file:./assets/fonts/Oswald-Medium.woff2"
+                        },
+                        {
+                            "fontFamily": "Oswald",
+                            "fontStyle": "normal",
+                            "fontWeight": "600",
+                            "src": "file:./assets/fonts/Oswald-SemiBold.woff2"
+                        },
+                        {
+                            "fontFamily": "Oswald",
+                            "fontStyle": "normal",
+                            "fontWeight": "700",
+                            "src": "file:./assets/fonts/Oswald-Bold.woff2"
+                        }
+                    ],
+                    "fontFamily": "Oswald, sans-serif",
+                    "name": "Oswald",
+                    "slug": "oswald"
+                }
             ],
             "fontSizes": [
                 {
@@ -497,56 +521,56 @@
         },
         "blocks": {
             "core/button": {
-				"border": {
-					"radius": "20rem"
-				},
-				"color": {
-					"background": "#ffffff00",
-					"text": "var(--wp--preset--color--contrast)"
-				},
-				"elements": {
-					"link": {
-						"color": {
-							"text": "var(--wp--preset--color--contrast)"
-						}
-					}
-				},
-				"spacing": {
-					"padding": {
-						"bottom": "var(--wp--preset--spacing--30)",
-						"left": "var(--wp--preset--spacing--40)",
-						"right": "var(--wp--preset--spacing--40)",
-						"top": "var(--wp--preset--spacing--30)"
-					}
-				},
-				"typography": {
-					"lineHeight": "1"
-				}
-			},
+                "border": {
+                    "radius": "20rem"
+                },
+                "color": {
+                    "background": "#ffffff00",
+                    "text": "var(--wp--preset--color--contrast)"
+                },
+                "elements": {
+                    "link": {
+                        "color": {
+                            "text": "var(--wp--preset--color--contrast)"
+                        }
+                    }
+                },
+                "spacing": {
+                    "padding": {
+                        "bottom": "var(--wp--preset--spacing--30)",
+                        "left": "var(--wp--preset--spacing--40)",
+                        "right": "var(--wp--preset--spacing--40)",
+                        "top": "var(--wp--preset--spacing--30)"
+                    }
+                },
+                "typography": {
+                    "lineHeight": "1"
+                }
+            },
             "core/image": {
-				"elements": {
-					"caption": {
-						"color": {
-							"background": "var(--wp--preset--color--base-two)",
-							"text": "var(--wp--preset--color--contrast)"
-						},
-						"spacing": {
-							"margin": {
-								"top": "0px"
-							},
-							"padding": {
-								"bottom": "var(--wp--preset--spacing--30)",
-								"left": "var(--wp--preset--spacing--40)",
-								"right": "var(--wp--preset--spacing--40)",
-								"top": "var(--wp--preset--spacing--30)"
-							}
-						},
-						"typography": {
-							"fontSize": "var(--wp--preset--font-size--small)"
-						}
-					}
-				}
-			},
+                "elements": {
+                    "caption": {
+                        "color": {
+                            "background": "var(--wp--preset--color--base-two)",
+                            "text": "var(--wp--preset--color--contrast)"
+                        },
+                        "spacing": {
+                            "margin": {
+                                "top": "0px"
+                            },
+                            "padding": {
+                                "bottom": "var(--wp--preset--spacing--30)",
+                                "left": "var(--wp--preset--spacing--40)",
+                                "right": "var(--wp--preset--spacing--40)",
+                                "top": "var(--wp--preset--spacing--30)"
+                            }
+                        },
+                        "typography": {
+                            "fontSize": "var(--wp--preset--font-size--small)"
+                        }
+                    }
+                }
+            },
             "core/list-item": {
                 "spacing": {
                     "margin": {
@@ -621,7 +645,9 @@
         {
             "name": "full-width",
             "title": "Full Width",
-            "postTypes": ["post"]
+            "postTypes": [
+                "post"
+            ]
         }
     ]
 }
