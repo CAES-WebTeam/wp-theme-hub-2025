@@ -6,6 +6,7 @@
  * Description: Main navigation with flyout menus for Stories, Expert Resources, Events, and Contact
  */
 ?>
+
 <!-- wp:caes-hub/field-report-navigation {"blockId":"field-report-nav-1f42c7d7-51ef-4dfe-bd9f-08e07a810db4","hoverDelay":200,"style":{"color":{"background":"#f4f1ef"}}} -->
 <!-- wp:caes-hub/field-report-nav-item {"linkText":"Stories","linkUrl":"/news","hasFlyout":true,"flyoutId":"field-report-nav-1f42c7d7-51ef-4dfe-bd9f-08e07a810db4-flyout-5fa4ede8-35a6-45e1-a326-d59ace785b0f"} -->
 <!-- wp:caes-hub/field-report-nav-flyout {"style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|60","left":"var:preset|spacing|60","right":"var:preset|spacing|60"}},"color":{"background":"#f4f1ef"}}} -->
@@ -13,7 +14,7 @@
 <div class="wp-block-group"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|20"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|40"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:image {"width":"180px","linkDestination":"custom"} -->
-<figure class="wp-block-image is-resized"><a href="/features/2025-almanac/"><img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/almanac.png'); ?>" alt="Almanac" width="180"/></a></figure>
+<figure class="wp-block-image is-resized"><a href="/features/2025-almanac/"><img src="<?php echo get_template_directory_uri(); ?>/assets/images/almanac.png" alt="Almanac" style="width:180px"/></a></figure>
 <!-- /wp:image -->
 
 <!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"constrained"}} -->
