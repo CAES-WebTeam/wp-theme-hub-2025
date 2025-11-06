@@ -7,7 +7,7 @@
 
     label {
         font-family: var(--wp--preset--font-family--georgia);
-        font-size: var(--wp--preset--font-size--regular);
+        font-size: var(--wp--preset--font-size--small);
         font-weight: 700;
         color: var(--wp--preset--color--contrast);
         margin: 0;
@@ -26,7 +26,7 @@
             color: var(--wp--preset--color--contrast);
             cursor: pointer;
             font-family: var(--wp--preset--font-family--georgia);
-            font-size: var(--wp--preset--font-size--regular);
+            font-size: var(--wp--preset--font-size--small);
             min-width: 120px;
             padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
             transition: border-color .2s ease, outline .2s ease;
