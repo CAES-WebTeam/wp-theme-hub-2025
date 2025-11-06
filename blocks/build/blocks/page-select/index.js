@@ -156,7 +156,7 @@ module.exports = window["wp"]["blocks"];
   \*******************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/page-select","version":"0.1.0","title":"Page Select","category":"theme","icon":"page","description":"Displays a dropwdown to select and navigate to different pages if using the page break block in content. Will display nothing otherwise.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"spacing":{"padding":true,"margin":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/page-select","version":"0.1.0","title":"Page Select","category":"theme","icon":"page","description":"Displays a dropwdown to select and navigate to different pages if using the page break block in content. Will display nothing otherwise.","acf":{"mode":"preview","renderTemplate":"./render.php"},"supports":{"anchor":true,"spacing":{"padding":true,"margin":true},"align":["wide","full","center","left","right"]},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

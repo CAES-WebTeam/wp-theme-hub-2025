@@ -16,7 +16,14 @@
     "spacing": {
       "padding": true,
       "margin": true
-    }
+    },
+    "align": [
+      "wide",
+      "full",
+      "center",
+      "left",
+      "right"
+    ]
   },
   "editorScript": "file:./index.js",
   "editorStyle": "file:./index.css",

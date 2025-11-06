@@ -54,7 +54,7 @@ for ($i = 1; $i <= $total_pages; $i++) {
     );
 }
 
-// Get block wrapper attributes
+// Get block wrapper attributes (includes alignment classes)
 $wrapper_attributes = get_block_wrapper_attributes();
 ?>
 
