@@ -1,7 +1,12 @@
 <?php
 /**
- * Plugin Name: Custom Yoast Schema for Authors
- * Description: Replaces the default Yoast author schema with authors from an ACF repeater field.
+ * Custom Yoast SEO Modifications
+ * Theme-specific customizations for Yoast SEO functionality.
+ * 
+ * Features:
+ * - Custom author schema using ACF repeater field (supports WordPress users and custom entries)
+ * - Page number injection for paginated publication titles
+ * - Article schema support for custom post types
  */
 
 // Prevent direct access
@@ -275,3 +280,45 @@ function caes_add_author_meta_tag_manually() {
 }
 
 add_action( 'wp_head', 'caes_add_author_meta_tag_manually', 1 );
+
+/**
+ * Add page number to paginated publication titles
+ * Works with Yoast SEO
+ */
+function caes_add_page_number_to_publication_title($title) {
+    // Only run on publications
+    if (!is_singular('publications')) {
+        return $title;
+    }
+    
+    // Get the current page number and ensure it's a positive integer
+    $page = absint(get_query_var('page'));
+    
+    // Only modify if we're on page 2 or higher
+    if ($page < 2) {
+        return $title;
+    }
+    
+    // Find the position of the separator
+    // Common Yoast separators
+    $separators = array(' | ', ' - ', ' • ', ' · ', ' « ', ' » ', ' < ', ' > ');
+    
+    foreach ($separators as $separator) {
+        $pos = strpos($title, $separator);
+        if ($pos !== false) {
+            // Insert " - Page X" before the separator
+            $before_separator = substr($title, 0, $pos);
+            $after_separator = substr($title, $pos);
+            
+            // Escape the page number for safety
+            return $before_separator . ' - Page ' . absint($page) . $after_separator;
+        }
+    }
+    
+    // If no separator found, just append to the end
+    return $title . ' - Page ' . absint($page);
+}
+add_filter('wpseo_title', 'caes_add_page_number_to_publication_title', 10, 1);
+
+// Fallback for if Yoast is disabled
+add_filter('pre_get_document_title', 'caes_add_page_number_to_publication_title', 10, 1);
