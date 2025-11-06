@@ -24,6 +24,9 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/action-ics' );
 	register_block_type(get_template_directory() . '/blocks/build/blocks/action-pdf' );
 
+	// Register Page Select
+	register_block_type(get_template_directory() . '/blocks/build/blocks/page-select' );
+
 	// Register Post Filter
 	register_block_type(get_template_directory() . '/blocks/build/blocks/post-filter' );
 

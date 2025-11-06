@@ -1,0 +1,66 @@
+// Page Select Block - Frontend Styles
+.wp-block-caes-hub-page-select {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: var(--wp--preset--spacing--40) 0;
+
+    label {
+        font-family: var(--wp--preset--font-family--georgia);
+        font-size: var(--wp--preset--font-size--regular);
+        font-weight: 700;
+        color: var(--wp--preset--color--contrast);
+        margin: 0;
+    }
+
+    .select-wrapper {
+        position: relative;
+        display: inline-block;
+
+        // Custom dropdown arrow
+        &::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid var(--wp--preset--color--contrast);
+            pointer-events: none;
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+            font-family: var(--wp--preset--font-family--georgia);
+            font-size: var(--wp--preset--font-size--regular);
+            color: var(--wp--preset--color--contrast);
+            background-color: var(--wp--preset--color--base);
+            border: 2px solid var(--wp--preset--color--base-three);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            min-width: 120px;
+            transition: border-color 0.2s ease, outline 0.2s ease;
+
+            &:hover {
+                border-color: var(--wp--preset--color--contrast-two);
+            }
+
+            &:focus {
+                outline: 3px solid var(--wp--preset--color--bulldog-red);
+                outline-offset: 2px;
+                border-color: var(--wp--preset--color--bulldog-red);
+            }
+
+            // Remove default arrow in IE
+            &::-ms-expand {
+                display: none;
+            }
+        }
+    }
+}
