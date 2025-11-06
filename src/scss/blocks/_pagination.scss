@@ -25,3 +25,10 @@
         font-weight: bold;
     }
 }
+
+.post-nav-links {
+    margin: var(--wp--preset--spacing--60) 0;
+    a:first-child {
+        margin-left: var(--wp--preset--spacing--20);
+    }
+}
