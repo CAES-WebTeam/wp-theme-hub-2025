@@ -1196,61 +1196,59 @@ function caes_hub_exclude_department_topics_from_publications($terms, $post_id, 
 add_filter('get_the_terms', 'caes_hub_exclude_department_topics_from_publications', 10, 3);
 
 /**
- * Modify publication title tag to include subtitle and page number
- * Works with Yoast SEO
+ * Add page number to the Title block for paginated publications
+ * Adds the page number inside the subtitle if one exists
  */
-function caes_modify_publication_title_tag($title) {
+function caes_add_page_number_to_title_block($block_content, $block) {
+    // Only process core/post-title blocks
+    if ($block['blockName'] !== 'core/post-title') {
+        return $block_content;
+    }
+    
     // Only run on publications
     if (!is_singular('publications')) {
-        return $title;
+        return $block_content;
     }
     
     // Get the current page number and ensure it's a positive integer
     $page = absint(get_query_var('page'));
     
-    // Check if there's a subtitle ACF field
-    $subtitle = get_field('subtitle');
-    
-    // If we're on page 1 and there's no subtitle, return original title
-    if ($page < 2 && empty($subtitle)) {
-        return $title;
+    // Only modify if we're on page 2 or higher
+    if ($page < 2) {
+        return $block_content;
     }
     
-    // Find the position of the separator (Yoast separator)
-    $separators = array(' | ', ' - ', ' • ', ' · ', ' « ', ' » ', ' < ', ' > ');
-    $separator_found = false;
-    $separator_pos = false;
+    // Page number text to insert
+    $page_number = ' - Page ' . absint($page);
     
-    foreach ($separators as $separator) {
-        $pos = strpos($title, $separator);
-        if ($pos !== false) {
-            $separator_pos = $pos;
-            $separator_found = true;
-            break;
-        }
-    }
-    
-    // Build what we're inserting
-    $insert_text = '';
-    if (!empty($subtitle)) {
-        $insert_text .= ': ' . $subtitle;
-    }
-    if ($page >= 2) {
-        $insert_text .= ' - Page ' . absint($page);
-    }
-    
-    // Insert before the separator if found, otherwise append
-    if ($separator_found) {
-        $before_separator = substr($title, 0, $separator_pos);
-        $after_separator = substr($title, $separator_pos);
+    // Check if there's a subtitle element inside the heading
+    if (preg_match('/<h[1-6][^>]*>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is', $block_content, $matches)) {
+        // Title has a subtitle element - add page number inside the subtitle
+        $before_subtitle = $matches[1];
+        $subtitle_open = $matches[2];
+        $subtitle_text = $matches[3];
+        $subtitle_close = $matches[4];
+        $after_subtitle = $matches[5];
         
-        return $before_separator . $insert_text . $after_separator;
+        // Insert page number at the end of the subtitle text
+        $new_subtitle_text = $subtitle_text . $page_number;
+        
+        $block_content = preg_replace(
+            '/<h([1-6][^>]*)>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is',
+            '<h$1>' . $before_subtitle . $subtitle_open . $new_subtitle_text . $subtitle_close . $after_subtitle . '</h$1>',
+            $block_content,
+            1
+        );
+    } else {
+        // No subtitle found - just append page number to title
+        $block_content = preg_replace(
+            '/(<\/h[1-6]>)$/i',
+            $page_number . '$1',
+            $block_content,
+            1
+        );
     }
     
-    // No separator found, just append
-    return $title . $insert_text;
+    return $block_content;
 }
-add_filter('wpseo_title', 'caes_modify_publication_title_tag', 10, 1);
-
-// Fallback for if Yoast is disabled
-add_filter('pre_get_document_title', 'caes_modify_publication_title_tag', 10, 1);
+add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
