@@ -1194,3 +1194,61 @@ function caes_hub_exclude_department_topics_from_publications($terms, $post_id, 
     });
 }
 add_filter('get_the_terms', 'caes_hub_exclude_department_topics_from_publications', 10, 3);
+
+/**
+ * Add page number to the Title block for paginated publications
+ * Adds the page number inside the subtitle if one exists
+ */
+function caes_add_page_number_to_title_block($block_content, $block) {
+    // Only process core/post-title blocks
+    if ($block['blockName'] !== 'core/post-title') {
+        return $block_content;
+    }
+    
+    // Only run on publications
+    if (!is_singular('publications')) {
+        return $block_content;
+    }
+    
+    // Get the current page number and ensure it's a positive integer
+    $page = absint(get_query_var('page'));
+    
+    // Only modify if we're on page 2 or higher
+    if ($page < 2) {
+        return $block_content;
+    }
+    
+    // Page number text to insert
+    $page_number = ' - Page ' . absint($page);
+    
+    // Check if there's a subtitle element inside the heading
+    if (preg_match('/<h[1-6][^>]*>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is', $block_content, $matches)) {
+        // Title has a subtitle element - add page number inside the subtitle
+        $before_subtitle = $matches[1];
+        $subtitle_open = $matches[2];
+        $subtitle_text = $matches[3];
+        $subtitle_close = $matches[4];
+        $after_subtitle = $matches[5];
+        
+        // Insert page number at the end of the subtitle text
+        $new_subtitle_text = $subtitle_text . $page_number;
+        
+        $block_content = preg_replace(
+            '/<h([1-6][^>]*)>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is',
+            '<h$1>' . $before_subtitle . $subtitle_open . $new_subtitle_text . $subtitle_close . $after_subtitle . '</h$1>',
+            $block_content,
+            1
+        );
+    } else {
+        // No subtitle found - just append page number to title
+        $block_content = preg_replace(
+            '/(<\/h[1-6]>)$/i',
+            $page_number . '$1',
+            $block_content,
+            1
+        );
+    }
+    
+    return $block_content;
+}
+add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
