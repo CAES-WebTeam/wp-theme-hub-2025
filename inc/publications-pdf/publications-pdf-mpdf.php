@@ -297,19 +297,11 @@ function generate_publication_pdf_file_mpdf($post_id)
         $authors_data = get_field('authors', $post_id);
         $author_names = [];
         $author_lines = [];
-        
-        // DEBUG: Log the raw authors data
-        error_log("=== PDF AUTHOR DEBUG START for Post ID: $post_id ===");
-        error_log("Raw authors_data: " . print_r($authors_data, true));
 
         if ($authors_data) {
             foreach ($authors_data as $index => $item) {
-                error_log("--- Processing Author #$index ---");
-                error_log("Item data: " . print_r($item, true));
-                
                 // Check the type field to determine if this is a user or custom entry
                 $entry_type = $item['type'] ?? '';
-                error_log("Entry type: '$entry_type'");
                 
                 $first_name = '';
                 $last_name = '';
@@ -317,16 +309,12 @@ function generate_publication_pdf_file_mpdf($post_id)
                 $full_name = '';
 
                 if ($entry_type === 'Custom') {
-                    error_log("Processing as CUSTOM user");
                     // Handle custom user entry - check both possible field names
                     $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
-                    error_log("Custom user data: " . print_r($custom_user, true));
                     $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
                     $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
                     $author_title = sanitize_text_field($custom_user['title'] ?? $custom_user['titile'] ?? '');
-                    error_log("Extracted - First: '$first_name', Last: '$last_name', Title: '$author_title'");
                 } else {
-                    error_log("Processing as WORDPRESS user");
                     // Handle WordPress user selection (existing logic)
                     $user_id = null;
                     if (isset($item['user']) && !empty($item['user'])) {
@@ -341,8 +329,6 @@ function generate_publication_pdf_file_mpdf($post_id)
                             }
                         }
                     }
-                    
-                    error_log("Found user_id: " . ($user_id ?? 'NULL'));
 
                     if ($user_id && is_numeric($user_id)) {
                         $display_name = get_the_author_meta('display_name', $user_id);
@@ -351,8 +337,6 @@ function generate_publication_pdf_file_mpdf($post_id)
                         $public_title = get_field('public_friendly_title', 'user_' . $user_id);
                         $regular_title = get_the_author_meta('title', $user_id);
                         $author_title = !empty($public_title) ? $public_title : $regular_title;
-                        
-                        error_log("WP User - Display: '$display_name', First: '$first_name', Last: '$last_name', Title: '$author_title'");
                         
                         // Use display_name if available, otherwise construct from first/last
                         $full_name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
@@ -366,22 +350,15 @@ function generate_publication_pdf_file_mpdf($post_id)
                         $full_name = trim("$first_name $last_name");
                     }
                     
-                    error_log("ADDING AUTHOR: '$full_name'");
                     $author_names[] = $full_name;
                     $author_line = '<strong>' . esc_html($full_name) . '</strong>';
                     if (!empty($author_title)) {
                         $author_line .= ', ' . esc_html($author_title);
                     }
                     $author_lines[] = $author_line;
-                } else {
-                    error_log("SKIPPING - No name found");
                 }
             }
         }
-        
-        // DEBUG: Log final results
-        error_log("Total authors found: " . count($author_names));
-        error_log("Author names array: " . print_r($author_names, true));
 
         // Format author names with proper grammar (commas and 'and')
         $formatted_authors = '';
@@ -396,9 +373,7 @@ function generate_publication_pdf_file_mpdf($post_id)
                 $formatted_authors = implode(', ', $author_names) . ', and ' . $last;
             }
         }
-        error_log("FINAL FORMATTED AUTHORS: '$formatted_authors'");
-        error_log("=== PDF AUTHOR DEBUG END ===");
-        // error_log("mPDF DEBUG: Authors processed - found " . count($author_names) . " authors");
+
 
         // Get topics for keywords
         $topics_terms = get_the_terms($post_id, 'topics');
@@ -489,28 +464,8 @@ function generate_publication_pdf_file_mpdf($post_id)
         // error_log("mPDF DEBUG: CSS styles applied");
 
         // COVER PAGE - No header/footer
-        // error_log("mPDF DEBUG: Starting cover page generation");
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
-
-        // DEBUG OUTPUT - REMOVE THIS AFTER TESTING
-        $debug_html = '<div style="background: #ffcccc; padding: 10px; margin-bottom: 20px; border: 2px solid red;">';
-        $debug_html .= '<h3 style="color: red; margin: 0 0 10px 0;">DEBUG INFO (Remove after testing)</h3>';
-        $debug_html .= '<p style="margin: 5px 0;"><strong>Post ID:</strong> ' . $post_id . '</p>';
-        $debug_html .= '<p style="margin: 5px 0;"><strong>Total Authors Found:</strong> ' . count($author_lines) . '</p>';
-        $debug_html .= '<p style="margin: 5px 0;"><strong>Formatted Names:</strong> ' . esc_html($formatted_authors) . '</p>';
-        $debug_html .= '<p style="margin: 5px 0;"><strong>Author Lines on Cover:</strong></p>';
-        if (!empty($author_lines)) {
-            $debug_html .= '<ul style="margin: 5px 0;">';
-            foreach ($author_lines as $line) {
-                $debug_html .= '<li>' . $line . '</li>';
-            }
-            $debug_html .= '</ul>';
-        } else {
-            $debug_html .= '<p style="color: red;">NO AUTHORS FOUND!</p>';
-        }
-        $debug_html .= '</div>';
-        $mpdf->WriteHTML($debug_html);
 
         // Simple HTML approach that works with mPDF
         if (!empty($featured_image_url)) {
