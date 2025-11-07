@@ -300,39 +300,79 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         if ($authors_data) {
             foreach ($authors_data as $item) {
-                $user_id = null;
-                if (isset($item['user']) && !empty($item['user'])) {
-                    $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-                }
+                // Check the type field to determine if this is a user or custom entry
+                $entry_type = $item['type'] ?? '';
+                
+                $first_name = '';
+                $last_name = '';
+                $author_title = '';
+                $full_name = '';
 
-                if (empty($user_id) && is_array($item)) {
-                    foreach ($item as $key => $value) {
-                        if (is_numeric($value) && $value > 0) {
-                            $user_id = $value;
-                            break;
+                if ($entry_type === 'Custom') {
+                    // Handle custom user entry - check both possible field names
+                    $custom_user = $item['custom_user'] ?? $item['custom'] ?? [];
+                    $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
+                    $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
+                    $author_title = sanitize_text_field($custom_user['title'] ?? $custom_user['titile'] ?? '');
+                } else {
+                    // Handle WordPress user selection (existing logic)
+                    $user_id = null;
+                    if (isset($item['user']) && !empty($item['user'])) {
+                        $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
+                    }
+
+                    if (empty($user_id) && is_array($item)) {
+                        foreach ($item as $key => $value) {
+                            if (is_numeric($value) && $value > 0) {
+                                $user_id = $value;
+                                break;
+                            }
                         }
+                    }
+
+                    if ($user_id && is_numeric($user_id)) {
+                        $display_name = get_the_author_meta('display_name', $user_id);
+                        $first_name = get_the_author_meta('first_name', $user_id);
+                        $last_name = get_the_author_meta('last_name', $user_id);
+                        $public_title = get_field('public_friendly_title', 'user_' . $user_id);
+                        $regular_title = get_the_author_meta('title', $user_id);
+                        $author_title = !empty($public_title) ? $public_title : $regular_title;
+                        
+                        // Use display_name if available, otherwise construct from first/last
+                        $full_name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
                     }
                 }
 
-                if ($user_id && is_numeric($user_id)) {
-                    $first_name = get_the_author_meta('first_name', $user_id);
-                    $last_name = get_the_author_meta('last_name', $user_id);
-                    $author_title = get_the_author_meta('title', $user_id);
-
-                    if ($first_name || $last_name) {
+                // Only proceed if we have at least a name
+                if (!empty($first_name) || !empty($last_name)) {
+                    // If full_name wasn't set (for custom users), construct it
+                    if (empty($full_name)) {
                         $full_name = trim("$first_name $last_name");
-                        $author_names[] = $full_name;
-                        $author_line = '<strong>' . esc_html($full_name) . '</strong>';
-                        if (!empty($author_title)) {
-                            $author_line .= ', ' . esc_html($author_title);
-                        }
-                        $author_lines[] = $author_line;
                     }
+                    
+                    $author_names[] = $full_name;
+                    $author_line = '<strong>' . esc_html($full_name) . '</strong>';
+                    if (!empty($author_title)) {
+                        $author_line .= ', ' . esc_html($author_title);
+                    }
+                    $author_lines[] = $author_line;
                 }
             }
         }
 
-        $formatted_authors = implode(', ', $author_names);
+        // Format author names with proper grammar (commas and 'and')
+        $formatted_authors = '';
+        if (!empty($author_names)) {
+            $count = count($author_names);
+            if ($count === 1) {
+                $formatted_authors = $author_names[0];
+            } elseif ($count === 2) {
+                $formatted_authors = $author_names[0] . ' and ' . $author_names[1];
+            } else {
+                $last = array_pop($author_names);
+                $formatted_authors = implode(', ', $author_names) . ', and ' . $last;
+            }
+        }
         // error_log("mPDF DEBUG: Authors processed - found " . count($author_names) . " authors");
 
         // Get topics for keywords
