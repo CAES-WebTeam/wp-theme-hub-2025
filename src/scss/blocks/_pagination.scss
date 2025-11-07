@@ -1,4 +1,7 @@
-.page-numbers, .wp-block-query-pagination-next, .wp-block-query-pagination-previous, .post-nav-links .post-page-numbers {
+.page-numbers,
+.wp-block-query-pagination-next,
+.wp-block-query-pagination-previous,
+.post-nav-links .post-page-numbers {
     padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
     background: var(--wp--preset--color--base);
     line-height: 1;
@@ -28,7 +31,23 @@
 
 .post-nav-links {
     margin: var(--wp--preset--spacing--60) 0;
+
     a:first-child {
         margin-left: var(--wp--preset--spacing--20);
+    }
+    .post-page-numbers {
+        padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--40);
+        background: var(--wp--preset--color--olympic);
+        border: 1px solid var(--wp--preset--color--olympic);
+        color: var(--wp--preset--color--base);
+        margin-right: var(--wp--preset--spacing--20);
+        &:not(.current):not(.dots):hover {
+            background: var(--wp--preset--color--base);
+            border: 1px solid var(--wp--preset--color--olympic);
+            color: var(--wp--preset--color--contrast);
+        }
+        &.current {
+            color: var(--wp--preset--color--contrast);
+        }
     }
 }
