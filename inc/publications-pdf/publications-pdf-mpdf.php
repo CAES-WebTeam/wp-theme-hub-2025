@@ -293,8 +293,8 @@ function generate_publication_pdf_file_mpdf($post_id)
             $publication_number = 'publication-' . $post_id;
         }
 
-        // Get authors data
-        $authors_data = get_field('authors', $post_id, false);
+        // Get authors data - IMPORTANT: Don't use false parameter, we need formatted data like render.php
+        $authors_data = get_field('authors', $post_id);
         $author_names = [];
         $author_lines = [];
         
