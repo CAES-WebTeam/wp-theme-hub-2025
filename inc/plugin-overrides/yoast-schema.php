@@ -282,10 +282,10 @@ function caes_add_author_meta_tag_manually() {
 add_action( 'wp_head', 'caes_add_author_meta_tag_manually', 1 );
 
 /**
- * Add page number to paginated publication titles
+ * Modify publication title tag to include subtitle and page number
  * Works with Yoast SEO
  */
-function caes_add_page_number_to_publication_title($title) {
+function caes_modify_publication_title_tag($title) {
     // Only run on publications
     if (!is_singular('publications')) {
         return $title;
@@ -294,31 +294,49 @@ function caes_add_page_number_to_publication_title($title) {
     // Get the current page number and ensure it's a positive integer
     $page = absint(get_query_var('page'));
     
-    // Only modify if we're on page 2 or higher
-    if ($page < 2) {
+    // Check if there's a subtitle ACF field
+    $subtitle = get_field('subtitle');
+    
+    // If we're on page 1 and there's no subtitle, return original title
+    if ($page < 2 && empty($subtitle)) {
         return $title;
     }
     
-    // Find the position of the separator
-    // Common Yoast separators
+    // Find the position of the separator (Yoast separator)
     $separators = array(' | ', ' - ', ' • ', ' · ', ' « ', ' » ', ' < ', ' > ');
+    $separator_found = false;
+    $separator_pos = false;
     
     foreach ($separators as $separator) {
         $pos = strpos($title, $separator);
         if ($pos !== false) {
-            // Insert " - Page X" before the separator
-            $before_separator = substr($title, 0, $pos);
-            $after_separator = substr($title, $pos);
-            
-            // Escape the page number for safety
-            return $before_separator . ' - Page ' . absint($page) . $after_separator;
+            $separator_pos = $pos;
+            $separator_found = true;
+            break;
         }
     }
     
-    // If no separator found, just append to the end
-    return $title . ' - Page ' . absint($page);
+    // Build what we're inserting
+    $insert_text = '';
+    if (!empty($subtitle)) {
+        $insert_text .= ': ' . $subtitle;
+    }
+    if ($page >= 2) {
+        $insert_text .= ' - Page ' . absint($page);
+    }
+    
+    // Insert before the separator if found, otherwise append
+    if ($separator_found) {
+        $before_separator = substr($title, 0, $separator_pos);
+        $after_separator = substr($title, $separator_pos);
+        
+        return $before_separator . $insert_text . $after_separator;
+    }
+    
+    // No separator found, just append
+    return $title . $insert_text;
 }
-add_filter('wpseo_title', 'caes_add_page_number_to_publication_title', 10, 1);
+add_filter('wpseo_title', 'caes_modify_publication_title_tag', 10, 1);
 
 // Fallback for if Yoast is disabled
-add_filter('pre_get_document_title', 'caes_add_page_number_to_publication_title', 10, 1);
+add_filter('pre_get_document_title', 'caes_modify_publication_title_tag', 10, 1);
