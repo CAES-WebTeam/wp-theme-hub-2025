@@ -11,6 +11,7 @@
 \*------------------------------------*/
 
 require get_template_directory() . '/inc/theme-support.php';
+require get_template_directory() . '/inc/analytics.php';
 require get_template_directory() . '/inc/post-types.php';
 require get_template_directory() . '/inc/blocks.php';
 require get_template_directory() . '/inc/acf.php';
