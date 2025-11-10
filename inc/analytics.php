@@ -1,13 +1,12 @@
 <?php
-
 /**
  * Analytics and Google Tag Manager Configuration
  * 
  * This file handles:
  * - Google Tag Manager initialization
- * - Custom data layer variables for GA4 tracking:
- * ---- Taxonomy and metadata tracking (topics, categories, tags, series, etc.)
- * ---- Author and expert tracking
+ * - Custom data layer variables for GA4 tracking
+ * - Taxonomy and metadata tracking (topics, categories, tags, series, etc.)
+ * - Author and expert tracking
  */
 
 // Add Google Tag Manager code to the head (only for non-logged-in users and non-local domains)
@@ -59,7 +58,6 @@ function add_gtm_noscript_block_theme()
     }
 }
 add_action('wp_body_open', 'add_gtm_noscript_block_theme');
-
 
 /**
  * Push custom data layer variables for GA4 tracking
@@ -167,35 +165,88 @@ function push_custom_data_layer()
             break;
     }
 
-    // Get author display name
-    $author_id = get_post_field('post_author', $post->ID);
-    if ($author_id) {
-        $author_name = get_the_author_meta('display_name', $author_id);
-        $data_layer['content_authors'] = $author_name ? $author_name : '';
-    } else {
-        $data_layer['content_authors'] = '';
-    }
-
-    // Get expert display names from ACF repeater field (for posts, publications, shorthand_story)
-    if (in_array($post_type, array('post', 'publications', 'shorthand_story'))) {
-        $experts = get_field('experts', $post->ID);
-        if ($experts && is_array($experts)) {
-            $expert_names = array();
-            foreach ($experts as $expert_row) {
-                if (!empty($expert_row['user']) && is_numeric($expert_row['user'])) {
-                    $expert_name = get_the_author_meta('display_name', $expert_row['user']);
-                    if ($expert_name) {
-                        $expert_names[] = $expert_name;
+    /**
+     * Helper function to extract names from ACF repeater fields (authors, experts, artists)
+     * Handles both User selection and Custom name entries
+     */
+    $extract_names_from_repeater = function($field_name, $post_id) {
+        $repeater_data = get_field($field_name, $post_id);
+        $names = array();
+        
+        if ($repeater_data && is_array($repeater_data)) {
+            foreach ($repeater_data as $item) {
+                $entry_type = $item['type'] ?? '';
+                $full_name = '';
+                
+                if ($entry_type === 'Custom') {
+                    // Handle custom name entry
+                    $custom_user = $item['custom_user'] ?? $item['custom'] ?? array();
+                    $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
+                    $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
+                    
+                    if (!empty($first_name) || !empty($last_name)) {
+                        $full_name = trim("$first_name $last_name");
+                    }
+                } else {
+                    // Handle WordPress user selection
+                    $user_id = null;
+                    if (isset($item['user']) && !empty($item['user'])) {
+                        $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
+                    }
+                    
+                    // Fallback: search for any numeric value in the item
+                    if (empty($user_id) && is_array($item)) {
+                        foreach ($item as $key => $value) {
+                            if (is_numeric($value) && $value > 0) {
+                                $user_id = $value;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if ($user_id && is_numeric($user_id)) {
+                        $display_name = get_the_author_meta('display_name', $user_id);
+                        if (!empty($display_name)) {
+                            $full_name = $display_name;
+                        } else {
+                            // Fallback to constructing from first/last name
+                            $first_name = get_the_author_meta('first_name', $user_id);
+                            $last_name = get_the_author_meta('last_name', $user_id);
+                            $full_name = trim("$first_name $last_name");
+                        }
                     }
                 }
+                
+                if (!empty($full_name)) {
+                    $names[] = $full_name;
+                }
             }
-            if (!empty($expert_names)) {
-                $data_layer['content_experts'] = implode('|', $expert_names);
-            } else {
-                $data_layer['content_experts'] = '';
-            }
+        }
+        
+        return !empty($names) ? implode('|', $names) : '';
+    };
+
+    // Get author names based on post type
+    if ($post_type === 'publications') {
+        // Publications: authors only
+        $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
+    } elseif ($post_type === 'post') {
+        // Posts (news): authors, experts, and artists
+        $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
+        $data_layer['content_experts'] = $extract_names_from_repeater('experts', $post->ID);
+        $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
+    } elseif ($post_type === 'shorthand_story') {
+        // Shorthand: authors and artists
+        $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
+        $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
+    } elseif ($post_type === 'events') {
+        // Events: use the WordPress post_author as fallback
+        $author_id = get_post_field('post_author', $post->ID);
+        if ($author_id) {
+            $author_name = get_the_author_meta('display_name', $author_id);
+            $data_layer['content_authors'] = $author_name ? $author_name : '';
         } else {
-            $data_layer['content_experts'] = '';
+            $data_layer['content_authors'] = '';
         }
     }
 
