@@ -228,8 +228,10 @@ function push_custom_data_layer()
 
     // Get author names based on post type
     if ($post_type === 'publications') {
-        // Publications: authors only
+        // Publications: authors, artists, and translators
         $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
+        $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
+        $data_layer['content_translators'] = $extract_names_from_repeater('translators', $post->ID);
     } elseif ($post_type === 'post') {
         // Posts (news): authors, experts, and artists
         $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
