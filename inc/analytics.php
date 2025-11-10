@@ -231,7 +231,7 @@ function push_custom_data_layer()
         // Publications: authors, artists, and translators
         $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
         $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
-        $data_layer['content_translators'] = $extract_names_from_repeater('translators', $post->ID);
+        $data_layer['content_translators'] = $extract_names_from_repeater('translator', $post->ID);
     } elseif ($post_type === 'post') {
         // Posts (news): authors, experts, and artists
         $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
