@@ -66,7 +66,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
 <div <?php echo $wrapper_attributes; ?>>
     <div class="primary-topics-wrapper">
         <?php if (!empty($icon_svg) || $icon_is_png): ?>
-            <span class="primary-topic-icon" aria-hidden="true">
+            <span class="primary-topic-icon" aria-hidden="true" style="display: inline-flex; height: 1.5rem; width: 1.5rem;">
                 <?php if ($icon_is_png): ?>
                     <img src="<?php echo esc_url($icon_url); ?>" alt="" />
                 <?php else: ?>
