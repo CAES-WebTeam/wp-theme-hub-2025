@@ -36,17 +36,23 @@
     a:first-child {
         margin-left: var(--wp--preset--spacing--20);
     }
+
     .post-page-numbers {
         padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--40);
         background: var(--wp--preset--color--olympic);
         border: 1px solid var(--wp--preset--color--olympic);
         color: var(--wp--preset--color--base);
         margin-right: var(--wp--preset--spacing--20);
+        min-width: 20.8px;
+        display: inline-block;
+        text-align: center;
+
         &:not(.current):not(.dots):hover {
             background: var(--wp--preset--color--base);
             border: 1px solid var(--wp--preset--color--olympic);
             color: var(--wp--preset--color--contrast);
         }
+
         &.current {
             color: var(--wp--preset--color--contrast);
         }
