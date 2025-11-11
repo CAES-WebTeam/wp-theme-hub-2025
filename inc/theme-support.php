@@ -861,3 +861,10 @@ function my_theme_add_favicon_final()
 
 // Hook the function into the wp_head action
 add_action('wp_head', 'my_theme_add_favicon_final');
+
+/**
+ * Extend Public Post Preview expiration to 30 days
+ */
+add_filter( 'ppp_nonce_life', function() {
+    return 30 * DAY_IN_SECONDS; // 30 days
+} );
