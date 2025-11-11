@@ -260,4 +260,4 @@ function push_custom_data_layer()
     </script>
     <?php
 }
-add_action('wp_head', 'push_custom_data_layer', 1);
+add_action('wp_head', 'push_custom_data_layer', -1);
