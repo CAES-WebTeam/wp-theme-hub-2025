@@ -260,4 +260,4 @@ function push_custom_data_layer()
     </script>
     <?php
 }
-add_action('wp_head', 'push_custom_data_layer', 5); // Priority 5 = after GTM init (priority 0) but before GTM loads
+add_action('wp_head', 'push_custom_data_layer', 1);
