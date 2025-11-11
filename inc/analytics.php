@@ -89,7 +89,7 @@ function push_custom_data_layer()
     $data_layer = array();
 
     // Always include post type
-    $data_layer['content_type'] = $post_type;
+    $data_layer['post_type'] = $post_type;
 
     // Helper function to get term slugs as pipe-delimited string
     $get_term_slugs = function ($taxonomy, $post_id) {
