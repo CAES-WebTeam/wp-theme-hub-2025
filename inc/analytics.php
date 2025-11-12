@@ -197,11 +197,13 @@ function push_custom_data_layer()
                 } else {
                     // Handle WordPress user selection
                     $user_id = null;
+                    
+                    // First check for 'user' key (standard ACF format)
                     if (isset($item['user']) && !empty($item['user'])) {
                         $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
                     }
                     
-                    // Fallback: search for any numeric value in the item
+                    // Fallback: check for numeric values in any field (ACF internal field keys)
                     if (empty($user_id) && is_array($item)) {
                         foreach ($item as $key => $value) {
                             if (is_numeric($value) && $value > 0) {
@@ -211,7 +213,7 @@ function push_custom_data_layer()
                         }
                     }
                     
-                    if ($user_id && is_numeric($user_id)) {
+                    if ($user_id && is_numeric($user_id) && $user_id > 0) {
                         // Try to get email from ACF field first
                         $email = get_field('field_uga_email_custom', 'user_' . $user_id);
                         
