@@ -166,26 +166,33 @@ function push_custom_data_layer()
     }
 
     /**
-     * Helper function to extract names from ACF repeater fields (authors, experts, artists)
+     * Helper function to extract email usernames from ACF repeater fields (authors, experts, artists)
      * Handles both User selection and Custom name entries
+     * Returns the part before @ from email addresses
      */
-    $extract_names_from_repeater = function($field_name, $post_id) {
+    $extract_usernames_from_repeater = function($field_name, $post_id) {
         $repeater_data = get_field($field_name, $post_id);
-        $names = array();
+        $usernames = array();
         
         if ($repeater_data && is_array($repeater_data)) {
             foreach ($repeater_data as $item) {
                 $entry_type = $item['type'] ?? '';
-                $full_name = '';
+                $email = '';
                 
                 if ($entry_type === 'Custom') {
-                    // Handle custom name entry
+                    // Handle custom name entry - no email available for custom entries
+                    // Fall back to constructing a name-based identifier
                     $custom_user = $item['custom_user'] ?? $item['custom'] ?? array();
                     $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
                     $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
                     
                     if (!empty($first_name) || !empty($last_name)) {
-                        $full_name = trim("$first_name $last_name");
+                        // Create a simplified identifier from name
+                        $identifier = strtolower(trim("$first_name $last_name"));
+                        $identifier = str_replace(' ', '-', $identifier);
+                        if (!empty($identifier)) {
+                            $usernames[] = $identifier;
+                        }
                     }
                 } else {
                     // Handle WordPress user selection
@@ -205,48 +212,74 @@ function push_custom_data_layer()
                     }
                     
                     if ($user_id && is_numeric($user_id)) {
-                        $display_name = get_the_author_meta('display_name', $user_id);
-                        if (!empty($display_name)) {
-                            $full_name = $display_name;
-                        } else {
-                            // Fallback to constructing from first/last name
-                            $first_name = get_the_author_meta('first_name', $user_id);
-                            $last_name = get_the_author_meta('last_name', $user_id);
-                            $full_name = trim("$first_name $last_name");
+                        // Try to get email from ACF field first
+                        $email = get_field('field_uga_email_custom', 'user_' . $user_id);
+                        
+                        // If ACF field is empty, fall back to user email
+                        if (empty($email)) {
+                            $email = get_the_author_meta('user_email', $user_id);
+                        }
+                        
+                        // Extract username (part before @) if email is valid
+                        if ($email && !strpos($email, 'placeholder')) {
+                            $email_parts = explode('@', $email);
+                            if (count($email_parts) === 2) {
+                                $domain = $email_parts[1];
+                                // If domain doesn't contain "spoofed", use the username
+                                if (strpos($domain, 'spoofed') === false) {
+                                    $username = $email_parts[0];
+                                    if (!empty($username)) {
+                                        $usernames[] = $username;
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-                
-                if (!empty($full_name)) {
-                    $names[] = $full_name;
                 }
             }
         }
         
-        return !empty($names) ? implode('|', $names) : '';
+        return !empty($usernames) ? implode('|', $usernames) : '';
     };
 
-    // Get author names based on post type
+    // Get author usernames based on post type
     if ($post_type === 'publications') {
         // Publications: authors, artists, and translators
-        $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
-        $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
-        $data_layer['content_translators'] = $extract_names_from_repeater('translator', $post->ID);
+        $data_layer['content_authors'] = $extract_usernames_from_repeater('authors', $post->ID);
+        $data_layer['content_artists'] = $extract_usernames_from_repeater('artists', $post->ID);
+        $data_layer['content_translators'] = $extract_usernames_from_repeater('translator', $post->ID);
     } elseif ($post_type === 'post') {
         // Posts (news): authors, experts, and artists
-        $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
-        $data_layer['content_experts'] = $extract_names_from_repeater('experts', $post->ID);
-        $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
+        $data_layer['content_authors'] = $extract_usernames_from_repeater('authors', $post->ID);
+        $data_layer['content_experts'] = $extract_usernames_from_repeater('experts', $post->ID);
+        $data_layer['content_artists'] = $extract_usernames_from_repeater('artists', $post->ID);
     } elseif ($post_type === 'shorthand_story') {
         // Shorthand: authors and artists
-        $data_layer['content_authors'] = $extract_names_from_repeater('authors', $post->ID);
-        $data_layer['content_artists'] = $extract_names_from_repeater('artists', $post->ID);
+        $data_layer['content_authors'] = $extract_usernames_from_repeater('authors', $post->ID);
+        $data_layer['content_artists'] = $extract_usernames_from_repeater('artists', $post->ID);
     } elseif ($post_type === 'events') {
-        // Events: use the WordPress post_author as fallback
+        // Events: use the WordPress post_author email username as fallback
         $author_id = get_post_field('post_author', $post->ID);
         if ($author_id) {
-            $author_name = get_the_author_meta('display_name', $author_id);
-            $data_layer['content_authors'] = $author_name ? $author_name : '';
+            // Try to get email from ACF field first
+            $email = get_field('field_uga_email_custom', 'user_' . $author_id);
+            
+            // If ACF field is empty, fall back to user email
+            if (empty($email)) {
+                $email = get_the_author_meta('user_email', $author_id);
+            }
+            
+            // Extract username (part before @)
+            if ($email && !strpos($email, 'placeholder')) {
+                $email_parts = explode('@', $email);
+                if (count($email_parts) === 2 && strpos($email_parts[1], 'spoofed') === false) {
+                    $data_layer['content_authors'] = $email_parts[0];
+                } else {
+                    $data_layer['content_authors'] = '';
+                }
+            } else {
+                $data_layer['content_authors'] = '';
+            }
         } else {
             $data_layer['content_authors'] = '';
         }
