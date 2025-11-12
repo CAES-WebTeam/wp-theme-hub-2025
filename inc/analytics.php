@@ -137,6 +137,15 @@ function debug_authors_data() {
                         }
                     } else {
                         echo '✗ Email invalid or contains placeholder<br>';
+                        echo 'Trying fallback to display name...<br>';
+                        if ($display_name) {
+                            $identifier = strtolower($display_name);
+                            $identifier = preg_replace('/[^a-z0-9]+/', '-', $identifier);
+                            $identifier = trim($identifier, '-');
+                            echo '✓ WOULD ADD IDENTIFIER: ' . $identifier . '<br>';
+                        } else {
+                            echo '✗ No display name available<br>';
+                        }
                     }
                 } else {
                     echo '✗ No valid user ID found<br>';
@@ -327,6 +336,17 @@ function push_custom_data_layer()
                                     }
                                 }
                             }
+                        } else {
+                            // Fallback: if no valid email, create identifier from display name
+                            $display_name = get_the_author_meta('display_name', $user_id);
+                            if (!empty($display_name)) {
+                                $identifier = strtolower($display_name);
+                                $identifier = preg_replace('/[^a-z0-9]+/', '-', $identifier);
+                                $identifier = trim($identifier, '-');
+                                if (!empty($identifier)) {
+                                    $usernames[] = $identifier;
+                                }
+                            }
                         }
                     }
                 }
@@ -369,10 +389,28 @@ function push_custom_data_layer()
                 if (count($email_parts) === 2 && strpos($email_parts[1], 'spoofed') === false) {
                     $data_layer['content_authors'] = $email_parts[0];
                 } else {
-                    $data_layer['content_authors'] = '';
+                    // Fallback: use display name as identifier
+                    $display_name = get_the_author_meta('display_name', $author_id);
+                    if (!empty($display_name)) {
+                        $identifier = strtolower($display_name);
+                        $identifier = preg_replace('/[^a-z0-9]+/', '-', $identifier);
+                        $identifier = trim($identifier, '-');
+                        $data_layer['content_authors'] = $identifier;
+                    } else {
+                        $data_layer['content_authors'] = '';
+                    }
                 }
             } else {
-                $data_layer['content_authors'] = '';
+                // Fallback: use display name as identifier
+                $display_name = get_the_author_meta('display_name', $author_id);
+                if (!empty($display_name)) {
+                    $identifier = strtolower($display_name);
+                    $identifier = preg_replace('/[^a-z0-9]+/', '-', $identifier);
+                    $identifier = trim($identifier, '-');
+                    $data_layer['content_authors'] = $identifier;
+                } else {
+                    $data_layer['content_authors'] = '';
+                }
             }
         } else {
             $data_layer['content_authors'] = '';
