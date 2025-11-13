@@ -1,0 +1,717 @@
+// =========================================================================
+// PUBLICATIONS PRINT STYLES
+// Post-type-specific print overrides for publications custom post type
+// =========================================================================
+
+@media print {
+  
+  // =====================================================
+  // GLOBAL PRINT SETTINGS FOR PUBLICATIONS
+  // =====================================================
+  
+  .single-publications {
+    font-family: Georgia, serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #000;
+    
+    // Remove all backgrounds and shadows
+    * {
+      background: transparent !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+  }
+  
+  // =====================================================
+  // HIDE NON-PRINTABLE ELEMENTS
+  // =====================================================
+  
+  .single-publications {
+    
+    // Navigation and UI elements
+    .breadcrumb-navigation,
+    .wp-block-caes-hub-breadcrumbs,
+    .taxonomy-topics,
+    .taxonomy-publication_series,
+    .wp-block-post-terms,
+    .wp-block-caes-hub-toc-new,
+    .caes-hub-pub-columns-nav-stack,
+    .wp-block-caes-hub-expert-mark,
+    .caes-hub-content-actions,
+    .caes-hub-content-actions-in-body,
+    .wp-block-caes-hub-action-share,
+    .wp-block-caes-hub-action-print,
+    .wp-block-caes-hub-action-pdf {
+      display: none !important;
+    }
+    
+    // Spacers used for web layout
+    .wp-block-spacer[aria-hidden="true"] {
+      display: none !important;
+    }
+    
+    // Horizontal rules used for web styling
+    .caes-hub-content-meta-wrap + .caes-hub-content-f-img hr,
+    .caes-hub-content-f-img hr {
+      display: none !important;
+    }
+  }
+  
+  // =====================================================
+  // LAYOUT & STRUCTURE
+  // =====================================================
+  
+  .single-publications {
+    
+    // Remove multi-column layout
+    .wp-block-columns,
+    .caes-hub-pub-columns {
+      display: block !important;
+      columns: 1 !important;
+      
+      .wp-block-column {
+        flex-basis: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    }
+    
+    // Main content container
+    .caes-hub-content-post {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+    }
+    
+    // Content wrapper
+    .entry-content,
+    .wp-block-post-content {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+    }
+  }
+  
+  // =====================================================
+  // TITLE PAGE / COVER PAGE
+  // =====================================================
+  
+  .single-publications {
+    
+    // Meta information above title
+    .caes-hub-content-meta {
+      margin-bottom: 30px;
+      
+      // Extension logo
+      .caes-hub-content-logo {
+        width: 30%;
+        height: auto;
+        margin-bottom: 20px;
+      }
+    }
+    
+    // Publication title
+    .wp-block-post-title,
+    h1.wp-block-post-title {
+      font-size: 32px !important;
+      font-weight: bold !important;
+      margin: 20px 0 !important;
+      line-height: 1.2 !important;
+      text-align: left !important;
+      page-break-after: avoid;
+    }
+    
+    // Authors block
+    .caes-hub-olympic-accent-border,
+    .wp-block-caes-hub-pub-details-authors {
+      margin: 10px 0 !important;
+      line-height: 1.3 !important;
+      font-size: 16px !important;
+      border: none !important;
+      border-left: none !important;
+      padding: 0 !important;
+      
+      strong {
+        font-weight: bold;
+      }
+    }
+    
+    // Publication number and date
+    .wp-block-caes-hub-pub-details-number,
+    .caes-hub-content-meta .wp-block-group {
+      margin: 15px 0 !important;
+      font-size: 14px !important;
+      
+      .pub-number-link,
+      .tooltip-trigger {
+        color: #000 !important;
+        text-decoration: none !important;
+      }
+      
+      // Hide tooltips in print
+      .tooltip,
+      .tooltip-content {
+        display: none !important;
+      }
+    }
+    
+    // Featured image on cover
+    .wp-block-post-featured-image {
+      margin: 0 0 20px 0;
+      width: 100%;
+      text-align: center;
+      page-break-inside: avoid;
+      
+      img {
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+      }
+    }
+    
+    // Force page break after cover content
+    .caes-hub-content-meta-wrap {
+      page-break-after: always;
+    }
+  }
+  
+  // =====================================================
+  // TYPOGRAPHY - HEADINGS
+  // =====================================================
+  
+  .single-publications {
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-family: Georgia, serif;
+      color: #000;
+      font-weight: bold;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin: 24px 0 12px 0;
+    }
+    
+    h2 {
+      font-size: 20px;
+      margin: 22px 0 10px 0;
+    }
+    
+    h3 {
+      font-size: 18px;
+      margin: 20px 0 8px 0;
+    }
+    
+    h4 {
+      font-size: 16px;
+      margin: 18px 0 6px 0;
+    }
+    
+    h5 {
+      font-size: 15px;
+      margin: 16px 0 4px 0;
+    }
+    
+    h6 {
+      font-size: 14px;
+      margin: 14px 0 4px 0;
+    }
+    
+    // Prevent orphaned headings
+    h2 + p,
+    h3 + p,
+    h4 + p,
+    h5 + p,
+    h6 + p {
+      page-break-before: avoid;
+    }
+  }
+  
+  // =====================================================
+  // TYPOGRAPHY - BODY TEXT
+  // =====================================================
+  
+  .single-publications {
+    
+    p {
+      margin: 0 0 12px 0;
+      line-height: 1.6;
+      orphans: 3;
+      widows: 3;
+    }
+    
+    strong, b {
+      font-weight: bold;
+    }
+    
+    em, i {
+      font-style: italic;
+    }
+    
+    a {
+      color: #000;
+      text-decoration: underline;
+      
+      // Show URLs in print
+      &[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: 90%;
+        word-wrap: break-word;
+      }
+      
+      // Don't show anchor links
+      &[href^="#"]::after {
+        content: "";
+      }
+    }
+    
+    // Hanging indent style (for references)
+    .is-style-caes-hub-hanging-indent {
+      padding-left: 2em;
+      text-indent: -2em;
+      margin-bottom: 8px;
+    }
+  }
+  
+  // =====================================================
+  // LISTS
+  // =====================================================
+  
+  .single-publications {
+    
+    ul, ol {
+      margin: 0 0 16px 0;
+      padding-left: 30px;
+      
+      li {
+        margin-bottom: 6px;
+        line-height: 1.6;
+      }
+      
+      // Nested lists
+      ul, ol {
+        margin-top: 6px;
+        margin-bottom: 6px;
+      }
+    }
+    
+    ul {
+      list-style-type: disc;
+    }
+    
+    ol {
+      list-style-type: decimal;
+    }
+    
+    // Style-specific lists
+    .is-style-caes-hub-list-none {
+      list-style: none;
+      padding-left: 0;
+    }
+  }
+  
+  // =====================================================
+  // IMAGES & FIGURES
+  // =====================================================
+  
+  .single-publications {
+    
+    img {
+      max-width: 100%;
+      height: auto;
+      page-break-inside: avoid;
+    }
+    
+    figure,
+    .wp-block-image,
+    .wp-block-figure {
+      margin: 15px 0;
+      page-break-inside: avoid;
+      
+      img {
+        display: block;
+        margin: 0 auto 5px auto;
+      }
+      
+      figcaption,
+      .wp-element-caption {
+        font-size: 12px;
+        line-height: 1.4;
+        margin-top: 5px;
+        text-align: center;
+      }
+    }
+    
+    // Image alignment
+    .alignleft,
+    .image-caption-wrapper.left {
+      float: left;
+      margin-right: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .alignright,
+    .image-caption-wrapper.right {
+      float: right;
+      margin-left: 15px;
+      margin-bottom: 15px;
+    }
+    
+    .aligncenter,
+    .image-caption-wrapper.center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+    }
+    
+    // Legacy image containers
+    .image-caption-wrapper {
+      margin: 15px 0;
+      page-break-inside: avoid;
+      
+      .wp-caption-text {
+        font-size: 12px;
+        color: #000;
+        line-height: 1.4;
+        margin-top: 5px;
+      }
+      
+      &.center .wp-caption-text {
+        text-align: center;
+      }
+    }
+  }
+  
+  // =====================================================
+  // TABLES
+  // =====================================================
+  
+  .single-publications {
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      page-break-inside: avoid;
+      font-size: 12px;
+      
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+        line-height: 1.4;
+      }
+      
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        font-size: 14px;
+      }
+      
+      // Striped rows
+      tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      
+      // Prevent table headers from being orphaned
+      thead {
+        display: table-header-group;
+      }
+      
+      tfoot {
+        display: table-footer-group;
+      }
+    }
+    
+    // WordPress table blocks
+    .wp-block-table {
+      margin: 20px 0;
+      
+      table {
+        margin: 0;
+      }
+      
+      figcaption {
+        font-size: 12px;
+        margin-top: 8px;
+        text-align: center;
+      }
+    }
+  }
+  
+  // =====================================================
+  // BLOCKQUOTES
+  // =====================================================
+  
+  .single-publications {
+    
+    blockquote {
+      margin: 20px 0;
+      padding: 10px 20px;
+      border-left: 3px solid #000;
+      font-style: italic;
+      page-break-inside: avoid;
+      
+      p {
+        margin-bottom: 8px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+      
+      cite {
+        display: block;
+        margin-top: 8px;
+        font-size: 14px;
+        font-style: normal;
+      }
+    }
+  }
+  
+  // =====================================================
+  // CODE & PREFORMATTED TEXT
+  // =====================================================
+  
+  .single-publications {
+    
+    code {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      background-color: #f5f5f5;
+      padding: 2px 4px;
+      border: 1px solid #ddd;
+    }
+    
+    pre {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      background-color: #f5f5f5;
+      padding: 10px;
+      border: 1px solid #ddd;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin: 16px 0;
+      page-break-inside: avoid;
+      
+      code {
+        background: none;
+        padding: 0;
+        border: none;
+      }
+    }
+  }
+  
+  // =====================================================
+  // BUTTONS & INTERACTIVE ELEMENTS
+  // =====================================================
+  
+  .single-publications {
+    
+    button,
+    .wp-block-button,
+    .button,
+    .btn {
+      display: none !important;
+    }
+    
+    // Exception: if button contains important text, show as text
+    .wp-block-button__link {
+      display: inline;
+      background: none;
+      border: none;
+      color: #000;
+      text-decoration: underline;
+      padding: 0;
+    }
+  }
+  
+  // =====================================================
+  // DISCLAIMER / FOOTER CONTENT
+  // =====================================================
+  
+  .single-publications {
+    
+    .caes-hub-pub-disclaimer {
+      margin-top: 40px;
+      page-break-before: auto;
+      
+      hr {
+        border: 0;
+        border-top: 1px solid #000;
+        margin: 10px 0;
+      }
+      
+      // Two-column layout for pub number and date
+      .wp-block-columns {
+        display: flex !important;
+        justify-content: space-between;
+        font-size: 11px;
+        margin: 5px 0;
+        
+        .wp-block-column {
+          flex: 1;
+          
+          &:first-child {
+            font-weight: bold;
+            text-align: left;
+          }
+          
+          &:last-child {
+            text-align: right;
+          }
+        }
+      }
+      
+      // Extension logo in disclaimer
+      .caes-hub-content-logo {
+        width: 150px;
+        height: auto;
+        margin-bottom: 10px;
+      }
+      
+      // Disclaimer text
+      p {
+        font-size: 10px;
+        line-height: 1.3;
+        margin: 5px 0;
+        
+        em {
+          font-style: italic;
+        }
+      }
+    }
+  }
+  
+  // =====================================================
+  // PAGE BREAKS
+  // =====================================================
+  
+  .single-publications {
+    
+    // Prevent breaks inside these elements
+    .page-break-inside-avoid,
+    figure,
+    .wp-block-image,
+    table,
+    blockquote,
+    pre {
+      page-break-inside: avoid;
+    }
+    
+    // Force break before
+    .page-break,
+    .wp-block-page-break {
+      page-break-before: always;
+    }
+    
+    // Avoid breaks after headings
+    h1, h2, h3, h4, h5, h6 {
+      page-break-after: avoid;
+    }
+  }
+  
+  // =====================================================
+  // UTILITY CLASSES
+  // =====================================================
+  
+  .single-publications {
+    
+    // Hide in print
+    .print-hidden,
+    .no-print {
+      display: none !important;
+    }
+    
+    // Show only in print
+    .print-only {
+      display: block !important;
+    }
+    
+    // Footer spacer
+    .footer-spacer {
+      height: 50px;
+    }
+    
+    // Screen reader only text (keep hidden)
+    .sr-only,
+    .screen-reader-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+  }
+  
+  // =====================================================
+  // WORDPRESS CORE BLOCKS - OVERRIDES
+  // =====================================================
+  
+  .single-publications {
+    
+    // Group blocks
+    .wp-block-group {
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+    }
+    
+    // Cover blocks
+    .wp-block-cover {
+      background: transparent !important;
+      padding: 0 !important;
+      
+      .wp-block-cover__inner-container {
+        padding: 0;
+      }
+    }
+    
+    // Media & text blocks
+    .wp-block-media-text {
+      display: block !important;
+      
+      .wp-block-media-text__media {
+        margin-bottom: 15px;
+      }
+      
+      .wp-block-media-text__content {
+        padding: 0;
+      }
+    }
+    
+    // Separator blocks
+    .wp-block-separator {
+      border: 0;
+      border-top: 1px solid #000;
+      margin: 20px 0;
+      
+      &.is-style-wide {
+        border-top-width: 2px;
+      }
+      
+      &.is-style-dots {
+        border: none;
+        text-align: center;
+        
+        &::before {
+          content: '···';
+          font-size: 20px;
+          letter-spacing: 2em;
+          padding-left: 2em;
+        }
+      }
+    }
+  }
+}

@@ -12,9 +12,11 @@ gulp.task('watch', function () {
             'clean-main',
             'clean-editor',
             'clean-login',
+            'clean-pub-print',
             'minify-main',
             'minify-editor',
-            'minify-login'
+            'minify-login',
+            'minify-pub-print'
         )
     );
 });
@@ -37,6 +39,14 @@ gulp.task('clean-editor', function () {
 
 gulp.task('clean-login', function () {
     return gulp.src('assets/css/login.min.css', {
+        read: false,
+        allowEmpty: true,
+    })
+        .pipe(clean());
+});
+
+gulp.task('clean-pub-print', function () {
+    return gulp.src('assets/css/pub-print.min.css', {
         read: false,
         allowEmpty: true,
     })
@@ -70,6 +80,15 @@ gulp.task('minify-login', function () {
         .pipe(gulp.dest('assets/css/'));
 });
 
+gulp.task('minify-pub-print', function () {
+    return gulp.src('src/scss/pub-print.scss')
+        .pipe(sass({
+            includePaths: ['./node_modules'],
+        }).on('error', sass.logError))
+        .pipe(cssnano({ zindex: false }))
+        .pipe(gulp.dest('assets/css/'));
+});
+
 gulp.task('js-bundling', function () {
     return gulp.src('src/js/main.js')
         .pipe(webpack({
@@ -91,9 +110,11 @@ gulp.task(
         'clean-main',
         'clean-editor',
         'clean-login',
+        'clean-pub-print',
         'minify-main',
         'minify-editor',
         'minify-login',
+        'minify-pub-print',
         'js-bundling'
     )
 );
