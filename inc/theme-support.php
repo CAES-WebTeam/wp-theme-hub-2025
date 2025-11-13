@@ -45,11 +45,11 @@ function caes_hub_enqueue_publication_print_assets() {
     $theme_uri = get_template_directory_uri();
     
     // Enqueue publications print styles
-    $publications_print_path = $theme_dir . '/assets/css/pub-print.min.css';
+    $publications_print_path = $theme_dir . '/assets/css/pub-print.css';
     if (file_exists($publications_print_path)) {
         wp_enqueue_style(
             'caes-hub-publications-print',
-            $theme_uri . '/assets/css/pub-print.min.css',
+            $theme_uri . '/assets/css/pub-print.css',
             array(),
             filemtime($publications_print_path),
             'print'
