@@ -58,3 +58,9 @@
         }
     }
 }
+
+@media print {
+    .post-nav-links {
+        display: none;
+    }
+}

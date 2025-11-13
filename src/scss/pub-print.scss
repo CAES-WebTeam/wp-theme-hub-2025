@@ -1,10 +1,10 @@
 @media print {
   .single-publications {
-    
+
     // =====================================================
     // COVER PAGE - FEATURED IMAGE
     // =====================================================
-    
+
     // Make the background container visible and reset positioning
     .caes-hub-main-bg {
       display: block !important;
@@ -19,7 +19,7 @@
       .caes-hub-main-bg-f-img {
         width: 100%;
         height: 100%;
-        
+
         img {
           filter: none;
           transform: none;
@@ -30,16 +30,16 @@
         }
       }
     }
-    
+
     // =====================================================
     // COVER PAGE - CONTENT AREA
     // =====================================================
-    
+
     .caes-hub-content-meta-wrap {
       page-break-after: always; // Force new page after cover
       page-break-inside: avoid;
       padding: 30px 0;
-      
+
       // Hide web-only elements on cover
       .breadcrumb-navigation,
       .taxonomy-topics,
@@ -47,22 +47,21 @@
       .wp-block-post-terms,
       .wp-block-spacer[aria-hidden="true"],
       .wp-block-caes-hub-page-select,
-      .post-nav-links,
       hr {
         display: none !important;
       }
     }
-    
+
     // =====================================================
     // COVER PAGE - EXTENSION LOGO
     // =====================================================
-    
+
     .caes-hub-content-meta {
       text-align: center;
-      
+
       .caes-hub-content-brand {
         margin-bottom: 20px;
-        
+
         .caes-hub-content-logo {
           width: 200px; // Adjust size as needed
           height: auto;
@@ -71,11 +70,11 @@
         }
       }
     }
-    
+
     // =====================================================
     // COVER PAGE - TITLE
     // =====================================================
-    
+
     .wp-block-post-title,
     h1.wp-block-post-title {
       font-size: 32px !important;
@@ -85,83 +84,21 @@
       text-align: center !important;
       page-break-after: avoid;
       text-align: left !important;
-      
+
       // Handle subtitle spans if present
       span {
         display: block;
         margin-top: 10px;
       }
     }
-    
+
     // =====================================================
-    // COVER PAGE - AUTHORS
+    // MORE HIDDEN ELEMENTS
     // =====================================================
-    
-    .caes-hub-olympic-accent-border,
-    .wp-block-caes-hub-pub-details-authors {
-      text-align: center;
-      font-size: 16px !important;
-      line-height: 1.4 !important;
-      margin: 15px 0 !important;
-      padding: 0 !important;
-      border: none !important;
-      
-      p {
-        margin: 0;
-      }
-      
-      strong {
-        font-weight: bold;
-      }
-      
-      br {
-        content: "";
-        display: block;
-        margin: 5px 0;
-      }
+
+    .caes-hub-content-bottom-meta {
+      display: none !important;
     }
-    
-    // =====================================================
-    // COVER PAGE - PUBLICATION NUMBER & DATE
-    // =====================================================
-    
-    .wp-block-caes-hub-pub-details-number,
-    .caes-hub-content-meta .wp-block-group:has(.wp-block-caes-hub-pub-details-number) {
-      text-align: center;
-      font-size: 14px !important;
-      margin: 20px 0 !important;
-      
-      // Hide the PDF button
-      .wp-block-caes-hub-action-pdf {
-        display: none !important;
-      }
-      
-      .pub-number-link,
-      .tooltip-trigger {
-        color: #000 !important;
-        text-decoration: none !important;
-        
-        // Format should show like: "Circular 1364-06"
-        span {
-          font-weight: normal;
-        }
-      }
-      
-      // Hide tooltips
-      .tooltip,
-      .tooltip-content,
-      .tooltip-container {
-        display: none !important;
-      }
-    }
-    
-    // =====================================================
-    // ADD PUBLICATION DATE TEXT
-    // =====================================================
-    
-    // If you need to add "published on [date]" text via CSS
-    // This would require JavaScript or PHP to inject properly
-    // For now, we'll style what's there
-    
+
   }
 }
