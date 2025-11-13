@@ -598,6 +598,14 @@ figcaption a {
     }
 }
 
+// Hide on print
+
+@media print {
+    .hide-print {
+        display: none !important;
+    }
+}
+
 /* Publications helper classes */
 
 .caes-hub-pub-content {
@@ -646,7 +654,6 @@ figcaption a {
         }
     }
 }
-
 
 /* Additional Styles */
 

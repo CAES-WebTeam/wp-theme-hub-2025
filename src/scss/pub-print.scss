@@ -46,6 +46,8 @@
       .taxonomy-publication_series,
       .wp-block-post-terms,
       .wp-block-spacer[aria-hidden="true"],
+      .wp-block-caes-hub-page-select,
+      .post-nav-links,
       hr {
         display: none !important;
       }
@@ -82,6 +84,7 @@
       margin: 20px 0 !important;
       text-align: center !important;
       page-break-after: avoid;
+      text-align: left !important;
       
       // Handle subtitle spans if present
       span {
