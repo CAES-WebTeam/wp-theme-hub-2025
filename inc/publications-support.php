@@ -1252,27 +1252,3 @@ function caes_add_page_number_to_title_block($block_content, $block) {
     return $block_content;
 }
 add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
-
-function caes_hub_enqueue_publication_print_assets() {
-    // Only load on single publications post type
-    if (!is_singular('publications')) {
-        return;
-    }
-    
-    // Get theme directory for file path checks
-    $theme_dir = get_template_directory();
-    $theme_uri = get_template_directory_uri();
-    
-    // Enqueue publications print styles
-    $publications_print_path = $theme_dir . '/assets/css/pub-print.min.css';
-    if (file_exists($publications_print_path)) {
-        wp_enqueue_style(
-            'caes-hub-publications-print',
-            $theme_uri . '/assets/css/pub-print.min.css',
-            array(),
-            filemtime($publications_print_path),
-            'print'
-        );
-    }
-}
-add_action('wp_enqueue_scripts', 'caes_hub_enqueue_publication_print_assets');
