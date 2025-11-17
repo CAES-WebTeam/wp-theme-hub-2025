@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Initialize Parvus for galleries
   const prvs = new Parvus({
-    gallerySelector: '.wp-block-gallery'
+    gallerySelector: '.wp-block-gallery, .parvus-gallery'
   });
   /*** END PARVUS LIGHTBOX INITIALIZATION */
 
