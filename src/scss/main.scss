@@ -678,6 +678,11 @@ figcaption a {
   color: var(--wp--preset--color--contrast);
 }
 
+.parvus__overlay {
+    background-color: var(--wp--preset--color--contrast);
+    color: var(--wp--preset--color--base);
+}
+
 /* Additional Styles */
 
 @import 'blocks/_custom-block-styles.scss';

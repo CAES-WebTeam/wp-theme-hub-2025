@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
   
   /*** START PARVUS LIGHTBOX INITIALIZATION */
   // Find all image blocks that link to images and add lightbox class
-  const linkedImgs = document.querySelectorAll('.wp-block-image a[href*=".jpg"],.wp-block-image a[href*=".jpeg"],.wp-block-image a[href*=".png"],.wp-block-image a[href*=".gif"]');
+  const linkedImgs = document.querySelectorAll('.wp-block-image a[href*=".webp"],.wp-block-image a[href*=".jpg"],.wp-block-image a[href*=".jpeg"],.wp-block-image a[href*=".png"],.wp-block-image a[href*=".gif"]');
 
   for (const link of linkedImgs) {
     link.classList.add('lightbox');
