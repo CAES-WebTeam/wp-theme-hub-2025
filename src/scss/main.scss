@@ -702,7 +702,7 @@ figcaption a {
     color: var(--wp--preset--color--contrast);
 }
 
-.lightbox.parvus-trigger .wp-element-caption {
+.lightbox.parvus-trigger + .wp-element-caption {
     display: none; 
 }
 
