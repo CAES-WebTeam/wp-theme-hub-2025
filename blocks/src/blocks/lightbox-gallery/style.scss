@@ -1,59 +1,356 @@
 /**
- * Frontend styles for the lightbox gallery block.
+ * Frontend styles for the Lightbox Gallery block
+ * style.scss
  */
 
-// Gallery trigger styles (the visible thumbnail with button)
+/* Base gallery container */
 .lightbox-gallery {
-  margin: 2rem 0;
+  margin: 0 auto;
+  max-width: 100%;
 }
 
+/* Simplified gallery trigger */
 .gallery-trigger {
   position: relative;
-  display: inline-block;
+  width: 100%;
   cursor: pointer;
-}
-
-.gallery-trigger-visible {
-  position: relative;
+  margin-bottom: 60.43px;
 }
 
 .gallery-trigger-image {
-  display: block;
   width: 100%;
   height: auto;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-trigger:hover .gallery-trigger-image {
+  opacity: 0.9;
 }
 
 .view-gallery-btn {
+  background: var(--wp--preset--color--contrast);
+  bottom: 0;
+  color: var(--wp--preset--color--base);
+  left: 50%;
+  padding: var(--wp--preset--spacing--40);
+  pointer-events: none;
   position: absolute;
-  inset: 0;
+  transform: translateX(-50%);
+  font-size: 1rem;
+  font-family: inherit;
   width: 100%;
-  height: 100%;
-  background: transparent;
-  border: none;
+  border: 0;
+  text-align: left;
+}
+
+.view-gallery-btn:hover,
+.view-gallery-btn:focus {
+  background: rgba(0, 0, 0, 0.9);
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.view-gallery-text {
+  display: block;
+}
+
+/* Alignment support for different widths */
+.wp-block-caes-hub-legacy-gallery.alignwide,
+.wp-block-caes-hub-legacy-gallery.alignfull {
+  max-width: none;
+}
+
+.wp-block-caes-hub-legacy-gallery.aligncenter {
+  text-align: center;
+}
+
+/* Lightbox Modal */
+.lightbox-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
   cursor: pointer;
+}
+
+.lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--wp--preset--color--contrast);
+  color: var(--wp--preset--color--base);
+}
+
+.lightbox-header {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  padding: var(--wp--preset--spacing--40);
+}
+
+.lightbox-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.lightbox-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.3s ease;
+  color: var(--wp--preset--color--base);
+}
 
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.3);
+.lightbox-close:hover,
+.lightbox-close:focus {
+  background: var(--wp--preset--color--base);
+  color: var(--wp--preset--color--contrast);
+}
+
+.lightbox-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lightbox-image-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  position: relative;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 60vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto; /* Center the image */
+}
+
+.lightbox-caption {
+  padding: var(--wp--preset--spacing--40);
+  color: var(--wp--preset--color--base);
+  max-width: 100%;
+  word-wrap: break-word;
+  text-align: center; /* Optional: center the caption */
+}
+
+/* Navigation - positioned below the slideshow */
+.lightbox-navigation {
+  position: static; /* Remove absolute positioning */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: var(--wp--preset--spacing--40);
+  background: var(--wp--preset--color--contrast);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: auto;
+}
+
+.nav-btn {
+  border: none;
+  width: 3rem;
+  height: 3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  background: var(--wp--preset--color--base);
+  border-radius: 4px;
+  pointer-events: auto;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 17px 10px;
+}
+
+.prev-btn {
+  background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNyIgaGVpZ2h0PSIxMCI+PGcgZGF0YS1uYW1lPSJHcm91cCAyMDE2MCI+PHBhdGggZGF0YS1uYW1lPSJQb2x5Z29uIDEyIiBkPSJtMCA1IDgtNXYxMFoiIGZpbGw9IiNiYTBjMmYiLz48cGF0aCBkYXRhLW5hbWU9IkxpbmUgNDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2JhMGMyZiIgc3Ryb2tlLXdpZHRoPSIzIiBkPSJNOCA1aDkiLz48L2c+PC9zdmc+);
+}
+
+.next-btn {
+  background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNyIgaGVpZ2h0PSIxMCI+PGcgZGF0YS1uYW1lPSJHcm91cCAyMDE2MCI+PHBhdGggZGF0YS1uYW1lPSJQb2x5Z29uIDEyIiBkPSJtMCA1IDgtNXYxMFoiIGZpbGw9IiNiYTBjMmYiLz48cGF0aCBkYXRhLW5hbWU9IkxpbmUgNDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2JhMGMyZiIgc3Ryb2tlLXdpZHRoPSIzIiBkPSJNOCA1aDkiLz48L2c+PC9zdmc+);
+  transform: rotate(180deg);
+}
+
+.nav-btn:hover:not(:disabled),
+.nav-btn:focus:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.9);
+  outline: 2px solid var(--wp--preset--color--contrast);
+  outline-offset: 2px;
+  transform: scale(1.05);
+}
+
+.next-btn:hover:not(:disabled),
+.next-btn:focus:not(:disabled) {
+  transform: rotate(180deg) scale(1.05);
+}
+
+.nav-btn:disabled {
+  background-color: rgba(128, 128, 128, 0.3);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.prev-btn,
+.next-btn {
+  position: static; /* Remove absolute positioning */
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Prevent body scroll when lightbox is open */
+body.lightbox-open {
+  overflow: hidden;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .lightbox-content {
+    max-width: 95vw;
+    max-height: 95vh;
   }
 
-  &:focus {
-    outline: 2px solid #007cba;
-    outline-offset: -2px;
+  .lightbox-image {
+    max-height: 50vh;
+  }
+
+  .view-gallery-btn {
+    padding: var(--wp--preset--spacing--20);
+    font-size: 0.8rem;
+  }
+
+  .lightbox-navigation {
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .nav-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-size: 14px 8px;
+  }
+  
+  .next-btn:hover:not(:disabled),
+  .next-btn:focus:not(:disabled) {
+    transform: rotate(180deg) scale(1.05);
   }
 }
 
-.view-gallery-text {
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 600;
-  pointer-events: none;
+@media (max-width: 480px) {
+  .lightbox-header {
+    padding: 0.75rem;
+  }
+
+  .lightbox-title {
+    font-size: 1rem;
+  }
+
+  .lightbox-image-container {
+    padding: 0.75rem 0;
+  }
+
+  .view-gallery-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .lightbox-navigation {
+    gap: 1rem;
+    padding: 0.75rem;
+  }
+
+  .nav-btn {
+    width: 2rem;
+    height: 2rem;
+    background-size: 12px 7px;
+  }
+  
+  .next-btn:hover:not(:disabled),
+  .next-btn:focus:not(:disabled) {
+    transform: rotate(180deg) scale(1.05);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .view-gallery-btn:focus,
+  .lightbox-close:focus,
+  .nav-btn:focus {
+    outline: 3px solid;
+    outline-offset: 2px;
+  }
+
+  .lightbox-navigation {
+    border-top: 2px solid white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .gallery-trigger-image,
+  .view-gallery-btn,
+  .lightbox-close,
+  .nav-btn {
+    transition: none;
+  }
+
+  .nav-btn:hover:not(:disabled),
+  .nav-btn:focus:not(:disabled) {
+    transform: none; /* Remove scale animation */
+  }
+  
+  /* Keep the next button rotated even with reduced motion */
+  .next-btn:hover:not(:disabled),
+  .next-btn:focus:not(:disabled) {
+    transform: rotate(180deg); /* Keep rotation but no scaling */
+  }
 }
 
 // Disable Parvus zoom animation for this block
