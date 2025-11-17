@@ -664,8 +664,11 @@ figcaption a {
   color: var(--wp--preset--color--base);
 }
 
-.parvus__btn {
-  background-color: var(--wp--preset--color--primary);
+.parvus__btn,
+.parvus__btn[aria-disabled=true] {
+  background-color: var(--wp--preset--color--contrast);
+  color: var(--wp--preset--color--base);
+  transition: all 0.3s ease-in-out;
 
   &:hover,
   &:focus {
