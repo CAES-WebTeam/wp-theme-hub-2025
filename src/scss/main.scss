@@ -695,6 +695,8 @@ figcaption a {
 .parvus__caption {
     color: var(--wp--preset--color--base);
     max-width: var(--wp--style--global--wide-size);
+    font-size: 1rem;
+    line-height: 1.4;
 }
 
 .parvus-trigger:has(img) .parvus-zoom__indicator {
