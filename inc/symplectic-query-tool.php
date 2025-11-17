@@ -336,3 +336,72 @@ function symplectic_query_api_handler() {
         wp_send_json_success($result);
     }
 }
+
+// Render the admin page
+function symplectic_query_tool_render_page() {
+    // Check if credentials are configured
+    $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
+    ?>
+    <div class="wrap">
+        <h1>Symplectic Elements User Query Tool</h1>
+        
+        <div class="symplectic-query-tool-wrapper">
+            <?php if (!$credentials_configured): ?>
+                <div class="notice notice-error">
+                    <p><strong>Configuration Required:</strong> API credentials are not configured. Please add the following to your wp-config.php file:</p>
+                    <pre>define('SYMPLECTIC_API_USERNAME', 'your_username_here');
+define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
+                </div>
+            <?php endif; ?>
+            
+            <div class="notice notice-info">
+                <p><strong>Purpose:</strong> This tool allows you to query user information from the Symplectic Elements API 
+                using a proprietary ID. Enter a proprietary ID below and click "Execute Query" to retrieve 
+                the full user details from the Symplectic Elements system.</p>
+            </div>
+            
+            <form id="symplectic-query-form" method="post">
+                <div class="symplectic-form-group">
+                    <label for="proprietary-id">Proprietary ID:</label>
+                    <input 
+                        type="text" 
+                        id="proprietary-id" 
+                        name="proprietary_id" 
+                        class="regular-text" 
+                        placeholder="Enter proprietary ID (e.g., 810019979)"
+                        value=""
+                        <?php echo !$credentials_configured ? 'disabled' : ''; ?>
+                    />
+                    <p class="description">Enter the proprietary ID of the user you want to query.</p>
+                </div>
+                
+                <div class="symplectic-form-group">
+                    <button type="submit" id="symplectic-submit" class="button button-primary" <?php echo !$credentials_configured ? 'disabled' : ''; ?>>
+                        Execute Query
+                    </button>
+                </div>
+            </form>
+            
+            <div class="symplectic-results-area">
+                <h2>Query Results</h2>
+                <div id="symplectic-results" class="empty">
+                    <?php if ($credentials_configured): ?>
+                        No query executed yet. Enter a proprietary ID above and click "Execute Query" to see results.
+                    <?php else: ?>
+                        Please configure API credentials in wp-config.php before using this tool.
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
+// Optional: Add a capability check to ensure only authorized users can access
+add_filter('user_has_cap', 'symplectic_query_tool_capability_check', 10, 3);
+
+function symplectic_query_tool_capability_check($allcaps, $caps, $args) {
+    // This is optional - you can customize who has access to the tool
+    // By default, it requires 'manage_options' capability
+    return $allcaps;
+}
