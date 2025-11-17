@@ -702,6 +702,10 @@ figcaption a {
     color: var(--wp--preset--color--contrast);
 }
 
+.lightbox.parvus-trigger .wp-element-caption {
+    display: none; 
+}
+
 /* Additional Styles */
 
 @import 'blocks/_custom-block-styles.scss';
