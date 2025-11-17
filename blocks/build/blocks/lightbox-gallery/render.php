@@ -23,7 +23,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
 <div <?php echo $wrapper_attributes; ?>>
     <div class="gallery-trigger">
         <!-- Hidden gallery images for Parvus - use visibility instead of display:none -->
-        <div class="parvus-gallery" style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
+        <div class="parvus-gallery">
             <?php foreach ($images as $image): ?>
                 <a href="<?php echo esc_url($image['url']); ?>" 
                    class="lightbox"
