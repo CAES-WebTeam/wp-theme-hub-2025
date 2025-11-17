@@ -448,6 +448,14 @@
         },
         "position": {
             "sticky": true
+        },
+        "blocks": {
+            "core/image": {
+                "lightbox": {
+                    "allowEditing": false,
+                    "enabled": false
+                }
+            }
         }
     },
     "styles": {

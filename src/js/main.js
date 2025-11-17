@@ -1,3 +1,5 @@
+// Import Parvus
+import Parvus from 'parvus';
 
 // Handle responsive tables function
 
@@ -84,9 +86,30 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   });
+  /*** END REMOVE EMPTY PARAGRAPHS */
+  
+  /*** START PARVUS LIGHTBOX INITIALIZATION */
+  // Find all image blocks that link to images and add lightbox class
+  const linkedImgs = document.querySelectorAll('.wp-block-image a[href*=".jpg"],.wp-block-image a[href*=".jpeg"],.wp-block-image a[href*=".png"],.wp-block-image a[href*=".gif"]');
+
+  for (const link of linkedImgs) {
+    link.classList.add('lightbox');
+
+    // Get sibling figcaption if it exists
+    const sibling = link.nextElementSibling;
+    if (sibling && sibling.classList.contains('wp-element-caption')) {
+      const caption = sibling.innerHTML;
+      link.setAttribute('data-caption', caption);
+    }
+  }
+
+  // Initialize Parvus for galleries
+  const prvs = new Parvus({
+    gallerySelector: '.wp-block-gallery'
+  });
+  /*** END PARVUS LIGHTBOX INITIALIZATION */
 
   /*** HANDLE LEGACY CONTENT */
-
   const classicWrapper = document.querySelector(".classic-content-wrapper");
 
   if (classicWrapper) {
@@ -108,15 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
   wrapResponsiveTables();
   handleOverflowScroll();
 
-});
-
-// Recheck for responsive tables on window resize
-window.addEventListener('resize', handleOverflowScroll);
-
-/** End legacy content cleanup */
-
-// Saved Posts
-document.addEventListener('DOMContentLoaded', function () {
+  // Saved Posts
   const saveButtons = document.querySelectorAll('.btn-save');
 
   saveButtons.forEach(button => {
@@ -158,3 +173,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
+
+// Recheck for responsive tables on window resize
+window.addEventListener('resize', handleOverflowScroll);
