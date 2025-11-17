@@ -158,8 +158,7 @@
   width: auto;
   height: auto;
   object-fit: contain;
-  margin: 0 auto;
-  /* Center the image */
+  margin: 0 auto; /* Center the image */
 }
 
 .lightbox-caption {
@@ -167,14 +166,12 @@
   color: var(--wp--preset--color--base);
   max-width: 100%;
   word-wrap: break-word;
-  text-align: center;
-  /* Optional: center the caption */
+  text-align: center; /* Optional: center the caption */
 }
 
 /* Navigation - positioned below the slideshow */
 .lightbox-navigation {
-  position: static;
-  /* Remove absolute positioning */
+  position: static; /* Remove absolute positioning */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,8 +229,7 @@
 
 .prev-btn,
 .next-btn {
-  position: static;
-  /* Remove absolute positioning */
+  position: static; /* Remove absolute positioning */
 }
 
 /* Screen reader only text */
@@ -280,7 +276,7 @@ body.lightbox-open {
     height: 2.5rem;
     background-size: 14px 8px;
   }
-
+  
   .next-btn:hover:not(:disabled),
   .next-btn:focus:not(:disabled) {
     transform: rotate(180deg) scale(1.05);
@@ -315,7 +311,7 @@ body.lightbox-open {
     height: 2rem;
     background-size: 12px 7px;
   }
-
+  
   .next-btn:hover:not(:disabled),
   .next-btn:focus:not(:disabled) {
     transform: rotate(180deg) scale(1.05);
@@ -324,7 +320,6 @@ body.lightbox-open {
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-
   .view-gallery-btn:focus,
   .lightbox-close:focus,
   .nav-btn:focus {
@@ -339,7 +334,6 @@ body.lightbox-open {
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-
   .gallery-trigger-image,
   .view-gallery-btn,
   .lightbox-close,
@@ -349,14 +343,12 @@ body.lightbox-open {
 
   .nav-btn:hover:not(:disabled),
   .nav-btn:focus:not(:disabled) {
-    transform: none;
-    /* Remove scale animation */
+    transform: none; /* Remove scale animation */
   }
-
+  
   /* Keep the next button rotated even with reduced motion */
   .next-btn:hover:not(:disabled),
   .next-btn:focus:not(:disabled) {
-    transform: rotate(180deg);
-    /* Keep rotation but no scaling */
+    transform: rotate(180deg); /* Keep rotation but no scaling */
   }
 }
