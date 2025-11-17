@@ -667,9 +667,10 @@ figcaption a {
 .parvus__btn {
   background-color: var(--wp--preset--color--primary);
 
-  &:hover {
-    background-color: var(--wp--preset--color--contrast);
-    color: var(--wp--preset--color--base);
+  &:hover,
+  &:focus {
+    background-color: var(--wp--preset--color--base);
+    color: var(--wp--preset--color--contrast);
   }
 }
 
@@ -680,6 +681,10 @@ figcaption a {
 
 .parvus__overlay {
     background-color: var(--wp--preset--color--contrast);
+    color: var(--wp--preset--color--base);
+}
+
+.parvus__caption {
     color: var(--wp--preset--color--base);
 }
 
