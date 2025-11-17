@@ -204,14 +204,27 @@ function symplectic_query_api_handler() {
     $username = SYMPLECTIC_API_USERNAME;
     $password = SYMPLECTIC_API_PASSWORD;
     
+    // Build authentication header
+    $auth_string = base64_encode($username . ':' . $password);
+    
     // Set up the API request with authentication
     $args = array(
         'headers' => array(
-            'Authorization' => 'Basic ' . base64_encode($username . ':' . $password),
+            'Authorization' => 'Basic ' . $auth_string,
             'Accept' => 'application/json',
         ),
         'timeout' => 300,
-        'sslverify' => true, // Set to true in production if SSL cert is valid
+        'sslverify' => true,
+    );
+    
+    // Prepare detailed diagnostic information
+    $diagnostic_info = array(
+        'request_url' => $api_url,
+        'request_method' => 'GET',
+        'username_length' => strlen($username),
+        'password_length' => strlen($password),
+        'auth_header_length' => strlen($auth_string),
+        'timestamp' => current_time('mysql'),
     );
     
     // Make the API request
@@ -219,95 +232,107 @@ function symplectic_query_api_handler() {
     
     // Check for errors
     if (is_wp_error($response)) {
-        wp_send_json_error('API request failed: ' . $response->get_error_message());
+        $error_data = array(
+            'error_message' => $response->get_error_message(),
+            'error_code' => $response->get_error_code(),
+            'diagnostic_info' => $diagnostic_info,
+        );
+        wp_send_json_error($error_data);
         return;
     }
     
     $response_code = wp_remote_retrieve_response_code($response);
     $response_body = wp_remote_retrieve_body($response);
+    $response_headers = wp_remote_retrieve_headers($response);
     
+    // Enhanced error handling for non-200 responses
     if ($response_code !== 200) {
-        wp_send_json_error('API returned status code: ' . $response_code);
+        // Prepare detailed error information
+        $error_details = array(
+            'status_code' => $response_code,
+            'status_message' => wp_remote_retrieve_response_message($response),
+            'response_body' => $response_body,
+            'response_headers' => array(
+                'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'Not provided',
+                'www_authenticate' => isset($response_headers['www-authenticate']) ? $response_headers['www-authenticate'] : 'Not provided',
+                'server' => isset($response_headers['server']) ? $response_headers['server'] : 'Not provided',
+            ),
+            'diagnostic_info' => $diagnostic_info,
+        );
+        
+        // Add specific guidance based on status code
+        switch ($response_code) {
+            case 401:
+                $error_details['error_type'] = 'Authentication Failed';
+                $error_details['likely_causes'] = array(
+                    'Invalid username or password',
+                    'Credentials expired or account disabled',
+                    'Username/password contains special characters not properly encoded',
+                    'Account lacks API access permissions',
+                    'IP address not whitelisted (if API has IP restrictions)',
+                );
+                $error_details['troubleshooting_steps'] = array(
+                    '1. Verify SYMPLECTIC_API_USERNAME and SYMPLECTIC_API_PASSWORD in wp-config.php',
+                    '2. Check if credentials work in another API client (like Postman)',
+                    '3. Confirm the account has API access enabled in Symplectic Elements',
+                    '4. Check for typos, extra spaces, or hidden characters in credentials',
+                    '5. Contact Symplectic Elements administrator to verify account status',
+                );
+                break;
+            case 403:
+                $error_details['error_type'] = 'Access Forbidden';
+                $error_details['likely_causes'] = array(
+                    'Account lacks permissions for this API endpoint',
+                    'IP address blocked',
+                );
+                break;
+            case 404:
+                $error_details['error_type'] = 'Not Found';
+                $error_details['likely_causes'] = array(
+                    'API endpoint URL is incorrect',
+                    'API version v6.13 may not be available',
+                );
+                break;
+            case 500:
+            case 502:
+            case 503:
+                $error_details['error_type'] = 'Server Error';
+                $error_details['likely_causes'] = array(
+                    'Symplectic Elements API server is experiencing issues',
+                    'Database connection problems on server side',
+                );
+                break;
+            default:
+                $error_details['error_type'] = 'HTTP Error ' . $response_code;
+        }
+        
+        wp_send_json_error($error_details);
         return;
     }
     
-    // Try to parse the response as JSON
+    // Success - parse and return the response
     $data = json_decode($response_body, true);
     
     if (json_last_error() !== JSON_ERROR_NONE) {
-        // If not JSON, return raw response
-        wp_send_json_success($response_body);
+        // If not JSON, return raw response with metadata
+        $result = array(
+            'raw_response' => $response_body,
+            'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
+            'response_length' => strlen($response_body),
+            'diagnostic_info' => $diagnostic_info,
+        );
+        wp_send_json_success($result);
     } else {
-        // Return parsed JSON
-        wp_send_json_success($data);
+        // Return parsed JSON with metadata
+        $result = array(
+            'data' => $data,
+            'response_metadata' => array(
+                'response_code' => $response_code,
+                'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
+                'response_size' => strlen($response_body),
+            ),
+            'diagnostic_info' => $diagnostic_info,
+        );
+        wp_send_json_success($result);
     }
-}
-
-// Render the admin page
-function symplectic_query_tool_render_page() {
-    // Check if credentials are configured
-    $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
-    ?>
-    <div class="wrap">
-        <h1>Symplectic Elements User Query Tool</h1>
-        
-        <div class="symplectic-query-tool-wrapper">
-            <?php if (!$credentials_configured): ?>
-                <div class="notice notice-error">
-                    <p><strong>Configuration Required:</strong> API credentials are not configured. Please add the following to your wp-config.php file:</p>
-                    <pre>define('SYMPLECTIC_API_USERNAME', 'your_username_here');
-define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
-                </div>
-            <?php endif; ?>
-            
-            <div class="notice notice-info">
-                <p><strong>Purpose:</strong> This tool allows you to query user information from the Symplectic Elements API 
-                using a proprietary ID. Enter a proprietary ID below and click "Execute Query" to retrieve 
-                the full user details from the Symplectic Elements system.</p>
-            </div>
-            
-            <form id="symplectic-query-form" method="post">
-                <div class="symplectic-form-group">
-                    <label for="proprietary-id">Proprietary ID:</label>
-                    <input 
-                        type="text" 
-                        id="proprietary-id" 
-                        name="proprietary_id" 
-                        class="regular-text" 
-                        placeholder="Enter proprietary ID (e.g., 810019979)"
-                        value=""
-                        <?php echo !$credentials_configured ? 'disabled' : ''; ?>
-                    />
-                    <p class="description">Enter the proprietary ID of the user you want to query.</p>
-                </div>
-                
-                <div class="symplectic-form-group">
-                    <button type="submit" id="symplectic-submit" class="button button-primary" <?php echo !$credentials_configured ? 'disabled' : ''; ?>>
-                        Execute Query
-                    </button>
-                </div>
-            </form>
-            
-            <div class="symplectic-results-area">
-                <h2>Query Results</h2>
-                <div id="symplectic-results" class="empty">
-                    <?php if ($credentials_configured): ?>
-                        No query executed yet. Enter a proprietary ID above and click "Execute Query" to see results.
-                    <?php else: ?>
-                        Please configure API credentials in wp-config.php before using this tool.
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php
-}
-
-// Optional: Add a capability check to ensure only authorized users can access
-add_filter('user_has_cap', 'symplectic_query_tool_capability_check', 10, 3);
-
-function symplectic_query_tool_capability_check($allcaps, $caps, $args) {
-    // This is optional - you can customize who has access to the tool
-    // By default, it requires 'manage_options' capability
-    return $allcaps;
 }
