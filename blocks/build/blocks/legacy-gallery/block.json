@@ -9,6 +9,7 @@
   "description": "Legacy gallery block. Not to be used for new content.",
   "example": {},
   "supports": {
+    "inserter": false,
     "html": false,
     "align": true,
     "spacing": {
