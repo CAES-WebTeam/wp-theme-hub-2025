@@ -1,0 +1,10 @@
+// Gallery block styles
+
+// Helper class for hiding thumbnail captions ON FRONT END. This is good for long captions 
+// you want to appear in the lightbox, but are too much text to display over the thumbnail.
+// Style is overriden in editor.
+.wp-block-gallery.hide-thumbnail-caption {
+    figure.wp-block-image figcaption {
+        display: none;
+    }
+}

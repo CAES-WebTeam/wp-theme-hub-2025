@@ -121,3 +121,17 @@ ul.is-style-caes-hub-list-none {
 .caes-hub-main-bg {
     position: absolute !important;
 }
+
+// Helper class for hiding thumbnail captions ON FRONT END.
+// This forces the caption to display in the editor so users can create captions.
+.wp-block-gallery.hide-thumbnail-caption {
+  figure.wp-block-image figcaption {
+    display: block;
+  }
+}
+
+.wp-block-image.hide-thumbnail-caption {
+  figcaption {
+    display: block;
+  }
+}
