@@ -76,6 +76,35 @@ function symplectic_query_tool_enqueue_scripts($hook) {
             background: #ffebe8;
             border: 1px solid #dc3232;
             border-radius: 3px;
+            margin-bottom: 15px;
+        }
+        .symplectic-error-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .symplectic-error-section {
+            margin-bottom: 15px;
+        }
+        .symplectic-error-section h4 {
+            margin: 0 0 5px 0;
+            color: #23282d;
+            font-size: 14px;
+        }
+        .symplectic-error-section ul {
+            margin: 5px 0 5px 20px;
+            list-style-type: disc;
+        }
+        .symplectic-error-section pre {
+            background: #f1f1f1;
+            padding: 8px;
+            border-radius: 3px;
+            overflow-x: auto;
+            margin: 5px 0;
         }
         .symplectic-success {
             color: #46b450;
@@ -135,17 +164,124 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                 "</div>"
                             );
                         } else {
-                            resultsArea.html(
-                                "<div class=\"symplectic-error\">Error: " + 
-                                (response.data || "Unknown error occurred") + 
-                                "</div>"
-                            );
+                            // Handle error response with detailed information
+                            var errorHtml = "";
+                            
+                            // Check if response.data is a string or object
+                            if (typeof response.data === "string") {
+                                errorHtml = "<div class=\"symplectic-error\">Error: " + escapeHtml(response.data) + "</div>";
+                            } else if (typeof response.data === "object" && response.data !== null) {
+                                // Build detailed error display
+                                errorHtml = "<div class=\"symplectic-error\">";
+                                
+                                // Main error message
+                                if (response.data.error_type) {
+                                    errorHtml += "<strong>" + escapeHtml(response.data.error_type) + "</strong>";
+                                    if (response.data.status_code) {
+                                        errorHtml += " (HTTP " + response.data.status_code + ")";
+                                    }
+                                } else if (response.data.error_message) {
+                                    errorHtml += "<strong>Error:</strong> " + escapeHtml(response.data.error_message);
+                                } else {
+                                    errorHtml += "<strong>API Request Failed</strong>";
+                                }
+                                
+                                errorHtml += "</div>";
+                                
+                                // Error details section
+                                errorHtml += "<div class=\"symplectic-error-details\">";
+                                
+                                // Status message
+                                if (response.data.status_message) {
+                                    errorHtml += "<div class=\"symplectic-error-section\">";
+                                    errorHtml += "<h4>Status Message:</h4>";
+                                    errorHtml += "<p>" + escapeHtml(response.data.status_message) + "</p>";
+                                    errorHtml += "</div>";
+                                }
+                                
+                                // Likely causes
+                                if (response.data.likely_causes && Array.isArray(response.data.likely_causes)) {
+                                    errorHtml += "<div class=\"symplectic-error-section\">";
+                                    errorHtml += "<h4>Likely Causes:</h4>";
+                                    errorHtml += "<ul>";
+                                    response.data.likely_causes.forEach(function(cause) {
+                                        errorHtml += "<li>" + escapeHtml(cause) + "</li>";
+                                    });
+                                    errorHtml += "</ul>";
+                                    errorHtml += "</div>";
+                                }
+                                
+                                // Troubleshooting steps
+                                if (response.data.troubleshooting_steps && Array.isArray(response.data.troubleshooting_steps)) {
+                                    errorHtml += "<div class=\"symplectic-error-section\">";
+                                    errorHtml += "<h4>Troubleshooting Steps:</h4>";
+                                    errorHtml += "<ul>";
+                                    response.data.troubleshooting_steps.forEach(function(step) {
+                                        errorHtml += "<li>" + escapeHtml(step) + "</li>";
+                                    });
+                                    errorHtml += "</ul>";
+                                    errorHtml += "</div>";
+                                }
+                                
+                                // Response body (if present and not too large)
+                                if (response.data.response_body) {
+                                    errorHtml += "<div class=\"symplectic-error-section\">";
+                                    errorHtml += "<h4>Response Body:</h4>";
+                                    var bodyText = response.data.response_body;
+                                    if (bodyText.length > 500) {
+                                        bodyText = bodyText.substring(0, 500) + "... (truncated)";
+                                    }
+                                    errorHtml += "<pre>" + escapeHtml(bodyText) + "</pre>";
+                                    errorHtml += "</div>";
+                                }
+                                
+                                // Response headers
+                                if (response.data.response_headers) {
+                                    errorHtml += "<div class=\"symplectic-error-section\">";
+                                    errorHtml += "<h4>Response Headers:</h4>";
+                                    errorHtml += "<pre>" + escapeHtml(JSON.stringify(response.data.response_headers, null, 2)) + "</pre>";
+                                    errorHtml += "</div>";
+                                }
+                                
+                                // Diagnostic info
+                                if (response.data.diagnostic_info) {
+                                    errorHtml += "<div class=\"symplectic-error-section\">";
+                                    errorHtml += "<h4>Request Details:</h4>";
+                                    errorHtml += "<pre>" + escapeHtml(JSON.stringify(response.data.diagnostic_info, null, 2)) + "</pre>";
+                                    errorHtml += "</div>";
+                                }
+                                
+                                // Full error object (collapsed by default)
+                                errorHtml += "<div class=\"symplectic-error-section\">";
+                                errorHtml += "<h4>Full Error Details:</h4>";
+                                errorHtml += "<details>";
+                                errorHtml += "<summary style=\"cursor: pointer;\">Click to expand raw error data</summary>";
+                                errorHtml += "<pre style=\"margin-top: 10px;\">" + escapeHtml(JSON.stringify(response.data, null, 2)) + "</pre>";
+                                errorHtml += "</details>";
+                                errorHtml += "</div>";
+                                
+                                errorHtml += "</div>";
+                            } else {
+                                // Fallback for unexpected data types
+                                errorHtml = "<div class=\"symplectic-error\">An unknown error occurred. Please try again.</div>";
+                            }
+                            
+                            resultsArea.html(errorHtml);
                         }
                     },
                     error: function(xhr, status, error) {
-                        resultsArea.html(
-                            "<div class=\"symplectic-error\">Request failed: " + error + "</div>"
-                        );
+                        var errorMessage = "<div class=\"symplectic-error\">";
+                        errorMessage += "<strong>Request Failed:</strong> " + escapeHtml(error);
+                        errorMessage += "</div>";
+                        
+                        if (xhr.responseText) {
+                            errorMessage += "<div class=\"symplectic-error-details\">";
+                            errorMessage += "<h4>Server Response:</h4>";
+                            errorMessage += "<pre>" + escapeHtml(xhr.responseText) + "</pre>";
+                            errorMessage += "</div>";
+                        }
+                        
+                        resultsArea.html(errorMessage);
                     },
                     complete: function() {
                         submitButton.prop("disabled", false).text("Execute Query");
@@ -154,6 +290,11 @@ function symplectic_query_tool_enqueue_scripts($hook) {
             });
             
             function escapeHtml(text) {
+                // Handle non-string types
+                if (typeof text !== "string") {
+                    text = String(text);
+                }
+                
                 var map = {
                     "&": "&amp;",
                     "<": "&lt;",
