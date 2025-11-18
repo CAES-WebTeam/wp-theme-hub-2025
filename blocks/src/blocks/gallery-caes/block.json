@@ -21,6 +21,10 @@
 			"items": {
 				"type": "object"
 			}
+		},
+		"cropImages": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"supports": {

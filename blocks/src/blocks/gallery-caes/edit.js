@@ -1,10 +1,10 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls } from '@wordpress/block-editor';
-import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton } from '@wordpress/components';
+import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { rows } = attributes;
+	const { rows, cropImages } = attributes;
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 
 	// Add a new row
@@ -101,7 +101,7 @@ const Edit = ({ attributes, setAttributes }) => {
 						return (
 							<div 
 								key={rowIndex} 
-								className={`gallery-row gallery-row-${columns}-cols`}
+								className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`}
 								style={{
 									display: 'grid',
 									gridTemplateColumns: `repeat(${columns}, 1fr)`,
@@ -122,8 +122,9 @@ const Edit = ({ attributes, setAttributes }) => {
 												alt={image.alt || ''}
 												style={{
 													width: '100%',
-													height: 'auto',
-													display: 'block'
+													height: cropImages ? '100%' : 'auto',
+													display: 'block',
+													objectFit: cropImages ? 'cover' : 'contain'
 												}}
 											/>
 										</div>
@@ -152,7 +153,15 @@ const Edit = ({ attributes, setAttributes }) => {
 
 			<InspectorControls>
 				<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
-					<p>{__('Configure columns per row in the editor below.', 'caes-gallery')}</p>
+					<ToggleControl
+						label={__('Crop images to fit', 'caes-gallery')}
+						checked={cropImages}
+						onChange={(value) => setAttributes({ cropImages: value })}
+						help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
+					/>
+					<p style={{ marginTop: '12px', fontSize: '13px', color: '#757575' }}>
+						{__('Configure columns per row in the editor below.', 'caes-gallery')}
+					</p>
 				</PanelBody>
 			</InspectorControls>
 

@@ -5,6 +5,7 @@
 
 // Get block attributes
 $rows = $attributes['rows'] ?? [];
+$crop_images = $attributes['cropImages'] ?? false;
 
 // Early return if no rows
 if (empty($rows)) {
@@ -45,7 +46,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
         }
         ?>
         
-        <div class="gallery-row gallery-row-<?php echo esc_attr($columns); ?>-cols" 
+        <div class="gallery-row gallery-row-<?php echo esc_attr($columns); ?>-cols<?php echo $crop_images ? ' is-cropped' : ''; ?>" 
              data-columns="<?php echo esc_attr($columns); ?>">
             
             <?php foreach ($images as $image): ?>
