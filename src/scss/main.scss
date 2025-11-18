@@ -702,6 +702,9 @@ figcaption a {
 .parvus__overlay {
     background-color: var(--wp--preset--color--contrast);
     color: var(--wp--preset--color--base);
+    // Force disable backdrop effects
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
 }
 
 .parvus__caption {
@@ -718,6 +721,15 @@ figcaption a {
 
 .lightbox.parvus-trigger+.wp-element-caption {
     display: none;
+}
+
+.parvus, 
+.parvus__overlay {
+    // Override to ensure we ONLY animate opacity/visibility
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    
+    // Force the element to exist on a 3D plane to prevent repainting
+    transform: translateZ(0); 
 }
 
 /* Additional Styles */
