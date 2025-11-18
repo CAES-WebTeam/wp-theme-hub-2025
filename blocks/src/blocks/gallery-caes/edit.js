@@ -77,7 +77,7 @@ const Edit = ({ attributes, setAttributes }) => {
 	// Preview Mode - Shows frontend appearance
 	if (isPreviewMode) {
 		return (
-			<div {...blockProps}>
+			<>
 				<BlockControls>
 					<ToolbarGroup>
 						<ToolbarButton
@@ -89,52 +89,65 @@ const Edit = ({ attributes, setAttributes }) => {
 					</ToolbarGroup>
 				</BlockControls>
 
-				<div className="caes-gallery-preview">
-					{rows.map((row, rowIndex) => {
-						const columns = row.columns ?? 3;
-						const images = row.images ?? [];
-						
-						if (images.length === 0) {
-							return null;
-						}
+				<InspectorControls>
+					<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
+						<ToggleControl
+							label={__('Crop images to fit', 'caes-gallery')}
+							checked={cropImages}
+							onChange={(value) => setAttributes({ cropImages: value })}
+							help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
+						/>
+					</PanelBody>
+				</InspectorControls>
 
-						return (
-							<div 
-								key={rowIndex} 
-								className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`}
-								style={{
-									display: 'grid',
-									gridTemplateColumns: `repeat(${columns}, 1fr)`,
-									gap: '1rem',
-									marginBottom: '1rem'
-								}}
-							>
-								{images.map((image) => (
-									<div key={image.id} className="gallery-item">
-										<div style={{
-											display: 'block',
-											overflow: 'hidden',
-											borderRadius: '4px',
-											cursor: 'pointer'
-										}}>
-											<img
-												src={image.url}
-												alt={image.alt || ''}
-												style={{
-													width: '100%',
-													height: cropImages ? '100%' : 'auto',
-													display: 'block',
-													objectFit: cropImages ? 'cover' : 'contain'
-												}}
-											/>
+				<div {...blockProps}>
+					<div className="caes-gallery-preview">
+						{rows.map((row, rowIndex) => {
+							const columns = row.columns ?? 3;
+							const images = row.images ?? [];
+							
+							if (images.length === 0) {
+								return null;
+							}
+
+							return (
+								<div 
+									key={rowIndex} 
+									className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`}
+									style={{
+										display: 'grid',
+										gridTemplateColumns: `repeat(${columns}, 1fr)`,
+										gap: '1rem',
+										marginBottom: '1rem'
+									}}
+								>
+									{images.map((image) => (
+										<div key={image.id} className="gallery-item">
+											<div style={{
+												display: 'block',
+												overflow: 'hidden',
+												cursor: 'pointer',
+												height: cropImages ? '250px' : 'auto'
+											}}>
+												<img
+													src={image.url}
+													alt={image.alt || ''}
+													style={{
+														width: '100%',
+														height: cropImages ? '100%' : 'auto',
+														display: 'block',
+														objectFit: cropImages ? 'cover' : 'contain'
+													}}
+												/>
+											</div>
 										</div>
-									</div>
-								))}
-							</div>
-						);
-					})}
+									))}
+								</div>
+							);
+						})}
+					</div>
 				</div>
-			</div>
+			</>
 		);
 	}
 

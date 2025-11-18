@@ -124,8 +124,7 @@ const Edit = ({
 
   // Preview Mode - Shows frontend appearance
   if (isPreviewMode) {
-    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-      ...blockProps,
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
           children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarButton, {
@@ -134,45 +133,60 @@ const Edit = ({
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit', 'caes-gallery')
           })
         })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+          title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Gallery Settings', 'caes-gallery'),
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Crop images to fit', 'caes-gallery'),
+            checked: cropImages,
+            onChange: value => setAttributes({
+              cropImages: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')
+          })
+        })
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-        className: "caes-gallery-preview",
-        children: rows.map((row, rowIndex) => {
-          var _row$columns, _row$images;
-          const columns = (_row$columns = row.columns) !== null && _row$columns !== void 0 ? _row$columns : 3;
-          const images = (_row$images = row.images) !== null && _row$images !== void 0 ? _row$images : [];
-          if (images.length === 0) {
-            return null;
-          }
-          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-            className: `gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`,
-            style: {
-              display: 'grid',
-              gridTemplateColumns: `repeat(${columns}, 1fr)`,
-              gap: '1rem',
-              marginBottom: '1rem'
-            },
-            children: images.map(image => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-              className: "gallery-item",
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-                style: {
-                  display: 'block',
-                  overflow: 'hidden',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                },
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                  src: image.url,
-                  alt: image.alt || '',
+        ...blockProps,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+          className: "caes-gallery-preview",
+          children: rows.map((row, rowIndex) => {
+            var _row$columns, _row$images;
+            const columns = (_row$columns = row.columns) !== null && _row$columns !== void 0 ? _row$columns : 3;
+            const images = (_row$images = row.images) !== null && _row$images !== void 0 ? _row$images : [];
+            if (images.length === 0) {
+              return null;
+            }
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+              className: `gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`,
+              style: {
+                display: 'grid',
+                gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                gap: '1rem',
+                marginBottom: '1rem'
+              },
+              children: images.map(image => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+                className: "gallery-item",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
                   style: {
-                    width: '100%',
-                    height: cropImages ? '100%' : 'auto',
                     display: 'block',
-                    objectFit: cropImages ? 'cover' : 'contain'
-                  }
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    height: cropImages ? '250px' : 'auto'
+                  },
+                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                    src: image.url,
+                    alt: image.alt || '',
+                    style: {
+                      width: '100%',
+                      height: cropImages ? '100%' : 'auto',
+                      display: 'block',
+                      objectFit: cropImages ? 'cover' : 'contain'
+                    }
+                  })
                 })
-              })
-            }, image.id))
-          }, rowIndex);
+              }, image.id))
+            }, rowIndex);
+          })
         })
       })]
     });

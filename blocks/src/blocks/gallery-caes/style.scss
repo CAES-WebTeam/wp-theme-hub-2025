@@ -30,11 +30,11 @@
 			grid-template-columns: repeat(6, 1fr);
 		}
 
-		// Cropped images mode
+		// Cropped images mode - fixed height with natural aspect
 		&.is-cropped {
 			.gallery-item {
 				a {
-					aspect-ratio: 1;
+					height: 250px;
 					display: block;
 				}
 
@@ -51,7 +51,6 @@
 			a {
 				display: block;
 				overflow: hidden;
-				border-radius: 4px;
 				transition: transform 0.2s ease;
 
 				&:hover {

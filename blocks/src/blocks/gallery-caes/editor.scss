@@ -8,7 +8,6 @@
 		padding: 20px;
 		background-color: #fff;
 		border: 2px solid #2271b1;
-		border-radius: 4px;
 
 		.gallery-row {
 			display: grid;
@@ -44,7 +43,7 @@
 			&.is-cropped {
 				.gallery-item {
 					> div {
-						aspect-ratio: 1;
+						height: 250px;
 					}
 
 					img {
@@ -59,7 +58,6 @@
 				> div {
 					display: block;
 					overflow: hidden;
-					border-radius: 4px;
 					cursor: pointer;
 					transition: transform 0.2s ease;
 
@@ -102,7 +100,6 @@
 		// Individual row editor
 		.gallery-row-editor {
 			border: 1px solid #ddd;
-			border-radius: 4px;
 			padding: 16px;
 			margin-bottom: 16px;
 			background-color: #f9f9f9;
@@ -147,7 +144,6 @@
 					aspect-ratio: 1;
 					background-color: #fff;
 					border: 1px solid #ddd;
-					border-radius: 4px;
 					overflow: hidden;
 
 					img {
@@ -182,7 +178,6 @@
 					padding: 8px;
 					background-color: #fff;
 					border: 1px solid #ddd;
-					border-radius: 4px;
 
 					&:hover {
 						background-color: #f0f0f0;
@@ -196,7 +191,6 @@
 						padding: 12px;
 						background-color: #fff;
 						border: 1px solid #ddd;
-						border-radius: 4px;
 						margin-bottom: 8px;
 
 						> div:first-child {
@@ -206,7 +200,6 @@
 								width: 60px;
 								height: 60px;
 								object-fit: cover;
-								border-radius: 4px;
 							}
 						}
 
@@ -227,7 +220,6 @@
 									width: 100%;
 									padding: 6px 8px;
 									border: 1px solid #ddd;
-									border-radius: 4px;
 
 									&:focus {
 										border-color: #2271b1;
