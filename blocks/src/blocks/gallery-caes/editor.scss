@@ -5,14 +5,13 @@
 .caes-gallery-block {
 	// Preview mode
 	.caes-gallery-preview {
-		padding: 20px;
 		background-color: #fff;
 		border: 2px solid #2271b1;
 
 		.gallery-row {
 			display: grid;
-			gap: 1rem;
-			margin-bottom: 1rem;
+			gap: var(--wp--style--block-gap, 1rem);
+			margin-bottom: 0;
 
 			&:last-child {
 				margin-bottom: 0;
@@ -47,6 +46,7 @@
 			&.is-cropped {
 				display: flex;
 				flex-wrap: wrap;
+				gap: var(--wp--style--block-gap, 1rem);
 
 				.gallery-item {
 					display: flex;
@@ -75,23 +75,23 @@
 				}
 
 				&.gallery-row-2-cols .gallery-item {
-					width: calc(50% - 0.5rem);
+					width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2));
 				}
 
 				&.gallery-row-3-cols .gallery-item {
-					width: calc(33.333% - 0.67rem);
+					width: calc(33.333% - (var(--wp--style--block-gap, 1rem) * 2 / 3));
 				}
 
 				&.gallery-row-4-cols .gallery-item {
-					width: calc(25% - 0.75rem);
+					width: calc(25% - (var(--wp--style--block-gap, 1rem) * 3 / 4));
 				}
 
 				&.gallery-row-5-cols .gallery-item {
-					width: calc(20% - 0.8rem);
+					width: calc(20% - (var(--wp--style--block-gap, 1rem) * 4 / 5));
 				}
 
 				&.gallery-row-6-cols .gallery-item {
-					width: calc(16.666% - 0.84rem);
+					width: calc(16.666% - (var(--wp--style--block-gap, 1rem) * 5 / 6));
 				}
 			}
 
@@ -119,6 +119,11 @@
 				}
 			}
 		}
+
+		// Add gap between rows
+		.gallery-row + .gallery-row {
+			margin-top: var(--wp--style--block-gap, 1rem);
+		}
 	}
 
 	// Responsive preview adjustments
@@ -129,7 +134,7 @@
 			}
 
 			&.is-cropped .gallery-item {
-				width: calc(50% - 0.5rem) !important;
+				width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2)) !important;
 			}
 		}
 	}

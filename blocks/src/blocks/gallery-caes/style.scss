@@ -6,8 +6,8 @@
 	// Gallery row layout
 	.gallery-row {
 		display: grid;
-		gap: 1rem;
-		margin-bottom: 1rem;
+		gap: var(--wp--style--block-gap, 1rem);
+		margin-bottom: 0;
 
 		// Dynamic column classes
 		&.gallery-row-1-cols {
@@ -38,6 +38,7 @@
 		&.is-cropped {
 			display: flex;
 			flex-wrap: wrap;
+			gap: var(--wp--style--block-gap, 1rem);
 
 			.gallery-item {
 				display: flex;
@@ -45,7 +46,6 @@
 				flex-direction: column;
 				justify-content: center;
 				position: relative;
-				width: calc((100% / var(--columns)) - 1rem);
 				
 				a {
 					flex: 1 0 0%;
@@ -61,41 +61,29 @@
 				}
 			}
 
-			// Set CSS custom properties for each column count
-			&.gallery-row-1-cols {
-				.gallery-item {
-					width: 100%;
-				}
+			// Set widths for each column count - accounting for gap
+			&.gallery-row-1-cols .gallery-item {
+				width: 100%;
 			}
 
-			&.gallery-row-2-cols {
-				.gallery-item {
-					width: calc(50% - 0.5rem);
-				}
+			&.gallery-row-2-cols .gallery-item {
+				width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2));
 			}
 
-			&.gallery-row-3-cols {
-				.gallery-item {
-					width: calc(33.333% - 0.67rem);
-				}
+			&.gallery-row-3-cols .gallery-item {
+				width: calc(33.333% - (var(--wp--style--block-gap, 1rem) * 2 / 3));
 			}
 
-			&.gallery-row-4-cols {
-				.gallery-item {
-					width: calc(25% - 0.75rem);
-				}
+			&.gallery-row-4-cols .gallery-item {
+				width: calc(25% - (var(--wp--style--block-gap, 1rem) * 3 / 4));
 			}
 
-			&.gallery-row-5-cols {
-				.gallery-item {
-					width: calc(20% - 0.8rem);
-				}
+			&.gallery-row-5-cols .gallery-item {
+				width: calc(20% - (var(--wp--style--block-gap, 1rem) * 4 / 5));
 			}
 
-			&.gallery-row-6-cols {
-				.gallery-item {
-					width: calc(16.666% - 0.84rem);
-				}
+			&.gallery-row-6-cols .gallery-item {
+				width: calc(16.666% - (var(--wp--style--block-gap, 1rem) * 5 / 6));
 			}
 		}
 
@@ -120,6 +108,11 @@
 		}
 	}
 
+	// Add gap between rows
+	.gallery-row + .gallery-row {
+		margin-top: var(--wp--style--block-gap, 1rem);
+	}
+
 	// Responsive adjustments
 	@media screen and (max-width: 782px) {
 		.gallery-row {
@@ -128,7 +121,7 @@
 			}
 
 			&.is-cropped .gallery-item {
-				width: calc(50% - 0.5rem) !important;
+				width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2)) !important;
 			}
 		}
 	}
