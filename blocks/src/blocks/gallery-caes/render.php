@@ -28,10 +28,22 @@ if (!$has_images) {
 // Generate unique ID for this gallery instance
 $gallery_id = 'caes-gallery-' . wp_unique_id();
 
-$wrapper_attributes = get_block_wrapper_attributes([
-    'class' => 'caes-gallery caes-gallery-parvus',
-    'id' => $gallery_id
-]);
+// Get the default wrapper attributes (includes WordPress-added classes and styles)
+$default_attributes = get_block_wrapper_attributes(['id' => $gallery_id]);
+
+// Parse the existing class attribute if it exists
+$has_class = preg_match('/class="([^"]*)"/', $default_attributes, $matches);
+$existing_classes = $has_class ? $matches[1] : '';
+
+// Add our custom classes
+$all_classes = trim($existing_classes . ' caes-gallery caes-gallery-parvus');
+
+// Replace or add the class attribute
+if ($has_class) {
+    $wrapper_attributes = str_replace('class="' . $existing_classes . '"', 'class="' . $all_classes . '"', $default_attributes);
+} else {
+    $wrapper_attributes = $default_attributes . ' class="' . $all_classes . '"';
+}
 ?>
 
 <div <?php echo $wrapper_attributes; ?>>
