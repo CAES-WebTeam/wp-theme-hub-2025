@@ -38,6 +38,17 @@ const Edit = ({
   } = attributes;
   const [isPreviewMode, setIsPreviewMode] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
 
+  // Convert spacing preset to CSS variable
+  const getGapValue = gapAttr => {
+    if (!gapAttr) return '1rem';
+    if (gapAttr.startsWith('var:preset|spacing|')) {
+      const slug = gapAttr.replace('var:preset|spacing|', '');
+      return `var(--wp--preset--spacing--${slug})`;
+    }
+    return gapAttr;
+  };
+  const gapValue = getGapValue(gap);
+
   // Add a new row
   const addRow = () => {
     const newRows = [...rows, {
@@ -144,26 +155,20 @@ const Edit = ({
               cropImages: value
             }),
             help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalUnitControl, {
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.__experimentalSpacingSizesControl, {
             label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Gap between images', 'caes-gallery'),
             value: gap,
             onChange: value => setAttributes({
               gap: value
             }),
-            units: [{
-              value: 'px',
-              label: 'px'
-            }, {
-              value: 'rem',
-              label: 'rem'
-            }, {
-              value: 'em',
-              label: 'em'
-            }]
+            sides: ['gap']
           })]
         })
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
         ...blockProps,
+        style: {
+          '--wp--style--block-gap': gapValue
+        },
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
           className: "caes-gallery-preview",
           children: rows.map((row, rowIndex) => {
@@ -239,16 +244,30 @@ const Edit = ({
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
       ...blockProps,
+      style: {
+        '--wp--style--block-gap': gapValue
+      },
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: "caes-gallery-editor",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           className: "gallery-header",
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Gallery (CAES)', 'caes-gallery')
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-            onClick: addRow,
-            variant: "primary",
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Row', 'caes-gallery')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            style: {
+              display: 'flex',
+              gap: '8px'
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              onClick: () => setIsPreviewMode(!isPreviewMode),
+              variant: "secondary",
+              icon: isPreviewMode ? 'edit' : 'visibility',
+              children: isPreviewMode ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit', 'caes-gallery') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Preview', 'caes-gallery')
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              onClick: addRow,
+              variant: "primary",
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Row', 'caes-gallery')
+            })]
           })]
         }), rows.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
           status: "warning",
@@ -638,7 +657,7 @@ module.exports = window["wp"]["i18n"];
   \********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[{"columns":3,"images":[]}],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":false},"gap":{"type":"string","default":"1rem"}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true,"blockGap":{"__experimentalDefault":"1rem"}}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[{"columns":3,"images":[]}],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":false},"gap":{"type":"string","default":"var:preset|spacing|50"}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 
