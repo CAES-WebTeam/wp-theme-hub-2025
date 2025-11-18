@@ -737,6 +737,8 @@ figcaption a {
     background-color: var(--wp--preset--color--contrast);
 }
 
+/* Custom Parvus Gallery Hover Effects - UPDATED */
+
 /* Hide the default Parvus zoom indicator icon */
 .parvus-zoom__indicator {
     display: none !important;
@@ -744,11 +746,12 @@ figcaption a {
 
 /* Gallery item hover effects - applies to both WP core gallery and CAES gallery */
 .wp-block-gallery .wp-block-image a.lightbox,
-.caes-gallery .gallery-item a.lightbox {
-    position: relative;
+.caes-gallery .gallery-item a.lightbox,
+.caes-gallery .gallery-item a {
+    position: relative !important;
     display: block;
-    overflow: hidden;
-    cursor: zoom-in;
+    overflow: hidden !important;
+    cursor: zoom-in !important;
     
     &::after {
         content: '';
@@ -765,6 +768,7 @@ figcaption a {
         opacity: 0;
         transition: all 0.3s ease;
         pointer-events: none;
+        z-index: 2;
     }
     
     &:hover,
@@ -775,12 +779,12 @@ figcaption a {
         }
         
         img {
-            transform: scale(1.05);
+            transform: scale(1.05) !important;
         }
     }
     
     img {
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease !important;
         display: block;
         width: 100%;
         height: auto;
@@ -789,7 +793,8 @@ figcaption a {
 
 /* Ensure keyboard focus has same effect */
 .wp-block-gallery .wp-block-image a.lightbox:focus-visible,
-.caes-gallery .gallery-item a.lightbox:focus-visible {
+.caes-gallery .gallery-item a.lightbox:focus-visible,
+.caes-gallery .gallery-item a:focus-visible {
     outline: 2px solid var(--wp--preset--color--olympic, #0047AB);
     outline-offset: 2px;
 }

@@ -104,18 +104,15 @@
 			a {
 				display: block;
 				overflow: hidden;
-				transition: transform 0.2s ease;
-
-				&:hover {
-					transform: scale(1.02);
-				}
+				position: relative;
+				cursor: zoom-in;
 			}
 
 			img {
 				width: 100%;
 				height: auto;
 				display: block;
-				transition: opacity 0.2s ease;
+				transition: opacity 0.2s ease, transform 0.3s ease;
 			}
 
 			a:hover img {
