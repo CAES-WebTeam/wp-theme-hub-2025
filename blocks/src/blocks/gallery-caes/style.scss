@@ -125,19 +125,19 @@
 	}
 
 	// Responsive adjustments
-	@media (max-width: 768px) {
+	@media screen and (max-width: 782px) {
 		.gallery-row {
 			&:not(.is-cropped) {
 				grid-template-columns: repeat(2, 1fr) !important;
 			}
 
 			&.is-cropped .gallery-item {
-				width: calc(50% - 1rem) !important;
+				width: calc(50% - 0.5rem) !important;
 			}
 		}
 	}
 
-	@media (max-width: 480px) {
+	@media screen and (max-width: 600px) {
 		.gallery-row {
 			&:not(.is-cropped) {
 				grid-template-columns: 1fr !important;

@@ -121,6 +121,31 @@
 		}
 	}
 
+	// Responsive preview adjustments
+	@media screen and (max-width: 782px) {
+		.caes-gallery-preview .gallery-row {
+			&:not(.is-cropped) {
+				grid-template-columns: repeat(2, 1fr) !important;
+			}
+
+			&.is-cropped .gallery-item {
+				width: calc(50% - 0.5rem) !important;
+			}
+		}
+	}
+
+	@media screen and (max-width: 600px) {
+		.caes-gallery-preview .gallery-row {
+			&:not(.is-cropped) {
+				grid-template-columns: 1fr !important;
+			}
+
+			&.is-cropped .gallery-item {
+				width: 100% !important;
+			}
+		}
+	}
+
 	.caes-gallery-editor {
 		// Gallery header
 		.gallery-header {
