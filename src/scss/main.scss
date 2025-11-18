@@ -732,6 +732,11 @@ figcaption a {
     transform: translateZ(0); 
 }
 
+.parvus__counter {
+    padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+    background-color: var(--wp--preset--color--contrast);
+}
+
 /* Additional Styles */
 
 @import 'blocks/_custom-block-styles.scss';

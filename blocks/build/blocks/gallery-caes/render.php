@@ -50,10 +50,30 @@ $wrapper_attributes = get_block_wrapper_attributes([
             <div class="gallery-row gallery-row-<?php echo esc_attr($columns); ?>-cols<?php echo $crop_images ? ' is-cropped' : ''; ?>" 
                  data-columns="<?php echo esc_attr($columns); ?>">
                 
-                <?php foreach ($images as $image): ?>
+                <?php 
+                $image_count = count($images);
+                $image_position = 0;
+                foreach ($images as $image): 
+                    $image_position++;
+                    
+                    // Build aria-label with context
+                    $aria_label = sprintf(
+                        'View image %d of %d in gallery',
+                        $image_position,
+                        $image_count
+                    );
+                    
+                    // Add alt text or caption to aria-label if available
+                    if (!empty($image['alt'])) {
+                        $aria_label .= ': ' . $image['alt'];
+                    } elseif (!empty($image['caption'])) {
+                        $aria_label .= ': ' . wp_strip_all_tags($image['caption']);
+                    }
+                ?>
                     <div class="gallery-item">
                         <a href="<?php echo esc_url($image['url']); ?>" 
                            class="lightbox"
+                           aria-label="<?php echo esc_attr($aria_label); ?>"
                            <?php if (!empty($image['caption'])): ?>
                            data-caption="<?php echo esc_attr($image['caption']); ?>"
                            <?php endif; ?>>
