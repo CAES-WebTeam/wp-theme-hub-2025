@@ -6,7 +6,7 @@
 	"title": "Gallery (CAES)",
 	"category": "media",
 	"icon": "grid-view",
-	"description": "Gallery block with customizable columns per row. Each row can have a different number of columns (2-6). Uses Parvus lightbox.",
+	"description": "Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.",
 	"keywords": ["gallery", "lightbox", "images", "parvus", "grid", "rows"],
 	"textdomain": "caes-gallery",
 	"attributes": {

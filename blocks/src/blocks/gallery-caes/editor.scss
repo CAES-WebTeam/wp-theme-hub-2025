@@ -19,6 +19,10 @@
 			}
 
 			// Dynamic column classes for preview
+			&.gallery-row-1-cols {
+				grid-template-columns: repeat(1, 1fr);
+			}
+
 			&.gallery-row-2-cols {
 				grid-template-columns: repeat(2, 1fr);
 			}
@@ -39,18 +43,55 @@
 				grid-template-columns: repeat(6, 1fr);
 			}
 
-			// Cropped images mode in preview
+			// Cropped images mode in preview - use flexbox like WP core gallery
 			&.is-cropped {
+				display: flex;
+				flex-wrap: wrap;
+
 				.gallery-item {
+					display: flex;
+					flex-grow: 1;
+					flex-direction: column;
+					justify-content: center;
+					position: relative;
+					
 					> div {
-						height: 250px;
+						flex: 1 0 0%;
+						height: 100%;
+						width: 100%;
 					}
 
 					img {
-						width: 100%;
+						flex: 1;
 						height: 100%;
 						object-fit: cover;
+						width: 100%;
 					}
+				}
+
+				// Set widths for each column count
+				&.gallery-row-1-cols .gallery-item {
+					width: 100%;
+				}
+
+				&.gallery-row-2-cols .gallery-item {
+					width: calc(50% - 0.5rem);
+				}
+
+				&.gallery-row-3-cols .gallery-item {
+					width: calc(33.333% - 0.67rem);
+				}
+
+				&.gallery-row-4-cols .gallery-item {
+					width: calc(25% - 0.75rem);
+				}
+
+				&.gallery-row-5-cols .gallery-item {
+					width: calc(20% - 0.8rem);
+				}
+
+				&.gallery-row-6-cols .gallery-item {
+					width: calc(16.666% - 0.84rem);
 				}
 			}
 

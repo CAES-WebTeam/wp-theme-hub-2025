@@ -10,6 +10,10 @@
 		margin-bottom: 1rem;
 
 		// Dynamic column classes
+		&.gallery-row-1-cols {
+			grid-template-columns: repeat(1, 1fr);
+		}
+
 		&.gallery-row-2-cols {
 			grid-template-columns: repeat(2, 1fr);
 		}
@@ -58,33 +62,39 @@
 			}
 
 			// Set CSS custom properties for each column count
+			&.gallery-row-1-cols {
+				.gallery-item {
+					width: 100%;
+				}
+			}
+
 			&.gallery-row-2-cols {
 				.gallery-item {
-					width: calc(50% - 1rem);
+					width: calc(50% - 0.5rem);
 				}
 			}
 
 			&.gallery-row-3-cols {
 				.gallery-item {
-					width: calc(33.333% - 1rem);
+					width: calc(33.333% - 0.67rem);
 				}
 			}
 
 			&.gallery-row-4-cols {
 				.gallery-item {
-					width: calc(25% - 1rem);
+					width: calc(25% - 0.75rem);
 				}
 			}
 
 			&.gallery-row-5-cols {
 				.gallery-item {
-					width: calc(20% - 1rem);
+					width: calc(20% - 0.8rem);
 				}
 			}
 
 			&.gallery-row-6-cols {
 				.gallery-item {
-					width: calc(16.666% - 1rem);
+					width: calc(16.666% - 0.84rem);
 				}
 			}
 		}

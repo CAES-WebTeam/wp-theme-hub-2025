@@ -267,6 +267,9 @@ const Edit = ({
                 label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Columns', 'caes-gallery'),
                 value: row.columns,
                 options: [{
+                  label: '1',
+                  value: 1
+                }, {
                   label: '2',
                   value: 2
                 }, {
@@ -617,7 +620,7 @@ module.exports = window["wp"]["i18n"];
   \********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (2-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[{"columns":3,"images":[]}],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":false}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[{"columns":3,"images":[]}],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":false}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 
