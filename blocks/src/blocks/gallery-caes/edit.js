@@ -1,23 +1,11 @@
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls, __experimentalSpacingSizesControl as SpacingSizesControl } from '@wordpress/block-editor';
+import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls } from '@wordpress/block-editor';
 import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { rows, cropImages, gap } = attributes;
+	const { rows, cropImages } = attributes;
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
-
-	// Convert spacing preset to CSS variable
-	const getGapValue = (gapAttr) => {
-		if (!gapAttr) return '1rem';
-		if (gapAttr.startsWith('var:preset|spacing|')) {
-			const slug = gapAttr.replace('var:preset|spacing|', '');
-			return `var(--wp--preset--spacing--${slug})`;
-		}
-		return gapAttr;
-	};
-
-	const gapValue = getGapValue(gap);
 
 	// Add a new row
 	const addRow = () => {
@@ -109,16 +97,10 @@ const Edit = ({ attributes, setAttributes }) => {
 							onChange={(value) => setAttributes({ cropImages: value })}
 							help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
 						/>
-						<SpacingSizesControl
-							label={__('Gap between images', 'caes-gallery')}
-							value={gap}
-							onChange={(value) => setAttributes({ gap: value })}
-							sides={['gap']}
-						/>
 					</PanelBody>
 				</InspectorControls>
 
-				<div {...blockProps} style={{ '--wp--style--block-gap': gapValue }}>
+				<div {...blockProps}>
 					<div className="caes-gallery-preview">
 						{rows.map((row, rowIndex) => {
 							const columns = row.columns ?? 3;
@@ -197,7 +179,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				</PanelBody>
 			</InspectorControls>
 
-			<div {...blockProps} style={{ '--wp--style--block-gap': gapValue }}>
+			<div {...blockProps}>
 				<div className="caes-gallery-editor">
 					<div className="gallery-header">
 						<h3>{__('Gallery (CAES)', 'caes-gallery')}</h3>

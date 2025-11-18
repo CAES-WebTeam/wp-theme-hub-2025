@@ -32,10 +32,6 @@
     "cropImages": {
       "type": "boolean",
       "default": false
-    },
-    "gap": {
-      "type": "string",
-      "default": "var:preset|spacing|50"
     }
   },
   "supports": {
