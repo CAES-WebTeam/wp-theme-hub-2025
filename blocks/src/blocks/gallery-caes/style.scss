@@ -136,16 +136,4 @@
 			}
 		}
 	}
-
-	@media screen and (max-width: 600px) {
-		.gallery-row {
-			&:not(.is-cropped) {
-				grid-template-columns: 1fr !important;
-			}
-
-			&.is-cropped .gallery-item {
-				width: 100% !important;
-			}
-		}
-	}
 }
