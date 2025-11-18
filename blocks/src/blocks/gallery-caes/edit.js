@@ -1,10 +1,10 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls } from '@wordpress/block-editor';
-import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl } from '@wordpress/components';
+import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl, __experimentalUnitControl as UnitControl } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { rows, cropImages } = attributes;
+	const { rows, cropImages, gap } = attributes;
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 
 	// Add a new row
@@ -96,6 +96,16 @@ const Edit = ({ attributes, setAttributes }) => {
 							checked={cropImages}
 							onChange={(value) => setAttributes({ cropImages: value })}
 							help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
+						/>
+						<UnitControl
+							label={__('Gap between images', 'caes-gallery')}
+							value={gap}
+							onChange={(value) => setAttributes({ gap: value })}
+							units={[
+								{ value: 'px', label: 'px' },
+								{ value: 'rem', label: 'rem' },
+								{ value: 'em', label: 'em' },
+							]}
 						/>
 					</PanelBody>
 				</InspectorControls>

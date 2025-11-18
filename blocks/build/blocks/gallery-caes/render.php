@@ -6,6 +6,7 @@
 // Get block attributes
 $rows = $attributes['rows'] ?? [];
 $crop_images = $attributes['cropImages'] ?? false;
+$gap = $attributes['gap'] ?? '1rem';
 
 // Early return if no rows
 if (empty($rows)) {
@@ -38,11 +39,25 @@ $existing_classes = $has_class ? $matches[1] : '';
 // Add our custom classes
 $all_classes = trim($existing_classes . ' caes-gallery caes-gallery-parvus');
 
-// Replace or add the class attribute
+// Parse existing style attribute if it exists
+$has_style = preg_match('/style="([^"]*)"/', $default_attributes, $style_matches);
+$existing_styles = $has_style ? $style_matches[1] : '';
+
+// Add our gap style
+$all_styles = trim($existing_styles . ' --wp--style--block-gap: ' . esc_attr($gap) . ';');
+
+// Replace or add the class and style attributes
+$wrapper_attributes = $default_attributes;
 if ($has_class) {
-    $wrapper_attributes = str_replace('class="' . $existing_classes . '"', 'class="' . $all_classes . '"', $default_attributes);
+    $wrapper_attributes = str_replace('class="' . $existing_classes . '"', 'class="' . $all_classes . '"', $wrapper_attributes);
 } else {
-    $wrapper_attributes = $default_attributes . ' class="' . $all_classes . '"';
+    $wrapper_attributes .= ' class="' . $all_classes . '"';
+}
+
+if ($has_style) {
+    $wrapper_attributes = str_replace('style="' . $existing_styles . '"', 'style="' . $all_styles . '"', $wrapper_attributes);
+} else {
+    $wrapper_attributes .= ' style="' . $all_styles . '"';
 }
 ?>
 

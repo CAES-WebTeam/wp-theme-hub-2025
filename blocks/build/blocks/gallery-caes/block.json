@@ -32,6 +32,10 @@
     "cropImages": {
       "type": "boolean",
       "default": false
+    },
+    "gap": {
+      "type": "string",
+      "default": "1rem"
     }
   },
   "supports": {
@@ -40,7 +44,9 @@
     "spacing": {
       "margin": true,
       "padding": true,
-      "blockGap": true
+      "blockGap": {
+        "__experimentalDefault": "1rem"
+      }
     }
   },
   "example": {
