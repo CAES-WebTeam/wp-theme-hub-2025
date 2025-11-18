@@ -51,6 +51,9 @@ function caes_hub_block_init()
 	// Legacy Gallery
 	register_block_type(get_template_directory() . '/blocks/build/blocks/legacy-gallery' );
 
+	// CAES Gallery (THIS WILL HOPEFULLY BE THE LAST ITERATION ;-;)
+	register_block_type(get_template_directory() . '/blocks/build/blocks/gallery-caes' );
+
 	// Register Carousel
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel' );
 	register_block_type(get_template_directory() . '/blocks/build/blocks/carousel-2' );

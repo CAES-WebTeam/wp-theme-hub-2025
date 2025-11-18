@@ -1,0 +1,71 @@
+/**
+ * Frontend styles for CAES Gallery Block
+ */
+
+.caes-gallery {
+	// Gallery row layout
+	.gallery-row {
+		display: grid;
+		gap: 1rem;
+		margin-bottom: 1rem;
+
+		// Dynamic column classes
+		&.gallery-row-2-cols {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		&.gallery-row-3-cols {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		&.gallery-row-4-cols {
+			grid-template-columns: repeat(4, 1fr);
+		}
+
+		&.gallery-row-5-cols {
+			grid-template-columns: repeat(5, 1fr);
+		}
+
+		&.gallery-row-6-cols {
+			grid-template-columns: repeat(6, 1fr);
+		}
+
+		// Individual gallery items
+		.gallery-item {
+			a {
+				display: block;
+				overflow: hidden;
+				border-radius: 4px;
+				transition: transform 0.2s ease;
+
+				&:hover {
+					transform: scale(1.02);
+				}
+			}
+
+			img {
+				width: 100%;
+				height: auto;
+				display: block;
+				transition: opacity 0.2s ease;
+			}
+
+			a:hover img {
+				opacity: 0.9;
+			}
+		}
+	}
+
+	// Responsive adjustments
+	@media (max-width: 768px) {
+		.gallery-row {
+			grid-template-columns: repeat(2, 1fr) !important;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.gallery-row {
+			grid-template-columns: 1fr !important;
+		}
+	}
+}
