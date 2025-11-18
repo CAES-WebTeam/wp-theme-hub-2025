@@ -179,8 +179,9 @@ const Edit = ({
                     alt: image.alt || '',
                     style: {
                       width: '100%',
-                      height: 'auto',
-                      display: 'block'
+                      height: cropImages ? '100%' : 'auto',
+                      display: 'block',
+                      objectFit: cropImages ? 'cover' : 'initial'
                     }
                   })
                 })
