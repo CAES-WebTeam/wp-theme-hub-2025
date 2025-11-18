@@ -114,10 +114,12 @@ const Edit = ({ attributes, setAttributes }) => {
 								<div 
 									key={rowIndex} 
 									className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`}
-									style={{
+									style={!cropImages ? {
 										display: 'grid',
 										gridTemplateColumns: `repeat(${columns}, 1fr)`,
 										gap: '1rem',
+										marginBottom: '1rem'
+									} : {
 										marginBottom: '1rem'
 									}}
 								>
@@ -126,17 +128,15 @@ const Edit = ({ attributes, setAttributes }) => {
 											<div style={{
 												display: 'block',
 												overflow: 'hidden',
-												cursor: 'pointer',
-												height: cropImages ? '250px' : 'auto'
+												cursor: 'pointer'
 											}}>
 												<img
 													src={image.url}
 													alt={image.alt || ''}
 													style={{
 														width: '100%',
-														height: cropImages ? '100%' : 'auto',
-														display: 'block',
-														objectFit: cropImages ? 'cover' : 'contain'
+														height: 'auto',
+														display: 'block'
 													}}
 												/>
 											</div>

@@ -158,10 +158,12 @@ const Edit = ({
             }
             return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
               className: `gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`,
-              style: {
+              style: !cropImages ? {
                 display: 'grid',
                 gridTemplateColumns: `repeat(${columns}, 1fr)`,
                 gap: '1rem',
+                marginBottom: '1rem'
+              } : {
                 marginBottom: '1rem'
               },
               children: images.map(image => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
@@ -170,17 +172,15 @@ const Edit = ({
                   style: {
                     display: 'block',
                     overflow: 'hidden',
-                    cursor: 'pointer',
-                    height: cropImages ? '250px' : 'auto'
+                    cursor: 'pointer'
                   },
                   children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
                     src: image.url,
                     alt: image.alt || '',
                     style: {
                       width: '100%',
-                      height: cropImages ? '100%' : 'auto',
-                      display: 'block',
-                      objectFit: cropImages ? 'cover' : 'contain'
+                      height: 'auto',
+                      display: 'block'
                     }
                   })
                 })
