@@ -3,6 +3,70 @@
  */
 
 .caes-gallery-block {
+	// Preview mode
+	.caes-gallery-preview {
+		padding: 20px;
+		background-color: #fff;
+		border: 2px solid #2271b1;
+		border-radius: 4px;
+
+		.gallery-row {
+			display: grid;
+			gap: 1rem;
+			margin-bottom: 1rem;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
+
+			// Dynamic column classes for preview
+			&.gallery-row-2-cols {
+				grid-template-columns: repeat(2, 1fr);
+			}
+
+			&.gallery-row-3-cols {
+				grid-template-columns: repeat(3, 1fr);
+			}
+
+			&.gallery-row-4-cols {
+				grid-template-columns: repeat(4, 1fr);
+			}
+
+			&.gallery-row-5-cols {
+				grid-template-columns: repeat(5, 1fr);
+			}
+
+			&.gallery-row-6-cols {
+				grid-template-columns: repeat(6, 1fr);
+			}
+
+			.gallery-item {
+				> div {
+					display: block;
+					overflow: hidden;
+					border-radius: 4px;
+					cursor: pointer;
+					transition: transform 0.2s ease;
+
+					&:hover {
+						transform: scale(1.02);
+					}
+				}
+
+				img {
+					width: 100%;
+					height: auto;
+					display: block;
+					transition: opacity 0.2s ease;
+				}
+
+				> div:hover img {
+					opacity: 0.9;
+				}
+			}
+		}
+	}
+
 	.caes-gallery-editor {
 		// Gallery header
 		.gallery-header {

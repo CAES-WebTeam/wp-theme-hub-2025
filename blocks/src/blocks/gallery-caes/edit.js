@@ -1,10 +1,11 @@
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, MediaUpload, MediaUploadCheck, InspectorControls } from '@wordpress/block-editor';
-import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice } from '@wordpress/components';
+import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls } from '@wordpress/block-editor';
+import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
 	const { rows } = attributes;
+	const [isPreviewMode, setIsPreviewMode] = useState(false);
 
 	// Add a new row
 	const addRow = () => {
@@ -73,8 +74,82 @@ const Edit = ({ attributes, setAttributes }) => {
 		className: 'caes-gallery-block'
 	});
 
+	// Preview Mode - Shows frontend appearance
+	if (isPreviewMode) {
+		return (
+			<div {...blockProps}>
+				<BlockControls>
+					<ToolbarGroup>
+						<ToolbarButton
+							onClick={() => setIsPreviewMode(false)}
+							icon="edit"
+						>
+							{__('Edit', 'caes-gallery')}
+						</ToolbarButton>
+					</ToolbarGroup>
+				</BlockControls>
+
+				<div className="caes-gallery-preview">
+					{rows.map((row, rowIndex) => {
+						const columns = row.columns ?? 3;
+						const images = row.images ?? [];
+						
+						if (images.length === 0) {
+							return null;
+						}
+
+						return (
+							<div 
+								key={rowIndex} 
+								className={`gallery-row gallery-row-${columns}-cols`}
+								style={{
+									display: 'grid',
+									gridTemplateColumns: `repeat(${columns}, 1fr)`,
+									gap: '1rem',
+									marginBottom: '1rem'
+								}}
+							>
+								{images.map((image) => (
+									<div key={image.id} className="gallery-item">
+										<div style={{
+											display: 'block',
+											overflow: 'hidden',
+											borderRadius: '4px',
+											cursor: 'pointer'
+										}}>
+											<img
+												src={image.url}
+												alt={image.alt || ''}
+												style={{
+													width: '100%',
+													height: 'auto',
+													display: 'block'
+												}}
+											/>
+										</div>
+									</div>
+								))}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<>
+			<BlockControls>
+				<ToolbarGroup>
+					<ToolbarButton
+						onClick={() => setIsPreviewMode(true)}
+						icon="visibility"
+					>
+						{__('Preview', 'caes-gallery')}
+					</ToolbarButton>
+				</ToolbarGroup>
+			</BlockControls>
+
 			<InspectorControls>
 				<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
 					<p>{__('Configure columns per row in the editor below.', 'caes-gallery')}</p>
