@@ -107,6 +107,66 @@ document.addEventListener('DOMContentLoaded', function () {
   const prvs = new Parvus({
     gallerySelector: '.wp-block-gallery, .parvus-gallery'
   });
+  
+  /*** START SAFARI PARVUS FLASH FIX */
+  // Only run in Safari
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
+  if (isSafari) {
+    // Add CSS for Safari body GPU fix when Parvus is open
+    const style = document.createElement('style');
+    style.id = 'safari-parvus-fix';
+    style.textContent = `
+      body.parvus-is-open {
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-backface-visibility: hidden !important;
+        backface-visibility: hidden !important;
+      }
+      
+      body.parvus-disable-transitions ::view-transition,
+      body.parvus-disable-transitions ::view-transition-group(*),
+      body.parvus-disable-transitions ::view-transition-image-pair(*),
+      body.parvus-disable-transitions ::view-transition-old(*),
+      body.parvus-disable-transitions ::view-transition-new(*) {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Watch for Parvus opening/closing
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.target.classList.contains('parvus')) {
+          const parvus = mutation.target;
+          const isOpen = parvus.hasAttribute('open');
+          
+          if (isOpen) {
+            // Parvus is opening - apply fixes
+            document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
+          } else {
+            // Parvus is closing - remove fixes after animation completes
+            setTimeout(() => {
+              document.body.classList.remove('parvus-is-open', 'parvus-disable-transitions');
+            }, 350); // Match Parvus animation duration
+          }
+        }
+      });
+    });
+    
+    // Wait for Parvus to exist, then observe it
+    setTimeout(() => {
+      const parvus = document.querySelector('.parvus');
+      if (parvus) {
+        observer.observe(parvus, {
+          attributes: true,
+          attributeFilter: ['open']
+        });
+      }
+    }, 1000);
+  }
+  /*** END SAFARI PARVUS FLASH FIX */
+  
   /*** END PARVUS LIGHTBOX INITIALIZATION */
 
   /*** HANDLE LEGACY CONTENT */

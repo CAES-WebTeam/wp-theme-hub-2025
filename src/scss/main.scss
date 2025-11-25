@@ -742,29 +742,6 @@ figcaption a {
     display: none !important;
 }
 
-/* Hack for weird parvus flashing issue for Safari. Works onlu when Parvus is active. */
-@supports (min-resolution:.001dpcm) {
-    // Only apply when Parvus is open
-    body:has(.parvus[style*="opacity"]),
-    body[style*="overflow: hidden"]:has(.parvus) {
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
-    }
-    
-    // Only disable view transitions when Parvus exists on page
-    body:has(.parvus) {
-        ::view-transition,
-        ::view-transition-group(*),
-        ::view-transition-image-pair(*),
-        ::view-transition-old(*),
-        ::view-transition-new(*) {
-            display: none !important;
-        }
-    }
-}
-
 /* Gallery item hover effects - applies to both WP core gallery and CAES gallery */
 .wp-block-gallery .wp-block-image a.lightbox,
 .caes-gallery .gallery-item a.lightbox,
