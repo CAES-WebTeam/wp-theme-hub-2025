@@ -62,29 +62,29 @@
 			// }
 
 			// Set widths for each column count - accounting for gap
-			&.gallery-row-1-cols .gallery-item {
-				width: 100%;
-			}
+			// &.gallery-row-1-cols .gallery-item {
+			// 	width: 100%;
+			// }
 
-			&.gallery-row-2-cols .gallery-item {
-				width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2));
-			}
+			// &.gallery-row-2-cols .gallery-item {
+			// 	width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2));
+			// }
 
-			&.gallery-row-3-cols .gallery-item {
-				width: calc(33.333% - (var(--wp--style--block-gap, 1rem) * 2 / 3));
-			}
+			// &.gallery-row-3-cols .gallery-item {
+			// 	width: calc(33.333% - (var(--wp--style--block-gap, 1rem) * 2 / 3));
+			// }
 
-			&.gallery-row-4-cols .gallery-item {
-				width: calc(25% - (var(--wp--style--block-gap, 1rem) * 3 / 4));
-			}
+			// &.gallery-row-4-cols .gallery-item {
+			// 	width: calc(25% - (var(--wp--style--block-gap, 1rem) * 3 / 4));
+			// }
 
-			&.gallery-row-5-cols .gallery-item {
-				width: calc(20% - (var(--wp--style--block-gap, 1rem) * 4 / 5));
-			}
+			// &.gallery-row-5-cols .gallery-item {
+			// 	width: calc(20% - (var(--wp--style--block-gap, 1rem) * 4 / 5));
+			// }
 
-			&.gallery-row-6-cols .gallery-item {
-				width: calc(16.666% - (var(--wp--style--block-gap, 1rem) * 5 / 6));
-			}
+			// &.gallery-row-6-cols .gallery-item {
+			// 	width: calc(16.666% - (var(--wp--style--block-gap, 1rem) * 5 / 6));
+			// }
 		}
 
 		// Individual gallery items (non-cropped)
