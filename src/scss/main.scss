@@ -814,3 +814,10 @@ figcaption a {
 
 /* Plugin Overrides */
 @import 'plugin-overrides/relevanssi-live-search.scss';
+
+.parvus,
+.parvus__overlay,
+.parvus__slide {
+    // Make transitions instant to see what's really happening
+    transition: none !important;
+}
