@@ -894,3 +894,11 @@ add_action('wp_head', 'my_theme_add_favicon_final');
 add_filter( 'ppp_nonce_life', function() {
     return 30 * DAY_IN_SECONDS; // 30 days
 } );
+
+add_action('enqueue_block_editor_assets', function() {
+    wp_add_inline_script(
+        'wp-blocks',
+        'wp.blocks.unregisterBlockType("core/gallery");',
+        'after'
+    );
+});
