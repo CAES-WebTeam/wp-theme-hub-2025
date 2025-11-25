@@ -1,6 +1,35 @@
 // Import Parvus
 import Parvus from 'parvus';
 
+/*** SAFARI PARVUS FLASH FIX - RUN IMMEDIATELY */
+(function() {
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
+  if (isSafari) {
+    // Inject CSS immediately
+    const style = document.createElement('style');
+    style.id = 'safari-parvus-fix';
+    style.textContent = `
+      body {
+        -webkit-transform: translate3d(0, 0, 0) !important;
+        transform: translate3d(0, 0, 0) !important;
+        -webkit-backface-visibility: hidden !important;
+        backface-visibility: hidden !important;
+      }
+      
+      ::view-transition,
+      ::view-transition-group(*),
+      ::view-transition-image-pair(*),
+      ::view-transition-old(*),
+      ::view-transition-new(*) {
+        display: none !important;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+  }
+})();
+/*** END SAFARI FIX */
+
 // Handle responsive tables function
 
 // Wrap all tables in a responsitable-wrapper
@@ -107,63 +136,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const prvs = new Parvus({
     gallerySelector: '.wp-block-gallery, .parvus-gallery'
   });
-
-  /*** START SAFARI PARVUS FLASH FIX */
-  // Only run in Safari
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-  if (isSafari) {
-    // Add CSS for Safari body GPU fix when Parvus is open
-    const style = document.createElement('style');
-    style.id = 'safari-parvus-fix';
-    style.textContent = `
-      body.parvus-is-open {
-        -webkit-transform: translate3d(0, 0, 0) !important;
-        transform: translate3d(0, 0, 0) !important;
-        -webkit-backface-visibility: hidden !important;
-        backface-visibility: hidden !important;
-      }
-      
-      body.parvus-disable-transitions ::view-transition,
-      body.parvus-disable-transitions ::view-transition-group(*),
-      body.parvus-disable-transitions ::view-transition-image-pair(*),
-      body.parvus-disable-transitions ::view-transition-old(*),
-      body.parvus-disable-transitions ::view-transition-new(*) {
-        display: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Intercept clicks on gallery images to apply fix BEFORE Parvus opens
-    document.addEventListener('click', (e) => {
-      const target = e.target.closest('.lightbox, .parvus-trigger');
-      if (target) {
-        // Apply fixes immediately, before Parvus processes the click
-        document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
-      }
-    }, true); // Use capture phase to run before Parvus
-
-    // Watch for Parvus closing to remove fixes
-    const existingParvus = document.querySelector('.parvus');
-    if (existingParvus) {
-      const parvusObserver = new MutationObserver(() => {
-        const isOpen = existingParvus.hasAttribute('open');
-
-        if (!isOpen) {
-          // Parvus is closing
-          setTimeout(() => {
-            document.body.classList.remove('parvus-is-open', 'parvus-disable-transitions');
-          }, 350);
-        }
-      });
-
-      parvusObserver.observe(existingParvus, {
-        attributes: true,
-        attributeFilter: ['open']
-      });
-    }
-  }
-  /*** END SAFARI PARVUS FLASH FIX */
 
   /*** END PARVUS LIGHTBOX INITIALIZATION */
 
