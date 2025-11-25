@@ -6,7 +6,7 @@
 	// Gallery row layout
 	.gallery-row {
 		display: grid;
-		gap: var(--wp--style--block-gap, 1rem);
+		gap: var(--wp--preset--spacing--40);
 		margin-bottom: 0;
 
 		// Dynamic column classes
@@ -38,7 +38,7 @@
 		&.is-cropped {
 			display: flex;
 			flex-wrap: wrap;
-			gap: var(--wp--style--block-gap, 1rem);
+			gap: var(--wp--preset--spacing--40);
 
 			.gallery-item {
 				display: flex;
