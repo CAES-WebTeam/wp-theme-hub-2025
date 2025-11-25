@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
   /*** END REMOVE EMPTY PARAGRAPHS */
-  
+
   /*** START PARVUS LIGHTBOX INITIALIZATION */
   // Find all image blocks that link to images and add lightbox class
   const linkedImgs = document.querySelectorAll('.wp-block-image a[href*=".webp"],.wp-block-image a[href*=".jpg"],.wp-block-image a[href*=".jpeg"],.wp-block-image a[href*=".png"],.wp-block-image a[href*=".gif"]');
@@ -107,15 +107,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const prvs = new Parvus({
     gallerySelector: '.wp-block-gallery, .parvus-gallery'
   });
-  
+
   /*** START SAFARI PARVUS FLASH FIX */
   // Only run in Safari
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  console.log('🔍 Safari Detection:', isSafari ? 'YES - Safari' : 'NO - Not Safari');
-  
+
   if (isSafari) {
-    console.log('✅ Safari fix activated');
-    
     // Add CSS for Safari body GPU fix when Parvus is open
     const style = document.createElement('style');
     style.id = 'safari-parvus-fix';
@@ -136,77 +133,38 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     `;
     document.head.appendChild(style);
-    console.log('✅ Safari fix CSS injected');
-    
-    // Function to attach observer to Parvus element
-    function attachParvusObserver(parvusElement) {
-      console.log('🎯 Attaching observer to Parvus element');
-      
+
+    // Intercept clicks on gallery images to apply fix BEFORE Parvus opens
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('.lightbox, .parvus-trigger');
+      if (target) {
+        // Apply fixes immediately, before Parvus processes the click
+        document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
+      }
+    }, true); // Use capture phase to run before Parvus
+
+    // Watch for Parvus closing to remove fixes
+    const existingParvus = document.querySelector('.parvus');
+    if (existingParvus) {
       const parvusObserver = new MutationObserver(() => {
-        const isOpen = parvusElement.hasAttribute('open');
-        console.log('🔔 Parvus open attribute changed:', isOpen ? 'OPEN' : 'CLOSED');
-        
-        if (isOpen) {
-          console.log('➕ Adding body classes: parvus-is-open, parvus-disable-transitions');
-          document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
-          console.log('Body classes now:', document.body.className);
-        } else {
-          console.log('⏱️ Waiting 350ms before removing body classes...');
+        const isOpen = existingParvus.hasAttribute('open');
+
+        if (!isOpen) {
+          // Parvus is closing
           setTimeout(() => {
-            console.log('➖ Removing body classes');
             document.body.classList.remove('parvus-is-open', 'parvus-disable-transitions');
-            console.log('Body classes now:', document.body.className);
           }, 350);
         }
       });
-      
-      parvusObserver.observe(parvusElement, {
+
+      parvusObserver.observe(existingParvus, {
         attributes: true,
         attributeFilter: ['open']
       });
-      console.log('👀 Now observing Parvus open attribute');
-      
-      // Check immediately if already open
-      if (parvusElement.hasAttribute('open')) {
-        console.log('⚡ Parvus is already open!');
-        document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
-      }
     }
-    
-    // Check if Parvus already exists on page load
-    console.log('🔎 Checking if Parvus already exists in DOM...');
-    const existingParvus = document.querySelector('.parvus');
-    if (existingParvus) {
-      console.log('✅ Found existing Parvus element!');
-      attachParvusObserver(existingParvus);
-    } else {
-      console.log('❌ No existing Parvus element found');
-    }
-    
-    // Also watch for Parvus being added dynamically
-    const bodyObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          console.log('🔍 Node added to DOM:', node.nodeName, node.className);
-          
-          if (node.classList && node.classList.contains('parvus')) {
-            console.log('🎯 Parvus element detected in DOM!');
-            attachParvusObserver(node);
-          }
-        });
-      });
-    });
-    
-    bodyObserver.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    console.log('👀 Now watching for Parvus to be added to DOM');
-  } else {
-    console.log('⏭️ Skipping Safari fix (not Safari)');
   }
   /*** END SAFARI PARVUS FLASH FIX */
-  
+
   /*** END PARVUS LIGHTBOX INITIALIZATION */
 
   /*** HANDLE LEGACY CONTENT */
