@@ -818,7 +818,8 @@ figcaption a {
 .parvus,
 .parvus__overlay,
 .parvus__slide,
-.caes-gallery .gallery-item a.lightbox:after, .caes-gallery .gallery-item a:after {
+.caes-gallery .gallery-item a.lightbox:after, .caes-gallery .gallery-item a:after,
+.parvus__content img {
     // Make transitions instant to see what's really happening
     transition: none !important;
 }
