@@ -3,6 +3,7 @@
  */
 
 .caes-gallery-block {
+
 	// Preview mode
 	.caes-gallery-preview {
 		background-color: #fff;
@@ -54,8 +55,8 @@
 					flex-direction: column;
 					justify-content: center;
 					position: relative;
-					
-					> div {
+
+					>div {
 						flex: 1 0 0%;
 						height: 100%;
 						width: 100%;
@@ -96,7 +97,7 @@
 			}
 
 			.gallery-item {
-				> div {
+				>div {
 					display: block;
 					overflow: hidden;
 				}
@@ -110,7 +111,7 @@
 		}
 
 		// Add gap between rows
-		.gallery-row + .gallery-row {
+		.gallery-row+.gallery-row {
 			margin-top: var(--wp--style--block-gap, 1rem);
 		}
 	}
@@ -128,157 +129,257 @@
 		}
 	}
 
+	// Shared gallery-row styles for editor mode
 	.caes-gallery-editor {
-		// Gallery header
-		.gallery-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 20px;
-			padding-bottom: 12px;
-			border-bottom: 2px solid #ddd;
+		.gallery-row {
+			display: grid;
+			gap: var(--wp--style--block-gap, 1rem);
+			margin-bottom: 1rem;
 
-			h3 {
-				margin: 0;
-				font-size: 18px;
-				font-weight: 600;
+			// Dynamic column classes
+			&.gallery-row-1-cols {
+				grid-template-columns: repeat(1, 1fr);
+			}
+
+			&.gallery-row-2-cols {
+				grid-template-columns: repeat(2, 1fr);
+			}
+
+			&.gallery-row-3-cols {
+				grid-template-columns: repeat(3, 1fr);
+			}
+
+			&.gallery-row-4-cols {
+				grid-template-columns: repeat(4, 1fr);
+			}
+
+			&.gallery-row-5-cols {
+				grid-template-columns: repeat(5, 1fr);
+			}
+
+			&.gallery-row-6-cols {
+				grid-template-columns: repeat(6, 1fr);
+			}
+
+			// Cropped mode - flexbox
+			&.is-cropped {
+				display: flex;
+				flex-wrap: wrap;
+				gap: var(--wp--style--block-gap, 1rem);
+
+				.gallery-item {
+					display: flex;
+					flex-grow: 1;
+					flex-direction: column;
+					justify-content: center;
+					position: relative;
+
+					>div {
+						flex: 1 0 0%;
+						height: 100%;
+						width: 100%;
+					}
+
+					img {
+						flex: 1;
+						height: 100%;
+						object-fit: cover;
+						width: 100%;
+					}
+				}
+
+				&.gallery-row-1-cols .gallery-item {
+					width: 100%;
+				}
+
+				&.gallery-row-2-cols .gallery-item {
+					width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2));
+				}
+
+				&.gallery-row-3-cols .gallery-item {
+					width: calc(33.333% - (var(--wp--style--block-gap, 1rem) * 2 / 3));
+				}
+
+				&.gallery-row-4-cols .gallery-item {
+					width: calc(25% - (var(--wp--style--block-gap, 1rem) * 3 / 4));
+				}
+
+				&.gallery-row-5-cols .gallery-item {
+					width: calc(20% - (var(--wp--style--block-gap, 1rem) * 4 / 5));
+				}
+
+				&.gallery-row-6-cols .gallery-item {
+					width: calc(16.666% - (var(--wp--style--block-gap, 1rem) * 5 / 6));
+				}
+			}
+
+			.gallery-item {
+				>div {
+					display: block;
+					overflow: hidden;
+				}
+
+				img {
+					width: 100%;
+					height: auto;
+					display: block;
+				}
 			}
 		}
 
-		// Individual row editor
-		.gallery-row-editor {
-			border: 1px solid #ddd;
-			padding: 16px;
-			margin-bottom: 16px;
-			background-color: #f9f9f9;
+		.caes-gallery-editor {
 
-			// Row header with controls
-			.row-header {
+			// Gallery header
+			.gallery-header {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
-				margin-bottom: 16px;
+				margin-bottom: 20px;
 				padding-bottom: 12px;
-				border-bottom: 1px solid #ddd;
+				border-bottom: 2px solid #ddd;
 
-				> div:first-child {
-					display: flex;
-					align-items: center;
-					gap: 12px;
-
-					strong {
-						font-size: 14px;
-					}
-
-					.components-base-control {
-						margin-bottom: 0;
-					}
-				}
-
-				> div:last-child {
-					display: flex;
-					gap: 8px;
+				h3 {
+					margin: 0;
+					font-size: 18px;
+					font-weight: 600;
 				}
 			}
 
-			// Image preview grid
-			.row-images-preview {
-				display: grid;
-				gap: 12px;
+			// Individual row editor
+			.gallery-row-editor {
+				border: 1px solid #ddd;
+				padding: 16px;
 				margin-bottom: 16px;
+				background-color: #f9f9f9;
 
-				.image-preview-item {
-					position: relative;
-					aspect-ratio: 1;
-					background-color: #fff;
-					border: 1px solid #ddd;
-					overflow: hidden;
+				// Row header with controls
+				.row-header {
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+					margin-bottom: 16px;
+					padding-bottom: 12px;
+					border-bottom: 1px solid #ddd;
 
-					img {
-						width: 100%;
-						height: 100%;
-						object-fit: cover;
-					}
+					>div:first-child {
+						display: flex;
+						align-items: center;
+						gap: 12px;
 
-					button {
-						position: absolute;
-						top: 4px;
-						right: 4px;
-						min-width: auto;
-						padding: 4px;
-						background-color: rgba(255, 255, 255, 0.9);
+						strong {
+							font-size: 14px;
+						}
 
-						&:hover {
-							background-color: rgba(255, 255, 255, 1);
+						.components-base-control {
+							margin-bottom: 0;
 						}
 					}
-				}
-			}
 
-			// Image details editor (collapsed by default)
-			details {
-				margin-top: 16px;
-
-				summary {
-					cursor: pointer;
-					font-weight: 500;
-					margin-bottom: 12px;
-					padding: 8px;
-					background-color: #fff;
-					border: 1px solid #ddd;
-
-					&:hover {
-						background-color: #f0f0f0;
+					>div:last-child {
+						display: flex;
+						gap: 8px;
 					}
 				}
 
-				.images-details-editor {
-					.image-detail-item {
-						display: flex;
-						gap: 12px;
-						padding: 12px;
+				// Image preview grid
+				.row-images-preview {
+					display: grid;
+					gap: 12px;
+					margin-bottom: 16px;
+
+					.image-preview-item {
+						position: relative;
+						aspect-ratio: 1;
 						background-color: #fff;
 						border: 1px solid #ddd;
-						margin-bottom: 8px;
+						overflow: hidden;
 
-						> div:first-child {
-							flex-shrink: 0;
-
-							img {
-								width: 60px;
-								height: 60px;
-								object-fit: cover;
-							}
+						img {
+							width: 100%;
+							height: 100%;
+							object-fit: cover;
 						}
 
-						> div:last-child {
-							flex-grow: 1;
+						button {
+							position: absolute;
+							top: 4px;
+							right: 4px;
+							min-width: auto;
+							padding: 4px;
+							background-color: rgba(255, 255, 255, 0.9);
 
-							label {
-								display: block;
-								margin-bottom: 8px;
+							&:hover {
+								background-color: rgba(255, 255, 255, 1);
+							}
+						}
+					}
+				}
 
-								strong {
-									display: block;
-									margin-bottom: 4px;
-									font-size: 13px;
-								}
+				// Image details editor (collapsed by default)
+				details {
+					margin-top: 16px;
 
-								input {
-									width: 100%;
-									padding: 6px 8px;
-									border: 1px solid #ddd;
+					summary {
+						cursor: pointer;
+						font-weight: 500;
+						margin-bottom: 12px;
+						padding: 8px;
+						background-color: #fff;
+						border: 1px solid #ddd;
 
-									&:focus {
-										border-color: #2271b1;
-										outline: none;
-										box-shadow: 0 0 0 1px #2271b1;
-									}
+						&:hover {
+							background-color: #f0f0f0;
+						}
+					}
+
+					.images-details-editor {
+						.image-detail-item {
+							display: flex;
+							gap: 12px;
+							padding: 12px;
+							background-color: #fff;
+							border: 1px solid #ddd;
+							margin-bottom: 8px;
+
+							>div:first-child {
+								flex-shrink: 0;
+
+								img {
+									width: 60px;
+									height: 60px;
+									object-fit: cover;
 								}
 							}
 
-							label:last-of-type {
-								margin-bottom: 0;
+							>div:last-child {
+								flex-grow: 1;
+
+								label {
+									display: block;
+									margin-bottom: 8px;
+
+									strong {
+										display: block;
+										margin-bottom: 4px;
+										font-size: 13px;
+									}
+
+									input {
+										width: 100%;
+										padding: 6px 8px;
+										border: 1px solid #ddd;
+
+										&:focus {
+											border-color: #2271b1;
+											outline: none;
+											box-shadow: 0 0 0 1px #2271b1;
+										}
+									}
+								}
+
+								label:last-of-type {
+									margin-bottom: 0;
+								}
 							}
 						}
 					}
