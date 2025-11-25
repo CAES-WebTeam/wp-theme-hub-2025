@@ -138,43 +138,60 @@ document.addEventListener('DOMContentLoaded', function () {
     document.head.appendChild(style);
     console.log('✅ Safari fix CSS injected');
     
-    // Watch for Parvus being added to DOM
+    // Function to attach observer to Parvus element
+    function attachParvusObserver(parvusElement) {
+      console.log('🎯 Attaching observer to Parvus element');
+      
+      const parvusObserver = new MutationObserver(() => {
+        const isOpen = parvusElement.hasAttribute('open');
+        console.log('🔔 Parvus open attribute changed:', isOpen ? 'OPEN' : 'CLOSED');
+        
+        if (isOpen) {
+          console.log('➕ Adding body classes: parvus-is-open, parvus-disable-transitions');
+          document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
+          console.log('Body classes now:', document.body.className);
+        } else {
+          console.log('⏱️ Waiting 350ms before removing body classes...');
+          setTimeout(() => {
+            console.log('➖ Removing body classes');
+            document.body.classList.remove('parvus-is-open', 'parvus-disable-transitions');
+            console.log('Body classes now:', document.body.className);
+          }, 350);
+        }
+      });
+      
+      parvusObserver.observe(parvusElement, {
+        attributes: true,
+        attributeFilter: ['open']
+      });
+      console.log('👀 Now observing Parvus open attribute');
+      
+      // Check immediately if already open
+      if (parvusElement.hasAttribute('open')) {
+        console.log('⚡ Parvus is already open!');
+        document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
+      }
+    }
+    
+    // Check if Parvus already exists on page load
+    console.log('🔎 Checking if Parvus already exists in DOM...');
+    const existingParvus = document.querySelector('.parvus');
+    if (existingParvus) {
+      console.log('✅ Found existing Parvus element!');
+      attachParvusObserver(existingParvus);
+    } else {
+      console.log('❌ No existing Parvus element found');
+    }
+    
+    // Also watch for Parvus being added dynamically
     const bodyObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
+          console.log('🔍 Node added to DOM:', node.nodeName, node.className);
+          
           if (node.classList && node.classList.contains('parvus')) {
             console.log('🎯 Parvus element detected in DOM!');
-            
-            // Parvus was just added - watch its open attribute
-            const parvusObserver = new MutationObserver(() => {
-              const isOpen = node.hasAttribute('open');
-              console.log('🔔 Parvus open attribute changed:', isOpen ? 'OPEN' : 'CLOSED');
-              
-              if (isOpen) {
-                console.log('➕ Adding body classes: parvus-is-open, parvus-disable-transitions');
-                document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
-                console.log('Body classes now:', document.body.className);
-              } else {
-                console.log('⏱️ Waiting 350ms before removing body classes...');
-                setTimeout(() => {
-                  console.log('➖ Removing body classes');
-                  document.body.classList.remove('parvus-is-open', 'parvus-disable-transitions');
-                  console.log('Body classes now:', document.body.className);
-                }, 350);
-              }
-            });
-            
-            parvusObserver.observe(node, {
-              attributes: true,
-              attributeFilter: ['open']
-            });
-            console.log('👀 Now observing Parvus open attribute');
-            
-            // Also check immediately in case it's already open
-            if (node.hasAttribute('open')) {
-              console.log('⚡ Parvus is already open on detection!');
-              document.body.classList.add('parvus-is-open', 'parvus-disable-transitions');
-            }
+            attachParvusObserver(node);
           }
         });
       });
