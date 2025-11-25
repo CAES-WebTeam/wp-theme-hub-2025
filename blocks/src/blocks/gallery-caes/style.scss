@@ -5,34 +5,34 @@
 .caes-gallery {
 	// Gallery row layout
 	.gallery-row {
-		display: grid;
+		// display: grid;
 		gap: var(--wp--preset--spacing--40);
 		margin-bottom: 0;
 
 		// Dynamic column classes
-		&.gallery-row-1-cols {
-			grid-template-columns: repeat(1, 1fr);
-		}
+		// &.gallery-row-1-cols {
+		// 	grid-template-columns: repeat(1, 1fr);
+		// }
 
-		&.gallery-row-2-cols {
-			grid-template-columns: repeat(2, 1fr);
-		}
+		// &.gallery-row-2-cols {
+		// 	grid-template-columns: repeat(2, 1fr);
+		// }
 
-		&.gallery-row-3-cols {
-			grid-template-columns: repeat(3, 1fr);
-		}
+		// &.gallery-row-3-cols {
+		// 	grid-template-columns: repeat(3, 1fr);
+		// }
 
-		&.gallery-row-4-cols {
-			grid-template-columns: repeat(4, 1fr);
-		}
+		// &.gallery-row-4-cols {
+		// 	grid-template-columns: repeat(4, 1fr);
+		// }
 
-		&.gallery-row-5-cols {
-			grid-template-columns: repeat(5, 1fr);
-		}
+		// &.gallery-row-5-cols {
+		// 	grid-template-columns: repeat(5, 1fr);
+		// }
 
-		&.gallery-row-6-cols {
-			grid-template-columns: repeat(6, 1fr);
-		}
+		// &.gallery-row-6-cols {
+		// 	grid-template-columns: repeat(6, 1fr);
+		// }
 
 		// Cropped images mode - use flexbox like WP core gallery
 		&.is-cropped {
