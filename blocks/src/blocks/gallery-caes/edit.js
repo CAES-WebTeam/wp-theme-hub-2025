@@ -287,34 +287,36 @@ const Edit = ({ attributes, setAttributes }) => {
 								</span>
 							</div>
 
-							{/* Image Preview Grid */}
+							{/* Image Preview Grid - Matches Preview Mode */}
 							{row.images.length > 0 && (
-								<div className="row-images-preview" style={{
-									display: 'grid',
-									gridTemplateColumns: `repeat(${row.columns}, 1fr)`,
-									gap: '12px',
-									marginBottom: '16px'
-								}}>
+								<div 
+									className={`gallery-row gallery-row-${row.columns}-cols${cropImages ? ' is-cropped' : ''}`}
+									style={!cropImages ? {
+										display: 'grid',
+										gridTemplateColumns: `repeat(${row.columns}, 1fr)`,
+										gap: '1rem',
+										marginBottom: '1rem'
+									} : {
+										marginBottom: '1rem'
+									}}
+								>
 									{row.images.map((image, imageIndex) => (
-										<div key={image.id} className="image-preview-item" style={{
-											position: 'relative',
-											backgroundColor: '#fff',
-											border: '1px solid #ddd',
-											borderRadius: '4px',
-											overflow: 'hidden',
-											display: 'flex',
-											alignItems: 'flex-start'
-										}}>
-											<img
-												src={image.url}
-												alt={image.alt || ''}
-												style={{
-													width: '100%',
-													height: cropImages ? '200px' : 'auto',
-													objectFit: cropImages ? 'cover' : 'initial',
-													display: 'block'
-												}}
-											/>
+										<div key={image.id} className="gallery-item" style={{ position: 'relative' }}>
+											<div style={{
+												display: 'block',
+												overflow: 'hidden'
+											}}>
+												<img
+													src={image.url}
+													alt={image.alt || ''}
+													style={{
+														width: '100%',
+														height: cropImages ? '100%' : 'auto',
+														display: 'block',
+														objectFit: cropImages ? 'cover' : 'initial'
+													}}
+												/>
+											</div>
 											<Button
 												onClick={() => onRemoveImage(rowIndex, imageIndex)}
 												variant="secondary"
@@ -327,7 +329,8 @@ const Edit = ({ attributes, setAttributes }) => {
 													right: '4px',
 													minWidth: 'auto',
 													padding: '4px',
-													backgroundColor: 'rgba(255, 255, 255, 0.9)'
+													backgroundColor: 'rgba(255, 255, 255, 0.9)',
+													zIndex: 10
 												}}
 											/>
 										</div>

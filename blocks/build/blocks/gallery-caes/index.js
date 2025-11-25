@@ -355,33 +355,35 @@ const Edit = ({
               children: [row.images.length, " ", row.images.length === 1 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('image', 'caes-gallery') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('images', 'caes-gallery')]
             })]
           }), row.images.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-            className: "row-images-preview",
-            style: {
+            className: `gallery-row gallery-row-${row.columns}-cols${cropImages ? ' is-cropped' : ''}`,
+            style: !cropImages ? {
               display: 'grid',
               gridTemplateColumns: `repeat(${row.columns}, 1fr)`,
-              gap: '12px',
-              marginBottom: '16px'
+              gap: '1rem',
+              marginBottom: '1rem'
+            } : {
+              marginBottom: '1rem'
             },
             children: row.images.map((image, imageIndex) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-              className: "image-preview-item",
+              className: "gallery-item",
               style: {
-                position: 'relative',
-                backgroundColor: '#fff',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'flex-start'
+                position: 'relative'
               },
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                src: image.url,
-                alt: image.alt || '',
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
                 style: {
-                  width: '100%',
-                  height: cropImages ? '200px' : 'auto',
-                  objectFit: cropImages ? 'cover' : 'initial',
-                  display: 'block'
-                }
+                  display: 'block',
+                  overflow: 'hidden'
+                },
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                  src: image.url,
+                  alt: image.alt || '',
+                  style: {
+                    width: '100%',
+                    height: cropImages ? '100%' : 'auto',
+                    display: 'block',
+                    objectFit: cropImages ? 'cover' : 'initial'
+                  }
+                })
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
                 onClick: () => onRemoveImage(rowIndex, imageIndex),
                 variant: "secondary",
@@ -394,7 +396,8 @@ const Edit = ({
                   right: '4px',
                   minWidth: 'auto',
                   padding: '4px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  zIndex: 10
                 }
               })]
             }, image.id))
