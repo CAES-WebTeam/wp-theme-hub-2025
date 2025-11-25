@@ -660,25 +660,90 @@ figcaption a {
 
 @import 'parvus/src/scss/parvus';
 
-.parvus {
-    color: var(--wp--preset--color--base);
+/* Safari Flash Fix - Target the Slider Transform */
 
-    // Fix for Safari White Flash
+// Fix for the slider that's causing the flash
+.parvus__slider {
+    // Force consistent GPU layer
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    will-change: opacity, visibility;
-
-    // Ensure the container itself is transparent so only the overlay colors apply
-    background-color: transparent;
+    -webkit-perspective: 1000;
+    perspective: 1000;
+    
+    // Prevent font rendering changes during transform
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    
+    // Keep it on GPU layer consistently
+    will-change: transform;
+    
+    // Ensure smooth compositing
+    transform-style: preserve-3d;
 }
 
+// Also fix the slides themselves
 .parvus__slide {
     background: var(--wp--preset--color--contrast);
     color: var(--wp--preset--color--base);
-    // Fix for Safari
+    
+    // Match parent optimizations
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     will-change: opacity;
+    
+    // Prevent position absolute from causing repaints
+    transform: translateZ(0);
+}
+
+// Fix images inside slides
+.parvus__slide img {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    
+    // Prevent image rendering changes
+    image-rendering: -webkit-optimize-contrast;
+}
+
+// Ensure overlay doesn't flash when slider moves
+.parvus__overlay {
+    background-color: var(--wp--preset--color--contrast);
+    color: var(--wp--preset--color--base);
+    
+    // Force disable backdrop effects (major Safari flash cause)
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    
+    // Keep on its own GPU layer, separate from slider
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    isolation: isolate;
+    
+    // Only animate what's necessary
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    will-change: opacity, visibility;
+}
+
+// Main parvus container
+.parvus {
+    color: var(--wp--preset--color--base);
+    background-color: transparent !important;
+    
+    // Safari fixes
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    
+    // Isolate from the rest of the page
+    isolation: isolate;
+    
+    // Only animate opacity/visibility
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+    will-change: opacity, visibility;
 }
 
 .parvus__btn,
@@ -699,14 +764,6 @@ figcaption a {
     color: var(--wp--preset--color--contrast);
 }
 
-.parvus__overlay {
-    background-color: var(--wp--preset--color--contrast);
-    color: var(--wp--preset--color--base);
-    // Force disable backdrop effects
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-}
-
 .parvus__caption {
     color: var(--wp--preset--color--base);
     max-width: var(--wp--style--global--wide-size);
@@ -721,15 +778,6 @@ figcaption a {
 
 .lightbox.parvus-trigger+.wp-element-caption {
     display: none;
-}
-
-.parvus, 
-.parvus__overlay {
-    // Override to ensure we ONLY animate opacity/visibility
-    transition: opacity 0.3s ease, visibility 0.3s ease !important;
-    
-    // Force the element to exist on a 3D plane to prevent repainting
-    transform: translateZ(0); 
 }
 
 .parvus__counter {
@@ -814,12 +862,3 @@ figcaption a {
 
 /* Plugin Overrides */
 @import 'plugin-overrides/relevanssi-live-search.scss';
-
-.parvus,
-.parvus__overlay,
-.parvus__slide,
-.caes-gallery .gallery-item a.lightbox:after, .caes-gallery .gallery-item a:after,
-.parvus__content img {
-    // Make transitions instant to see what's really happening
-    transition: none !important;
-}
