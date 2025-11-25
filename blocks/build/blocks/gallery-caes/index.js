@@ -366,19 +366,19 @@ const Edit = ({
               className: "image-preview-item",
               style: {
                 position: 'relative',
-                aspectRatio: '1',
                 backgroundColor: '#fff',
                 border: '1px solid #ddd',
                 borderRadius: '4px',
                 overflow: 'hidden'
               },
               children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                src: image.sizes?.medium?.url || image.url,
+                src: image.url,
                 alt: image.alt || '',
                 style: {
                   width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
+                  height: cropImages ? '200px' : 'auto',
+                  objectFit: cropImages ? 'cover' : 'contain',
+                  display: 'block'
                 }
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
                 onClick: () => onRemoveImage(rowIndex, imageIndex),

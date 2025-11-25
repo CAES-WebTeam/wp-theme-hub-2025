@@ -298,19 +298,19 @@ const Edit = ({ attributes, setAttributes }) => {
 									{row.images.map((image, imageIndex) => (
 										<div key={image.id} className="image-preview-item" style={{
 											position: 'relative',
-											aspectRatio: '1',
 											backgroundColor: '#fff',
 											border: '1px solid #ddd',
 											borderRadius: '4px',
 											overflow: 'hidden'
 										}}>
 											<img
-												src={image.sizes?.medium?.url || image.url}
+												src={image.url}
 												alt={image.alt || ''}
 												style={{
 													width: '100%',
-													height: '100%',
-													objectFit: 'cover'
+													height: cropImages ? '200px' : 'auto',
+													objectFit: cropImages ? 'cover' : 'contain',
+													display: 'block'
 												}}
 											/>
 											<Button
