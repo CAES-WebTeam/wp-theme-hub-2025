@@ -895,10 +895,23 @@ add_filter( 'ppp_nonce_life', function() {
     return 30 * DAY_IN_SECONDS; // 30 days
 } );
 
-add_action('enqueue_block_editor_assets', function() {
-    wp_add_inline_script(
-        'wp-blocks',
-        'wp.blocks.unregisterBlockType("core/gallery");',
-        'after'
+// Disable specific blocks in the block editor
+function disable_specific_blocks( $allowed_block_types, $post ) {
+    // If all blocks are allowed (true), get the full list first
+    if ( $allowed_block_types === true ) {
+        $registered_blocks = WP_Block_Type_Registry::get_instance()->get_all_registered();
+        $allowed_block_types = array_keys( $registered_blocks );
+    }
+    
+    // An array of block names to disable
+    $disabled_blocks = array(
+        'core/gallery',
+        // Add more block names as needed
     );
-});
+    
+    // Remove disabled blocks from the allowed list
+    $allowed_block_types = array_diff( $allowed_block_types, $disabled_blocks );
+    
+    return $allowed_block_types;
+}
+add_filter( 'allowed_block_types_all', 'disable_specific_blocks', 10, 2 );
