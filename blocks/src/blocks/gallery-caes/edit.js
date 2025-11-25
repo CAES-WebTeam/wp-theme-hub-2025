@@ -174,7 +174,7 @@ const Edit = ({ attributes, setAttributes }) => {
 						help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
 					/>
 					<p style={{ marginTop: '12px', fontSize: '13px', color: '#757575' }}>
-						{__('Configure columns per row in the editor below.', 'caes-gallery')}
+						{__('Configure columns per row in the block editor.', 'caes-gallery')}
 					</p>
 				</PanelBody>
 			</InspectorControls>
@@ -182,7 +182,7 @@ const Edit = ({ attributes, setAttributes }) => {
 			<div {...blockProps}>
 				<div className="caes-gallery-editor">
 					<div className="gallery-header">
-						<h3>{__('Gallery (CAES)', 'caes-gallery')}</h3>
+						<h3>{__('Gallery (CAES) Setup', 'caes-gallery')}</h3>
 						<div style={{ display: 'flex', gap: '8px' }}>
 							<Button 
 								onClick={() => setIsPreviewMode(!isPreviewMode)} 
