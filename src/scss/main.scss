@@ -778,10 +778,9 @@ figcaption a {
 //     background-color: var(--wp--preset--color--contrast);
 // }
 
-/* NUCLEAR OPTION - Safari Flash Fix */
-/* Force entire page to stay on GPU layer to prevent any compositing changes */
+/* Refined Safari Flash Fix - Keeps animations working */
 
-// Put the entire body on a GPU layer
+// Put the entire body on a GPU layer to prevent page-level compositing changes
 body {
     -webkit-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
@@ -789,7 +788,7 @@ body {
     backface-visibility: hidden;
 }
 
-// Aggressive Parvus fixes
+// Main Parvus container - NO transition here (this was causing the flash)
 .parvus {
     color: var(--wp--preset--color--base);
     background-color: transparent !important;
@@ -804,16 +803,14 @@ body {
     // Isolate completely
     isolation: isolate !important;
     
-    // Disable all transitions temporarily to test
+    // NO TRANSITION on container
     transition: none !important;
     
-    // Keep visible at all times
-    visibility: visible !important;
-    
-    // Prevent Safari from being clever
+    // Prevent Safari will-change optimization
     will-change: auto !important;
 }
 
+// Overlay - This can have transition for opacity
 .parvus__overlay {
     background-color: var(--wp--preset--color--contrast) !important;
     color: var(--wp--preset--color--base);
@@ -828,25 +825,28 @@ body {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     
-    // Disable transitions to test
-    transition: none !important;
+    // Allow ONLY opacity transition (not visibility)
+    transition: opacity 0.3s ease !important;
     
     // Prevent will-change optimization
     will-change: auto !important;
 }
 
+// Slider - This NEEDS transitions for sliding between images
 .parvus__slider {
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    transform: translate3d(0, 0, 0) !important;
     -webkit-backface-visibility: hidden !important;
     backface-visibility: hidden !important;
     -webkit-font-smoothing: subpixel-antialiased !important;
     
-    // Keep it simple
-    transition: none !important;
-    will-change: auto !important;
+    // Allow transform transition for sliding (but keep on GPU layer)
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    
+    // Keep normal slider transition
+    // Don't override this - let Parvus handle it
 }
 
+// Slides
 .parvus__slide {
     background: var(--wp--preset--color--contrast);
     color: var(--wp--preset--color--base);
@@ -857,6 +857,7 @@ body {
     backface-visibility: hidden !important;
 }
 
+// Images in slides
 .parvus__slide img {
     -webkit-transform: translate3d(0, 0, 0) !important;
     transform: translate3d(0, 0, 0) !important;
