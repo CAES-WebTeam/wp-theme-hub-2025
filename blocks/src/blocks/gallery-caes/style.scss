@@ -99,7 +99,7 @@
 				width: 100%;
 				height: auto;
 				display: block;
-				transition: opacity 0.2s ease, transform 0.3s ease;
+				// transition: opacity 0.2s ease, transform 0.3s ease;
 			}
 
 			a:hover img {
@@ -114,15 +114,15 @@
 	}
 
 	// Responsive adjustments
-	@media screen and (max-width: 782px) {
-		.gallery-row {
-			&:not(.is-cropped) {
-				grid-template-columns: repeat(2, 1fr) !important;
-			}
+	// @media screen and (max-width: 782px) {
+	// 	.gallery-row {
+	// 		&:not(.is-cropped) {
+	// 			grid-template-columns: repeat(2, 1fr) !important;
+	// 		}
 
-			&.is-cropped .gallery-item {
-				width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2)) !important;
-			}
-		}
-	}
+	// 		&.is-cropped .gallery-item {
+	// 			width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2)) !important;
+	// 		}
+	// 	}
+	// }
 }
