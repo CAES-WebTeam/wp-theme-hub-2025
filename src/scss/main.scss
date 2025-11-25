@@ -816,25 +816,25 @@ figcaption a {
 @import 'plugin-overrides/relevanssi-live-search.scss';
 
 // Prevent Safari flash when Parvus adds overflow:hidden to body
-body {
-    // Keep body on GPU layer consistently
-    -webkit-transform: translate3d(0, 0, 0);
-    transform: translate3d(0, 0, 0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+// body {
+//     // Keep body on GPU layer consistently
+//     -webkit-transform: translate3d(0, 0, 0);
+//     transform: translate3d(0, 0, 0);
+//     -webkit-backface-visibility: hidden;
+//     backface-visibility: hidden;
     
-    // Prevent layout shifts when overflow changes
-    &[style*="overflow: hidden"] {
-        // Force same rendering context
-        -webkit-transform: translate3d(0, 0, 0);
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-// ::view-transition,
-// ::view-transition-group(*),
-// ::view-transition-image-pair(*),
-// ::view-transition-old(*),
-// ::view-transition-new(*) {
-//     display: none !important;
+//     // Prevent layout shifts when overflow changes
+//     &[style*="overflow: hidden"] {
+//         // Force same rendering context
+//         -webkit-transform: translate3d(0, 0, 0);
+//         transform: translate3d(0, 0, 0);
+//     }
 // }
+
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+    display: none !important;
+}
