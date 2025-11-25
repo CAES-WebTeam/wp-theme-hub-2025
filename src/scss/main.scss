@@ -660,89 +660,89 @@ figcaption a {
 
 @import 'parvus/src/scss/parvus';
 
-.parvus {
-    color: var(--wp--preset--color--base);
+// .parvus {
+//     color: var(--wp--preset--color--base);
 
-    // Fix for Safari White Flash
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    will-change: opacity, visibility;
+//     // Fix for Safari White Flash
+//     -webkit-backface-visibility: hidden;
+//     backface-visibility: hidden;
+//     will-change: opacity, visibility;
 
-    // Ensure the container itself is transparent so only the overlay colors apply
-    background-color: transparent;
-}
+//     // Ensure the container itself is transparent so only the overlay colors apply
+//     background-color: transparent;
+// }
 
-.parvus__slide {
-    background: var(--wp--preset--color--contrast);
-    color: var(--wp--preset--color--base);
-    // Fix for Safari
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    will-change: opacity;
-}
+// .parvus__slide {
+//     background: var(--wp--preset--color--contrast);
+//     color: var(--wp--preset--color--base);
+//     // Fix for Safari
+//     -webkit-backface-visibility: hidden;
+//     backface-visibility: hidden;
+//     will-change: opacity;
+// }
 
-.parvus__btn,
-.parvus__btn[aria-disabled=true] {
-    background-color: var(--wp--preset--color--contrast);
-    color: var(--wp--preset--color--base);
-    transition: all 0.3s ease-in-out;
+// .parvus__btn,
+// .parvus__btn[aria-disabled=true] {
+//     background-color: var(--wp--preset--color--contrast);
+//     color: var(--wp--preset--color--base);
+//     transition: all 0.3s ease-in-out;
 
-    &:hover,
-    &:focus {
-        background-color: var(--wp--preset--color--base);
-        color: var(--wp--preset--color--contrast);
-    }
-}
+//     &:hover,
+//     &:focus {
+//         background-color: var(--wp--preset--color--base);
+//         color: var(--wp--preset--color--contrast);
+//     }
+// }
 
-.parvus-zoom__indicator {
-    background-color: var(--wp--preset--color--base);
-    color: var(--wp--preset--color--contrast);
-}
+// .parvus-zoom__indicator {
+//     background-color: var(--wp--preset--color--base);
+//     color: var(--wp--preset--color--contrast);
+// }
 
-.parvus__overlay {
-    background-color: var(--wp--preset--color--contrast);
-    color: var(--wp--preset--color--base);
-    // Force disable backdrop effects
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-}
+// .parvus__overlay {
+//     background-color: var(--wp--preset--color--contrast);
+//     color: var(--wp--preset--color--base);
+//     // Force disable backdrop effects
+//     -webkit-backdrop-filter: none !important;
+//     backdrop-filter: none !important;
+// }
 
-.parvus__caption {
-    color: var(--wp--preset--color--base);
-    max-width: var(--wp--style--global--wide-size);
-    font-size: 1rem;
-    line-height: 1.4;
-}
+// .parvus__caption {
+//     color: var(--wp--preset--color--base);
+//     max-width: var(--wp--style--global--wide-size);
+//     font-size: 1rem;
+//     line-height: 1.4;
+// }
 
-.parvus-trigger:has(img) .parvus-zoom__indicator {
-    background-color: var(--wp--preset--color--base);
-    color: var(--wp--preset--color--contrast);
-}
+// .parvus-trigger:has(img) .parvus-zoom__indicator {
+//     background-color: var(--wp--preset--color--base);
+//     color: var(--wp--preset--color--contrast);
+// }
 
-.lightbox.parvus-trigger+.wp-element-caption {
-    display: none;
-}
+// .lightbox.parvus-trigger+.wp-element-caption {
+//     display: none;
+// }
 
-.parvus, 
-.parvus__overlay {
-    // Override to ensure we ONLY animate opacity/visibility
-    transition: opacity 0.3s ease, visibility 0.3s ease !important;
+// .parvus, 
+// .parvus__overlay {
+//     // Override to ensure we ONLY animate opacity/visibility
+//     transition: opacity 0.3s ease, visibility 0.3s ease !important;
     
-    // Force the element to exist on a 3D plane to prevent repainting
-    transform: translateZ(0); 
-}
+//     // Force the element to exist on a 3D plane to prevent repainting
+//     transform: translateZ(0); 
+// }
 
-.parvus__counter {
-    padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
-    background-color: var(--wp--preset--color--contrast);
-}
+// .parvus__counter {
+//     padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+//     background-color: var(--wp--preset--color--contrast);
+// }
 
-/* Custom Parvus Gallery Hover Effects - UPDATED */
+// /* Custom Parvus Gallery Hover Effects - UPDATED */
 
-/* Hide the default Parvus zoom indicator icon */
-.parvus-zoom__indicator {
-    display: none !important;
-}
+// /* Hide the default Parvus zoom indicator icon */
+// .parvus-zoom__indicator {
+//     display: none !important;
+// }
 
 /* Gallery item hover effects - applies to both WP core gallery and CAES gallery */
 .wp-block-gallery .wp-block-image a.lightbox,
