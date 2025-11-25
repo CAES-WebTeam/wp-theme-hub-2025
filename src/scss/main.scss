@@ -660,92 +660,85 @@ figcaption a {
 
 @import 'parvus/src/scss/parvus';
 
-/* Safari Flash Fix - Target the Slider Transform */
-
-// Fix for the slider that's causing the flash
-.parvus__slider {
-    // Force consistent GPU layer
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-perspective: 1000;
-    perspective: 1000;
+.parvus,
+.parvus__overlay {
+    // CRITICAL: Force transform to NEVER be "none"
+    transform: translate3d(0, 0, 0) !important;
     
-    // Prevent font rendering changes during transform
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    // Keep on GPU layer consistently
+    -webkit-backface-visibility: hidden !important;
+    backface-visibility: hidden !important;
     
-    // Keep it on GPU layer consistently
-    will-change: transform;
+    // Prevent font smoothing changes
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
     
-    // Ensure smooth compositing
-    transform-style: preserve-3d;
+    // Tell Safari what will change (only opacity and visibility)
+    will-change: opacity, visibility !important;
+    
+    // Only animate these properties
+    transition: opacity 0.3s ease, visibility 0.3s ease !important;
 }
 
-// Also fix the slides themselves
-.parvus__slide {
-    background: var(--wp--preset--color--contrast);
-    color: var(--wp--preset--color--base);
-    
-    // Match parent optimizations
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    will-change: opacity;
-    
-    // Prevent position absolute from causing repaints
-    transform: translateZ(0);
-}
-
-// Fix images inside slides
-.parvus__slide img {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0);
-    
-    // Prevent image rendering changes
-    image-rendering: -webkit-optimize-contrast;
-}
-
-// Ensure overlay doesn't flash when slider moves
+// Ensure overlay stays at correct opacity
 .parvus__overlay {
     background-color: var(--wp--preset--color--contrast);
     color: var(--wp--preset--color--base);
     
-    // Force disable backdrop effects (major Safari flash cause)
+    // Force disable backdrop effects
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     
-    // Keep on its own GPU layer, separate from slider
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0);
-    isolation: isolate;
-    
-    // Only animate what's necessary
-    transition: opacity 0.3s ease, visibility 0.3s ease !important;
-    will-change: opacity, visibility;
+    // Prevent the overlay opacity from jumping back to 1 after close
+    &:not([style*="opacity"]) {
+        opacity: 0 !important;
+    }
 }
 
-// Main parvus container
+// Main container specific
 .parvus {
     color: var(--wp--preset--color--base);
     background-color: transparent !important;
     
-    // Safari fixes
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    transform: translateZ(0);
-    -webkit-font-smoothing: antialiased;
-    
-    // Isolate from the rest of the page
-    isolation: isolate;
-    
-    // Only animate opacity/visibility
-    transition: opacity 0.3s ease, visibility 0.3s ease !important;
-    will-change: opacity, visibility;
+    // Isolate compositing layer
+    isolation: isolate !important;
 }
 
+// Slider fixes
+.parvus__slider {
+    // Keep slider on its own GPU layer
+    -webkit-backface-visibility: hidden !important;
+    backface-visibility: hidden !important;
+    -webkit-font-smoothing: antialiased !important;
+    will-change: transform !important;
+    
+    // Ensure 3D context
+    -webkit-perspective: 1000 !important;
+    perspective: 1000 !important;
+    transform-style: preserve-3d !important;
+}
+
+// Slides
+.parvus__slide {
+    background: var(--wp--preset--color--contrast);
+    color: var(--wp--preset--color--base);
+    
+    -webkit-backface-visibility: hidden !important;
+    backface-visibility: hidden !important;
+    -webkit-font-smoothing: antialiased !important;
+    
+    // Force transform to never be "none"
+    transform: translate3d(0, 0, 0) !important;
+}
+
+// Images in slides
+.parvus__slide img {
+    -webkit-backface-visibility: hidden !important;
+    backface-visibility: hidden !important;
+    transform: translate3d(0, 0, 0) !important;
+}
+
+// Keep other Parvus styles as they were
 .parvus__btn,
 .parvus__btn[aria-disabled=true] {
     background-color: var(--wp--preset--color--contrast);
@@ -784,6 +777,7 @@ figcaption a {
     padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
     background-color: var(--wp--preset--color--contrast);
 }
+
 
 /* Custom Parvus Gallery Hover Effects - UPDATED */
 
