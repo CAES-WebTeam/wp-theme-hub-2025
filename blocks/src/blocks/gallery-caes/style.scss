@@ -36,8 +36,8 @@
 
 		// Cropped images mode - use flexbox like WP core gallery
 		&.is-cropped {
-			// display: flex;
-			// flex-wrap: wrap;
+			display: flex;
+			flex-wrap: wrap;
 			gap: var(--wp--preset--spacing--40);
 
 			.gallery-item {
