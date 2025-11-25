@@ -895,10 +895,11 @@ add_filter( 'ppp_nonce_life', function() {
     return 30 * DAY_IN_SECONDS; // 30 days
 } );
 
-// Disable the core/gallery block in the block editor
-function disable_core_gallery_block( $allowed_block_types, $block_editor_context ) {
+// Hide Gallery blocks from the block inserter
+function caes_hide_gallery_blocks_from_inserter( $allowed_block_types, $block_editor_context ) {
     $disallowed_blocks = array(
         'core/gallery',
+        'caes-hub/legacy-gallery',
     );
     
     // Get all registered blocks if $allowed_block_types is not already set.
@@ -922,4 +923,4 @@ function disable_core_gallery_block( $allowed_block_types, $block_editor_context
     // Return the filtered list of allowed blocks
     return $filtered_blocks;
 }
-add_filter( 'allowed_block_types_all', 'disable_core_gallery_block', 10, 2 );
+add_filter( 'allowed_block_types_all', 'caes_hide_gallery_blocks_from_inserter', 10, 2 );
