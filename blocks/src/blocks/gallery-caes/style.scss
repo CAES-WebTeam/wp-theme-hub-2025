@@ -2,12 +2,12 @@
  * Frontend styles for CAES Gallery Block
  */
 
-.caes-gallery {
+// .caes-gallery {
 	// Gallery row layout
-	.gallery-row {
+	// .gallery-row {
 		// display: grid;
-		gap: var(--wp--preset--spacing--40);
-		margin-bottom: 0;
+		// gap: var(--wp--preset--spacing--40);
+		// margin-bottom: 0;
 
 		// Dynamic column classes
 		// &.gallery-row-1-cols {
@@ -85,7 +85,7 @@
 			// &.gallery-row-6-cols .gallery-item {
 			// 	width: calc(16.666% - (var(--wp--style--block-gap, 1rem) * 5 / 6));
 			// }
-		}
+		// }
 
 		// Individual gallery items (non-cropped)
 	// 	.gallery-item {
@@ -125,4 +125,4 @@
 	// 		}
 	// 	}
 	// }
-}
+// }	
