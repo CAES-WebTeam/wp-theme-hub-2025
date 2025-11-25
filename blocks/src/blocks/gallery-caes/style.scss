@@ -110,7 +110,7 @@
 
 	// Add gap between rows
 	.gallery-row + .gallery-row {
-		margin-top: var(--wp--style--block-gap, 1rem);
+		margin-top: var(--wp--preset--spacing--40);
 	}
 
 	// Responsive adjustments
