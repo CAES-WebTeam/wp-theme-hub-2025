@@ -895,23 +895,31 @@ add_filter( 'ppp_nonce_life', function() {
     return 30 * DAY_IN_SECONDS; // 30 days
 } );
 
-// Disable specific blocks in the block editor
-function disable_specific_blocks( $allowed_block_types, $post ) {
-    // If all blocks are allowed (true), get the full list first
-    if ( $allowed_block_types === true ) {
-        $registered_blocks = WP_Block_Type_Registry::get_instance()->get_all_registered();
+// Disable the core/gallery block in the block editor
+function disable_core_gallery_block( $allowed_block_types, $block_editor_context ) {
+    $disallowed_blocks = array(
+        'core/gallery',
+    );
+    
+    // Get all registered blocks if $allowed_block_types is not already set.
+    if ( ! is_array( $allowed_block_types ) || empty( $allowed_block_types ) ) {
+        $registered_blocks   = WP_Block_Type_Registry::get_instance()->get_all_registered();
         $allowed_block_types = array_keys( $registered_blocks );
     }
     
-    // An array of block names to disable
-    $disabled_blocks = array(
-        'core/gallery',
-        // Add more block names as needed
-    );
+    // Create a new array for the allowed blocks.
+    $filtered_blocks = array();
     
-    // Remove disabled blocks from the allowed list
-    $allowed_block_types = array_diff( $allowed_block_types, $disabled_blocks );
+    // Loop through each block in the allowed blocks list.
+    foreach ( $allowed_block_types as $block ) {
+        // Check if the block is not in the disallowed blocks list.
+        if ( ! in_array( $block, $disallowed_blocks, true ) ) {
+            // If it's not disallowed, add it to the filtered list.
+            $filtered_blocks[] = $block;
+        }
+    }
     
-    return $allowed_block_types;
+    // Return the filtered list of allowed blocks
+    return $filtered_blocks;
 }
-add_filter( 'allowed_block_types_all', 'disable_specific_blocks', 10, 2 );
+add_filter( 'allowed_block_types_all', 'disable_core_gallery_block', 10, 2 );
