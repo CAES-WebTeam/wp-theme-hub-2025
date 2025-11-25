@@ -35,10 +35,10 @@
 		// }
 
 		// Cropped images mode - use flexbox like WP core gallery
-		&.is-cropped {
+		// &.is-cropped {
 			// display: flex;
 			// flex-wrap: wrap;
-			gap: var(--wp--preset--spacing--40);
+			// gap: var(--wp--preset--spacing--40);
 
 			// .gallery-item {
 			// 	display: flex;
@@ -88,30 +88,30 @@
 		}
 
 		// Individual gallery items (non-cropped)
-		.gallery-item {
-			a {
-				display: block;
-				overflow: hidden;
-				position: relative;
-			}
+	// 	.gallery-item {
+	// 		a {
+	// 			display: block;
+	// 			overflow: hidden;
+	// 			position: relative;
+	// 		}
 
-			img {
-				// width: 100%;
-				// height: auto;
-				display: block;
-				// transition: opacity 0.2s ease, transform 0.3s ease;
-			}
+	// 		img {
+	// 			// width: 100%;
+	// 			// height: auto;
+	// 			display: block;
+	// 			// transition: opacity 0.2s ease, transform 0.3s ease;
+	// 		}
 
-			a:hover img {
-				opacity: 0.9;
-			}
-		}
-	}
+	// 		a:hover img {
+	// 			opacity: 0.9;
+	// 		}
+	// 	}
+	// }
 
 	// Add gap between rows
-	.gallery-row + .gallery-row {
-		margin-top: var(--wp--preset--spacing--40);
-	}
+	// .gallery-row + .gallery-row {
+	// 	margin-top: var(--wp--preset--spacing--40);
+	// }
 
 	// Responsive adjustments
 	// @media screen and (max-width: 782px) {
