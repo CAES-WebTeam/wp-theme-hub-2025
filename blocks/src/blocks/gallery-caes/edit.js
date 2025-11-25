@@ -301,7 +301,9 @@ const Edit = ({ attributes, setAttributes }) => {
 											backgroundColor: '#fff',
 											border: '1px solid #ddd',
 											borderRadius: '4px',
-											overflow: 'hidden'
+											overflow: 'hidden',
+											display: 'flex',
+											alignItems: 'flex-start'
 										}}>
 											<img
 												src={image.url}
@@ -309,7 +311,7 @@ const Edit = ({ attributes, setAttributes }) => {
 												style={{
 													width: '100%',
 													height: cropImages ? '200px' : 'auto',
-													objectFit: cropImages ? 'cover' : 'contain',
+													objectFit: cropImages ? 'cover' : 'initial',
 													display: 'block'
 												}}
 											/>

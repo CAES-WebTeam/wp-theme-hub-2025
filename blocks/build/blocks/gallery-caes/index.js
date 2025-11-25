@@ -369,7 +369,9 @@ const Edit = ({
                 backgroundColor: '#fff',
                 border: '1px solid #ddd',
                 borderRadius: '4px',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'flex-start'
               },
               children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
                 src: image.url,
@@ -377,7 +379,7 @@ const Edit = ({
                 style: {
                   width: '100%',
                   height: cropImages ? '200px' : 'auto',
-                  objectFit: cropImages ? 'cover' : 'contain',
+                  objectFit: cropImages ? 'cover' : 'initial',
                   display: 'block'
                 }
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {

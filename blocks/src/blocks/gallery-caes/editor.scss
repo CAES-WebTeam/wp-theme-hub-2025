@@ -99,23 +99,12 @@
 				> div {
 					display: block;
 					overflow: hidden;
-					cursor: pointer;
-					transition: transform 0.2s ease;
-
-					&:hover {
-						transform: scale(1.02);
-					}
 				}
 
 				img {
 					width: 100%;
 					height: auto;
 					display: block;
-					transition: opacity 0.2s ease;
-				}
-
-				> div:hover img {
-					opacity: 0.9;
 				}
 			}
 		}
