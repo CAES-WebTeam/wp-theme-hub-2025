@@ -831,10 +831,10 @@ body {
     }
 }
 
-::view-transition,
-::view-transition-group(*),
-::view-transition-image-pair(*),
-::view-transition-old(*),
-::view-transition-new(*) {
-    display: none !important;
-}
+// ::view-transition,
+// ::view-transition-group(*),
+// ::view-transition-image-pair(*),
+// ::view-transition-old(*),
+// ::view-transition-new(*) {
+//     display: none !important;
+// }
