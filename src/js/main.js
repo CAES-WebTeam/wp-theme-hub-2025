@@ -107,6 +107,177 @@ document.addEventListener('DOMContentLoaded', function () {
   const prvs = new Parvus({
     gallerySelector: '.wp-block-gallery, .parvus-gallery'
   });
+  
+  /*** START PARVUS SAFARI FLASH DEBUG */
+  console.log('🔍 Parvus Safari Flash Debugger Loaded');
+  
+  // Detect Safari
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  console.log('Browser:', isSafari ? '🟢 Safari' : '⚪ Other');
+  
+  // Store timing data
+  const timingData = {
+    events: [],
+    paints: [],
+    styles: []
+  };
+  
+  // Monitor performance entries (paints, compositing)
+  if ('PerformanceObserver' in window) {
+    try {
+      const paintObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          timingData.paints.push({
+            time: entry.startTime,
+            name: entry.name,
+            duration: entry.duration
+          });
+          console.log('🎨 Paint Event:', entry.name, 'at', entry.startTime.toFixed(2) + 'ms');
+        });
+      });
+      paintObserver.observe({ entryTypes: ['paint', 'measure'] });
+    } catch (e) {
+      console.warn('PerformanceObserver not supported:', e);
+    }
+  }
+  
+  // Monitor computed styles helper
+  function captureComputedStyles(element, label) {
+    if (!element) return;
+    const styles = window.getComputedStyle(element);
+    const data = {
+      time: performance.now(),
+      label: label,
+      element: element.className,
+      transform: styles.transform,
+      opacity: styles.opacity,
+      visibility: styles.visibility,
+      display: styles.display,
+      backgroundColor: styles.backgroundColor,
+      willChange: styles.willChange,
+      backfaceVisibility: styles.backfaceVisibility,
+      isolation: styles.isolation
+    };
+    timingData.styles.push(data);
+    console.log('🎨 Computed Styles:', label, data);
+    return data;
+  }
+  
+  // Wait for Parvus to be ready
+  setTimeout(() => {
+    const parvusContainer = document.querySelector('.parvus');
+    const parvusOverlay = document.querySelector('.parvus__overlay');
+    const parvusSlider = document.querySelector('.parvus__slider');
+    
+    if (parvusContainer) {
+      console.log('✅ Found Parvus container');
+      
+      // Track transitions
+      parvusContainer.addEventListener('transitionstart', (e) => {
+        console.log('🚀 TRANSITION START:', {
+          property: e.propertyName,
+          target: e.target.className,
+          elapsedTime: e.elapsedTime
+        });
+        
+        captureComputedStyles(parvusContainer, 'Container at transition start');
+        captureComputedStyles(parvusOverlay, 'Overlay at transition start');
+        captureComputedStyles(parvusSlider, 'Slider at transition start');
+      }, true);
+      
+      parvusContainer.addEventListener('transitionend', (e) => {
+        console.log('🏁 TRANSITION END:', {
+          property: e.propertyName,
+          target: e.target.className,
+          elapsedTime: e.elapsedTime
+        });
+        
+        captureComputedStyles(parvusContainer, 'Container at transition end');
+        captureComputedStyles(parvusOverlay, 'Overlay at transition end');
+        captureComputedStyles(parvusSlider, 'Slider at transition end');
+      }, true);
+      
+      // Track class changes
+      const classObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class' || mutation.attributeName === 'style') {
+            console.log('🏷️ ATTRIBUTE CHANGE:', {
+              element: mutation.target.className,
+              attribute: mutation.attributeName,
+              old: mutation.oldValue,
+              new: mutation.target.getAttribute(mutation.attributeName)
+            });
+            
+            setTimeout(() => {
+              captureComputedStyles(parvusContainer, 'Container after change');
+              captureComputedStyles(parvusOverlay, 'Overlay after change');
+              captureComputedStyles(parvusSlider, 'Slider after change');
+            }, 0);
+          }
+        });
+      });
+      
+      classObserver.observe(parvusContainer, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ['class', 'style']
+      });
+      
+      if (parvusOverlay) {
+        classObserver.observe(parvusOverlay, {
+          attributes: true,
+          attributeOldValue: true,
+          attributeFilter: ['class', 'style']
+        });
+      }
+      
+      if (parvusSlider) {
+        classObserver.observe(parvusSlider, {
+          attributes: true,
+          attributeOldValue: true,
+          attributeFilter: ['class', 'style']
+        });
+      }
+    } else {
+      console.warn('❌ Parvus container not found');
+    }
+    
+    // Monitor all lightbox triggers
+    document.querySelectorAll('.lightbox, .parvus-trigger').forEach((trigger) => {
+      trigger.addEventListener('click', (e) => {
+        console.log('👆 LIGHTBOX CLICKED:', {
+          src: e.currentTarget.href,
+          time: performance.now()
+        });
+        
+        // Capture pre-open state
+        setTimeout(() => {
+          const container = document.querySelector('.parvus');
+          const overlay = document.querySelector('.parvus__overlay');
+          const slider = document.querySelector('.parvus__slider');
+          
+          captureComputedStyles(container, 'Container immediately after click');
+          captureComputedStyles(overlay, 'Overlay immediately after click');
+          captureComputedStyles(slider, 'Slider immediately after click');
+        }, 10);
+      });
+    });
+  }, 1000);
+  
+  // Export debug data to console
+  window.getParvusDebugData = () => {
+    console.log('📊 === PARVUS DEBUG REPORT ===');
+    console.log('Total Events:', timingData.events.length);
+    console.log('Total Paints:', timingData.paints.length);
+    console.log('Total Style Captures:', timingData.styles.length);
+    console.log('\n📋 Full Data:', timingData);
+    
+    return timingData;
+  };
+  
+  console.log('💡 TIP: After seeing the flash, run window.getParvusDebugData() in console');
+  /*** END PARVUS SAFARI FLASH DEBUG */
+  
   /*** END PARVUS LIGHTBOX INITIALIZATION */
 
   /*** HANDLE LEGACY CONTENT */
