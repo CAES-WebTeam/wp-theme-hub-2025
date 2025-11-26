@@ -31,7 +31,7 @@
     },
     "cropImages": {
       "type": "boolean",
-      "default": false
+      "default": true
     },
     "showCaptions": {
       "type": "boolean",
