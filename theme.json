@@ -716,6 +716,11 @@
                     "color": "var(--wp--preset--color--base-three)",
                     "width": "1px"
                 }
+            },
+            "core/table": {
+                "typography": {
+                    "fontFamily": "var(--wp--preset--font-family--trade-gothic)"
+                }
             }
         }
     },
