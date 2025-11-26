@@ -201,6 +201,131 @@
                     "slug": "merriweather-sans"
                 },
                 {
+                    "fontFace": [
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "300",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Light.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "oblique",
+                            "fontWeight": "300",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-LightObl.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "400",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "oblique",
+                            "fontWeight": "400",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Obl.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "400",
+                            "fontStretch": "condensed",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Cn18.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "oblique",
+                            "fontWeight": "400",
+                            "fontStretch": "condensed",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Cn18Obl.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "400",
+                            "fontStretch": "expanded",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Extended.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "700",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Bold.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "oblique",
+                            "fontWeight": "700",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-BoldObl.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "700",
+                            "fontStretch": "condensed",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-BdCn20.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "oblique",
+                            "fontWeight": "700",
+                            "fontStretch": "condensed",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-BdCn20Obl.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "700",
+                            "fontStretch": "expanded",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-BoldExt.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "normal",
+                            "fontWeight": "800",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Bd2.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "Trade Gothic LT Std",
+                            "fontStyle": "oblique",
+                            "fontWeight": "800",
+                            "src": [
+                                "file:./assets/fonts/trade-gothic/TradeGothicLTStd-Bd2Obl.woff2"
+                            ]
+                        }
+                    ],
+                    "fontFamily": "Trade Gothic LT Std, sans-serif",
+                    "name": "Trade Gothic LT Std",
+                    "slug": "trade-gothic"
+                },
+                {
                     "name": "Georgia",
                     "slug": "georgia",
                     "fontFamily": "Georgia, serif",
