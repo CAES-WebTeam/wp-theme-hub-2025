@@ -42,6 +42,18 @@ const Edit = ({
   const [showTextColorPicker, setShowTextColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [showBgColorPicker, setShowBgColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
 
+  // Auto-add first row when block is inserted
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (rows.length === 0) {
+      setAttributes({
+        rows: [{
+          columns: 3,
+          images: []
+        }]
+      });
+    }
+  }, []);
+
   // Add a new row
   const addRow = () => {
     const newRows = [...rows, {
@@ -843,7 +855,7 @@ module.exports = window["wp"]["i18n"];
   \********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[{"columns":3,"images":[]}],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":true},"showCaptions":{"type":"boolean","default":false},"captionTextColor":{"type":"string","default":"#ffffff"},"captionBackgroundColor":{"type":"string","default":"rgba(0, 0, 0, 0.7)"}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":true},"showCaptions":{"type":"boolean","default":false},"captionTextColor":{"type":"string","default":"#ffffff"},"captionBackgroundColor":{"type":"string","default":"rgba(0, 0, 0, 0.7)"}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 

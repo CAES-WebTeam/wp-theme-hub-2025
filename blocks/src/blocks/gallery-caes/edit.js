@@ -1,13 +1,20 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls } from '@wordpress/block-editor';
 import { Button, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl, ColorPicker, __experimentalHStack as HStack, __experimentalVStack as VStack, Popover } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
 	const { rows, cropImages, showCaptions, captionTextColor, captionBackgroundColor } = attributes;
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 	const [showTextColorPicker, setShowTextColorPicker] = useState(false);
 	const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+
+	// Auto-add first row when block is inserted
+	useEffect(() => {
+		if (rows.length === 0) {
+			setAttributes({ rows: [{ columns: 3, images: [] }] });
+		}
+	}, []);
 
 	// Add a new row
 	const addRow = () => {

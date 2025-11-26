@@ -19,12 +19,7 @@
   "attributes": {
     "rows": {
       "type": "array",
-      "default": [
-        {
-          "columns": 3,
-          "images": []
-        }
-      ],
+      "default": [],
       "items": {
         "type": "object"
       }
