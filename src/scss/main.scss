@@ -796,6 +796,12 @@ figcaption a {
     outline-offset: 2px;
 }
 
+/* Math */
+
+math {
+    font-family: var(--wp--preset--font-family--trade-gothic);
+}
+
 /* Additional Styles */
 
 @import 'blocks/_custom-block-styles.scss';
