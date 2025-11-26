@@ -32,6 +32,18 @@
     "cropImages": {
       "type": "boolean",
       "default": false
+    },
+    "showCaptions": {
+      "type": "boolean",
+      "default": false
+    },
+    "captionTextColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "captionBackgroundColor": {
+      "type": "string",
+      "default": "rgba(0, 0, 0, 0.7)"
     }
   },
   "supports": {

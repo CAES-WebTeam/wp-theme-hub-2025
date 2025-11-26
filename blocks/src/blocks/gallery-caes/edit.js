@@ -1,11 +1,13 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, MediaUpload, MediaUploadCheck, BlockControls, InspectorControls } from '@wordpress/block-editor';
-import { Button, Flex, FlexItem, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl } from '@wordpress/components';
+import { Button, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, ToggleControl, ColorPicker, __experimentalHStack as HStack, __experimentalVStack as VStack, Popover } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { rows, cropImages } = attributes;
+	const { rows, cropImages, showCaptions, captionTextColor, captionBackgroundColor } = attributes;
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
+	const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+	const [showBgColorPicker, setShowBgColorPicker] = useState(false);
 
 	// Add a new row
 	const addRow = () => {
@@ -70,9 +72,40 @@ const Edit = ({ attributes, setAttributes }) => {
 		setAttributes({ rows: newRows });
 	};
 
+	// Color swatch button component
+	const ColorSwatchButton = ({ color, onClick, label }) => (
+		<Button
+			onClick={onClick}
+			style={{
+				width: '36px',
+				height: '36px',
+				padding: '0',
+				border: '1px solid #949494',
+				borderRadius: '4px',
+				background: color,
+				minWidth: '36px'
+			}}
+			aria-label={label}
+		/>
+	);
+
 	const blockProps = useBlockProps({
 		className: 'caes-gallery-block'
 	});
+
+	// Caption overlay styles for editor
+	const captionOverlayStyle = {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		padding: '8px 12px',
+		color: captionTextColor,
+		backgroundColor: captionBackgroundColor,
+		fontSize: '14px',
+		lineHeight: '1.4',
+		margin: 0
+	};
 
 	// Preview Mode - Shows frontend appearance
 	if (isPreviewMode) {
@@ -98,6 +131,66 @@ const Edit = ({ attributes, setAttributes }) => {
 							help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
 						/>
 					</PanelBody>
+					<PanelBody title={__('Caption Settings', 'caes-gallery')}>
+						<ToggleControl
+							label={__('Show captions on thumbnails', 'caes-gallery')}
+							checked={showCaptions}
+							onChange={(value) => setAttributes({ showCaptions: value })}
+							help={__('Display image captions as overlays on the thumbnail images.', 'caes-gallery')}
+						/>
+						{showCaptions && (
+							<VStack spacing={4} style={{ marginTop: '16px' }}>
+								<HStack alignment="left">
+									<span style={{ minWidth: '120px' }}>{__('Text Color', 'caes-gallery')}</span>
+									<div style={{ position: 'relative' }}>
+										<ColorSwatchButton
+											color={captionTextColor}
+											onClick={() => setShowTextColorPicker(!showTextColorPicker)}
+											label={__('Select text color', 'caes-gallery')}
+										/>
+										{showTextColorPicker && (
+											<Popover
+												position="bottom left"
+												onClose={() => setShowTextColorPicker(false)}
+											>
+												<div style={{ padding: '16px' }}>
+													<ColorPicker
+														color={captionTextColor}
+														onChange={(color) => setAttributes({ captionTextColor: color })}
+														enableAlpha={true}
+													/>
+												</div>
+											</Popover>
+										)}
+									</div>
+								</HStack>
+								<HStack alignment="left">
+									<span style={{ minWidth: '120px' }}>{__('Background Color', 'caes-gallery')}</span>
+									<div style={{ position: 'relative' }}>
+										<ColorSwatchButton
+											color={captionBackgroundColor}
+											onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+											label={__('Select background color', 'caes-gallery')}
+										/>
+										{showBgColorPicker && (
+											<Popover
+												position="bottom left"
+												onClose={() => setShowBgColorPicker(false)}
+											>
+												<div style={{ padding: '16px' }}>
+													<ColorPicker
+														color={captionBackgroundColor}
+														onChange={(color) => setAttributes({ captionBackgroundColor: color })}
+														enableAlpha={true}
+													/>
+												</div>
+											</Popover>
+										)}
+									</div>
+								</HStack>
+							</VStack>
+						)}
+					</PanelBody>
 				</InspectorControls>
 
 				<div {...blockProps}>
@@ -113,7 +206,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							return (
 								<div 
 									key={rowIndex} 
-									className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}`}
+									className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}${showCaptions ? ' has-captions' : ''}`}
 									style={!cropImages ? {
 										display: 'grid',
 										gridTemplateColumns: `repeat(${columns}, 1fr)`,
@@ -128,7 +221,8 @@ const Edit = ({ attributes, setAttributes }) => {
 											<div style={{
 												display: 'block',
 												overflow: 'hidden',
-												cursor: 'pointer'
+												cursor: 'pointer',
+												position: 'relative'
 											}}>
 												<img
 													src={image.url}
@@ -140,6 +234,11 @@ const Edit = ({ attributes, setAttributes }) => {
 														objectFit: cropImages ? 'cover' : 'initial'
 													}}
 												/>
+												{showCaptions && image.caption && (
+													<figcaption style={captionOverlayStyle}>
+														{image.caption}
+													</figcaption>
+												)}
 											</div>
 										</div>
 									))}
@@ -176,6 +275,66 @@ const Edit = ({ attributes, setAttributes }) => {
 					<p style={{ marginTop: '12px', fontSize: '13px', color: '#757575' }}>
 						{__('Configure columns per row in the block editor.', 'caes-gallery')}
 					</p>
+				</PanelBody>
+				<PanelBody title={__('Caption Settings', 'caes-gallery')}>
+					<ToggleControl
+						label={__('Show captions on thumbnails', 'caes-gallery')}
+						checked={showCaptions}
+						onChange={(value) => setAttributes({ showCaptions: value })}
+						help={__('Display image captions as overlays on the thumbnail images.', 'caes-gallery')}
+					/>
+					{showCaptions && (
+						<VStack spacing={4} style={{ marginTop: '16px' }}>
+							<HStack alignment="left">
+								<span style={{ minWidth: '120px' }}>{__('Text Color', 'caes-gallery')}</span>
+								<div style={{ position: 'relative' }}>
+									<ColorSwatchButton
+										color={captionTextColor}
+										onClick={() => setShowTextColorPicker(!showTextColorPicker)}
+										label={__('Select text color', 'caes-gallery')}
+									/>
+									{showTextColorPicker && (
+										<Popover
+											position="bottom left"
+											onClose={() => setShowTextColorPicker(false)}
+										>
+											<div style={{ padding: '16px' }}>
+												<ColorPicker
+													color={captionTextColor}
+													onChange={(color) => setAttributes({ captionTextColor: color })}
+													enableAlpha={true}
+												/>
+											</div>
+										</Popover>
+									)}
+								</div>
+							</HStack>
+							<HStack alignment="left">
+								<span style={{ minWidth: '120px' }}>{__('Background Color', 'caes-gallery')}</span>
+								<div style={{ position: 'relative' }}>
+									<ColorSwatchButton
+										color={captionBackgroundColor}
+										onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+										label={__('Select background color', 'caes-gallery')}
+									/>
+									{showBgColorPicker && (
+										<Popover
+											position="bottom left"
+											onClose={() => setShowBgColorPicker(false)}
+										>
+											<div style={{ padding: '16px' }}>
+												<ColorPicker
+													color={captionBackgroundColor}
+													onChange={(color) => setAttributes({ captionBackgroundColor: color })}
+													enableAlpha={true}
+												/>
+											</div>
+										</Popover>
+									)}
+								</div>
+							</HStack>
+						</VStack>
+					)}
 				</PanelBody>
 			</InspectorControls>
 
@@ -290,7 +449,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							{/* Image Preview Grid - Matches Preview Mode */}
 							{row.images.length > 0 && (
 								<div 
-									className={`gallery-row gallery-row-${row.columns}-cols${cropImages ? ' is-cropped' : ''}`}
+									className={`gallery-row gallery-row-${row.columns}-cols${cropImages ? ' is-cropped' : ''}${showCaptions ? ' has-captions' : ''}`}
 									style={!cropImages ? {
 										display: 'grid',
 										gridTemplateColumns: `repeat(${row.columns}, 1fr)`,
@@ -304,7 +463,8 @@ const Edit = ({ attributes, setAttributes }) => {
 										<div key={image.id} className="gallery-item" style={{ position: 'relative' }}>
 											<div style={{
 												display: 'block',
-												overflow: 'hidden'
+												overflow: 'hidden',
+												position: 'relative'
 											}}>
 												<img
 													src={image.url}
@@ -316,6 +476,11 @@ const Edit = ({ attributes, setAttributes }) => {
 														objectFit: cropImages ? 'cover' : 'initial'
 													}}
 												/>
+												{showCaptions && image.caption && (
+													<figcaption style={captionOverlayStyle}>
+														{image.caption}
+													</figcaption>
+												)}
 											</div>
 											<Button
 												onClick={() => onRemoveImage(rowIndex, imageIndex)}

@@ -6,6 +6,9 @@
 // Get block attributes
 $rows = $attributes['rows'] ?? [];
 $crop_images = $attributes['cropImages'] ?? false;
+$show_captions = $attributes['showCaptions'] ?? false;
+$caption_text_color = $attributes['captionTextColor'] ?? '#ffffff';
+$caption_bg_color = $attributes['captionBackgroundColor'] ?? 'rgba(0, 0, 0, 0.7)';
 
 // Early return if no rows
 if (empty($rows)) {
@@ -36,13 +39,34 @@ $has_class = preg_match('/class="([^"]*)"/', $default_attributes, $matches);
 $existing_classes = $has_class ? $matches[1] : '';
 
 // Add our custom classes
-$all_classes = trim($existing_classes . ' caes-gallery caes-gallery-parvus');
+$gallery_classes = 'caes-gallery caes-gallery-parvus';
+if ($show_captions) {
+    $gallery_classes .= ' has-caption-overlays';
+}
+$all_classes = trim($existing_classes . ' ' . $gallery_classes);
 
 // Replace or add the class attribute
 if ($has_class) {
     $wrapper_attributes = str_replace('class="' . $existing_classes . '"', 'class="' . $all_classes . '"', $default_attributes);
 } else {
     $wrapper_attributes = $default_attributes . ' class="' . $all_classes . '"';
+}
+
+// Build inline styles for caption colors if captions are enabled
+$caption_styles = '';
+if ($show_captions) {
+    $caption_styles = sprintf(
+        '--caes-caption-text-color: %s; --caes-caption-bg-color: %s;',
+        esc_attr($caption_text_color),
+        esc_attr($caption_bg_color)
+    );
+    
+    // Add style attribute to wrapper
+    if (strpos($wrapper_attributes, 'style="') !== false) {
+        $wrapper_attributes = preg_replace('/style="([^"]*)"/', 'style="$1 ' . $caption_styles . '"', $wrapper_attributes);
+    } else {
+        $wrapper_attributes .= ' style="' . $caption_styles . '"';
+    }
 }
 ?>
 
@@ -57,9 +81,17 @@ if ($has_class) {
             if (empty($images)) {
                 continue;
             }
+            
+            $row_classes = 'gallery-row gallery-row-' . esc_attr($columns) . '-cols';
+            if ($crop_images) {
+                $row_classes .= ' is-cropped';
+            }
+            if ($show_captions) {
+                $row_classes .= ' has-captions';
+            }
             ?>
             
-            <div class="gallery-row gallery-row-<?php echo esc_attr($columns); ?>-cols<?php echo $crop_images ? ' is-cropped' : ''; ?>" 
+            <div class="<?php echo esc_attr($row_classes); ?>" 
                  data-columns="<?php echo esc_attr($columns); ?>">
                 
                 <?php 
@@ -81,8 +113,10 @@ if ($has_class) {
                     } elseif (!empty($image['caption'])) {
                         $aria_label .= ': ' . wp_strip_all_tags($image['caption']);
                     }
+                    
+                    $has_caption = $show_captions && !empty($image['caption']);
                 ?>
-                    <div class="gallery-item">
+                    <div class="gallery-item<?php echo $has_caption ? ' has-caption' : ''; ?>">
                         <a href="<?php echo esc_url($image['url']); ?>" 
                            class="lightbox"
                            aria-label="<?php echo esc_attr($aria_label); ?>"
@@ -91,6 +125,11 @@ if ($has_class) {
                            <?php endif; ?>>
                             <img src="<?php echo esc_url($image['url']); ?>" 
                                  alt="<?php echo esc_attr($image['alt'] ?? ''); ?>" />
+                            <?php if ($has_caption): ?>
+                            <figcaption class="gallery-caption-overlay">
+                                <?php echo esc_html($image['caption']); ?>
+                            </figcaption>
+                            <?php endif; ?>
                         </a>
                     </div>
                 <?php endforeach; ?>

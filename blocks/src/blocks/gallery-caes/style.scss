@@ -3,6 +3,10 @@
  */
 
 .caes-gallery {
+	// CSS custom properties for caption colors (set via inline styles)
+	--caes-caption-text-color: #ffffff;
+	--caes-caption-bg-color: rgba(0, 0, 0, 0.7);
+
 	// Gallery row layout
 	.gallery-row {
 		display: grid;
@@ -105,6 +109,21 @@
 			a:hover img {
 				opacity: 0.9;
 			}
+
+			// Caption overlay styles
+			.gallery-caption-overlay {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 8px 12px;
+				margin: 0;
+				color: var(--caes-caption-text-color);
+				background-color: var(--caes-caption-bg-color);
+				font-size: 14px;
+				line-height: 1.4;
+				transition: opacity 0.2s ease;
+			}
 		}
 	}
 
@@ -122,6 +141,12 @@
 
 			&.is-cropped .gallery-item {
 				width: calc(50% - (var(--wp--style--block-gap, 1rem) / 2)) !important;
+			}
+
+			// Adjust caption font size on smaller screens
+			.gallery-item .gallery-caption-overlay {
+				font-size: 12px;
+				padding: 6px 10px;
 			}
 		}
 	}
