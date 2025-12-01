@@ -68,31 +68,42 @@ add_action('init', 'add_expert_user_role');
  * 1. Define the Role and Capabilities
  */
 function caes_update_content_manager_role() {
-    $editor = get_role('editor');
-    if (!$editor) return;
+    $admin = get_role('administrator');
+    if (!$admin) return;
 
-    // Merge Editor caps with specific custom caps
+    // Start with Administrator caps, then remove dangerous ones
     $capabilities = array_merge(
-        $editor->capabilities,
+        $admin->capabilities,
         array(
-            // --- Content & Safety ---
-            'unfiltered_html'    => true, // Scripts/Iframes
+            // --- User Management Restrictions ---
+            'create_users'       => false, // Cannot create new users
+            'delete_users'       => false, // Cannot delete users
+            'promote_users'      => false, // Cannot promote to Admin
+            'remove_users'       => false, // Cannot remove users from site
             
-            // --- User Management ---
-            'edit_users'         => true,
-            'list_users'         => true,
-            'create_users'       => false, // Safety: Cannot create new users
-            'delete_users'       => false, // Safety: Cannot delete users
-            'promote_users'      => false, // Safety: Cannot promote to Admin
+            // --- Theme Restrictions ---
+            'switch_themes'      => false, // Cannot switch themes
+            'install_themes'     => false, // Cannot install themes
+            'edit_themes'        => false, // Cannot edit theme files
+            'delete_themes'      => false, // Cannot delete themes
+            'update_themes'      => false, // Cannot update themes
             
-            // --- Theme & Assets ---
-            'edit_theme_options' => true, // Menus/Widgets
-            'upload_files'       => true,
-            'manage_categories'  => true,
-            'manage_links'       => true,
+            // --- Plugin Restrictions ---
+            'install_plugins'    => false, // Cannot install plugins
+            'activate_plugins'   => false, // Cannot activate/deactivate plugins
+            'edit_plugins'       => false, // Cannot edit plugin files
+            'delete_plugins'     => false, // Cannot delete plugins
+            'update_plugins'     => false, // Cannot update plugins
             
-            // --- Network User Management (for multisite) ---
-            'manage_network_users' => true,
+            // --- Core/Site Restrictions ---
+            'update_core'        => false, // Cannot update WordPress
+            'manage_options'     => false, // Cannot change site settings
+            'export'             => false, // Cannot export site data
+            'import'             => false, // Cannot import data
+            
+            // --- Allow These ---
+            'edit_theme_options' => true,  // Menus/Widgets
+            'manage_network_users' => true, // For multisite user editing
         )
     );
 
