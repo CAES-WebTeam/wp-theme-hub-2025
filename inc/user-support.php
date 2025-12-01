@@ -150,20 +150,28 @@ function caes_map_content_manager_caps($caps, $cap, $user_id, $args) {
         return $caps;
     }
 
-    // A. Allow Editing/Promoting (viewing profile) of non-admins
-    if ($cap === 'edit_user' || $cap === 'promote_user') {
+    // A. Allow Editing (viewing profile) of non-admins
+    if ($cap === 'edit_user') {
         $target_user_id = isset($args[0]) ? $args[0] : false;
         
         if ($target_user_id) {
             $target_user = get_userdata($target_user_id);
             
-            // BLOCK: Never allow editing an Administrator
+            // BLOCK: Never allow editing an Administrator or Super Admin
             if ($target_user && in_array('administrator', (array) $target_user->roles)) {
+                return array('do_not_allow');
+            }
+            if (is_super_admin($target_user_id)) {
                 return array('do_not_allow');
             }
         }
         // ALLOW: If not an admin, grant permission
         return array('read');
+    }
+    
+    // B. Block promoting users
+    if ($cap === 'promote_user') {
+        return array('do_not_allow');
     }
     
     // B. Allow listing users
@@ -198,7 +206,7 @@ function caes_content_manager_user_has_cap($allcaps, $caps, $args, $user) {
     
     $requested_cap = $args[0];
     
-    if ($requested_cap === 'edit_user' || $requested_cap === 'promote_user') {
+    if ($requested_cap === 'edit_user') {
         // Get the target user ID (third element in args array)
         $target_user_id = isset($args[2]) ? $args[2] : 0;
         
@@ -217,6 +225,12 @@ function caes_content_manager_user_has_cap($allcaps, $caps, $args, $user) {
             $allcaps['edit_user'] = true;
             $allcaps['edit_users'] = true;
         }
+    }
+    
+    // Block promoting users
+    if ($requested_cap === 'promote_user') {
+        $allcaps['promote_users'] = false;
+        return $allcaps;
     }
     
     // Also ensure list_users works
