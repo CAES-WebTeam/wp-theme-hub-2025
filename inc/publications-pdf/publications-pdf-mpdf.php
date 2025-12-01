@@ -441,10 +441,10 @@ function generate_publication_pdf_file_mpdf($post_id)
                     'BI' => 'Georgia-Bold-Italic.ttf'
                 ],
                 'tradegothic' => [
-                    'R' => 'TradeGothicLTStd.otf',
-                    'B' => 'TradeGothicLTStd-Bold.otf',
-                    'I' => 'TradeGothicLTStd-Obl.otf',
-                    'BI' => 'TradeGothicLTStd-BoldObl.otf'
+                    'R' => 'TradeGothicLTStd.ttf',
+                    'B' => 'TradeGothicLTStd-Bold.ttf',
+                    'I' => 'TradeGothicLTStd-Obl.ttf',
+                    'BI' => 'TradeGothicLTStd-BoldObl.ttf'
                 ]
             ],
             'default_font' => 'georgia',
