@@ -150,6 +150,7 @@ function process_content_for_mpdf($content)
 }
 
 // Get CSS for mPDF with improved accessibility and spacing
+// Get CSS for mPDF with improved accessibility and spacing
 function get_mpdf_styles()
 {
     // Increased font sizes for cover page elements and added image alignment styles.
@@ -164,9 +165,11 @@ function get_mpdf_styles()
         h5 { font-size: 15px; font-weight: bold; margin: 16px 0 4px 0; }
         h6 { font-size: 14px; font-weight: bold; margin: 14px 0 4px 0; }
 
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-        table th, table td { border: 1px solid #dd; padding: 8px; text-align: left; font-size: 12px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: "tradegothic", sans-serif; }
+        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; font-family: "tradegothic", sans-serif; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
+
+        math, .math { font-family: "tradegothic", sans-serif; }
 
         .footer-spacer { height: 50px; }
         .page-break { page-break-before: always; }
@@ -302,7 +305,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             foreach ($authors_data as $index => $item) {
                 // Check the type field to determine if this is a user or custom entry
                 $entry_type = $item['type'] ?? '';
-                
+
                 $first_name = '';
                 $last_name = '';
                 $author_title = '';
@@ -337,7 +340,7 @@ function generate_publication_pdf_file_mpdf($post_id)
                         $public_title = get_field('public_friendly_title', 'user_' . $user_id);
                         $regular_title = get_the_author_meta('title', $user_id);
                         $author_title = !empty($public_title) ? $public_title : $regular_title;
-                        
+
                         // Use display_name if available, otherwise construct from first/last
                         $full_name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
                     }
@@ -349,7 +352,7 @@ function generate_publication_pdf_file_mpdf($post_id)
                     if (empty($full_name)) {
                         $full_name = trim("$first_name $last_name");
                     }
-                    
+
                     $author_names[] = $full_name;
                     $author_line = '<strong>' . esc_html($full_name) . '</strong>';
                     if (!empty($author_title)) {
@@ -436,6 +439,12 @@ function generate_publication_pdf_file_mpdf($post_id)
                     'B' => 'Georgia-Bold.ttf',
                     'I' => 'Georgia-Italic.ttf',
                     'BI' => 'Georgia-Bold-Italic.ttf'
+                ],
+                'tradegothic' => [
+                    'R' => 'TradeGothicLTStd.otf',
+                    'B' => 'TradeGothicLTStd-Bold.otf',
+                    'I' => 'TradeGothicLTStd-Obl.otf',
+                    'BI' => 'TradeGothicLTStd-BoldObl.otf'
                 ]
             ],
             'default_font' => 'georgia',
