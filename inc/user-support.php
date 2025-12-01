@@ -58,6 +58,125 @@ function add_expert_user_role()
 }
 add_action('init', 'add_expert_user_role');
 
+/**
+ * Role Definition: Content Manager
+ * * Note: 'promote_users' is intentionally false to prevent role escalation.
+ * * We handle the edit permission logic via map_meta_cap filter below.
+ */
+function caes_update_content_manager_role() {
+    $editor = get_role('editor');
+    if (!$editor) return;
+
+    // Define capability set
+    $capabilities = array_merge(
+        $editor->capabilities,
+        array(
+            // Script/HTML execution
+            'unfiltered_html' => true,
+            
+            // User administration
+            'edit_users' => true,
+            'list_users' => true,
+            'create_users' => false,
+            'delete_users' => false, 
+            'promote_users' => false, // Handled via filter
+            
+            // Appearance & Customization
+            'edit_theme_options' => true,
+            
+            // Asset management
+            'upload_files'      => true,
+            'manage_categories' => true,
+            'manage_links'      => true,
+        )
+    );
+
+    $role = add_role('content_manager', 'Content Manager', $capabilities);
+
+    // Force update if role exists
+    if (null === $role) {
+        $role = get_role('content_manager');
+        foreach ($capabilities as $cap => $grant) {
+            $role->add_cap($cap, $grant);
+        }
+    }
+}
+
+/**
+ * Triggers
+ */
+function caes_trigger_role_update() { caes_update_content_manager_role(); }
+add_action('after_switch_theme', 'caes_trigger_role_update');
+
+function caes_manual_role_update_check() {
+    if (isset($_GET['update_my_roles']) && $_GET['update_my_roles'] === '1' && current_user_can('administrator')) {
+        caes_update_content_manager_role();
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-success is-dismissible"><p><strong>System:</strong> Content Manager role definitions updated.</p></div>';
+        });
+    }
+}
+add_action('admin_init', 'caes_manual_role_update_check');
+
+/**
+ * Granular User Editing Permissions
+ * * Overrides default WP logic to allow Content Managers to edit 
+ * * other users, BUT strictly blocks editing of Administrators.
+ */
+function caes_map_content_manager_caps($caps, $cap, $user_id, $args) {
+    
+    // 1. Check if user is a Content Manager
+    $user = get_userdata($user_id);
+    if (!$user || !in_array('content_manager', (array) $user->roles)) {
+        return $caps;
+    }
+
+    // 2. Handle specific capabilities
+    if ($cap === 'edit_user' || $cap === 'promote_user') {
+        
+        // $args[0] is the ID of the user being edited
+        $target_user_id = isset($args[0]) ? $args[0] : false;
+        
+        if ($target_user_id) {
+            $target_user = get_userdata($target_user_id);
+            
+            // SAFETY: Do not allow editing/promoting of Administrators
+            if ($target_user && in_array('administrator', (array) $target_user->roles)) {
+                return array('do_not_allow');
+            }
+            
+            // SAFETY: Do not allow editing of other Content Managers
+            if ($target_user && in_array('content_manager', (array) $target_user->roles) && $target_user_id !== $user_id) {
+                return array('do_not_allow');
+            }
+        }
+        
+        // Grant permission for non-admins
+        return array('read');
+    }
+    
+    // 3. Allow viewing the user list
+    if ($cap === 'edit_users' || $cap === 'list_users') {
+        return array('read');
+    }
+
+    return $caps;
+}
+add_filter('map_meta_cap', 'caes_map_content_manager_caps', 10, 4);
+
+/**
+ * UI Filter: Editable Roles
+ * * Hides 'Administrator' from the role dropdown selector.
+ * * Prevents Content Managers from promoting anyone to Admin.
+ */
+function caes_filter_editable_roles($roles) {
+    if (current_user_can('content_manager') && !current_user_can('administrator')) {
+        unset($roles['administrator']);
+    }
+    return $roles;
+}
+add_filter('editable_roles', 'caes_filter_editable_roles');
+
 
 /**
  * ---------------------------------------------------------------------------------
