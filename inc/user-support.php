@@ -229,6 +229,17 @@ function caes_content_manager_user_has_cap($allcaps, $caps, $args, $user) {
 }
 add_filter('user_has_cap', 'caes_content_manager_user_has_cap', 100, 4);
 
+add_filter('map_meta_cap', 'caes_allow_unfiltered_html', 10, 4);
+function caes_allow_unfiltered_html($caps, $cap, $user_id, $args) {
+    if ($cap === 'unfiltered_html') {
+        $user = get_userdata($user_id);
+        if ($user && in_array('content_manager', (array) $user->roles)) {
+            return array('exist'); // Grant if user exists
+        }
+    }
+    return $caps;
+}
+
 /**
  * 4. Hide "Administrator" from Role Selectors
  * Prevents Content Managers from seeing or selecting "Administrator" in dropdowns.
