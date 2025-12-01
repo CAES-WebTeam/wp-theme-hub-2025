@@ -59,41 +59,43 @@ function add_expert_user_role()
 add_action('init', 'add_expert_user_role');
 
 /**
- * Role Definition: Content Manager
- * * Note: 'promote_users' is intentionally false to prevent role escalation.
- * * We handle the edit permission logic via map_meta_cap filter below.
+ * ---------------------------------------------------------------------------------
+ * Content Manager Role Definitions
+ * ---------------------------------------------------------------------------------
+ */
+
+/**
+ * 1. Define the Role and Capabilities
  */
 function caes_update_content_manager_role() {
     $editor = get_role('editor');
     if (!$editor) return;
 
-    // Define capability set
+    // Merge Editor caps with specific custom caps
     $capabilities = array_merge(
         $editor->capabilities,
         array(
-            // Script/HTML execution
-            'unfiltered_html' => true,
+            // --- Content & Safety ---
+            'unfiltered_html'    => true, // Scripts/Iframes
             
-            // User administration
-            'edit_users' => true,
-            'list_users' => true,
-            'create_users' => false,
-            'delete_users' => false, 
-            'promote_users' => false, // Handled via filter
+            // --- User Management ---
+            'edit_users'         => true,
+            'list_users'         => true,
+            'create_users'       => false, // Safety: Cannot create new users
+            'delete_users'       => false, // Safety: Cannot delete users
+            'promote_users'      => false, // Safety: Cannot promote to Admin
             
-            // Appearance & Customization
-            'edit_theme_options' => true,
-            
-            // Asset management
-            'upload_files'      => true,
-            'manage_categories' => true,
-            'manage_links'      => true,
+            // --- Theme & Assets ---
+            'edit_theme_options' => true, // Menus/Widgets
+            'upload_files'       => true,
+            'manage_categories'  => true,
+            'manage_links'       => true,
         )
     );
 
     $role = add_role('content_manager', 'Content Manager', $capabilities);
 
-    // Force update if role exists
+    // If role exists, strictly enforce these capabilities
     if (null === $role) {
         $role = get_role('content_manager');
         foreach ($capabilities as $cap => $grant) {
@@ -103,7 +105,7 @@ function caes_update_content_manager_role() {
 }
 
 /**
- * Triggers
+ * 2. Triggers (Activation & Manual Refresh)
  */
 function caes_trigger_role_update() { caes_update_content_manager_role(); }
 add_action('after_switch_theme', 'caes_trigger_role_update');
@@ -112,50 +114,45 @@ function caes_manual_role_update_check() {
     if (isset($_GET['update_my_roles']) && $_GET['update_my_roles'] === '1' && current_user_can('administrator')) {
         caes_update_content_manager_role();
         add_action('admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p><strong>System:</strong> Content Manager role definitions updated.</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p><strong>System:</strong> Content Manager role updated.</p></div>';
         });
     }
 }
 add_action('admin_init', 'caes_manual_role_update_check');
 
 /**
- * Granular User Editing Permissions
- * * Overrides default WP logic to allow Content Managers to edit 
- * * other users, BUT strictly blocks editing of Administrators.
+ * 3. Multisite/Network User Editing Fix
+ * This filter is REQUIRED for Content Managers to edit users on Multisite/Network setups.
+ * It bypasses the strict "super admin" checks for specific safe actions.
  */
 function caes_map_content_manager_caps($caps, $cap, $user_id, $args) {
     
-    // 1. Check if user is a Content Manager
+    // Safety: Do not interfere with Network Admin dashboard
+    if (is_network_admin()) { return $caps; }
+    
+    // Check if current user is Content Manager
     $user = get_userdata($user_id);
     if (!$user || !in_array('content_manager', (array) $user->roles)) {
         return $caps;
     }
 
-    // 2. Handle specific capabilities
+    // A. Allow Editing/Promoting (viewing profile) of non-admins
     if ($cap === 'edit_user' || $cap === 'promote_user') {
-        
-        // $args[0] is the ID of the user being edited
         $target_user_id = isset($args[0]) ? $args[0] : false;
         
         if ($target_user_id) {
             $target_user = get_userdata($target_user_id);
             
-            // SAFETY: Do not allow editing/promoting of Administrators
+            // BLOCK: Never allow editing an Administrator
             if ($target_user && in_array('administrator', (array) $target_user->roles)) {
                 return array('do_not_allow');
             }
-            
-            // SAFETY: Do not allow editing of other Content Managers
-            if ($target_user && in_array('content_manager', (array) $target_user->roles) && $target_user_id !== $user_id) {
-                return array('do_not_allow');
-            }
         }
-        
-        // Grant permission for non-admins
+        // ALLOW: If not an admin, grant permission
         return array('read');
     }
     
-    // 3. Allow viewing the user list
+    // B. Allow listing users
     if ($cap === 'edit_users' || $cap === 'list_users') {
         return array('read');
     }
@@ -165,9 +162,8 @@ function caes_map_content_manager_caps($caps, $cap, $user_id, $args) {
 add_filter('map_meta_cap', 'caes_map_content_manager_caps', 10, 4);
 
 /**
- * UI Filter: Editable Roles
- * * Hides 'Administrator' from the role dropdown selector.
- * * Prevents Content Managers from promoting anyone to Admin.
+ * 4. Hide "Administrator" from Role Selectors
+ * Prevents Content Managers from seeing or selecting "Administrator" in dropdowns.
  */
 function caes_filter_editable_roles($roles) {
     if (current_user_can('content_manager') && !current_user_can('administrator')) {
@@ -176,7 +172,6 @@ function caes_filter_editable_roles($roles) {
     return $roles;
 }
 add_filter('editable_roles', 'caes_filter_editable_roles');
-
 
 /**
  * ---------------------------------------------------------------------------------
@@ -1912,94 +1907,3 @@ CSS;
     echo '</form>';
     echo '</div>';
 }
-
-/**
- * Role Definition: Content Manager
- * * Inherits 'editor' capabilities and extends with specific 
- * user management and theme options privileges.
- */
-function caes_update_content_manager_role() {
-    $editor = get_role('editor');
-    
-    if (!$editor) {
-        return;
-    }
-
-    // Define capability set
-    $capabilities = array_merge(
-        $editor->capabilities,
-        array(
-            // Script/HTML execution
-            'unfiltered_html' => true,
-            
-            // User administration
-            'edit_users' => true,
-            'list_users' => true,
-            
-            // Appearance & Customization
-            'edit_theme_options' => true,
-            
-            // Asset management
-            'upload_files'      => true,
-            'manage_categories' => true,
-            'manage_links'      => true,
-        )
-    );
-
-    // Attempt to add role. Returns null if role already exists.
-    $role = add_role('content_manager', 'Content Manager', $capabilities);
-
-    // If role exists, explicitly update capabilities
-    if (null === $role) {
-        $role = get_role('content_manager');
-        foreach ($capabilities as $cap => $grant) {
-            $role->add_cap($cap, $grant);
-        }
-    }
-}
-
-/**
- * Execution Triggers
- * 1. Theme Activation
- * 2. Manual Admin Overload (via $_GET['update_my_roles'])
- */
-function caes_trigger_role_update() {
-    // Trigger on activation
-    caes_update_content_manager_role();
-}
-add_action('after_switch_theme', 'caes_trigger_role_update');
-
-function caes_manual_role_update_check() {
-    if (isset($_GET['update_my_roles']) && $_GET['update_my_roles'] === '1') {
-        if (current_user_can('administrator')) {
-            caes_update_content_manager_role();
-            
-            add_action('admin_notices', function() {
-                echo '<div class="notice notice-success is-dismissible"><p><strong>System:</strong> Content Manager role definitions updated.</p></div>';
-            });
-        }
-    }
-}
-add_action('admin_init', 'caes_manual_role_update_check');
-
-/**
- * Capability Mapping
- * * Bypasses primitive cap checks for user editing in specific contexts.
- * Required for non-Super Admins to edit users in some configurations.
- */
-function caes_map_content_manager_caps($caps, $cap, $user_id, $args) {
-    if (is_network_admin()) {
-        return $caps;
-    }
-    
-    $user = get_userdata($user_id);
-    
-    if ($user && in_array('content_manager', (array) $user->roles)) {
-        if (in_array($cap, array('edit_users', 'edit_user', 'list_users'))) {
-            return array('read');
-        }
-    }
-    
-    return $caps;
-}
-add_filter('map_meta_cap', 'caes_map_content_manager_caps', 10, 4);
