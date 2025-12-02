@@ -150,9 +150,7 @@ function process_content_for_mpdf($content)
 }
 
 // Get CSS for mPDF with improved accessibility and spacing
-// Get CSS for mPDF with improved accessibility and spacing
-function get_mpdf_styles()
-{
+function get_mpdf_styles() {
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
         body { font-family: "georgia", serif; font-size: 16px; line-height: 1.6; color: #000; }
@@ -165,8 +163,8 @@ function get_mpdf_styles()
         h5 { font-size: 15px; font-weight: bold; margin: 16px 0 4px 0; }
         h6 { font-size: 14px; font-weight: bold; margin: 14px 0 4px 0; }
 
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: "tradegothic", sans-serif; }
-        table th, table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; font-family: "tradegothic", sans-serif; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: "tradegothic", sans-serif; line-height: 1.2; }
+        table th, table td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 12px; font-family: "tradegothic", sans-serif; line-height: 1.2; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
 
         math, .math { font-family: "tradegothic", sans-serif; }
