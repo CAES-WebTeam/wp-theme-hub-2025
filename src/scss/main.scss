@@ -106,6 +106,7 @@ figcaption a {
     // Pub columns
     .wp-block-columns.caes-hub-pub-columns {
         flex-wrap: wrap !important;
+        gap: 0 !important;
 
         &>.wp-block-column {
             flex-basis: 100% !important;
@@ -136,12 +137,6 @@ figcaption a {
         .caes-hub-profile-columns-info {
             padding: var(--wp--preset--spacing--50) !important;
         }
-    }
-}
-
-@media screen and (max-width: 782px) {
-    .wp-block-columns.caes-hub-pub-columns {
-        gap: 0;
     }
 }
 
