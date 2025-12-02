@@ -146,11 +146,25 @@ function process_content_for_mpdf($content)
     // Clean up any empty paragraphs that might have been left behind.
     $content = str_replace(['<p></p>', '<p>&nbsp;</p>'], '', $content);
 
+    // Add content-table class to all tables in main content (preserves existing classes)
+    $content = preg_replace_callback('/<table([^>]*)>/i', function($matches) {
+        $attributes = $matches[1];
+        if (preg_match('/class=["\']([^"\']*)["\']/', $attributes, $classMatch)) {
+            // Table already has a class attribute - append to it
+            $newAttributes = preg_replace('/class=["\']([^"\']*)["\']/','class="$1 content-table"', $attributes);
+            return '<table' . $newAttributes . '>';
+        } else {
+            // No class attribute - add one
+            return '<table' . $attributes . ' class="content-table">';
+        }
+    }, $content);
+
     return $content;
 }
 
 // Get CSS for mPDF with improved accessibility and spacing
-function get_mpdf_styles() {
+function get_mpdf_styles()
+{
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
         body { font-family: "georgia", serif; font-size: 16px; line-height: 1.6; color: #000; }
@@ -163,8 +177,9 @@ function get_mpdf_styles() {
         h5 { font-size: 15px; font-weight: bold; margin: 16px 0 4px 0; }
         h6 { font-size: 14px; font-weight: bold; margin: 14px 0 4px 0; }
 
-        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-family: "tradegothic", sans-serif; line-height: 1.2; }
-        table th, table td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 12px; font-family: "tradegothic", sans-serif; line-height: 1.2; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.0; }
+        table th, table td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
 
         math, .math { font-family: "tradegothic", sans-serif; }
@@ -174,25 +189,25 @@ function get_mpdf_styles() {
 
         /* Styles for Image and Caption Alignment */
         .image-caption-wrapper {
-            margin-top: 15px; /* Space above the image-caption block */
-            margin-bottom: 15px; /* Space below caption */
+            margin-top: 15px;
+            margin-bottom: 15px;
         }
         .image-caption-wrapper.center {
-            text-align: center; /* Center the caption text */
+            text-align: center;
             margin-left: auto;
             margin-right: auto;
         }
         .image-caption-wrapper img {
-            margin-bottom: 5px; /* Space between image and caption */
+            margin-bottom: 5px;
         }
         .wp-caption-text {
             font-size: 12px;
             color: #000;
             line-height: 1.4;
-            text-align: left; /* Default text alignment */
+            text-align: left;
         }
         .image-caption-wrapper.center .wp-caption-text {
-            text-align: center; /* Center caption text only when wrapper is centered */
+            text-align: center;
         }
 
         figure.wp-block-image {
