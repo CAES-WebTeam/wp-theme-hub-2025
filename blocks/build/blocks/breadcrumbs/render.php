@@ -522,9 +522,6 @@ if (empty($breadcrumb_items)) {
     return '';
 }
 
-// Get total items for class assignment
-$total_items = count($breadcrumb_items);
-
 // Get wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
     'class' => 'breadcrumb-navigation' 
@@ -562,23 +559,8 @@ add_action('wp_head', function() use ($schema) {
 ?>
 <nav <?php echo $wrapper_attributes; ?>>
     <ol class="breadcrumb-list">
-        <?php 
-        $parent_index = $total_items - 2;
-        
-        foreach ($breadcrumb_items as $index => $item): 
-            // Determine item type for CSS class
-            $item_class = 'breadcrumb-list-item';
-            if ($index === $total_items - 1) {
-                $item_class .= ' breadcrumb-list-item--current';
-            } elseif ($index === $parent_index) {
-                $item_class .= ' breadcrumb-list-item--parent';
-            } elseif ($index === 0) {
-                $item_class .= ' breadcrumb-list-item--first';
-            } else {
-                $item_class .= ' breadcrumb-list-item--middle';
-            }
-        ?>
-            <li class="<?php echo esc_attr($item_class); ?>">
+        <?php foreach ($breadcrumb_items as $index => $item): ?>
+            <li class="breadcrumb-list-item">
                 <span class="breadcrumb-item">
                     <?php if ($item['url']): ?>
                         <a href="<?php echo esc_url($item['url']); ?>" 

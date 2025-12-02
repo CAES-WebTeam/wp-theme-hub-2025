@@ -62,37 +62,10 @@
 		color: inherit;
 	}
 
-	// Mobile styles
+	// Mobile: Hide breadcrumbs on publications only
 	@media (max-width: 768px) {
-		// Hide completely on publications
 		&.breadcrumb-navigation--hidden {
 			display: none;
-		}
-
-		.breadcrumb-list {
-			flex-wrap: nowrap;
-		}
-
-		// Hide everything except parent and current
-		.breadcrumb-list-item--first,
-		.breadcrumb-list-item--middle {
-			display: none;
-		}
-
-		// Add back arrow before parent
-		.breadcrumb-list-item--parent::before {
-			content: "←";
-			margin-right: 0.5em;
-		}
-
-		// Truncate long current page titles
-		.breadcrumb-list-item--current .breadcrumb-current {
-			display: inline-block;
-			max-width: 200px;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			vertical-align: bottom;
 		}
 	}
 
