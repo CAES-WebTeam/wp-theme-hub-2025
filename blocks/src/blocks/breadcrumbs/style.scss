@@ -80,7 +80,7 @@
 
 		// Only show ellipsis when there are middle items to collapse
 		&.breadcrumb-navigation--has-middle .breadcrumb-list-item--parent::before {
-			content: "…";
+			content: "… /";
 			opacity: 0.6;
 			margin-right: 0.5em;
 		}
