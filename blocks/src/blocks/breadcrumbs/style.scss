@@ -81,7 +81,8 @@
 
 		// Add back arrow before parent
 		.breadcrumb-list-item--parent::before {
-			content: "← ";
+			content: "←";
+			margin-right: 0.5em;
 		}
 
 		// Truncate long current page titles
