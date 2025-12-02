@@ -16,20 +16,9 @@ if (is_front_page() && is_home()) {
 $show_home = $attributes['showHome'] ?? true;
 $home_text = $attributes['homeText'] ?? __('Home', 'your-textdomain');
 $max_depth = $attributes['maxDepth'] ?? 0;
+
 // Check if this is a single publication
 $is_publication = is_singular('publications');
-
-// Check if we have collapsible middle items (more than 3 items: first, parent, current)
-$total_items = count($breadcrumb_items);
-$has_middle_items = $total_items > 3;
-
-// Get wrapper attributes
-$wrapper_attributes = get_block_wrapper_attributes([
-    'class' => 'breadcrumb-navigation' 
-        . ($is_publication ? ' breadcrumb-navigation--hidden' : '')
-        . ($has_middle_items ? ' breadcrumb-navigation--has-middle' : ''),
-    'aria-label' => esc_attr__('Breadcrumb Navigation', 'your-textdomain')
-]);
 
 /**
  * Generate breadcrumb items array
@@ -247,13 +236,13 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
             );
         } else {
             $breadcrumbs[] = array(
-                'title' => 'Publication Series',
+                'title' => 'Series',
                 'url' => home_url('/publications/series/'),
                 'position' => $position++
             );
         }
-        
-        // Handle term hierarchy for publication-series
+
+        // Handle term hierarchy
         if ($term->parent) {
             $ancestors = get_ancestors($term->term_id, $term->taxonomy);
             $ancestors = array_reverse($ancestors);
@@ -267,7 +256,7 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
                 );
             }
         }
-        
+
         // Current term
         $breadcrumbs[] = array(
             'title' => $term->name,
@@ -277,74 +266,97 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
         
         return $breadcrumbs;
     }
-    
-    // Special handling for topics taxonomy - detect context from URL
-    if ($term->taxonomy === 'topics') {
-        $current_url = $_SERVER['REQUEST_URI'];
+
+    // Special handling for publication_topics taxonomy
+    if ($term->taxonomy === 'publication_topics') {
+        // Add Publications page
+        $publications_page = get_page_by_path('publications');
+        if ($publications_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($publications_page->ID),
+                'url' => get_permalink($publications_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Expert Resources',
+                'url' => home_url('/publications/'),
+                'position' => $position++
+            );
+        }
+
+        // Add Topics page
+        $topics_page = get_page_by_path('publications/topics');
+        if ($topics_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($topics_page->ID),
+                'url' => get_permalink($topics_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Topics',
+                'url' => home_url('/publications/topics/'),
+                'position' => $position++
+            );
+        }
+
+        // Handle term hierarchy
+        if ($term->parent) {
+            $ancestors = get_ancestors($term->term_id, $term->taxonomy);
+            $ancestors = array_reverse($ancestors);
+            
+            foreach ($ancestors as $ancestor_id) {
+                $ancestor = get_term($ancestor_id, $term->taxonomy);
+                $breadcrumbs[] = array(
+                    'title' => $ancestor->name,
+                    'url' => get_term_link($ancestor),
+                    'position' => $position++
+                );
+            }
+        }
+
+        // Current term
+        $breadcrumbs[] = array(
+            'title' => $term->name,
+            'url' => null,
+            'position' => $position
+        );
         
-        if (strpos($current_url, '/publications/') !== false) {
-            // Publications context
-            $publications_page = get_page_by_path('publications');
-            if ($publications_page) {
-                $breadcrumbs[] = array(
-                    'title' => get_the_title($publications_page->ID),
-                    'url' => get_permalink($publications_page->ID),
-                    'position' => $position++
-                );
-            } else {
-                $breadcrumbs[] = array(
-                    'title' => 'Expert Resources',
-                    'url' => home_url('/publications/'),
-                    'position' => $position++
-                );
-            }
+        return $breadcrumbs;
+    }
 
-            $topics_page = get_page_by_path('publications/topics');
-            if ($topics_page) {
-                $breadcrumbs[] = array(
-                    'title' => get_the_title($topics_page->ID),
-                    'url' => get_permalink($topics_page->ID),
-                    'position' => $position++
-                );
-            } else {
-                $breadcrumbs[] = array(
-                    'title' => 'Topics',
-                    'url' => home_url('/publications/topics/'),
-                    'position' => $position++
-                );
-            }
+    // Special handling for topics taxonomy (for posts/news)
+    if ($term->taxonomy === 'topics') {
+        // Add News page
+        $news_page = get_page_by_path('news');
+        if ($news_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($news_page->ID),
+                'url' => get_permalink($news_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'News',
+                'url' => home_url('/news/'),
+                'position' => $position++
+            );
+        }
 
-        } elseif (strpos($current_url, '/news/') !== false) {
-            // News context
-            $news_page = get_page_by_path('news');
-            if ($news_page) {
-                $breadcrumbs[] = array(
-                    'title' => get_the_title($news_page->ID),
-                    'url' => get_permalink($news_page->ID),
-                    'position' => $position++
-                );
-            } else {
-                $breadcrumbs[] = array(
-                    'title' => 'News',
-                    'url' => home_url('/news/'),
-                    'position' => $position++
-                );
-            }
-
-            $topics_page = get_page_by_path('news/topics');
-            if ($topics_page) {
-                $breadcrumbs[] = array(
-                    'title' => get_the_title($topics_page->ID),
-                    'url' => get_permalink($topics_page->ID),
-                    'position' => $position++
-                );
-            } else {
-                $breadcrumbs[] = array(
-                    'title' => 'Topics',
-                    'url' => home_url('/news/topics/'),
-                    'position' => $position++
-                );
-            }
+        $topics_page = get_page_by_path('news/topics');
+        if ($topics_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($topics_page->ID),
+                'url' => get_permalink($topics_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Topics',
+                'url' => home_url('/news/topics/'),
+                'position' => $position++
+            );
         }
         
         // Handle term hierarchy for topics
@@ -509,6 +521,18 @@ if ($max_depth > 0 && count($breadcrumb_items) > $max_depth) {
 if (empty($breadcrumb_items)) {
     return '';
 }
+
+// Check if we have collapsible middle items (more than 3 items: first, parent, current)
+$total_items = count($breadcrumb_items);
+$has_middle_items = $total_items > 3;
+
+// Get wrapper attributes
+$wrapper_attributes = get_block_wrapper_attributes([
+    'class' => 'breadcrumb-navigation' 
+        . ($is_publication ? ' breadcrumb-navigation--hidden' : '')
+        . ($has_middle_items ? ' breadcrumb-navigation--has-middle' : ''),
+    'aria-label' => esc_attr__('Breadcrumb Navigation', 'your-textdomain')
+]);
 
 // Generate schema markup
 $schema_items = array();
