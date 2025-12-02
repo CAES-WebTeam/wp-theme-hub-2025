@@ -1,6 +1,6 @@
 // Breadcrumb Navigation Styles
 .wp-block-caes-hub-breadcrumbs {
-
+	
 	.breadcrumb-navigation {
 		font-size: 0.875rem;
 		line-height: 1.5;
@@ -64,23 +64,27 @@
 
 	// Mobile styles
 	@media (max-width: 768px) {
-
 		// Hide completely on publications
 		&.breadcrumb-navigation--hidden {
 			display: none;
 		}
-		
+
+		.breadcrumb-list {
+			flex-wrap: nowrap;
+		}
+
+		// Hide everything except parent and current
+		.breadcrumb-list-item--first,
 		.breadcrumb-list-item--middle {
 			display: none;
 		}
 
-		// Only show ellipsis when there are middle items to collapse
-		&.breadcrumb-navigation--has-middle .breadcrumb-list-item--parent::before {
-			content: "… /";
-			opacity: 0.6;
-			margin-right: 0.5em;
+		// Add back arrow before parent
+		.breadcrumb-list-item--parent::before {
+			content: "← ";
 		}
 
+		// Truncate long current page titles
 		.breadcrumb-list-item--current .breadcrumb-current {
 			display: inline-block;
 			max-width: 200px;
@@ -96,7 +100,7 @@
 		.breadcrumb-navigation {
 			font-size: 0.8125rem;
 		}
-
+		
 		.breadcrumb-list-item:not(:last-child)::after {
 			margin: 0 0.25em;
 		}
@@ -105,10 +109,10 @@
 
 // Editor-specific styles
 .wp-block-caes-hub-breadcrumbs {
-
+	
 	.breadcrumb-preview-notice {
 		margin-bottom: 1rem;
-
+		
 		.components-notice__content {
 			font-size: 0.875rem;
 		}

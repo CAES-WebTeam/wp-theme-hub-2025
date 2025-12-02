@@ -522,15 +522,13 @@ if (empty($breadcrumb_items)) {
     return '';
 }
 
-// Check if we have collapsible middle items (more than 3 items: first, parent, current)
+// Get total items for class assignment
 $total_items = count($breadcrumb_items);
-$has_middle_items = $total_items > 3;
 
 // Get wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
     'class' => 'breadcrumb-navigation' 
-        . ($is_publication ? ' breadcrumb-navigation--hidden' : '')
-        . ($has_middle_items ? ' breadcrumb-navigation--has-middle' : ''),
+        . ($is_publication ? ' breadcrumb-navigation--hidden' : ''),
     'aria-label' => esc_attr__('Breadcrumb Navigation', 'your-textdomain')
 ]);
 
