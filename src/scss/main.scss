@@ -288,7 +288,7 @@ figcaption a {
 // Mobile adjustments
 @media screen and (max-width: 782px) {
     .caes-hub-main-wrapper {
-        margin-top: 0;
+        margin-top: 0 !important;
         padding-top: var(--wp--preset--spacing--50) !important;
         padding-bottom: var(--wp--preset--spacing--50) !important;
     }
