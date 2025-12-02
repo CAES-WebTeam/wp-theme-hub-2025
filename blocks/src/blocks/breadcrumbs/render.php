@@ -16,11 +16,18 @@ if (is_front_page() && is_home()) {
 $show_home = $attributes['showHome'] ?? true;
 $home_text = $attributes['homeText'] ?? __('Home', 'your-textdomain');
 $max_depth = $attributes['maxDepth'] ?? 0;
+// Check if this is a single publication
 $is_publication = is_singular('publications');
+
+// Check if we have collapsible middle items (more than 3 items: first, parent, current)
+$total_items = count($breadcrumb_items);
+$has_middle_items = $total_items > 3;
 
 // Get wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
-    'class' => 'breadcrumb-navigation' . ($is_publication ? ' breadcrumb-navigation--hidden-mobile' : ''),
+    'class' => 'breadcrumb-navigation' 
+        . ($is_publication ? ' breadcrumb-navigation--hidden' : '')
+        . ($has_middle_items ? ' breadcrumb-navigation--has-middle' : ''),
     'aria-label' => esc_attr__('Breadcrumb Navigation', 'your-textdomain')
 ]);
 
@@ -534,8 +541,7 @@ add_action('wp_head', function() use ($schema) {
 <nav <?php echo $wrapper_attributes; ?>>
     <ol class="breadcrumb-list">
         <?php 
-        $total_items = count($breadcrumb_items);
-        $parent_index = $total_items - 2; // Second to last item
+        $parent_index = $total_items - 2;
         
         foreach ($breadcrumb_items as $index => $item): 
             // Determine item type for CSS class
@@ -544,6 +550,8 @@ add_action('wp_head', function() use ($schema) {
                 $item_class .= ' breadcrumb-list-item--current';
             } elseif ($index === $parent_index) {
                 $item_class .= ' breadcrumb-list-item--parent';
+            } elseif ($index === 0) {
+                $item_class .= ' breadcrumb-list-item--first';
             } else {
                 $item_class .= ' breadcrumb-list-item--middle';
             }
