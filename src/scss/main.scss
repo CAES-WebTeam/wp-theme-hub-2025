@@ -560,6 +560,10 @@ figcaption a {
 }
 
 @media screen and (max-width: 782px) {
+    .hide-mobile {
+        display: none !important;
+    }
+    
     .add-margin-top-mobile {
         margin-top: var(--wp--style--block-gap) !important;
     }
