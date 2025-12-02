@@ -182,7 +182,17 @@ function get_mpdf_styles()
         table th, table td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
 
-        math, .math { font-family: "tradegothic", sans-serif; }
+        /* UPDATED MATH STYLES */
+        /* Target the parent container, the class, and specific MathML children */
+        math, .math,
+        math *, .math * { 
+            font-family: "tradegothic", sans-serif !important; 
+        }
+        
+        /* Explicitly target standard MathML tags to override defaults */
+        mi, mo, mn, mtext, ms {
+            font-family: "tradegothic", sans-serif !important;
+        }
 
         .footer-spacer { height: 50px; }
         .page-break { page-break-before: always; }
