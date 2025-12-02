@@ -532,8 +532,22 @@ add_action('wp_head', function() use ($schema) {
 ?>
 <nav <?php echo $wrapper_attributes; ?>>
     <ol class="breadcrumb-list">
-        <?php foreach ($breadcrumb_items as $index => $item): ?>
-            <li class="breadcrumb-list-item">
+        <?php 
+        $total_items = count($breadcrumb_items);
+        $parent_index = $total_items - 2; // Second to last item
+        
+        foreach ($breadcrumb_items as $index => $item): 
+            // Determine item type for CSS class
+            $item_class = 'breadcrumb-list-item';
+            if ($index === $total_items - 1) {
+                $item_class .= ' breadcrumb-list-item--current';
+            } elseif ($index === $parent_index) {
+                $item_class .= ' breadcrumb-list-item--parent';
+            } else {
+                $item_class .= ' breadcrumb-list-item--middle';
+            }
+        ?>
+            <li class="<?php echo esc_attr($item_class); ?>">
                 <span class="breadcrumb-item">
                     <?php if ($item['url']): ?>
                         <a href="<?php echo esc_url($item['url']); ?>" 

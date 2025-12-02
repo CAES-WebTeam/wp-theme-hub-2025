@@ -1,6 +1,6 @@
 // Breadcrumb Navigation Styles
 .wp-block-caes-hub-breadcrumbs {
-	
+
 	.breadcrumb-navigation {
 		font-size: 0.875rem;
 		line-height: 1.5;
@@ -67,7 +67,7 @@
 		.breadcrumb-navigation {
 			font-size: 0.8125rem;
 		}
-		
+
 		.breadcrumb-list-item:not(:last-child)::after {
 			margin: 0 0.25em;
 		}
@@ -76,10 +76,10 @@
 
 // Editor-specific styles
 .wp-block-caes-hub-breadcrumbs {
-	
+
 	.breadcrumb-preview-notice {
 		margin-bottom: 1rem;
-		
+
 		.components-notice__content {
 			font-size: 0.875rem;
 		}
@@ -90,6 +90,15 @@
 @media print {
 	.wp-block-caes-hub-breadcrumbs {
 		.breadcrumb-list {
+			display: none;
+		}
+	}
+}
+
+// Mobile: Show only parent + current
+@media (max-width: 768px) {
+	.wp-block-caes-hub-breadcrumbs {
+		.breadcrumb-list-item--middle {
 			display: none;
 		}
 	}
