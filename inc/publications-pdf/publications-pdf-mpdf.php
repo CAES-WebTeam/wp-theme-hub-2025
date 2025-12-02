@@ -105,13 +105,12 @@ function get_latest_published_date($post_id)
 // Enhanced table and content processing for mPDF
 function process_content_for_mpdf($content)
 {
-    // This revised function intelligently identifies legacy image containers
-    // by their structure: a div containing an image followed by loose caption text.
+    // 1. IMAGE HANDLING
+    // This logic intelligently identifies legacy image containers
     $content = preg_replace_callback(
         '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">.*?(<img[^>]+>)(.*?)<\/div>/is',
         function ($matches) {
             $alignment_class = $matches[1];
-            // Normalize WordPress alignment classes
             if ($alignment_class == 'alignleft' || $alignment_class == 'left') {
                 $alignment_class = 'left';
             } elseif ($alignment_class == 'alignright' || $alignment_class == 'right') {
@@ -122,18 +121,13 @@ function process_content_for_mpdf($content)
 
             $width = $matches[2];
             $image_tag = $matches[3];
-            // The caption is any text that follows the image inside the div.
             $caption_text = trim(strip_tags($matches[4], '<a><em><strong><i><b>'));
 
-            // SAFETY CHECK: If there's no caption text, it's likely just a layout div.
-            // In that case, we return the original HTML to avoid breaking anything.
             if (empty($caption_text)) {
                 return $matches[0];
             }
 
-            // Rebuild the HTML into our new, correct structure.
             $html = '<div class="image-caption-wrapper ' . $alignment_class . '" style="width: ' . $width . 'margin-top: 15px; margin-bottom: 15px;">';
-            // We add the image and then wrap the loose text in a paragraph tag for proper styling and wrapping.
             $html .= $image_tag;
             $html .= '<p class="wp-caption-text">' . $caption_text . '</p>';
             $html .= '</div>';
@@ -143,21 +137,39 @@ function process_content_for_mpdf($content)
         $content
     );
 
-    // Clean up any empty paragraphs that might have been left behind.
+    // Clean up empty paragraphs
     $content = str_replace(['<p></p>', '<p>&nbsp;</p>'], '', $content);
 
-    // Add content-table class to all tables in main content (preserves existing classes)
+    // 2. TABLE HANDLING
+    // Add content-table class to all tables
     $content = preg_replace_callback('/<table([^>]*)>/i', function($matches) {
         $attributes = $matches[1];
         if (preg_match('/class=["\']([^"\']*)["\']/', $attributes, $classMatch)) {
-            // Table already has a class attribute - append to it
             $newAttributes = preg_replace('/class=["\']([^"\']*)["\']/','class="$1 content-table"', $attributes);
             return '<table' . $newAttributes . '>';
         } else {
-            // No class attribute - add one
             return '<table' . $attributes . ' class="content-table">';
         }
     }, $content);
+
+    // 3. MATHML FONT FORCING (NEW)
+    // mPDF often ignores CSS classes on MathML. We must inject inline styles.
+    // We target the main containers and the individual token elements.
+    
+    // Style the parent <math> tag
+    $style_attr = ' style="font-family: \'tradegothic\', sans-serif;"';
+    
+    // Inject style into <math> tags if they don't already have a style attribute
+    $content = preg_replace('/<math(?![^>]*style=)([^>]*)>/i', '<math$1' . $style_attr . '>', $content);
+    
+    // Also force it on specific MathML tokens (Variables, Numbers, Operators, Text)
+    // This ensures that even if inheritance breaks, the elements themselves carry the font.
+    $tags_to_force = ['mi', 'mn', 'mo', 'mtext', 'ms'];
+    
+    foreach ($tags_to_force as $tag) {
+        // Replace <tag> with <tag style="..."> (ignoring tags that might already have styles)
+        $content = preg_replace('/<' . $tag . '(?![^>]*style=)([^>]*)>/i', '<' . $tag . '$1' . $style_attr . '>', $content);
+    }
 
     return $content;
 }
