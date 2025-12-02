@@ -139,6 +139,12 @@ figcaption a {
     }
 }
 
+@media screen and (max-width: 782px) {
+    .wp-block-columns.caes-hub-pub-columns {
+        gap: 0;
+    }
+}
+
 // Print view
 @media print {
     .caes-hub-pub-columns {
@@ -563,7 +569,7 @@ figcaption a {
     .hide-mobile {
         display: none !important;
     }
-    
+
     .add-margin-top-mobile {
         margin-top: var(--wp--style--block-gap) !important;
     }
