@@ -285,6 +285,15 @@ figcaption a {
     }
 }
 
+// Mobile adjustments
+@media screen and (max-width: 782px) {
+    .caes-hub-main-wrapper {
+        margin-top: 0;
+        padding-top: var(--wp--preset--spacing--50) !important;
+        padding-bottom: var(--wp--preset--spacing--50) !important;
+    }
+}
+
 /* CAES Hub Content */
 
 .caes-hub-content {
@@ -728,13 +737,13 @@ figcaption a {
     display: none;
 }
 
-.parvus, 
+.parvus,
 .parvus__overlay {
     // Override to ensure we ONLY animate opacity/visibility
     transition: opacity 0.3s ease, visibility 0.3s ease !important;
-    
+
     // Force the element to exist on a 3D plane to prevent repainting
-    transform: translateZ(0); 
+    transform: translateZ(0);
 }
 
 .parvus__counter {
@@ -754,7 +763,7 @@ figcaption a {
     position: relative !important;
     display: block;
     overflow: hidden !important;
-    
+
     &::after {
         content: '';
         position: absolute;
@@ -772,19 +781,19 @@ figcaption a {
         pointer-events: none;
         z-index: 2;
     }
-    
+
     &:hover,
     &:focus {
         &::after {
             background-color: rgba(0, 0, 0, 0.4);
             opacity: 1;
         }
-        
+
         img {
             transform: scale(1.05) !important;
         }
     }
-    
+
     img {
         transition: transform 0.3s ease !important;
         display: block;
