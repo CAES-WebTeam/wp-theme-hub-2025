@@ -16,10 +16,11 @@ if (is_front_page() && is_home()) {
 $show_home = $attributes['showHome'] ?? true;
 $home_text = $attributes['homeText'] ?? __('Home', 'your-textdomain');
 $max_depth = $attributes['maxDepth'] ?? 0;
+$is_publication = is_singular('publications');
 
 // Get wrapper attributes
 $wrapper_attributes = get_block_wrapper_attributes([
-    'class' => 'breadcrumb-navigation',
+    'class' => 'breadcrumb-navigation' . ($is_publication ? ' breadcrumb-navigation--hidden-mobile' : ''),
     'aria-label' => esc_attr__('Breadcrumb Navigation', 'your-textdomain')
 ]);
 

@@ -97,9 +97,24 @@
 
 // Mobile: Show only parent + current
 @media (max-width: 768px) {
-	.wp-block-caes-hub-breadcrumbs {
-		.breadcrumb-list-item--middle {
-			display: none;
-		}
+	.breadcrumb-list-item--middle {
+		display: none;
+	}
+
+	.breadcrumb-list {
+		flex-wrap: nowrap;
+	}
+
+	.breadcrumb-list-item--current .breadcrumb-current {
+		display: inline-block;
+		max-width: 200px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		vertical-align: bottom;
+	}
+
+	.breadcrumb-navigation--hidden-mobile {
+		display: none;
 	}
 }
