@@ -142,34 +142,28 @@ function process_content_for_mpdf($content)
 
     // 2. TABLE HANDLING
     // Add content-table class to all tables
-    $content = preg_replace_callback('/<table([^>]*)>/i', function($matches) {
+    $content = preg_replace_callback('/<table([^>]*)>/i', function ($matches) {
         $attributes = $matches[1];
         if (preg_match('/class=["\']([^"\']*)["\']/', $attributes, $classMatch)) {
-            $newAttributes = preg_replace('/class=["\']([^"\']*)["\']/','class="$1 content-table"', $attributes);
+            $newAttributes = preg_replace('/class=["\']([^"\']*)["\']/', 'class="$1 content-table"', $attributes);
             return '<table' . $newAttributes . '>';
         } else {
             return '<table' . $attributes . ' class="content-table">';
         }
     }, $content);
 
-    // 3. MATHML FONT FORCING (NEW)
-    // mPDF often ignores CSS classes on MathML. We must inject inline styles.
-    // We target the main containers and the individual token elements.
-    
-    // Style the parent <math> tag
-    $style_attr = ' style="font-family: \'tradegothic\', sans-serif;"';
-    
-    // Inject style into <math> tags if they don't already have a style attribute
-    $content = preg_replace('/<math(?![^>]*style=)([^>]*)>/i', '<math$1' . $style_attr . '>', $content);
-    
-    // Also force it on specific MathML tokens (Variables, Numbers, Operators, Text)
-    // This ensures that even if inheritance breaks, the elements themselves carry the font.
-    $tags_to_force = ['mi', 'mn', 'mo', 'mtext', 'ms'];
-    
-    foreach ($tags_to_force as $tag) {
-        // Replace <tag> with <tag style="..."> (ignoring tags that might already have styles)
-        $content = preg_replace('/<' . $tag . '(?![^>]*style=)([^>]*)>/i', '<' . $tag . '$1' . $style_attr . '>', $content);
-    }
+    // 3. MATHML → Styled span (mPDF ignores MathML tags but renders text)
+    $content = preg_replace_callback(
+        '/<math[^>]*>(.*?)<\/math>/is',
+        function ($matches) {
+            // Strip all MathML tags, keep text content
+            $text = strip_tags($matches[1]);
+            // Clean up extra whitespace
+            $text = preg_replace('/\s+/', ' ', trim($text));
+            return '<span style="font-family: tradegothic, sans-serif;">' . $text . '</span>';
+        },
+        $content
+    );
 
     return $content;
 }
