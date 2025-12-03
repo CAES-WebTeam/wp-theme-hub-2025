@@ -1,6 +1,8 @@
 <!-- wp:columns {"style":{"spacing":{"blockGap":{"top":"0","left":"0"}}}} -->
-<div class="wp-block-columns"><!-- wp:column {"width":"222px","className":"caes-hub-left","backgroundColor":"base"} -->
-<div class="wp-block-column caes-hub-left has-base-background-color has-background" style="flex-basis:222px"><!-- wp:template-part {"slug":"sidebar","theme":"wp-theme-hub-2025","area":"uncategorized","className":"caes-hub-sidebar-wrapper"} /--></div>
+<div class="wp-block-columns"><!-- wp:column {"width":"222px","className":"caes-hub-left","style":{"spacing":{"blockGap":"0"}},"backgroundColor":"base"} -->
+<div class="wp-block-column caes-hub-left has-base-background-color has-background" style="flex-basis:222px"><!-- wp:template-part {"slug":"sidebar","theme":"wp-theme-hub-2025","area":"uncategorized","className":"caes-hub-sidebar-wrapper"} /-->
+
+<!-- wp:caes-hub/expert-mark {"useMobileVersion":true} /--></div>
 <!-- /wp:column -->
 
 <!-- wp:column {"width":"","className":"caes-hub-right has-background","backgroundColor":"base-two"} -->
@@ -22,8 +24,8 @@
 <div class="wp-block-group caes-hub-content-meta"><!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|20"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group"><!-- wp:caes-hub/breadcrumbs {"fontSize":"small"} /-->
 
-<!-- wp:spacer {"height":"20px"} -->
-<div style="height:20px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- wp:spacer {"height":"20px","className":"hide-mobile"} -->
+<div style="height:20px" aria-hidden="true" class="wp-block-spacer hide-mobile"></div>
 <!-- /wp:spacer -->
 
 <!-- wp:post-terms {"term":"topics","prefix":"\u003cstrong\u003eTopics: \u003c/strong\u003e"} /-->
@@ -79,7 +81,7 @@
 <div class="wp-block-group caes-hub-pub-columns-nav-stack" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)"><!-- wp:caes-hub/toc-new {"listStyle":"none","tocHeading":"In this resource","showSubheadings":false,"popout":false,"topOfContentAnchor":true,"anchorLinkText":"Summary","className":"is-style-caes-hub-style-2","style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"typography":{"fontSize":"16px"}},"backgroundColor":"base-two"} /-->
 
 <!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap","justifyContent":"center","orientation":"horizontal"}} -->
-<div class="wp-block-group"><!-- wp:caes-hub/expert-mark {"customWidth":"160px","link":"/publications/science-you-can-trust/","tooltip":"Click here for more information on how we produce science you can trust."} /--></div>
+<div class="wp-block-group"><!-- wp:caes-hub/expert-mark {"customWidth":"160px","link":"/publications/science-you-can-trust/","tooltip":"Click here for more information on how we produce science you can trust.","className":"hide-mobile"} /--></div>
 <!-- /wp:group --></div>
 <!-- /wp:group --></div>
 <!-- /wp:column -->
