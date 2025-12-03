@@ -578,10 +578,6 @@ figcaption a {
     flex-shrink: 0;
 }
 
-.padding-50 {
-    padding: var(--wp--preset--spacing--50) !important;
-}
-
 @media screen and (max-width: 782px) {
     .hide-mobile {
         display: none !important;
@@ -602,6 +598,11 @@ figcaption a {
     .remove-margin-bottom-mobile {
         margin-bottom: 0 !important;
     }
+
+    .padding-50-mobile {
+        padding: var(--wp--preset--spacing--50) !important;
+    }
+
 
 }
 
