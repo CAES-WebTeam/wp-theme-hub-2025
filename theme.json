@@ -720,7 +720,8 @@
             "core/table": {
                 "typography": {
                     "fontFamily": "var(--wp--preset--font-family--trade-gothic)",
-                    "fontSize": "0.9em"
+                    "fontSize": "0.9em",
+                    "lineHeight": "1.2"
                 }
             }
         }
