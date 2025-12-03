@@ -569,6 +569,10 @@ figcaption a {
     border: 0;
 }
 
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
 @media screen and (max-width: 782px) {
     .hide-mobile {
         display: none !important;
