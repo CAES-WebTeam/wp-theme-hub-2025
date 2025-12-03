@@ -23,6 +23,10 @@
     "tooltip": {
       "type": "string",
       "default": "This content is written and reviewed by certified experts."
+    },
+    "useMobileVersion": {
+      "type": "boolean",
+      "default": false
     }
   },
   "textdomain": "expert-mark",

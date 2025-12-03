@@ -81,7 +81,14 @@ const Edit = ({
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Use Mobile Version", "caes-hub"),
+          checked: attributes.useMobileVersion,
+          onChange: val => setAttributes({
+            useMobileVersion: val
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Display as a horizontal card with background (mobile-only)", "caes-hub")
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_5__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)("Tooltip", "caes-hub"),
           value: attributes.tooltip,
           onChange: val => setAttributes({
@@ -255,7 +262,7 @@ module.exports = window["wp"]["serverSideRender"];
   \*******************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/expert-mark","version":"0.1.0","title":"Expert Mark","category":"theme","icon":"block-default","description":"Displays our mark for verifying the expertise of the author.","example":{},"supports":{"html":false},"attributes":{"customWidth":{"type":"string","default":"75px"},"link":{"type":"string","default":"#"},"tooltip":{"type":"string","default":"This content is written and reviewed by certified experts."}},"textdomain":"expert-mark","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/expert-mark","version":"0.1.0","title":"Expert Mark","category":"theme","icon":"block-default","description":"Displays our mark for verifying the expertise of the author.","example":{},"supports":{"html":false},"attributes":{"customWidth":{"type":"string","default":"75px"},"link":{"type":"string","default":"#"},"tooltip":{"type":"string","default":"This content is written and reviewed by certified experts."},"useMobileVersion":{"type":"boolean","default":false}},"textdomain":"expert-mark","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
 
 /***/ })
 

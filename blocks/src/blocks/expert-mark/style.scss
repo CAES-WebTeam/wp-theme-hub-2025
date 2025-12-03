@@ -85,6 +85,28 @@
 
 }
 
+// Mobile version styles
+.wp-block-caes-hub-expert-mark.expert-mark-mobile {
+    .expert-mark-image {
+        flex-shrink: 0 !important;
+        min-width: 100px;
+        
+        img {
+            width: 100px !important;
+            height: auto;
+        }
+    }
+    
+    .expert-mark-text {
+        flex: 1;
+        
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
+    }
+}
+
 @media (max-width: 782px) {
     .wp-block-caes-hub-expert-mark .tooltip {
         display: none !important;
