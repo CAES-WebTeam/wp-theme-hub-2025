@@ -719,7 +719,8 @@
             },
             "core/table": {
                 "typography": {
-                    "fontFamily": "var(--wp--preset--font-family--trade-gothic)"
+                    "fontFamily": "var(--wp--preset--font-family--trade-gothic)",
+                    "fontSize": "0.9em"
                 }
             }
         }
