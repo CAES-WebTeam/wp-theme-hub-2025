@@ -60,6 +60,7 @@ $overlay_id = $block_id . '-overlay';
         role="dialog"
         aria-modal="true"
         aria-hidden="true"
+        inert
         style="--overlay-bg-color: <?php echo esc_attr($overlay_bg_color); ?>"
         data-mobile-overlay
         data-overlay-position="<?php echo esc_attr($overlay_position); ?>"

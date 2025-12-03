@@ -29,6 +29,7 @@ function initMobileContainer(container) {
     isOpen = true;
     trigger.setAttribute('aria-expanded', 'true');
     overlay.setAttribute('aria-hidden', 'false');
+    overlay.removeAttribute('inert');
     overlay.classList.add('is-open');
 
     // Prevent body scroll
@@ -52,6 +53,7 @@ function initMobileContainer(container) {
     isOpen = false;
     trigger.setAttribute('aria-expanded', 'false');
     overlay.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('inert', '');
     overlay.classList.remove('is-open');
 
     // Restore body scroll
