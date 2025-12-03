@@ -31,7 +31,7 @@ $useMobileVersion = $attributes['useMobileVersion'] ?? false;
 		<?php endif; ?>
 		<div class="expert-mark-text" style="font-size:0.7rem;line-height:1.2;">
 			<?php if ($link): ?>
-				<strong>This resource was written and reviewed by experts. </strong><a href="<?php echo esc_url($link); ?>">Click here to learn more about how we produce science you can trust.</a>
+				<strong>This resource was written and reviewed by experts. </strong><a href="<?php echo esc_url($link); ?>">Learn more about how we produce science you can trust.</a>
 			<?php else: ?>
 				<strong>This resource was written and reviewed by experts.</strong> Learn more about how we produce science you can trust.
 			<?php endif; ?>
