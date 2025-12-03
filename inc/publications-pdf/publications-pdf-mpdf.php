@@ -184,8 +184,8 @@ function get_mpdf_styles()
         h6 { font-size: 14px; font-weight: bold; margin: 14px 0 4px 0; }
 
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-        table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.0; }
-        table th, table td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; font-size: 12px; }
+        table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.1; padding: 8px; }
+        table th, table td { border: 1px solid #ddd; padding:8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
 
         /* UPDATED MATH STYLES */
