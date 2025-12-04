@@ -25,14 +25,33 @@ $placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAA
         <!-- Hidden gallery links for Parvus -->
         <div class="parvus-gallery" style="display: none;" aria-hidden="true">
             <?php foreach ($images as $image): 
+                // Get URLs (with protocol fix)
                 $full_url = set_url_scheme($image['url']);
                 $large_url = set_url_scheme($image['sizes']['large']['url'] ?? $image['url']);
                 $medium_large_url = set_url_scheme($image['sizes']['medium_large']['url'] ?? $large_url);
                 $medium_url = set_url_scheme($image['sizes']['medium']['url'] ?? $medium_large_url);
+                
+                // Get actual widths
+                $full_width = $image['width'] ?? 1600;
+                $large_width = $image['sizes']['large']['width'] ?? $full_width;
+                $medium_large_width = $image['sizes']['medium_large']['width'] ?? $large_width;
+                $medium_width = $image['sizes']['medium']['width'] ?? $medium_large_width;
+                
+                // Build srcset with actual widths
+                $srcset_parts = [];
+                $srcset_parts[] = esc_url($medium_url) . ' ' . esc_attr($medium_width) . 'w';
+                if ($medium_large_url !== $medium_url) {
+                    $srcset_parts[] = esc_url($medium_large_url) . ' ' . esc_attr($medium_large_width) . 'w';
+                }
+                if ($large_url !== $medium_large_url) {
+                    $srcset_parts[] = esc_url($large_url) . ' ' . esc_attr($large_width) . 'w';
+                }
+                $srcset_parts[] = esc_url($full_url) . ' ' . esc_attr($full_width) . 'w';
+                $srcset = implode(', ', $srcset_parts);
             ?>
                 <a href="<?php echo esc_url($full_url); ?>" 
                    class="lightbox"
-                   data-srcset="<?php echo esc_url($medium_url); ?> 480w, <?php echo esc_url($medium_large_url); ?> 768w, <?php echo esc_url($large_url); ?> 1024w, <?php echo esc_url($full_url); ?> 1600w"
+                   data-srcset="<?php echo $srcset; ?>"
                    data-sizes="(max-width: 75em) 100vw, 75em"
                    <?php if (!empty($image['caption'])): ?>
                    data-caption="<?php echo esc_attr($image['caption']); ?>"
