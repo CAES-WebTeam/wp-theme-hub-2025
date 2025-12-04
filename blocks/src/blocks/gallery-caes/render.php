@@ -100,6 +100,15 @@ if ($show_captions) {
                 foreach ($images as $image): 
                     $image_position++;
                     
+                    // Get URLs for different sizes (with protocol fix)
+                    $full_url = set_url_scheme($image['url']);
+                    $large_url = set_url_scheme($image['sizes']['large']['url'] ?? $image['url']);
+                    $medium_large_url = set_url_scheme($image['sizes']['medium_large']['url'] ?? $large_url);
+                    $medium_url = set_url_scheme($image['sizes']['medium']['url'] ?? $medium_large_url);
+                    
+                    // Use large for display thumbnail
+                    $display_url = $large_url;
+                    
                     // Build aria-label with context
                     $aria_label = sprintf(
                         'View image %d of %d in gallery',
@@ -117,14 +126,18 @@ if ($show_captions) {
                     $has_caption = $show_captions && !empty($image['caption']);
                 ?>
                     <div class="gallery-item<?php echo $has_caption ? ' has-caption' : ''; ?>">
-                        <a href="<?php echo esc_url($image['url']); ?>" 
+                        <a href="<?php echo esc_url($full_url); ?>" 
                            class="lightbox"
                            aria-label="<?php echo esc_attr($aria_label); ?>"
+                           data-srcset="<?php echo esc_url($medium_url); ?> 480w, <?php echo esc_url($medium_large_url); ?> 768w, <?php echo esc_url($large_url); ?> 1024w, <?php echo esc_url($full_url); ?> 1600w"
+                           data-sizes="(max-width: 75em) 100vw, 75em"
                            <?php if (!empty($image['caption'])): ?>
                            data-caption="<?php echo esc_attr($image['caption']); ?>"
                            <?php endif; ?>>
-                            <img src="<?php echo esc_url($image['url']); ?>" 
-                                 alt="<?php echo esc_attr($image['alt'] ?? ''); ?>" />
+                            <img src="<?php echo esc_url($display_url); ?>" 
+                                 alt="<?php echo esc_attr($image['alt'] ?? ''); ?>" 
+                                 loading="lazy"
+                                 decoding="async" />
                             <?php if ($has_caption): ?>
                             <figcaption class="gallery-caption-overlay">
                                 <?php echo esc_html($image['caption']); ?>

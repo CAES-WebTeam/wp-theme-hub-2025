@@ -25,13 +25,14 @@ $placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAA
         <!-- Hidden gallery links for Parvus -->
         <div class="parvus-gallery" style="display: none;" aria-hidden="true">
             <?php foreach ($images as $image): 
-                $medium_url = set_url_scheme($image['sizes']['medium_large']['url'] ?? $image['sizes']['large']['url'] ?? $image['url']);
-                $large_url = set_url_scheme($image['sizes']['large']['url'] ?? $image['url']);
                 $full_url = set_url_scheme($image['url']);
+                $large_url = set_url_scheme($image['sizes']['large']['url'] ?? $image['url']);
+                $medium_large_url = set_url_scheme($image['sizes']['medium_large']['url'] ?? $large_url);
+                $medium_url = set_url_scheme($image['sizes']['medium']['url'] ?? $medium_large_url);
             ?>
                 <a href="<?php echo esc_url($full_url); ?>" 
                    class="lightbox"
-                   data-srcset="<?php echo esc_url($medium_url); ?> 768w, <?php echo esc_url($large_url); ?> 1024w, <?php echo esc_url($full_url); ?> 1600w"
+                   data-srcset="<?php echo esc_url($medium_url); ?> 480w, <?php echo esc_url($medium_large_url); ?> 768w, <?php echo esc_url($large_url); ?> 1024w, <?php echo esc_url($full_url); ?> 1600w"
                    data-sizes="(max-width: 75em) 100vw, 75em"
                    <?php if (!empty($image['caption'])): ?>
                    data-caption="<?php echo esc_attr($image['caption']); ?>"
@@ -48,7 +49,9 @@ $placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAA
             <img
                 src="<?php echo esc_url($trigger_url); ?>"
                 alt="<?php echo esc_attr($images[0]['alt'] ?? ''); ?>"
-                class="gallery-trigger-image" />
+                class="gallery-trigger-image"
+                loading="lazy"
+                decoding="async" />
             <button
                 type="button"
                 class="view-gallery-btn"
