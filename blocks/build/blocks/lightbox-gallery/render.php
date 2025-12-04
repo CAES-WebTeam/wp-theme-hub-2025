@@ -12,9 +12,6 @@ if (empty($images)) {
     return '';
 }
 
-// Generate unique ID for this gallery instance
-$gallery_id = 'lightbox-gallery-' . wp_unique_id();
-
 $wrapper_attributes = get_block_wrapper_attributes([
     'class' => 'lightbox-gallery lightbox-gallery-parvus'
 ]);
@@ -24,13 +21,15 @@ $wrapper_attributes = get_block_wrapper_attributes([
     <div class="gallery-trigger">
         <!-- Hidden gallery images for Parvus -->
         <div class="parvus-gallery" style="display: none;">
-            <?php foreach ($images as $image): ?>
-                <a href="<?php echo esc_url($image['url']); ?>" 
+            <?php foreach ($images as $image): 
+                $large_url = $image['sizes']['large']['url'] ?? $image['url'];
+            ?>
+                <a href="<?php echo esc_url($large_url); ?>" 
                    class="lightbox"
                    <?php if (!empty($image['caption'])): ?>
                    data-caption="<?php echo esc_attr($image['caption']); ?>"
                    <?php endif; ?>>
-                    <img src="<?php echo esc_url($image['url']); ?>" 
+                    <img src="<?php echo esc_url($large_url); ?>" 
                          alt="<?php echo esc_attr($image['alt'] ?? ''); ?>">
                 </a>
             <?php endforeach; ?>
@@ -38,8 +37,9 @@ $wrapper_attributes = get_block_wrapper_attributes([
         
         <!-- Visible trigger -->
         <div class="gallery-trigger-visible">
+            <?php $trigger_url = $images[0]['sizes']['large']['url'] ?? $images[0]['url']; ?>
             <img
-                src="<?php echo esc_url($images[0]['url']); ?>"
+                src="<?php echo esc_url($trigger_url); ?>"
                 alt="<?php echo esc_attr($images[0]['alt'] ?? ''); ?>"
                 class="gallery-trigger-image" />
             <button
