@@ -19,19 +19,15 @@ $wrapper_attributes = get_block_wrapper_attributes([
 
 <div <?php echo $wrapper_attributes; ?>>
     <div class="gallery-trigger">
-        <!-- Hidden gallery images for Parvus -->
-        <div class="parvus-gallery" style="display: none;">
-            <?php foreach ($images as $image): 
-                $large_url = $image['sizes']['large']['url'] ?? $image['url'];
-            ?>
-                <a href="<?php echo esc_url($large_url); ?>" 
+        <!-- Hidden gallery links for Parvus -->
+        <div class="parvus-gallery" style="display: none;" aria-hidden="true">
+            <?php foreach ($images as $image): ?>
+                <a href="<?php echo esc_url($image['url']); ?>" 
                    class="lightbox"
+                   aria-label="<?php echo esc_attr($image['alt'] ?: __('Gallery image', 'lightbox-gallery')); ?>"
                    <?php if (!empty($image['caption'])): ?>
                    data-caption="<?php echo esc_attr($image['caption']); ?>"
-                   <?php endif; ?>>
-                    <img src="<?php echo esc_url($large_url); ?>" 
-                         alt="<?php echo esc_attr($image['alt'] ?? ''); ?>">
-                </a>
+                   <?php endif; ?>></a>
             <?php endforeach; ?>
         </div>
         
