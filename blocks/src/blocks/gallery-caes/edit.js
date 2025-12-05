@@ -125,14 +125,16 @@ const Edit = ({ attributes, setAttributes }) => {
 	const viewGalleryBarStyle = {
 		position: 'absolute',
 		bottom: 0,
-		left: 0,
-		right: 0,
-		backgroundColor: 'rgba(0, 0, 0, 0.7)',
+		left: '50%',
+		transform: 'translateX(-50%)',
+		width: '100%',
+		backgroundColor: '#000',
 		color: '#fff',
-		padding: '12px',
-		textAlign: 'center',
-		fontSize: '14px',
-		fontWeight: '500'
+		padding: '1rem',
+		textAlign: 'left',
+		fontSize: '1rem',
+		fontFamily: 'inherit',
+		border: 0
 	};
 
 	// Get first image for thumbnail trigger mode
@@ -263,14 +265,14 @@ const Edit = ({ attributes, setAttributes }) => {
 							{rows.map((row, rowIndex) => {
 								const columns = row.columns ?? 3;
 								const images = row.images ?? [];
-								
+
 								if (images.length === 0) {
 									return null;
 								}
 
 								return (
-									<div 
-										key={rowIndex} 
+									<div
+										key={rowIndex}
 										className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}${showCaptions ? ' has-captions' : ''}`}
 										style={!cropImages ? {
 											display: 'grid',
@@ -417,8 +419,8 @@ const Edit = ({ attributes, setAttributes }) => {
 					<div className="gallery-header">
 						<h3>{__('Gallery (CAES) Setup', 'caes-gallery')}</h3>
 						<div style={{ display: 'flex', gap: '8px' }}>
-							<Button 
-								onClick={() => setIsPreviewMode(!isPreviewMode)} 
+							<Button
+								onClick={() => setIsPreviewMode(!isPreviewMode)}
 								variant="secondary"
 								icon={isPreviewMode ? 'edit' : 'visibility'}
 							>
@@ -546,7 +548,7 @@ const Edit = ({ attributes, setAttributes }) => {
 
 							{/* Image Preview Grid - Matches Preview Mode */}
 							{row.images.length > 0 && (
-								<div 
+								<div
 									className={`gallery-row gallery-row-${row.columns}-cols${cropImages ? ' is-cropped' : ''}${showCaptions ? ' has-captions' : ''}`}
 									style={!cropImages ? {
 										display: 'grid',

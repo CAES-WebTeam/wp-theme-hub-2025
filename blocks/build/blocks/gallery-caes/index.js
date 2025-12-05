@@ -184,14 +184,16 @@ const Edit = ({
   const viewGalleryBarStyle = {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '100%',
+    backgroundColor: '#000',
     color: '#fff',
-    padding: '12px',
-    textAlign: 'center',
-    fontSize: '14px',
-    fontWeight: '500'
+    padding: '1rem',
+    textAlign: 'left',
+    fontSize: '1rem',
+    fontFamily: 'inherit',
+    border: 0
   };
 
   // Get first image for thumbnail trigger mode
