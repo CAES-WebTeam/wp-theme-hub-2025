@@ -114,6 +114,45 @@
 		.gallery-row+.gallery-row {
 			margin-top: var(--wp--style--block-gap, 1rem);
 		}
+
+		// ===========================================
+		// Thumbnail Trigger Preview Styles (Editor)
+		// ===========================================
+		&.thumbnail-trigger-preview {
+			padding: 0;
+
+			.gallery-trigger {
+				position: relative;
+			}
+
+			.gallery-trigger-visible {
+				position: relative;
+				overflow: hidden;
+			}
+
+			.gallery-trigger-image {
+				width: 100%;
+				height: auto;
+				display: block;
+			}
+
+			.view-gallery-btn-preview {
+				position: absolute;
+				bottom: 1rem;
+				right: 1rem;
+				background-color: rgba(0, 0, 0, 0.7);
+				color: #fff;
+				padding: 0.75rem 1.25rem;
+				font-size: 0.875rem;
+				font-weight: 500;
+				border-radius: 4px;
+				pointer-events: none;
+
+				.view-gallery-text {
+					display: inline-block;
+				}
+			}
+		}
 	}
 
 	// Responsive preview adjustments

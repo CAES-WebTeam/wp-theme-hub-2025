@@ -36,7 +36,8 @@ const Edit = ({
     cropImages,
     showCaptions,
     captionTextColor,
-    captionBackgroundColor
+    captionBackgroundColor,
+    useThumbnailTrigger
   } = attributes;
   const [isPreviewMode, setIsPreviewMode] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [showTextColorPicker, setShowTextColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
@@ -53,6 +54,13 @@ const Edit = ({
       });
     }
   }, []);
+
+  // Get all images from all rows (flattened)
+  const getAllImages = () => {
+    return rows.reduce((acc, row) => {
+      return acc.concat(row.images || []);
+    }, []);
+  };
 
   // Add a new row
   const addRow = () => {
@@ -172,6 +180,10 @@ const Edit = ({
     margin: 0
   };
 
+  // Get first image for thumbnail trigger mode
+  const allImages = getAllImages();
+  const firstImage = allImages[0];
+
   // Preview Mode - Shows frontend appearance
   if (isPreviewMode) {
     return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
@@ -184,17 +196,24 @@ const Edit = ({
           })
         })
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
           title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Gallery Settings', 'caes-gallery'),
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Use thumbnail trigger', 'caes-gallery'),
+            checked: useThumbnailTrigger,
+            onChange: value => setAttributes({
+              useThumbnailTrigger: value
+            }),
+            help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show a single image with a "View Gallery" button that opens the full gallery.', 'caes-gallery')
+          }), !useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
             label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Crop images to fit', 'caes-gallery'),
             checked: cropImages,
             onChange: value => setAttributes({
               cropImages: value
             }),
             help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')
-          })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+          })]
+        }), !useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
           title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption Settings', 'caes-gallery'),
           children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
             label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show captions on thumbnails', 'caes-gallery'),
@@ -277,7 +296,37 @@ const Edit = ({
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
         ...blockProps,
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+        children: useThumbnailTrigger && firstImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          className: "caes-gallery-preview thumbnail-trigger-preview",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            className: "gallery-trigger",
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+              className: "gallery-trigger-visible",
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                src: firstImage.sizes?.large?.url || firstImage.url,
+                alt: firstImage.alt || '',
+                className: "gallery-trigger-image"
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+                className: "view-gallery-btn-preview",
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+                  className: "view-gallery-text",
+                  children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('View Gallery', 'caes-gallery')
+                })
+              })]
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
+            style: {
+              textAlign: 'center',
+              color: '#666',
+              fontSize: '12px',
+              marginTop: '8px'
+            },
+            children: [allImages.length, " ", allImages.length === 1 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('image', 'caes-gallery') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('images', 'caes-gallery'), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('in gallery', 'caes-gallery')]
+          })]
+        }) :
+        /*#__PURE__*/
+        /* Standard Gallery Preview */
+        (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
           className: "caes-gallery-preview",
           children: rows.map((row, rowIndex) => {
             var _row$columns, _row$images;
@@ -326,6 +375,8 @@ const Edit = ({
       })]
     });
   }
+
+  // Edit Mode
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
@@ -339,21 +390,21 @@ const Edit = ({
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Gallery Settings', 'caes-gallery'),
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Use thumbnail trigger', 'caes-gallery'),
+          checked: useThumbnailTrigger,
+          onChange: value => setAttributes({
+            useThumbnailTrigger: value
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show a single image with a "View Gallery" button that opens the full gallery.', 'caes-gallery')
+        }), !useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Crop images to fit', 'caes-gallery'),
           checked: cropImages,
           onChange: value => setAttributes({
             cropImages: value
           }),
           help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
-          style: {
-            marginTop: '12px',
-            fontSize: '13px',
-            color: '#757575'
-          },
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Configure columns per row in the block editor.', 'caes-gallery')
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      }), !useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption Settings', 'caes-gallery'),
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToggleControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Show captions on thumbnails', 'caes-gallery'),
@@ -458,6 +509,13 @@ const Edit = ({
               children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Row', 'caes-gallery')
             })]
           })]
+        }), useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
+          status: "info",
+          isDismissible: false,
+          style: {
+            marginBottom: '16px'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Thumbnail trigger mode is enabled. The first image from the gallery will be shown with a "View Gallery" button.', 'caes-gallery')
         }), rows.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
           status: "warning",
           isDismissible: false,
@@ -489,7 +547,7 @@ const Edit = ({
               },
               children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("strong", {
                 children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Row', 'caes-gallery'), " ", rowIndex + 1]
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+              }), !useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
                 label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Columns', 'caes-gallery'),
                 value: row.columns,
                 options: [{
@@ -598,7 +656,7 @@ const Edit = ({
                     display: 'block',
                     objectFit: cropImages ? 'cover' : 'initial'
                   }
-                }), showCaptions && image.caption && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("figcaption", {
+                }), showCaptions && image.caption && !useThumbnailTrigger && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("figcaption", {
                   style: captionOverlayStyle,
                   children: image.caption
                 })]
@@ -855,7 +913,7 @@ module.exports = window["wp"]["i18n"];
   \********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":true},"showCaptions":{"type":"boolean","default":false},"captionTextColor":{"type":"string","default":"#ffffff"},"captionBackgroundColor":{"type":"string","default":"rgba(0, 0, 0, 0.7)"}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/caes-gallery","version":"0.1.0","title":"Gallery (CAES)","category":"media","icon":"grid-view","description":"Gallery block with customizable columns per row. Each row can have a different number of columns (1-6). Uses Parvus lightbox.","keywords":["gallery","lightbox","images","parvus","grid","rows"],"textdomain":"caes-gallery","attributes":{"rows":{"type":"array","default":[],"items":{"type":"object"}},"cropImages":{"type":"boolean","default":true},"showCaptions":{"type":"boolean","default":false},"captionTextColor":{"type":"string","default":"#ffffff"},"captionBackgroundColor":{"type":"string","default":"rgba(0, 0, 0, 0.7)"},"useThumbnailTrigger":{"type":"boolean","default":false}},"supports":{"align":true,"html":false,"spacing":{"margin":true,"padding":true}},"example":{"attributes":{"rows":[{"columns":3,"images":[{"id":1,"url":"https://example.com/image1.jpg","alt":"Sample image 1","caption":"Beautiful landscape"},{"id":2,"url":"https://example.com/image2.jpg","alt":"Sample image 2","caption":"Stunning sunset"},{"id":3,"url":"https://example.com/image3.jpg","alt":"Sample image 3","caption":"Mountain view"}]}]}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
 
 /***/ })
 

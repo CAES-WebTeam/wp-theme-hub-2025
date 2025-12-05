@@ -4,7 +4,7 @@ import { Button, PanelBody, SelectControl, Notice, ToolbarGroup, ToolbarButton, 
 import { useState, useEffect } from '@wordpress/element';
 
 const Edit = ({ attributes, setAttributes }) => {
-	const { rows, cropImages, showCaptions, captionTextColor, captionBackgroundColor } = attributes;
+	const { rows, cropImages, showCaptions, captionTextColor, captionBackgroundColor, useThumbnailTrigger } = attributes;
 	const [isPreviewMode, setIsPreviewMode] = useState(false);
 	const [showTextColorPicker, setShowTextColorPicker] = useState(false);
 	const [showBgColorPicker, setShowBgColorPicker] = useState(false);
@@ -15,6 +15,13 @@ const Edit = ({ attributes, setAttributes }) => {
 			setAttributes({ rows: [{ columns: 3, images: [] }] });
 		}
 	}, []);
+
+	// Get all images from all rows (flattened)
+	const getAllImages = () => {
+		return rows.reduce((acc, row) => {
+			return acc.concat(row.images || []);
+		}, []);
+	};
 
 	// Add a new row
 	const addRow = () => {
@@ -114,6 +121,10 @@ const Edit = ({ attributes, setAttributes }) => {
 		margin: 0
 	};
 
+	// Get first image for thumbnail trigger mode
+	const allImages = getAllImages();
+	const firstImage = allImages[0];
+
 	// Preview Mode - Shows frontend appearance
 	if (isPreviewMode) {
 		return (
@@ -132,12 +143,196 @@ const Edit = ({ attributes, setAttributes }) => {
 				<InspectorControls>
 					<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
 						<ToggleControl
+							label={__('Use thumbnail trigger', 'caes-gallery')}
+							checked={useThumbnailTrigger}
+							onChange={(value) => setAttributes({ useThumbnailTrigger: value })}
+							help={__('Show a single image with a "View Gallery" button that opens the full gallery.', 'caes-gallery')}
+						/>
+						{!useThumbnailTrigger && (
+							<ToggleControl
+								label={__('Crop images to fit', 'caes-gallery')}
+								checked={cropImages}
+								onChange={(value) => setAttributes({ cropImages: value })}
+								help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
+							/>
+						)}
+					</PanelBody>
+					{!useThumbnailTrigger && (
+						<PanelBody title={__('Caption Settings', 'caes-gallery')}>
+							<ToggleControl
+								label={__('Show captions on thumbnails', 'caes-gallery')}
+								checked={showCaptions}
+								onChange={(value) => setAttributes({ showCaptions: value })}
+								help={__('Display image captions as overlays on the thumbnail images.', 'caes-gallery')}
+							/>
+							{showCaptions && (
+								<VStack spacing={4} style={{ marginTop: '16px' }}>
+									<HStack alignment="left">
+										<span style={{ minWidth: '120px' }}>{__('Text Color', 'caes-gallery')}</span>
+										<div style={{ position: 'relative' }}>
+											<ColorSwatchButton
+												color={captionTextColor}
+												onClick={() => setShowTextColorPicker(!showTextColorPicker)}
+												label={__('Select text color', 'caes-gallery')}
+											/>
+											{showTextColorPicker && (
+												<Popover
+													position="bottom left"
+													onClose={() => setShowTextColorPicker(false)}
+												>
+													<div style={{ padding: '16px' }}>
+														<ColorPicker
+															color={captionTextColor}
+															onChange={(color) => setAttributes({ captionTextColor: color })}
+															enableAlpha={true}
+														/>
+													</div>
+												</Popover>
+											)}
+										</div>
+									</HStack>
+									<HStack alignment="left">
+										<span style={{ minWidth: '120px' }}>{__('Background Color', 'caes-gallery')}</span>
+										<div style={{ position: 'relative' }}>
+											<ColorSwatchButton
+												color={captionBackgroundColor}
+												onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+												label={__('Select background color', 'caes-gallery')}
+											/>
+											{showBgColorPicker && (
+												<Popover
+													position="bottom left"
+													onClose={() => setShowBgColorPicker(false)}
+												>
+													<div style={{ padding: '16px' }}>
+														<ColorPicker
+															color={captionBackgroundColor}
+															onChange={(color) => setAttributes({ captionBackgroundColor: color })}
+															enableAlpha={true}
+														/>
+													</div>
+												</Popover>
+											)}
+										</div>
+									</HStack>
+								</VStack>
+							)}
+						</PanelBody>
+					)}
+				</InspectorControls>
+
+				<div {...blockProps}>
+					{/* Thumbnail Trigger Preview */}
+					{useThumbnailTrigger && firstImage ? (
+						<div className="caes-gallery-preview thumbnail-trigger-preview">
+							<div className="gallery-trigger">
+								<div className="gallery-trigger-visible">
+									<img
+										src={firstImage.sizes?.large?.url || firstImage.url}
+										alt={firstImage.alt || ''}
+										className="gallery-trigger-image"
+									/>
+									<div className="view-gallery-btn-preview">
+										<span className="view-gallery-text">{__('View Gallery', 'caes-gallery')}</span>
+									</div>
+								</div>
+							</div>
+							<p style={{ textAlign: 'center', color: '#666', fontSize: '12px', marginTop: '8px' }}>
+								{allImages.length} {allImages.length === 1 ? __('image', 'caes-gallery') : __('images', 'caes-gallery')} {__('in gallery', 'caes-gallery')}
+							</p>
+						</div>
+					) : (
+						/* Standard Gallery Preview */
+						<div className="caes-gallery-preview">
+							{rows.map((row, rowIndex) => {
+								const columns = row.columns ?? 3;
+								const images = row.images ?? [];
+								
+								if (images.length === 0) {
+									return null;
+								}
+
+								return (
+									<div 
+										key={rowIndex} 
+										className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}${showCaptions ? ' has-captions' : ''}`}
+										style={!cropImages ? {
+											display: 'grid',
+											gridTemplateColumns: `repeat(${columns}, 1fr)`,
+											gap: '1rem',
+											marginBottom: '1rem'
+										} : {
+											marginBottom: '1rem'
+										}}
+									>
+										{images.map((image) => (
+											<div key={image.id} className="gallery-item">
+												<div style={{
+													display: 'block',
+													overflow: 'hidden',
+													cursor: 'pointer',
+													position: 'relative'
+												}}>
+													<img
+														src={image.url}
+														alt={image.alt || ''}
+														style={{
+															width: '100%',
+															height: cropImages ? '100%' : 'auto',
+															display: 'block',
+															objectFit: cropImages ? 'cover' : 'initial'
+														}}
+													/>
+													{showCaptions && image.caption && (
+														<figcaption style={captionOverlayStyle}>
+															{image.caption}
+														</figcaption>
+													)}
+												</div>
+											</div>
+										))}
+									</div>
+								);
+							})}
+						</div>
+					)}
+				</div>
+			</>
+		);
+	}
+
+	// Edit Mode
+	return (
+		<>
+			<BlockControls>
+				<ToolbarGroup>
+					<ToolbarButton
+						onClick={() => setIsPreviewMode(true)}
+						icon="visibility"
+					>
+						{__('Preview', 'caes-gallery')}
+					</ToolbarButton>
+				</ToolbarGroup>
+			</BlockControls>
+
+			<InspectorControls>
+				<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
+					<ToggleControl
+						label={__('Use thumbnail trigger', 'caes-gallery')}
+						checked={useThumbnailTrigger}
+						onChange={(value) => setAttributes({ useThumbnailTrigger: value })}
+						help={__('Show a single image with a "View Gallery" button that opens the full gallery.', 'caes-gallery')}
+					/>
+					{!useThumbnailTrigger && (
+						<ToggleControl
 							label={__('Crop images to fit', 'caes-gallery')}
 							checked={cropImages}
 							onChange={(value) => setAttributes({ cropImages: value })}
 							help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
 						/>
-					</PanelBody>
+					)}
+				</PanelBody>
+				{!useThumbnailTrigger && (
 					<PanelBody title={__('Caption Settings', 'caes-gallery')}>
 						<ToggleControl
 							label={__('Show captions on thumbnails', 'caes-gallery')}
@@ -198,151 +393,7 @@ const Edit = ({ attributes, setAttributes }) => {
 							</VStack>
 						)}
 					</PanelBody>
-				</InspectorControls>
-
-				<div {...blockProps}>
-					<div className="caes-gallery-preview">
-						{rows.map((row, rowIndex) => {
-							const columns = row.columns ?? 3;
-							const images = row.images ?? [];
-							
-							if (images.length === 0) {
-								return null;
-							}
-
-							return (
-								<div 
-									key={rowIndex} 
-									className={`gallery-row gallery-row-${columns}-cols${cropImages ? ' is-cropped' : ''}${showCaptions ? ' has-captions' : ''}`}
-									style={!cropImages ? {
-										display: 'grid',
-										gridTemplateColumns: `repeat(${columns}, 1fr)`,
-										gap: '1rem',
-										marginBottom: '1rem'
-									} : {
-										marginBottom: '1rem'
-									}}
-								>
-									{images.map((image) => (
-										<div key={image.id} className="gallery-item">
-											<div style={{
-												display: 'block',
-												overflow: 'hidden',
-												cursor: 'pointer',
-												position: 'relative'
-											}}>
-												<img
-													src={image.url}
-													alt={image.alt || ''}
-													style={{
-														width: '100%',
-														height: cropImages ? '100%' : 'auto',
-														display: 'block',
-														objectFit: cropImages ? 'cover' : 'initial'
-													}}
-												/>
-												{showCaptions && image.caption && (
-													<figcaption style={captionOverlayStyle}>
-														{image.caption}
-													</figcaption>
-												)}
-											</div>
-										</div>
-									))}
-								</div>
-							);
-						})}
-					</div>
-				</div>
-			</>
-		);
-	}
-
-	return (
-		<>
-			<BlockControls>
-				<ToolbarGroup>
-					<ToolbarButton
-						onClick={() => setIsPreviewMode(true)}
-						icon="visibility"
-					>
-						{__('Preview', 'caes-gallery')}
-					</ToolbarButton>
-				</ToolbarGroup>
-			</BlockControls>
-
-			<InspectorControls>
-				<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
-					<ToggleControl
-						label={__('Crop images to fit', 'caes-gallery')}
-						checked={cropImages}
-						onChange={(value) => setAttributes({ cropImages: value })}
-						help={__('Images are cropped to maintain a consistent height and eliminate gaps.', 'caes-gallery')}
-					/>
-					<p style={{ marginTop: '12px', fontSize: '13px', color: '#757575' }}>
-						{__('Configure columns per row in the block editor.', 'caes-gallery')}
-					</p>
-				</PanelBody>
-				<PanelBody title={__('Caption Settings', 'caes-gallery')}>
-					<ToggleControl
-						label={__('Show captions on thumbnails', 'caes-gallery')}
-						checked={showCaptions}
-						onChange={(value) => setAttributes({ showCaptions: value })}
-						help={__('Display image captions as overlays on the thumbnail images.', 'caes-gallery')}
-					/>
-					{showCaptions && (
-						<VStack spacing={4} style={{ marginTop: '16px' }}>
-							<HStack alignment="left">
-								<span style={{ minWidth: '120px' }}>{__('Text Color', 'caes-gallery')}</span>
-								<div style={{ position: 'relative' }}>
-									<ColorSwatchButton
-										color={captionTextColor}
-										onClick={() => setShowTextColorPicker(!showTextColorPicker)}
-										label={__('Select text color', 'caes-gallery')}
-									/>
-									{showTextColorPicker && (
-										<Popover
-											position="bottom left"
-											onClose={() => setShowTextColorPicker(false)}
-										>
-											<div style={{ padding: '16px' }}>
-												<ColorPicker
-													color={captionTextColor}
-													onChange={(color) => setAttributes({ captionTextColor: color })}
-													enableAlpha={true}
-												/>
-											</div>
-										</Popover>
-									)}
-								</div>
-							</HStack>
-							<HStack alignment="left">
-								<span style={{ minWidth: '120px' }}>{__('Background Color', 'caes-gallery')}</span>
-								<div style={{ position: 'relative' }}>
-									<ColorSwatchButton
-										color={captionBackgroundColor}
-										onClick={() => setShowBgColorPicker(!showBgColorPicker)}
-										label={__('Select background color', 'caes-gallery')}
-									/>
-									{showBgColorPicker && (
-										<Popover
-											position="bottom left"
-											onClose={() => setShowBgColorPicker(false)}
-										>
-											<div style={{ padding: '16px' }}>
-												<ColorPicker
-													color={captionBackgroundColor}
-													onChange={(color) => setAttributes({ captionBackgroundColor: color })}
-													enableAlpha={true}
-												/>
-											</div>
-										</Popover>
-									)}
-								</div>
-							</HStack>
-						</VStack>
-					)}
-				</PanelBody>
+				)}
 			</InspectorControls>
 
 			<div {...blockProps}>
@@ -362,6 +413,12 @@ const Edit = ({ attributes, setAttributes }) => {
 							</Button>
 						</div>
 					</div>
+
+					{useThumbnailTrigger && (
+						<Notice status="info" isDismissible={false} style={{ marginBottom: '16px' }}>
+							{__('Thumbnail trigger mode is enabled. The first image from the gallery will be shown with a "View Gallery" button.', 'caes-gallery')}
+						</Notice>
+					)}
 
 					{rows.length === 0 && (
 						<Notice status="warning" isDismissible={false}>
@@ -388,20 +445,22 @@ const Edit = ({ attributes, setAttributes }) => {
 							}}>
 								<div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 									<strong>{__('Row', 'caes-gallery')} {rowIndex + 1}</strong>
-									<SelectControl
-										label={__('Columns', 'caes-gallery')}
-										value={row.columns}
-										options={[
-											{ label: '1', value: 1 },
-											{ label: '2', value: 2 },
-											{ label: '3', value: 3 },
-											{ label: '4', value: 4 },
-											{ label: '5', value: 5 },
-											{ label: '6', value: 6 }
-										]}
-										onChange={(value) => updateRowColumns(rowIndex, value)}
-										style={{ marginBottom: 0 }}
-									/>
+									{!useThumbnailTrigger && (
+										<SelectControl
+											label={__('Columns', 'caes-gallery')}
+											value={row.columns}
+											options={[
+												{ label: '1', value: 1 },
+												{ label: '2', value: 2 },
+												{ label: '3', value: 3 },
+												{ label: '4', value: 4 },
+												{ label: '5', value: 5 },
+												{ label: '6', value: 6 }
+											]}
+											onChange={(value) => updateRowColumns(rowIndex, value)}
+											style={{ marginBottom: 0 }}
+										/>
+									)}
 								</div>
 								<div style={{ display: 'flex', gap: '8px' }}>
 									<Button
@@ -483,7 +542,7 @@ const Edit = ({ attributes, setAttributes }) => {
 														objectFit: cropImages ? 'cover' : 'initial'
 													}}
 												/>
-												{showCaptions && image.caption && (
+												{showCaptions && image.caption && !useThumbnailTrigger && (
 													<figcaption style={captionOverlayStyle}>
 														{image.caption}
 													</figcaption>
