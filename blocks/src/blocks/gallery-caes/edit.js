@@ -177,7 +177,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				<InspectorControls>
 					<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
 						<ToggleControl
-							label={__('Use thumbnail trigger', 'caes-gallery')}
+							label={__('Use only first image for thumbnail', 'caes-gallery')}
 							checked={useThumbnailTrigger}
 							onChange={(value) => setAttributes({ useThumbnailTrigger: value })}
 							help={__('Show a single image with a "View Gallery" button that opens the full gallery.', 'caes-gallery')}
@@ -336,7 +336,7 @@ const Edit = ({ attributes, setAttributes }) => {
 			<InspectorControls>
 				<PanelBody title={__('Gallery Settings', 'caes-gallery')}>
 					<ToggleControl
-						label={__('Use thumbnail trigger', 'caes-gallery')}
+						label={__('Use only first image for thumbnail', 'caes-gallery')}
 						checked={useThumbnailTrigger}
 						onChange={(value) => setAttributes({ useThumbnailTrigger: value })}
 						help={__('Show a single image with a "View Gallery" button that opens the full gallery.', 'caes-gallery')}
