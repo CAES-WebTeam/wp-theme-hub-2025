@@ -186,7 +186,7 @@ const Edit = ({
     bottom: 0,
     left: '50%',
     transform: 'translateX(-50%)',
-    width: '100%',
+    width: 'calc(100% - 2rem)',
     backgroundColor: '#000',
     color: '#fff',
     padding: '1rem',
