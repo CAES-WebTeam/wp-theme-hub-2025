@@ -424,31 +424,18 @@ const Edit = ({ attributes, setAttributes }) => {
 							}}>
 								{__('Thumbnail trigger is on. The first image will be used to open the gallery.', 'caes-gallery')}
 							</p>
-							<div style={{
-								marginBottom: '20px',
-								position: 'relative'
-							}}>
-								<img
-									src={firstImage.sizes?.large?.url || firstImage.url}
-									alt={firstImage.alt || ''}
-									style={{
-										width: '100%',
-										height: 'auto',
-										display: 'block'
-									}}
-								/>
-								<div style={{
-									position: 'absolute',
-									bottom: '1rem',
-									right: '1rem',
-									backgroundColor: 'rgba(0, 0, 0, 0.7)',
-									color: '#fff',
-									padding: '0.75rem 1.25rem',
-									fontSize: '0.875rem',
-									fontWeight: '500',
-									borderRadius: '4px'
-								}}>
-									{__('View Gallery', 'caes-gallery')}
+							<div className="caes-gallery-preview thumbnail-trigger-preview" style={{ marginBottom: '20px' }}>
+								<div className="gallery-trigger">
+									<div className="gallery-trigger-visible">
+										<img
+											src={firstImage.sizes?.large?.url || firstImage.url}
+											alt={firstImage.alt || ''}
+											className="gallery-trigger-image"
+										/>
+										<div className="view-gallery-btn-preview">
+											<span className="view-gallery-text">{__('View Gallery', 'caes-gallery')}</span>
+										</div>
+									</div>
 								</div>
 							</div>
 						</>
