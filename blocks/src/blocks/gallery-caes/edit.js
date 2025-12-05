@@ -414,9 +414,69 @@ const Edit = ({ attributes, setAttributes }) => {
 						</div>
 					</div>
 
-					{useThumbnailTrigger && (
-						<Notice status="info" isDismissible={false} style={{ marginBottom: '16px' }}>
-							{__('Thumbnail trigger mode is enabled. The first image from the gallery will be shown with a "View Gallery" button.', 'caes-gallery')}
+					{/* Live Thumbnail Trigger Preview */}
+					{useThumbnailTrigger && firstImage && (
+						<div className="thumbnail-trigger-live-preview" style={{
+							marginBottom: '20px',
+							border: '2px solid #2271b1',
+							borderRadius: '4px',
+							overflow: 'hidden',
+							position: 'relative'
+						}}>
+							<div style={{
+								position: 'absolute',
+								top: '8px',
+								left: '8px',
+								backgroundColor: '#2271b1',
+								color: '#fff',
+								padding: '4px 8px',
+								fontSize: '11px',
+								fontWeight: '600',
+								borderRadius: '3px',
+								zIndex: 15,
+								textTransform: 'uppercase'
+							}}>
+								{__('Output Preview', 'caes-gallery')}
+							</div>
+							<div style={{ position: 'relative' }}>
+								<img
+									src={firstImage.sizes?.large?.url || firstImage.url}
+									alt={firstImage.alt || ''}
+									style={{
+										width: '100%',
+										height: 'auto',
+										display: 'block'
+									}}
+								/>
+								<div style={{
+									position: 'absolute',
+									bottom: '1rem',
+									right: '1rem',
+									backgroundColor: 'rgba(0, 0, 0, 0.7)',
+									color: '#fff',
+									padding: '0.75rem 1.25rem',
+									fontSize: '0.875rem',
+									fontWeight: '500',
+									borderRadius: '4px'
+								}}>
+									<span>{__('View Gallery', 'caes-gallery')}</span>
+								</div>
+							</div>
+							<div style={{
+								padding: '8px 12px',
+								backgroundColor: '#f0f0f0',
+								fontSize: '12px',
+								color: '#666',
+								textAlign: 'center'
+							}}>
+								{allImages.length} {allImages.length === 1 ? __('image', 'caes-gallery') : __('images', 'caes-gallery')} {__('in gallery', 'caes-gallery')} — {__('Click opens lightbox', 'caes-gallery')}
+							</div>
+						</div>
+					)}
+
+					{useThumbnailTrigger && !firstImage && (
+						<Notice status="warning" isDismissible={false} style={{ marginBottom: '16px' }}>
+							{__('Add images to a row below to see the thumbnail trigger preview.', 'caes-gallery')}
 						</Notice>
 					)}
 
