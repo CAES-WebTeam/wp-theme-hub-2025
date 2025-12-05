@@ -509,32 +509,17 @@ const Edit = ({
               children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Row', 'caes-gallery')
             })]
           })]
-        }), useThumbnailTrigger && firstImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-          className: "thumbnail-trigger-live-preview",
-          style: {
-            marginBottom: '20px',
-            border: '2px solid #2271b1',
-            borderRadius: '4px',
-            overflow: 'hidden',
-            position: 'relative'
-          },
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+        }), useThumbnailTrigger && firstImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
             style: {
-              position: 'absolute',
-              top: '8px',
-              left: '8px',
-              backgroundColor: '#2271b1',
-              color: '#fff',
-              padding: '4px 8px',
-              fontSize: '11px',
-              fontWeight: '600',
-              borderRadius: '3px',
-              zIndex: 15,
-              textTransform: 'uppercase'
+              margin: '0 0 12px 0',
+              color: '#1e1e1e',
+              fontSize: '13px'
             },
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Output Preview', 'caes-gallery')
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Thumbnail trigger is on. The first image will be used to open the gallery.', 'caes-gallery')
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
             style: {
+              marginBottom: '20px',
               position: 'relative'
             },
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
@@ -557,19 +542,8 @@ const Edit = ({
                 fontWeight: '500',
                 borderRadius: '4px'
               },
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-                children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('View Gallery', 'caes-gallery')
-              })
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('View Gallery', 'caes-gallery')
             })]
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-            style: {
-              padding: '8px 12px',
-              backgroundColor: '#f0f0f0',
-              fontSize: '12px',
-              color: '#666',
-              textAlign: 'center'
-            },
-            children: [allImages.length, " ", allImages.length === 1 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('image', 'caes-gallery') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('images', 'caes-gallery'), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('in gallery', 'caes-gallery'), " \u2014 ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Click opens lightbox', 'caes-gallery')]
           })]
         }), useThumbnailTrigger && !firstImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
           status: "warning",

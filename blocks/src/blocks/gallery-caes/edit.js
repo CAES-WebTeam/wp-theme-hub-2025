@@ -416,29 +416,18 @@ const Edit = ({ attributes, setAttributes }) => {
 
 					{/* Live Thumbnail Trigger Preview */}
 					{useThumbnailTrigger && firstImage && (
-						<div className="thumbnail-trigger-live-preview" style={{
-							marginBottom: '20px',
-							border: '2px solid #2271b1',
-							borderRadius: '4px',
-							overflow: 'hidden',
-							position: 'relative'
-						}}>
-							<div style={{
-								position: 'absolute',
-								top: '8px',
-								left: '8px',
-								backgroundColor: '#2271b1',
-								color: '#fff',
-								padding: '4px 8px',
-								fontSize: '11px',
-								fontWeight: '600',
-								borderRadius: '3px',
-								zIndex: 15,
-								textTransform: 'uppercase'
+						<>
+							<p style={{
+								margin: '0 0 12px 0',
+								color: '#1e1e1e',
+								fontSize: '13px'
 							}}>
-								{__('Output Preview', 'caes-gallery')}
-							</div>
-							<div style={{ position: 'relative' }}>
+								{__('Thumbnail trigger is on. The first image will be used to open the gallery.', 'caes-gallery')}
+							</p>
+							<div style={{
+								marginBottom: '20px',
+								position: 'relative'
+							}}>
 								<img
 									src={firstImage.sizes?.large?.url || firstImage.url}
 									alt={firstImage.alt || ''}
@@ -459,19 +448,10 @@ const Edit = ({ attributes, setAttributes }) => {
 									fontWeight: '500',
 									borderRadius: '4px'
 								}}>
-									<span>{__('View Gallery', 'caes-gallery')}</span>
+									{__('View Gallery', 'caes-gallery')}
 								</div>
 							</div>
-							<div style={{
-								padding: '8px 12px',
-								backgroundColor: '#f0f0f0',
-								fontSize: '12px',
-								color: '#666',
-								textAlign: 'center'
-							}}>
-								{allImages.length} {allImages.length === 1 ? __('image', 'caes-gallery') : __('images', 'caes-gallery')} {__('in gallery', 'caes-gallery')} — {__('Click opens lightbox', 'caes-gallery')}
-							</div>
-						</div>
+						</>
 					)}
 
 					{useThumbnailTrigger && !firstImage && (
