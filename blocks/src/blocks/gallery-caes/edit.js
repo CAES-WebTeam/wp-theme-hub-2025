@@ -121,9 +121,41 @@ const Edit = ({ attributes, setAttributes }) => {
 		margin: 0
 	};
 
+	// View Gallery bar style
+	const viewGalleryBarStyle = {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: 'rgba(0, 0, 0, 0.7)',
+		color: '#fff',
+		padding: '12px',
+		textAlign: 'center',
+		fontSize: '14px',
+		fontWeight: '500'
+	};
+
 	// Get first image for thumbnail trigger mode
 	const allImages = getAllImages();
 	const firstImage = allImages[0];
+
+	// Thumbnail trigger preview component (reused in both modes)
+	const ThumbnailTriggerPreview = () => (
+		<div style={{ position: 'relative' }}>
+			<img
+				src={firstImage.sizes?.large?.url || firstImage.url}
+				alt={firstImage.alt || ''}
+				style={{
+					width: '100%',
+					height: 'auto',
+					display: 'block'
+				}}
+			/>
+			<div style={viewGalleryBarStyle}>
+				{__('View Gallery', 'caes-gallery')}
+			</div>
+		</div>
+	);
 
 	// Preview Mode - Shows frontend appearance
 	if (isPreviewMode) {
@@ -224,23 +256,7 @@ const Edit = ({ attributes, setAttributes }) => {
 				<div {...blockProps}>
 					{/* Thumbnail Trigger Preview */}
 					{useThumbnailTrigger && firstImage ? (
-						<div className="caes-gallery-preview thumbnail-trigger-preview">
-							<div className="gallery-trigger">
-								<div className="gallery-trigger-visible">
-									<img
-										src={firstImage.sizes?.large?.url || firstImage.url}
-										alt={firstImage.alt || ''}
-										className="gallery-trigger-image"
-									/>
-									<div className="view-gallery-btn-preview">
-										<span className="view-gallery-text">{__('View Gallery', 'caes-gallery')}</span>
-									</div>
-								</div>
-							</div>
-							<p style={{ textAlign: 'center', color: '#666', fontSize: '12px', marginTop: '8px' }}>
-								{allImages.length} {allImages.length === 1 ? __('image', 'caes-gallery') : __('images', 'caes-gallery')} {__('in gallery', 'caes-gallery')}
-							</p>
-						</div>
+						<ThumbnailTriggerPreview />
 					) : (
 						/* Standard Gallery Preview */
 						<div className="caes-gallery-preview">
@@ -424,19 +440,8 @@ const Edit = ({ attributes, setAttributes }) => {
 							}}>
 								{__('Thumbnail trigger is on. The first image will be used to open the gallery.', 'caes-gallery')}
 							</p>
-							<div className="caes-gallery-preview thumbnail-trigger-preview" style={{ marginBottom: '20px' }}>
-								<div className="gallery-trigger">
-									<div className="gallery-trigger-visible">
-										<img
-											src={firstImage.sizes?.large?.url || firstImage.url}
-											alt={firstImage.alt || ''}
-											className="gallery-trigger-image"
-										/>
-										<div className="view-gallery-btn-preview">
-											<span className="view-gallery-text">{__('View Gallery', 'caes-gallery')}</span>
-										</div>
-									</div>
-								</div>
+							<div style={{ marginBottom: '20px' }}>
+								<ThumbnailTriggerPreview />
 							</div>
 						</>
 					)}

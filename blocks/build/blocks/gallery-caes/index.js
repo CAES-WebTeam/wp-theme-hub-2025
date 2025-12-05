@@ -180,9 +180,42 @@ const Edit = ({
     margin: 0
   };
 
+  // View Gallery bar style
+  const viewGalleryBarStyle = {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    color: '#fff',
+    padding: '12px',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: '500'
+  };
+
   // Get first image for thumbnail trigger mode
   const allImages = getAllImages();
   const firstImage = allImages[0];
+
+  // Thumbnail trigger preview component (reused in both modes)
+  const ThumbnailTriggerPreview = () => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+    style: {
+      position: 'relative'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+      src: firstImage.sizes?.large?.url || firstImage.url,
+      alt: firstImage.alt || '',
+      style: {
+        width: '100%',
+        height: 'auto',
+        display: 'block'
+      }
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+      style: viewGalleryBarStyle,
+      children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('View Gallery', 'caes-gallery')
+    })]
+  });
 
   // Preview Mode - Shows frontend appearance
   if (isPreviewMode) {
@@ -296,34 +329,7 @@ const Edit = ({
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
         ...blockProps,
-        children: useThumbnailTrigger && firstImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-          className: "caes-gallery-preview thumbnail-trigger-preview",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-            className: "gallery-trigger",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-              className: "gallery-trigger-visible",
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                src: firstImage.sizes?.large?.url || firstImage.url,
-                alt: firstImage.alt || '',
-                className: "gallery-trigger-image"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-                className: "view-gallery-btn-preview",
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-                  className: "view-gallery-text",
-                  children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('View Gallery', 'caes-gallery')
-                })
-              })]
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
-            style: {
-              textAlign: 'center',
-              color: '#666',
-              fontSize: '12px',
-              marginTop: '8px'
-            },
-            children: [allImages.length, " ", allImages.length === 1 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('image', 'caes-gallery') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('images', 'caes-gallery'), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('in gallery', 'caes-gallery')]
-          })]
-        }) :
+        children: useThumbnailTrigger && firstImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(ThumbnailTriggerPreview, {}) :
         /*#__PURE__*/
         /* Standard Gallery Preview */
         (0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
@@ -518,27 +524,10 @@ const Edit = ({
             },
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Thumbnail trigger is on. The first image will be used to open the gallery.', 'caes-gallery')
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-            className: "caes-gallery-preview thumbnail-trigger-preview",
             style: {
               marginBottom: '20px'
             },
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-              className: "gallery-trigger",
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                className: "gallery-trigger-visible",
-                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                  src: firstImage.sizes?.large?.url || firstImage.url,
-                  alt: firstImage.alt || '',
-                  className: "gallery-trigger-image"
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-                  className: "view-gallery-btn-preview",
-                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-                    className: "view-gallery-text",
-                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('View Gallery', 'caes-gallery')
-                  })
-                })]
-              })
-            })
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(ThumbnailTriggerPreview, {})
           })]
         }), useThumbnailTrigger && !firstImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
           status: "warning",
