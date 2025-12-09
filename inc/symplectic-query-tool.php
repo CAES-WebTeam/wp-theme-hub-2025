@@ -338,8 +338,14 @@ function symplectic_query_api_handler() {
     }
     
     // Build the API URL
+
+    // Test API base URL
     // $api_url = 'https://uga-test.elements.symplectic.org:8093/secure-api/v6.13/users';
+
+    // Production API base URL
     $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13';
+
+    // Final query URL
     $api_url .= '?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
     
     // Get credentials from wp-config.php constants
