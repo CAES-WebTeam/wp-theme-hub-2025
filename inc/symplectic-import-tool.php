@@ -199,27 +199,6 @@ function fetch_symplectic_user($my_id, $detail = 'full') {
     // Build the API URL - searching by username (proprietary-id)
     $api_url = SYMPLECTIC_API_BASE . '/users';
     $api_url .= '?query=username=%22' . $my_id . '%22&detail=full';
-
-    // https://uga.elements.symplectic.org:8091/secure-api/v6.13/users?query=username=%22ags84031%22&detail=full
-
-
-    //  $username = sanitize_text_field($_POST['username']);
-    
-    // if (empty($username)) {
-    //     wp_send_json_error('Username is required');
-    //     return;
-    // }
-    
-    // // Build the API URL
-
-    // // Test API base URL
-    // // $api_url = 'https://uga-test.elements.symplectic.org:8093/secure-api/v6.13/users';
-
-    // // Production API base URL
-    // $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users';
-
-    // // Final query URL
-    // $api_url .= '?query=username=%22' . urlencode($username) . '%22&detail=full';
     
     symplectic_log("📡 Querying Symplectic API: {$api_url}", 'debug');
     
@@ -229,7 +208,7 @@ function fetch_symplectic_user($my_id, $detail = 'full') {
     $args = [
         'headers' => [
             'Authorization' => 'Basic ' . $auth_string,
-            'Accept' => 'application/json',
+            'Accept' => 'application/xml, application/json',
         ],
         'timeout' => 300,
         'sslverify' => true,
@@ -248,10 +227,214 @@ function fetch_symplectic_user($my_id, $detail = 'full') {
     }
     
     $body = wp_remote_retrieve_body($response);
-    $data = json_decode($body, true);
+    $content_type = wp_remote_retrieve_header($response, 'content-type');
     
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        return new WP_Error('parse_error', 'Failed to parse Symplectic API response: ' . json_last_error_msg());
+    symplectic_log("  → Content-Type: {$content_type}", 'debug');
+    symplectic_log("  → Response length: " . strlen($body) . " bytes", 'debug');
+    
+    // Attempt to parse based on content type
+    $data = null;
+    $parse_warnings = [];
+    
+    // Check if response is XML
+    if (strpos($content_type, 'xml') !== false || strpos(ltrim($body), '<?xml') === 0) {
+        symplectic_log("  → Detected XML response, parsing...", 'debug');
+        
+        // Suppress XML errors and collect them
+        libxml_use_internal_errors(true);
+        
+        try {
+            $xml = simplexml_load_string($body);
+            
+            if ($xml === false) {
+                $xml_errors = libxml_get_errors();
+                foreach ($xml_errors as $error) {
+                    $parse_warnings[] = "XML Error: " . trim($error->message);
+                }
+                libxml_clear_errors();
+                symplectic_log("⚠️ XML parsing encountered issues", 'warning');
+            } else {
+                // Register the API namespace for XPath queries
+                $xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                
+                // Convert XML to array structure
+                $data = symplectic_xml_to_array($xml);
+                
+                // Also include raw XML reference
+                $data['_raw_xml'] = $body;
+                $data['_parse_method'] = 'xml';
+                
+                symplectic_log("✅ XML parsed successfully", 'debug');
+            }
+        } catch (Exception $e) {
+            $parse_warnings[] = "XML Exception: " . $e->getMessage();
+            symplectic_log("⚠️ XML parsing exception: " . $e->getMessage(), 'warning');
+        }
+        
+        libxml_use_internal_errors(false);
+    }
+    // Check if response is JSON
+    elseif (strpos($content_type, 'json') !== false || in_array(substr(ltrim($body), 0, 1), ['{', '['])) {
+        symplectic_log("  → Detected JSON response, parsing...", 'debug');
+        
+        $data = json_decode($body, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $parse_warnings[] = "JSON Error: " . json_last_error_msg();
+            symplectic_log("⚠️ JSON parsing failed: " . json_last_error_msg(), 'warning');
+            $data = null;
+        } else {
+            $data['_parse_method'] = 'json';
+            symplectic_log("✅ JSON parsed successfully", 'debug');
+        }
+    }
+    // Unknown content type
+    else {
+        $parse_warnings[] = "Unexpected content type: {$content_type}";
+        symplectic_log("⚠️ Unexpected content type: {$content_type}", 'warning');
+    }
+    
+    // If parsing failed completely, return raw response with warning instead of error
+    if ($data === null) {
+        symplectic_log("⚠️ Could not parse response, returning raw payload", 'warning');
+        
+        $data = [
+            '_raw_response' => $body,
+            '_content_type' => $content_type,
+            '_response_length' => strlen($body),
+            '_parse_warnings' => $parse_warnings,
+            '_parse_method' => 'raw',
+        ];
+    }
+    
+    // Add any warnings to the data
+    if (!empty($parse_warnings)) {
+        $data['_parse_warnings'] = $parse_warnings;
+    }
+    
+    return $data;
+}
+
+/**
+ * Converts Symplectic API XML response to an associative array
+ * 
+ * @param SimpleXMLElement $xml The XML element to convert
+ * @return array Parsed data array
+ */
+function symplectic_xml_to_array($xml) {
+    $data = [];
+    
+    // Register namespace
+    $xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+    
+    // Extract pagination info
+    $pagination = $xml->xpath('//api:pagination');
+    if (!empty($pagination)) {
+        $attrs = $pagination[0]->attributes();
+        $data['pagination'] = [
+            'results_count' => (string) ($attrs['results-count'] ?? '0'),
+            'items_per_page' => (string) ($attrs['items-per-page'] ?? '25'),
+        ];
+    }
+    
+    // Extract user objects from result list
+    $objects = $xml->xpath('//api:object[@category="user"]');
+    $data['users'] = [];
+    
+    foreach ($objects as $obj) {
+        $attrs = $obj->attributes();
+        $user = [
+            'id' => (string) ($attrs['id'] ?? ''),
+            'proprietary_id' => (string) ($attrs['proprietary-id'] ?? ''),
+            'username' => (string) ($attrs['username'] ?? ''),
+            'type' => (string) ($attrs['type'] ?? ''),
+            'href' => (string) ($attrs['href'] ?? ''),
+            'created_when' => (string) ($attrs['created-when'] ?? ''),
+            'last_modified_when' => (string) ($attrs['last-modified-when'] ?? ''),
+        ];
+        
+        // Register namespace for child element queries
+        $obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+        
+        // Extract standard fields
+        $field_mappings = [
+            'first_name' => 'api:first-name',
+            'last_name' => 'api:last-name',
+            'initials' => 'api:initials',
+            'email_address' => 'api:email-address',
+            'position' => 'api:position',
+            'is_current_staff' => 'api:is-current-staff',
+            'is_academic' => 'api:is-academic',
+            'is_login_allowed' => 'api:is-login-allowed',
+            'primary_group_descriptor' => 'api:primary-group-descriptor',
+            'privacy_level' => 'api:privacy-level',
+            'claimed' => 'api:claimed',
+        ];
+        
+        foreach ($field_mappings as $key => $xpath) {
+            $elements = $obj->xpath($xpath);
+            if (!empty($elements)) {
+                $user[$key] = (string) $elements[0];
+            }
+        }
+        
+        // Extract organisation-defined-data fields
+        $org_data = $obj->xpath('api:organisation-defined-data');
+        if (!empty($org_data)) {
+            $user['organisation_data'] = [];
+            foreach ($org_data as $field) {
+                $field_attrs = $field->attributes();
+                $field_name = (string) ($field_attrs['field-name'] ?? 'unknown');
+                $user['organisation_data'][$field_name] = (string) $field;
+            }
+        }
+        
+        // Extract address information from records
+        $addresses = $obj->xpath('.//api:address');
+        if (!empty($addresses)) {
+            $user['addresses'] = [];
+            foreach ($addresses as $addr) {
+                $address = [];
+                $addr->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                $lines = $addr->xpath('api:line');
+                foreach ($lines as $line) {
+                    $type = (string) $line->attributes()['type'];
+                    $address[$type] = (string) $line;
+                }
+                $user['addresses'][] = $address;
+            }
+        }
+        
+        // Extract phone numbers from records
+        $phones = $obj->xpath('.//api:phone-number');
+        if (!empty($phones)) {
+            $user['phone_numbers'] = [];
+            foreach ($phones as $phone) {
+                $phone->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                $number = $phone->xpath('api:number');
+                $type = $phone->xpath('api:type');
+                $user['phone_numbers'][] = [
+                    'number' => !empty($number) ? (string) $number[0] : '',
+                    'type' => !empty($type) ? (string) $type[0] : '',
+                ];
+            }
+        }
+        
+        // Extract user identifier associations
+        $identifiers = $obj->xpath('.//api:user-identifier-association');
+        if (!empty($identifiers)) {
+            $user['identifier_associations'] = [];
+            foreach ($identifiers as $id) {
+                $id_attrs = $id->attributes();
+                $user['identifier_associations'][] = [
+                    'scheme' => (string) ($id_attrs['scheme'] ?? ''),
+                    'status' => (string) ($id_attrs['status'] ?? ''),
+                    'value' => (string) $id,
+                ];
+            }
+        }
+        
+        $data['users'][] = $user;
     }
     
     return $data;
