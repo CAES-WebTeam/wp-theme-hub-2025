@@ -3,7 +3,7 @@
  * Symplectic Elements API Query Tool for WordPress Admin
  * 
  * This plugin creates an admin page to query user data from the Symplectic Elements API
- * using a proprietary ID.
+ * using a proprietary ID, or fetch all users with pagination.
  * 
  * IMPORTANT: Add the following constants to your wp-config.php file:
  * define('SYMPLECTIC_API_USERNAME', 'your_username_here');
@@ -50,9 +50,20 @@ function symplectic_query_tool_enqueue_scripts($hook) {
             margin-bottom: 5px;
             font-weight: 600;
         }
-        .symplectic-form-group input[type="text"] {
+        .symplectic-form-group input[type="text"],
+        .symplectic-form-group input[type="number"],
+        .symplectic-form-group select {
             width: 100%;
             max-width: 400px;
+        }
+        .symplectic-form-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .symplectic-form-row .symplectic-form-group {
+            flex: 1;
+            min-width: 150px;
         }
         .symplectic-results-area {
             margin-top: 30px;
@@ -124,27 +135,110 @@ function symplectic_query_tool_enqueue_scripts($hook) {
             line-height: 1.4;
             white-space: pre-wrap;
             word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .symplectic-pagination-info {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #0073aa;
+            border-radius: 3px;
+            margin-bottom: 15px;
+        }
+        .symplectic-pagination-info h4 {
+            margin: 0 0 10px 0;
+            color: #0073aa;
+        }
+        .symplectic-pagination-info p {
+            margin: 5px 0;
+        }
+        .symplectic-pagination-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .symplectic-pagination-controls button {
+            min-width: 100px;
+        }
+        .symplectic-pagination-controls .page-info {
+            flex: 1;
+            text-align: center;
+            font-weight: 600;
+        }
+        .symplectic-hint {
+            background: #fff8e5;
+            border-left: 4px solid #ffb900;
+            padding: 10px 15px;
+            margin-bottom: 15px;
         }
     ');
     
     // Add inline JavaScript for AJAX functionality
     wp_add_inline_script('jquery', '
         jQuery(document).ready(function($) {
+            var currentPage = 1;
+            var totalPages = 1;
+            var lastQueryParams = {};
+            
             $("#symplectic-query-form").on("submit", function(e) {
                 e.preventDefault();
-                
+                currentPage = 1;
+                executeQuery();
+            });
+            
+            // Pagination button handlers
+            $(document).on("click", "#symplectic-prev-page", function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    executeQuery();
+                }
+            });
+            
+            $(document).on("click", "#symplectic-next-page", function() {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    executeQuery();
+                }
+            });
+            
+            $(document).on("click", "#symplectic-first-page", function() {
+                if (currentPage > 1) {
+                    currentPage = 1;
+                    executeQuery();
+                }
+            });
+            
+            $(document).on("click", "#symplectic-last-page", function() {
+                if (currentPage < totalPages) {
+                    currentPage = totalPages;
+                    executeQuery();
+                }
+            });
+            
+            function executeQuery() {
                 var proprietaryId = $("#proprietary-id").val().trim();
+                var perPage = parseInt($("#per-page").val()) || 25;
                 var resultsArea = $("#symplectic-results");
                 var submitButton = $("#symplectic-submit");
                 
                 if (!proprietaryId) {
-                    resultsArea.html("<div class=\"symplectic-error\">Please enter a Proprietary ID.</div>");
+                    resultsArea.html("<div class=\"symplectic-error\">Please enter a Proprietary ID or \"null\" to fetch all users.</div>");
                     return;
                 }
                 
+                // Store query params for pagination
+                lastQueryParams = {
+                    proprietary_id: proprietaryId,
+                    per_page: perPage,
+                    page: currentPage
+                };
+                
                 // Show loading state
                 submitButton.prop("disabled", true).text("Querying...");
-                resultsArea.html("<div class=\"symplectic-loading\">Loading results...</div>");
+                resultsArea.html("<div class=\"symplectic-loading\">Loading results" + (proprietaryId.toLowerCase() === "null" ? " (fetching all users, page " + currentPage + ")..." : "...") + "</div>");
                 
                 // Make AJAX request to our PHP handler
                 $.ajax({
@@ -153,16 +247,60 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     data: {
                         action: "symplectic_query_api",
                         proprietary_id: proprietaryId,
+                        per_page: perPage,
+                        page: currentPage,
                         nonce: "' . wp_create_nonce('symplectic_query_nonce') . '"
                     },
                     success: function(response) {
                         if (response.success) {
-                            resultsArea.html(
-                                "<div class=\"symplectic-success\">Query successful!</div>" +
-                                "<div class=\"symplectic-json-output\">" + 
-                                    escapeHtml(JSON.stringify(response.data, null, 2)) + 
-                                "</div>"
-                            );
+                            var html = "";
+                            
+                            // Check for pagination info
+                            if (response.data.pagination) {
+                                var pagination = response.data.pagination;
+                                totalPages = pagination.total_pages || 1;
+                                
+                                html += "<div class=\"symplectic-pagination-info\">";
+                                html += "<h4>Pagination Information</h4>";
+                                html += "<p><strong>Total Results:</strong> " + (pagination.total_results || "Unknown") + "</p>";
+                                html += "<p><strong>Results Per Page:</strong> " + (pagination.per_page || perPage) + "</p>";
+                                html += "<p><strong>Current Page:</strong> " + currentPage + " of " + totalPages + "</p>";
+                                
+                                if (pagination.results_on_page !== undefined) {
+                                    html += "<p><strong>Results on This Page:</strong> " + pagination.results_on_page + "</p>";
+                                }
+                                
+                                // Pagination controls
+                                if (totalPages > 1) {
+                                    html += "<div class=\"symplectic-pagination-controls\">";
+                                    html += "<button type=\"button\" id=\"symplectic-first-page\" class=\"button\" " + (currentPage <= 1 ? "disabled" : "") + ">« First</button>";
+                                    html += "<button type=\"button\" id=\"symplectic-prev-page\" class=\"button\" " + (currentPage <= 1 ? "disabled" : "") + ">‹ Previous</button>";
+                                    html += "<span class=\"page-info\">Page " + currentPage + " of " + totalPages + "</span>";
+                                    html += "<button type=\"button\" id=\"symplectic-next-page\" class=\"button\" " + (currentPage >= totalPages ? "disabled" : "") + ">Next ›</button>";
+                                    html += "<button type=\"button\" id=\"symplectic-last-page\" class=\"button\" " + (currentPage >= totalPages ? "disabled" : "") + ">Last »</button>";
+                                    html += "</div>";
+                                }
+                                
+                                html += "</div>";
+                            }
+                            
+                            html += "<div class=\"symplectic-success\">Query successful!</div>";
+                            html += "<div class=\"symplectic-json-output\">" + 
+                                escapeHtml(JSON.stringify(response.data, null, 2)) + 
+                            "</div>";
+                            
+                            // Add bottom pagination controls for long results
+                            if (response.data.pagination && response.data.pagination.total_pages > 1) {
+                                html += "<div class=\"symplectic-pagination-controls\" style=\"margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;\">";
+                                html += "<button type=\"button\" id=\"symplectic-first-page\" class=\"button\" " + (currentPage <= 1 ? "disabled" : "") + ">« First</button>";
+                                html += "<button type=\"button\" id=\"symplectic-prev-page\" class=\"button\" " + (currentPage <= 1 ? "disabled" : "") + ">‹ Previous</button>";
+                                html += "<span class=\"page-info\">Page " + currentPage + " of " + totalPages + "</span>";
+                                html += "<button type=\"button\" id=\"symplectic-next-page\" class=\"button\" " + (currentPage >= totalPages ? "disabled" : "") + ">Next ›</button>";
+                                html += "<button type=\"button\" id=\"symplectic-last-page\" class=\"button\" " + (currentPage >= totalPages ? "disabled" : "") + ">Last »</button>";
+                                html += "</div>";
+                            }
+                            
+                            resultsArea.html(html);
                         } else {
                             // Handle error response with detailed information
                             var errorHtml = "";
@@ -287,7 +425,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                         submitButton.prop("disabled", false).text("Execute Query");
                     }
                 });
-            });
+            }
             
             function escapeHtml(text) {
                 // Handle non-string types
@@ -331,23 +469,44 @@ function symplectic_query_api_handler() {
     }
     
     $proprietary_id = sanitize_text_field($_POST['proprietary_id']);
+    $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 25;
+    $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+    
+    // Validate pagination parameters
+    $per_page = max(1, min(100, $per_page)); // Limit between 1 and 100
+    $page = max(1, $page);
     
     if (empty($proprietary_id)) {
-        wp_send_json_error('Proprietary ID is required');
+        wp_send_json_error('Proprietary ID is required (enter "null" to fetch all users)');
         return;
     }
     
     // Build the API URL
-
-    // Test API base URL
-    // $api_url = 'https://uga-test.elements.symplectic.org:8093/secure-api/v6.13/users';
-
     // Production API base URL
-    $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users';
-
-    // Final query URL
-    // $api_url .= '?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
-    $api_url .= '?detail=ref';
+    $api_base_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users';
+    
+    // Test API base URL (uncomment to use)
+    // $api_base_url = 'https://uga-test.elements.symplectic.org:8093/secure-api/v6.13/users';
+    
+    // Build query parameters
+    $query_params = array();
+    
+    // Check if we're fetching all users (proprietary_id is "null")
+    $fetch_all_users = (strtolower($proprietary_id) === 'null');
+    
+    if (!$fetch_all_users) {
+        // Query for specific user by proprietary ID
+        $query_params['query'] = 'proprietary-id="' . $proprietary_id . '"';
+        $query_params['detail'] = 'full';
+    } else {
+        // Fetching all users - use pagination parameters
+        $query_params['per-page'] = $per_page;
+        $query_params['page'] = $page;
+        $query_params['detail'] = 'ref'; // Use 'ref' for lighter response when fetching all
+    }
+    
+    // Build the final URL
+    $api_url = $api_base_url . '?' . http_build_query($query_params);
     
     // Get credentials from wp-config.php constants
     $username = SYMPLECTIC_API_USERNAME;
@@ -370,6 +529,9 @@ function symplectic_query_api_handler() {
     $diagnostic_info = array(
         'request_url' => $api_url,
         'request_method' => 'GET',
+        'fetch_all_users' => $fetch_all_users,
+        'page' => $page,
+        'per_page' => $per_page,
         'username_length' => strlen($username),
         'password_length' => strlen($password),
         'auth_header_length' => strlen($auth_string),
@@ -462,28 +624,94 @@ function symplectic_query_api_handler() {
     // Success - parse and return the response
     $data = json_decode($response_body, true);
     
+    // Extract pagination information from the response
+    $pagination_info = array(
+        'page' => $page,
+        'per_page' => $per_page,
+        'total_results' => null,
+        'total_pages' => 1,
+        'results_on_page' => 0,
+    );
+    
     if (json_last_error() !== JSON_ERROR_NONE) {
-        // If not JSON, return raw response with metadata
-        $result = array(
-            'raw_response' => $response_body,
-            'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
-            'response_length' => strlen($response_body),
-            'diagnostic_info' => $diagnostic_info,
-        );
-        wp_send_json_success($result);
-    } else {
-        // Return parsed JSON with metadata
-        $result = array(
-            'data' => $data,
-            'response_metadata' => array(
-                'response_code' => $response_code,
+        // If not JSON, try to parse XML (Symplectic may return XML)
+        $xml_data = @simplexml_load_string($response_body);
+        
+        if ($xml_data !== false) {
+            // Convert XML to array for easier handling
+            $data = json_decode(json_encode($xml_data), true);
+            
+            // Try to extract pagination from XML attributes
+            if (isset($xml_data['results-count'])) {
+                $pagination_info['total_results'] = (int)$xml_data['results-count'];
+            }
+            if (isset($xml_data['last-page'])) {
+                $pagination_info['total_pages'] = (int)$xml_data['last-page'];
+            }
+        } else {
+            // Return raw response with metadata
+            $result = array(
+                'raw_response' => $response_body,
                 'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
-                'response_size' => strlen($response_body),
-            ),
-            'diagnostic_info' => $diagnostic_info,
-        );
-        wp_send_json_success($result);
+                'response_length' => strlen($response_body),
+                'diagnostic_info' => $diagnostic_info,
+            );
+            wp_send_json_success($result);
+            return;
+        }
     }
+    
+    // Try to extract pagination info from JSON response
+    // Symplectic API typically includes pagination in the response structure
+    if (is_array($data)) {
+        // Check for common pagination response patterns
+        if (isset($data['pagination'])) {
+            $pagination_info['total_results'] = isset($data['pagination']['results-count']) ? (int)$data['pagination']['results-count'] : null;
+            $pagination_info['total_pages'] = isset($data['pagination']['last-page']) ? (int)$data['pagination']['last-page'] : 1;
+        }
+        
+        // Check for root-level pagination attributes (common in Symplectic responses)
+        if (isset($data['@attributes'])) {
+            if (isset($data['@attributes']['results-count'])) {
+                $pagination_info['total_results'] = (int)$data['@attributes']['results-count'];
+            }
+            if (isset($data['@attributes']['last-page'])) {
+                $pagination_info['total_pages'] = (int)$data['@attributes']['last-page'];
+            }
+        }
+        
+        // Direct attributes (sometimes present)
+        if (isset($data['results-count'])) {
+            $pagination_info['total_results'] = (int)$data['results-count'];
+        }
+        if (isset($data['last-page'])) {
+            $pagination_info['total_pages'] = (int)$data['last-page'];
+        }
+        
+        // Count results on current page
+        if (isset($data['entry']) && is_array($data['entry'])) {
+            $pagination_info['results_on_page'] = count($data['entry']);
+        } elseif (isset($data['users']) && is_array($data['users'])) {
+            $pagination_info['results_on_page'] = count($data['users']);
+        } elseif (isset($data['api:object']) && is_array($data['api:object'])) {
+            $pagination_info['results_on_page'] = count($data['api:object']);
+        }
+    }
+    
+    // Return parsed data with metadata
+    $result = array(
+        'data' => $data,
+        'pagination' => $fetch_all_users ? $pagination_info : null,
+        'response_metadata' => array(
+            'response_code' => $response_code,
+            'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
+            'response_size' => strlen($response_body),
+            'fetch_all_users' => $fetch_all_users,
+        ),
+        'diagnostic_info' => $diagnostic_info,
+    );
+    
+    wp_send_json_success($result);
 }
 
 // Render the admin page
@@ -509,6 +737,11 @@ define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
                 the full user details from the Symplectic Elements system.</p>
             </div>
             
+            <div class="symplectic-hint">
+                <p><strong>Tip:</strong> Enter <code>null</code> as the Proprietary ID to fetch all users from the system. 
+                Use the pagination controls to navigate through large result sets.</p>
+            </div>
+            
             <form id="symplectic-query-form" method="post">
                 <div class="symplectic-form-group">
                     <label for="proprietary-id">Proprietary ID:</label>
@@ -517,11 +750,28 @@ define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
                         id="proprietary-id" 
                         name="proprietary_id" 
                         class="regular-text" 
-                        placeholder="Enter proprietary ID (e.g., 810019979)"
+                        placeholder="Enter proprietary ID (e.g., 810019979) or &quot;null&quot; for all users"
                         value=""
                         <?php echo !$credentials_configured ? 'disabled' : ''; ?>
                     />
-                    <p class="description">Enter the proprietary ID of the user you want to query.</p>
+                    <p class="description">Enter the proprietary ID of the user you want to query, or enter "null" to fetch all users.</p>
+                </div>
+                
+                <div class="symplectic-form-row">
+                    <div class="symplectic-form-group">
+                        <label for="per-page">Results Per Page:</label>
+                        <select 
+                            id="per-page" 
+                            name="per_page"
+                            <?php echo !$credentials_configured ? 'disabled' : ''; ?>
+                        >
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <p class="description">Number of results per page (applies when fetching all users).</p>
+                    </div>
                 </div>
                 
                 <div class="symplectic-form-group">
@@ -535,7 +785,7 @@ define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
                 <h2>Query Results</h2>
                 <div id="symplectic-results" class="empty">
                     <?php if ($credentials_configured): ?>
-                        No query executed yet. Enter a proprietary ID above and click "Execute Query" to see results.
+                        No query executed yet. Enter a proprietary ID above and click "Execute Query" to see results, or enter "null" to fetch all users.
                     <?php else: ?>
                         Please configure API credentials in wp-config.php before using this tool.
                     <?php endif; ?>
