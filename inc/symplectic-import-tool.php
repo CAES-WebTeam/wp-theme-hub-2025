@@ -448,13 +448,54 @@ function symplectic_xml_to_array($xml)
                 $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
                 $field_attrs = $field->attributes();
                 $field_name = (string) ($field_attrs['name'] ?? '');
+                $field_type = (string) ($field_attrs['type'] ?? '');
 
-                // Get the text content (check for api:text child first)
-                $text_element = $field->xpath('api:text');
-                if (!empty($text_element)) {
-                    $user['fields'][$field_name] = (string) $text_element[0];
+                // Handle degree-list type specially
+                if ($field_type === 'degree-list') {
+                    $degrees = $field->xpath('.//api:degree');
+                    $user['degrees'] = [];
+                    foreach ($degrees as $degree) {
+                        $degree->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                        // Extract degree name
+                        $name = $degree->xpath('api:name');
+                        $degree_name = !empty($name) ? (string) $name[0] : '';
+
+                        // Extract field of study
+                        $fos = $degree->xpath('api:field-of-study');
+                        $field_of_study = !empty($fos) ? (string) $fos[0] : '';
+
+                        // Extract year
+                        $year = $degree->xpath('api:end-date/api:year');
+                        $degree_year = !empty($year) ? (string) $year[0] : '';
+
+                        // Extract institution details
+                        $org = $degree->xpath('api:institution/api:line[@type="organisation"]');
+                        $institution = !empty($org) ? (string) $org[0] : '';
+
+                        $state = $degree->xpath('api:institution/api:line[@type="state"]');
+                        $degree_state = !empty($state) ? (string) $state[0] : '';
+
+                        $country = $degree->xpath('api:institution/api:line[@type="country"]');
+                        $degree_country = !empty($country) ? (string) $country[0] : '';
+
+                        $user['degrees'][] = [
+                            'degree_name' => $degree_name,
+                            'field_of_study' => $field_of_study,
+                            'institution' => $institution,
+                            'year' => $degree_year,
+                            'state' => $degree_state,
+                            'country' => $degree_country,
+                        ];
+                    }
                 } else {
-                    $user['fields'][$field_name] = (string) $field;
+                    // Handle simple text fields (like overview)
+                    $text_element = $field->xpath('api:text');
+                    if (!empty($text_element)) {
+                        $user['fields'][$field_name] = (string) $text_element[0];
+                    } else {
+                        $user['fields'][$field_name] = (string) $field;
+                    }
                 }
             }
         }
@@ -558,6 +599,16 @@ function process_single_user_symplectic($wp_user_id, $dry_run = true)
             } else {
                 symplectic_log("  → No overview data found to save", 'warning');
             }
+
+            // Map degrees to ACF repeater field
+            $degrees = $symplectic_user['degrees'] ?? [];
+
+            if (!empty($degrees)) {
+                update_field('degrees', $degrees, 'user_' . $wp_user_id);
+                symplectic_log("  → Saved " . count($degrees) . " degree(s) to 'degrees' field", 'success');
+            } else {
+                symplectic_log("  → No degrees data found to save", 'warning');
+            }
         } else {
             symplectic_log("⚠️ No user data found in Symplectic response", 'warning');
         }
@@ -566,6 +617,8 @@ function process_single_user_symplectic($wp_user_id, $dry_run = true)
 
         // Show what would be saved
         $symplectic_user = $symplectic_data['users'][0] ?? null;
+
+        // Preview overview
         if ($symplectic_user && !empty($symplectic_user['fields']['overview'])) {
             $overview = $symplectic_user['fields']['overview'];
             symplectic_log("  → Would save to 'about' field (" . strlen($overview) . " chars):", 'debug');
@@ -574,6 +627,21 @@ function process_single_user_symplectic($wp_user_id, $dry_run = true)
             symplectic_log("  ────────────────────────────────────", 'debug');
         } else {
             symplectic_log("  → No 'overview' field found in Symplectic response", 'warning');
+        }
+
+        // Preview degrees
+        if ($symplectic_user && !empty($symplectic_user['degrees'])) {
+            $degrees = $symplectic_user['degrees'];
+            symplectic_log("  → Would save " . count($degrees) . " degree(s) to 'degrees' field:", 'debug');
+            symplectic_log("  ────────────────────────────────────", 'debug');
+            foreach ($degrees as $index => $degree) {
+                $deg_num = $index + 1;
+                symplectic_log("  [{$deg_num}] {$degree['degree_name']} in {$degree['field_of_study']}", 'info');
+                symplectic_log("      {$degree['institution']}, {$degree['state']}, {$degree['country']} ({$degree['year']})", 'info');
+            }
+            symplectic_log("  ────────────────────────────────────", 'debug');
+        } else {
+            symplectic_log("  → No 'degrees' found in Symplectic response", 'warning');
         }
     }
 
