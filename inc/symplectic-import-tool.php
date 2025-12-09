@@ -434,6 +434,25 @@ function symplectic_xml_to_array($xml) {
             }
         }
         
+        // Extract api:field elements (like overview, research interests, etc.)
+        $fields = $obj->xpath('.//api:field');
+        if (!empty($fields)) {
+            $user['fields'] = [];
+            foreach ($fields as $field) {
+                $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                $field_attrs = $field->attributes();
+                $field_name = (string) ($field_attrs['name'] ?? '');
+                
+                // Get the text content (check for api:text child first)
+                $text_element = $field->xpath('api:text');
+                if (!empty($text_element)) {
+                    $user['fields'][$field_name] = (string) $text_element[0];
+                } else {
+                    $user['fields'][$field_name] = (string) $field;
+                }
+            }
+        }
+        
         $data['users'][] = $user;
     }
     
@@ -518,13 +537,31 @@ function process_single_user_symplectic($wp_user_id, $dry_run = true) {
     // Step 4: Save data to ACF fields (if not dry run)
     if (!$dry_run) {
         symplectic_log("💾 Saving Symplectic data to user meta...", 'info');
-        // TODO: Map Symplectic fields to ACF fields here
-        // Example:
-        // update_field('symplectic_id', $symplectic_data['id'] ?? '', 'user_' . $wp_user_id);
-        // update_field('orcid', $symplectic_data['orcid'] ?? '', 'user_' . $wp_user_id);
-        symplectic_log("⚠️ Field mapping not yet implemented - data not saved", 'warning');
+        
+        // Get the first user from the response
+        $symplectic_user = $symplectic_data['users'][0] ?? null;
+        
+        if ($symplectic_user) {
+            // Map overview field to ACF 'about' field
+            $overview = $symplectic_user['fields']['overview'] ?? '';
+            
+            if (!empty($overview)) {
+                update_field('about', $overview, 'user_' . $wp_user_id);
+                symplectic_log("  → Saved 'overview' to 'about' field (" . strlen($overview) . " chars)", 'success');
+            } else {
+                symplectic_log("  → No overview data found to save", 'warning');
+            }
+        } else {
+            symplectic_log("⚠️ No user data found in Symplectic response", 'warning');
+        }
     } else {
         symplectic_log("🔍 DRY RUN: No data saved", 'info');
+        
+        // Show what would be saved
+        $symplectic_user = $symplectic_data['users'][0] ?? null;
+        if ($symplectic_user && !empty($symplectic_user['fields']['overview'])) {
+            symplectic_log("  → Would save 'overview' to 'about' field (" . strlen($symplectic_user['fields']['overview']) . " chars)", 'debug');
+        }
     }
     
     return [
