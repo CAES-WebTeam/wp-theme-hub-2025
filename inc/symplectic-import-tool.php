@@ -188,6 +188,39 @@ function fetch_personnel_by_college_id($college_id)
 }
 
 /**
+ * Gets or creates an Area of Expertise term without duplication
+ * 
+ * @param string $term_name The term name to find or create
+ * @return int|WP_Error     Term ID on success, WP_Error on failure
+ */
+function get_or_create_expertise_term($term_name)
+{
+    $term_name = trim($term_name);
+    
+    if (empty($term_name)) {
+        return new WP_Error('empty_term', 'Term name cannot be empty');
+    }
+    
+    // Check if term already exists
+    $existing_term = get_term_by('name', $term_name, 'area_of_expertise');
+    
+    if ($existing_term) {
+        return $existing_term->term_id;
+    }
+    
+    // Create new term
+    $result = wp_insert_term($term_name, 'area_of_expertise');
+    
+    if (is_wp_error($result)) {
+        return $result;
+    }
+    
+    symplectic_log("  → Created new expertise term: {$term_name} (ID: {$result['term_id']})", 'success');
+    
+    return $result['term_id'];
+}
+
+/**
  * Fetches user data from the Symplectic Elements API using MyID (username)
  * 
  * @param string $my_id      The MyID (UGA username) to query
@@ -488,6 +521,18 @@ function symplectic_xml_to_array($xml)
                             'country' => $degree_country,
                         ];
                     }
+                } elseif ($field_type === 'keyword-list') {
+                    // Handle keyword-list type (labels/areas of expertise)
+                    $keywords = $field->xpath('.//api:keyword');
+                    if (!empty($keywords)) {
+                        $user['keywords'] = [];
+                        foreach ($keywords as $keyword) {
+                            $keyword_text = trim((string) $keyword);
+                            if (!empty($keyword_text)) {
+                                $user['keywords'][] = $keyword_text;
+                            }
+                        }
+                    }
                 } else {
                     // Handle simple text fields (like overview)
                     $text_element = $field->xpath('api:text');
@@ -495,6 +540,20 @@ function symplectic_xml_to_array($xml)
                         $user['fields'][$field_name] = (string) $text_element[0];
                     } else {
                         $user['fields'][$field_name] = (string) $field;
+                    }
+                }
+            }
+        }
+
+        // Extract keywords from all-labels as fallback if not already captured
+        if (empty($user['keywords'])) {
+            $all_labels = $obj->xpath('.//api:all-labels//api:keyword');
+            if (!empty($all_labels)) {
+                $user['keywords'] = [];
+                foreach ($all_labels as $keyword) {
+                    $keyword_text = trim((string) $keyword);
+                    if (!empty($keyword_text)) {
+                        $user['keywords'][] = $keyword_text;
                     }
                 }
             }
@@ -609,6 +668,30 @@ function process_single_user_symplectic($wp_user_id, $dry_run = true)
             } else {
                 symplectic_log("  → No degrees data found to save", 'warning');
             }
+
+            // Map keywords to Areas of Expertise taxonomy via ACF field
+            $keywords = $symplectic_user['keywords'] ?? [];
+
+            if (!empty($keywords)) {
+                $term_ids = [];
+                
+                foreach ($keywords as $keyword) {
+                    $term_id = get_or_create_expertise_term($keyword);
+                    
+                    if (!is_wp_error($term_id)) {
+                        $term_ids[] = $term_id;
+                    } else {
+                        symplectic_log("  → Failed to create term '{$keyword}': " . $term_id->get_error_message(), 'warning');
+                    }
+                }
+                
+                if (!empty($term_ids)) {
+                    update_field('areas_of_expertise', $term_ids, 'user_' . $wp_user_id);
+                    symplectic_log("  → Saved " . count($term_ids) . " area(s) of expertise", 'success');
+                }
+            } else {
+                symplectic_log("  → No keywords/expertise data found to save", 'warning');
+            }
         } else {
             symplectic_log("⚠️ No user data found in Symplectic response", 'warning');
         }
@@ -642,6 +725,21 @@ function process_single_user_symplectic($wp_user_id, $dry_run = true)
             symplectic_log("  ────────────────────────────────────", 'debug');
         } else {
             symplectic_log("  → No 'degrees' found in Symplectic response", 'warning');
+        }
+
+        // Preview keywords/expertise
+        if ($symplectic_user && !empty($symplectic_user['keywords'])) {
+            $keywords = $symplectic_user['keywords'];
+            symplectic_log("  → Would save " . count($keywords) . " area(s) of expertise:", 'debug');
+            symplectic_log("  ────────────────────────────────────", 'debug');
+            foreach ($keywords as $keyword) {
+                $existing = get_term_by('name', $keyword, 'area_of_expertise');
+                $status = $existing ? '(exists)' : '(new)';
+                symplectic_log("  • {$keyword} {$status}", 'info');
+            }
+            symplectic_log("  ────────────────────────────────────", 'debug');
+        } else {
+            symplectic_log("  → No keywords/expertise found in Symplectic response", 'warning');
         }
     }
 
@@ -1140,6 +1238,12 @@ function symplectic_dev_render_admin_page()
     // Count personnel users for stats
     $personnel_user_count = count(get_users(['role' => 'personnel_user', 'fields' => 'ID']));
 
+    // Count expertise terms for stats
+    $expertise_term_count = wp_count_terms(['taxonomy' => 'area_of_expertise', 'hide_empty' => false]);
+    if (is_wp_error($expertise_term_count)) {
+        $expertise_term_count = 0;
+    }
+
     // Main form display
 ?>
     <div class="wrap symplectic-dev-wrap">
@@ -1151,6 +1255,10 @@ function symplectic_dev_render_admin_page()
             <div class="stat-box">
                 <div class="stat-value"><?php echo esc_html($personnel_user_count); ?></div>
                 <div class="stat-label">Personnel Users</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value"><?php echo esc_html($expertise_term_count); ?></div>
+                <div class="stat-label">Expertise Terms</div>
             </div>
             <div class="stat-box">
                 <div class="stat-value"><?php echo defined('SYMPLECTIC_API_USERNAME') ? '✓' : '✗'; ?></div>
@@ -1278,7 +1386,13 @@ function symplectic_dev_render_admin_page()
                 <li><strong>Fetch College ID:</strong> Get the College ID from each user's ACF custom fields</li>
                 <li><strong>Query Personnel API:</strong> Use College ID to fetch user data including MyID from <code><?php echo esc_html(CAES_PERSONNEL_API_BASE); ?></code></li>
                 <li><strong>Query Symplectic API:</strong> Use MyID (as 'username' parameter) to fetch publication/research data from Symplectic Elements</li>
-                <li><strong>Save Data:</strong> Store relevant Symplectic data in WordPress user custom fields</li>
+                <li><strong>Save Data:</strong> Store relevant Symplectic data in WordPress user custom fields:
+                    <ul>
+                        <li>Overview → About field</li>
+                        <li>Degrees → Degrees repeater field</li>
+                        <li>Keywords → Areas of Expertise taxonomy</li>
+                    </ul>
+                </li>
             </ol>
         </div>
 
