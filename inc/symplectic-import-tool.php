@@ -155,7 +155,7 @@ function symplectic_display_error_summary($operation_name) {
  * @return array|WP_Error User data array on success, WP_Error on failure
  */
 function fetch_personnel_by_college_id($college_id) {
-    $api_url = CAES_PERSONNEL_API_BASE . '?returnContactInfoColumns=true&COLLEGEID=' . intval($college_id);
+    $api_url = CAES_PERSONNEL_API_BASE . '?returnContactInfoColumns=true&ignoreActiveStatus=true&COLLEGEID=' . intval($college_id);
     
     symplectic_log("📡 Querying CAES Personnel API: {$api_url}", 'debug');
     
