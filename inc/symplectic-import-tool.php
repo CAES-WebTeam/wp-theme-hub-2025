@@ -198,7 +198,7 @@ function fetch_symplectic_user($my_id, $detail = 'full') {
     
     // Build the API URL - searching by username (proprietary-id)
     $api_url = SYMPLECTIC_API_BASE . '/users';
-    $api_url .= '?query=username=%22' . $my_id . '%22&detail=full';
+    $api_url .= '?query=username=' . $my_id . '&detail=full';
 
 
     //  $username = sanitize_text_field($_POST['username']);
