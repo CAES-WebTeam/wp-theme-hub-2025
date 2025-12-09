@@ -198,7 +198,26 @@ function fetch_symplectic_user($my_id, $detail = 'full') {
     
     // Build the API URL - searching by username (proprietary-id)
     $api_url = SYMPLECTIC_API_BASE . '/users';
-    $api_url .= '?query=username%3D%22' . urlencode($my_id) . '%22&detail=' . urlencode($detail);
+    $api_url .= '?query=username=%22' . $my_id . '%22&detail=full';
+
+
+    //  $username = sanitize_text_field($_POST['username']);
+    
+    // if (empty($username)) {
+    //     wp_send_json_error('Username is required');
+    //     return;
+    // }
+    
+    // // Build the API URL
+
+    // // Test API base URL
+    // // $api_url = 'https://uga-test.elements.symplectic.org:8093/secure-api/v6.13/users';
+
+    // // Production API base URL
+    // $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users';
+
+    // // Final query URL
+    // $api_url .= '?query=username=%22' . urlencode($username) . '%22&detail=full';
     
     symplectic_log("📡 Querying Symplectic API: {$api_url}", 'debug');
     
