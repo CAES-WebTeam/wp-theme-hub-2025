@@ -1793,3 +1793,49 @@ CSS;
     echo '</form>';
     echo '</div>';
 }
+
+// Register 'area_of_expertise' taxonomy for users. 
+// This will be populated with info we pull from Elements and is not meant to be changed in WP admin.
+
+add_action('init', function () {
+    register_taxonomy('area_of_expertise', null, array(
+        'labels' => array(
+            'name'                       => 'Areas of Expertise',
+            'singular_name'              => 'Area of Expertise',
+            'menu_name'                  => 'Areas of Expertise',
+            'all_items'                  => 'All Areas of Expertise',
+            'edit_item'                  => 'Edit Area of Expertise',
+            'view_item'                  => 'View Area of Expertise',
+            'update_item'                => 'Update Area of Expertise',
+            'add_new_item'               => 'Add New Area of Expertise',
+            'new_item_name'              => 'New Area of Expertise Name',
+            'search_items'               => 'Search Areas of Expertise',
+            'popular_items'              => 'Popular Areas of Expertise',
+            'separate_items_with_commas' => 'Separate areas with commas',
+            'add_or_remove_items'        => 'Add or remove areas of expertise',
+            'choose_from_most_used'      => 'Choose from most used areas',
+            'not_found'                  => 'No areas of expertise found',
+            'no_terms'                   => 'No areas of expertise',
+            'back_to_items'              => '← Back to Areas of Expertise',
+        ),
+        'public'             => true,
+        'publicly_queryable' => true,
+        'show_ui'            => true,
+        'show_in_menu'       => true,
+        'show_in_nav_menus'  => true,
+        'show_in_rest'       => true,
+        'show_admin_column'  => true,
+        'hierarchical'       => false,
+        'rewrite'            => array(
+            'slug'         => 'expertise',
+            'with_front'   => false,
+            'hierarchical' => false,
+        ),
+        'capabilities' => array(
+            'manage_terms' => 'do_not_allow',
+            'edit_terms'   => 'do_not_allow',
+            'delete_terms' => 'do_not_allow',
+            'assign_terms' => 'edit_users',
+        ),
+    ));
+});
