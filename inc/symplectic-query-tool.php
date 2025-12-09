@@ -346,7 +346,8 @@ function symplectic_query_api_handler() {
     $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users';
 
     // Final query URL
-    $api_url .= '?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
+    // $api_url .= '?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
+    $api_url .= '?detail=ref';
     
     // Get credentials from wp-config.php constants
     $username = SYMPLECTIC_API_USERNAME;
