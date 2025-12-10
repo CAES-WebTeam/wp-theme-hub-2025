@@ -1,0 +1,29 @@
+/**
+ * Frontend styles for the User Expertise block.
+ */
+
+.wp-block-theme-user-expertise {
+	// Main wrapper inherits block gap from supports.
+
+	&__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--wp--preset--spacing--30, 0.75rem);
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	&__pill {
+		display: inline-block;
+		padding-block: 0;
+		padding-inline: var(--wp--preset--spacing--40, 1rem);
+		border-radius: 50rem;
+		font-size: 1.3rem;
+		line-height: 1.6;
+		margin: 0;
+
+		// Ensure text doesn't wrap within pills.
+		white-space: nowrap;
+	}
+}
