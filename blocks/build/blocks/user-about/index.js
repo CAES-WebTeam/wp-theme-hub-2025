@@ -184,7 +184,7 @@ module.exports = window["wp"]["i18n"];
   \******************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"theme/user-about","version":"1.0.0","title":"User About","category":"theme","icon":"id-alt","description":"Displays a user\'s about/biography text from their profile.","keywords":["about","user","biography","bio","profile"],"textdomain":"theme","attributes":{},"supports":{"html":false,"align":false,"color":{"text":true,"background":true,"link":true},"spacing":{"margin":true,"padding":true},"typography":{"fontSize":true,"lineHeight":true}},"usesContext":["postId","postType"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-about","version":"1.0.0","title":"User About","category":"theme","icon":"id-alt","description":"Displays a user\'s about/biography text from their profile.","keywords":["about","user","biography","bio","profile"],"textdomain":"theme","attributes":{},"supports":{"html":false,"align":false,"color":{"text":true,"background":true,"link":true},"spacing":{"margin":true,"padding":true},"typography":{"fontSize":true,"lineHeight":true}},"usesContext":["postId","postType"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 

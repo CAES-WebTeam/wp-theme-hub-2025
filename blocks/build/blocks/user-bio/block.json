@@ -3,10 +3,10 @@
   "apiVersion": 3,
   "name": "caes-hub/user-bio",
   "version": "0.1.0",
-  "title": "User Biography or Tagline",
+  "title": "User Tagline",
   "category": "theme",
   "icon": "admin-users",
-  "description": "Displays the user's biography or tagline.",
+  "description": "Displays the user's tagline.",
   "acf": {
     "mode": "preview",
     "renderTemplate": "./render.php"
