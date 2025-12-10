@@ -1,0 +1,27 @@
+/**
+ * Editor styles for the User About block.
+ */
+
+.wp-block-theme-user-about {
+
+	&__content {
+
+		> *:first-child {
+			margin-block-start: 0;
+		}
+
+		> *:last-child {
+			margin-block-end: 0;
+		}
+	}
+
+	&__notice {
+		margin-block-start: 1rem;
+		padding: 0.5rem 1rem;
+		background-color: #f0f0f0;
+		border-left: 4px solid #007cba;
+		font-size: 0.875rem;
+		color: #50575e;
+		font-style: italic;
+	}
+}
