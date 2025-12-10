@@ -164,12 +164,6 @@ export default function Edit( { attributes, setAttributes } ) {
 						</p>
 					) ) }
 				</div>
-				<p className="wp-block-caes-hub-user-education__notice">
-					{ __(
-						'Degrees will be loaded dynamically from the user profile.',
-						'theme'
-					) }
-				</p>
 			</div>
 		</>
 	);

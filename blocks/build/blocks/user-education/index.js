@@ -183,9 +183,6 @@ function Edit({
             children: [degree.degree_name, ", ", degree.field_of_study]
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("br", {}), degree.institution, ", ", degree.state, ", ", degree.country, " (", degree.year, ")"]
         }, index))
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
-        className: "wp-block-caes-hub-user-education__notice",
-        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Degrees will be loaded dynamically from the user profile.', 'theme')
       })]
     })]
   });
