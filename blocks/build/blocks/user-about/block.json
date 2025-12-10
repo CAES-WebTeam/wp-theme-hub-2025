@@ -49,6 +49,13 @@
     "typography": {
       "fontSize": true,
       "lineHeight": true
+    },
+    "layout": {
+      "default": {
+        "type": "flex",
+        "orientation": "vertical"
+      },
+      "allowEditing": false
     }
   },
   "usesContext": [
