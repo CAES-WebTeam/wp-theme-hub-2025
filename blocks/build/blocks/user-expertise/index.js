@@ -106,7 +106,7 @@ function Edit({
   // Sample expertise items for preview
   const sampleExpertise = [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Biochemistry', 'theme'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Cell Biology', 'theme'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Plant Biology', 'theme'), (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Genetics', 'theme')];
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
-    className: 'wp-block-theme-user-expertise'
+    className: 'wp-block-caes-hub-user-expertise'
   });
 
   // Build pill styles
@@ -116,7 +116,7 @@ function Edit({
   };
 
   // Build class names for pills
-  const pillClasses = ['wp-block-theme-user-expertise__pill', backgroundColor && !customBackgroundColor ? `has-${backgroundColor}-background-color` : '', textColor && !customTextColor ? `has-${textColor}-color` : '', backgroundColor || customBackgroundColor ? 'has-background' : '', textColor || customTextColor ? 'has-text-color' : ''].filter(Boolean).join(' ');
+  const pillClasses = ['wp-block-caes-hub-user-expertise__pill', backgroundColor && !customBackgroundColor ? `has-${backgroundColor}-background-color` : '', textColor && !customTextColor ? `has-${textColor}-color` : '', backgroundColor || customBackgroundColor ? 'has-background' : '', textColor || customTextColor ? 'has-text-color' : ''].filter(Boolean).join(' ');
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
     children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
@@ -145,7 +145,7 @@ function Edit({
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
       ...blockProps,
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-        className: "wp-block-theme-user-expertise__list",
+        className: "wp-block-caes-hub-user-expertise__list",
         children: sampleExpertise.map((item, index) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
           className: pillClasses,
           style: pillStyle,

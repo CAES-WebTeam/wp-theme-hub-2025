@@ -87,7 +87,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 	];
 
 	const blockProps = useBlockProps( {
-		className: 'wp-block-theme-user-expertise',
+		className: 'wp-block-caes-hub-user-expertise',
 	} );
 
 	// Build pill styles
@@ -98,7 +98,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 
 	// Build class names for pills
 	const pillClasses = [
-		'wp-block-theme-user-expertise__pill',
+		'wp-block-caes-hub-user-expertise__pill',
 		backgroundColor && ! customBackgroundColor
 			? `has-${ backgroundColor }-background-color`
 			: '',
@@ -144,7 +144,7 @@ export default function Edit( { attributes, setAttributes, context } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="wp-block-theme-user-expertise__list">
+				<div className="wp-block-caes-hub-user-expertise__list">
 					{ sampleExpertise.map( ( item, index ) => (
 						<span
 							key={ index }

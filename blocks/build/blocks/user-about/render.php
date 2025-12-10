@@ -60,13 +60,13 @@ if ( empty( $about_text ) ) {
 // Get wrapper attributes from block supports (includes color, typography, spacing).
 $wrapper_attributes = get_block_wrapper_attributes(
 	array(
-		'class' => 'wp-block-theme-user-about',
+		'class' => 'wp-block-caes-hub-user-about',
 	)
 );
 
 // Output the block.
 $output = '<div ' . $wrapper_attributes . '>';
-$output .= '<div class="wp-block-theme-user-about__content">';
+$output .= '<div class="wp-block-caes-hub-user-about__content">';
 $output .= wp_kses_post( $about_text );
 $output .= '</div>';
 $output .= '</div>';

@@ -69,7 +69,7 @@ if ( ! is_array( $expertise_terms ) ) {
 }
 
 // Build wrapper classes.
-$wrapper_classes = array( 'wp-block-theme-user-expertise' );
+$wrapper_classes = array( 'wp-block-caes-hub-user-expertise' );
 
 // Get wrapper attributes from block supports.
 $wrapper_attributes = get_block_wrapper_attributes(
@@ -79,7 +79,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
 );
 
 // Build pill classes.
-$pill_classes = array( 'wp-block-theme-user-expertise__pill' );
+$pill_classes = array( 'wp-block-caes-hub-user-expertise__pill' );
 
 if ( $background_color && ! $custom_background_color ) {
 	$pill_classes[] = 'has-' . $background_color . '-background-color';
@@ -108,7 +108,7 @@ $pill_style_string = ! empty( $pill_styles ) ? ' style="' . implode( ';', $pill_
 
 // Start output.
 $output = '<div ' . $wrapper_attributes . '>';
-$output .= '<ul class="wp-block-theme-user-expertise__list" role="list">';
+$output .= '<ul class="wp-block-caes-hub-user-expertise__list" role="list">';
 
 foreach ( $expertise_terms as $term ) {
 	// Handle both term objects and term IDs.
