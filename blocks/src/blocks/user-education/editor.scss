@@ -1,0 +1,30 @@
+/**
+ * Editor styles for the User Education block.
+ */
+
+.wp-block-caes-hub-user-education {
+
+	&__heading {
+		margin: 0;
+	}
+
+	&__list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--wp--preset--spacing--20, 0.5rem);
+	}
+
+	&__degree {
+		margin: 0;
+	}
+
+	&__notice {
+		margin: 0;
+		padding: 0.5rem 1rem;
+		background-color: #f0f0f0;
+		border-left: 4px solid #007cba;
+		font-size: 0.875rem;
+		color: #50575e;
+		font-style: italic;
+	}
+}

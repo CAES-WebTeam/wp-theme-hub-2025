@@ -1,0 +1,60 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/user-education",
+	"version": "1.0.0",
+	"title": "User Education",
+	"category": "theme",
+	"icon": "welcome-learn-more",
+	"description": "Displays a user's academic degrees and credentials.",
+	"keywords": ["education", "user", "degrees", "credentials", "profile"],
+	"textdomain": "theme",
+	"attributes": {
+		"headingText": {
+			"type": "string",
+			"default": ""
+		},
+		"headingLevel": {
+			"type": "string",
+			"default": "h2"
+		},
+		"headingFontSize": {
+			"type": "string",
+			"default": ""
+		},
+		"headingFontFamily": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": false,
+		"color": {
+			"text": true,
+			"background": true,
+			"link": true
+		},
+		"spacing": {
+			"margin": true,
+			"padding": true,
+			"blockGap": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true
+		},
+		"layout": {
+			"default": {
+				"type": "flex",
+				"orientation": "vertical"
+			},
+			"allowEditing": false
+		}
+	},
+	"usesContext": ["postId", "postType"],
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
