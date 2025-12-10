@@ -8,6 +8,12 @@
  * @return string  Rendered block HTML.
  */
 
+// Get heading attributes.
+$heading_text        = $attributes['headingText'] ?? '';
+$heading_level       = $attributes['headingLevel'] ?? 'h2';
+$heading_font_size   = $attributes['headingFontSize'] ?? '';
+$heading_font_family = $attributes['headingFontFamily'] ?? '';
+
 /**
  * Get the user ID.
  *
@@ -57,6 +63,29 @@ if ( empty( $about_text ) ) {
 	return '';
 }
 
+// Build heading classes and styles.
+$heading_classes = array( 'wp-block-caes-hub-user-about__heading' );
+
+if ( $heading_font_family ) {
+	$heading_classes[] = 'has-' . $heading_font_family . '-font-family';
+}
+
+$heading_class_string = implode( ' ', $heading_classes );
+
+$heading_styles = array();
+
+if ( $heading_font_size ) {
+	$heading_styles[] = 'font-size:' . esc_attr( $heading_font_size );
+}
+
+$heading_style_string = ! empty( $heading_styles ) ? ' style="' . implode( ';', $heading_styles ) . '"' : '';
+
+// Validate heading level.
+$allowed_tags = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p' );
+if ( ! in_array( $heading_level, $allowed_tags, true ) ) {
+	$heading_level = 'h2';
+}
+
 // Get wrapper attributes from block supports (includes color, typography, spacing).
 $wrapper_attributes = get_block_wrapper_attributes(
 	array(
@@ -66,6 +95,14 @@ $wrapper_attributes = get_block_wrapper_attributes(
 
 // Output the block.
 $output = '<div ' . $wrapper_attributes . '>';
+
+// Output heading if text is provided.
+if ( ! empty( $heading_text ) ) {
+	$output .= '<' . $heading_level . ' class="' . esc_attr( $heading_class_string ) . '"' . $heading_style_string . '>';
+	$output .= esc_html( $heading_text );
+	$output .= '</' . $heading_level . '>';
+}
+
 $output .= '<div class="wp-block-caes-hub-user-about__content">';
 $output .= wp_kses_post( $about_text );
 $output .= '</div>';

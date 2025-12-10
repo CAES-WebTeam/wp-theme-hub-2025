@@ -3,6 +3,13 @@
  */
 
 .wp-block-caes-hub-user-about {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wp--style--block-gap, 0.75rem);
+
+	&__heading {
+		margin: 0;
+	}
 
 	&__content {
 
