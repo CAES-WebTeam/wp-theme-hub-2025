@@ -155,12 +155,6 @@ export default function Edit( { attributes, setAttributes, context } ) {
 						</span>
 					) ) }
 				</div>
-				<p className="wp-block-theme-user-expertise__notice">
-					{ __(
-						'Expertise areas will be loaded dynamically from the user profile.',
-						'theme'
-					) }
-				</p>
 			</div>
 		</>
 	);
