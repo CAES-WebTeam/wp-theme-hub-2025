@@ -63,7 +63,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/user-about/style.scss");
 /* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/user-about/edit.js");
-Object(function webpackMissingModule() { var e = new Error("Cannot find module './save'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+/* harmony import */ var _save__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./save */ "./src/blocks/user-about/save.js");
 /* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./block.json */ "./src/blocks/user-about/block.json");
 /**
  * Registers a new block provided a unique name and an object defining its behavior.
@@ -98,8 +98,31 @@ Object(function webpackMissingModule() { var e = new Error("Cannot find module '
    * @see ./edit.js
    */
   edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"],
-  save: Object(function webpackMissingModule() { var e = new Error("Cannot find module './save'"); e.code = 'MODULE_NOT_FOUND'; throw e; }())
+  save: _save__WEBPACK_IMPORTED_MODULE_3__["default"]
 });
+
+/***/ }),
+
+/***/ "./src/blocks/user-about/save.js":
+/*!***************************************!*\
+  !*** ./src/blocks/user-about/save.js ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ save)
+/* harmony export */ });
+/**
+ * Save function for the User About block.
+ *
+ * Returns null because this is a dynamic block rendered via PHP.
+ *
+ * @return {null} Null - rendered dynamically.
+ */
+function save() {
+  return null;
+}
 
 /***/ }),
 
