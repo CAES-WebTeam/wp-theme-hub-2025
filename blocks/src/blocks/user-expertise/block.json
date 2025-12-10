@@ -23,6 +23,22 @@
 		},
 		"customTextColor": {
 			"type": "string"
+		},
+		"headingText": {
+			"type": "string",
+			"default": ""
+		},
+		"headingLevel": {
+			"type": "string",
+			"default": "h2"
+		},
+		"headingFontSize": {
+			"type": "string",
+			"default": ""
+		},
+		"headingFontFamily": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {

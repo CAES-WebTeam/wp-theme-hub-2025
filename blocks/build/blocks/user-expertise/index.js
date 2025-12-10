@@ -49,17 +49,29 @@ function Edit({
     backgroundColor,
     textColor,
     customBackgroundColor,
-    customTextColor
+    customTextColor,
+    headingText,
+    headingLevel,
+    headingFontSize,
+    headingFontFamily
   } = attributes;
   const {
     postId,
     postType
   } = context;
 
-  // Get theme color palette
-  const colors = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => {
+  // Get theme color palette and font settings
+  const {
+    colors,
+    fontSizes,
+    fontFamilies
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_3__.useSelect)(select => {
     const settings = select('core/block-editor').getSettings();
-    return settings.colors || [];
+    return {
+      colors: settings.colors || [],
+      fontSizes: settings.fontSizes || [],
+      fontFamilies: settings.__experimentalFontFamilies?.theme || []
+    };
   }, []);
 
   // Find the color object for named colors
@@ -117,11 +129,96 @@ function Edit({
 
   // Build class names for pills
   const pillClasses = ['wp-block-caes-hub-user-expertise__pill', backgroundColor && !customBackgroundColor ? `has-${backgroundColor}-background-color` : '', textColor && !customTextColor ? `has-${textColor}-color` : '', backgroundColor || customBackgroundColor ? 'has-background' : '', textColor || customTextColor ? 'has-text-color' : ''].filter(Boolean).join(' ');
+
+  // Heading level options
+  const headingLevelOptions = [{
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading 1', 'theme'),
+    value: 'h1'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading 2', 'theme'),
+    value: 'h2'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading 3', 'theme'),
+    value: 'h3'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading 4', 'theme'),
+    value: 'h4'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading 5', 'theme'),
+    value: 'h5'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading 6', 'theme'),
+    value: 'h6'
+  }, {
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Paragraph', 'theme'),
+    value: 'p'
+  }];
+
+  // Build font family options from theme settings
+  const fontFamilyOptions = [{
+    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Default', 'theme'),
+    value: ''
+  }, ...fontFamilies.map(font => ({
+    label: font.name,
+    value: font.slug
+  }))];
+
+  // Get font family CSS value
+  const getFontFamilyStyle = slug => {
+    if (!slug) return undefined;
+    const font = fontFamilies.find(f => f.slug === slug);
+    return font ? font.fontFamily : undefined;
+  };
+
+  // Build heading styles
+  const headingStyle = {
+    fontSize: headingFontSize || undefined,
+    fontFamily: getFontFamilyStyle(headingFontFamily)
+  };
+
+  // Build heading class
+  const headingClasses = ['wp-block-caes-hub-user-expertise__heading', headingFontFamily ? `has-${headingFontFamily}-font-family` : ''].filter(Boolean).join(' ');
+
+  // Render heading element
+  const HeadingTag = headingLevel || 'h2';
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Color Settings', 'theme'),
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading Settings', 'theme'),
         initialOpen: true,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading Text', 'theme'),
+          value: headingText,
+          onChange: value => setAttributes({
+            headingText: value
+          }),
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Enter heading text…', 'theme')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Heading Level', 'theme'),
+          value: headingLevel,
+          options: headingLevelOptions,
+          onChange: value => setAttributes({
+            headingLevel: value
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FontSizePicker, {
+          fontSizes: fontSizes,
+          value: headingFontSize,
+          onChange: value => setAttributes({
+            headingFontSize: value
+          }),
+          fallbackFontSize: 20,
+          withSlider: true
+        }), fontFamilies.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Font Family', 'theme'),
+          value: headingFontFamily,
+          options: fontFamilyOptions,
+          onChange: value => setAttributes({
+            headingFontFamily: value
+          })
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Pill Color Settings', 'theme'),
+        initialOpen: false,
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.BaseControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Background Color', 'theme'),
           id: "expertise-bg-color",
@@ -141,17 +238,21 @@ function Edit({
             clearable: true
           })
         })]
-      })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
       ...blockProps,
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+      children: [headingText && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(HeadingTag, {
+        className: headingClasses,
+        style: headingStyle,
+        children: headingText
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
         className: "wp-block-caes-hub-user-expertise__list",
         children: sampleExpertise.map((item, index) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
           className: pillClasses,
           style: pillStyle,
           children: item
         }, index))
-      })
+      })]
     })]
   });
 }
@@ -310,7 +411,7 @@ module.exports = window["wp"]["i18n"];
   \**********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-expertise","version":"1.0.0","title":"User Expertise","category":"theme","icon":"awards","description":"Displays a user\'s areas of expertise as styled pills.","keywords":["expertise","user","taxonomy","skills"],"textdomain":"theme","attributes":{"backgroundColor":{"type":"string","default":"hedges"},"textColor":{"type":"string","default":""},"customBackgroundColor":{"type":"string"},"customTextColor":{"type":"string"}},"supports":{"html":false,"align":false,"spacing":{"margin":true,"padding":false,"blockGap":true},"typography":{"fontSize":true,"lineHeight":false}},"usesContext":["postId","postType"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/user-expertise","version":"1.0.0","title":"User Expertise","category":"theme","icon":"awards","description":"Displays a user\'s areas of expertise as styled pills.","keywords":["expertise","user","taxonomy","skills"],"textdomain":"theme","attributes":{"backgroundColor":{"type":"string","default":"hedges"},"textColor":{"type":"string","default":""},"customBackgroundColor":{"type":"string"},"customTextColor":{"type":"string"},"headingText":{"type":"string","default":""},"headingLevel":{"type":"string","default":"h2"},"headingFontSize":{"type":"string","default":""},"headingFontFamily":{"type":"string","default":""}},"supports":{"html":false,"align":false,"spacing":{"margin":true,"padding":false,"blockGap":true},"typography":{"fontSize":true,"lineHeight":false}},"usesContext":["postId","postType"],"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
 
 /***/ })
 

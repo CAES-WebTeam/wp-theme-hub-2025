@@ -13,6 +13,10 @@ $background_color        = $attributes['backgroundColor'] ?? 'hedges';
 $text_color              = $attributes['textColor'] ?? '';
 $custom_background_color = $attributes['customBackgroundColor'] ?? '';
 $custom_text_color       = $attributes['customTextColor'] ?? '';
+$heading_text            = $attributes['headingText'] ?? '';
+$heading_level           = $attributes['headingLevel'] ?? 'h2';
+$heading_font_size       = $attributes['headingFontSize'] ?? '';
+$heading_font_family     = $attributes['headingFontFamily'] ?? '';
 
 /**
  * Get the user ID.
@@ -106,8 +110,39 @@ if ( $custom_text_color ) {
 
 $pill_style_string = ! empty( $pill_styles ) ? ' style="' . implode( ';', $pill_styles ) . '"' : '';
 
+// Build heading classes and styles.
+$heading_classes = array( 'wp-block-caes-hub-user-expertise__heading' );
+
+if ( $heading_font_family ) {
+	$heading_classes[] = 'has-' . $heading_font_family . '-font-family';
+}
+
+$heading_class_string = implode( ' ', $heading_classes );
+
+$heading_styles = array();
+
+if ( $heading_font_size ) {
+	$heading_styles[] = 'font-size:' . esc_attr( $heading_font_size );
+}
+
+$heading_style_string = ! empty( $heading_styles ) ? ' style="' . implode( ';', $heading_styles ) . '"' : '';
+
+// Validate heading level.
+$allowed_tags = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p' );
+if ( ! in_array( $heading_level, $allowed_tags, true ) ) {
+	$heading_level = 'h2';
+}
+
 // Start output.
 $output = '<div ' . $wrapper_attributes . '>';
+
+// Output heading if text is provided.
+if ( ! empty( $heading_text ) ) {
+	$output .= '<' . $heading_level . ' class="' . esc_attr( $heading_class_string ) . '"' . $heading_style_string . '>';
+	$output .= esc_html( $heading_text );
+	$output .= '</' . $heading_level . '>';
+}
+
 $output .= '<ul class="wp-block-caes-hub-user-expertise__list" role="list">';
 
 foreach ( $expertise_terms as $term ) {
