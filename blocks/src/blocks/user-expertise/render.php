@@ -121,7 +121,8 @@ foreach ( $expertise_terms as $term ) {
 		continue;
 	}
 
-	$term_name = esc_html( $term->name );
+	// Strip leading 4-digit code and space (e.g., "0703 Crop Production" → "Crop Production").
+	$term_name = esc_html( preg_replace( '/^\d{4}\s+/', '', $term->name ) );
 	$term_link = get_term_link( $term, 'area_of_expertise' );
 
 	// If term links are desired, wrap in anchor. Otherwise just use span.
