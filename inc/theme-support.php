@@ -928,7 +928,7 @@ add_filter( 'allowed_block_types_all', 'caes_hide_gallery_blocks_from_inserter',
 // Add 'notes' support to ACF post types
 function add_notes_support_to_acf_post_types() {
     // Add your ACF post type slugs here
-    $post_types = array( 'publication', 'event', 'profile' );
+    $post_types = array( 'publications' );
 
     foreach ( $post_types as $post_type ) {
         $supports        = get_all_post_type_supports( $post_type );
