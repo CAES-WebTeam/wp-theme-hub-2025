@@ -924,3 +924,27 @@ function caes_hide_gallery_blocks_from_inserter( $allowed_block_types, $block_ed
     return $filtered_blocks;
 }
 add_filter( 'allowed_block_types_all', 'caes_hide_gallery_blocks_from_inserter', 10, 2 );
+
+
+// Add 'notes' support to ACF post types
+function add_notes_support_to_acf_post_types() {
+    // Add your ACF post type slugs here
+    $post_types = array( 'publications' );
+
+    foreach ( $post_types as $post_type ) {
+        $supports        = get_all_post_type_supports( $post_type );
+        $editor_supports = array( 'notes' => true );
+
+        if ( 
+            isset( $supports['editor'] ) &&
+            is_array( $supports['editor'] ) && 
+            isset( $supports['editor'][0] ) && 
+            is_array( $supports['editor'][0] ) 
+        ) {
+            $editor_supports = array_merge( $editor_supports, $supports['editor'][0] );
+        }
+
+        add_post_type_support( $post_type, 'editor', $editor_supports );
+    }
+}
+add_action( 'init', 'add_notes_support_to_acf_post_types', 20 );
