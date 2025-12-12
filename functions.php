@@ -47,3 +47,33 @@ require get_template_directory() . '/inc/pub-sunset-tool.php';
 // Plugin overrides
 require get_template_directory() . '/inc/plugin-overrides/relevanssi-search.php';
 require get_template_directory() . '/inc/plugin-overrides/yoast-schema.php';
+
+/**
+ * Log wp_mail failures
+ */
+add_action('wp_mail_failed', function($wp_error) {
+    $log_entry = date('[Y-m-d H:i:s]') . ' wp_mail FAILED: ' . $wp_error->get_error_message() . "\n";
+    $log_entry .= 'Error Data: ' . print_r($wp_error->get_error_data(), true) . "\n";
+    error_log($log_entry);
+}, 10, 1);
+
+/**
+ * Log all wp_mail attempts (optional - can be verbose)
+ */
+add_filter('wp_mail', function($args) {
+    $log_entry = date('[Y-m-d H:i:s]') . " wp_mail ATTEMPT\n";
+    $log_entry .= 'To: ' . (is_array($args['to']) ? implode(', ', $args['to']) : $args['to']) . "\n";
+    $log_entry .= 'Subject: ' . $args['subject'] . "\n";
+    error_log($log_entry);
+    return $args;
+}, 10, 1);
+
+/**
+ * Capture PHPMailer errors directly
+ */
+add_action('phpmailer_init', function($phpmailer) {
+    $phpmailer->SMTPDebug = 0; // Set to 2 or 3 for verbose SMTP logging (careful on production)
+    $phpmailer->Debugoutput = function($str, $level) {
+        error_log("PHPMailer [{$level}]: {$str}");
+    };
+}, 10, 1);
