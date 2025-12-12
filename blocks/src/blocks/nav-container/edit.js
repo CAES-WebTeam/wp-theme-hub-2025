@@ -16,12 +16,6 @@ export default function Edit({ attributes, setAttributes, clientId }) {
         [clientId]
     );
 
-    // Debug: Log inner blocks
-    useEffect(() => {
-        console.log('Navigation Inner blocks:', innerBlocks);
-        console.log('Client ID:', clientId);
-    }, [innerBlocks, clientId]);
-
     // Generate unique block ID if not set
     useEffect(() => {
         if (!blockId) {

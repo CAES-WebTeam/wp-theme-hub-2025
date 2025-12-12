@@ -50,12 +50,6 @@ function Edit({
     return getBlocks(clientId);
   }, [clientId]);
 
-  // Debug: Log inner blocks
-  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useEffect)(() => {
-    console.log('Navigation Inner blocks:', innerBlocks);
-    console.log('Client ID:', clientId);
-  }, [innerBlocks, clientId]);
-
   // Generate unique block ID if not set
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_4__.useEffect)(() => {
     if (!blockId) {

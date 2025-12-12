@@ -30,7 +30,7 @@ function Edit({
     className: 'submenu show',
     // Show in editor for visibility
     id: flyoutId,
-    'aria-label': sprintf((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('%s submenu', 'caes-hub'), parentNavItem)
+    'aria-label': (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.sprintf)((0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('%s submenu', 'caes-hub'), parentNavItem)
   });
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
     ...blockProps,
