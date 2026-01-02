@@ -91,6 +91,9 @@ function push_custom_data_layer()
     // Always include post type
     $data_layer['post_type'] = $post_type;
 
+    // Include publish date in 'Y-m-d' format
+    $data_layer['publish_date'] = get_the_date('Y-m-d', $post->ID);
+
     // Helper function to get term slugs as pipe-delimited string
     $get_term_slugs = function ($taxonomy, $post_id) {
         $terms = get_the_terms($post_id, $taxonomy);
