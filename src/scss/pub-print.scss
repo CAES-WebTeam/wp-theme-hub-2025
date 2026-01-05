@@ -1,4 +1,18 @@
 @media print {
+
+  // =====================================================
+  // FOOTER BASIC
+  // =====================================================
+  // Page setup with margins for footer space
+  @page {
+    margin-bottom: 60px;
+
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 0.8rem;
+    }
+  }
+
   .single-publications {
 
     // =====================================================
@@ -100,19 +114,6 @@
       span {
         display: block;
         margin-top: 10px;
-      }
-    }
-
-    // =====================================================
-    // FOOTER BASIC
-    // =====================================================
-    // Page setup with margins for footer space
-    @page {
-      margin-bottom: 60px;
-
-      @bottom-center {
-        content: "Page " counter(page) " of " counter(pages);
-        font-size: 0.8rem;
       }
     }
 
