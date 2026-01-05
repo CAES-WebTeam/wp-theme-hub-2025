@@ -947,3 +947,28 @@ function add_notes_support_to_acf_post_types() {
     }
 }
 add_action( 'init', 'add_notes_support_to_acf_post_types', 20 );
+
+/**
+ * Allow .xlsm (Excel Macro-Enabled Workbook) uploads
+ * Restricted to users with upload_files capability
+ */
+add_filter('upload_mimes', function($mimes) {
+    if (current_user_can('upload_files')) {
+        $mimes['xlsm'] = 'application/vnd.ms-excel.sheet.macroEnabled.12';
+    }
+    return $mimes;
+});
+
+/**
+ * Ensure WordPress correctly identifies .xlsm files
+ */
+add_filter('wp_check_filetype_and_ext', function($data, $file, $filename, $mimes) {
+    if (empty($data['ext']) || empty($data['type'])) {
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if ($ext === 'xlsm') {
+            $data['ext'] = 'xlsm';
+            $data['type'] = 'application/vnd.ms-excel.sheet.macroEnabled.12';
+        }
+    }
+    return $data;
+}, 10, 4);
