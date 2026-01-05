@@ -1252,3 +1252,128 @@ function caes_add_page_number_to_title_block($block_content, $block) {
     return $block_content;
 }
 add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
+
+// Print styles for publications - this is for dynamic data that can't be handled in static CSS
+add_action('wp_head', function() {
+  if (is_singular('publications')) {
+    $type = get_field('publication_type');
+    $number = get_field('circular_number');
+    $title = get_the_title();
+    ?>
+    <style>
+    @media print {
+      @page {
+        @bottom-left {
+          content: "UGA Cooperative Extension <?php echo esc_attr($type); ?> <?php echo esc_attr($number); ?> | <?php echo esc_attr($title); ?>";
+        }
+      }
+    }
+    </style>
+    <?php
+  }
+});
+
+/**
+ * Add print CSS with dynamic footer for publications
+ */
+
+function normalize_hyphens_for_pdf($content)
+{
+    $replacements = [
+        "\u{2010}" => '-', // Hyphen
+        "\u{2013}" => '-', // En Dash (replaces 'ÃƒÂ¢Ã¢â€šÂ¬')
+        "\u{2014}" => '-', // Em Dash (replaces 'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬')
+    ];
+    $content = str_replace(array_keys($replacements), array_values($replacements), $content);
+    return $content;
+}
+
+function format_publication_number_for_display($publication_number)
+{
+    $originalPubNumber = $publication_number;
+    $displayPubNumber = $originalPubNumber;
+    $pubType = '';
+
+    if ($originalPubNumber) {
+        $prefix = strtoupper(substr($originalPubNumber, 0, 2));
+        $firstChar = strtoupper(substr($originalPubNumber, 0, 1));
+
+        switch ($prefix) {
+            case 'AP':
+                $pubType = 'Annual Publication';
+                $displayPubNumber = substr($originalPubNumber, 2);
+                break;
+            case 'TP':
+                $pubType = 'Temporary Publication';
+                $displayPubNumber = substr($originalPubNumber, 2);
+                break;
+            default:
+                switch ($firstChar) {
+                    case 'B':
+                        $pubType = 'Bulletin';
+                        $displayPubNumber = substr($originalPubNumber, 1);
+                        break;
+                    case 'C':
+                        $pubType = 'Circular';
+                        $displayPubNumber = substr($originalPubNumber, 1);
+                        break;
+                    default:
+                        $pubType = 'Publication';
+                        break;
+                }
+                break;
+        }
+    }
+
+    $displayPubNumber = trim($displayPubNumber);
+    $formatted_pub_number_string = '';
+    if (!empty($pubType) && !empty($displayPubNumber)) {
+        $formatted_pub_number_string = $pubType . ' ' . $displayPubNumber;
+    } elseif (!empty($displayPubNumber)) {
+        $formatted_pub_number_string = $displayPubNumber;
+    }
+
+    return $formatted_pub_number_string;
+}
+
+add_action('wp_head', function() {
+    if (!is_singular('publications')) {
+        return;
+    }
+
+    $post_id = get_the_ID();
+    $publication_number = get_field('publication_number', $post_id);
+    $publication_title = get_the_title();
+    $subtitle = get_post_meta($post_id, 'subtitle', true);
+    
+    if (!empty($subtitle)) {
+        $publication_title .= ': ' . $subtitle;
+    }
+
+    $formatted_pub_number = format_publication_number_for_display($publication_number);
+    $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
+    ?>
+    <style>
+    @media print {
+        @page {
+            size: 8.5in 11in;
+            margin: 0.5in 0.5in 0.75in 0.5in;
+
+            @bottom-left {
+                content: "<?php echo $footer_text; ?>";
+                font-size: 10px;
+                font-family: Georgia, serif;
+            }
+
+            @bottom-right {
+                content: counter(page);
+                font-size: 10px;
+                font-family: Georgia, serif;
+            }
+        }
+    }
+    </style>
+    <?php
+});
+
+/* End print CSS with dynamic footer for publications */

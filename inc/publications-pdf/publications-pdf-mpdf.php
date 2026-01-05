@@ -9,68 +9,6 @@ require_once get_template_directory() . '/vendor/autoload.php';
 use Mpdf\Mpdf;
 use Mpdf\HTMLParserMode;
 
-// Reuse your existing helper functions (these don't need TCPDF)
-// Keep: normalize_hyphens_for_pdf, format_publication_number_for_display, get_latest_published_date
-
-function normalize_hyphens_for_pdf($content)
-{
-    $replacements = [
-        "\u{2010}" => '-', // Hyphen
-        "\u{2013}" => '-', // En Dash (replaces 'ÃƒÂ¢Ã¢â€šÂ¬')
-        "\u{2014}" => '-', // Em Dash (replaces 'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬')
-    ];
-    $content = str_replace(array_keys($replacements), array_values($replacements), $content);
-    return $content;
-}
-
-function format_publication_number_for_display($publication_number)
-{
-    $originalPubNumber = $publication_number;
-    $displayPubNumber = $originalPubNumber;
-    $pubType = '';
-
-    if ($originalPubNumber) {
-        $prefix = strtoupper(substr($originalPubNumber, 0, 2));
-        $firstChar = strtoupper(substr($originalPubNumber, 0, 1));
-
-        switch ($prefix) {
-            case 'AP':
-                $pubType = 'Annual Publication';
-                $displayPubNumber = substr($originalPubNumber, 2);
-                break;
-            case 'TP':
-                $pubType = 'Temporary Publication';
-                $displayPubNumber = substr($originalPubNumber, 2);
-                break;
-            default:
-                switch ($firstChar) {
-                    case 'B':
-                        $pubType = 'Bulletin';
-                        $displayPubNumber = substr($originalPubNumber, 1);
-                        break;
-                    case 'C':
-                        $pubType = 'Circular';
-                        $displayPubNumber = substr($originalPubNumber, 1);
-                        break;
-                    default:
-                        $pubType = 'Publication';
-                        break;
-                }
-                break;
-        }
-    }
-
-    $displayPubNumber = trim($displayPubNumber);
-    $formatted_pub_number_string = '';
-    if (!empty($pubType) && !empty($displayPubNumber)) {
-        $formatted_pub_number_string = $pubType . ' ' . $displayPubNumber;
-    } elseif (!empty($displayPubNumber)) {
-        $formatted_pub_number_string = $displayPubNumber;
-    }
-
-    return $formatted_pub_number_string;
-}
-
 function get_latest_published_date($post_id)
 {
     $history = get_field('history', $post_id);
