@@ -6,6 +6,7 @@
     // =====================================================
     .wp-block-columns.caes-hub-pub-columns {
       flex-direction: column !important;
+
       .wp-block-column {
         flex-basis: 100% !important;
       }
@@ -99,6 +100,19 @@
       span {
         display: block;
         margin-top: 10px;
+      }
+    }
+
+    // =====================================================
+    // FOOTER BASIC
+    // =====================================================
+    // Page setup with margins for footer space
+    @page {
+      margin-bottom: 60px;
+
+      @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 0.8rem;
       }
     }
 
