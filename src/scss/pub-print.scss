@@ -5,10 +5,11 @@
   // =====================================================
   // Page setup with margins for footer space
   @page {
-    margin-bottom: 60px;
+    size: 8.5in 9in;
+    margin-bottom: 4in;
 
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
+    @bottom-right {
+      content: counter(page);
       font-size: 0.8rem;
     }
   }
