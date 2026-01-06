@@ -17,92 +17,92 @@
         flex-basis: 100% !important;
       }
     }
+    
+    // // =====================================================
+    // // COVER PAGE - FEATURED IMAGE
+    // // =====================================================
+    // .caes-hub-main-bg {
+    //   display: block !important;
+    //   position: relative !important; // Override the global reset for this element
+    //   width: 100%;
+    //   height: 5in; // Fixed unit instead of vh
+    //   margin: 0;
+    //   padding: 0;
+    //   overflow: hidden;
+    //   page-break-inside: avoid;
 
-    // =====================================================
-    // COVER PAGE - FEATURED IMAGE
-    // =====================================================
-    .caes-hub-main-bg {
-      display: block !important;
-      position: relative !important; // Override the global reset for this element
-      width: 100%;
-      height: 5in; // Fixed unit instead of vh
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      page-break-inside: avoid;
+    //   .caes-hub-main-bg-f-img {
+    //     width: 100%;
+    //     height: 100%;
 
-      .caes-hub-main-bg-f-img {
-        width: 100%;
-        height: 100%;
+    //     img {
+    //       filter: none;
+    //       transform: none;
+    //       width: 100%;
+    //       height: 100%;
+    //       object-fit: cover;
+    //       object-position: center;
+    //     }
+    //   }
+    // }
 
-        img {
-          filter: none;
-          transform: none;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center;
-        }
-      }
-    }
+    // // =====================================================
+    // // COVER PAGE - CONTENT AREA
+    // // =====================================================
+    // .caes-hub-content-meta-wrap {
+    //   page-break-after: always;
+    //   page-break-inside: avoid;
+    //   padding: 30px 0;
+    // }
 
-    // =====================================================
-    // COVER PAGE - CONTENT AREA
-    // =====================================================
-    .caes-hub-content-meta-wrap {
-      page-break-after: always;
-      page-break-inside: avoid;
-      padding: 30px 0;
-    }
+    // // =====================================================
+    // // HIDDEN ELEMENTS (web-only)
+    // // =====================================================
+    // .breadcrumb-navigation,
+    // .taxonomy-topics,
+    // .taxonomy-publication_series,
+    // .wp-block-post-terms,
+    // .wp-block-spacer[aria-hidden="true"],
+    // .wp-block-caes-hub-page-select,
+    // .caes-hub-content-bottom-meta,
+    // hr {
+    //   display: none !important;
+    // }
 
-    // =====================================================
-    // HIDDEN ELEMENTS (web-only)
-    // =====================================================
-    .breadcrumb-navigation,
-    .taxonomy-topics,
-    .taxonomy-publication_series,
-    .wp-block-post-terms,
-    .wp-block-spacer[aria-hidden="true"],
-    .wp-block-caes-hub-page-select,
-    .caes-hub-content-bottom-meta,
-    hr {
-      display: none !important;
-    }
+    // // =====================================================
+    // // COVER PAGE - EXTENSION LOGO
+    // // =====================================================
+    // .caes-hub-content-meta {
+    //   text-align: center;
 
-    // =====================================================
-    // COVER PAGE - EXTENSION LOGO
-    // =====================================================
-    .caes-hub-content-meta {
-      text-align: center;
+    //   .caes-hub-content-brand {
+    //     margin-bottom: 20px;
 
-      .caes-hub-content-brand {
-        margin-bottom: 20px;
+    //     .caes-hub-content-logo {
+    //       width: 200px;
+    //       height: auto;
+    //       display: block;
+    //       margin: 0 auto;
+    //     }
+    //   }
+    // }
 
-        .caes-hub-content-logo {
-          width: 200px;
-          height: auto;
-          display: block;
-          margin: 0 auto;
-        }
-      }
-    }
+    // // =====================================================
+    // // COVER PAGE - TITLE
+    // // =====================================================
+    // .wp-block-post-title,
+    // h1.wp-block-post-title {
+    //   font-size: 32px !important;
+    //   font-weight: bold !important;
+    //   line-height: 1.2 !important;
+    //   margin: 20px 0 !important;
+    //   text-align: left !important;
+    //   page-break-after: avoid;
 
-    // =====================================================
-    // COVER PAGE - TITLE
-    // =====================================================
-    .wp-block-post-title,
-    h1.wp-block-post-title {
-      font-size: 32px !important;
-      font-weight: bold !important;
-      line-height: 1.2 !important;
-      margin: 20px 0 !important;
-      text-align: left !important;
-      page-break-after: avoid;
-
-      span {
-        display: block;
-        margin-top: 10px;
-      }
-    }
+    //   span {
+    //     display: block;
+    //     margin-top: 10px;
+    //   }
+    // }
   }
 }
