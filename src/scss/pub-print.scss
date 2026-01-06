@@ -1,4 +1,21 @@
 @media print {
+  * {
+    position: static !important;
+    float: none !important;
+  }
+  
+  body, html {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .caes-hub-main-bg {
+    height: auto !important;
+    max-height: 5in;
+  }
+}
+
+@media print {
 
   // =====================================================
   // FOOTER BASIC
