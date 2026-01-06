@@ -1253,26 +1253,6 @@ function caes_add_page_number_to_title_block($block_content, $block) {
 }
 add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
 
-// Print styles for publications - this is for dynamic data that can't be handled in static CSS
-add_action('wp_head', function() {
-  if (is_singular('publications')) {
-    $type = get_field('publication_type');
-    $number = get_field('circular_number');
-    $title = get_the_title();
-    ?>
-    <style>
-    @media print {
-      @page {
-        @bottom-left {
-          content: "UGA Cooperative Extension <?php echo esc_attr($type); ?> <?php echo esc_attr($number); ?> | <?php echo esc_attr($title); ?>";
-        }
-      }
-    }
-    </style>
-    <?php
-  }
-});
-
 /**
  * Add print CSS with dynamic footer for publications
  */
