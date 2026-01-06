@@ -284,7 +284,6 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
                 }
             }
         }
-
     }
 
     $pub_id = get_field('publication_id', $post_id);
@@ -977,7 +976,8 @@ function update_flat_author_ids_meta($post_id)
  * This version reads directly from the $_POST data to get the incoming values
  * before they are saved to the database, making it reliable and portable.
  */
-function update_latest_revision_date_on_save($post_id) {
+function update_latest_revision_date_on_save($post_id)
+{
     // Only run for our post type and not on autosaves
     if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
         return;
@@ -1036,7 +1036,8 @@ add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 /**
  * When a publication is saved, calculate and store the latest "Published" date.
  */
-function update_latest_publish_date_on_save($post_id) {
+function update_latest_publish_date_on_save($post_id)
+{
     // Only run for publications and not on autosaves
     if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
         return;
@@ -1094,18 +1095,19 @@ add_action('acf/save_post', 'update_latest_publish_date_on_save', 20);
  *
  * @param WP_Query $query The main WP_Query object.
  */
-function custom_sort_publication_series_archives( $query ) {
+function custom_sort_publication_series_archives($query)
+{
     // Run only on the front-end, for the main query, on a publication series archive.
-    if ( ! is_admin() && $query->is_main_query() && $query->is_tax('publication_series') ) {
+    if (! is_admin() && $query->is_main_query() && $query->is_tax('publication_series')) {
 
         // Set the meta key to ensure the postmeta table is joined correctly.
         $query->set('meta_key', 'publication_number');
 
         // Add our temporary filter to modify the SQL's ORDER BY clause.
-        add_filter( 'posts_orderby', 'custom_series_alphanumeric_orderby', 10, 2 );
+        add_filter('posts_orderby', 'custom_series_alphanumeric_orderby', 10, 2);
     }
 }
-add_action( 'pre_get_posts', 'custom_sort_publication_series_archives' );
+add_action('pre_get_posts', 'custom_sort_publication_series_archives');
 
 /**
  * Helper function to apply the custom alphanumeric SQL sorting logic.
@@ -1120,11 +1122,12 @@ add_action( 'pre_get_posts', 'custom_sort_publication_series_archives' );
  * @param WP_Query $query   The WP_Query object (unused, but required by the filter).
  * @return string The modified ORDER BY clause.
  */
-function custom_series_alphanumeric_orderby( $orderby, $query ) {
+function custom_series_alphanumeric_orderby($orderby, $query)
+{
     global $wpdb;
 
     // Remove this filter immediately so it doesn't affect other queries.
-    remove_filter( current_filter(), __FUNCTION__, 10 );
+    remove_filter(current_filter(), __FUNCTION__, 10);
 
     // 1. Sort by the alphabetical prefix (e.g., 'C', 'SB').
     $prefix_sort = "SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, ' ', 1)";
@@ -1153,7 +1156,8 @@ function custom_series_alphanumeric_orderby( $orderby, $query ) {
  * @return array|WP_Error The filtered list of terms.
  */
 
-function caes_hub_exclude_department_topics_from_publications($terms, $post_id, $taxonomy) {
+function caes_hub_exclude_department_topics_from_publications($terms, $post_id, $taxonomy)
+{
     // Bail out early if it's not the right context.
     if (!is_singular('publications') || $taxonomy !== 'topics' || is_admin()) {
         return $terms;
@@ -1164,30 +1168,30 @@ function caes_hub_exclude_department_topics_from_publications($terms, $post_id, 
 
     // Only run the database queries if our static variable hasn't been populated yet.
     if ($exclude_ids === null) {
-        $exclude_ids = []; 
-        
+        $exclude_ids = [];
+
         // Terms to exclude (parent terms)
         $terms_to_exclude = ['Departments', 'Departments and Units'];
-        
+
         foreach ($terms_to_exclude as $term_name) {
             $department_term = get_term_by('name', $term_name, 'topics');
-            
+
             if ($department_term) {
                 $exclude_ids[] = $department_term->term_id;
                 $child_term_ids = get_term_children($department_term->term_id, 'topics');
-                
+
                 if (!is_wp_error($child_term_ids) && !empty($child_term_ids)) {
                     $exclude_ids = array_merge($exclude_ids, $child_term_ids);
                 }
             }
         }
     }
-    
+
     // If there are no IDs to exclude or no terms to filter, return early.
     if (empty($exclude_ids) || is_wp_error($terms) || empty($terms)) {
         return $terms;
     }
-    
+
     // Filter the terms using our cached list of IDs.
     return array_filter($terms, function ($term) use ($exclude_ids) {
         return !in_array($term->term_id, $exclude_ids);
@@ -1199,28 +1203,29 @@ add_filter('get_the_terms', 'caes_hub_exclude_department_topics_from_publication
  * Add page number to the Title block for paginated publications
  * Adds the page number inside the subtitle if one exists
  */
-function caes_add_page_number_to_title_block($block_content, $block) {
+function caes_add_page_number_to_title_block($block_content, $block)
+{
     // Only process core/post-title blocks
     if ($block['blockName'] !== 'core/post-title') {
         return $block_content;
     }
-    
+
     // Only run on publications
     if (!is_singular('publications')) {
         return $block_content;
     }
-    
+
     // Get the current page number and ensure it's a positive integer
     $page = absint(get_query_var('page'));
-    
+
     // Only modify if we're on page 2 or higher
     if ($page < 2) {
         return $block_content;
     }
-    
+
     // Page number text to insert
     $page_number = ' - Page ' . absint($page);
-    
+
     // Check if there's a subtitle element inside the heading
     if (preg_match('/<h[1-6][^>]*>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is', $block_content, $matches)) {
         // Title has a subtitle element - add page number inside the subtitle
@@ -1229,10 +1234,10 @@ function caes_add_page_number_to_title_block($block_content, $block) {
         $subtitle_text = $matches[3];
         $subtitle_close = $matches[4];
         $after_subtitle = $matches[5];
-        
+
         // Insert page number at the end of the subtitle text
         $new_subtitle_text = $subtitle_text . $page_number;
-        
+
         $block_content = preg_replace(
             '/<h([1-6][^>]*)>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is',
             '<h$1>' . $before_subtitle . $subtitle_open . $new_subtitle_text . $subtitle_close . $after_subtitle . '</h$1>',
@@ -1248,7 +1253,7 @@ function caes_add_page_number_to_title_block($block_content, $block) {
             1
         );
     }
-    
+
     return $block_content;
 }
 add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
@@ -1316,6 +1321,9 @@ function format_publication_number_for_display($publication_number)
     return $formatted_pub_number_string;
 }
 
+/**
+ * Add print CSS with dynamic footer for publications
+ */
 add_action('wp_head', function() {
     if (!is_singular('publications')) {
         return;
@@ -1335,9 +1343,18 @@ add_action('wp_head', function() {
     ?>
     <style>
     @media print {
+        @page :first {
+            @bottom-right {
+                content: none;
+            }
+            @bottom-left {
+                content: none;
+            }
+        }
+
         @page {
             size: 8.5in 11in;
-            margin: 0.5in 0.5in 0.75in 0.5in;
+            margin: 0.75in 0.75in 1in 0.75in;
 
             @bottom-left {
                 content: "<?php echo $footer_text; ?>";
@@ -1351,6 +1368,10 @@ add_action('wp_head', function() {
                 font-family: Georgia, serif;
             }
         }
+
+        .caes-hub-content-meta-wrap {
+            counter-reset: page;
+        }
     }
     </style>
     <?php
@@ -1359,7 +1380,7 @@ add_action('wp_head', function() {
 /* End print CSS with dynamic footer for publications */
 
 /* Add print-only LAST PAGE footer to publications */
-add_filter('the_content', function($content) {
+add_filter('the_content', function ($content) {
     if (!is_singular('publications') || is_admin()) {
         return $content;
     }
@@ -1392,7 +1413,10 @@ add_filter('the_content', function($content) {
             <span class="print-pub-date">' . esc_html($publish_date_text) . '</span>
         </div>
         <hr>
-        <p class="print-disclaimer">Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em></p>
+        <p class="print-disclaimer">Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia
+College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the
+counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information,
+national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em></p>
     </div>';
 
     return $content . $footer_html;
