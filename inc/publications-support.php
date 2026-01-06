@@ -1352,6 +1352,15 @@ add_action('wp_head', function() {
             }
         }
 
+        @page :last {
+            @bottom-right {
+                content: none;
+            }
+            @bottom-left {
+                content: none;
+            }
+        }
+
         @page {
             size: 8.5in 11in;
             margin: 0.75in 0.75in 1in 0.75in;
