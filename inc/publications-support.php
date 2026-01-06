@@ -1321,7 +1321,19 @@ function format_publication_number_for_display($publication_number)
     return $formatted_pub_number_string;
 }
 
-add_action('wp_head', function () {
+add_action('wp_head', function() {
+    if (!is_singular('publications')) {
+        return;
+    }
+    ?>
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+    <?php
+});
+
+/**
+ * Add print CSS with dynamic footer for publications
+ */
+add_action('wp_head', function() {
     if (!is_singular('publications')) {
         return;
     }
@@ -1330,35 +1342,57 @@ add_action('wp_head', function () {
     $publication_number = get_field('publication_number', $post_id);
     $publication_title = get_the_title();
     $subtitle = get_post_meta($post_id, 'subtitle', true);
-
+    
     if (!empty($subtitle)) {
         $publication_title .= ': ' . $subtitle;
     }
 
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
-?>
+    ?>
     <style>
-        @media print {
-            @page {
-                size: 8.5in 11in;
-                margin: 0.5in 0.5in 0.75in 0.5in;
-
-                @bottom-left {
-                    content: "<?php echo $footer_text; ?>";
-                    font-size: 10px;
-                    font-family: Georgia, serif;
-                }
-
-                @bottom-right {
-                    content: counter(page);
-                    font-size: 10px;
-                    font-family: Georgia, serif;
-                }
+    @media print {
+        @page :first {
+            @bottom-right {
+                content: none;
+            }
+            @bottom-left {
+                content: none;
             }
         }
+
+        @page :last {
+            @bottom-right {
+                content: none;
+            }
+            @bottom-left {
+                content: none;
+            }
+        }
+
+        @page {
+            size: 8.5in 11in;
+            margin: 0.75in 0.75in 1in 0.75in;
+
+            @bottom-left {
+                content: "<?php echo $footer_text; ?>";
+                font-size: 10px;
+                font-family: Georgia, serif;
+            }
+
+            @bottom-right {
+                content: counter(page);
+                font-size: 10px;
+                font-family: Georgia, serif;
+            }
+        }
+
+        .caes-hub-content-meta-wrap {
+            counter-reset: page;
+        }
+    }
     </style>
-<?php
+    <?php
 });
 
 /* End print CSS with dynamic footer for publications */
