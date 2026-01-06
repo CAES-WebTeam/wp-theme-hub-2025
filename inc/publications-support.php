@@ -1357,3 +1357,44 @@ add_action('wp_head', function() {
 });
 
 /* End print CSS with dynamic footer for publications */
+
+/* Add print-only LAST PAGE footer to publications */
+add_filter('the_content', function($content) {
+    if (!is_singular('publications') || is_admin()) {
+        return $content;
+    }
+
+    $post_id = get_the_ID();
+    $publication_number = get_field('publication_number', $post_id);
+    $formatted_pub_number = format_publication_number_for_display($publication_number);
+    $latest_published_info = get_latest_published_date($post_id);
+    $permalink = get_permalink($post_id);
+
+    $status_labels = [
+        2 => 'Published',
+        4 => 'Published with Minor Revisions',
+        5 => 'Published with Major Revisions',
+        6 => 'Published with Full Review',
+    ];
+
+    $publish_date_text = '';
+    if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
+        $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
+        $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
+    }
+
+    $footer_html = '
+    <div class="print-last-page-footer">
+        <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($permalink) . '">' . esc_html($permalink) . '</a></p>
+        <hr>
+        <div class="print-pub-meta">
+            <span class="print-pub-number">' . esc_html($formatted_pub_number) . '</span>
+            <span class="print-pub-date">' . esc_html($publish_date_text) . '</span>
+        </div>
+        <hr>
+        <p class="print-disclaimer">Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em></p>
+    </div>';
+
+    return $content . $footer_html;
+}, 20);
+/* End print-only LAST PAGE footer to publications */
