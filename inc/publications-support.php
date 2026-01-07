@@ -1510,7 +1510,7 @@ add_filter('render_block', function ($block_content, $block) {
     if (!empty($authors_html) || !empty($pub_meta_html)) {
         $print_info_added = true; // Mark as added so it doesn't repeat
         
-        $html_to_add = '<div class="print-title-info" style="margin-bottom: 20px; font-family: inherit;">';
+        $html_to_add = '<div class="print-title-info">';
         $html_to_add .= $authors_html;
         $html_to_add .= $pub_meta_html;
         $html_to_add .= '</div>';
