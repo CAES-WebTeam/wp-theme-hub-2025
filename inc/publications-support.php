@@ -1340,97 +1340,115 @@ add_action('wp_head', function() {
 
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
-    ?>
-    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
-    <style>
-    /* Running element - OUTSIDE @media print for Paged.js */
-    .print-last-page-footer {
-        position: running(lastpagefooter);
-    }
-
-    @media print {
-        @page {
-            size: 8.5in 11in;
-            margin: 0.75in 0.75in 1.25in 0.75in;
-
-            @bottom-left {
-                content: "<?php echo $footer_text; ?>";
-                font-size: 10px;
-                font-family: Georgia, serif;
-            }
-
-            @bottom-right {
-                content: counter(page);
-                font-size: 10px;
-                font-family: Georgia, serif;
-            }
-        }
-
-        @page :first {
-            @bottom-left { content: none; }
-            @bottom-right { content: none; }
-        }
-
-        @page :last {
-            margin-bottom: 2in;
-            @bottom-left { content: none; }
-            @bottom-right { content: none; }
-            @bottom-center {
-                content: element(lastpagefooter);
-                width: 100%;
-            }
-        }
-
-        .caes-hub-content-meta-wrap {
-            counter-reset: page;
-        }
-    }
-    </style>
-    <?php
-});
-
-/* End print CSS with dynamic footer for publications */
-
-/* Add print-only LAST PAGE footer to publications */
-add_filter('the_content', function ($content) {
-    if (!is_singular('publications') || is_admin()) {
-        return $content;
-    }
-
-    $post_id = get_the_ID();
-    $publication_number = get_field('publication_number', $post_id);
-    $formatted_pub_number = format_publication_number_for_display($publication_number);
+    
+    // Get last page footer data
     $latest_published_info = get_latest_published_date($post_id);
     $permalink = get_permalink($post_id);
-
+    
     $status_labels = [
         2 => 'Published',
         4 => 'Published with Minor Revisions',
         5 => 'Published with Major Revisions',
         6 => 'Published with Full Review',
     ];
-
+    
     $publish_date_text = '';
     if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
         $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
         $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
     }
+    ?>
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+    <style>
+    @page {
+        size: 8.5in 11in;
+        margin: 0.75in 0.75in 1in 0.75in;
 
-    $footer_html = '
-    <div class="print-last-page-footer">
-        <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($permalink) . '">' . esc_html($permalink) . '</a></p>
-        <hr>
-        <div class="print-pub-meta">
-            <span class="print-pub-number">' . esc_html($formatted_pub_number) . '</span>
-            <span class="print-pub-date">' . esc_html($publish_date_text) . '</span>
-        </div>
-        <hr>
-        <p class="print-disclaimer">Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia
-College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the
-counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information,
-national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em></p>
-    </div>';
+        @bottom-left {
+            content: "<?php echo $footer_text; ?>";
+            font-size: 10px;
+            font-family: Georgia, serif;
+        }
 
-    return $content . $footer_html;
-}, 20);
-/* End print-only LAST PAGE footer to publications */
+        @bottom-right {
+            content: counter(page);
+            font-size: 10px;
+            font-family: Georgia, serif;
+        }
+    }
+
+    @page :first {
+        @bottom-left { content: none; }
+        @bottom-right { content: none; }
+    }
+
+    .caes-hub-content-meta-wrap {
+        counter-reset: page;
+    }
+
+    /* Style for injected last page footer */
+    .custom-last-footer {
+        font-family: Georgia, serif;
+        font-size: 10px;
+        line-height: 1.3;
+        width: 100%;
+    }
+    .custom-last-footer hr {
+        border: 0;
+        border-top: 1px solid #000;
+        margin: 6px 0;
+    }
+    .custom-last-footer .meta-row {
+        display: flex;
+        justify-content: space-between;
+    }
+    .custom-last-footer .pub-number {
+        font-weight: bold;
+    }
+    .custom-last-footer .permalink {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    .custom-last-footer .disclaimer {
+        font-size: 9px;
+        margin-top: 6px;
+    }
+    </style>
+
+    <script>
+    // Wait for Paged.js to finish rendering
+    document.addEventListener('DOMContentLoaded', function() {
+        // Paged.js fires this event when done
+        window.PagedPolyfill && window.PagedPolyfill.preview().then(function() {
+            // Get all bottom margin elements
+            const bottomMargins = document.querySelectorAll('.pagedjs_margin-bottom');
+            if (bottomMargins.length > 0) {
+                const lastPageBottom = bottomMargins[bottomMargins.length - 1];
+                
+                // Clear existing content
+                lastPageBottom.innerHTML = '';
+                
+                // Inject custom footer
+                lastPageBottom.innerHTML = `
+                    <div class="custom-last-footer">
+                        <div class="permalink">
+                            The permalink for this UGA Extension publication is<br>
+                            <a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($permalink); ?></a>
+                        </div>
+                        <hr>
+                        <div class="meta-row">
+                            <span class="pub-number"><?php echo esc_html($formatted_pub_number); ?></span>
+                            <span class="pub-date"><?php echo esc_html($publish_date_text); ?></span>
+                        </div>
+                        <hr>
+                        <div class="disclaimer">
+                            Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    });
+    </script>
+    <?php
+});
