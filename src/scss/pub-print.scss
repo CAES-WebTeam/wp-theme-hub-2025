@@ -193,6 +193,8 @@
       padding: 0;
       overflow: hidden;
       page-break-inside: avoid;
+      max-width: var(--wp--style--global--wide-size);
+      margin: 0 auto;
 
       .caes-hub-main-bg-f-img {
         width: 100%;
