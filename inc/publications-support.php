@@ -1454,27 +1454,30 @@ add_filter('render_block', function ($block_content, $block) {
             $user = get_sub_field('user');
             
             if ($user) {
-                if (is_numeric($user)) {
-                    $user = get_userdata($user);
-                }
+                if (is_numeric($user)) $user = get_userdata($user);
                 
                 if ($user) {
+                    // 1. Get Name and Bold it
                     $name = trim($user->first_name . ' ' . $user->last_name);
                     if (empty($name)) $name = $user->display_name;
-                    $name = '<strong>' . $name . '</strong>';
+                    
+                    // Escape name then wrap in strong
+                    $name_html = '<strong>' . esc_html($name) . '</strong>';
 
-                    // Get Title (check 'title' or 'job_title')
+                    // 2. Get Title
                     $author_title = get_field('title', 'user_' . $user->ID); 
                     if (empty($author_title)) {
                         $author_title = get_user_meta($user->ID, 'job_title', true); 
                     }
 
-                    $line_text = $name;
+                    // 3. Construct Line: "Name, Title"
+                    $line_html = $name_html;
                     if (!empty($author_title)) {
-                        $line_text .= ', ' . $author_title;
+                        $line_html .= ', ' . esc_html($author_title);
                     }
 
-                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($line_text) . '</div>';
+                    // Output (Note: We do NOT escape $line_html here because it contains our <strong> tags)
+                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . $line_html . '</div>';
                 }
             }
         }
