@@ -1341,13 +1341,13 @@ add_action('wp_head', function() {
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     ?>
-    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
     <style>
-    @media print {
-        .print-last-page-footer {
-            position: running(lastpagefooter);
-        }
+    /* Running element - OUTSIDE @media print for Paged.js */
+    .print-last-page-footer {
+        position: running(lastpagefooter);
+    }
 
+    @media print {
         @page {
             size: 8.5in 11in;
             margin: 0.75in 0.75in 1.25in 0.75in;
