@@ -176,3 +176,12 @@
         top: var(--wp-admin--admin-bar--height);
     }
 }
+
+// Print view
+
+@media print {
+  .wp-block-caes-hub-field-report-navigation,
+  .wp-block-caes-hub-field-report-nav-flyout {
+    display: none;
+  }
+}
