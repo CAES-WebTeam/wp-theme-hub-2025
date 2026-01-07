@@ -1341,7 +1341,6 @@ add_action('wp_head', function() {
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     
-    // Get last page footer data
     $latest_published_info = get_latest_published_date($post_id);
     $permalink = get_permalink($post_id);
     
@@ -1357,12 +1356,16 @@ add_action('wp_head', function() {
         $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
         $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
     }
+    
+    // Escape for JS
+    $js_permalink = esc_js($permalink);
+    $js_pub_number = esc_js($formatted_pub_number);
+    $js_pub_date = esc_js($publish_date_text);
     ?>
-    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
     <style>
     @page {
         size: 8.5in 11in;
-        margin: 0.75in 0.75in 1in 0.75in;
+        margin: 0.75in 0.75in 1.25in 0.75in;
 
         @bottom-left {
             content: "<?php echo $footer_text; ?>";
@@ -1386,12 +1389,11 @@ add_action('wp_head', function() {
         counter-reset: page;
     }
 
-    /* Style for injected last page footer */
     .custom-last-footer {
         font-family: Georgia, serif;
         font-size: 10px;
         line-height: 1.3;
-        width: 100%;
+        padding: 0 10px;
     }
     .custom-last-footer hr {
         border: 0;
@@ -1413,41 +1415,44 @@ add_action('wp_head', function() {
         font-size: 9px;
         margin-top: 6px;
     }
+    
+    /* Hide default footer on last page */
+    .pagedjs_page:last-of-type .pagedjs_margin-bottom-left,
+    .pagedjs_page:last-of-type .pagedjs_margin-bottom-right {
+        display: none;
+    }
     </style>
 
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
     <script>
-    // Wait for Paged.js to finish rendering
-    document.addEventListener('DOMContentLoaded', function() {
-        // Paged.js fires this event when done
-        window.PagedPolyfill && window.PagedPolyfill.preview().then(function() {
-            // Get all bottom margin elements
-            const bottomMargins = document.querySelectorAll('.pagedjs_margin-bottom');
-            if (bottomMargins.length > 0) {
-                const lastPageBottom = bottomMargins[bottomMargins.length - 1];
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            const pages = document.querySelectorAll('.pagedjs_page');
+            if (pages.length > 0) {
+                const lastPage = pages[pages.length - 1];
+                const bottomCenter = lastPage.querySelector('.pagedjs_margin-bottom-center');
                 
-                // Clear existing content
-                lastPageBottom.innerHTML = '';
-                
-                // Inject custom footer
-                lastPageBottom.innerHTML = `
-                    <div class="custom-last-footer">
-                        <div class="permalink">
-                            The permalink for this UGA Extension publication is<br>
-                            <a href="<?php echo esc_url($permalink); ?>"><?php echo esc_html($permalink); ?></a>
+                if (bottomCenter) {
+                    bottomCenter.innerHTML = `
+                        <div class="custom-last-footer">
+                            <div class="permalink">
+                                The permalink for this UGA Extension publication is<br>
+                                <a href="<?php echo $js_permalink; ?>"><?php echo $js_permalink; ?></a>
+                            </div>
+                            <hr>
+                            <div class="meta-row">
+                                <span class="pub-number"><?php echo $js_pub_number; ?></span>
+                                <span class="pub-date"><?php echo $js_pub_date; ?></span>
+                            </div>
+                            <hr>
+                            <div class="disclaimer">
+                                Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>
+                            </div>
                         </div>
-                        <hr>
-                        <div class="meta-row">
-                            <span class="pub-number"><?php echo esc_html($formatted_pub_number); ?></span>
-                            <span class="pub-date"><?php echo esc_html($publish_date_text); ?></span>
-                        </div>
-                        <hr>
-                        <div class="disclaimer">
-                            Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>
-                        </div>
-                    </div>
-                `;
+                    `;
+                }
             }
-        });
+        }, 1000); // Wait for Paged.js to finish
     });
     </script>
     <?php
