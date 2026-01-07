@@ -1326,14 +1326,13 @@ function format_publication_number_for_display($publication_number)
  * Add print support for publications
  */
 /**
- * Add print support for publications
+ * Add print CSS for publications
  */
 add_action('wp_head', function() {
     if (!is_singular('publications')) {
         return;
     }
 
-    $is_print_view = isset($_GET['print']) && $_GET['print'] === 'true';
     $post_id = get_the_ID();
     $publication_number = get_field('publication_number', $post_id);
     $publication_title = get_the_title();
@@ -1345,11 +1344,9 @@ add_action('wp_head', function() {
 
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
-
-    if ($is_print_view) {
-        ?>
-        <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
-        <style>
+    ?>
+    <style>
+    @media print {
         @page {
             size: 8.5in 11in;
             margin: 0.75in 0.75in 1in 0.75in;
@@ -1375,97 +1372,9 @@ add_action('wp_head', function() {
         .caes-hub-content-meta-wrap {
             counter-reset: page;
         }
-        </style>
-        <?php
-    } else {
-        ?>
-        <style>
-        @media print {
-            body::before {
-                content: "Please use the print button or Ctrl+P to print this publication.";
-                display: block;
-                font-size: 24px;
-                text-align: center;
-                padding: 100px;
-            }
-            body > *:not(#print-redirect-notice) {
-                display: none !important;
-            }
-        }
-        </style>
-        <script>
-        (function() {
-            const printUrl = '<?php echo esc_url(add_query_arg('print', 'true', get_permalink())); ?>';
-            
-            function openPrintView(e) {
-                if (e) e.preventDefault();
-                window.open(printUrl, '_blank');
-            }
-
-            // Catch Ctrl+P / Cmd+P
-            document.addEventListener('keydown', function(e) {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                    openPrintView(e);
-                }
-            });
-
-            // Catch browser menu print
-            window.addEventListener('beforeprint', function() {
-                window.open(printUrl, '_blank');
-            });
-        })();
-        </script>
-        <?php
     }
-});
-
-/**
- * Dequeue scripts that break Paged.js on print view
- */
-add_action('wp_enqueue_scripts', function() {
-    if (!is_singular('publications')) {
-        return;
-    }
-
-    $is_print_view = isset($_GET['print']) && $_GET['print'] === 'true';
-
-    if ($is_print_view) {
-        // Remove emoji script
-        remove_action('wp_head', 'print_emoji_detection_script', 7);
-        remove_action('wp_print_styles', 'print_emoji_styles');
-        
-        // Dequeue theme scripts that might interfere
-        wp_dequeue_script('main');
-        wp_dequeue_script('jquery');
-    }
-}, 100);
-
-/**
- * Add print view banner
- */
-add_action('wp_body_open', function() {
-    if (!is_singular('publications')) {
-        return;
-    }
-
-    $is_print_view = isset($_GET['print']) && $_GET['print'] === 'true';
-
-    if ($is_print_view) {
-        ?>
-        <div id="print-view-banner" style="position:fixed; top:0; left:0; right:0; background:#ba0c2f; color:#fff; padding:12px 20px; z-index:999999; font-family: Georgia, serif; text-align:center;">
-            <span style="margin-right: 20px;">Print-formatted view</span>
-            <button onclick="window.close()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">✕ Close</button>
-            <button onclick="window.print()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; margin-left:10px; cursor:pointer;">Print</button>
-        </div>
-        <style>
-        body { padding-top: 60px !important; }
-        @media print {
-            #print-view-banner { display: none !important; }
-            body { padding-top: 0 !important; }
-        }
-        </style>
-        <?php
-    }
+    </style>
+    <?php
 });
 
 add_filter('the_content', function ($content) {
