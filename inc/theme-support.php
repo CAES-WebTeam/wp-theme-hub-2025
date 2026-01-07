@@ -34,9 +34,6 @@ add_action('enqueue_block_editor_assets', 'theme_editor_assets');
 
 
 // Enqueue publication print styles
-
-// In theme-support.php
-
 function caes_hub_enqueue_publication_print_assets() {
     // This check ensures it ONLY loads on publication posts
     if (!is_singular('publications')) {
