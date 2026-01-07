@@ -34,25 +34,26 @@ add_action('enqueue_block_editor_assets', 'theme_editor_assets');
 
 
 // Enqueue publication print styles
+
+// In theme-support.php
+
 function caes_hub_enqueue_publication_print_assets() {
-    // Only load on single publications post type
+    // This check ensures it ONLY loads on publication posts
     if (!is_singular('publications')) {
         return;
     }
     
-    // Get theme directory for file path checks
     $theme_dir = get_template_directory();
     $theme_uri = get_template_directory_uri();
-    
-    // Enqueue publications print styles
     $publications_print_path = $theme_dir . '/assets/css/pub-print.css';
+
     if (file_exists($publications_print_path)) {
         wp_enqueue_style(
             'caes-hub-publications-print',
             $theme_uri . '/assets/css/pub-print.css',
             array(),
             filemtime($publications_print_path),
-            'print'
+            'all' // <--- CHANGE THIS from 'print' to 'all'
         );
     }
 }
