@@ -1389,6 +1389,9 @@ add_action('wp_head', function() {
 /**
  * Add print overlay and banner HTML to body
  */
+/**
+ * Add print overlay and banner HTML to body
+ */
 add_action('wp_body_open', function() {
     if (!is_singular('publications')) {
         return;
@@ -1415,19 +1418,27 @@ add_action('wp_body_open', function() {
         let isLoading = false;
 
         function showOverlay() {
+            console.log('Showing overlay');
             document.getElementById('print-overlay').style.display = 'flex';
         }
 
         function hideOverlay() {
+            console.log('Hiding overlay');
             document.getElementById('print-overlay').style.display = 'none';
         }
 
         function showBanner() {
-            document.getElementById('print-view-banner').style.display = 'block';
+            console.log('Showing banner');
+            const banner = document.getElementById('print-view-banner');
+            banner.style.display = 'block';
             document.body.classList.add('paged-view-active');
+            console.log('Banner display:', banner.style.display);
+            console.log('Body classes:', document.body.className);
         }
 
         function loadPagedAndPrint() {
+            console.log('loadPagedAndPrint called, pagedLoaded:', pagedLoaded, 'isLoading:', isLoading);
+            
             if (pagedLoaded) {
                 window.print();
                 return;
@@ -1441,33 +1452,42 @@ add_action('wp_body_open', function() {
             const script = document.createElement('script');
             script.src = 'https://unpkg.com/pagedjs/dist/paged.polyfill.js';
             script.onload = function() {
+                console.log('Paged.js script loaded');
+                
                 const checkReady = setInterval(function() {
                     const pages = document.querySelectorAll('.pagedjs_page');
+                    console.log('Checking for pages:', pages.length);
+                    
                     if (pages.length > 0) {
                         clearInterval(checkReady);
                         pagedLoaded = true;
                         isLoading = false;
+                        console.log('Pages found:', pages.length);
                         
                         setTimeout(function() {
                             hideOverlay();
                             showBanner();
-                            window.print();
+                            console.log('About to print');
+                            // Comment out print for now to debug
+                            // window.print();
                         }, 500);
                     }
                 }, 100);
 
                 setTimeout(function() {
                     clearInterval(checkReady);
+                    const pages = document.querySelectorAll('.pagedjs_page');
+                    console.log('Timeout reached, pages:', pages.length);
                     if (!pagedLoaded) {
                         pagedLoaded = true;
                         isLoading = false;
                         hideOverlay();
                         showBanner();
-                        window.print();
                     }
                 }, 10000);
             };
-            script.onerror = function() {
+            script.onerror = function(e) {
+                console.error('Failed to load Paged.js', e);
                 isLoading = false;
                 hideOverlay();
                 alert('Failed to load print formatter. Printing without formatting.');
