@@ -1450,7 +1450,7 @@ add_filter('render_block', function ($block_content, $block) {
     // Using the specific path you provided
     $logo_url = '/wp-content/themes/wp-theme-hub-2025/assets/images/Extension_logo_Formal_FC.png';
     
-    $logo_html = '<div class="print-header-logo" style="margin-bottom: 20px;">';
+    $logo_html = '<div class="print-header-logo">';
     $logo_html .= '<img src="' . esc_url($logo_url) . '" alt="Extension Logo" style="max-width: 300px; height: auto;">';
     $logo_html .= '</div>';
 
@@ -1486,7 +1486,7 @@ add_filter('render_block', function ($block_content, $block) {
                         $line_html .= ', ' . esc_html($author_title);
                     }
 
-                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . $line_html . '</div>';
+                    $authors_html .= '<div class="print-author-line">' . $line_html . '</div>';
                 }
             }
         }

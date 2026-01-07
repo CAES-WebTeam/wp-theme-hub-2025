@@ -30,6 +30,15 @@
     font-weight: normal;
   }
 
+  .print-header-logo {
+    text-align: left;
+    img {
+      max-width: 200px;
+      height: auto;
+    }
+  }
+
+
   .single-publications {
     .wp-block-columns.caes-hub-pub-columns {
       display: block !important;
