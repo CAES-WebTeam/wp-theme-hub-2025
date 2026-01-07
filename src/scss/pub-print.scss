@@ -1,7 +1,6 @@
 // Hide on screen (before Paged.js)
 .print-last-page-footer,
 .print-title-info,
-.print-header-logo,
 .print-header-logo {
   display: none;
 }
@@ -33,6 +32,7 @@
 
   .print-header-logo {
     text-align: left;
+
     img {
       max-width: 200px;
       height: auto;
