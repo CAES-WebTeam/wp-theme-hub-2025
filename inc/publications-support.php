@@ -1377,6 +1377,77 @@ add_action('wp_head', function() {
     <?php
 });
 
+// ===================
+// PRINT ONLY INFO AFTER TITLE
+// ===================
+add_filter('the_title', function($title, $id) {
+    // Check if we are in the main loop, singular publication, and not in admin
+    if (is_admin() || !is_singular('publications') || !in_the_loop()) {
+        return $title;
+    }
+
+    // 1. Get Publication Number
+    $publication_number = get_field('publication_number', $id);
+    
+    // Use the formatting helper if available (from your existing codebase)
+    $formatted_pub_number = function_exists('format_publication_number_for_display') 
+        ? format_publication_number_for_display($publication_number) 
+        : $publication_number;
+
+    // 2. Get Date and Status
+    // Uses the same logic as your print footer
+    $publish_date_text = '';
+    
+    // Ensure the helper function exists (it is used in your footer, so it should be available)
+    if (function_exists('get_latest_published_date')) {
+        $latest_published_info = get_latest_published_date($id);
+        
+        if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
+            // Status labels map (matches your mPDF and footer logic)
+            $status_labels = [
+                1 => 'Unpublished/Removed',
+                2 => 'Published',
+                4 => 'Published with Minor Revisions',
+                5 => 'Published with Major Revisions',
+                6 => 'Published with Full Review',
+                7 => 'Historic/Archived',
+                8 => 'In Review for Minor Revisions',
+                9 => 'In Review for Major Revisions',
+                10 => 'In Review'
+            ];
+            
+            $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
+            $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
+        }
+    }
+
+    // 3. Construct HTML
+    // Appends a div with classes similar to the footer for consistency.
+    if (!empty($formatted_pub_number) || !empty($publish_date_text)) {
+        // We use a specific class 'print-title-info' so you can toggle display in your CSS
+        $html = '<div class="print-title-info">'; 
+        $html .= '<div class="print-pub-meta" style="margin-top: 0.5em; font-size: 0.8em; font-weight: normal;">';
+        
+        if (!empty($formatted_pub_number)) {
+            $html .= '<span class="print-pub-number" style="margin-right: 15px;">' . esc_html($formatted_pub_number) . '</span>';
+        }
+        
+        if (!empty($publish_date_text)) {
+            $html .= '<span class="print-pub-date">' . esc_html($publish_date_text) . '</span>';
+        }
+        
+        $html .= '</div></div>';
+        
+        return $title . $html;
+    }
+
+    return $title;
+}, 20, 2);
+
+/**
+ * Add print-only LAST PAGE footer to publications
+ */
+
 add_filter('the_content', function ($content) {
     if (!is_singular('publications') || is_admin()) {
         return $content;
