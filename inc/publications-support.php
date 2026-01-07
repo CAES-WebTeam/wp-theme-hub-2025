@@ -1321,14 +1321,16 @@ function format_publication_number_for_display($publication_number)
     return $formatted_pub_number_string;
 }
 
+
 /**
- * Add print CSS and Paged.js loader for publications
+ * Add print support for publications
  */
 add_action('wp_head', function() {
     if (!is_singular('publications')) {
         return;
     }
 
+    $is_print_view = isset($_GET['print']) && $_GET['print'] === 'true';
     $post_id = get_the_ID();
     $publication_number = get_field('publication_number', $post_id);
     $publication_title = get_the_title();
@@ -1340,27 +1342,12 @@ add_action('wp_head', function() {
 
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
-    ?>
-    <style>
-    body.paged-view-active {
-        padding-top: 60px !important;
-    }
 
-    @media print {
-        #print-overlay,
-        #print-view-banner {
-            display: none !important;
-        }
-
-        body.paged-view-active {
-            padding-top: 0 !important;
-        }
-
-        @page :first {
-            @bottom-right { content: none; }
-            @bottom-left { content: none; }
-        }
-
+    if ($is_print_view) {
+        // Print view: load Paged.js
+        ?>
+        <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+        <style>
         @page {
             size: 8.5in 11in;
             margin: 0.75in 0.75in 1in 0.75in;
@@ -1378,139 +1365,92 @@ add_action('wp_head', function() {
             }
         }
 
+        @page :first {
+            @bottom-right { content: none; }
+            @bottom-left { content: none; }
+        }
+
         .caes-hub-content-meta-wrap {
             counter-reset: page;
         }
+        </style>
+        <?php
+    } else {
+        // Normal view: intercept print and redirect
+        ?>
+        <style>
+        @media print {
+            @page {
+                size: 8.5in 11in;
+                margin: 0.75in 0.75in 1in 0.75in;
+
+                @bottom-left {
+                    content: "<?php echo $footer_text; ?>";
+                    font-size: 10px;
+                    font-family: Georgia, serif;
+                }
+
+                @bottom-right {
+                    content: counter(page);
+                    font-size: 10px;
+                    font-family: Georgia, serif;
+                }
+            }
+
+            @page :first {
+                @bottom-right { content: none; }
+                @bottom-left { content: none; }
+            }
+
+            .caes-hub-content-meta-wrap {
+                counter-reset: page;
+            }
+        }
+        </style>
+        <script>
+        (function() {
+            function openPrintView(e) {
+                e.preventDefault();
+                window.open('<?php echo esc_url(add_query_arg('print', 'true', get_permalink())); ?>', '_blank');
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                    openPrintView(e);
+                }
+            });
+        })();
+        </script>
+        <?php
     }
-    </style>
-    <?php
 });
 
 /**
- * Add print overlay and banner HTML to body
- */
-/**
- * Add print overlay and banner HTML to body
+ * Add print view banner
  */
 add_action('wp_body_open', function() {
     if (!is_singular('publications')) {
         return;
     }
-    ?>
-    <!-- Print Overlay -->
-    <div id="print-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:999999; justify-content:center; align-items:center; flex-direction:column;">
-        <div style="text-align:center; font-family: Georgia, serif;">
-            <div style="font-size: 24px; margin-bottom: 20px;">Preparing print view...</div>
-            <div style="font-size: 16px; color: #666;">Please wait while we format your document.</div>
+
+    $is_print_view = isset($_GET['print']) && $_GET['print'] === 'true';
+
+    if ($is_print_view) {
+        ?>
+        <div id="print-view-banner" style="position:fixed; top:0; left:0; right:0; background:#ba0c2f; color:#fff; padding:12px 20px; z-index:999999; font-family: Georgia, serif; text-align:center;">
+            <span style="margin-right: 20px;">Print-formatted view</span>
+            <button onclick="window.close()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">✕ Close</button>
+            <button onclick="window.print()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; margin-left:10px; cursor:pointer;">Print</button>
         </div>
-    </div>
-
-    <!-- Return to Article Banner -->
-    <div id="print-view-banner" style="display:none; position:fixed; top:0; left:0; right:0; background:#ba0c2f; color:#fff; padding:12px 20px; z-index:999999; font-family: Georgia, serif; text-align:center;">
-        <span style="margin-right: 20px;">You are viewing the print-formatted version of this publication.</span>
-        <button onclick="window.location.reload(true)" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">← Return to Article</button>
-        <button onclick="window.print()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; margin-left:10px; cursor:pointer;">Print Now</button>
-    </div>
-
-    <script>
-    (function() {
-        let pagedLoaded = false;
-        let isLoading = false;
-
-        function showOverlay() {
-            console.log('Showing overlay');
-            document.getElementById('print-overlay').style.display = 'flex';
+        <style>
+        body { padding-top: 60px !important; }
+        @media print {
+            #print-view-banner { display: none !important; }
+            body { padding-top: 0 !important; }
         }
-
-        function hideOverlay() {
-            console.log('Hiding overlay');
-            document.getElementById('print-overlay').style.display = 'none';
-        }
-
-        function showBanner() {
-            console.log('Showing banner');
-            const banner = document.getElementById('print-view-banner');
-            banner.style.display = 'block';
-            document.body.classList.add('paged-view-active');
-            console.log('Banner display:', banner.style.display);
-            console.log('Body classes:', document.body.className);
-        }
-
-        function loadPagedAndPrint() {
-            console.log('loadPagedAndPrint called, pagedLoaded:', pagedLoaded, 'isLoading:', isLoading);
-            
-            if (pagedLoaded) {
-                window.print();
-                return;
-            }
-
-            if (isLoading) return;
-            isLoading = true;
-
-            showOverlay();
-
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/pagedjs/dist/paged.polyfill.js';
-            script.onload = function() {
-                console.log('Paged.js script loaded');
-                
-                const checkReady = setInterval(function() {
-                    const pages = document.querySelectorAll('.pagedjs_page');
-                    console.log('Checking for pages:', pages.length);
-                    
-                    if (pages.length > 0) {
-                        clearInterval(checkReady);
-                        pagedLoaded = true;
-                        isLoading = false;
-                        console.log('Pages found:', pages.length);
-                        
-                        setTimeout(function() {
-                            hideOverlay();
-                            showBanner();
-                            console.log('About to print');
-                            // Comment out print for now to debug
-                            // window.print();
-                        }, 500);
-                    }
-                }, 100);
-
-                setTimeout(function() {
-                    clearInterval(checkReady);
-                    const pages = document.querySelectorAll('.pagedjs_page');
-                    console.log('Timeout reached, pages:', pages.length);
-                    if (!pagedLoaded) {
-                        pagedLoaded = true;
-                        isLoading = false;
-                        hideOverlay();
-                        showBanner();
-                    }
-                }, 10000);
-            };
-            script.onerror = function(e) {
-                console.error('Failed to load Paged.js', e);
-                isLoading = false;
-                hideOverlay();
-                alert('Failed to load print formatter. Printing without formatting.');
-                window.print();
-            };
-            document.head.appendChild(script);
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                loadPagedAndPrint();
-            }
-        });
-
-        window.addEventListener('beforeprint', function(e) {
-            if (!pagedLoaded && !isLoading) {
-                loadPagedAndPrint();
-            }
-        });
-    })();
-    </script>
-    <?php
+        </style>
+        <?php
+    }
 });
 
 add_filter('the_content', function ($content) {
