@@ -1461,6 +1461,7 @@ add_filter('render_block', function ($block_content, $block) {
                 if ($user) {
                     $name = trim($user->first_name . ' ' . $user->last_name);
                     if (empty($name)) $name = $user->display_name;
+                    $name = '<strong>' . $name . '</strong>';
 
                     // Get Title (check 'title' or 'job_title')
                     $author_title = get_field('title', 'user_' . $user->ID); 
