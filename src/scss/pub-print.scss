@@ -1,6 +1,7 @@
 // Hide on screen (before Paged.js)
 .print-last-page-footer,
-.print-title-info {
+.print-title-info,
+.print-header-logo {
   display: none;
 }
 
@@ -15,7 +16,8 @@
     overflow: visible !important;
   }
 
-  .print-title-info {
+  .print-title-info,
+  .print-header-logo {
     display: block !important;
     text-align: left;
     line-height: 1.2;

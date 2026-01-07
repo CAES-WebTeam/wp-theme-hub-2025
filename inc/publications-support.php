@@ -1424,7 +1424,7 @@ national origin, race, religion, sex, or veteran status, and is an Equal Opportu
 }, 20);
 
 // ===================
-// PRINT VIEW: INSERT INFO AFTER POST TITLE BLOCK
+// PRINT VIEW: LOGO ABOVE & INFO BELOW TITLE
 // ===================
 add_filter('render_block', function ($block_content, $block) {
     // 1. Target only the Core Post Title block
@@ -1438,16 +1438,28 @@ add_filter('render_block', function ($block_content, $block) {
     }
 
     // 3. Prevent Duplication (run only once per page load)
-    static $print_info_added = false;
-    if ($print_info_added) {
+    static $print_mod_added = false;
+    if ($print_mod_added) {
         return $block_content;
     }
+    $print_mod_added = true;
 
     $id = get_the_ID();
 
-    // --- A. GET AUTHORS & TITLES ---
+    // --- A. PREPARE LOGO (ABOVE TITLE) ---
+    // Using the specific path you provided
+    $logo_url = '/wp-content/themes/wp-theme-hub-2025/assets/images/Extension_logo_Formal_FC.png';
+    
+    $logo_html = '<div class="print-header-logo" style="margin-bottom: 20px;">';
+    $logo_html .= '<img src="' . esc_url($logo_url) . '" alt="Extension Logo" style="max-width: 300px; height: auto;">';
+    $logo_html .= '</div>';
+
+
+    // --- B. PREPARE AUTHORS & INFO (BELOW TITLE) ---
+    $info_html = '';
     $authors_html = '';
     
+    // 1. Get Authors
     if (have_rows('authors', $id)) {
         while (have_rows('authors', $id)) {
             the_row();
@@ -1457,33 +1469,30 @@ add_filter('render_block', function ($block_content, $block) {
                 if (is_numeric($user)) $user = get_userdata($user);
                 
                 if ($user) {
-                    // 1. Get Name and Bold it
+                    // Name (Bolded)
                     $name = trim($user->first_name . ' ' . $user->last_name);
                     if (empty($name)) $name = $user->display_name;
-                    
-                    // Escape name then wrap in strong
                     $name_html = '<strong>' . esc_html($name) . '</strong>';
 
-                    // 2. Get Title
+                    // Title
                     $author_title = get_field('title', 'user_' . $user->ID); 
                     if (empty($author_title)) {
                         $author_title = get_user_meta($user->ID, 'job_title', true); 
                     }
 
-                    // 3. Construct Line: "Name, Title"
+                    // Construct Line
                     $line_html = $name_html;
                     if (!empty($author_title)) {
                         $line_html .= ', ' . esc_html($author_title);
                     }
 
-                    // Output (Note: We do NOT escape $line_html here because it contains our <strong> tags)
                     $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . $line_html . '</div>';
                 }
             }
         }
     }
 
-    // --- B. GET PUB NUMBER & DATE ---
+    // 2. Get Pub Number & Date
     $pub_meta_html = '';
     $pub_number = get_field('publication_number', $id);
     
@@ -1506,24 +1515,22 @@ add_filter('render_block', function ($block_content, $block) {
             $date_text = date('F j, Y', strtotime($latest_info['date']));
 
             $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
-            $pub_meta_html = '<div class="print-meta-line">' . esc_html($meta_line) . '</div>';
+            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
         }
     }
 
-    // --- C. APPEND TO TITLE BLOCK ---
+    // Combine Info Section
     if (!empty($authors_html) || !empty($pub_meta_html)) {
-        $print_info_added = true; // Mark as added so it doesn't repeat
-        
-        $html_to_add = '<div class="print-title-info">';
-        $html_to_add .= $authors_html;
-        $html_to_add .= $pub_meta_html;
-        $html_to_add .= '</div>';
-        
-        // Return: Title Block HTML + Our Info
-        return $block_content . $html_to_add;
+        $info_html = '<div class="print-title-info" style="margin-bottom: 20px; font-family: inherit;">';
+        $info_html .= $authors_html;
+        $info_html .= $pub_meta_html;
+        $info_html .= '</div>';
     }
 
-    return $block_content;
+    // --- C. RETURN COMBINED OUTPUT ---
+    // Structure: [LOGO] + [TITLE BLOCK] + [INFO]
+    return $logo_html . $block_content . $info_html;
+
 }, 10, 2);
 
 /* End print-only LAST PAGE footer to publications */
