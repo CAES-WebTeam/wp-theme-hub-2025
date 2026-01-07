@@ -1377,111 +1377,6 @@ add_action('wp_head', function() {
     <?php
 });
 
-// ===================
-// PRINT VIEW: INFO AFTER TITLE
-// ===================
-add_filter('the_title', function($title, $id) {
-    // 1. Only run this in the main loop for a single publication (and not in admin)
-    if (is_admin() || !is_singular('publications') || !in_the_loop()) {
-        return $title;
-    }
-
-    // --- A. GET AUTHORS & TITLES ---
-    $authors_html = '';
-    
-    // Check the 'authors' ACF repeater field
-    if (have_rows('authors', $id)) {
-        while (have_rows('authors', $id)) {
-            the_row();
-            
-            // Get the user object (or ID) from the sub-field
-            $user = get_sub_field('user');
-            
-            if ($user) {
-                // Ensure we have a WP_User object
-                if (is_numeric($user)) {
-                    $user = get_userdata($user);
-                }
-                
-                if ($user) {
-                    // 1. Get Name (First Last)
-                    $name = trim($user->first_name . ' ' . $user->last_name);
-                    if (empty($name)) {
-                        $name = $user->display_name;
-                    }
-
-                    // 2. Get Title (e.g., "Associate Professor")
-                    // We check common ACF field names 'title' or 'job_title'. 
-                    // Update 'title' below if your field name is different.
-                    $author_title = get_field('title', 'user_' . $user->ID); 
-                    if (empty($author_title)) {
-                        $author_title = get_user_meta($user->ID, 'job_title', true); // Fallback
-                    }
-
-                    // 3. Format Line: "Name, Title"
-                    $line_text = $name;
-                    if (!empty($author_title)) {
-                        $line_text .= ', ' . $author_title;
-                    }
-
-                    // Append to HTML
-                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($line_text) . '</div>';
-                }
-            }
-        }
-    }
-
-    // --- B. GET PUB NUMBER & DATE ---
-    $pub_meta_html = '';
-    
-    // Get Publication Number (e.g., "Bulletin 1588")
-    $pub_number = get_field('publication_number', $id);
-    $formatted_pub_number = function_exists('format_publication_number_for_display') 
-        ? format_publication_number_for_display($pub_number) 
-        : $pub_number;
-
-    // Get Status and Date
-    if (function_exists('get_latest_published_date')) {
-        $latest_info = get_latest_published_date($id);
-        
-        if (!empty($latest_info['date'])) {
-            // Status map (lowercased to match your reference "published on")
-            $status_map = [
-                1 => 'unpublished',
-                2 => 'published', 
-                4 => 'published with minor revisions',
-                5 => 'published with major revisions',
-                6 => 'published with full review',
-                7 => 'archived',
-                8 => 'in review',
-                10 => 'in review'
-            ];
-
-            $status_code = $latest_info['status'];
-            $status_text = isset($status_map[$status_code]) ? $status_map[$status_code] : 'published';
-            $date_text = date('F j, Y', strtotime($latest_info['date']));
-
-            // Construct Line: "Bulletin 1588 published on November 25, 2025"
-            $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
-            
-            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
-        }
-    }
-
-    // --- C. OUTPUT ---
-    if (!empty($authors_html) || !empty($pub_meta_html)) {
-        // Wrapper div with print-title-info class
-        $output = '<div class="print-title-info" style="margin-top: 5px; margin-bottom: 20px; font-family: inherit;">';
-        $output .= $authors_html;
-        $output .= $pub_meta_html;
-        $output .= '</div>';
-        
-        return $title . $output;
-    }
-
-    return $title;
-}, 20, 2);
-
 /**
  * Add print-only LAST PAGE footer to publications
  */
@@ -1527,223 +1422,104 @@ national origin, race, religion, sex, or veteran status, and is an Equal Opportu
 
     return $content . $footer_html;
 }, 20);
+
+// ===================
+// PRINT VIEW: INSERT INFO AFTER POST TITLE BLOCK
+// ===================
+add_filter('render_block', function ($block_content, $block) {
+    // 1. Target only the Core Post Title block
+    if ($block['blockName'] !== 'core/post-title') {
+        return $block_content;
+    }
+
+    // 2. Check context: Single Publication, Not Admin
+    if (is_admin() || !is_singular('publications')) {
+        return $block_content;
+    }
+
+    // 3. Prevent Duplication (run only once per page load)
+    static $print_info_added = false;
+    if ($print_info_added) {
+        return $block_content;
+    }
+
+    $id = get_the_ID();
+
+    // --- A. GET AUTHORS & TITLES ---
+    $authors_html = '';
+    
+    if (have_rows('authors', $id)) {
+        while (have_rows('authors', $id)) {
+            the_row();
+            $user = get_sub_field('user');
+            
+            if ($user) {
+                if (is_numeric($user)) {
+                    $user = get_userdata($user);
+                }
+                
+                if ($user) {
+                    $name = trim($user->first_name . ' ' . $user->last_name);
+                    if (empty($name)) $name = $user->display_name;
+
+                    // Get Title (check 'title' or 'job_title')
+                    $author_title = get_field('title', 'user_' . $user->ID); 
+                    if (empty($author_title)) {
+                        $author_title = get_user_meta($user->ID, 'job_title', true); 
+                    }
+
+                    $line_text = $name;
+                    if (!empty($author_title)) {
+                        $line_text .= ', ' . $author_title;
+                    }
+
+                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($line_text) . '</div>';
+                }
+            }
+        }
+    }
+
+    // --- B. GET PUB NUMBER & DATE ---
+    $pub_meta_html = '';
+    $pub_number = get_field('publication_number', $id);
+    
+    $formatted_pub_number = function_exists('format_publication_number_for_display') 
+        ? format_publication_number_for_display($pub_number) 
+        : $pub_number;
+
+    if (function_exists('get_latest_published_date')) {
+        $latest_info = get_latest_published_date($id);
+        
+        if (!empty($latest_info['date'])) {
+            $status_map = [
+                1 => 'unpublished', 2 => 'published', 4 => 'published with minor revisions',
+                5 => 'published with major revisions', 6 => 'published with full review',
+                7 => 'archived', 8 => 'in review', 10 => 'in review'
+            ];
+            
+            $status_code = $latest_info['status'];
+            $status_text = isset($status_map[$status_code]) ? $status_map[$status_code] : 'published';
+            $date_text = date('F j, Y', strtotime($latest_info['date']));
+
+            $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
+            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
+        }
+    }
+
+    // --- C. APPEND TO TITLE BLOCK ---
+    if (!empty($authors_html) || !empty($pub_meta_html)) {
+        $print_info_added = true; // Mark as added so it doesn't repeat
+        
+        $html_to_add = '<div class="print-title-info" style="margin-bottom: 20px; font-family: inherit;">';
+        $html_to_add .= $authors_html;
+        $html_to_add .= $pub_meta_html;
+        $html_to_add .= '</div>';
+        
+        // Return: Title Block HTML + Our Info
+        return $block_content . $html_to_add;
+    }
+
+    return $block_content;
+}, 10, 2);
+
 /* End print-only LAST PAGE footer to publications */
-
-// ===================
-// PRINT VIEW: INFO AFTER TITLE (Prepended to Content)
-// ===================
-add_filter('the_content', function($content) {
-    // 1. Only run this in the main loop for a single publication (and not in admin)
-    if (is_admin() || !is_singular('publications') || !in_the_loop()) {
-        return $content;
-    }
-
-    $id = get_the_ID();
-
-    // --- A. GET AUTHORS & TITLES ---
-    $authors_html = '';
-    
-    // Check the 'authors' ACF repeater field
-    if (have_rows('authors', $id)) {
-        while (have_rows('authors', $id)) {
-            the_row();
-            
-            // Get the user object (or ID) from the sub-field
-            $user = get_sub_field('user');
-            
-            if ($user) {
-                // Ensure we have a WP_User object if it returns an ID
-                if (is_numeric($user)) {
-                    $user = get_userdata($user);
-                }
-                
-                if ($user) {
-                    // 1. Get Name (First Last)
-                    $name = trim($user->first_name . ' ' . $user->last_name);
-                    if (empty($name)) {
-                        $name = $user->display_name;
-                    }
-
-                    // 2. Get Title (e.g., "Associate Professor")
-                    // Checks ACF 'title' field on User, falls back to standard 'job_title'
-                    $author_title = get_field('title', 'user_' . $user->ID); 
-                    if (empty($author_title)) {
-                        $author_title = get_user_meta($user->ID, 'job_title', true); 
-                    }
-
-                    // 3. Format Line: "Name, Title"
-                    $line_text = $name;
-                    if (!empty($author_title)) {
-                        $line_text .= ', ' . $author_title;
-                    }
-
-                    // Append to HTML (Each on its own line)
-                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($line_text) . '</div>';
-                }
-            }
-        }
-    }
-
-    // --- B. GET PUB NUMBER & DATE ---
-    $pub_meta_html = '';
-    
-    // Get Publication Number (e.g., "Bulletin 1588")
-    $pub_number = get_field('publication_number', $id);
-    
-    // Use your existing helper if available
-    $formatted_pub_number = function_exists('format_publication_number_for_display') 
-        ? format_publication_number_for_display($pub_number) 
-        : $pub_number;
-
-    // Get Status and Date using your existing helper
-    if (function_exists('get_latest_published_date')) {
-        $latest_info = get_latest_published_date($id);
-        
-        if (!empty($latest_info['date'])) {
-            // Status map (lowercased to match your reference "published on")
-            $status_map = [
-                1 => 'unpublished',
-                2 => 'published', 
-                4 => 'published with minor revisions',
-                5 => 'published with major revisions',
-                6 => 'published with full review',
-                7 => 'archived',
-                8 => 'in review',
-                10 => 'in review'
-            ];
-
-            $status_code = $latest_info['status'];
-            $status_text = isset($status_map[$status_code]) ? $status_map[$status_code] : 'published';
-            $date_text = date('F j, Y', strtotime($latest_info['date']));
-
-            // Construct Line: "Bulletin 1588 published on November 25, 2025"
-            $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
-            
-            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
-        }
-    }
-
-    // --- C. OUTPUT (PREPEND TO CONTENT) ---
-    if (!empty($authors_html) || !empty($pub_meta_html)) {
-        // Wrapper div with print-title-info class
-        // Inline styles ensure basic formatting, use CSS classes to control print/screen display
-        $header_info = '<div class="print-title-info" style="margin-bottom: 20px; font-family: inherit;">';
-        $header_info .= $authors_html;
-        $header_info .= $pub_meta_html;
-        $header_info .= '</div>';
-        
-        return $header_info . $content;
-    }
-
-    return $content;
-}, 10); // Priority 10 ensures it runs before your footer filter (usually 20)
-
-// ===================
-// PRINT VIEW: INFO AFTER TITLE (Prepended to Content)
-// ===================
-add_filter('the_content', function($content) {
-    // 1. Only run this in the main loop for a single publication (and not in admin)
-    if (is_admin() || !is_singular('publications') || !in_the_loop()) {
-        return $content;
-    }
-
-    $id = get_the_ID();
-
-    // --- A. GET AUTHORS & TITLES ---
-    $authors_html = '';
-    
-    // Check the 'authors' ACF repeater field
-    if (have_rows('authors', $id)) {
-        while (have_rows('authors', $id)) {
-            the_row();
-            
-            // Get the user object (or ID) from the sub-field
-            $user = get_sub_field('user');
-            
-            if ($user) {
-                // Ensure we have a WP_User object if it returns an ID
-                if (is_numeric($user)) {
-                    $user = get_userdata($user);
-                }
-                
-                if ($user) {
-                    // 1. Get Name (First Last)
-                    $name = trim($user->first_name . ' ' . $user->last_name);
-                    if (empty($name)) {
-                        $name = $user->display_name;
-                    }
-
-                    // 2. Get Title (e.g., "Associate Professor")
-                    // Checks ACF 'title' field on User, falls back to standard 'job_title'
-                    $author_title = get_field('title', 'user_' . $user->ID); 
-                    if (empty($author_title)) {
-                        $author_title = get_user_meta($user->ID, 'job_title', true); 
-                    }
-
-                    // 3. Format Line: "Name, Title"
-                    $line_text = $name;
-                    if (!empty($author_title)) {
-                        $line_text .= ', ' . $author_title;
-                    }
-
-                    // Append to HTML (Each on its own line)
-                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($line_text) . '</div>';
-                }
-            }
-        }
-    }
-
-    // --- B. GET PUB NUMBER & DATE ---
-    $pub_meta_html = '';
-    
-    // Get Publication Number (e.g., "Bulletin 1588")
-    $pub_number = get_field('publication_number', $id);
-    
-    // Use your existing helper if available
-    $formatted_pub_number = function_exists('format_publication_number_for_display') 
-        ? format_publication_number_for_display($pub_number) 
-        : $pub_number;
-
-    // Get Status and Date using your existing helper
-    if (function_exists('get_latest_published_date')) {
-        $latest_info = get_latest_published_date($id);
-        
-        if (!empty($latest_info['date'])) {
-            // Status map (lowercased to match your reference "published on")
-            $status_map = [
-                1 => 'unpublished',
-                2 => 'published', 
-                4 => 'published with minor revisions',
-                5 => 'published with major revisions',
-                6 => 'published with full review',
-                7 => 'archived',
-                8 => 'in review',
-                10 => 'in review'
-            ];
-
-            $status_code = $latest_info['status'];
-            $status_text = isset($status_map[$status_code]) ? $status_map[$status_code] : 'published';
-            $date_text = date('F j, Y', strtotime($latest_info['date']));
-
-            // Construct Line: "Bulletin 1588 published on November 25, 2025"
-            $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
-            
-            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
-        }
-    }
-
-    // --- C. OUTPUT (PREPEND TO CONTENT) ---
-    // We check if we have content to show
-    if (!empty($authors_html) || !empty($pub_meta_html)) {
-        // Wrapper div with print-title-info class
-        $header_info = '<div class="print-title-info" style="margin-bottom: 20px; font-family: inherit;">';
-        $header_info .= $authors_html;
-        $header_info .= $pub_meta_html;
-        $header_info .= '</div>';
-        
-        // Return Header + Content (Prepended)
-        return $header_info . $content;
-    }
-
-    return $content;
-}, 10);
