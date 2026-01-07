@@ -177,6 +177,12 @@
 
 
   .single-publications {
+
+    .caes-hub-content>.wp-block-group:first-child {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
     .wp-block-columns.caes-hub-pub-columns {
       display: block !important;
 
