@@ -1341,6 +1341,7 @@ add_action('wp_head', function() {
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     ?>
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
     <style>
     /* Running element - OUTSIDE @media print for Paged.js */
     .print-last-page-footer {
