@@ -1451,7 +1451,7 @@ add_filter('render_block', function ($block_content, $block) {
     $logo_url = '/wp-content/themes/wp-theme-hub-2025/assets/images/Extension_logo_Formal_FC.png';
     
     $logo_html = '<div class="print-header-logo">';
-    $logo_html .= '<img src="' . esc_url($logo_url) . '" alt="Extension Logo" style="max-width: 300px; height: auto;">';
+    $logo_html .= '<img src="' . esc_url($logo_url) . '" alt="University of Georgia Extension">';
     $logo_html .= '</div>';
 
 
