@@ -215,6 +215,8 @@
       page-break-after: always;
       page-break-inside: avoid;
       padding: 30px 0;
+      max-width: var(--wp--style--global--content-size);
+      margin: 0 auto;
     }
 
     .breadcrumb-navigation,
