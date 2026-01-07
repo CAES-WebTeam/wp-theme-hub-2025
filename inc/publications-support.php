@@ -1321,15 +1321,6 @@ function format_publication_number_for_display($publication_number)
     return $formatted_pub_number_string;
 }
 
-add_action('wp_head', function() {
-    if (!is_singular('publications')) {
-        return;
-    }
-    ?>
-    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
-    <?php
-});
-
 /**
  * Add print CSS with dynamic footer for publications
  */
