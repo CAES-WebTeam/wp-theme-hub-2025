@@ -71,8 +71,9 @@
 
   .single-publications {
     .wp-block-columns.caes-hub-pub-columns {
+      display: block !important;
       .wp-block-column {
-        flex-basis: 100% !important;
+        width: 100% !important;
       }
     }
 

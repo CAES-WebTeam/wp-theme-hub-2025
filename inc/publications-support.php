@@ -1378,67 +1378,105 @@ add_action('wp_head', function() {
 });
 
 // ===================
-// PRINT ONLY INFO AFTER TITLE
+// PRINT VIEW: INFO AFTER TITLE
 // ===================
 add_filter('the_title', function($title, $id) {
-    // Check if we are in the main loop, singular publication, and not in admin
+    // 1. Only run this in the main loop for a single publication (and not in admin)
     if (is_admin() || !is_singular('publications') || !in_the_loop()) {
         return $title;
     }
 
-    // 1. Get Publication Number
-    $publication_number = get_field('publication_number', $id);
+    // --- A. GET AUTHORS & TITLES ---
+    $authors_html = '';
     
-    // Use the formatting helper if available (from your existing codebase)
-    $formatted_pub_number = function_exists('format_publication_number_for_display') 
-        ? format_publication_number_for_display($publication_number) 
-        : $publication_number;
-
-    // 2. Get Date and Status
-    // Uses the same logic as your print footer
-    $publish_date_text = '';
-    
-    // Ensure the helper function exists (it is used in your footer, so it should be available)
-    if (function_exists('get_latest_published_date')) {
-        $latest_published_info = get_latest_published_date($id);
-        
-        if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
-            // Status labels map (matches your mPDF and footer logic)
-            $status_labels = [
-                1 => 'Unpublished/Removed',
-                2 => 'Published',
-                4 => 'Published with Minor Revisions',
-                5 => 'Published with Major Revisions',
-                6 => 'Published with Full Review',
-                7 => 'Historic/Archived',
-                8 => 'In Review for Minor Revisions',
-                9 => 'In Review for Major Revisions',
-                10 => 'In Review'
-            ];
+    // Check the 'authors' ACF repeater field
+    if (have_rows('authors', $id)) {
+        while (have_rows('authors', $id)) {
+            the_row();
             
-            $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
-            $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
+            // Get the user object (or ID) from the sub-field
+            $user = get_sub_field('user');
+            
+            if ($user) {
+                // Ensure we have a WP_User object
+                if (is_numeric($user)) {
+                    $user = get_userdata($user);
+                }
+                
+                if ($user) {
+                    // 1. Get Name (First Last)
+                    $name = trim($user->first_name . ' ' . $user->last_name);
+                    if (empty($name)) {
+                        $name = $user->display_name;
+                    }
+
+                    // 2. Get Title (e.g., "Associate Professor")
+                    // We check common ACF field names 'title' or 'job_title'. 
+                    // Update 'title' below if your field name is different.
+                    $author_title = get_field('title', 'user_' . $user->ID); 
+                    if (empty($author_title)) {
+                        $author_title = get_user_meta($user->ID, 'job_title', true); // Fallback
+                    }
+
+                    // 3. Format Line: "Name, Title"
+                    $line_text = $name;
+                    if (!empty($author_title)) {
+                        $line_text .= ', ' . $author_title;
+                    }
+
+                    // Append to HTML
+                    $authors_html .= '<div class="print-author-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($line_text) . '</div>';
+                }
+            }
         }
     }
 
-    // 3. Construct HTML
-    // Appends a div with classes similar to the footer for consistency.
-    if (!empty($formatted_pub_number) || !empty($publish_date_text)) {
-        // We use a specific class 'print-title-info' so you can toggle display in your CSS
-        $html = '<div class="print-title-info">'; 
-        $html .= '<div class="print-pub-meta" style="margin-top: 0.5em; font-size: 0.8em; font-weight: normal;">';
+    // --- B. GET PUB NUMBER & DATE ---
+    $pub_meta_html = '';
+    
+    // Get Publication Number (e.g., "Bulletin 1588")
+    $pub_number = get_field('publication_number', $id);
+    $formatted_pub_number = function_exists('format_publication_number_for_display') 
+        ? format_publication_number_for_display($pub_number) 
+        : $pub_number;
+
+    // Get Status and Date
+    if (function_exists('get_latest_published_date')) {
+        $latest_info = get_latest_published_date($id);
         
-        if (!empty($formatted_pub_number)) {
-            $html .= '<span class="print-pub-number" style="margin-right: 15px;">' . esc_html($formatted_pub_number) . '</span>';
+        if (!empty($latest_info['date'])) {
+            // Status map (lowercased to match your reference "published on")
+            $status_map = [
+                1 => 'unpublished',
+                2 => 'published', 
+                4 => 'published with minor revisions',
+                5 => 'published with major revisions',
+                6 => 'published with full review',
+                7 => 'archived',
+                8 => 'in review',
+                10 => 'in review'
+            ];
+
+            $status_code = $latest_info['status'];
+            $status_text = isset($status_map[$status_code]) ? $status_map[$status_code] : 'published';
+            $date_text = date('F j, Y', strtotime($latest_info['date']));
+
+            // Construct Line: "Bulletin 1588 published on November 25, 2025"
+            $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
+            
+            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
         }
+    }
+
+    // --- C. OUTPUT ---
+    if (!empty($authors_html) || !empty($pub_meta_html)) {
+        // Wrapper div with print-title-info class
+        $output = '<div class="print-title-info" style="margin-top: 5px; margin-bottom: 20px; font-family: inherit;">';
+        $output .= $authors_html;
+        $output .= $pub_meta_html;
+        $output .= '</div>';
         
-        if (!empty($publish_date_text)) {
-            $html .= '<span class="print-pub-date">' . esc_html($publish_date_text) . '</span>';
-        }
-        
-        $html .= '</div></div>';
-        
-        return $title . $html;
+        return $title . $output;
     }
 
     return $title;
