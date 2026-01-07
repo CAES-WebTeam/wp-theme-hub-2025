@@ -1350,29 +1350,16 @@ add_action('wp_head', function() {
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     ?>
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
     <style>
     @media print {
-        @page :first {
-            @bottom-right {
-                content: none;
-            }
-            @bottom-left {
-                content: none;
-            }
-        }
-
-        @page :last {
-            @bottom-right {
-                content: none;
-            }
-            @bottom-left {
-                content: none;
-            }
+        .print-last-page-footer {
+            position: running(lastpagefooter);
         }
 
         @page {
             size: 8.5in 11in;
-            margin: 0.75in 0.75in 1in 0.75in;
+            margin: 0.75in 0.75in 1.25in 0.75in;
 
             @bottom-left {
                 content: "<?php echo $footer_text; ?>";
@@ -1384,6 +1371,21 @@ add_action('wp_head', function() {
                 content: counter(page);
                 font-size: 10px;
                 font-family: Georgia, serif;
+            }
+        }
+
+        @page :first {
+            @bottom-left { content: none; }
+            @bottom-right { content: none; }
+        }
+
+        @page :last {
+            margin-bottom: 2in;
+            @bottom-left { content: none; }
+            @bottom-right { content: none; }
+            @bottom-center {
+                content: element(lastpagefooter);
+                width: 100%;
             }
         }
 
