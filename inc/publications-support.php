@@ -1321,9 +1321,8 @@ function format_publication_number_for_display($publication_number)
     return $formatted_pub_number_string;
 }
 
-
 /**
- * Add print CSS with dynamic footer for publications
+ * Add print CSS and Paged.js loader for publications
  */
 add_action('wp_head', function() {
     if (!is_singular('publications')) {
@@ -1342,24 +1341,24 @@ add_action('wp_head', function() {
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     ?>
+    
+    <!-- Print Overlay -->
+    <div id="print-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:999999; justify-content:center; align-items:center; flex-direction:column;">
+        <div style="text-align:center; font-family: Georgia, serif;">
+            <div style="font-size: 24px; margin-bottom: 20px;">Preparing print view...</div>
+            <div style="font-size: 16px; color: #666;">Please wait while we format your document.</div>
+        </div>
+    </div>
+
     <style>
     @media print {
-        @page :first {
-            @bottom-right {
-                content: none;
-            }
-            @bottom-left {
-                content: none;
-            }
+        #print-overlay {
+            display: none !important;
         }
 
-        @page :last {
-            @bottom-right {
-                content: none;
-            }
-            @bottom-left {
-                content: none;
-            }
+        @page :first {
+            @bottom-right { content: none; }
+            @bottom-left { content: none; }
         }
 
         @page {
@@ -1384,51 +1383,88 @@ add_action('wp_head', function() {
         }
     }
     </style>
+
+    <script>
+    (function() {
+        let pagedLoaded = false;
+        let isLoading = false;
+        const overlay = document.getElementById('print-overlay');
+
+        function showOverlay() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideOverlay() {
+            overlay.style.display = 'none';
+        }
+
+        function loadPagedAndPrint() {
+            if (pagedLoaded) {
+                window.print();
+                return;
+            }
+
+            if (isLoading) return;
+            isLoading = true;
+
+            showOverlay();
+
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/pagedjs/dist/paged.polyfill.js';
+            script.onload = function() {
+                // Wait for Paged.js to finish rendering
+                const checkReady = setInterval(function() {
+                    const pages = document.querySelectorAll('.pagedjs_page');
+                    if (pages.length > 0) {
+                        clearInterval(checkReady);
+                        pagedLoaded = true;
+                        isLoading = false;
+                        
+                        // Small delay to ensure rendering is complete
+                        setTimeout(function() {
+                            hideOverlay();
+                            window.print();
+                        }, 500);
+                    }
+                }, 100);
+
+                // Timeout fallback after 10 seconds
+                setTimeout(function() {
+                    clearInterval(checkReady);
+                    if (!pagedLoaded) {
+                        pagedLoaded = true;
+                        isLoading = false;
+                        hideOverlay();
+                        window.print();
+                    }
+                }, 10000);
+            };
+            script.onerror = function() {
+                isLoading = false;
+                hideOverlay();
+                alert('Failed to load print formatter. Printing without formatting.');
+                window.print();
+            };
+            document.head.appendChild(script);
+        }
+
+        // Intercept Ctrl+P / Cmd+P
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                loadPagedAndPrint();
+            }
+        });
+
+        // Intercept beforeprint (for browser menu Print)
+        window.addEventListener('beforeprint', function(e) {
+            if (!pagedLoaded && !isLoading) {
+                // Can't fully prevent, but we can load Paged.js for next time
+                loadPagedAndPrint();
+            }
+        });
+    })();
+    </script>
     <?php
 });
-
-/* End print CSS with dynamic footer for publications */
-
-/* Add print-only LAST PAGE footer to publications */
-add_filter('the_content', function ($content) {
-    if (!is_singular('publications') || is_admin()) {
-        return $content;
-    }
-
-    $post_id = get_the_ID();
-    $publication_number = get_field('publication_number', $post_id);
-    $formatted_pub_number = format_publication_number_for_display($publication_number);
-    $latest_published_info = get_latest_published_date($post_id);
-    $permalink = get_permalink($post_id);
-
-    $status_labels = [
-        2 => 'Published',
-        4 => 'Published with Minor Revisions',
-        5 => 'Published with Major Revisions',
-        6 => 'Published with Full Review',
-    ];
-
-    $publish_date_text = '';
-    if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
-        $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
-        $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
-    }
-
-    $footer_html = '
-    <div class="print-last-page-footer">
-        <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($permalink) . '">' . esc_html($permalink) . '</a></p>
-        <hr>
-        <div class="print-pub-meta">
-            <span class="print-pub-number">' . esc_html($formatted_pub_number) . '</span>
-            <span class="print-pub-date">' . esc_html($publish_date_text) . '</span>
-        </div>
-        <hr>
-        <p class="print-disclaimer">Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia
-College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the
-counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information,
-national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em></p>
-    </div>';
-
-    return $content . $footer_html;
-}, 20);
-/* End print-only LAST PAGE footer to publications */
+/* End print CSS and Paged.js loader for publications */
