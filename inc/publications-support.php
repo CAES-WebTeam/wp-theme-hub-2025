@@ -1515,7 +1515,7 @@ add_filter('render_block', function ($block_content, $block) {
             $date_text = date('F j, Y', strtotime($latest_info['date']));
 
             $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
-            $pub_meta_html = '<div class="print-meta-line" style="font-size: 0.9em; margin-top: 4px; font-weight: normal;">' . esc_html($meta_line) . '</div>';
+            $pub_meta_html = '<div class="print-meta-line">' . esc_html($meta_line) . '</div>';
         }
     }
 
