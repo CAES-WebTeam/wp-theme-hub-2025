@@ -1349,7 +1349,7 @@ add_action('wp_head', function() {
     @media print {
         @page {
             size: 8.5in 11in;
-            margin: 0.5in 0.5in 0.5in 0.5in;
+            margin: 0.5in 0.5in 0.75in 0.5in;
 
             @bottom-left {
                 content: "<?php echo $footer_text; ?>";
