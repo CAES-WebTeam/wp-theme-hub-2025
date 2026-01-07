@@ -1325,6 +1325,9 @@ function format_publication_number_for_display($publication_number)
 /**
  * Add print support for publications
  */
+/**
+ * Add print support for publications
+ */
 add_action('wp_head', function() {
     if (!is_singular('publications')) {
         return;
@@ -1344,7 +1347,6 @@ add_action('wp_head', function() {
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
 
     if ($is_print_view) {
-        // Print view: load Paged.js
         ?>
         <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
         <style>
@@ -1376,54 +1378,67 @@ add_action('wp_head', function() {
         </style>
         <?php
     } else {
-        // Normal view: intercept print and redirect
         ?>
         <style>
         @media print {
-            @page {
-                size: 8.5in 11in;
-                margin: 0.75in 0.75in 1in 0.75in;
-
-                @bottom-left {
-                    content: "<?php echo $footer_text; ?>";
-                    font-size: 10px;
-                    font-family: Georgia, serif;
-                }
-
-                @bottom-right {
-                    content: counter(page);
-                    font-size: 10px;
-                    font-family: Georgia, serif;
-                }
+            body::before {
+                content: "Please use the print button or Ctrl+P to print this publication.";
+                display: block;
+                font-size: 24px;
+                text-align: center;
+                padding: 100px;
             }
-
-            @page :first {
-                @bottom-right { content: none; }
-                @bottom-left { content: none; }
-            }
-
-            .caes-hub-content-meta-wrap {
-                counter-reset: page;
+            body > *:not(#print-redirect-notice) {
+                display: none !important;
             }
         }
         </style>
         <script>
         (function() {
+            const printUrl = '<?php echo esc_url(add_query_arg('print', 'true', get_permalink())); ?>';
+            
             function openPrintView(e) {
-                e.preventDefault();
-                window.open('<?php echo esc_url(add_query_arg('print', 'true', get_permalink())); ?>', '_blank');
+                if (e) e.preventDefault();
+                window.open(printUrl, '_blank');
             }
 
+            // Catch Ctrl+P / Cmd+P
             document.addEventListener('keydown', function(e) {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
                     openPrintView(e);
                 }
+            });
+
+            // Catch browser menu print
+            window.addEventListener('beforeprint', function() {
+                window.open(printUrl, '_blank');
             });
         })();
         </script>
         <?php
     }
 });
+
+/**
+ * Dequeue scripts that break Paged.js on print view
+ */
+add_action('wp_enqueue_scripts', function() {
+    if (!is_singular('publications')) {
+        return;
+    }
+
+    $is_print_view = isset($_GET['print']) && $_GET['print'] === 'true';
+
+    if ($is_print_view) {
+        // Remove emoji script
+        remove_action('wp_head', 'print_emoji_detection_script', 7);
+        remove_action('wp_print_styles', 'print_emoji_styles');
+        
+        // Dequeue theme scripts that might interfere
+        wp_dequeue_script('main');
+        wp_dequeue_script('jquery');
+    }
+}, 100);
 
 /**
  * Add print view banner
