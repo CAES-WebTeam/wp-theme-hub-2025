@@ -1341,24 +1341,7 @@ add_action('wp_head', function() {
     $formatted_pub_number = format_publication_number_for_display($publication_number);
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     ?>
-    
-    <!-- Print Overlay -->
-    <div id="print-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:999999; justify-content:center; align-items:center; flex-direction:column;">
-        <div style="text-align:center; font-family: Georgia, serif;">
-            <div style="font-size: 24px; margin-bottom: 20px;">Preparing print view...</div>
-            <div style="font-size: 16px; color: #666;">Please wait while we format your document.</div>
-        </div>
-    </div>
-
-    <!-- Return to Article Button (hidden until Paged.js loads) -->
-    <div id="print-view-banner" style="display:none; position:fixed; top:0; left:0; right:0; background:#ba0c2f; color:#fff; padding:12px 20px; z-index:999999; font-family: Georgia, serif; text-align:center;">
-        <span style="margin-right: 20px;">You are viewing the print-formatted version of this publication.</span>
-        <a href="<?php echo esc_url(get_permalink()); ?>" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; text-decoration:none; border-radius:4px;">← Return to Article</a>
-        <button onclick="window.print()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; margin-left:10px; cursor:pointer;">Print Now</button>
-    </div>
-
     <style>
-    /* Add top padding when banner is visible */
     body.paged-view-active {
         padding-top: 60px !important;
     }
@@ -1400,24 +1383,47 @@ add_action('wp_head', function() {
         }
     }
     </style>
+    <?php
+});
+
+/**
+ * Add print overlay and banner HTML to body
+ */
+add_action('wp_body_open', function() {
+    if (!is_singular('publications')) {
+        return;
+    }
+    ?>
+    <!-- Print Overlay -->
+    <div id="print-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); z-index:999999; justify-content:center; align-items:center; flex-direction:column;">
+        <div style="text-align:center; font-family: Georgia, serif;">
+            <div style="font-size: 24px; margin-bottom: 20px;">Preparing print view...</div>
+            <div style="font-size: 16px; color: #666;">Please wait while we format your document.</div>
+        </div>
+    </div>
+
+    <!-- Return to Article Banner -->
+    <div id="print-view-banner" style="display:none; position:fixed; top:0; left:0; right:0; background:#ba0c2f; color:#fff; padding:12px 20px; z-index:999999; font-family: Georgia, serif; text-align:center;">
+        <span style="margin-right: 20px;">You are viewing the print-formatted version of this publication.</span>
+        <button onclick="window.location.reload(true)" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; cursor:pointer;">← Return to Article</button>
+        <button onclick="window.print()" style="color:#fff; background:rgba(0,0,0,0.3); padding:8px 16px; border:none; border-radius:4px; margin-left:10px; cursor:pointer;">Print Now</button>
+    </div>
 
     <script>
     (function() {
         let pagedLoaded = false;
         let isLoading = false;
-        const overlay = document.getElementById('print-overlay');
-        const banner = document.getElementById('print-view-banner');
 
         function showOverlay() {
-            overlay.style.display = 'flex';
+            document.getElementById('print-overlay').style.display = 'flex';
         }
 
         function hideOverlay() {
-            overlay.style.display = 'none';
+            document.getElementById('print-overlay').style.display = 'none';
         }
 
         function showBanner() {
-            banner.style.display = 'block';
+            document.getElementById('print-view-banner').style.display = 'block';
             document.body.classList.add('paged-view-active');
         }
 
@@ -1487,9 +1493,6 @@ add_action('wp_head', function() {
     <?php
 });
 
-/* End print CSS with dynamic footer for publications */
-
-/* Add print-only LAST PAGE footer to publications */
 add_filter('the_content', function ($content) {
     if (!is_singular('publications') || is_admin()) {
         return $content;
