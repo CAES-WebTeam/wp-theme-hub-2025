@@ -34,9 +34,11 @@
     font-size: 24px;
     font-weight: bold;
     margin: 24px 0 12px 0;
+
     br {
       display: none !important;
     }
+
     span {
       font-size: inherit !important;
       margin-top: auto !important;
@@ -249,7 +251,7 @@
       page-break-after: always;
       page-break-inside: avoid;
       padding: 30px 0;
-      max-width: var(--wp--style--global--content-size);
+      max-width: var(--wp--style--global--wide-size);
       margin: 0 auto;
     }
 
@@ -336,6 +338,11 @@
   }
 
   .is-layout-constrained> :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
-    max-width: 100% !important;
+    max-width: var(--wp--style--global--wide-size) !important;
   }
+
+  .is-layout-constrained>:where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
+    max-width: calc(var(--wp--style--global--wide-size) - 40px) !important;
+  }
+
 }
