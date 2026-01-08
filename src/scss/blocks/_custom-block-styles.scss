@@ -205,7 +205,7 @@ ul.is-style-caes-hub-list-checkbox {
 }
 
 @media print {
-    .wp-block-group.has-background {
+    .wp-block-group.has-background:not(.has-base-background-color) {
         padding: 0 !important;
     }
 }
