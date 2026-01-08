@@ -229,7 +229,7 @@
       padding: 0;
       overflow: hidden;
       page-break-inside: avoid;
-      max-width: var(--wp--style--global--wide-size);
+      max-width: 100%;
       margin: 0 auto;
 
       .caes-hub-main-bg-f-img {
@@ -332,11 +332,11 @@
   }
 
   .is-layout-constrained> :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
-    max-width: var(--wp--style--global--wide-size) !important;
+    max-width: var(--wp--style--global--content-size) !important;
   }
 
   .is-layout-constrained>:where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
-    max-width: calc(var(--wp--style--global--wide-size) - 40px) !important;
+    max-width: calc(var(--wp--style--global--content-size) - 40px) !important;
   }
 
   :root :where(.is-layout-constrained) > * {
