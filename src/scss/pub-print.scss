@@ -34,6 +34,13 @@
     font-size: 24px;
     font-weight: bold;
     margin: 24px 0 12px 0;
+    br {
+      display: none !important;
+    }
+    span {
+      font-size: inherit !important;
+      margin-top: auto !important;
+    }
   }
 
   h2 {
