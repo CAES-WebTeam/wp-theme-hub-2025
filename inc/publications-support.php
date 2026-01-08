@@ -1406,7 +1406,7 @@ add_filter('the_content', function ($content) {
     }
 
     $footer_html = '
-    <div class="print-last-page-footer">
+    <div class="print-last-page-footer" style="margin-block-start: 4rem !important">
         <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($permalink) . '">' . esc_html($permalink) . '</a></p>
         <div class="print-pub-meta">
             <span class="print-pub-number">' . esc_html($formatted_pub_number) . '</span>
