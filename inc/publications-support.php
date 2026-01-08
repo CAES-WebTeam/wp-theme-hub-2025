@@ -1461,31 +1461,59 @@ add_filter('render_block', function ($block_content, $block) {
     if (have_rows('authors', $id)) {
         while (have_rows('authors', $id)) {
             the_row();
-            $user = get_sub_field('user');
             
-            if ($user) {
-                if (is_numeric($user)) $user = get_userdata($user);
+            // FIX: Initialize variables for each person to prevent data persistence
+            $name = '';
+            $author_title = '';
+            
+            // Check the type field to determine if this is a user or custom entry
+            $entry_type = get_sub_field('type');
+            
+            if ($entry_type === 'Custom') {
+                // Handle custom user entry
+                $custom_user = get_sub_field('custom_user');
+                if (empty($custom_user)) {
+                    $custom_user = get_sub_field('custom');
+                }
+                
+                if ($custom_user) {
+                    $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
+                    $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
+                    $author_title = sanitize_text_field($custom_user['title'] ?? $custom_user['titile'] ?? '');
+                    $name = trim($first_name . ' ' . $last_name);
+                }
+            } else {
+                // Handle WordPress user selection
+                $user = get_sub_field('user');
                 
                 if ($user) {
-                    // Name (Bolded)
-                    $name = trim($user->first_name . ' ' . $user->last_name);
-                    if (empty($name)) $name = $user->display_name;
-                    $name_html = '<strong>' . esc_html($name) . '</strong>';
+                    if (is_numeric($user)) $user = get_userdata($user);
+                    
+                    if ($user) {
+                        // Name
+                        $name = trim($user->first_name . ' ' . $user->last_name);
+                        if (empty($name)) $name = $user->display_name;
 
-                    // Title
-                    $author_title = get_field('title', 'user_' . $user->ID); 
-                    if (empty($author_title)) {
-                        $author_title = get_user_meta($user->ID, 'job_title', true); 
+                        // Title
+                        $author_title = get_field('title', 'user_' . $user->ID); 
+                        if (empty($author_title)) {
+                            $author_title = get_user_meta($user->ID, 'job_title', true); 
+                        }
                     }
-
-                    // Construct Line
-                    $line_html = $name_html;
-                    if (!empty($author_title)) {
-                        $line_html .= ', ' . esc_html($author_title);
-                    }
-
-                    $authors_html .= '<div class="print-author-line">' . $line_html . '</div>';
                 }
+            }
+            
+            // Only output if we have a name
+            if (!empty($name)) {
+                $name_html = '<strong>' . esc_html($name) . '</strong>';
+                
+                // Construct Line
+                $line_html = $name_html;
+                if (!empty($author_title)) {
+                    $line_html .= ', ' . esc_html($author_title);
+                }
+
+                $authors_html .= '<div class="print-author-line">' . $line_html . '</div>';
             }
         }
     }
