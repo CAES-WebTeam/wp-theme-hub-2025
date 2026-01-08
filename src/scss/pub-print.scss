@@ -345,4 +345,8 @@
     max-width: calc(var(--wp--style--global--wide-size) - 40px) !important;
   }
 
+  :root :where(.is-layout-constrained) > * {
+    margin-block-start: 1em !important;
+  }
+
 }
