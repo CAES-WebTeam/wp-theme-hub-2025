@@ -218,6 +218,10 @@
     .caes-hub-content-post,
     .entry-content {
       margin-top: 0 !important;
+
+      figure:not(.wp-block-embed):not(.wp-block-image):not(.align-right):not(.align-left):not(.alignleft):not(.alignright) {
+        page-break-inside: avoid;
+      }
     }
 
     .caes-hub-main-bg {
@@ -339,7 +343,7 @@
     max-width: calc(var(--wp--style--global--content-size) - 40px) !important;
   }
 
-  :root :where(.is-layout-constrained) > * {
+  :root :where(.is-layout-constrained)>* {
     margin-block-start: 1em !important;
   }
 
