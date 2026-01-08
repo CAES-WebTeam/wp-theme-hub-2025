@@ -27,7 +27,7 @@
   h6 {
     font-family: var(--wp--preset--font-family--georgia);
     border: 0px !important;
-    color: #000;
+    color: #000 !important;
   }
 
   h1 {
@@ -64,6 +64,10 @@
     font-size: 14px;
     font-weight: bold;
     margin: 14px 0 4px 0;
+  }
+
+  p {
+    color: #000 !important;
   }
 
   table {
