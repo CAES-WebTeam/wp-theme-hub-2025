@@ -289,11 +289,6 @@
       margin: 20px 0 !important;
       text-align: left !important;
       page-break-after: avoid;
-
-      span {
-        display: block;
-        margin-top: 10px;
-      }
     }
   }
 
@@ -302,7 +297,7 @@
     font-family: var(--wp--preset--font-family--georgia);
     font-size: 10pt;
     page-break-inside: avoid;
-    margin-top: 4rem;
+    margin-top: 4rem !important;
 
     .print-permalink {
       text-align: center;
