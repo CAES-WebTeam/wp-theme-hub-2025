@@ -139,7 +139,7 @@ add_action( 'acf/include_fields', function() {
 				'Urban Agriculture' => 'Urban Agriculture',
 				'Youth & Family Development' => 'Youth & Family Development',
 				'Food Safety & Quality' => 'Food Safety & Quality',
-				'Sustainability, Conversation, & the Environment' => 'Sustainability, Conversation, & the Environment',
+				'Sustainability, Conversation, & the Environment' => 'Sustainability, Conservation, & the Environment',
 				'Community, Home, & Life Skills' => 'Community, Home, & Life Skills',
 			),
 			'default_value' => false,
