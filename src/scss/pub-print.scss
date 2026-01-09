@@ -245,7 +245,6 @@
           transform: none;
           width: 100%;
           height: 100%;
-          object-fit: cover;
           object-position: center;
         }
       }
@@ -337,6 +336,7 @@
 
   .is-layout-constrained> :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
     max-width: var(--wp--style--global--content-size) !important;
+    flex-wrap: unset !important;
   }
 
   .is-layout-constrained>:where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
