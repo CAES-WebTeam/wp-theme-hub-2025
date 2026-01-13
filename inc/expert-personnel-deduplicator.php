@@ -328,11 +328,83 @@ function ajax_dup_detect_results() {
         return $b['confidence'] - $a['confidence'];
     });
 
+    // Enrich results with personnel_id, source_expert_id, and writer_id
+    foreach ($results as &$result) {
+        $p_id = $result['personnel']['id'];
+        $e_id = $result['expert']['id'];
+        
+        $result['personnel']['personnel_id'] = get_field('personnel_id', 'user_' . $p_id) ?: '';
+        $result['expert']['source_expert_id'] = get_field('source_expert_id', 'user_' . $e_id) ?: '';
+        $result['expert']['writer_id'] = get_field('writer_id', 'user_' . $e_id) ?: '';
+    }
+    unset($result);
+
+    // Store results for CSV export (keep for 1 hour)
+    set_transient('dup_detect_export_results', $results, HOUR_IN_SECONDS);
+
     delete_transient('dup_detect_personnel');
     delete_transient('dup_detect_experts');
     delete_transient('dup_detect_results');
 
     wp_send_json_success(['duplicates' => $results]);
+}
+
+// CSV Export handler
+add_action('admin_init', 'handle_dup_detect_csv_export');
+function handle_dup_detect_csv_export() {
+    if (!isset($_GET['action']) || $_GET['action'] !== 'export_duplicates_csv') return;
+    if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'export_duplicates_csv')) {
+        wp_die('Security check failed');
+    }
+    if (!current_user_can('manage_options')) {
+        wp_die('Permission denied');
+    }
+
+    $results = get_transient('dup_detect_export_results');
+    if (!$results) {
+        wp_die('No export data available. Please run the detection again.');
+    }
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=duplicate_users_' . date('Y-m-d_His') . '.csv');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $output = fopen('php://output', 'w');
+    
+    // CSV Header
+    fputcsv($output, [
+        'personnel_id',
+        'expert_source_id',
+        'expert_writer_id',
+        'confidence',
+        'personnel_wp_id',
+        'personnel_name',
+        'personnel_email',
+        'expert_wp_id',
+        'expert_name',
+        'expert_email',
+        'match_reasons'
+    ]);
+
+    foreach ($results as $row) {
+        fputcsv($output, [
+            $row['personnel']['personnel_id'],
+            $row['expert']['source_expert_id'],
+            $row['expert']['writer_id'],
+            $row['confidence'],
+            $row['personnel']['id'],
+            $row['personnel']['name'],
+            $row['personnel']['email'],
+            $row['expert']['id'],
+            $row['expert']['name'],
+            $row['expert']['email'],
+            implode(' | ', $row['reasons'])
+        ]);
+    }
+
+    fclose($output);
+    exit;
 }
 
 /**
@@ -448,12 +520,16 @@ function duplicate_detection_page_content() {
                 else low++;
             });
 
+            const csvUrl = '<?php echo admin_url('admin.php?action=export_duplicates_csv&_wpnonce='); ?>' + '<?php echo wp_create_nonce('export_duplicates_csv'); ?>';
             $('#results-summary').html(`
                 <div style="background:#f9f9f9;padding:15px;margin-bottom:20px;border:1px solid #ddd;">
                     <strong>Found ${duplicates.length} potential duplicates:</strong>
                     <span style="color:#d63638;"> High (70%+): ${high}</span> |
                     <span style="color:#dba617;"> Medium (50-69%): ${medium}</span> |
                     <span style="color:#2271b1;"> Lower (&lt;50%): ${low}</span>
+                    <br><br>
+                    <a href="${csvUrl}" class="button button-primary">📥 Export to CSV</a>
+                    <span style="margin-left:10px;color:#666;">Download for review or use with the User Merge utility</span>
                 </div>
             `);
 
@@ -466,11 +542,14 @@ function duplicate_detection_page_content() {
                 const confBg = d.confidence >= 70 ? '#fcf0f1' : (d.confidence >= 50 ? '#fcf9e8' : '#f0f6fc');
                 const p = d.personnel, e = d.expert;
                 const reasons = d.reasons.map(r => `<li>${r}</li>`).join('');
+                const pPersonnelId = p.personnel_id || 'N/A';
+                const eSourceId = e.source_expert_id || 'N/A';
+                const eWriterId = e.writer_id || 'N/A';
 
                 html += `<tr style="background:${confBg}">
                     <td style="text-align:center;font-weight:bold;color:${confColor}">${d.confidence}%</td>
-                    <td><strong>${p.name}</strong><br><small>ID: ${p.id} | ${p.login}</small><br><small>${p.email}</small>${p.phone ? `<br><small>${p.phone}</small>` : ''}</td>
-                    <td><strong>${e.name}</strong><br><small>ID: ${e.id} | ${e.login}</small><br><small>${e.email}</small>${e.phone ? `<br><small>${e.phone}</small>` : ''}</td>
+                    <td><strong>${p.name}</strong><br><small>WP ID: ${p.id} | Personnel ID: ${pPersonnelId}</small><br><small>${p.email}</small>${p.phone ? `<br><small>${p.phone}</small>` : ''}</td>
+                    <td><strong>${e.name}</strong><br><small>WP ID: ${e.id}</small><br><small>Source Expert ID: ${eSourceId} | Writer ID: ${eWriterId}</small><br><small>${e.email}</small>${e.phone ? `<br><small>${e.phone}</small>` : ''}</td>
                     <td><ul style="margin:0;padding-left:15px;font-size:12px">${reasons}</ul></td>
                     <td><a href="user-edit.php?user_id=${p.id}" target="_blank" class="button button-small">Personnel</a><br><br>
                         <a href="user-edit.php?user_id=${e.id}" target="_blank" class="button button-small">Expert</a></td>
