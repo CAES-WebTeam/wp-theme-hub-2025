@@ -25,6 +25,7 @@ require get_template_directory() . '/inc/rss-support.php';
 // require get_template_directory() . '/inc/multisite-script-protect.php';
 require get_template_directory() . '/inc/symplectic-query-tool.php';
 require get_template_directory() . '/inc/expert-personnel-deduplicator.php';
+require get_template_directory() . '/inc/expert-personnel-deduplicator-stage-2.php';
 
 // Publications PDF generation
 require get_template_directory() . '/inc/publications-pdf/publications-pdf-mpdf.php';
