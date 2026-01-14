@@ -342,13 +342,179 @@ function ajax_user_merge_upload_csv() {
         wp_send_json_error('No CSV content provided.');
     }
 
-    $result = parse_and_store_csv($csv_content);
+    // Parse header and count lines
+    $lines = explode("\n", trim($csv_content));
+    if (count($lines) < 2) {
+        wp_send_json_error('CSV must have a header row and at least one data row.');
+    }
     
-    if (is_wp_error($result)) {
-        wp_send_json_error($result->get_error_message());
+    $header = str_getcsv(array_shift($lines));
+    $header = array_map(function($h) { return strtolower(trim($h)); }, $header);
+    
+    // Validate required columns
+    $cols = [
+        'personnel_id' => array_search('personnel_id', $header),
+        'expert_wp_id' => array_search('expert wp id', $header),
+    ];
+    
+    if ($cols['personnel_id'] === false || $cols['expert_wp_id'] === false) {
+        wp_send_json_error('CSV missing required columns (personnel_id, expert wp id).');
+    }
+    
+    // Generate session and store CSV for batched processing
+    $session_id = wp_generate_password(16, false);
+    user_merge_create_table();
+    
+    // Store the CSV content and header info for batch processing
+    update_option('user_merge_session_id', $session_id, false);
+    update_option('user_merge_csv_data', [
+        'header' => $header,
+        'lines' => $lines,
+        'total' => count($lines),
+        'processed' => 0,
+        'imported' => 0,
+        'errors' => [],
+    ], false);
+
+    wp_send_json_success([
+        'session_id' => $session_id,
+        'total_lines' => count($lines),
+        'message' => 'CSV uploaded. Starting processing...',
+    ]);
+}
+
+add_action('wp_ajax_user_merge_process_csv_batch', 'ajax_user_merge_process_csv_batch');
+function ajax_user_merge_process_csv_batch() {
+    check_ajax_referer('user_merge_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied');
     }
 
-    wp_send_json_success($result);
+    global $wpdb;
+    $table_name = user_merge_get_table_name();
+    
+    $csv_data = get_option('user_merge_csv_data');
+    $session_id = get_option('user_merge_session_id');
+    
+    if (!$csv_data || !$session_id) {
+        wp_send_json_error('No CSV data found. Please re-upload.');
+    }
+    
+    $header = $csv_data['header'];
+    $lines = $csv_data['lines'];
+    $processed = $csv_data['processed'];
+    $imported = $csv_data['imported'];
+    $errors = $csv_data['errors'];
+    $total = $csv_data['total'];
+    
+    // Column indices
+    $cols = [
+        'confidence' => array_search('confidence', $header),
+        'personnel_wp_id' => array_search('personnel wp id', $header),
+        'personnel_name' => array_search('personnel name', $header),
+        'personnel_email' => array_search('personnel email', $header),
+        'personnel_phone' => array_search('personnel phone', $header),
+        'personnel_id' => array_search('personnel_id', $header),
+        'expert_wp_id' => array_search('expert wp id', $header),
+        'expert_name' => array_search('expert name', $header),
+        'expert_email' => array_search('expert email', $header),
+        'expert_phone' => array_search('expert phone', $header),
+        'expert_source_id' => array_search('expert_source_id', $header),
+        'expert_writer_id' => array_search('expert_writer_id', $header),
+        'match_reasons' => array_search('match reasons', $header),
+    ];
+    
+    $batch_size = 10; // Process 10 rows at a time
+    $batch_end = min($processed + $batch_size, $total);
+    
+    for ($i = $processed; $i < $batch_end; $i++) {
+        $line = $lines[$i];
+        $line_num = $i + 2; // +2 for header row and 0-index
+        
+        if (empty(trim($line))) {
+            continue;
+        }
+        
+        $data = str_getcsv($line);
+        
+        $personnel_id = $cols['personnel_id'] !== false ? trim($data[$cols['personnel_id']] ?? '') : '';
+        $expert_wp_id = $cols['expert_wp_id'] !== false ? intval($data[$cols['expert_wp_id']] ?? 0) : 0;
+        
+        if (empty($personnel_id) || empty($expert_wp_id)) {
+            $errors[] = "Line {$line_num}: Missing personnel_id or expert_wp_id";
+            continue;
+        }
+        
+        // Look up personnel WP ID
+        $personnel_wp_id = $cols['personnel_wp_id'] !== false ? intval($data[$cols['personnel_wp_id']] ?? 0) : 0;
+        if (!$personnel_wp_id) {
+            $users = get_users(['meta_key' => 'personnel_id', 'meta_value' => $personnel_id, 'number' => 1, 'fields' => 'ID']);
+            $personnel_wp_id = !empty($users) ? intval($users[0]) : 0;
+        }
+        
+        if (!$personnel_wp_id) {
+            $errors[] = "Line {$line_num}: Personnel ID '{$personnel_id}' not found";
+            continue;
+        }
+        
+        // Verify expert exists
+        $expert_user = get_user_by('ID', $expert_wp_id);
+        if (!$expert_user) {
+            $errors[] = "Line {$line_num}: Expert WP ID {$expert_wp_id} not found";
+            continue;
+        }
+        
+        // Count affected posts
+        $affected_posts = find_posts_referencing_user($expert_wp_id);
+        
+        // Parse confidence
+        $confidence = $cols['confidence'] !== false ? intval(str_replace('%', '', $data[$cols['confidence']] ?? '0')) : 0;
+        
+        $wpdb->insert($table_name, [
+            'session_id' => $session_id,
+            'csv_line' => $line_num,
+            'confidence' => $confidence,
+            'match_reasons' => $cols['match_reasons'] !== false ? ($data[$cols['match_reasons']] ?? '') : '',
+            'personnel_wp_id' => $personnel_wp_id,
+            'personnel_name' => $cols['personnel_name'] !== false ? ($data[$cols['personnel_name']] ?? '') : '',
+            'personnel_email' => $cols['personnel_email'] !== false ? ($data[$cols['personnel_email']] ?? '') : '',
+            'personnel_phone' => $cols['personnel_phone'] !== false ? ($data[$cols['personnel_phone']] ?? '') : '',
+            'personnel_id' => $personnel_id,
+            'expert_wp_id' => $expert_wp_id,
+            'expert_name' => $cols['expert_name'] !== false ? ($data[$cols['expert_name']] ?? '') : '',
+            'expert_email' => $cols['expert_email'] !== false ? ($data[$cols['expert_email']] ?? '') : '',
+            'expert_phone' => $cols['expert_phone'] !== false ? ($data[$cols['expert_phone']] ?? '') : '',
+            'expert_source_id' => $cols['expert_source_id'] !== false ? ($data[$cols['expert_source_id']] ?? '') : '',
+            'expert_writer_id' => $cols['expert_writer_id'] !== false ? ($data[$cols['expert_writer_id']] ?? '') : '',
+            'affected_posts_count' => count($affected_posts),
+            'status' => 'pending',
+        ]);
+        
+        $imported++;
+    }
+    
+    $processed = $batch_end;
+    $is_complete = $processed >= $total;
+    $progress = $total > 0 ? round(($processed / $total) * 100) : 100;
+    
+    // Update stored data
+    $csv_data['processed'] = $processed;
+    $csv_data['imported'] = $imported;
+    $csv_data['errors'] = $errors;
+    update_option('user_merge_csv_data', $csv_data, false);
+    
+    if ($is_complete) {
+        delete_option('user_merge_csv_data');
+    }
+    
+    wp_send_json_success([
+        'processed' => $processed,
+        'total' => $total,
+        'imported' => $imported,
+        'errors_count' => count($errors),
+        'progress' => $progress,
+        'is_complete' => $is_complete,
+    ]);
 }
 
 add_action('wp_ajax_user_merge_get_queue', 'ajax_user_merge_get_queue');
@@ -625,11 +791,17 @@ function render_user_merge_page() {
             <p>Upload a CSV file from the Duplicate Detection tool.</p>
             <input type="file" id="csv-file" accept=".csv" style="margin-bottom:10px;"><br>
             <button id="upload-csv" class="button button-primary">Upload & Parse CSV</button>
+            <div id="upload-progress" style="display:none; margin-top:15px;">
+                <div style="background:#f0f0f0; border-radius:4px; height:20px; overflow:hidden;">
+                    <div id="upload-progress-bar" style="background:#2271b1; height:100%; width:0%; transition:width 0.3s;"></div>
+                </div>
+                <p id="upload-progress-text" style="margin:5px 0 0; font-size:12px; color:#666;">Initializing...</p>
+            </div>
             <div id="upload-status" style="margin-top:10px;"></div>
         </div>
 
         <!-- Existing Session Notice -->
-        <div id="session-notice" style="display:none; background:#fff3cd; border:1px solid #ffc107; padding:15px; margin-bottom:20px; max-width:600px;">
+        <div id="session-notice" style="display:none; background:#f0f6fc; border:1px solid #2271b1; padding:15px; margin-bottom:20px; max-width:600px;">
             <strong>📋 Existing Session Found</strong>
             <p id="session-info"></p>
             <button id="resume-session" class="button button-primary">Resume Working</button>
@@ -689,10 +861,11 @@ function render_user_merge_page() {
             background: #f6f7f7;
         }
         .queue-table tr.status-merged {
-            background: #d4edda;
+            background: #f0f9f0;
         }
         .queue-table tr.status-rejected {
-            background: #f8d7da;
+            background: #fafafa;
+            opacity: 0.7;
         }
         .confidence-badge {
             display: inline-block;
@@ -702,8 +875,8 @@ function render_user_merge_page() {
             font-size: 12px;
         }
         .confidence-high { background: #d63638; color: #fff; }
-        .confidence-medium { background: #dba617; color: #fff; }
-        .confidence-low { background: #2271b1; color: #fff; }
+        .confidence-medium { background: #2271b1; color: #fff; }
+        .confidence-low { background: #50575e; color: #fff; }
         
         .user-card {
             background: #f9f9f9;
@@ -777,8 +950,8 @@ function render_user_merge_page() {
             font-weight: 600;
         }
         .status-merged { background: #00a32a; color: #fff; }
-        .status-rejected { background: #d63638; color: #fff; }
-        .status-pending { background: #dba617; color: #fff; }
+        .status-rejected { background: #50575e; color: #fff; }
+        .status-pending { background: #2271b1; color: #fff; }
         
         .processing-overlay {
             position: absolute;
@@ -970,35 +1143,78 @@ function render_user_merge_page() {
 
             const $btn = $(this);
             $btn.prop('disabled', true).text('Uploading...');
+            $('#upload-progress').show();
+            $('#upload-progress-bar').css('width', '0%');
+            $('#upload-progress-text').text('Reading file...');
+            $('#upload-status').empty();
 
             const reader = new FileReader();
             reader.onload = function(e) {
+                $('#upload-progress-text').text('Uploading CSV...');
+                
                 $.post(ajaxurl, {
                     action: 'user_merge_upload_csv',
                     nonce: nonce,
                     csv_content: e.target.result
                 }, function(response) {
-                    $btn.prop('disabled', false).text('Upload & Parse CSV');
-                    
                     if (response.success) {
-                        const data = response.data;
-                        let msg = `✓ Imported ${data.imported} pairs.`;
-                        if (data.errors.length) {
-                            msg += ` ${data.errors.length} errors.`;
-                        }
-                        $('#upload-status').html(`<span style="color:green;">${msg}</span>`);
-                        
-                        $('#upload-section').hide();
-                        $('#session-notice').hide();
-                        $('#queue-section').show();
-                        loadQueue();
+                        $('#upload-progress-text').text(`Processing 0 / ${response.data.total_lines} rows...`);
+                        processCsvBatch(response.data.total_lines);
                     } else {
+                        $btn.prop('disabled', false).text('Upload & Parse CSV');
+                        $('#upload-progress').hide();
                         $('#upload-status').html(`<span style="color:red;">Error: ${response.data}</span>`);
                     }
+                }).fail(function() {
+                    $btn.prop('disabled', false).text('Upload & Parse CSV');
+                    $('#upload-progress').hide();
+                    $('#upload-status').html('<span style="color:red;">Upload failed. Please try again.</span>');
                 });
             };
             reader.readAsText(file);
         });
+
+        function processCsvBatch(totalLines) {
+            $.post(ajaxurl, {
+                action: 'user_merge_process_csv_batch',
+                nonce: nonce
+            }, function(response) {
+                if (!response.success) {
+                    $('#upload-csv').prop('disabled', false).text('Upload & Parse CSV');
+                    $('#upload-progress').hide();
+                    $('#upload-status').html(`<span style="color:red;">Error: ${response.data}</span>`);
+                    return;
+                }
+                
+                const data = response.data;
+                $('#upload-progress-bar').css('width', data.progress + '%');
+                $('#upload-progress-text').text(`Processing ${data.processed} / ${data.total} rows... (${data.imported} imported)`);
+                
+                if (data.is_complete) {
+                    $('#upload-csv').prop('disabled', false).text('Upload & Parse CSV');
+                    
+                    let msg = `✓ Imported ${data.imported} pairs.`;
+                    if (data.errors_count > 0) {
+                        msg += ` ${data.errors_count} rows skipped.`;
+                    }
+                    $('#upload-status').html(`<span style="color:green;">${msg}</span>`);
+                    
+                    setTimeout(function() {
+                        $('#upload-section').hide();
+                        $('#session-notice').hide();
+                        $('#queue-section').show();
+                        $('#upload-progress').hide();
+                        loadQueue();
+                    }, 500);
+                } else {
+                    processCsvBatch(totalLines);
+                }
+            }).fail(function() {
+                $('#upload-csv').prop('disabled', false).text('Upload & Parse CSV');
+                $('#upload-progress').hide();
+                $('#upload-status').html('<span style="color:red;">Processing failed. Please try again.</span>');
+            });
+        }
 
         // Resume session
         $('#resume-session').on('click', function() {
