@@ -974,6 +974,7 @@ add_filter('wp_check_filetype_and_ext', function($data, $file, $filename, $mimes
 /**
  * Convert table block figcaption to proper table caption element.
  * Improves accessibility by using native table caption semantics.
+ * Bandaid solution until Gutenberg table block is updated.
  */
 add_filter( 'render_block_core/table', 'convert_table_figcaption_to_caption', 10, 2 );
 
