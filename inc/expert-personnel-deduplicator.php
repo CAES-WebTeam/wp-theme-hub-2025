@@ -1,7 +1,7 @@
 <?php
 /**
- * Duplicate User Detection Utility (Batched Version)
- * Uses AJAX batching to prevent timeouts and displays real-time progress.
+ * Duplicate User Detection Utility (Database-Backed Version)
+ * Uses a custom table for incremental saves, supports resume, and preloads user data in batches.
  */
 
 if (!defined('ABSPATH')) {
@@ -10,7 +10,42 @@ if (!defined('ABSPATH')) {
 
 /**
  * ---------------------------------------------------------------------------------
- * 1. Fuzzy Matching Helper Functions
+ * 1. Database Table Setup
+ * ---------------------------------------------------------------------------------
+ */
+
+function dup_detect_get_table_name() {
+    global $wpdb;
+    return $wpdb->prefix . 'dup_detect_results';
+}
+
+function dup_detect_create_table() {
+    global $wpdb;
+    $table_name = dup_detect_get_table_name();
+    $charset_collate = $wpdb->get_charset_collate();
+
+    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        session_id varchar(32) NOT NULL,
+        personnel_id bigint(20) NOT NULL,
+        expert_id bigint(20) NOT NULL,
+        confidence int(3) NOT NULL,
+        reasons longtext NOT NULL,
+        personnel_data longtext NOT NULL,
+        expert_data longtext NOT NULL,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY session_id (session_id),
+        KEY confidence (confidence)
+    ) $charset_collate;";
+
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+}
+
+/**
+ * ---------------------------------------------------------------------------------
+ * 2. Fuzzy Matching Helper Functions
  * ---------------------------------------------------------------------------------
  */
 
@@ -92,25 +127,24 @@ function check_nickname_match($name1, $name2) {
     return false;
 }
 
-function compare_users_by_id($personnel_id, $expert_id, $threshold) {
-    $personnel = get_user_by('ID', $personnel_id);
-    $expert = get_user_by('ID', $expert_id);
-    if (!$personnel || !$expert) return null;
-
+/**
+ * Compare users using preloaded data arrays instead of database lookups
+ */
+function compare_users_preloaded($personnel_data, $expert_data, $threshold) {
     $reasons = [];
     $confidence_score = 0;
 
-    $p_first = get_user_meta($personnel->ID, 'first_name', true);
-    $p_last = get_user_meta($personnel->ID, 'last_name', true);
-    $p_display = $personnel->display_name;
-    $p_email = get_field('uga_email', 'user_' . $personnel->ID) ?: $personnel->user_email;
-    $p_phone = get_field('phone_number', 'user_' . $personnel->ID);
+    $p_first = $personnel_data['first_name'];
+    $p_last = $personnel_data['last_name'];
+    $p_display = $personnel_data['display_name'];
+    $p_email = $personnel_data['email'];
+    $p_phone = $personnel_data['phone'];
 
-    $e_first = get_user_meta($expert->ID, 'first_name', true);
-    $e_last = get_user_meta($expert->ID, 'last_name', true);
-    $e_display = $expert->display_name;
-    $e_email = get_field('uga_email', 'user_' . $expert->ID) ?: $expert->user_email;
-    $e_phone = get_field('phone_number', 'user_' . $expert->ID);
+    $e_first = $expert_data['first_name'];
+    $e_last = $expert_data['last_name'];
+    $e_display = $expert_data['display_name'];
+    $e_email = $expert_data['email'];
+    $e_phone = $expert_data['phone'];
 
     $p_full = normalize_name($p_first . ' ' . $p_last);
     $e_full = normalize_name($e_first . ' ' . $e_last);
@@ -177,6 +211,7 @@ function compare_users_by_id($personnel_id, $expert_id, $threshold) {
         }
     }
 
+    // Name inversion check
     $inv_first = calculate_similarity($p_first, $e_last);
     $inv_last = calculate_similarity($p_last, $e_first);
     if ($inv_first['levenshtein'] >= 85 && $inv_last['levenshtein'] >= 85) {
@@ -199,16 +234,16 @@ function compare_users_by_id($personnel_id, $expert_id, $threshold) {
         'confidence' => $confidence_score,
         'reasons' => $reasons,
         'personnel' => [
-            'id' => $personnel->ID,
-            'login' => $personnel->user_login,
+            'id' => $personnel_data['id'],
+            'login' => $personnel_data['login'],
             'name' => $p_first . ' ' . $p_last,
             'display' => $p_display,
             'email' => $p_email,
             'phone' => $p_phone
         ],
         'expert' => [
-            'id' => $expert->ID,
-            'login' => $expert->user_login,
+            'id' => $expert_data['id'],
+            'login' => $expert_data['login'],
             'name' => $e_first . ' ' . $e_last,
             'display' => $e_display,
             'email' => $e_email,
@@ -218,8 +253,76 @@ function compare_users_by_id($personnel_id, $expert_id, $threshold) {
 }
 
 /**
+ * Preload user data for a batch of user IDs
+ */
+function preload_user_data($user_ids) {
+    global $wpdb;
+    
+    if (empty($user_ids)) return [];
+    
+    $user_ids = array_map('intval', $user_ids);
+    $id_placeholders = implode(',', array_fill(0, count($user_ids), '%d'));
+    
+    // Get basic user data
+    $users_query = $wpdb->prepare(
+        "SELECT ID, user_login, display_name, user_email FROM {$wpdb->users} WHERE ID IN ($id_placeholders)",
+        ...$user_ids
+    );
+    $users = $wpdb->get_results($users_query, ARRAY_A);
+    
+    $user_data = [];
+    foreach ($users as $user) {
+        $user_data[$user['ID']] = [
+            'id' => $user['ID'],
+            'login' => $user['user_login'],
+            'display_name' => $user['display_name'],
+            'wp_email' => $user['user_email'],
+            'first_name' => '',
+            'last_name' => '',
+            'email' => $user['user_email'],
+            'phone' => ''
+        ];
+    }
+    
+    // Get user meta (first_name, last_name)
+    $meta_query = $wpdb->prepare(
+        "SELECT user_id, meta_key, meta_value FROM {$wpdb->usermeta} 
+         WHERE user_id IN ($id_placeholders) AND meta_key IN ('first_name', 'last_name')",
+        ...$user_ids
+    );
+    $metas = $wpdb->get_results($meta_query, ARRAY_A);
+    
+    foreach ($metas as $meta) {
+        if (isset($user_data[$meta['user_id']])) {
+            $user_data[$meta['user_id']][$meta['meta_key']] = $meta['meta_value'];
+        }
+    }
+    
+    // Get ACF fields (uga_email, phone_number) - stored in postmeta with user_ prefix or usermeta
+    // ACF stores user fields in usermeta with underscore prefix for field key
+    $acf_meta_query = $wpdb->prepare(
+        "SELECT user_id, meta_key, meta_value FROM {$wpdb->usermeta} 
+         WHERE user_id IN ($id_placeholders) AND meta_key IN ('uga_email', 'phone_number')",
+        ...$user_ids
+    );
+    $acf_metas = $wpdb->get_results($acf_meta_query, ARRAY_A);
+    
+    foreach ($acf_metas as $meta) {
+        if (isset($user_data[$meta['user_id']])) {
+            if ($meta['meta_key'] === 'uga_email' && !empty($meta['meta_value'])) {
+                $user_data[$meta['user_id']]['email'] = $meta['meta_value'];
+            } elseif ($meta['meta_key'] === 'phone_number') {
+                $user_data[$meta['user_id']]['phone'] = $meta['meta_value'];
+            }
+        }
+    }
+    
+    return $user_data;
+}
+
+/**
  * ---------------------------------------------------------------------------------
- * 2. AJAX Handlers
+ * 3. AJAX Handlers
  * ---------------------------------------------------------------------------------
  */
 
@@ -230,19 +333,32 @@ function ajax_dup_detect_init() {
         wp_send_json_error('Permission denied');
     }
 
+    // Ensure table exists
+    dup_detect_create_table();
+
     $personnel_users = get_users(['role' => 'personnel_user', 'number' => -1, 'fields' => 'ID']);
     $expert_users = get_users(['role' => 'expert_user', 'number' => -1, 'fields' => 'ID']);
 
     $personnel_ids = array_map('intval', $personnel_users);
     $expert_ids = array_map('intval', $expert_users);
 
-    set_transient('dup_detect_personnel', $personnel_ids, HOUR_IN_SECONDS);
-    set_transient('dup_detect_experts', $expert_ids, HOUR_IN_SECONDS);
-    delete_transient('dup_detect_results');
+    // Generate unique session ID
+    $session_id = wp_generate_password(16, false);
+    
+    // Store session data
+    update_option('dup_detect_session', [
+        'session_id' => $session_id,
+        'personnel_ids' => $personnel_ids,
+        'expert_ids' => $expert_ids,
+        'current_position' => 0,
+        'started_at' => current_time('mysql'),
+        'status' => 'running'
+    ], false);
 
     $total = count($personnel_ids) * count($expert_ids);
 
     wp_send_json_success([
+        'session_id' => $session_id,
         'personnel_count' => count($personnel_ids),
         'expert_count' => count($expert_ids),
         'total_comparisons' => $total,
@@ -256,27 +372,66 @@ function ajax_dup_detect_batch() {
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Permission denied');
     }
+    
+    global $wpdb;
+    $table_name = dup_detect_get_table_name();
 
     $batch_start = intval($_POST['batch_start'] ?? 0);
     $batch_size = intval($_POST['batch_size'] ?? 500);
     $threshold = intval($_POST['threshold'] ?? 40);
 
-    $personnel_ids = get_transient('dup_detect_personnel');
-    $expert_ids = get_transient('dup_detect_experts');
-
-    if (!$personnel_ids || !$expert_ids) {
+    $session = get_option('dup_detect_session');
+    if (!$session || empty($session['personnel_ids']) || empty($session['expert_ids'])) {
         wp_send_json_error('Session expired. Please restart the detection.');
     }
+
+    $personnel_ids = $session['personnel_ids'];
+    $expert_ids = $session['expert_ids'];
+    $session_id = $session['session_id'];
 
     $p_count = count($personnel_ids);
     $e_count = count($expert_ids);
     $total = $p_count * $e_count;
 
+    // Track execution time - leave buffer for response
+    $start_time = microtime(true);
+    $max_execution = min(25, (int)ini_get('max_execution_time') - 5); // 25 sec max, or less if PHP limit is lower
+    if ($max_execution <= 0) $max_execution = 25;
+
     $matches = [];
     $processed = 0;
     $log_messages = [];
+    
+    // Figure out which personnel users we'll need for this batch
+    $batch_end = min($batch_start + $batch_size, $total);
+    $p_start_index = intval($batch_start / $e_count);
+    $p_end_index = intval(($batch_end - 1) / $e_count);
+    
+    // Preload personnel data for this batch range
+    $personnel_batch_ids = array_slice($personnel_ids, $p_start_index, $p_end_index - $p_start_index + 1);
+    $personnel_data_cache = preload_user_data($personnel_batch_ids);
+    
+    // Preload ALL expert data (they're reused across personnel)
+    // Only do this once per session - cache in a transient
+    $expert_cache_key = 'dup_detect_expert_cache_' . $session_id;
+    $expert_data_cache = get_transient($expert_cache_key);
+    if ($expert_data_cache === false) {
+        $expert_data_cache = preload_user_data($expert_ids);
+        set_transient($expert_cache_key, $expert_data_cache, 2 * HOUR_IN_SECONDS);
+    }
 
     for ($i = $batch_start; $i < $batch_start + $batch_size && $i < $total; $i++) {
+        // Check execution time
+        $elapsed = microtime(true) - $start_time;
+        if ($elapsed > $max_execution) {
+            // Save progress and exit gracefully
+            $log_messages[] = [
+                'type' => 'info',
+                'message' => "⏱️ Time limit approaching, saving progress at position {$i}"
+            ];
+            break;
+        }
+
         $p_index = intval($i / $e_count);
         $e_index = $i % $e_count;
 
@@ -284,9 +439,29 @@ function ajax_dup_detect_batch() {
 
         $p_id = $personnel_ids[$p_index];
         $e_id = $expert_ids[$e_index];
+        
+        // Use cached data
+        $p_data = $personnel_data_cache[$p_id] ?? null;
+        $e_data = $expert_data_cache[$e_id] ?? null;
+        
+        if (!$p_data || !$e_data) {
+            $processed++;
+            continue;
+        }
 
-        $result = compare_users_by_id($p_id, $e_id, $threshold);
+        $result = compare_users_preloaded($p_data, $e_data, $threshold);
         if ($result) {
+            // Save to database immediately
+            $wpdb->insert($table_name, [
+                'session_id' => $session_id,
+                'personnel_id' => $p_id,
+                'expert_id' => $e_id,
+                'confidence' => $result['confidence'],
+                'reasons' => json_encode($result['reasons']),
+                'personnel_data' => json_encode($result['personnel']),
+                'expert_data' => json_encode($result['expert'])
+            ]);
+            
             $matches[] = $result;
             $log_messages[] = [
                 'type' => 'match',
@@ -298,11 +473,20 @@ function ajax_dup_detect_batch() {
 
     $new_start = $batch_start + $processed;
     $is_complete = $new_start >= $total;
-    $progress = $total > 0 ? round(($new_start / $total) * 100, 1) : 100;
+    $progress = $total > 0 ? round(($new_start / $total) * 100, 2) : 100;
 
-    $existing_results = get_transient('dup_detect_results') ?: [];
-    $all_results = array_merge($existing_results, $matches);
-    set_transient('dup_detect_results', $all_results, HOUR_IN_SECONDS);
+    // Update session progress
+    $session['current_position'] = $new_start;
+    if ($is_complete) {
+        $session['status'] = 'complete';
+    }
+    update_option('dup_detect_session', $session, false);
+
+    // Get total match count from database
+    $total_matches = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table_name WHERE session_id = %s",
+        $session_id
+    ));
 
     wp_send_json_success([
         'processed' => $processed,
@@ -311,8 +495,9 @@ function ajax_dup_detect_batch() {
         'progress' => $progress,
         'is_complete' => $is_complete,
         'matches_in_batch' => count($matches),
-        'total_matches' => count($all_results),
-        'log' => $log_messages
+        'total_matches' => intval($total_matches),
+        'log' => $log_messages,
+        'elapsed_time' => round(microtime(true) - $start_time, 2)
     ]);
 }
 
@@ -323,179 +508,268 @@ function ajax_dup_detect_results() {
         wp_send_json_error('Permission denied');
     }
 
-    $results = get_transient('dup_detect_results') ?: [];
-    usort($results, function($a, $b) {
-        return $b['confidence'] - $a['confidence'];
-    });
-
-    // Enrich results with personnel_id, source_expert_id, and writer_id
-    foreach ($results as &$result) {
-        $p_id = $result['personnel']['id'];
-        $e_id = $result['expert']['id'];
-        
-        $result['personnel']['personnel_id'] = get_field('personnel_id', 'user_' . $p_id) ?: '';
-        $result['expert']['source_expert_id'] = get_field('source_expert_id', 'user_' . $e_id) ?: '';
-        $result['expert']['writer_id'] = get_field('writer_id', 'user_' . $e_id) ?: '';
+    global $wpdb;
+    $table_name = dup_detect_get_table_name();
+    
+    $session = get_option('dup_detect_session');
+    if (!$session) {
+        wp_send_json_error('No session found');
     }
-    unset($result);
+    
+    $session_id = $session['session_id'];
+    
+    // Get all results from database
+    $rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE session_id = %s ORDER BY confidence DESC",
+        $session_id
+    ), ARRAY_A);
+    
+    $results = [];
+    foreach ($rows as $row) {
+        $personnel = json_decode($row['personnel_data'], true);
+        $expert = json_decode($row['expert_data'], true);
+        
+        // Enrich with additional IDs
+        $personnel['personnel_id'] = get_field('personnel_id', 'user_' . $personnel['id']) ?: '';
+        $expert['source_expert_id'] = get_field('source_expert_id', 'user_' . $expert['id']) ?: '';
+        $expert['writer_id'] = get_field('writer_id', 'user_' . $expert['id']) ?: '';
+        
+        $results[] = [
+            'confidence' => intval($row['confidence']),
+            'reasons' => json_decode($row['reasons'], true),
+            'personnel' => $personnel,
+            'expert' => $expert
+        ];
+    }
 
-    // Store results for CSV export (keep for 1 hour)
+    // Store for CSV export
     set_transient('dup_detect_export_results', $results, HOUR_IN_SECONDS);
-
-    delete_transient('dup_detect_personnel');
-    delete_transient('dup_detect_experts');
-    delete_transient('dup_detect_results');
+    
+    // Clean up expert cache
+    delete_transient('dup_detect_expert_cache_' . $session_id);
 
     wp_send_json_success(['duplicates' => $results]);
 }
 
-// CSV Export handler
-add_action('admin_init', 'handle_dup_detect_csv_export');
-function handle_dup_detect_csv_export() {
-    if (!isset($_GET['action']) || $_GET['action'] !== 'export_duplicates_csv') return;
-    if (!isset($_GET['_wpnonce']) || !wp_verify_nonce($_GET['_wpnonce'], 'export_duplicates_csv')) {
-        wp_die('Security check failed');
-    }
+add_action('wp_ajax_dup_detect_resume', 'ajax_dup_detect_resume');
+function ajax_dup_detect_resume() {
+    check_ajax_referer('dup_detect_nonce', 'nonce');
     if (!current_user_can('manage_options')) {
-        wp_die('Permission denied');
+        wp_send_json_error('Permission denied');
     }
-
-    $results = get_transient('dup_detect_export_results');
-    if (!$results) {
-        wp_die('No export data available. Please run the detection again.');
-    }
-
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename=duplicate_users_' . date('Y-m-d_His') . '.csv');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-
-    $output = fopen('php://output', 'w');
     
-    // CSV Header
-    fputcsv($output, [
-        'personnel_id',
-        'expert_source_id',
-        'expert_writer_id',
-        'confidence',
-        'personnel_wp_id',
-        'personnel_name',
-        'personnel_email',
-        'expert_wp_id',
-        'expert_name',
-        'expert_email',
-        'match_reasons'
-    ]);
-
-    foreach ($results as $row) {
-        fputcsv($output, [
-            $row['personnel']['personnel_id'],
-            $row['expert']['source_expert_id'],
-            $row['expert']['writer_id'],
-            $row['confidence'],
-            $row['personnel']['id'],
-            $row['personnel']['name'],
-            $row['personnel']['email'],
-            $row['expert']['id'],
-            $row['expert']['name'],
-            $row['expert']['email'],
-            implode(' | ', $row['reasons'])
-        ]);
+    global $wpdb;
+    $table_name = dup_detect_get_table_name();
+    
+    $session = get_option('dup_detect_session');
+    if (!$session) {
+        wp_send_json_error('No previous session found');
     }
+    
+    $session_id = $session['session_id'];
+    $p_count = count($session['personnel_ids']);
+    $e_count = count($session['expert_ids']);
+    $total = $p_count * $e_count;
+    $current = $session['current_position'];
+    
+    $total_matches = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table_name WHERE session_id = %s",
+        $session_id
+    ));
+    
+    wp_send_json_success([
+        'session_id' => $session_id,
+        'current_position' => $current,
+        'total' => $total,
+        'total_matches' => intval($total_matches),
+        'status' => $session['status'],
+        'started_at' => $session['started_at'],
+        'progress' => $total > 0 ? round(($current / $total) * 100, 2) : 0,
+        'message' => "Found previous session started at {$session['started_at']}. Position: " . number_format($current) . " / " . number_format($total) . " ({$total_matches} matches found)"
+    ]);
+}
 
-    fclose($output);
-    exit;
+add_action('wp_ajax_dup_detect_clear', 'ajax_dup_detect_clear');
+function ajax_dup_detect_clear() {
+    check_ajax_referer('dup_detect_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied');
+    }
+    
+    global $wpdb;
+    $table_name = dup_detect_get_table_name();
+    
+    $session = get_option('dup_detect_session');
+    if ($session) {
+        // Delete results for this session
+        $wpdb->delete($table_name, ['session_id' => $session['session_id']]);
+        delete_transient('dup_detect_expert_cache_' . $session['session_id']);
+    }
+    
+    delete_option('dup_detect_session');
+    
+    wp_send_json_success(['message' => 'Session cleared']);
 }
 
 /**
  * ---------------------------------------------------------------------------------
- * 3. Admin Page
+ * 4. CSV Export Handler
  * ---------------------------------------------------------------------------------
  */
 
-add_action('admin_menu', 'add_duplicate_detection_page');
-function add_duplicate_detection_page() {
-    add_submenu_page(
-        'caes-tools',
+add_action('admin_action_export_duplicates_csv', function() {
+    if (!current_user_can('manage_options')) {
+        wp_die('Permission denied');
+    }
+    
+    check_admin_referer('export_duplicates_csv');
+    
+    $results = get_transient('dup_detect_export_results');
+    if (empty($results)) {
+        wp_die('No results available for export. Please run detection first.');
+    }
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=duplicate-users-' . date('Y-m-d-His') . '.csv');
+    
+    $output = fopen('php://output', 'w');
+    
+    // Header row
+    fputcsv($output, [
+        'Confidence',
+        'Personnel WP ID',
+        'Personnel Name',
+        'Personnel Email',
+        'Personnel Phone',
+        'Personnel ID',
+        'Expert WP ID',
+        'Expert Name',
+        'Expert Email',
+        'Expert Phone',
+        'Source Expert ID',
+        'Writer ID',
+        'Match Reasons'
+    ]);
+    
+    foreach ($results as $row) {
+        fputcsv($output, [
+            $row['confidence'] . '%',
+            $row['personnel']['id'],
+            $row['personnel']['name'],
+            $row['personnel']['email'],
+            $row['personnel']['phone'] ?? '',
+            $row['personnel']['personnel_id'] ?? '',
+            $row['expert']['id'],
+            $row['expert']['name'],
+            $row['expert']['email'],
+            $row['expert']['phone'] ?? '',
+            $row['expert']['source_expert_id'] ?? '',
+            $row['expert']['writer_id'] ?? '',
+            implode('; ', $row['reasons'])
+        ]);
+    }
+    
+    fclose($output);
+    exit;
+});
+
+/**
+ * ---------------------------------------------------------------------------------
+ * 5. Admin Page Rendering
+ * ---------------------------------------------------------------------------------
+ */
+
+add_action('admin_menu', function() {
+    add_users_page(
         'Duplicate User Detection',
-        'Duplicate User Detection',
+        'Duplicate Detection',
         'manage_options',
         'duplicate-user-detection',
-        'duplicate_detection_page_content'
+        'render_duplicate_detection_page'
     );
-}
+});
 
-function duplicate_detection_page_content() {
-    if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have sufficient permissions.'));
-    }
-    $nonce = wp_create_nonce('dup_detect_nonce');
+function render_duplicate_detection_page() {
     ?>
     <div class="wrap">
-        <h1>Duplicate User Detection</h1>
-        <p>Compares <strong>Personnel Users</strong> against <strong>Expert Users</strong> to find potential duplicates using fuzzy name matching.</p>
+        <h1>🔍 Duplicate User Detection</h1>
+        <p>Compares Personnel Users against Expert Users using fuzzy name matching, email comparison, and phone matching.</p>
+        
+        <div id="session-check" style="background:#fff3cd;border:1px solid #ffc107;padding:15px;margin:20px 0;display:none;">
+            <strong>⚠️ Previous Session Found</strong>
+            <p id="session-info"></p>
+            <button id="resume-session" class="button button-primary">Resume Session</button>
+            <button id="clear-session" class="button">Start Fresh</button>
+        </div>
 
-        <div class="card" style="max-width: 800px; padding: 20px; margin: 20px 0;">
-            <h2 style="margin-top:0;">Detection Settings</h2>
+        <div style="background:#fff;padding:20px;border:1px solid #ddd;margin-bottom:20px;">
+            <h3 style="margin-top:0;">Settings</h3>
             <table class="form-table">
                 <tr>
-                    <th><label for="threshold">Confidence Threshold</label></th>
+                    <th>Confidence Threshold</th>
                     <td>
-                        <input type="range" id="threshold" min="10" max="90" value="40" style="width:300px" oninput="document.getElementById('threshold_val').textContent=this.value">
-                        <span id="threshold_val" style="font-weight:bold;">40</span>%
-                        <p class="description">Only matches at or above this threshold will be shown.</p>
+                        <input type="number" id="threshold" value="40" min="10" max="100" style="width:80px;"> %
+                        <p class="description">Minimum confidence score to report as potential duplicate (recommended: 40-50%)</p>
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="batch_size">Batch Size</label></th>
+                    <th>Batch Size</th>
                     <td>
-                        <select id="batch_size">
-                            <option value="250">250 (slower, less server load)</option>
-                            <option value="500" selected>500 (balanced)</option>
-                            <option value="1000">1000 (faster, more server load)</option>
-                            <option value="2000">2000 (fastest)</option>
-                        </select>
-                        <p class="description">Number of comparisons per batch. Reduce if experiencing timeouts.</p>
+                        <input type="number" id="batch_size" value="1000" min="100" max="5000" style="width:100px;">
+                        <p class="description">Comparisons per batch. Higher = faster but more memory. (recommended: 500-2000)</p>
                     </td>
                 </tr>
             </table>
             <p>
-                <button id="start-detection" class="button button-primary button-large">Start Detection</button>
-                <button id="stop-detection" class="button button-secondary" style="display:none;">Stop</button>
+                <button id="start-detection" class="button button-primary button-hero">🚀 Start Detection</button>
+                <button id="stop-detection" class="button" style="display:none;">⏹️ Stop</button>
             </p>
         </div>
 
-        <div id="progress-section" style="display:none; max-width:800px;">
-            <h2>Progress</h2>
-            <div style="background:#f0f0f0; border-radius:4px; height:30px; margin-bottom:10px;">
-                <div id="progress-bar" style="background:#0073aa; height:100%; border-radius:4px; width:0%; transition:width 0.3s;"></div>
+        <div id="progress-section" style="display:none;background:#fff;padding:20px;border:1px solid #ddd;margin-bottom:20px;">
+            <h3 style="margin-top:0;">Progress</h3>
+            <div style="background:#f0f0f0;border-radius:4px;height:30px;margin-bottom:10px;overflow:hidden;">
+                <div id="progress-bar" style="background:#2271b1;height:100%;width:0%;transition:width 0.3s;"></div>
             </div>
-            <p id="progress-text">Initializing...</p>
-            <p><strong>Matches found:</strong> <span id="match-count">0</span></p>
+            <p id="progress-text" style="margin:0;">Initializing...</p>
+            <p style="margin-top:10px;"><strong>Matches found:</strong> <span id="match-count">0</span></p>
         </div>
 
-        <div id="console-section" style="display:none; max-width:800px; margin-top:20px;">
-            <h2>Console Output</h2>
-            <div id="console-output" style="background:#1e1e1e; color:#d4d4d4; font-family:monospace; font-size:12px; height:300px; overflow-y:auto; padding:10px; border-radius:4px;"></div>
+        <div id="console-section" style="display:none;background:#fff;padding:20px;border:1px solid #ddd;margin-bottom:20px;">
+            <h3 style="margin-top:0;">Log</h3>
+            <div id="console-output" style="background:#1e1e1e;color:#d4d4d4;padding:15px;height:200px;overflow-y:auto;font-family:monospace;font-size:12px;"></div>
         </div>
 
-        <div id="results-section" style="display:none; margin-top:20px;">
-            <h2>Results</h2>
+        <div id="results-section" style="display:none;background:#fff;padding:20px;border:1px solid #ddd;">
+            <h3 style="margin-top:0;">Results</h3>
             <div id="results-summary"></div>
             <div id="results-table"></div>
         </div>
     </div>
 
     <script>
-    jQuery(document).ready(function($) {
-        const nonce = '<?php echo $nonce; ?>';
+    jQuery(function($) {
+        const nonce = '<?php echo wp_create_nonce('dup_detect_nonce'); ?>';
+        const ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
         let isRunning = false;
         let shouldStop = false;
 
+        // Check for existing session on page load
+        checkExistingSession();
+
+        function checkExistingSession() {
+            $.post(ajaxurl, {action: 'dup_detect_resume', nonce: nonce}, function(response) {
+                if (response.success && response.data.status === 'running' && response.data.current_position > 0) {
+                    $('#session-info').text(response.data.message);
+                    $('#session-check').show();
+                }
+            });
+        }
+
         function log(message, type = 'info') {
-            const $console = $('#console-output');
             const time = new Date().toLocaleTimeString();
-            const colors = {info:'#9cdcfe', success:'#4ec9b0', warning:'#dcdcaa', error:'#f14c4c', match:'#ce9178'};
+            const $console = $('#console-output');
+            const colors = {info: '#d4d4d4', success: '#6a9955', error: '#f14c4c', warning: '#cca700', match: '#569cd6'};
             const color = colors[type] || colors.info;
             $console.append(`<div style="color:${color}">[${time}] ${message}</div>`);
             $console.scrollTop($console[0].scrollHeight);
@@ -562,10 +836,11 @@ function duplicate_detection_page_content() {
 
         function runBatch(start, batchSize, threshold, total) {
             if (shouldStop) {
-                log('Detection stopped by user.', 'warning');
+                log('Detection stopped by user. Progress saved - you can resume later.', 'warning');
                 isRunning = false;
                 $('#start-detection').prop('disabled', false);
                 $('#stop-detection').hide();
+                checkExistingSession();
                 return;
             }
 
@@ -578,9 +853,11 @@ function duplicate_detection_page_content() {
             }, function(response) {
                 if (!response.success) {
                     log('Error: ' + (response.data || 'Unknown error'), 'error');
+                    log('Progress saved at position ' + start + '. You can resume later.', 'warning');
                     isRunning = false;
                     $('#start-detection').prop('disabled', false);
                     $('#stop-detection').hide();
+                    checkExistingSession();
                     return;
                 }
 
@@ -589,11 +866,11 @@ function duplicate_detection_page_content() {
                 $('#match-count').text(data.total_matches);
 
                 if (data.log && data.log.length) {
-                    data.log.forEach(l => log(l.message, 'match'));
+                    data.log.forEach(l => log(l.message, l.type || 'match'));
                 }
 
-                if (data.processed > 0 && data.log.length === 0) {
-                    log(`Processed batch: ${start.toLocaleString()} - ${data.next_start.toLocaleString()} (${data.matches_in_batch} matches)`, 'info');
+                if (data.processed > 0 && !data.log.some(l => l.type === 'match')) {
+                    log(`Processed batch: ${start.toLocaleString()} - ${data.next_start.toLocaleString()} (${data.matches_in_batch} matches) [${data.elapsed_time}s]`, 'info');
                 }
 
                 if (data.is_complete) {
@@ -605,9 +882,11 @@ function duplicate_detection_page_content() {
                 }
             }).fail(function(xhr) {
                 log('AJAX error: ' + xhr.statusText, 'error');
+                log('Progress saved. You can resume later.', 'warning');
                 isRunning = false;
                 $('#start-detection').prop('disabled', false);
                 $('#stop-detection').hide();
+                checkExistingSession();
             });
         }
 
@@ -616,6 +895,7 @@ function duplicate_detection_page_content() {
                 isRunning = false;
                 $('#start-detection').prop('disabled', false);
                 $('#stop-detection').hide();
+                $('#session-check').hide();
 
                 if (response.success) {
                     log(`Found ${response.data.duplicates.length} potential duplicates.`, 'success');
@@ -627,43 +907,86 @@ function duplicate_detection_page_content() {
             });
         }
 
-        $('#start-detection').on('click', function() {
+        function startDetection(resumeFrom = 0) {
             if (isRunning) return;
             isRunning = true;
             shouldStop = false;
 
-            $(this).prop('disabled', true);
+            $('#start-detection').prop('disabled', true);
             $('#stop-detection').show();
             $('#progress-section, #console-section').show();
             $('#results-section').hide();
-            $('#console-output').empty();
+            $('#session-check').hide();
+            
+            if (resumeFrom === 0) {
+                $('#console-output').empty();
+            }
+            
             $('#match-count').text('0');
             updateProgress(0, 'Initializing...');
 
-            log('Starting duplicate detection...', 'info');
+            if (resumeFrom > 0) {
+                log('Resuming detection from position ' + resumeFrom.toLocaleString() + '...', 'info');
+                const batchSize = parseInt($('#batch_size').val());
+                const threshold = parseInt($('#threshold').val());
+                
+                $.post(ajaxurl, {action: 'dup_detect_resume', nonce: nonce}, function(response) {
+                    if (response.success) {
+                        const data = response.data;
+                        updateProgress(data.progress, `Resuming: ${data.current_position.toLocaleString()} / ${data.total.toLocaleString()}`);
+                        $('#match-count').text(data.total_matches);
+                        runBatch(data.current_position, batchSize, threshold, data.total);
+                    }
+                });
+            } else {
+                log('Starting duplicate detection...', 'info');
+                $.post(ajaxurl, {action: 'dup_detect_init', nonce: nonce}, function(response) {
+                    if (!response.success) {
+                        log('Initialization failed: ' + (response.data || 'Unknown error'), 'error');
+                        isRunning = false;
+                        $('#start-detection').prop('disabled', false);
+                        $('#stop-detection').hide();
+                        return;
+                    }
 
-            $.post(ajaxurl, {action: 'dup_detect_init', nonce: nonce}, function(response) {
-                if (!response.success) {
-                    log('Initialization failed: ' + (response.data || 'Unknown error'), 'error');
+                    const data = response.data;
+                    log(data.message, 'success');
+                    log(`Starting comparisons with threshold: ${$('#threshold').val()}%, batch size: ${$('#batch_size').val()}`, 'info');
+
+                    const batchSize = parseInt($('#batch_size').val());
+                    const threshold = parseInt($('#threshold').val());
+                    runBatch(0, batchSize, threshold, data.total_comparisons);
+                }).fail(function(xhr) {
+                    log('AJAX error during init: ' + xhr.statusText, 'error');
                     isRunning = false;
                     $('#start-detection').prop('disabled', false);
                     $('#stop-detection').hide();
-                    return;
+                });
+            }
+        }
+
+        $('#start-detection').on('click', function() {
+            startDetection(0);
+        });
+
+        $('#resume-session').on('click', function() {
+            $.post(ajaxurl, {action: 'dup_detect_resume', nonce: nonce}, function(response) {
+                if (response.success) {
+                    startDetection(response.data.current_position);
                 }
-
-                const data = response.data;
-                log(data.message, 'success');
-                log(`Starting comparisons with threshold: ${$('#threshold').val()}%, batch size: ${$('#batch_size').val()}`, 'info');
-
-                const batchSize = parseInt($('#batch_size').val());
-                const threshold = parseInt($('#threshold').val());
-                runBatch(0, batchSize, threshold, data.total_comparisons);
-            }).fail(function(xhr) {
-                log('AJAX error during init: ' + xhr.statusText, 'error');
-                isRunning = false;
-                $('#start-detection').prop('disabled', false);
-                $('#stop-detection').hide();
             });
+        });
+
+        $('#clear-session').on('click', function() {
+            if (confirm('This will delete all progress and results from the previous session. Continue?')) {
+                $.post(ajaxurl, {action: 'dup_detect_clear', nonce: nonce}, function(response) {
+                    if (response.success) {
+                        $('#session-check').hide();
+                        $('#console-output').empty();
+                        log('Previous session cleared.', 'info');
+                    }
+                });
+            }
         });
 
         $('#stop-detection').on('click', function() {
