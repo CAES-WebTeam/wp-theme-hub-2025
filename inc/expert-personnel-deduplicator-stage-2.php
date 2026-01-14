@@ -200,7 +200,64 @@ function find_posts_referencing_user($expert_wp_id) {
     return array_values($found_posts);
 }
 
-function reassign_user_in_post($post_id, $meta_key, $old_user_id, $new_user_id, $dry_run = false) {
+/**
+ * Check if a user already exists in a repeater field on a post
+ */
+function user_exists_in_repeater($post_id, $repeater, $user_field, $user_id) {
+    global $wpdb;
+    
+    $results = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->postmeta} 
+         WHERE post_id = %d 
+         AND meta_key LIKE %s 
+         AND meta_value = %s",
+        $post_id,
+        $wpdb->esc_like($repeater) . '_%_' . $user_field,
+        $user_id
+    ));
+    
+    return intval($results) > 0;
+}
+
+/**
+ * Remove a row from an ACF repeater field
+ */
+function remove_repeater_row($post_id, $repeater, $row_index, $dry_run = false) {
+    if ($dry_run) {
+        return [
+            'success' => true,
+            'message' => "Would remove row {$row_index} from {$repeater}",
+            'dry_run' => true,
+            'action' => 'remove'
+        ];
+    }
+    
+    // Get the current repeater data using ACF
+    $rows = get_field($repeater, $post_id);
+    
+    if (!is_array($rows) || !isset($rows[$row_index])) {
+        return [
+            'success' => false,
+            'message' => "Row {$row_index} not found in {$repeater}"
+        ];
+    }
+    
+    // Remove the row
+    array_splice($rows, $row_index, 1);
+    
+    // Update the field using ACF's function
+    $result = update_field($repeater, $rows, $post_id);
+    
+    return [
+        'success' => $result !== false,
+        'message' => $result !== false 
+            ? "Removed duplicate row {$row_index} from {$repeater}"
+            : "Failed to remove row from {$repeater}",
+        'action' => 'remove'
+    ];
+}
+
+function reassign_user_in_post($post_id, $meta_key, $old_user_id, $new_user_id, $repeater, $user_field, $row_index, $dry_run = false) {
     $current_value = get_post_meta($post_id, $meta_key, true);
     
     if (intval($current_value) !== intval($old_user_id)) {
@@ -209,35 +266,58 @@ function reassign_user_in_post($post_id, $meta_key, $old_user_id, $new_user_id, 
             'message' => "Meta key {$meta_key} value ({$current_value}) doesn't match expected ({$old_user_id})"
         ];
     }
+    
+    // Check if the new user already exists in this repeater (would create duplicate)
+    $already_exists = user_exists_in_repeater($post_id, $repeater, $user_field, $new_user_id);
+    
+    if ($already_exists) {
+        // Personnel already in this repeater - remove the expert's row instead of creating duplicate
+        return remove_repeater_row($post_id, $repeater, $row_index, $dry_run);
+    }
 
     if ($dry_run) {
         return [
             'success' => true,
             'message' => "Would update {$meta_key} from {$old_user_id} to {$new_user_id}",
-            'dry_run' => true
+            'dry_run' => true,
+            'action' => 'update'
         ];
     }
 
     $result = update_post_meta($post_id, $meta_key, $new_user_id);
     
-    if ($result !== false) {
-        // Clear all caches for this post so front-end reflects the change immediately
-        clean_post_cache($post_id);
-        
-        // Touch the post to trigger any save hooks (updates modified date too)
-        wp_update_post([
-            'ID' => $post_id,
-            'post_modified' => current_time('mysql'),
-            'post_modified_gmt' => current_time('mysql', 1),
-        ]);
-    }
-    
     return [
         'success' => $result !== false,
         'message' => $result !== false 
             ? "Updated {$meta_key} from {$old_user_id} to {$new_user_id}"
-            : "Failed to update {$meta_key}"
+            : "Failed to update {$meta_key}",
+        'action' => 'update'
     ];
+}
+
+/**
+ * Flush all caches and trigger ACF save hooks for a post
+ */
+function flush_post_and_trigger_save($post_id) {
+    // Clear WordPress post cache
+    clean_post_cache($post_id);
+    
+    // Clear ACF cache if available
+    if (function_exists('acf_flush_value_cache')) {
+        acf_flush_value_cache($post_id);
+    }
+    
+    // Clear any object cache for this post
+    wp_cache_delete($post_id, 'posts');
+    wp_cache_delete($post_id, 'post_meta');
+    
+    // Trigger ACF save hook - this is what regenerates ACF's internal data
+    if (function_exists('acf_save_post')) {
+        do_action('acf/save_post', $post_id);
+    }
+    
+    // Also trigger standard WordPress save hooks
+    do_action('save_post', $post_id, get_post($post_id), true);
 }
 
 /**
@@ -334,6 +414,7 @@ function ajax_user_merge_dry_run_preview() {
     $totals = [
         'pairs' => count($pairs),
         'posts_to_update' => 0,
+        'rows_to_remove' => 0,
         'experts_to_delete' => 0,
     ];
 
@@ -346,17 +427,31 @@ function ajax_user_merge_dry_run_preview() {
         
         // Find affected posts
         $affected_posts = find_posts_referencing_user($pair['expert_wp_id']);
-        $totals['posts_to_update'] += count($affected_posts);
         
-        // Format affected posts for display
+        // Format affected posts for display, checking for duplicates
         $posts_display = [];
         foreach ($affected_posts as $post_ref) {
+            // Check if personnel already exists in this repeater
+            $would_be_duplicate = user_exists_in_repeater(
+                $post_ref['post_id'], 
+                $post_ref['repeater'], 
+                $post_ref['user_field'], 
+                $pair['personnel_wp_id']
+            );
+            
+            if ($would_be_duplicate) {
+                $totals['rows_to_remove']++;
+            } else {
+                $totals['posts_to_update']++;
+            }
+            
             $posts_display[] = [
                 'id' => $post_ref['post_id'],
                 'title' => $post_ref['post_title'],
                 'type' => $post_ref['post_type'],
                 'field' => $post_ref['repeater'] . '[' . $post_ref['row_index'] . ']',
                 'edit_url' => get_edit_post_link($post_ref['post_id'], 'raw'),
+                'action' => $would_be_duplicate ? 'remove' : 'update',
             ];
         }
         
@@ -392,6 +487,18 @@ function ajax_user_merge_dry_run_preview() {
 }
 
 add_action('wp_ajax_user_merge_process_batch', 'ajax_user_merge_process_batch');
+
+add_action('wp_ajax_user_merge_reset_index', 'ajax_user_merge_reset_index');
+function ajax_user_merge_reset_index() {
+    check_ajax_referer('user_merge_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied');
+    }
+    
+    set_transient('user_merge_index', 0, HOUR_IN_SECONDS);
+    wp_send_json_success(['message' => 'Index reset']);
+}
+
 function ajax_user_merge_process_batch() {
     check_ajax_referer('user_merge_nonce', 'nonce');
     if (!current_user_can('manage_options')) {
@@ -414,9 +521,13 @@ function ajax_user_merge_process_batch() {
     $log = [];
     $stats = [
         'posts_updated' => 0,
+        'rows_removed' => 0,
         'experts_deleted' => 0,
         'errors' => 0
     ];
+    
+    // Track which posts were modified so we can flush caches once per post
+    $modified_posts = [];
 
     for ($i = $current_index; $i < $current_index + $batch_size && $i < $total_pairs; $i++) {
         $pair = $pairs[$i];
@@ -431,7 +542,7 @@ function ajax_user_merge_process_batch() {
         if (empty($affected_posts)) {
             $log[] = ['type' => 'info', 'message' => "{$prefix}  No posts found referencing Expert WP#{$pair['expert_wp_id']}"];
         } else {
-            $log[] = ['type' => 'info', 'message' => "{$prefix}  Found " . count($affected_posts) . " field reference(s) to update"];
+            $log[] = ['type' => 'info', 'message' => "{$prefix}  Found " . count($affected_posts) . " field reference(s) to process"];
 
             foreach ($affected_posts as $post_ref) {
                 $result = reassign_user_in_post(
@@ -439,15 +550,33 @@ function ajax_user_merge_process_batch() {
                     $post_ref['meta_key'],
                     $pair['expert_wp_id'],
                     $pair['personnel_wp_id'],
+                    $post_ref['repeater'],
+                    $post_ref['user_field'],
+                    $post_ref['row_index'],
                     $dry_run
                 );
 
                 if ($result['success']) {
-                    $stats['posts_updated']++;
-                    $log[] = [
-                        'type' => 'success',
-                        'message' => "{$prefix}  ✓ {$post_ref['post_type']} #{$post_ref['post_id']} \"{$post_ref['post_title']}\" - {$post_ref['repeater']}[{$post_ref['row_index']}]: {$result['message']}"
-                    ];
+                    $action = isset($result['action']) ? $result['action'] : 'update';
+                    
+                    if ($action === 'remove') {
+                        $stats['rows_removed']++;
+                        $log[] = [
+                            'type' => 'warning',
+                            'message' => "{$prefix}  ⚠ {$post_ref['post_type']} #{$post_ref['post_id']} \"{$post_ref['post_title']}\" - {$post_ref['repeater']}[{$post_ref['row_index']}]: REMOVED (personnel already exists in this field)"
+                        ];
+                    } else {
+                        $stats['posts_updated']++;
+                        $log[] = [
+                            'type' => 'success',
+                            'message' => "{$prefix}  ✓ {$post_ref['post_type']} #{$post_ref['post_id']} \"{$post_ref['post_title']}\" - {$post_ref['repeater']}[{$post_ref['row_index']}]: {$result['message']}"
+                        ];
+                    }
+                    
+                    // Track this post for cache flushing
+                    if (!$dry_run) {
+                        $modified_posts[$post_ref['post_id']] = true;
+                    }
                 } else {
                     $stats['errors']++;
                     $log[] = [
@@ -478,6 +607,14 @@ function ajax_user_merge_process_batch() {
                 }
             }
         }
+    }
+    
+    // Flush caches and trigger save hooks for all modified posts
+    if (!$dry_run && !empty($modified_posts)) {
+        foreach (array_keys($modified_posts) as $post_id) {
+            flush_post_and_trigger_save($post_id);
+        }
+        $log[] = ['type' => 'info', 'message' => "Flushed caches for " . count($modified_posts) . " modified post(s)"];
     }
 
     $new_index = $current_index + $processed;
@@ -588,6 +725,7 @@ function render_user_merge_page() {
             <p id="progress-text">Initializing...</p>
             <div id="stats-display" style="display:flex; gap:20px; margin:10px 0;">
                 <div><strong>Posts Updated:</strong> <span id="stat-posts">0</span></div>
+                <div><strong>Rows Removed:</strong> <span id="stat-removed">0</span></div>
                 <div><strong>Experts Deleted:</strong> <span id="stat-deleted">0</span></div>
                 <div><strong>Errors:</strong> <span id="stat-errors">0</span></div>
             </div>
@@ -684,6 +822,26 @@ function render_user_merge_page() {
             font-size: 20px;
             color: #2271b1;
         }
+        .preview-table .action-badge {
+            padding: 1px 5px;
+            border-radius: 2px;
+            font-size: 9px;
+            text-transform: uppercase;
+            margin-right: 5px;
+            font-weight: 600;
+        }
+        .preview-table .action-update {
+            background: #d4edda;
+            color: #155724;
+        }
+        .preview-table .action-remove {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .preview-table .post-item-remove {
+            background: #fff3cd;
+            border-left: 3px solid #dba617;
+        }
     </style>
 
     <script>
@@ -691,7 +849,7 @@ function render_user_merge_page() {
         const nonce = '<?php echo $nonce; ?>';
         let isRunning = false;
         let shouldStop = false;
-        let totalStats = {posts: 0, deleted: 0, errors: 0};
+        let totalStats = {posts: 0, removed: 0, deleted: 0, errors: 0};
 
         function log(message, type = 'info') {
             const $console = $('#console-output');
@@ -714,9 +872,11 @@ function render_user_merge_page() {
 
         function updateStats(stats) {
             totalStats.posts += stats.posts_updated || 0;
+            totalStats.removed += stats.rows_removed || 0;
             totalStats.deleted += stats.experts_deleted || 0;
             totalStats.errors += stats.errors || 0;
             $('#stat-posts').text(totalStats.posts);
+            $('#stat-removed').text(totalStats.removed);
             $('#stat-deleted').text(totalStats.deleted);
             $('#stat-errors').text(totalStats.errors);
         }
@@ -796,6 +956,9 @@ function render_user_merge_page() {
                 • <strong>${totals.pairs}</strong> user pairs will be processed<br>
                 • <strong>${totals.posts_to_update}</strong> post references will be updated
             `;
+            if (totals.rows_to_remove > 0) {
+                summaryHtml += `<br>• <strong style="color:#dba617;">${totals.rows_to_remove}</strong> duplicate rows will be <strong style="color:#dba617;">REMOVED</strong> (personnel already exists)`;
+            }
             if (deleteExperts) {
                 summaryHtml += `<br>• <strong style="color:#d63638;">${totals.experts_to_delete}</strong> expert users will be <strong style="color:#d63638;">DELETED</strong>`;
             }
@@ -849,8 +1012,15 @@ function render_user_merge_page() {
                     postsHtml = '<span class="no-posts">No posts to update</span>';
                 } else {
                     item.affected_posts.forEach(post => {
+                        const isRemove = post.action === 'remove';
+                        const actionBadge = isRemove 
+                            ? '<span class="action-badge action-remove">REMOVE</span>' 
+                            : '<span class="action-badge action-update">UPDATE</span>';
+                        const itemClass = isRemove ? 'post-item post-item-remove' : 'post-item';
+                        
                         postsHtml += `
-                            <div class="post-item">
+                            <div class="${itemClass}">
+                                ${actionBadge}
                                 <span class="post-type">${post.type}</span>
                                 <a href="${post.edit_url}" target="_blank">${escapeHtml(post.title)}</a>
                                 <span style="color:#646970;">→ ${post.field}</span>
@@ -941,6 +1111,7 @@ function render_user_merge_page() {
                     $('#final-stats').html(`
                         <p><strong>Mode:</strong> ${modeText}</p>
                         <p><strong>Total Posts Updated:</strong> ${totalStats.posts}</p>
+                        <p><strong>Total Duplicate Rows Removed:</strong> ${totalStats.removed}</p>
                         <p><strong>Total Expert Users Deleted:</strong> ${totalStats.deleted}</p>
                         <p><strong>Total Errors:</strong> ${totalStats.errors}</p>
                     `);
@@ -961,24 +1132,23 @@ function render_user_merge_page() {
 
             isRunning = true;
             shouldStop = false;
-            totalStats = {posts: 0, deleted: 0, errors: 0};
+            totalStats = {posts: 0, removed: 0, deleted: 0, errors: 0};
 
             $('#start-merge').prop('disabled', true);
             $('#stop-merge').show();
             $('#progress-section, #console-section').show();
             $('#completion-section').hide();
             $('#console-output').empty();
-            $('#stat-posts, #stat-deleted, #stat-errors').text('0');
+            $('#stat-posts, #stat-removed, #stat-deleted, #stat-errors').text('0');
             updateProgress(0, 'Starting...');
 
             const mode = isDryRun ? 'DRY RUN' : 'LIVE';
             log(`🚀 Starting merge process in ${mode} mode...`, 'info');
 
-            // Reset the index
+            // Reset the index to start from beginning
             $.post(ajaxurl, {
-                action: 'user_merge_parse_csv',
-                nonce: nonce,
-                csv_content: window.lastCsvContent || ''
+                action: 'user_merge_reset_index',
+                nonce: nonce
             }, function() {
                 runBatch(isDryRun);
             });
