@@ -43,6 +43,7 @@ function user_merge_create_table() {
         expert_source_id varchar(100) DEFAULT '',
         expert_writer_id varchar(100) DEFAULT '',
         affected_posts_count int(11) DEFAULT 0,
+        affected_posts_cache longtext DEFAULT NULL,
         status varchar(20) DEFAULT 'pending',
         processed_at datetime DEFAULT NULL,
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -464,9 +465,20 @@ function ajax_user_merge_process_csv_batch() {
             continue;
         }
         
-        // Count affected posts
+        // Count affected posts and cache them
         $affected_posts = find_posts_referencing_user($expert_wp_id);
-        
+        $affected_posts_for_cache = array_map(function($p) {
+            return [
+                'post_id' => $p['post_id'],
+                'post_title' => $p['post_title'],
+                'post_type' => $p['post_type'],
+                'repeater' => $p['repeater'],
+                'user_field' => $p['user_field'],
+                'meta_key' => $p['meta_key'],
+                'row_index' => $p['row_index'],
+            ];
+        }, $affected_posts);
+
         // Parse confidence
         $confidence = $cols['confidence'] !== false ? intval(str_replace('%', '', $data[$cols['confidence']] ?? '0')) : 0;
         
@@ -487,6 +499,7 @@ function ajax_user_merge_process_csv_batch() {
             'expert_source_id' => $cols['expert_source_id'] !== false ? ($data[$cols['expert_source_id']] ?? '') : '',
             'expert_writer_id' => $cols['expert_writer_id'] !== false ? ($data[$cols['expert_writer_id']] ?? '') : '',
             'affected_posts_count' => count($affected_posts),
+            'affected_posts_cache' => json_encode($affected_posts_for_cache),
             'status' => 'pending',
         ]);
         
@@ -533,7 +546,10 @@ function ajax_user_merge_get_queue() {
     }
     
     $filter = isset($_POST['filter']) ? sanitize_text_field($_POST['filter']) : 'pending';
-    
+    $page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
+    $per_page = 50;
+    $offset = ($page - 1) * $per_page;
+
     $where_status = '';
     if ($filter === 'pending') {
         $where_status = "AND status = 'pending'";
@@ -544,8 +560,13 @@ function ajax_user_merge_get_queue() {
     }
     
     $rows = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM $table_name WHERE session_id = %s $where_status ORDER BY confidence DESC, id ASC",
-        $session_id
+        "SELECT * FROM $table_name 
+         WHERE session_id = %s $where_status 
+         ORDER BY confidence DESC, id ASC
+         LIMIT %d OFFSET %d",
+        $session_id,
+        $per_page,
+        $offset
     ), ARRAY_A);
     
     // Get counts
@@ -559,31 +580,50 @@ function ajax_user_merge_get_queue() {
         $session_id
     ), ARRAY_A);
     
+    // Get filtered count for pagination
+    $filtered_count = $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM $table_name WHERE session_id = %s $where_status",
+        $session_id
+    ));
+
     // Enrich with current affected posts count and edit links
     foreach ($rows as &$row) {
         $row['personnel_edit_url'] = get_edit_user_link($row['personnel_wp_id']);
         $row['expert_edit_url'] = get_edit_user_link($row['expert_wp_id']);
         
-        // Re-check affected posts (in case things changed)
-        if ($row['status'] === 'pending') {
-            $affected = find_posts_referencing_user($row['expert_wp_id']);
-            $row['affected_posts_count'] = count($affected);
-            $row['affected_posts'] = array_map(function($p) {
-                return [
-                    'id' => $p['post_id'],
-                    'title' => $p['post_title'],
-                    'type' => $p['post_type'],
-                    'field' => $p['repeater'] . '[' . $p['row_index'] . ']',
-                    'edit_url' => get_edit_post_link($p['post_id'], 'raw'),
-                ];
-            }, $affected);
+        // Use cached affected posts instead of re-querying
+        if ($row['status'] === 'pending' && !empty($row['affected_posts_cache'])) {
+            $cached_posts = json_decode($row['affected_posts_cache'], true);
+            if (is_array($cached_posts)) {
+                $row['affected_posts'] = array_map(function($p) {
+                    return [
+                        'id' => $p['post_id'],
+                        'title' => $p['post_title'],
+                        'type' => $p['post_type'],
+                        'field' => $p['repeater'] . '[' . $p['row_index'] . ']',
+                        'edit_url' => get_edit_post_link($p['post_id'], 'raw'),
+                    ];
+                }, $cached_posts);
+            } else {
+                $row['affected_posts'] = [];
+            }
+        } else {
+            $row['affected_posts'] = [];
         }
+        // Remove the cache from response to reduce payload size
+        unset($row['affected_posts_cache']);
     }
     
     wp_send_json_success([
         'rows' => $rows,
         'counts' => $counts,
         'session_id' => $session_id,
+        'pagination' => [
+            'page' => $page,
+            'per_page' => $per_page,
+            'total' => intval($filtered_count),
+            'total_pages' => ceil($filtered_count / $per_page),
+        ],
     ]);
 }
 
@@ -832,6 +872,9 @@ function render_user_merge_page() {
             <!-- Queue Table -->
             <div id="queue-table-container" style="background:#fff; border:1px solid #ddd;"></div>
             
+            <!-- Pagination -->
+            <div id="pagination-container" style="margin-top:15px; display:flex; gap:10px; align-items:center;"></div>
+             
             <!-- Action Log -->
             <div id="action-log" style="display:none; margin-top:20px; background:#1e1e1e; color:#d4d4d4; padding:15px; max-height:200px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
         </div>
@@ -965,12 +1008,26 @@ function render_user_merge_page() {
             justify-content: center;
             font-weight: 600;
         }
+
+        .pagination-btn {
+            min-width: 36px;
+        }
+        .pagination-btn.active {
+            background: #2271b1;
+            border-color: #2271b1;
+            color: #fff;
+        }
+        .pagination-info {
+            color: #666;
+            font-size: 13px;
+        }
     </style>
 
     <script>
     jQuery(document).ready(function($) {
         const nonce = '<?php echo $nonce; ?>';
         let currentFilter = 'pending';
+        let currentPage = 1;
 
         // Check for existing session on load
         checkSession();
@@ -999,20 +1056,29 @@ function render_user_merge_page() {
             $log.scrollTop($log[0].scrollHeight);
         }
 
-        function loadQueue() {
+        function loadQueue(page) {
+            page = page || 1;
+            currentPage = page;
+            
+            $('#queue-table-container').html('<p style="padding:20px;color:#666;">Loading...</p>');
+            
             $.post(ajaxurl, {
                 action: 'user_merge_get_queue',
                 nonce: nonce,
-                filter: currentFilter
+                filter: currentFilter,
+                page: page
             }, function(response) {
                 if (!response.success) {
-                    alert('Error: ' + response.data);
+                    $('#queue-table-container').html('<p style="padding:20px;color:red;">Error: ' + response.data + '</p>');
                     return;
                 }
                 
                 const data = response.data;
                 updateCounts(data.counts);
                 renderTable(data.rows);
+                renderPagination(data.pagination);
+            }).fail(function() {
+                $('#queue-table-container').html('<p style="padding:20px;color:red;">Failed to load queue. Please refresh the page.</p>');
             });
         }
 
@@ -1021,6 +1087,45 @@ function render_user_merge_page() {
             $('#count-pending').text(counts.pending || 0);
             $('#count-merged').text(counts.merged || 0);
             $('#count-rejected').text(counts.rejected || 0);
+        }
+
+        function renderPagination(pagination) {
+            if (!pagination || pagination.total_pages <= 1) {
+                $('#pagination-container').empty();
+                return;
+            }
+            
+            let html = '<span class="pagination-info">Page ' + pagination.page + ' of ' + pagination.total_pages + ' (' + pagination.total + ' items)</span>';
+            html += '<div style="display:flex; gap:5px;">';
+            
+            if (pagination.page > 1) {
+                html += '<button class="button pagination-btn" data-page="' + (pagination.page - 1) + '">&laquo; Prev</button>';
+            }
+            
+            const startPage = Math.max(1, pagination.page - 3);
+            const endPage = Math.min(pagination.total_pages, pagination.page + 3);
+            
+            if (startPage > 1) {
+                html += '<button class="button pagination-btn" data-page="1">1</button>';
+                if (startPage > 2) html += '<span style="padding:0 5px;">...</span>';
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const activeClass = i === pagination.page ? ' active' : '';
+                html += '<button class="button pagination-btn' + activeClass + '" data-page="' + i + '">' + i + '</button>';
+            }
+            
+            if (endPage < pagination.total_pages) {
+                if (endPage < pagination.total_pages - 1) html += '<span style="padding:0 5px;">...</span>';
+                html += '<button class="button pagination-btn" data-page="' + pagination.total_pages + '">' + pagination.total_pages + '</button>';
+            }
+            
+            if (pagination.page < pagination.total_pages) {
+                html += '<button class="button pagination-btn" data-page="' + (pagination.page + 1) + '">Next &raquo;</button>';
+            }
+            
+            html += '</div>';
+            $('#pagination-container').html(html);
         }
 
         function renderTable(rows) {
@@ -1248,6 +1353,13 @@ function render_user_merge_page() {
             currentFilter = $(this).data('filter');
             loadQueue();
         });
+
+        // Pagination buttons
+                $(document).on('click', '.pagination-btn', function() {
+                    const page = $(this).data('page');
+                    loadQueue(page);
+                    $('html, body').animate({ scrollTop: $('#queue-table-container').offset().top - 50 }, 200);
+                });
 
         // Merge/Reject actions
         $(document).on('click', '.btn-merge, .btn-reject', function() {
