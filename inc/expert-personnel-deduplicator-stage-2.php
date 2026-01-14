@@ -220,6 +220,18 @@ function reassign_user_in_post($post_id, $meta_key, $old_user_id, $new_user_id, 
 
     $result = update_post_meta($post_id, $meta_key, $new_user_id);
     
+    if ($result !== false) {
+        // Clear all caches for this post so front-end reflects the change immediately
+        clean_post_cache($post_id);
+        
+        // Touch the post to trigger any save hooks (updates modified date too)
+        wp_update_post([
+            'ID' => $post_id,
+            'post_modified' => current_time('mysql'),
+            'post_modified_gmt' => current_time('mysql', 1),
+        ]);
+    }
+    
     return [
         'success' => $result !== false,
         'message' => $result !== false 
