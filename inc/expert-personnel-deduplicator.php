@@ -634,20 +634,20 @@ add_action('admin_action_export_duplicates_csv', function() {
     
     $output = fopen('php://output', 'w');
     
-    // Header row
+    // Header row - column names must match what stage-2 merge tool expects
     fputcsv($output, [
         'Confidence',
         'Personnel WP ID',
         'Personnel Name',
         'Personnel Email',
         'Personnel Phone',
-        'Personnel ID',
+        'personnel_id',
         'Expert WP ID',
         'Expert Name',
         'Expert Email',
         'Expert Phone',
-        'Source Expert ID',
-        'Writer ID',
+        'expert_source_id',
+        'expert_writer_id',
         'Match Reasons'
     ]);
     
