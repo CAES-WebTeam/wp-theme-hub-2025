@@ -1335,10 +1335,11 @@ add_action('wp_head', function() {
 
     $post_id = get_the_ID();
     $publication_number = get_field('publication_number', $post_id);
-    $publication_title = get_the_title();
+    $publication_title = wp_strip_all_tags(get_the_title());
     $subtitle = get_post_meta($post_id, 'subtitle', true);
     
-    if (!empty($subtitle)) {
+    // Only append subtitle if it's not already in the title
+    if (!empty($subtitle) && strpos($publication_title, $subtitle) === false) {
         $publication_title .= ': ' . $subtitle;
     }
 
