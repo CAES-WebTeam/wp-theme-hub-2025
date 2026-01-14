@@ -1346,7 +1346,7 @@ add_action('wp_head', function() {
     $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
     ?>
     <style>
-    @media print {
+    /* @media print { */
         @page {
             size: 8.5in 11in;
             margin: 0.5in 0.5in 0.75in 0.5in;
@@ -1372,7 +1372,7 @@ add_action('wp_head', function() {
         .caes-hub-content-meta-wrap {
             counter-reset: page;
         }
-    }
+    /* } */
     </style>
     <?php
 });
