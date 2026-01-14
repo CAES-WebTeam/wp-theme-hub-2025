@@ -301,6 +301,84 @@ function ajax_user_merge_parse_csv() {
     ]);
 }
 
+/**
+ * Dry Run Preview - generates a full preview of what will happen
+ */
+add_action('wp_ajax_user_merge_dry_run_preview', 'ajax_user_merge_dry_run_preview');
+function ajax_user_merge_dry_run_preview() {
+    check_ajax_referer('user_merge_nonce', 'nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Permission denied');
+    }
+
+    $pairs = get_transient('user_merge_pairs');
+    if (!$pairs) {
+        wp_send_json_error('Session expired. Please re-upload the CSV.');
+    }
+
+    $delete_experts = isset($_POST['delete_experts']) && $_POST['delete_experts'] === 'true';
+    
+    $preview_data = [];
+    $totals = [
+        'pairs' => count($pairs),
+        'posts_to_update' => 0,
+        'experts_to_delete' => 0,
+    ];
+
+    foreach ($pairs as $pair) {
+        $personnel_user = get_user_by('ID', $pair['personnel_wp_id']);
+        $expert_user = get_user_by('ID', $pair['expert_wp_id']);
+        
+        $personnel_name = $personnel_user ? $personnel_user->display_name : "Unknown (WP#{$pair['personnel_wp_id']})";
+        $expert_name = $expert_user ? $expert_user->display_name : "Unknown (WP#{$pair['expert_wp_id']})";
+        
+        // Find affected posts
+        $affected_posts = find_posts_referencing_user($pair['expert_wp_id']);
+        $totals['posts_to_update'] += count($affected_posts);
+        
+        // Format affected posts for display
+        $posts_display = [];
+        foreach ($affected_posts as $post_ref) {
+            $posts_display[] = [
+                'id' => $post_ref['post_id'],
+                'title' => $post_ref['post_title'],
+                'type' => $post_ref['post_type'],
+                'field' => $post_ref['repeater'] . '[' . $post_ref['row_index'] . ']',
+                'edit_url' => get_edit_post_link($post_ref['post_id'], 'raw'),
+            ];
+        }
+        
+        $preview_data[] = [
+            'personnel' => [
+                'wp_id' => $pair['personnel_wp_id'],
+                'name' => $personnel_name,
+                'personnel_id' => $pair['personnel_id'],
+                'edit_url' => get_edit_user_link($pair['personnel_wp_id']),
+            ],
+            'expert' => [
+                'wp_id' => $pair['expert_wp_id'],
+                'name' => $expert_name,
+                'source_id' => $pair['source_expert_id'],
+                'writer_id' => $pair['writer_id'],
+                'edit_url' => get_edit_user_link($pair['expert_wp_id']),
+                'will_delete' => $delete_experts,
+            ],
+            'affected_posts' => $posts_display,
+            'post_count' => count($affected_posts),
+        ];
+        
+        if ($delete_experts) {
+            $totals['experts_to_delete']++;
+        }
+    }
+
+    wp_send_json_success([
+        'preview' => $preview_data,
+        'totals' => $totals,
+        'delete_experts' => $delete_experts,
+    ]);
+}
+
 add_action('wp_ajax_user_merge_process_batch', 'ajax_user_merge_process_batch');
 function ajax_user_merge_process_batch() {
     check_ajax_referer('user_merge_nonce', 'nonce');
@@ -407,97 +485,86 @@ function ajax_user_merge_process_batch() {
         'total' => $total_pairs,
         'progress' => $progress,
         'is_complete' => $is_complete,
-        'stats' => $stats,
         'log' => $log,
+        'stats' => $stats,
         'dry_run' => $dry_run
     ]);
 }
 
 /**
  * ---------------------------------------------------------------------------------
- * 6. Admin Page
+ * 6. Admin Page Rendering
  * ---------------------------------------------------------------------------------
  */
 
-add_action('admin_menu', 'add_user_merge_page');
-function add_user_merge_page() {
-    add_submenu_page(
-        'caes-tools',
-        'User Merge & Cleanup',
-        'User Merge & Cleanup',
+add_action('admin_menu', function() {
+    add_users_page(
+        'User Merge Utility',
+        'User Merge',
         'manage_options',
-        'user-merge-cleanup',
-        'user_merge_page_content'
+        'user-merge-utility',
+        'render_user_merge_page'
     );
-}
+});
 
-function user_merge_page_content() {
-    if (!current_user_can('manage_options')) {
-        wp_die(__('Insufficient permissions.'));
-    }
+function render_user_merge_page() {
     $nonce = wp_create_nonce('user_merge_nonce');
     ?>
     <div class="wrap">
-        <h1>User Merge & Cleanup</h1>
-        <p>This utility reassigns content from <strong>Expert Users</strong> to their corresponding <strong>Personnel Users</strong>, then optionally deletes the Expert User accounts.</p>
+        <h1>🔀 User Merge & Cleanup Utility</h1>
+        <p>Reassigns content from Expert Users to Personnel Users based on a CSV mapping file.</p>
 
-        <div class="card" style="max-width:900px; padding:20px; margin:20px 0;">
+        <div style="background:#fff; padding:20px; border:1px solid #ddd; margin-bottom:20px; max-width:900px;">
             <h2 style="margin-top:0;">Step 1: Upload CSV</h2>
-            <p>Upload a CSV file containing user pairs. The CSV must have these columns:</p>
-            <ul>
-                <li><code>personnel_id</code> - The Personnel ID of the target Personnel User</li>
-                <li><code>expert_source_id</code> and/or <code>expert_writer_id</code> - Identifiers for the Expert User to merge</li>
-            </ul>
-            <p><em>Tip: Export this CSV from the <a href="<?php echo admin_url('admin.php?page=duplicate-user-detection'); ?>">Duplicate User Detection</a> tool.</em></p>
+            <p>Upload a CSV file with columns: <code>personnel_id</code>, <code>expert_source_id</code>, <code>expert_writer_id</code></p>
+            <p><em>Tip: Use the Duplicate Detection tool to generate this CSV.</em></p>
             
-            <div style="margin:15px 0;">
-                <input type="file" id="csv-file" accept=".csv">
-                <button id="parse-csv" class="button button-secondary" style="margin-left:10px;">Parse CSV</button>
-            </div>
-            
-            <div id="csv-preview" style="display:none; margin-top:15px; padding:15px; background:#f9f9f9; border:1px solid #ddd;">
-                <h3 style="margin-top:0;">CSV Preview</h3>
-                <div id="csv-stats"></div>
-                <div id="csv-errors" style="max-height:150px; overflow-y:auto;"></div>
-            </div>
+            <input type="file" id="csv-file" accept=".csv" style="margin-bottom:10px;"><br>
+            <button id="parse-csv" class="button button-primary">Parse CSV</button>
         </div>
 
-        <div id="merge-settings" class="card" style="max-width:900px; padding:20px; margin:20px 0; display:none;">
-            <h2 style="margin-top:0;">Step 2: Configure & Run</h2>
-            
+        <div id="csv-preview" style="display:none; background:#fff; padding:20px; border:1px solid #ddd; margin-bottom:20px; max-width:900px;">
+            <h2 style="margin-top:0;">Step 2: Review Parsed Data</h2>
+            <div id="csv-stats"></div>
+            <div id="csv-errors"></div>
+        </div>
+
+        <div id="merge-settings" style="display:none; background:#fff; padding:20px; border:1px solid #ddd; margin-bottom:20px; max-width:900px;">
+            <h2 style="margin-top:0;">Step 3: Configure & Run</h2>
             <table class="form-table">
                 <tr>
-                    <th><label for="dry-run">Dry Run Mode</label></th>
+                    <th>Delete Expert Users?</th>
                     <td>
-                        <input type="checkbox" id="dry-run" checked>
-                        <label for="dry-run">Preview changes without modifying the database</label>
-                        <p class="description" style="color:#d63638;"><strong>Recommended:</strong> Always run in dry mode first to verify changes.</p>
+                        <label>
+                            <input type="checkbox" id="delete-experts">
+                            Delete Expert User accounts after reassigning their content
+                        </label>
+                        <p class="description" style="color:#d63638;">⚠️ This permanently deletes the user accounts!</p>
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="delete-experts">Delete Expert Users</label></th>
+                    <th>Batch Size</th>
                     <td>
-                        <input type="checkbox" id="delete-experts" checked>
-                        <label for="delete-experts">Delete Expert User accounts after reassigning their content</label>
-                        <p class="description">Any WordPress posts authored by the Expert will be reassigned to the Personnel User.</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th><label for="batch-size">Batch Size</label></th>
-                    <td>
-                        <select id="batch-size">
-                            <option value="1">1 pair (slowest, most detailed)</option>
-                            <option value="3">3 pairs</option>
-                            <option value="5" selected>5 pairs (recommended)</option>
-                            <option value="10">10 pairs (faster)</option>
-                        </select>
+                        <input type="number" id="batch-size" value="5" min="1" max="20" style="width:80px;">
+                        <p class="description">User pairs to process per batch (lower = more stable)</p>
                     </td>
                 </tr>
             </table>
-
-            <p>
-                <button id="start-merge" class="button button-primary button-large">Start Merge Process</button>
+            <p style="margin-top:20px;">
+                <button id="preview-merge" class="button button-secondary button-hero">👁️ Preview Changes</button>
+                <button id="start-merge" class="button button-primary button-hero" style="display:none;">🚀 Run Merge</button>
                 <button id="stop-merge" class="button button-secondary" style="display:none;">Stop</button>
+            </p>
+        </div>
+
+        <!-- Dry Run Preview Table -->
+        <div id="preview-section" style="display:none; background:#fff; padding:20px; border:1px solid #ddd; margin-bottom:20px; max-width:1200px;">
+            <h2 style="margin-top:0;">📋 Preview: Changes That Will Be Made</h2>
+            <div id="preview-summary" style="background:#f0f6fc; padding:15px; margin-bottom:20px; border-left:4px solid #2271b1;"></div>
+            <div id="preview-table-container" style="max-height:600px; overflow-y:auto;"></div>
+            <p style="margin-top:20px; padding-top:15px; border-top:1px solid #ddd;">
+                <button id="confirm-merge" class="button button-primary button-hero">✅ Confirm & Run Merge</button>
+                <button id="cancel-preview" class="button">Cancel</button>
             </p>
         </div>
 
@@ -516,7 +583,7 @@ function user_merge_page_content() {
 
         <div id="console-section" style="display:none; max-width:900px; margin-top:20px;">
             <h2>Console Output</h2>
-            <div id="console-output" style="background:#1e1e1e; color:#d4d4d4; font-family:monospace; font-size:12px; height:400px; overflow-y:auto; padding:10px; border-radius:4px;"></div>
+            <div id="console-output" style="background:#1e1e1e; color:#d4d4d4; font-family:monospace; font-size:12px; height:300px; overflow-y:auto; padding:10px; border-radius:4px;"></div>
         </div>
 
         <div id="completion-section" style="display:none; max-width:900px; margin-top:20px;">
@@ -526,6 +593,86 @@ function user_merge_page_content() {
             </div>
         </div>
     </div>
+
+    <style>
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .preview-table th {
+            background: #f0f0f1;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #c3c4c7;
+            position: sticky;
+            top: 0;
+        }
+        .preview-table td {
+            padding: 10px;
+            border-bottom: 1px solid #dcdcde;
+            vertical-align: top;
+        }
+        .preview-table tr:hover {
+            background: #f6f7f7;
+        }
+        .preview-table .user-cell {
+            min-width: 180px;
+        }
+        .preview-table .user-name {
+            font-weight: 600;
+            color: #1d2327;
+        }
+        .preview-table .user-meta {
+            font-size: 11px;
+            color: #646970;
+            margin-top: 3px;
+        }
+        .preview-table .posts-cell {
+            max-width: 400px;
+        }
+        .preview-table .post-item {
+            background: #f0f0f1;
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .preview-table .post-item a {
+            color: #2271b1;
+            text-decoration: none;
+        }
+        .preview-table .post-item a:hover {
+            text-decoration: underline;
+        }
+        .preview-table .post-type {
+            background: #dcdcde;
+            padding: 1px 5px;
+            border-radius: 2px;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-right: 5px;
+        }
+        .preview-table .no-posts {
+            color: #646970;
+            font-style: italic;
+        }
+        .preview-table .delete-badge {
+            background: #d63638;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+        .preview-table .arrow-cell {
+            text-align: center;
+            font-size: 20px;
+            color: #2271b1;
+        }
+    </style>
 
     <script>
     jQuery(document).ready(function($) {
@@ -606,8 +753,138 @@ function user_merge_page_content() {
             reader.readAsText(file);
         });
 
+        // Preview Changes (Dry Run)
+        $('#preview-merge').on('click', function() {
+            const $btn = $(this);
+            $btn.prop('disabled', true).text('Loading preview...');
+
+            $.post(ajaxurl, {
+                action: 'user_merge_dry_run_preview',
+                nonce: nonce,
+                delete_experts: $('#delete-experts').is(':checked') ? 'true' : 'false'
+            }, function(response) {
+                $btn.prop('disabled', false).text('👁️ Preview Changes');
+
+                if (!response.success) {
+                    alert('Error: ' + response.data);
+                    return;
+                }
+
+                const data = response.data;
+                renderPreviewTable(data.preview, data.totals, data.delete_experts);
+                $('#preview-section').show();
+                $('#merge-settings').hide();
+            });
+        });
+
+        function renderPreviewTable(preview, totals, deleteExperts) {
+            // Summary
+            let summaryHtml = `
+                <strong>Summary of Changes:</strong><br>
+                • <strong>${totals.pairs}</strong> user pairs will be processed<br>
+                • <strong>${totals.posts_to_update}</strong> post references will be updated
+            `;
+            if (deleteExperts) {
+                summaryHtml += `<br>• <strong style="color:#d63638;">${totals.experts_to_delete}</strong> expert users will be <strong style="color:#d63638;">DELETED</strong>`;
+            }
+            $('#preview-summary').html(summaryHtml);
+
+            // Table
+            let tableHtml = `
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th class="user-cell">Expert User (Source)</th>
+                            <th class="arrow-cell"></th>
+                            <th class="user-cell">Personnel User (Target)</th>
+                            <th class="posts-cell">Affected Posts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            preview.forEach(item => {
+                const expert = item.expert;
+                const personnel = item.personnel;
+                
+                // Expert user cell
+                let expertHtml = `
+                    <div class="user-name">${escapeHtml(expert.name)}</div>
+                    <div class="user-meta">
+                        WP ID: ${expert.wp_id}<br>
+                        ${expert.source_id ? `Source ID: ${expert.source_id}<br>` : ''}
+                        ${expert.writer_id ? `Writer ID: ${expert.writer_id}<br>` : ''}
+                        <a href="${expert.edit_url}" target="_blank">Edit User</a>
+                    </div>
+                `;
+                if (expert.will_delete) {
+                    expertHtml += `<div class="delete-badge">WILL BE DELETED</div>`;
+                }
+
+                // Personnel user cell
+                let personnelHtml = `
+                    <div class="user-name">${escapeHtml(personnel.name)}</div>
+                    <div class="user-meta">
+                        WP ID: ${personnel.wp_id}<br>
+                        Personnel ID: ${personnel.personnel_id}<br>
+                        <a href="${personnel.edit_url}" target="_blank">Edit User</a>
+                    </div>
+                `;
+
+                // Affected posts cell
+                let postsHtml = '';
+                if (item.affected_posts.length === 0) {
+                    postsHtml = '<span class="no-posts">No posts to update</span>';
+                } else {
+                    item.affected_posts.forEach(post => {
+                        postsHtml += `
+                            <div class="post-item">
+                                <span class="post-type">${post.type}</span>
+                                <a href="${post.edit_url}" target="_blank">${escapeHtml(post.title)}</a>
+                                <span style="color:#646970;">→ ${post.field}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                tableHtml += `
+                    <tr>
+                        <td class="user-cell">${expertHtml}</td>
+                        <td class="arrow-cell">→</td>
+                        <td class="user-cell">${personnelHtml}</td>
+                        <td class="posts-cell">${postsHtml}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += '</tbody></table>';
+            $('#preview-table-container').html(tableHtml);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Cancel preview
+        $('#cancel-preview').on('click', function() {
+            $('#preview-section').hide();
+            $('#merge-settings').show();
+        });
+
+        // Confirm and run merge from preview
+        $('#confirm-merge').on('click', function() {
+            if (!confirm('⚠️ WARNING: You are about to make PERMANENT changes to the database.\n\nThis will:\n- Update user references in posts\n' + ($('#delete-experts').is(':checked') ? '- DELETE Expert User accounts\n' : '') + '\nAre you sure you want to continue?')) {
+                return;
+            }
+            
+            $('#preview-section').hide();
+            startMerge(false); // Not a dry run
+        });
+
         // Run merge batch
-        function runBatch() {
+        function runBatch(isDryRun) {
             if (shouldStop) {
                 log('Process stopped by user.', 'warning');
                 isRunning = false;
@@ -619,7 +896,7 @@ function user_merge_page_content() {
             $.post(ajaxurl, {
                 action: 'user_merge_process_batch',
                 nonce: nonce,
-                dry_run: $('#dry-run').is(':checked') ? 'true' : 'false',
+                dry_run: isDryRun ? 'true' : 'false',
                 delete_experts: $('#delete-experts').is(':checked') ? 'true' : 'false',
                 batch_size: $('#batch-size').val()
             }, function(response) {
@@ -657,7 +934,7 @@ function user_merge_page_content() {
                     `);
                     $('#completion-section').show();
                 } else {
-                    runBatch();
+                    runBatch(isDryRun);
                 }
             }).fail(function(xhr) {
                 log('AJAX error: ' + xhr.statusText, 'error');
@@ -667,22 +944,14 @@ function user_merge_page_content() {
             });
         }
 
-        // Start merge
-        $('#start-merge').on('click', function() {
+        function startMerge(isDryRun) {
             if (isRunning) return;
-
-            const isDryRun = $('#dry-run').is(':checked');
-            if (!isDryRun) {
-                if (!confirm('⚠️ WARNING: You are about to make PERMANENT changes to the database.\n\nThis will:\n- Update user references in posts\n' + ($('#delete-experts').is(':checked') ? '- DELETE Expert User accounts\n' : '') + '\nAre you sure you want to continue?')) {
-                    return;
-                }
-            }
 
             isRunning = true;
             shouldStop = false;
             totalStats = {posts: 0, deleted: 0, errors: 0};
 
-            $(this).prop('disabled', true);
+            $('#start-merge').prop('disabled', true);
             $('#stop-merge').show();
             $('#progress-section, #console-section').show();
             $('#completion-section').hide();
@@ -693,7 +962,26 @@ function user_merge_page_content() {
             const mode = isDryRun ? 'DRY RUN' : 'LIVE';
             log(`🚀 Starting merge process in ${mode} mode...`, 'info');
 
-            runBatch();
+            // Reset the index
+            $.post(ajaxurl, {
+                action: 'user_merge_parse_csv',
+                nonce: nonce,
+                csv_content: window.lastCsvContent || ''
+            }, function() {
+                runBatch(isDryRun);
+            });
+        }
+
+        // Start merge (old button, kept for compatibility)
+        $('#start-merge').on('click', function() {
+            if (isRunning) return;
+
+            const isDryRun = false;
+            if (!confirm('⚠️ WARNING: You are about to make PERMANENT changes to the database.\n\nThis will:\n- Update user references in posts\n' + ($('#delete-experts').is(':checked') ? '- DELETE Expert User accounts\n' : '') + '\nAre you sure you want to continue?')) {
+                return;
+            }
+
+            startMerge(isDryRun);
         });
 
         // Stop merge
