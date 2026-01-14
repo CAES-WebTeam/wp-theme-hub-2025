@@ -3,14 +3,9 @@
 
     table caption {
         background-color: var(--wp--preset--color--base-two);
-        color: var(--wp--preset--color--contrast);
         font-size: var(--wp--preset--font-size--small);
-        margin-top: 0px;
-        padding-top: var(--wp--preset--spacing--30);
-        padding-right: var(--wp--preset--spacing--40);
-        padding-bottom: var(--wp--preset--spacing--30);
-        padding-left: var(--wp--preset--spacing--40);
-
+        padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40) 0.3rem var(--wp--preset--spacing--40);
+        
         &.caption-bottom {
             caption-side: bottom;
         }
