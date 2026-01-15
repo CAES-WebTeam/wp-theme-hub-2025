@@ -630,7 +630,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             }
 
             $cover_html = '
-    <div style="text-align: center; margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
+    <div style="margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
         <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: ' . $img_margin_top . ';">
     </div>
     <div style="margin-top: 15mm;">';
