@@ -692,9 +692,8 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Add spacing at the end of content to prevent footer overlap
         $processed_content .= '<div class="footer-spacer"></div>';
 
-        // error_log("mPDF DEBUG: Content processed, writing to PDF");
+        error_log('CAPTION DEBUG: ' . print_r(preg_match('/<caption[^>]*>.*?<\/caption>/is', $processed_content, $debug_match) ? $debug_match[0] : 'No caption found', true));
         $mpdf->WriteHTML($processed_content);
-        // error_log("mPDF DEBUG: Main content written successfully");
 
         // LAST PAGE - Add special footer
         // Force a new page for the special footer
@@ -718,5 +717,3 @@ function generate_publication_pdf_file_mpdf($post_id)
         return false;
     }
 }
-
-error_log('CAPTION DEBUG: ' . print_r(preg_match('/<caption[^>]*>.*?<\/caption>/is', $processed_content, $debug_match) ? $debug_match[0] : 'No caption found', true));
