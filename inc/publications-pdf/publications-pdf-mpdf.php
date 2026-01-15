@@ -692,7 +692,6 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Add spacing at the end of content to prevent footer overlap
         $processed_content .= '<div class="footer-spacer"></div>';
 
-        die('<pre>' . htmlspecialchars($processed_content) . '</pre>');
         $mpdf->WriteHTML($processed_content);
 
         // LAST PAGE - Add special footer

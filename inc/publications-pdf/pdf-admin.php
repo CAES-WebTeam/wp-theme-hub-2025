@@ -526,6 +526,41 @@ jQuery(document).ready(function($) {
         });
     });
 
+    // Debug HTML button handler - opens processed HTML in new window
+    $(document).on('click', '.debug-html-btn', function() {
+        var postId = $(this).data('post-id');
+        var postTitle = $(this).data('post-title');
+        var $button = $(this);
+        
+        $button.prop('disabled', true).text('Loading...');
+        setStatus('Loading debug HTML for "' + postTitle + '"...');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'fr2025_debug_pdf_html',
+                post_id: postId,
+                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+            },
+            success: function(response) {
+                $button.prop('disabled', false).text('Debug HTML');
+                if (response.success) {
+                    setStatus('Debug HTML loaded for "' + postTitle + '"', 'success');
+                    var debugWindow = window.open('', '_blank', 'width=1000,height=800');
+                    debugWindow.document.write(response.data.html);
+                    debugWindow.document.close();
+                } else {
+                    setStatus('Error loading debug HTML: ' + response.data, 'error');
+                }
+            },
+            error: function() {
+                $button.prop('disabled', false).text('Debug HTML');
+                setStatus('Network error loading debug HTML', 'error');
+            }
+        });
+    });
+
     // Initialize
     loadPublicationsTable(1);
 });
@@ -688,6 +723,7 @@ function fr2025_ajax_get_publications_table() {
             }
             $actions .= '<a href="' . esc_url(get_edit_post_link($pub->ID)) . '" style="margin-left: 5px;" title="Edit Publication">Edit</a>';
             $actions .= '<a href="' . esc_url(get_permalink($pub->ID)) . '" target="_blank" style="margin-left: 5px;" title="View Publication on site">View</a> ';
+            $actions .= '<button class="button button-small debug-html-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '" title="Debug: View processed HTML">Debug HTML</button>';
 
             // --- 2. Build the HTML row in the correct order ---
             $html .= '<tr' . $row_class . '>';
@@ -853,3 +889,78 @@ function fr2025_ajax_cancel_bulk_pdfs() {
         wp_send_json_error('An error occurred during bulk cancellation.');
     }
 }
+
+/**
+ * AJAX handler to debug PDF HTML output
+ * Returns the processed HTML that would be sent to mPDF
+ */
+function fr2025_ajax_debug_pdf_html() {
+    check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+    }
+
+    $post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+    if ($post_id <= 0) {
+        wp_send_json_error('Invalid Post ID.');
+    }
+
+    $post = get_post($post_id);
+    if (!$post || $post->post_type !== 'publications') {
+        wp_send_json_error('Invalid publication.');
+    }
+
+    // Process the content the same way the PDF generator does
+    $post_content = $post->post_content;
+    if (is_array($post_content)) {
+        $post_content = implode('', $post_content);
+    } elseif (is_object($post_content)) {
+        $post_content = json_encode($post_content);
+    }
+
+    // Use the same processing function as mPDF
+    if (function_exists('process_content_for_mpdf')) {
+        $processed_content = process_content_for_mpdf($post_content);
+    } else {
+        $processed_content = $post_content;
+    }
+
+    // Get the CSS styles too
+    $css = '';
+    if (function_exists('get_mpdf_styles')) {
+        $css = get_mpdf_styles();
+    }
+
+    // Build a complete HTML document for viewing
+    $debug_html = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Debug HTML: ' . esc_html($post->post_title) . '</title>
+    <style>
+        body { font-family: Georgia, serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .debug-info { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 5px; font-family: monospace; font-size: 12px; }
+        .debug-info h3 { margin-top: 0; color: #333; }
+        hr { margin: 30px 0; }
+        ' . $css . '
+    </style>
+</head>
+<body>
+    <div class="debug-info">
+        <h3>Debug Info</h3>
+        <p><strong>Post ID:</strong> ' . $post_id . '</p>
+        <p><strong>Title:</strong> ' . esc_html($post->post_title) . '</p>
+        <p><strong>Generated:</strong> ' . current_time('mysql') . '</p>
+    </div>
+    <hr>
+    <h2>Processed Content (what mPDF receives):</h2>
+    ' . $processed_content . '
+    <hr>
+    <h2>Raw HTML (for inspection):</h2>
+    <pre style="background: #f9f9f9; padding: 15px; overflow-x: auto; font-size: 11px; white-space: pre-wrap; word-wrap: break-word;">' . htmlspecialchars($processed_content) . '</pre>
+</body>
+</html>';
+
+    wp_send_json_success(array('html' => $debug_html));
+}
+add_action('wp_ajax_fr2025_debug_pdf_html', 'fr2025_ajax_debug_pdf_html');
