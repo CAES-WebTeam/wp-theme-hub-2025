@@ -577,6 +577,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             ],
             'default_font' => 'georgia',
             'format' => 'Letter',
+            'tempDir' => sys_get_temp_dir() . '/mpdf_' . time(), // Force new cache
             'orientation' => 'P',
             'margin_left' => 15,
             'margin_right' => 15,
