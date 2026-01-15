@@ -9,6 +9,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Set to true to show Debug HTML buttons
+define('FR2025_PDF_DEBUG_MODE', false);
+
 /**
  * Queues PDF generation when a 'publications' post is saved or updated.
  *
@@ -209,12 +212,12 @@ function fr2025_render_pdf_maintenance_page()
         <h1>PDF Management</h1>
 
         <div style="background: #f1f1f1; padding: 15px; border-radius: 5px; margin: 20px 0; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-            
+
             <div style="display: flex; flex-grow: 1; min-width: 250px;">
                 <input type="search" id="publication-search" placeholder="Search by title or pub #" style="width: 100%; margin-right: -1px;">
                 <button id="search-button" class="button">Search</button>
             </div>
-            
+
             <button id="queue-selected-pdfs" class="button button-primary" disabled>Queue Selected</button>
             <button id="cancel-selected-pdfs" class="button button-secondary" disabled>Cancel Selected</button>
             <button id="clear-cron-lock" class="button button-secondary">Clear Stuck Processes</button>
@@ -232,354 +235,407 @@ function fr2025_render_pdf_maintenance_page()
         </div>
 
         <script>
-jQuery(document).ready(function($) {
-    var currentPage = 1;
-    var filterNoManual = true;
-    var searchTerm = ''; 
-    var searchTimeout; 
+            jQuery(document).ready(function($) {
+                var currentPage = 1;
+                var filterNoManual = true;
+                var searchTerm = '';
+                var searchTimeout;
 
-    function setStatus(message, type = 'info') {
-        var color = type === 'error' ? 'red' : (type === 'success' ? 'green' : '#666');
-        $('#status-message').html('<span style="color:' + color + ';">' + message + '</span>');
-    }
+                function setStatus(message, type = 'info') {
+                    var color = type === 'error' ? 'red' : (type === 'success' ? 'green' : '#666');
+                    $('#status-message').html('<span style="color:' + color + ';">' + message + '</span>');
+                }
 
-    function loadPublicationsTable(page = 1) {
-        setStatus('Loading publications...');
-        $('#publications-table-container').html('<p style="color: #ff9800;">Loading page ' + page + '...</p>');
-        
-        clearTimeout(searchTimeout);
+                function loadPublicationsTable(page = 1) {
+                    setStatus('Loading publications...');
+                    $('#publications-table-container').html('<p style="color: #ff9800;">Loading page ' + page + '...</p>');
 
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_get_publications_table',
-                page: page,
-                filter_no_manual: filterNoManual ? 1 : 0,
-                search: searchTerm, 
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#publications-table-container').html(response.data.html);
-                    currentPage = response.data.page;
-                    var statusText = 'Page ' + page + ' loaded (' + response.data.total + ' total publications found)';
-                    if (filterNoManual) statusText += ' (filtered)';
-                    if (searchTerm) statusText += ' for search term "' + searchTerm + '"';
-                    setStatus(statusText, 'success');
+                    clearTimeout(searchTimeout);
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_get_publications_table',
+                            page: page,
+                            filter_no_manual: filterNoManual ? 1 : 0,
+                            search: searchTerm,
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#publications-table-container').html(response.data.html);
+                                currentPage = response.data.page;
+                                var statusText = 'Page ' + page + ' loaded (' + response.data.total + ' total publications found)';
+                                if (filterNoManual) statusText += ' (filtered)';
+                                if (searchTerm) statusText += ' for search term "' + searchTerm + '"';
+                                setStatus(statusText, 'success');
+                                updateBulkButtonState();
+                            } else {
+                                $('#publications-table-container').html('<p style="color: red;">Error: ' + response.data + '</p>');
+                                setStatus('Error loading table', 'error');
+                            }
+                        },
+                        error: function() {
+                            $('#publications-table-container').html('<p style="color: red;">Network error loading table</p>');
+                            setStatus('Network error', 'error');
+                        }
+                    });
+                }
+
+                // MODIFIED: Updated to handle both queue and cancel buttons
+                function updateBulkButtonState() {
+                    var checkedCount = 0;
+                    var canQueueCount = 0;
+                    var canCancelCount = 0;
+
+                    $('.publication-checkbox:checked').each(function() {
+                        checkedCount++;
+                        var status = $(this).data('status');
+                        if (status === 'pending' || status === 'processing') {
+                            canCancelCount++;
+                        } else {
+                            canQueueCount++;
+                        }
+                    });
+
+                    // Handle Queue button
+                    if (canQueueCount > 0 && canCancelCount === 0) {
+                        $('#queue-selected-pdfs').prop('disabled', false).text('Queue ' + canQueueCount + ' Selected');
+                    } else {
+                        $('#queue-selected-pdfs').prop('disabled', true).text('Queue Selected');
+                    }
+
+                    // Handle Cancel button
+                    if (canCancelCount > 0 && canQueueCount === 0) {
+                        $('#cancel-selected-pdfs').prop('disabled', false).text('Cancel ' + canCancelCount + ' Selected');
+                    } else {
+                        $('#cancel-selected-pdfs').prop('disabled', true).text('Cancel Selected');
+                    }
+                }
+
+                // --- Event handlers ---
+
+                $('#publication-search').on('keyup', function() {
+                    clearTimeout(searchTimeout);
+                    var newSearchTerm = $(this).val();
+
+                    searchTimeout = setTimeout(function() {
+                        if (newSearchTerm !== searchTerm) {
+                            searchTerm = newSearchTerm;
+                            currentPage = 1;
+                            loadPublicationsTable(1);
+                        }
+                    }, 500);
+                });
+
+                $('#search-button').on('click', function() {
+                    searchTerm = $('#publication-search').val();
+                    currentPage = 1;
+                    loadPublicationsTable(1);
+                });
+
+                $('#filter-no-manual').on('change', function() {
+                    filterNoManual = $(this).is(':checked');
+                    currentPage = 1;
+                    loadPublicationsTable(1);
+                });
+
+                $('#clear-cron-lock').on('click', function() {
+                    if (!confirm('Clear cron lock and cancel stuck processes?')) return;
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_clear_cron_lock',
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            setStatus('Cron lock cleared', 'success');
+                            loadPublicationsTable(currentPage);
+                        }
+                    });
+                });
+
+                $('#queue-selected-pdfs').on('click', function() {
+                    var postIds = $('.publication-checkbox:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+
+                    if (postIds.length === 0) {
+                        alert('Please select at least one publication to queue.');
+                        return;
+                    }
+
+                    if (!confirm('Are you sure you want to queue PDF generation for ' + postIds.length + ' selected publications?')) {
+                        return;
+                    }
+
+                    setStatus('Queuing ' + postIds.length + ' publications...');
+                    $(this).prop('disabled', true);
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_queue_bulk_pdfs',
+                            post_ids: postIds,
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                setStatus(response.data.message, 'success');
+                                loadPublicationsTable(currentPage);
+                            } else {
+                                setStatus('Error queuing PDFs: ' + response.data, 'error');
+                            }
+                            updateBulkButtonState();
+                        },
+                        error: function() {
+                            setStatus('Network error during bulk queue.', 'error');
+                            updateBulkButtonState();
+                        }
+                    });
+                });
+
+                // NEW: Bulk cancel functionality
+                $('#cancel-selected-pdfs').on('click', function() {
+                    var postIds = $('.publication-checkbox:checked').map(function() {
+                        return $(this).val();
+                    }).get();
+
+                    if (postIds.length === 0) {
+                        alert('Please select at least one publication to cancel.');
+                        return;
+                    }
+
+                    if (!confirm('Are you sure you want to cancel PDF generation for ' + postIds.length + ' selected publications?')) {
+                        return;
+                    }
+
+                    setStatus('Cancelling ' + postIds.length + ' publications...');
+                    $(this).prop('disabled', true);
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_cancel_bulk_pdfs',
+                            post_ids: postIds,
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                setStatus(response.data.message, 'success');
+                                loadPublicationsTable(currentPage);
+                            } else {
+                                setStatus('Error cancelling PDFs: ' + response.data, 'error');
+                            }
+                            updateBulkButtonState();
+                        },
+                        error: function() {
+                            setStatus('Network error during bulk cancel.', 'error');
+                            updateBulkButtonState();
+                        }
+                    });
+                });
+
+
+                // --- Delegated event handlers ---
+                $(document).on('click', '.pagination-btn', function() {
+                    var page = $(this).data('page');
+                    loadPublicationsTable(page);
+                });
+
+                $(document).on('change', '.publication-checkbox', function() {
                     updateBulkButtonState();
-                } else {
-                    $('#publications-table-container').html('<p style="color: red;">Error: ' + response.data + '</p>');
-                    setStatus('Error loading table', 'error');
-                }
-            },
-            error: function() {
-                $('#publications-table-container').html('<p style="color: red;">Network error loading table</p>');
-                setStatus('Network error', 'error');
-            }
-        });
-    }
-    
-    // MODIFIED: Updated to handle both queue and cancel buttons
-    function updateBulkButtonState() {
-        var checkedCount = 0;
-        var canQueueCount = 0;
-        var canCancelCount = 0;
+                });
 
-        $('.publication-checkbox:checked').each(function() {
-            checkedCount++;
-            var status = $(this).data('status');
-            if (status === 'pending' || status === 'processing') {
-                canCancelCount++;
-            } else {
-                canQueueCount++;
-            }
-        });
-        
-        // Handle Queue button
-        if (canQueueCount > 0 && canCancelCount === 0) {
-            $('#queue-selected-pdfs').prop('disabled', false).text('Queue ' + canQueueCount + ' Selected');
-        } else {
-            $('#queue-selected-pdfs').prop('disabled', true).text('Queue Selected');
-        }
+                $(document).on('change', '#select-all-publications', function() {
+                    $('.publication-checkbox').prop('checked', $(this).is(':checked'));
+                    updateBulkButtonState();
+                });
 
-        // Handle Cancel button
-        if (canCancelCount > 0 && canQueueCount === 0) {
-            $('#cancel-selected-pdfs').prop('disabled', false).text('Cancel ' + canCancelCount + ' Selected');
-        } else {
-            $('#cancel-selected-pdfs').prop('disabled', true).text('Cancel Selected');
-        }
-    }
+                $(document).on('click', '.regenerate-pdf-btn', function() {
+                    var postId = $(this).data('post-id');
+                    var postTitle = $(this).data('post-title');
+                    var $button = $(this);
+                    var $row = $button.closest('tr');
 
-    // --- Event handlers ---
-    
-    $('#publication-search').on('keyup', function() {
-        clearTimeout(searchTimeout);
-        var newSearchTerm = $(this).val();
-        
-        searchTimeout = setTimeout(function() {
-            if (newSearchTerm !== searchTerm) {
-                searchTerm = newSearchTerm;
-                currentPage = 1;
+                    if (!confirm('Generate PDF for "' + postTitle + '"?')) return;
+
+                    $row.find('td:nth-child(5)').html('<span class="status-indicator status-processing"></span>Processing');
+                    $row.find('td:nth-child(6)').html('Queued just now');
+                    $button.prop('disabled', true).text('Queued...');
+                    $row.detach().prependTo($row.closest('tbody'));
+                    $row.css('background-color', '#fff3cd');
+                    setTimeout(function() {
+                        $row.css('background-color', '');
+                    }, 3000);
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_queue_single_pdf',
+                            post_id: postId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                setStatus('Queued PDF generation for ' + postTitle, 'success');
+                                $button.text('Processing...');
+                            } else {
+                                setStatus('Failed to queue PDF: ' + response.data, 'error');
+                                $button.prop('disabled', false).text('Generate PDF');
+                                $row.find('td:nth-child(5)').html('<span class="status-indicator status-missing"></span>Missing');
+                                $row.find('td:nth-child(6)').html('Never');
+                            }
+                        },
+                        error: function() {
+                            setStatus('Network error queuing PDF', 'error');
+                            $button.prop('disabled', false).text('Generate PDF');
+                            $row.find('td:nth-child(5)').html('<span class="status-indicator status-missing"></span>Missing');
+                            $row.find('td:nth-child(6)').html('Never');
+                        }
+                    });
+                });
+
+                $(document).on('click', '.cancel-pdf-btn', function() {
+                    var postId = $(this).data('post-id');
+                    var postTitle = $(this).data('post-title');
+
+                    if (!confirm('Are you sure you want to cancel the PDF generation for "' + postTitle + '"?')) {
+                        return;
+                    }
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_cancel_single_pdf',
+                            post_id: postId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                setStatus(response.data, 'success');
+                                loadPublicationsTable(currentPage); // Refresh the table
+                            } else {
+                                setStatus('Error cancelling PDF: ' + response.data, 'error');
+                            }
+                        },
+                        error: function() {
+                            setStatus('Network error during cancellation.', 'error');
+                        }
+                    });
+                });
+
+                // Debug HTML button handler - opens processed HTML in new window
+                $(document).on('click', '.debug-html-btn', function() {
+                    var postId = $(this).data('post-id');
+                    var postTitle = $(this).data('post-title');
+                    var $button = $(this);
+
+                    $button.prop('disabled', true).text('Loading...');
+                    setStatus('Loading debug HTML for "' + postTitle + '"...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'fr2025_debug_pdf_html',
+                            post_id: postId,
+                            _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            $button.prop('disabled', false).text('Debug HTML');
+                            if (response.success) {
+                                setStatus('Debug HTML loaded for "' + postTitle + '"', 'success');
+                                var debugWindow = window.open('', '_blank', 'width=1000,height=800');
+                                debugWindow.document.write(response.data.html);
+                                debugWindow.document.close();
+                            } else {
+                                setStatus('Error loading debug HTML: ' + response.data, 'error');
+                            }
+                        },
+                        error: function() {
+                            $button.prop('disabled', false).text('Debug HTML');
+                            setStatus('Network error loading debug HTML', 'error');
+                        }
+                    });
+                });
+
+                // Initialize
                 loadPublicationsTable(1);
-            }
-        }, 500); 
-    });
-
-    $('#search-button').on('click', function() {
-        searchTerm = $('#publication-search').val();
-        currentPage = 1;
-        loadPublicationsTable(1);
-    });
-    
-    $('#filter-no-manual').on('change', function() {
-        filterNoManual = $(this).is(':checked');
-        currentPage = 1;
-        loadPublicationsTable(1);
-    });
-    
-    $('#clear-cron-lock').on('click', function() {
-        if (!confirm('Clear cron lock and cancel stuck processes?')) return;
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_clear_cron_lock',
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                setStatus('Cron lock cleared', 'success');
-                loadPublicationsTable(currentPage);
-            }
-        });
-    });
-
-    $('#queue-selected-pdfs').on('click', function() {
-        var postIds = $('.publication-checkbox:checked').map(function() {
-            return $(this).val();
-        }).get();
-        
-        if (postIds.length === 0) {
-            alert('Please select at least one publication to queue.');
-            return;
-        }
-        
-        if (!confirm('Are you sure you want to queue PDF generation for ' + postIds.length + ' selected publications?')) {
-            return;
-        }
-        
-        setStatus('Queuing ' + postIds.length + ' publications...');
-        $(this).prop('disabled', true);
-        
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_queue_bulk_pdfs',
-                post_ids: postIds,
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                if (response.success) {
-                    setStatus(response.data.message, 'success');
-                    loadPublicationsTable(currentPage);
-                } else {
-                    setStatus('Error queuing PDFs: ' + response.data, 'error');
-                }
-                updateBulkButtonState();
-            },
-            error: function() {
-                setStatus('Network error during bulk queue.', 'error');
-                updateBulkButtonState();
-            }
-        });
-    });
-    
-    // NEW: Bulk cancel functionality
-    $('#cancel-selected-pdfs').on('click', function() {
-        var postIds = $('.publication-checkbox:checked').map(function() {
-            return $(this).val();
-        }).get();
-
-        if (postIds.length === 0) {
-            alert('Please select at least one publication to cancel.');
-            return;
-        }
-
-        if (!confirm('Are you sure you want to cancel PDF generation for ' + postIds.length + ' selected publications?')) {
-            return;
-        }
-
-        setStatus('Cancelling ' + postIds.length + ' publications...');
-        $(this).prop('disabled', true);
-
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_cancel_bulk_pdfs',
-                post_ids: postIds,
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                if (response.success) {
-                    setStatus(response.data.message, 'success');
-                    loadPublicationsTable(currentPage);
-                } else {
-                    setStatus('Error cancelling PDFs: ' + response.data, 'error');
-                }
-                updateBulkButtonState();
-            },
-            error: function() {
-                setStatus('Network error during bulk cancel.', 'error');
-                updateBulkButtonState();
-            }
-        });
-    });
-
-
-    // --- Delegated event handlers ---
-    $(document).on('click', '.pagination-btn', function() {
-        var page = $(this).data('page');
-        loadPublicationsTable(page);
-    });
-    
-    $(document).on('change', '.publication-checkbox', function() {
-        updateBulkButtonState();
-    });
-
-    $(document).on('change', '#select-all-publications', function() {
-        $('.publication-checkbox').prop('checked', $(this).is(':checked'));
-        updateBulkButtonState();
-    });
-
-    $(document).on('click', '.regenerate-pdf-btn', function() {
-        var postId = $(this).data('post-id');
-        var postTitle = $(this).data('post-title');
-        var $button = $(this);
-        var $row = $button.closest('tr');
-        
-        if (!confirm('Generate PDF for "' + postTitle + '"?')) return;
-        
-        $row.find('td:nth-child(5)').html('<span class="status-indicator status-processing"></span>Processing');
-        $row.find('td:nth-child(6)').html('Queued just now');
-        $button.prop('disabled', true).text('Queued...');
-        $row.detach().prependTo($row.closest('tbody'));
-        $row.css('background-color', '#fff3cd');
-        setTimeout(function() { $row.css('background-color', ''); }, 3000);
-        
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_queue_single_pdf',
-                post_id: postId,
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                if (response.success) {
-                    setStatus('Queued PDF generation for ' + postTitle, 'success');
-                    $button.text('Processing...');
-                } else {
-                    setStatus('Failed to queue PDF: ' + response.data, 'error');
-                    $button.prop('disabled', false).text('Generate PDF');
-                    $row.find('td:nth-child(5)').html('<span class="status-indicator status-missing"></span>Missing');
-                    $row.find('td:nth-child(6)').html('Never');
-                }
-            },
-            error: function() {
-                setStatus('Network error queuing PDF', 'error');
-                $button.prop('disabled', false).text('Generate PDF');
-                $row.find('td:nth-child(5)').html('<span class="status-indicator status-missing"></span>Missing');
-                $row.find('td:nth-child(6)').html('Never');
-            }
-        });
-    });
-    
-    $(document).on('click', '.cancel-pdf-btn', function() {
-        var postId = $(this).data('post-id');
-        var postTitle = $(this).data('post-title');
-        
-        if (!confirm('Are you sure you want to cancel the PDF generation for "' + postTitle + '"?')) {
-            return;
-        }
-
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_cancel_single_pdf',
-                post_id: postId,
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                if (response.success) {
-                    setStatus(response.data, 'success');
-                    loadPublicationsTable(currentPage); // Refresh the table
-                } else {
-                    setStatus('Error cancelling PDF: ' + response.data, 'error');
-                }
-            },
-            error: function() {
-                setStatus('Network error during cancellation.', 'error');
-            }
-        });
-    });
-
-    // Debug HTML button handler - opens processed HTML in new window
-    $(document).on('click', '.debug-html-btn', function() {
-        var postId = $(this).data('post-id');
-        var postTitle = $(this).data('post-title');
-        var $button = $(this);
-        
-        $button.prop('disabled', true).text('Loading...');
-        setStatus('Loading debug HTML for "' + postTitle + '"...');
-        
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'fr2025_debug_pdf_html',
-                post_id: postId,
-                _ajax_nonce: '<?php echo wp_create_nonce('fr2025_pdf_nonce'); ?>'
-            },
-            success: function(response) {
-                $button.prop('disabled', false).text('Debug HTML');
-                if (response.success) {
-                    setStatus('Debug HTML loaded for "' + postTitle + '"', 'success');
-                    var debugWindow = window.open('', '_blank', 'width=1000,height=800');
-                    debugWindow.document.write(response.data.html);
-                    debugWindow.document.close();
-                } else {
-                    setStatus('Error loading debug HTML: ' + response.data, 'error');
-                }
-            },
-            error: function() {
-                $button.prop('disabled', false).text('Debug HTML');
-                setStatus('Network error loading debug HTML', 'error');
-            }
-        });
-    });
-
-    // Initialize
-    loadPublicationsTable(1);
-});
-</script>
+            });
+        </script>
 
         <style>
-            .publications-table { width: 100%; border-collapse: collapse; background: white; }
-            .publications-table th, .publications-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
-            .publications-table th { background-color: #f9f9f9; font-weight: bold; border-bottom: 2px solid #ddd; }
-            .publications-table tr:hover { background-color: #f5f5f5; }
-            .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
-            .status-generated { background-color: #4CAF50; }
-            .status-manual { background-color: #2196F3; }
-            .status-missing { background-color: #f44336; }
-            .status-processing { background-color: #ff9800; }
-            .pagination-controls { margin: 20px 0; text-align: center; }
-            .pagination-controls button { margin: 0 2px; }
-            .recently-queued { background-color: #fff3cd !important; }
-            .recently-queued:hover { background-color: #ffeaa7 !important; }
+            .publications-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+            }
+
+            .publications-table th,
+            .publications-table td {
+                padding: 8px 12px;
+                text-align: left;
+                border-bottom: 1px solid #eee;
+                vertical-align: middle;
+            }
+
+            .publications-table th {
+                background-color: #f9f9f9;
+                font-weight: bold;
+                border-bottom: 2px solid #ddd;
+            }
+
+            .publications-table tr:hover {
+                background-color: #f5f5f5;
+            }
+
+            .status-indicator {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                margin-right: 5px;
+            }
+
+            .status-generated {
+                background-color: #4CAF50;
+            }
+
+            .status-manual {
+                background-color: #2196F3;
+            }
+
+            .status-missing {
+                background-color: #f44336;
+            }
+
+            .status-processing {
+                background-color: #ff9800;
+            }
+
+            .pagination-controls {
+                margin: 20px 0;
+                text-align: center;
+            }
+
+            .pagination-controls button {
+                margin: 0 2px;
+            }
+
+            .recently-queued {
+                background-color: #fff3cd !important;
+            }
+
+            .recently-queued:hover {
+                background-color: #ffeaa7 !important;
+            }
         </style>
     </div>
 <?php
@@ -598,7 +654,8 @@ add_action('wp_ajax_fr2025_cancel_bulk_pdfs', 'fr2025_ajax_cancel_bulk_pdfs'); /
 /**
  * Get publications table with all PDF status information
  */
-function fr2025_ajax_get_publications_table() {
+function fr2025_ajax_get_publications_table()
+{
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) wp_send_json_error('Insufficient permissions');
 
@@ -723,8 +780,9 @@ function fr2025_ajax_get_publications_table() {
             }
             $actions .= '<a href="' . esc_url(get_edit_post_link($pub->ID)) . '" style="margin-left: 5px;" title="Edit Publication">Edit</a>';
             $actions .= '<a href="' . esc_url(get_permalink($pub->ID)) . '" target="_blank" style="margin-left: 5px;" title="View Publication on site">View</a> ';
-            $actions .= '<button class="button button-small debug-html-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '" title="Debug: View processed HTML">Debug HTML</button>';
-
+            if (defined('FR2025_PDF_DEBUG_MODE') && FR2025_PDF_DEBUG_MODE) {
+                $actions .= '<button class="button button-small debug-html-btn" data-post-id="' . $pub->ID . '" data-post-title="' . esc_attr($pub->post_title) . '" title="Debug: View processed HTML">Debug HTML</button>';
+            }
             // --- 2. Build the HTML row in the correct order ---
             $html .= '<tr' . $row_class . '>';
             $html .= '<td><input type="checkbox" class="publication-checkbox" value="' . $pub->ID . '" data-status="' . $status_for_js . '"></td>'; // Col 1: Checkbox
@@ -747,7 +805,8 @@ function fr2025_ajax_get_publications_table() {
             $html .= '<button class="button pagination-btn" data-page="1">First</button> ';
             $html .= '<button class="button pagination-btn" data-page="' . ($page - 1) . '">Previous</button> ';
         }
-        $start = max(1, $page - 2); $end = min($total_pages, $page + 2);
+        $start = max(1, $page - 2);
+        $end = min($total_pages, $page + 2);
         for ($i = $start; $i <= $end; $i++) {
             $class = $i === $page ? 'button-primary' : 'button-secondary';
             $html .= '<button class="button ' . $class . ' pagination-btn" data-page="' . $i . '">' . $i . '</button> ';
@@ -822,28 +881,30 @@ function fr2025_ajax_queue_bulk_pdfs()
 /**
  * AJAX handler to clear cron lock and remove stuck processes
  */
-function fr2025_ajax_clear_cron_lock() {
+function fr2025_ajax_clear_cron_lock()
+{
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
-    
+
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
     }
-    
+
     global $wpdb;
     $table_name = $wpdb->prefix . 'pdf_generation_queue';
-    
+
     delete_transient('pdf_generation_lock');
-    
+
     $affected = $wpdb->query("DELETE FROM {$table_name} WHERE status = 'processing' AND TIMESTAMPDIFF(MINUTE, queued_at, NOW()) > 10");
     $wpdb->query("DELETE FROM {$table_name} WHERE status = 'pending' AND TIMESTAMPDIFF(MINUTE, queued_at, NOW()) > 60");
-    
+
     wp_send_json_success("Cron lock cleared and removed $affected stuck processes");
 }
 
 /**
  * AJAX handler to cancel a single PDF generation process
  */
-function fr2025_ajax_cancel_single_pdf() {
+function fr2025_ajax_cancel_single_pdf()
+{
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
@@ -864,7 +925,8 @@ function fr2025_ajax_cancel_single_pdf() {
 /**
  * NEW: AJAX handler to cancel multiple PDF generation processes
  */
-function fr2025_ajax_cancel_bulk_pdfs() {
+function fr2025_ajax_cancel_bulk_pdfs()
+{
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
@@ -873,9 +935,9 @@ function fr2025_ajax_cancel_bulk_pdfs() {
     if (!isset($_POST['post_ids']) || !is_array($_POST['post_ids'])) {
         wp_send_json_error('No post IDs provided.');
     }
-    
+
     $post_ids = array_map('intval', $_POST['post_ids']);
-    
+
     if (empty($post_ids)) {
         wp_send_json_error('No valid post IDs provided.');
     }
@@ -894,7 +956,8 @@ function fr2025_ajax_cancel_bulk_pdfs() {
  * AJAX handler to debug PDF HTML output
  * Returns the processed HTML that would be sent to mPDF
  */
-function fr2025_ajax_debug_pdf_html() {
+function fr2025_ajax_debug_pdf_html()
+{
     check_ajax_referer('fr2025_pdf_nonce', '_ajax_nonce');
     if (!current_user_can('manage_options')) {
         wp_send_json_error('Insufficient permissions');
@@ -936,7 +999,7 @@ function fr2025_ajax_debug_pdf_html() {
     $font_dir = get_template_directory() . '/assets/fonts/';
     $font_debug .= '<p><strong>Font Directory:</strong> ' . $font_dir . '</p>';
     $font_debug .= '<p><strong>Directory exists:</strong> ' . (is_dir($font_dir) ? 'YES' : 'NO') . '</p>';
-    
+
     $fonts_to_check = [
         'Oswald-Regular.ttf',
         'Oswald-Light.ttf',
@@ -945,7 +1008,7 @@ function fr2025_ajax_debug_pdf_html() {
         'TradeGothicLTStd.ttf',
         'Georgia.ttf'
     ];
-    
+
     $font_debug .= '<p><strong>Font files:</strong></p><ul>';
     foreach ($fonts_to_check as $font_file) {
         $full_path = $font_dir . $font_file;
@@ -986,10 +1049,10 @@ function fr2025_ajax_debug_pdf_html() {
                 ],
                 'default_font' => 'georgia',
             ]);
-            
+
             $font_debug .= '<p><strong>mPDF instantiated:</strong> <span style="color: green;">SUCCESS</span></p>';
             $font_debug .= '<p><strong>Registered fontdata keys:</strong> ' . implode(', ', array_keys($test_mpdf->fontdata)) . '</p>';
-            
+
             // Check if oswald is in the fontdata
             if (isset($test_mpdf->fontdata['oswald'])) {
                 $font_debug .= '<p style="color: green;"><strong>Oswald in fontdata:</strong> YES</p>';
@@ -997,7 +1060,6 @@ function fr2025_ajax_debug_pdf_html() {
             } else {
                 $font_debug .= '<p style="color: red;"><strong>Oswald in fontdata:</strong> NO</p>';
             }
-            
         } catch (Exception $e) {
             $font_debug .= '<p style="color: red;"><strong>mPDF Error:</strong> ' . $e->getMessage() . '</p>';
         }
