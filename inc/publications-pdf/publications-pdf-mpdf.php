@@ -529,8 +529,8 @@ function generate_publication_pdf_file_mpdf($post_id)
                     'BI' => 'TradeGothicLTStd-BoldObl.ttf'
                 ],
                 'oswald' => [
-                    'R' => 'Oswald-Regular.ttf',
-                    'B' => 'Oswald-Bold.ttf'
+                    'R' => 'Oswald-Light.ttf',
+                    'B' => 'Oswald-SemiBold.ttf'
                 ]
             ],
             'default_font' => 'georgia',
