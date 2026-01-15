@@ -530,7 +530,9 @@ function generate_publication_pdf_file_mpdf($post_id)
                 ],
                 'oswald' => [
                     'R' => 'Oswald-Light.ttf',
-                    'B' => 'Oswald-SemiBold.ttf'
+                    'B' => 'Oswald-SemiBold.ttf',
+                    'I' => 'Oswald-Light.ttf',
+                    'BI' => 'Oswald-SemiBold.ttf'
                 ]
             ],
             'default_font' => 'georgia',
