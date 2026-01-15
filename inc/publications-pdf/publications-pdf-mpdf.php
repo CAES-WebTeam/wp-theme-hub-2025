@@ -40,9 +40,122 @@ function get_latest_published_date($post_id)
     ];
 }
 
+// Process images to ensure they have proper dimensions for mPDF
+function ensure_image_dimensions($content)
+{
+    // Match all img tags
+    return preg_replace_callback(
+        '/<img([^>]*)>/i',
+        function ($matches) {
+            $attributes = $matches[1];
+            
+            // Check if width is already set (either as attribute or in style)
+            $has_width_attr = preg_match('/\bwidth\s*=\s*["\']?\d+/i', $attributes);
+            $has_width_style = preg_match('/style\s*=\s*["\'][^"\']*width\s*:/i', $attributes);
+            
+            // If width is already defined, return unchanged
+            if ($has_width_attr || $has_width_style) {
+                return $matches[0];
+            }
+            
+            // Extract src to get actual dimensions
+            if (preg_match('/src\s*=\s*["\']([^"\']+)["\']/i', $attributes, $src_match)) {
+                $src = $src_match[1];
+                
+                // Try to get actual image dimensions
+                $dimensions = @getimagesize($src);
+                
+                if ($dimensions && isset($dimensions[0]) && isset($dimensions[1])) {
+                    $actual_width = $dimensions[0];
+                    $actual_height = $dimensions[1];
+                    
+                    // Calculate max width based on page width (letter = 8.5", margins = 30mm total ≈ 1.18")
+                    // Usable width ≈ 7.32" ≈ 555px at 72dpi, but let's use a safe max
+                    $max_width = 550;
+                    
+                    if ($actual_width > $max_width) {
+                        // Scale down proportionally
+                        $scale = $max_width / $actual_width;
+                        $new_width = $max_width;
+                        $new_height = round($actual_height * $scale);
+                    } else {
+                        // Use actual dimensions
+                        $new_width = $actual_width;
+                        $new_height = $actual_height;
+                    }
+                    
+                    // Add width and height attributes
+                    return '<img' . $attributes . ' width="' . $new_width . '" height="' . $new_height . '">';
+                } else {
+                    // Fallback: set a reasonable max-width style if we can't get dimensions
+                    // Check if there's an existing style attribute
+                    if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $attributes, $style_match)) {
+                        $existing_style = rtrim($style_match[1], ';');
+                        $new_style = $existing_style . '; max-width: 100%; height: auto;';
+                        $attributes = preg_replace('/style\s*=\s*["\'][^"\']*["\']/', 'style="' . $new_style . '"', $attributes);
+                    } else {
+                        $attributes .= ' style="max-width: 100%; height: auto;"';
+                    }
+                    return '<img' . $attributes . '>';
+                }
+            }
+            
+            // If no src found, return unchanged
+            return $matches[0];
+        },
+        $content
+    );
+}
+
+// Calculate appropriate title font size based on length
+function calculate_title_font_size($title, $has_subtitle = false)
+{
+    $length = mb_strlen($title);
+    
+    // Base sizes and thresholds
+    $base_size = 32;
+    $min_size = 18;
+    
+    // Adjust thresholds if there's a subtitle (titles with subtitles need smaller fonts sooner)
+    if ($has_subtitle) {
+        // With subtitle, start reducing earlier
+        if ($length <= 40) {
+            return $base_size;
+        } elseif ($length <= 60) {
+            return 28;
+        } elseif ($length <= 80) {
+            return 24;
+        } elseif ($length <= 100) {
+            return 22;
+        } elseif ($length <= 130) {
+            return 20;
+        } else {
+            return $min_size;
+        }
+    } else {
+        // Without subtitle, we have more room
+        if ($length <= 50) {
+            return $base_size;
+        } elseif ($length <= 70) {
+            return 28;
+        } elseif ($length <= 90) {
+            return 24;
+        } elseif ($length <= 120) {
+            return 22;
+        } elseif ($length <= 150) {
+            return 20;
+        } else {
+            return $min_size;
+        }
+    }
+}
+
 // Enhanced table and content processing for mPDF
 function process_content_for_mpdf($content)
 {
+    // 0. ENSURE ALL IMAGES HAVE DIMENSIONS
+    $content = ensure_image_dimensions($content);
+    
     // 1. IMAGE HANDLING
     // This logic intelligently identifies legacy image containers
     $content = preg_replace_callback(
@@ -253,7 +366,8 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Gather all the data (same as TCPDF version)
         $publication_title = $post->post_title;
         $subtitle = get_post_meta($post_id, 'subtitle', true);
-        if (!empty($subtitle)) {
+        $has_subtitle = !empty($subtitle);
+        if ($has_subtitle) {
             $publication_title .= ': ' . $subtitle;
         }
         $publication_number = get_field('publication_number', $post_id);
@@ -460,8 +574,9 @@ function generate_publication_pdf_file_mpdf($post_id)
             $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px;">';
         }
 
-        // Title
-        $cover_html .= '<h1 style="font-size: 32px; font-weight: bold; margin: 20px 0 20px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
+        // Title with dynamic font size
+        $title_font_size = calculate_title_font_size($publication_title, $has_subtitle);
+        $cover_html .= '<h1 style="font-size: ' . $title_font_size . 'px; font-weight: bold; margin: 20px 0 20px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
 
         // Authors
         if (!empty($author_lines)) {
