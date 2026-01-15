@@ -587,6 +587,14 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_footer' => 15     // Increased for footer clearance
         ]);
         // error_log("mPDF DEBUG: mPDF instance created successfully");
+        $mpdf = new Mpdf([
+    // ... your config
+]);
+
+// Debug: Check if oswald font is registered
+error_log('mPDF fontdata keys: ' . print_r(array_keys($mpdf->fontdata), true));
+error_log('Oswald font path: ' . get_template_directory() . '/assets/fonts/Oswald-Light.ttf');
+error_log('Oswald file exists: ' . (file_exists(get_template_directory() . '/assets/fonts/Oswald-Light.ttf') ? 'YES' : 'NO'));
 
         // Set metadata
         $mpdf->SetCreator('UGA Extension');
