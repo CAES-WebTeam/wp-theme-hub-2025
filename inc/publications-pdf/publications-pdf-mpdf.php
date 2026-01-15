@@ -718,3 +718,5 @@ function generate_publication_pdf_file_mpdf($post_id)
         return false;
     }
 }
+
+error_log('CAPTION DEBUG: ' . print_r(preg_match('/<caption[^>]*>.*?<\/caption>/is', $processed_content, $debug_match) ? $debug_match[0] : 'No caption found', true));
