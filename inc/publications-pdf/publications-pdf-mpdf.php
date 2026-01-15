@@ -238,7 +238,7 @@ function get_mpdf_styles()
         table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.1; padding: 8px; }
         table th, table td { border: 1px solid #ddd; padding:8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
-        table caption { font-family: "tradegothic", sans-serif; text-align: center; font-size: 14px; margin-bottom: 8px; aption-side: top; }
+        table caption { font-family: "oswald", sans-serif; text-align: center; font-size: 16px; margin-bottom: 8px; aption-side: top; }
 
         /* UPDATED MATH STYLES */
         /* Target the parent container, the class, and specific MathML children */
@@ -527,6 +527,10 @@ function generate_publication_pdf_file_mpdf($post_id)
                     'B' => 'TradeGothicLTStd-Bold.ttf',
                     'I' => 'TradeGothicLTStd-Obl.ttf',
                     'BI' => 'TradeGothicLTStd-BoldObl.ttf'
+                ],
+                'oswald' => [
+                    'R' => 'Oswald-Regular.ttf',
+                    'B' => 'Oswald-Bold.ttf'
                 ]
             ],
             'default_font' => 'georgia',
