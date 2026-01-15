@@ -203,6 +203,33 @@ function process_content_for_mpdf($content)
         }
     }, $content);
 
+    // 2.5 CONVERT TABLE FIGCAPTIONS TO PROPER CAPTIONS
+    // WordPress/Gutenberg outputs figcaption for table captions - convert for accessibility
+    $content = preg_replace_callback(
+        '/<figure[^>]*class="[^"]*wp-block-table[^"]*"[^>]*>(.*?)<\/figure>/is',
+        function ($matches) {
+            $figure_content = $matches[1];
+
+            // Extract figcaption content if present
+            if (preg_match('/<figcaption[^>]*>(.*?)<\/figcaption>/is', $figure_content, $caption_match)) {
+                $caption_text = $caption_match[1];
+
+                // Remove figcaption from content
+                $figure_content = preg_replace('/<figcaption[^>]*>.*?<\/figcaption>/is', '', $figure_content);
+
+                // Insert caption inside the table, right after opening tag
+                $figure_content = preg_replace(
+                    '/(<table[^>]*>)/i',
+                    '$1<caption>' . $caption_text . '</caption>',
+                    $figure_content
+                );
+            }
+
+            return $figure_content; // Return without the figure wrapper
+        },
+        $content
+    );
+
     // 3. MATHML → Styled span (mPDF ignores MathML tags but renders text)
     $content = preg_replace_callback(
         '/<math[^>]*>(.*?)<\/math>/is',
