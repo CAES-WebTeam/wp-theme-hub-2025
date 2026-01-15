@@ -233,7 +233,7 @@ function process_content_for_mpdf($content)
     // Force tradegothic on captions via inline style (debug test)
     $content = preg_replace(
         '/<caption>/i',
-        '<caption style="font-family: "oswald", sans-serif;">',
+        '<caption style="font-family: oswald, sans-serif;">',
         $content
     );
 
@@ -577,7 +577,6 @@ function generate_publication_pdf_file_mpdf($post_id)
             ],
             'default_font' => 'georgia',
             'format' => 'Letter',
-            'tempDir' => sys_get_temp_dir() . '/mpdf_' . time(), // Force new cache
             'orientation' => 'P',
             'margin_left' => 15,
             'margin_right' => 15,
@@ -587,14 +586,6 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_footer' => 15     // Increased for footer clearance
         ]);
         // error_log("mPDF DEBUG: mPDF instance created successfully");
-        $mpdf = new Mpdf([
-    // ... your config
-]);
-
-// Debug: Check if oswald font is registered
-error_log('mPDF fontdata keys: ' . print_r(array_keys($mpdf->fontdata), true));
-error_log('Oswald font path: ' . get_template_directory() . '/assets/fonts/Oswald-Light.ttf');
-error_log('Oswald file exists: ' . (file_exists(get_template_directory() . '/assets/fonts/Oswald-Light.ttf') ? 'YES' : 'NO'));
 
         // Set metadata
         $mpdf->SetCreator('UGA Extension');
