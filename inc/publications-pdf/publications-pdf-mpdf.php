@@ -230,6 +230,13 @@ function process_content_for_mpdf($content)
         $content
     );
 
+    // Force tradegothic on captions via inline style (debug test)
+    $content = preg_replace(
+        '/<caption>/i',
+        '<caption style="font-family: tradegothic, sans-serif;">',
+        $content
+    );
+
     // 3. MATHML → Styled span (mPDF ignores MathML tags but renders text)
     $content = preg_replace_callback(
         '/<math[^>]*>(.*?)<\/math>/is',
