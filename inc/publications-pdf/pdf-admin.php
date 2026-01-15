@@ -931,6 +931,80 @@ function fr2025_ajax_debug_pdf_html() {
         $css = get_mpdf_styles();
     }
 
+    // Font debugging
+    $font_debug = '<h3>Font Debug Info</h3>';
+    $font_dir = get_template_directory() . '/assets/fonts/';
+    $font_debug .= '<p><strong>Font Directory:</strong> ' . $font_dir . '</p>';
+    $font_debug .= '<p><strong>Directory exists:</strong> ' . (is_dir($font_dir) ? 'YES' : 'NO') . '</p>';
+    
+    $fonts_to_check = [
+        'Oswald-Regular.ttf',
+        'Oswald-Light.ttf',
+        'Oswald-Bold.ttf',
+        'Oswald-SemiBold.ttf',
+        'TradeGothicLTStd.ttf',
+        'Georgia.ttf'
+    ];
+    
+    $font_debug .= '<p><strong>Font files:</strong></p><ul>';
+    foreach ($fonts_to_check as $font_file) {
+        $full_path = $font_dir . $font_file;
+        $exists = file_exists($full_path);
+        $size = $exists ? filesize($full_path) : 0;
+        $color = $exists ? 'green' : 'red';
+        $font_debug .= '<li style="color: ' . $color . ';">' . $font_file . ': ' . ($exists ? 'EXISTS (' . number_format($size) . ' bytes)' : 'MISSING') . '</li>';
+    }
+    $font_debug .= '</ul>';
+
+    // Try to instantiate mPDF and check registered fonts
+    if (class_exists('Mpdf\Mpdf')) {
+        try {
+            $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+            $fontDirs = $defaultConfig['fontDir'];
+            $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+            $fontData = $defaultFontConfig['fontdata'];
+
+            $test_mpdf = new \Mpdf\Mpdf([
+                'fontDir' => array_merge($fontDirs, [$font_dir]),
+                'fontdata' => $fontData + [
+                    'georgia' => [
+                        'R' => 'Georgia.ttf',
+                        'B' => 'Georgia-Bold.ttf',
+                        'I' => 'Georgia-Italic.ttf',
+                        'BI' => 'Georgia-Bold-Italic.ttf'
+                    ],
+                    'tradegothic' => [
+                        'R' => 'TradeGothicLTStd.ttf',
+                        'B' => 'TradeGothicLTStd-Bold.ttf',
+                        'I' => 'TradeGothicLTStd-Obl.ttf',
+                        'BI' => 'TradeGothicLTStd-BoldObl.ttf'
+                    ],
+                    'oswald' => [
+                        'R' => 'Oswald-Regular.ttf',
+                        'B' => 'Oswald-Bold.ttf'
+                    ]
+                ],
+                'default_font' => 'georgia',
+            ]);
+            
+            $font_debug .= '<p><strong>mPDF instantiated:</strong> <span style="color: green;">SUCCESS</span></p>';
+            $font_debug .= '<p><strong>Registered fontdata keys:</strong> ' . implode(', ', array_keys($test_mpdf->fontdata)) . '</p>';
+            
+            // Check if oswald is in the fontdata
+            if (isset($test_mpdf->fontdata['oswald'])) {
+                $font_debug .= '<p style="color: green;"><strong>Oswald in fontdata:</strong> YES</p>';
+                $font_debug .= '<pre>' . print_r($test_mpdf->fontdata['oswald'], true) . '</pre>';
+            } else {
+                $font_debug .= '<p style="color: red;"><strong>Oswald in fontdata:</strong> NO</p>';
+            }
+            
+        } catch (Exception $e) {
+            $font_debug .= '<p style="color: red;"><strong>mPDF Error:</strong> ' . $e->getMessage() . '</p>';
+        }
+    } else {
+        $font_debug .= '<p style="color: red;"><strong>mPDF class not found</strong></p>';
+    }
+
     // Build a complete HTML document for viewing
     $debug_html = '<!DOCTYPE html>
 <html>
@@ -951,6 +1025,9 @@ function fr2025_ajax_debug_pdf_html() {
         <p><strong>Post ID:</strong> ' . $post_id . '</p>
         <p><strong>Title:</strong> ' . esc_html($post->post_title) . '</p>
         <p><strong>Generated:</strong> ' . current_time('mysql') . '</p>
+    </div>
+    <div class="debug-info">
+        ' . $font_debug . '
     </div>
     <hr>
     <h2>Processed Content (what mPDF receives):</h2>
