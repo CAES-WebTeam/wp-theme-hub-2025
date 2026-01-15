@@ -48,31 +48,31 @@ function ensure_image_dimensions($content)
         '/<img([^>]*)>/i',
         function ($matches) {
             $attributes = $matches[1];
-            
+
             // Check if width is already set (either as attribute or in style)
             $has_width_attr = preg_match('/\bwidth\s*=\s*["\']?\d+/i', $attributes);
             $has_width_style = preg_match('/style\s*=\s*["\'][^"\']*width\s*:/i', $attributes);
-            
+
             // If width is already defined, return unchanged
             if ($has_width_attr || $has_width_style) {
                 return $matches[0];
             }
-            
+
             // Extract src to get actual dimensions
             if (preg_match('/src\s*=\s*["\']([^"\']+)["\']/i', $attributes, $src_match)) {
                 $src = $src_match[1];
-                
+
                 // Try to get actual image dimensions
                 $dimensions = @getimagesize($src);
-                
+
                 if ($dimensions && isset($dimensions[0]) && isset($dimensions[1])) {
                     $actual_width = $dimensions[0];
                     $actual_height = $dimensions[1];
-                    
+
                     // Calculate max width based on page width (letter = 8.5", margins = 30mm total ≈ 1.18")
                     // Usable width ≈ 7.32" ≈ 555px at 72dpi, but let's use a safe max
                     $max_width = 550;
-                    
+
                     if ($actual_width > $max_width) {
                         // Scale down proportionally
                         $scale = $max_width / $actual_width;
@@ -83,7 +83,7 @@ function ensure_image_dimensions($content)
                         $new_width = $actual_width;
                         $new_height = $actual_height;
                     }
-                    
+
                     // Add width and height attributes
                     return '<img' . $attributes . ' width="' . $new_width . '" height="' . $new_height . '">';
                 } else {
@@ -99,7 +99,7 @@ function ensure_image_dimensions($content)
                     return '<img' . $attributes . '>';
                 }
             }
-            
+
             // If no src found, return unchanged
             return $matches[0];
         },
@@ -111,11 +111,11 @@ function ensure_image_dimensions($content)
 function calculate_title_font_size($title, $has_subtitle = false)
 {
     $length = mb_strlen($title);
-    
+
     // Base sizes and thresholds
     $base_size = 32;
     $min_size = 18;
-    
+
     // Adjust thresholds if there's a subtitle (titles with subtitles need smaller fonts sooner)
     if ($has_subtitle) {
         // With subtitle, start reducing earlier
@@ -155,7 +155,7 @@ function process_content_for_mpdf($content)
 {
     // 0. ENSURE ALL IMAGES HAVE DIMENSIONS
     $content = ensure_image_dimensions($content);
-    
+
     // 1. IMAGE HANDLING
     // This logic intelligently identifies legacy image containers
     $content = preg_replace_callback(
@@ -238,6 +238,7 @@ function get_mpdf_styles()
         table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.1; padding: 8px; }
         table th, table td { border: 1px solid #ddd; padding:8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
+        table caption { font-family: "tradegothic", sans-serif; text-align: center; font-size: 14px; margin-bottom: 8px; aption-side: top; }
 
         /* UPDATED MATH STYLES */
         /* Target the parent container, the class, and specific MathML children */
