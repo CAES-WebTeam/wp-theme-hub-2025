@@ -475,11 +475,17 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         // Get featured image
         $featured_image_url = '';
+        $featured_image_dimensions = null;
         if (has_post_thumbnail($post_id)) {
             $featured_image_id = get_post_thumbnail_id($post_id);
             $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
             if ($featured_image_array) {
                 $featured_image_url = $featured_image_array[0];
+                // Store width and height from WordPress
+                $featured_image_dimensions = [
+                    'width' => $featured_image_array[1],
+                    'height' => $featured_image_array[2]
+                ];
             }
         }
 
@@ -564,13 +570,36 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
 
-        // Simple HTML approach that works with mPDF
         if (!empty($featured_image_url)) {
+            // Fixed container height in mm
+            $container_height_mm = 80;
+
+            // Calculate centering offset if we have dimensions
+            $img_margin_top = '-15mm'; // Default (just pulls into top margin)
+
+            if ($featured_image_dimensions && $featured_image_dimensions['width'] > 0) {
+                // Page width with negative margins: 215.9mm (letter) + 30mm (pulling into both margins) = ~246mm usable
+                $page_width_mm = 246;
+
+                // Calculate what height the image will render at when width is 100%
+                $aspect_ratio = $featured_image_dimensions['height'] / $featured_image_dimensions['width'];
+                $rendered_height_mm = $page_width_mm * $aspect_ratio;
+
+                // If image is taller than container, calculate offset to center the crop
+                if ($rendered_height_mm > $container_height_mm) {
+                    $overflow_mm = $rendered_height_mm - $container_height_mm;
+                    $center_offset_mm = $overflow_mm / 2;
+                    // Add the 15mm for pulling into top margin
+                    $total_offset_mm = 15 + $center_offset_mm;
+                    $img_margin_top = '-' . round($total_offset_mm) . 'mm';
+                }
+            }
+
             $cover_html = '
-            <div style="text-align: center; margin: 0 -15mm;">
-                <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: -15mm;">
-            </div>
-            <div style="margin-top: 15mm;">';
+    <div style="text-align: center; margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
+        <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: ' . $img_margin_top . ';">
+    </div>
+    <div style="margin-top: 15mm;">';
         } else {
             $cover_html = '<div style="margin-top: 30px;">';
         }
