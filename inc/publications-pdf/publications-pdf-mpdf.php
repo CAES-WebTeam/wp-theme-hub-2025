@@ -265,7 +265,7 @@ function get_mpdf_styles()
         table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.1; padding: 8px; }
         table th, table td { border: 1px solid #ddd; padding:8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
-        table caption { font-family: oswald; text-align: center; font-size: 16px; margin-bottom: 8px; font-weight: 300; }
+        table caption { font-family: "tradegothic", sans-serif; text-align: center; font-size: 16px; margin-bottom: 8px; font-weight: 300; }
 
         /* UPDATED MATH STYLES */
         /* Target the parent container, the class, and specific MathML children */
