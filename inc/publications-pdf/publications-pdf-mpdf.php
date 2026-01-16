@@ -257,6 +257,9 @@ function process_content_for_mpdf($content)
         $content
     );
 
+    // Remove range slider inputs (image comparison blocks, etc.)
+    $content = preg_replace('/<input[^>]*type=["\']range["\'][^>]*\/?>/i', '', $content);
+
     return $content;
 }
 
