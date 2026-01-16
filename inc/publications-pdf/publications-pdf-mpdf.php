@@ -605,7 +605,6 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         // Build featured image on cover page, if it exists
-        // Build featured image on cover page, if it exists
         if (!empty($featured_image_url)) {
             // 1. Define Page Width (Letter is 8.5 inches)
             // We use the full width because the CSS (left: -15mm, right: -15mm) pulls it to the edges.
@@ -626,7 +625,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Extension logo
         $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
         if (file_exists($extension_logo_path)) {
-            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-top: ' . $container_height_mm . 'mm; margin-bottom: 10px;">';
+               $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-top: 30px; margin-bottom: 10px;">';
         }
 
         // Title with dynamic font size
