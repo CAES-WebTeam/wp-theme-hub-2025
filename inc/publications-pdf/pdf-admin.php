@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Set to true to show Debug HTML buttons
-define('FR2025_PDF_DEBUG_MODE', true);
+define('FR2025_PDF_DEBUG_MODE', false);
 
 /**
  * Queues PDF generation when a 'publications' post is saved or updated.
