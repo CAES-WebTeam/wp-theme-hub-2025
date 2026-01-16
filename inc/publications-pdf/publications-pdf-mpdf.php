@@ -507,22 +507,6 @@ function generate_publication_pdf_file_mpdf($post_id)
             $formatted_keywords = 'Expert Resource';
         }
 
-        // Get featured image
-        $featured_image_url = '';
-        $featured_image_dimensions = null;
-        if (has_post_thumbnail($post_id)) {
-            $featured_image_id = get_post_thumbnail_id($post_id);
-            $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
-            if ($featured_image_array) {
-                $featured_image_url = $featured_image_array[0];
-                // Store width and height from WordPress
-                $featured_image_dimensions = [
-                    'width' => $featured_image_array[1],
-                    'height' => $featured_image_array[2]
-                ];
-            }
-        }
-
         $latest_published_info = get_latest_published_date($post_id);
         $latest_published_date = $latest_published_info['date'];
 
@@ -605,27 +589,11 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetHTMLFooter('');
 
         if (!empty($featured_image_url)) {
-            // Fixed container height in mm
             $container_height_mm = 80;
-
-            // Calculate centering offset if we have dimensions
-            $img_margin_top = '-15mm'; // Default (just pulls into top margin)
-
-            if (!empty($featured_image_url)) {
-                $container_height_mm = 80;
-
-                $cover_html = '
-    <div style="margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
-        <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: -15mm;">
-    </div>
-    <div style="margin-top: 15mm;">';
-            } else {
-                $cover_html = '<div style="margin-top: 30px;">';
-            }
 
             $cover_html = '
     <div style="margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
-        <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: ' . $img_margin_top . ';">
+        <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: -15mm;">
     </div>
     <div style="margin-top: 15mm;">';
         } else {
@@ -660,11 +628,6 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         $cover_html .= '</div>';
-
-        // Close the additional div for the featured image case
-        if (!empty($featured_image_url)) {
-            $cover_html .= '</div>';
-        }
 
         // error_log("mPDF DEBUG: Cover HTML built, writing to PDF");
         $mpdf->WriteHTML($cover_html);
