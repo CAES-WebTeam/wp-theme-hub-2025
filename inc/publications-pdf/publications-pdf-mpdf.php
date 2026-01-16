@@ -606,7 +606,7 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         // Build featured image on cover page, if it exists
         if (!empty($featured_image_url)) {
-            $container_height_mm = 80;
+            $container_height_mm = 100;
 
             $cover_html = '
     <div style="position: absolute; top: 0; left: -15mm; right: -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
@@ -620,7 +620,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Extension logo
         $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
         if (file_exists($extension_logo_path)) {
-            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-top: 80mm; margin-bottom: 10px;">';
+            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-top: 100mm; margin-bottom: 10px;">';
         }
 
         // Title with dynamic font size
