@@ -610,7 +610,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             $container_height_mm = 80;
             
             // Calculate centering offset if we have dimensions
-            $img_margin_top = '-15mm'; // Default (just pulls into top margin)
+            $img_margin_top = '0'; // Default (just pulls into top margin)
             
             if ($featured_image_dimensions && $featured_image_dimensions['width'] > 0) {
                 // Page width with negative margins: 215.9mm (letter) + 30mm (pulling into both margins) = ~246mm usable
