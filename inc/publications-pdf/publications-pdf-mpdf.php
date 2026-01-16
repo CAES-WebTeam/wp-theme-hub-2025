@@ -588,12 +588,27 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
 
+        // Get featured image
+        $featured_image_url = '';
+        $featured_image_width = 0;
+        $featured_image_height = 0;
+        if (has_post_thumbnail($post_id)) {
+            $featured_image_id = get_post_thumbnail_id($post_id);
+            $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
+            if ($featured_image_array) {
+                $featured_image_url = $featured_image_array[0];
+                $featured_image_width = $featured_image_array[1];
+                $featured_image_height = $featured_image_array[2];
+            }
+        }
+
+        // Build featured image on cover page, if it exists
         if (!empty($featured_image_url)) {
             $container_height_mm = 80;
 
             $cover_html = '
     <div style="margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
-        <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: -15mm;">
+        <img src="' . $featured_image_url . '" width="' . $featured_image_width . '" height="' . $featured_image_height . '" style="width: 100%; height: auto; max-width: none; margin-top: -15mm;">
     </div>
     <div style="margin-top: 15mm;">';
         } else {
