@@ -609,25 +609,15 @@ function generate_publication_pdf_file_mpdf($post_id)
             // Fixed container height in mm
             $container_height_mm = 80;
             
-            // Calculate centering offset if we have dimensions
-            $img_margin_top = '-30mm'; // Default (just pulls into top margin)
+            // For top-aligned crop, only pull into top margin (no centering offset)
+            $img_margin_top = '-15mm';
             
+            // Still calculate rendered height - mPDF needs this context
             if ($featured_image_dimensions && $featured_image_dimensions['width'] > 0) {
-                // Page width with negative margins: 215.9mm (letter) + 30mm (pulling into both margins) = ~246mm usable
                 $page_width_mm = 246;
-                
-                // Calculate what height the image will render at when width is 100%
                 $aspect_ratio = $featured_image_dimensions['height'] / $featured_image_dimensions['width'];
                 $rendered_height_mm = $page_width_mm * $aspect_ratio;
-                
-                // If image is taller than container, calculate offset to center the crop
-                if ($rendered_height_mm > $container_height_mm) {
-                    $overflow_mm = $rendered_height_mm - $container_height_mm;
-                    $center_offset_mm = $overflow_mm / 2;
-                    // Add the 15mm for pulling into top margin
-                    $total_offset_mm = 15 + $center_offset_mm;
-                    $img_margin_top = '-' . round($total_offset_mm) . 'mm';
-                }
+                // We calculate but don't use for centering - just keeping mPDF aware of dimensions
             }
             
             $cover_html = '
