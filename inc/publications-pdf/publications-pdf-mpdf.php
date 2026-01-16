@@ -608,18 +608,18 @@ function generate_publication_pdf_file_mpdf($post_id)
         if (!empty($featured_image_url)) {
             // Fixed container height in mm
             $container_height_mm = 80;
-            
+
             // Calculate centering offset if we have dimensions
             $img_margin_top = '0mm'; // Default (just pulls into top margin)
-            
+
             if ($featured_image_dimensions && $featured_image_dimensions['width'] > 0) {
                 // Page width with negative margins: 215.9mm (letter) + 30mm (pulling into both margins) = ~246mm usable
                 $page_width_mm = 246;
-                
+
                 // Calculate what height the image will render at when width is 100%
                 $aspect_ratio = $featured_image_dimensions['height'] / $featured_image_dimensions['width'];
                 $rendered_height_mm = $page_width_mm * $aspect_ratio;
-                
+
                 // If image is taller than container, calculate offset to show TOP of image
                 if ($rendered_height_mm > $container_height_mm) {
                     $overflow_mm = $rendered_height_mm - $container_height_mm;
@@ -628,12 +628,14 @@ function generate_publication_pdf_file_mpdf($post_id)
                     $img_margin_top = '-' . round($total_offset_mm) . 'mm';
                 }
             }
-            
+
             $cover_html = '
-            <div style="text-align: center; margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
-                <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: ' . $img_margin_top . ';">
-            </div>
-            <div style="margin-top: 15mm;">';
+                <div style="margin: 0 -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
+                    <div style="margin-top: -15mm;">
+                        <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none;">
+                    </div>
+                </div>
+                <div style="margin-top: 15mm;">';
         } else {
             $cover_html = '<div style="margin-top: 30px;">';
         }
