@@ -625,7 +625,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Extension logo
         $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
         if (file_exists($extension_logo_path)) {
-               $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px;">';
+               $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px; margin-top:' . $container_height_mm . 'mm">';
         }
 
         // Title with dynamic font size
