@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Set to true to show Debug HTML buttons
-define('FR2025_PDF_DEBUG_MODE', false);
+define('FR2025_PDF_DEBUG_MODE', true);
 
 /**
  * Queues PDF generation when a 'publications' post is saved or updated.
@@ -1067,6 +1067,80 @@ function fr2025_ajax_debug_pdf_html()
         $font_debug .= '<p style="color: red;"><strong>mPDF class not found</strong></p>';
     }
 
+    // Cover page image debug
+    $cover_debug = '<h3>Cover Page Image Debug</h3>';
+    $featured_image_url = '';
+    $featured_image_dimensions = null;
+    
+    if (has_post_thumbnail($post_id)) {
+        $featured_image_id = get_post_thumbnail_id($post_id);
+        $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
+        if ($featured_image_array) {
+            $featured_image_url = $featured_image_array[0];
+            $featured_image_dimensions = [
+                'width' => $featured_image_array[1],
+                'height' => $featured_image_array[2]
+            ];
+        }
+    }
+    
+    if (!empty($featured_image_url)) {
+        $cover_debug .= '<p><strong>Featured Image URL:</strong> ' . esc_html($featured_image_url) . '</p>';
+        $cover_debug .= '<p><strong>Original Dimensions:</strong> ' . $featured_image_dimensions['width'] . ' x ' . $featured_image_dimensions['height'] . ' px</p>';
+        
+        // Calculate the same values the PDF generator uses
+        $container_height_mm = 80;
+        $page_width_mm = 246;
+        $aspect_ratio = $featured_image_dimensions['height'] / $featured_image_dimensions['width'];
+        $rendered_height_mm = $page_width_mm * $aspect_ratio;
+        
+        $cover_debug .= '<p><strong>Container Height:</strong> ' . $container_height_mm . 'mm</p>';
+        $cover_debug .= '<p><strong>Rendered Height (at 100% width):</strong> ' . round($rendered_height_mm, 1) . 'mm</p>';
+        
+        if ($rendered_height_mm > $container_height_mm) {
+            $overflow_mm = $rendered_height_mm - $container_height_mm;
+            $center_offset_mm = $overflow_mm / 2;
+            $total_offset_mm = 15 + $center_offset_mm;
+            $cover_debug .= '<p><strong>Overflow:</strong> ' . round($overflow_mm, 1) . 'mm</p>';
+            $cover_debug .= '<p><strong>Center Offset:</strong> -' . round($total_offset_mm) . 'mm (for centered crop)</p>';
+            $cover_debug .= '<p><strong>Top Offset:</strong> -15mm (for top-aligned crop)</p>';
+        } else {
+            $cover_debug .= '<p><strong>Image fits within container</strong> - no cropping needed</p>';
+        }
+        
+        // Visual preview - simulating letter page proportions (8.5 x 11 = 0.773 ratio)
+        // Using 600px width to represent page, container at 80mm of ~280mm page height = ~28.5%
+        $preview_width = 600;
+        $preview_container_height = 170; // Approximate 80mm in preview scale
+        
+        $cover_debug .= '<h4>Visual Preview (Top-Aligned Crop)</h4>';
+        $cover_debug .= '<p style="font-size: 11px; color: #666;">Gray box = 80mm container, red dashed = page margins</p>';
+        $cover_debug .= '<div style="width: ' . $preview_width . 'px; border: 2px dashed red; padding: 15px; background: #fff;">';
+        $cover_debug .= '<div style="width: 100%; height: ' . $preview_container_height . 'px; overflow: hidden; background: #eee; position: relative;">';
+        $cover_debug .= '<img src="' . esc_url($featured_image_url) . '" style="width: 100%; height: auto; margin-top: 0;">';
+        $cover_debug .= '</div>';
+        $cover_debug .= '<div style="padding: 15px 0; font-family: Georgia, serif;">';
+        $cover_debug .= '<div style="font-size: 24px; font-weight: bold; margin: 10px 0;">' . esc_html($post->post_title) . '</div>';
+        $cover_debug .= '<div style="font-size: 14px; color: #666;">[Author info would appear here]</div>';
+        $cover_debug .= '</div>';
+        $cover_debug .= '</div>';
+        
+        $cover_debug .= '<h4>Visual Preview (Center-Aligned Crop)</h4>';
+        $center_margin_preview = round(($rendered_height_mm - $container_height_mm) / 2 * ($preview_container_height / $container_height_mm));
+        $cover_debug .= '<div style="width: ' . $preview_width . 'px; border: 2px dashed red; padding: 15px; background: #fff;">';
+        $cover_debug .= '<div style="width: 100%; height: ' . $preview_container_height . 'px; overflow: hidden; background: #eee; position: relative;">';
+        $cover_debug .= '<img src="' . esc_url($featured_image_url) . '" style="width: 100%; height: auto; margin-top: -' . $center_margin_preview . 'px;">';
+        $cover_debug .= '</div>';
+        $cover_debug .= '<div style="padding: 15px 0; font-family: Georgia, serif;">';
+        $cover_debug .= '<div style="font-size: 24px; font-weight: bold; margin: 10px 0;">' . esc_html($post->post_title) . '</div>';
+        $cover_debug .= '<div style="font-size: 14px; color: #666;">[Author info would appear here]</div>';
+        $cover_debug .= '</div>';
+        $cover_debug .= '</div>';
+        
+    } else {
+        $cover_debug .= '<p style="color: orange;"><strong>No featured image set for this publication</strong></p>';
+    }
+
     // Build a complete HTML document for viewing
     $debug_html = '<!DOCTYPE html>
 <html>
@@ -1090,6 +1164,9 @@ function fr2025_ajax_debug_pdf_html()
     </div>
     <div class="debug-info">
         ' . $font_debug . '
+    </div>
+    <div class="debug-info">
+        ' . $cover_debug . '
     </div>
     <hr>
     <h2>Processed Content (what mPDF receives):</h2>
