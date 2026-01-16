@@ -250,6 +250,13 @@ function process_content_for_mpdf($content)
         $content
     );
 
+    // Remove the beforeafter slider styles that conflict with PDF rendering
+    $content = preg_replace(
+        '/<style>\s*img\s*\{\s*display:\s*block;[^<]*\.beforeafter[^<]*<\/style>/is',
+        '',
+        $content
+    );
+
     return $content;
 }
 
@@ -625,7 +632,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Extension logo
         $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
         if (file_exists($extension_logo_path)) {
-               $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px; margin-top:' . $container_height_mm . 'mm">';
+            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px; margin-top:' . $container_height_mm . 'mm">';
         }
 
         // Title with dynamic font size
