@@ -612,7 +612,7 @@ function generate_publication_pdf_file_mpdf($post_id)
     <div style="position: absolute; top: 0; left: -15mm; right: -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
         <img src="' . $featured_image_url . '" style="width: 100%; height: auto;">
     </div>
-    <div style="margin-top: ' . ($container_height_mm - 15) . 'mm;">';
+    <div style="margin-top: ' . $container_height_mm . 'mm;">';
         } else {
             $cover_html = '<div style="margin-top: 30px;">';
         }
