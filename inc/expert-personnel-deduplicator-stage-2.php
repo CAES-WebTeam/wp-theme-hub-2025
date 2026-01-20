@@ -1,1404 +1,1293 @@
 <?php
 /**
- * User Merge & Cleanup Utility
- * Review and approve/reject duplicate pairs one at a time.
- * Saves progress to database for persistence across page reloads.
+ * Plugin Name: Duplicate User Manager
+ * Plugin URI: https://caes.uga.edu
+ * Description: Review and merge duplicate personnel/expert users, transferring post credits appropriately.
+ * Version: 1.0.0
+ * Author: CAES Web Team
+ * Text Domain: duplicate-user-manager
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * ---------------------------------------------------------------------------------
- * 1. Database Table Setup
- * ---------------------------------------------------------------------------------
- */
+class Duplicate_User_Manager {
 
-function user_merge_get_table_name() {
-    global $wpdb;
-    return $wpdb->prefix . 'user_merge_queue';
-}
+    const OPTION_DUPLICATES = 'dum_duplicate_data';
+    const OPTION_DISMISSED = 'dum_dismissed_pairs';
+    const OPTION_MERGED = 'dum_merged_pairs';
+    const ITEMS_PER_PAGE = 10;
 
-function user_merge_create_table() {
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
-        id bigint(20) NOT NULL AUTO_INCREMENT,
-        session_id varchar(32) NOT NULL,
-        csv_line int(11) NOT NULL,
-        confidence int(3) NOT NULL,
-        match_reasons text NOT NULL,
-        personnel_wp_id bigint(20) NOT NULL,
-        personnel_name varchar(255) NOT NULL,
-        personnel_email varchar(255) NOT NULL,
-        personnel_phone varchar(50) DEFAULT '',
-        personnel_id varchar(100) NOT NULL,
-        expert_wp_id bigint(20) NOT NULL,
-        expert_name varchar(255) NOT NULL,
-        expert_email varchar(255) NOT NULL,
-        expert_phone varchar(50) DEFAULT '',
-        expert_source_id varchar(100) DEFAULT '',
-        expert_writer_id varchar(100) DEFAULT '',
-        affected_posts_count int(11) DEFAULT 0,
-        affected_posts_cache longtext DEFAULT NULL,
-        status varchar(20) DEFAULT 'pending',
-        processed_at datetime DEFAULT NULL,
-        created_at datetime DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
-        KEY session_id (session_id),
-        KEY status (status)
-    ) $charset_collate;";
-
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-}
-
-/**
- * ---------------------------------------------------------------------------------
- * 2. Configuration: Post Types and Fields to Check
- * ---------------------------------------------------------------------------------
- */
-
-function get_user_reference_fields() {
-    return [
+    private $credit_fields = [
         'post' => [
-            ['repeater' => 'authors', 'user_field' => 'user'],
-            ['repeater' => 'artists', 'user_field' => 'user'],
-            ['repeater' => 'experts', 'user_field' => 'user'],
+            'authors' => 'user',
+            'artists' => 'user', 
+            'expert_sources' => 'user'
         ],
         'publications' => [
-            ['repeater' => 'authors', 'user_field' => 'user'],
-            ['repeater' => 'translator', 'user_field' => 'user'],
-            ['repeater' => 'artists', 'user_field' => 'user'],
+            'authors' => 'user',
+            'translator' => 'user',
+            'artists' => 'user'
         ],
         'shorthand_story' => [
-            ['repeater' => 'authors', 'user_field' => 'user'],
-            ['repeater' => 'artists', 'user_field' => 'user'],
-        ],
+            'authors' => 'user',
+            'artists' => 'user'
+        ]
     ];
-}
 
-/**
- * ---------------------------------------------------------------------------------
- * 3. Content Functions
- * ---------------------------------------------------------------------------------
- */
+    public function __construct() {
+        add_action('admin_menu', [$this, 'add_admin_menu']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
+        add_action('wp_ajax_dum_dismiss_pair', [$this, 'ajax_dismiss_pair']);
+        add_action('wp_ajax_dum_restore_pair', [$this, 'ajax_restore_pair']);
+        add_action('wp_ajax_dum_get_user_posts', [$this, 'ajax_get_user_posts']);
+        add_action('wp_ajax_dum_merge_users', [$this, 'ajax_merge_users']);
+        add_action('wp_ajax_dum_upload_csv', [$this, 'ajax_upload_csv']);
+        add_action('wp_ajax_dum_clear_data', [$this, 'ajax_clear_data']);
+        add_action('wp_ajax_dum_get_user_comparison', [$this, 'ajax_get_user_comparison']);
+    }
 
-function find_posts_referencing_user($expert_wp_id) {
-    global $wpdb;
-    
-    $field_config = get_user_reference_fields();
-    $found_posts = [];
+    public function add_admin_menu() {
+        add_users_page(
+            'Duplicate User Manager',
+            'Duplicate Manager',
+            'manage_options',
+            'duplicate-user-manager',
+            [$this, 'render_admin_page']
+        );
+    }
 
-    foreach ($field_config as $post_type => $fields) {
-        foreach ($fields as $field_info) {
-            $repeater = $field_info['repeater'];
-            $user_field = $field_info['user_field'];
-            
-            $results = $wpdb->get_results($wpdb->prepare(
-                "SELECT DISTINCT p.ID, p.post_title, p.post_type, pm.meta_key
-                 FROM {$wpdb->posts} p
-                 INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
-                 WHERE p.post_type = %s
-                 AND p.post_status != 'trash'
-                 AND pm.meta_key LIKE %s
-                 AND pm.meta_value = %s",
-                $post_type,
-                $wpdb->esc_like($repeater) . '_%_' . $user_field,
-                $expert_wp_id
-            ));
-
-            foreach ($results as $row) {
-                $key = $row->ID . '_' . $row->meta_key;
-                if (!isset($found_posts[$key])) {
-                    preg_match('/' . preg_quote($repeater, '/') . '_(\d+)_' . preg_quote($user_field, '/') . '/', $row->meta_key, $matches);
-                    $row_index = isset($matches[1]) ? intval($matches[1]) : null;
-
-                    $found_posts[$key] = [
-                        'post_id' => $row->ID,
-                        'post_title' => $row->post_title,
-                        'post_type' => $row->post_type,
-                        'repeater' => $repeater,
-                        'user_field' => $user_field,
-                        'meta_key' => $row->meta_key,
-                        'row_index' => $row_index,
-                    ];
-                }
-            }
+    public function enqueue_scripts($hook) {
+        if ($hook !== 'users_page_duplicate-user-manager') {
+            return;
         }
-    }
 
-    return array_values($found_posts);
-}
+        // Inline styles
+        wp_register_style('dum-admin-styles', false);
+        wp_enqueue_style('dum-admin-styles');
+        wp_add_inline_style('dum-admin-styles', $this->get_inline_styles());
 
-function user_exists_in_repeater($post_id, $repeater, $user_field, $user_id) {
-    global $wpdb;
-    
-    $results = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM {$wpdb->postmeta} 
-         WHERE post_id = %d 
-         AND meta_key LIKE %s 
-         AND meta_value = %s",
-        $post_id,
-        $wpdb->esc_like($repeater) . '_%_' . $user_field,
-        $user_id
-    ));
-    
-    return intval($results) > 0;
-}
-
-function remove_repeater_row($post_id, $repeater, $row_index) {
-    $rows = get_field($repeater, $post_id);
-    
-    if (!is_array($rows) || !isset($rows[$row_index])) {
-        return ['success' => false, 'message' => "Row {$row_index} not found in {$repeater}"];
-    }
-    
-    array_splice($rows, $row_index, 1);
-    $result = update_field($repeater, $rows, $post_id);
-    
-    return [
-        'success' => $result !== false,
-        'message' => $result !== false ? "Removed row {$row_index} from {$repeater}" : "Failed to remove row",
-        'action' => 'remove'
-    ];
-}
-
-function reassign_user_in_post($post_id, $meta_key, $old_user_id, $new_user_id, $repeater, $user_field, $row_index) {
-    $current_value = get_post_meta($post_id, $meta_key, true);
-    
-    if (intval($current_value) !== intval($old_user_id)) {
-        return ['success' => false, 'message' => "Value mismatch"];
-    }
-    
-    // Check for duplicate
-    if (user_exists_in_repeater($post_id, $repeater, $user_field, $new_user_id)) {
-        return remove_repeater_row($post_id, $repeater, $row_index);
-    }
-
-    $result = update_post_meta($post_id, $meta_key, $new_user_id);
-    
-    return [
-        'success' => $result !== false,
-        'message' => $result !== false ? "Updated to {$new_user_id}" : "Failed to update",
-        'action' => 'update'
-    ];
-}
-
-function flush_post_and_trigger_save($post_id) {
-    clean_post_cache($post_id);
-    
-    if (function_exists('acf_flush_value_cache')) {
-        acf_flush_value_cache($post_id);
-    }
-    
-    wp_cache_delete($post_id, 'posts');
-    wp_cache_delete($post_id, 'post_meta');
-    
-    do_action('acf/save_post', $post_id);
-    do_action('save_post', $post_id, get_post($post_id), true);
-}
-
-/**
- * ---------------------------------------------------------------------------------
- * 4. CSV Parsing
- * ---------------------------------------------------------------------------------
- */
-
-function parse_and_store_csv($csv_content) {
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    
-    user_merge_create_table();
-    
-    $lines = explode("\n", trim($csv_content));
-    if (count($lines) < 2) {
-        return new WP_Error('invalid_csv', 'CSV must have a header row and at least one data row.');
-    }
-
-    $header = str_getcsv(array_shift($lines));
-    $header = array_map(function($h) { return strtolower(trim($h)); }, $header);
-    
-    // Find column indices
-    $cols = [
-        'confidence' => array_search('confidence', $header),
-        'personnel_wp_id' => array_search('personnel wp id', $header),
-        'personnel_name' => array_search('personnel name', $header),
-        'personnel_email' => array_search('personnel email', $header),
-        'personnel_phone' => array_search('personnel phone', $header),
-        'personnel_id' => array_search('personnel_id', $header),
-        'expert_wp_id' => array_search('expert wp id', $header),
-        'expert_name' => array_search('expert name', $header),
-        'expert_email' => array_search('expert email', $header),
-        'expert_phone' => array_search('expert phone', $header),
-        'expert_source_id' => array_search('expert_source_id', $header),
-        'expert_writer_id' => array_search('expert_writer_id', $header),
-        'match_reasons' => array_search('match reasons', $header),
-    ];
-    
-    // Validate required columns
-    if ($cols['personnel_id'] === false || $cols['expert_wp_id'] === false) {
-        return new WP_Error('missing_columns', 'CSV missing required columns (personnel_id, expert wp id).');
-    }
-    
-    // Generate session ID
-    $session_id = wp_generate_password(16, false);
-    
-    $imported = 0;
-    $errors = [];
-    $line_num = 1;
-    
-    foreach ($lines as $line) {
-        $line_num++;
-        if (empty(trim($line))) continue;
+        // Inline scripts
+        wp_register_script('dum-admin-script', false, ['jquery'], '1.0.0', true);
+        wp_enqueue_script('dum-admin-script');
         
-        $data = str_getcsv($line);
-        
-        $personnel_id = $cols['personnel_id'] !== false ? trim($data[$cols['personnel_id']] ?? '') : '';
-        $expert_wp_id = $cols['expert_wp_id'] !== false ? intval($data[$cols['expert_wp_id']] ?? 0) : 0;
-        
-        if (empty($personnel_id) || empty($expert_wp_id)) {
-            $errors[] = "Line {$line_num}: Missing personnel_id or expert_wp_id";
-            continue;
-        }
-        
-        // Look up personnel WP ID
-        $personnel_wp_id = $cols['personnel_wp_id'] !== false ? intval($data[$cols['personnel_wp_id']] ?? 0) : 0;
-        if (!$personnel_wp_id) {
-            $users = get_users(['meta_key' => 'personnel_id', 'meta_value' => $personnel_id, 'number' => 1, 'fields' => 'ID']);
-            $personnel_wp_id = !empty($users) ? intval($users[0]) : 0;
-        }
-        
-        if (!$personnel_wp_id) {
-            $errors[] = "Line {$line_num}: Could not find personnel user with ID '{$personnel_id}'";
-            continue;
-        }
-        
-        // Verify expert exists
-        $expert_user = get_user_by('ID', $expert_wp_id);
-        if (!$expert_user) {
-            $errors[] = "Line {$line_num}: Expert WP ID {$expert_wp_id} not found";
-            continue;
-        }
-        
-        // Count affected posts
-        $affected_posts = find_posts_referencing_user($expert_wp_id);
-        
-        // Parse confidence (remove % if present)
-        $confidence = $cols['confidence'] !== false ? intval(str_replace('%', '', $data[$cols['confidence']] ?? '0')) : 0;
-        
-        $wpdb->insert($table_name, [
-            'session_id' => $session_id,
-            'csv_line' => $line_num,
-            'confidence' => $confidence,
-            'match_reasons' => $cols['match_reasons'] !== false ? ($data[$cols['match_reasons']] ?? '') : '',
-            'personnel_wp_id' => $personnel_wp_id,
-            'personnel_name' => $cols['personnel_name'] !== false ? ($data[$cols['personnel_name']] ?? '') : '',
-            'personnel_email' => $cols['personnel_email'] !== false ? ($data[$cols['personnel_email']] ?? '') : '',
-            'personnel_phone' => $cols['personnel_phone'] !== false ? ($data[$cols['personnel_phone']] ?? '') : '',
-            'personnel_id' => $personnel_id,
-            'expert_wp_id' => $expert_wp_id,
-            'expert_name' => $cols['expert_name'] !== false ? ($data[$cols['expert_name']] ?? '') : '',
-            'expert_email' => $cols['expert_email'] !== false ? ($data[$cols['expert_email']] ?? '') : '',
-            'expert_phone' => $cols['expert_phone'] !== false ? ($data[$cols['expert_phone']] ?? '') : '',
-            'expert_source_id' => $cols['expert_source_id'] !== false ? ($data[$cols['expert_source_id']] ?? '') : '',
-            'expert_writer_id' => $cols['expert_writer_id'] !== false ? ($data[$cols['expert_writer_id']] ?? '') : '',
-            'affected_posts_count' => count($affected_posts),
-            'status' => 'pending',
+        wp_localize_script('dum-admin-script', 'dumAjax', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('dum_nonce'),
+            'strings' => [
+                'confirmDismiss' => 'Are you sure you want to dismiss this match?',
+                'confirmMerge' => 'Are you sure you want to merge these users? This will transfer all post credits from the Expert user to the Personnel user.',
+                'confirmClear' => 'Are you sure you want to clear all data? This cannot be undone.',
+                'loading' => 'Loading...',
+                'error' => 'An error occurred. Please try again.',
+                'mergeSuccess' => 'Users merged successfully!',
+                'dismissSuccess' => 'Match dismissed.',
+                'restoreSuccess' => 'Match restored.',
+            ]
         ]);
         
-        $imported++;
-    }
-    
-    if ($imported > 0) {
-        update_option('user_merge_session_id', $session_id, false);
-    }
-    
-    return [
-        'session_id' => $session_id,
-        'imported' => $imported,
-        'errors' => $errors,
-    ];
-}
-
-/**
- * ---------------------------------------------------------------------------------
- * 5. AJAX Handlers
- * ---------------------------------------------------------------------------------
- */
-
-add_action('wp_ajax_user_merge_upload_csv', 'ajax_user_merge_upload_csv');
-function ajax_user_merge_upload_csv() {
-    check_ajax_referer('user_merge_nonce', 'nonce');
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied');
+        wp_add_inline_script('dum-admin-script', $this->get_inline_scripts());
     }
 
-    $csv_content = isset($_POST['csv_content']) ? wp_unslash($_POST['csv_content']) : '';
-    
-    if (empty($csv_content)) {
-        wp_send_json_error('No CSV content provided.');
-    }
-
-    // Parse header and count lines
-    $lines = explode("\n", trim($csv_content));
-    if (count($lines) < 2) {
-        wp_send_json_error('CSV must have a header row and at least one data row.');
-    }
-    
-    $header = str_getcsv(array_shift($lines));
-    $header = array_map(function($h) { return strtolower(trim($h)); }, $header);
-    
-    // Validate required columns
-    $cols = [
-        'personnel_id' => array_search('personnel_id', $header),
-        'expert_wp_id' => array_search('expert wp id', $header),
-    ];
-    
-    if ($cols['personnel_id'] === false || $cols['expert_wp_id'] === false) {
-        wp_send_json_error('CSV missing required columns (personnel_id, expert wp id).');
-    }
-    
-    // Generate session and store CSV for batched processing
-    $session_id = wp_generate_password(16, false);
-    user_merge_create_table();
-    
-    // Store the CSV content and header info for batch processing
-    update_option('user_merge_session_id', $session_id, false);
-    update_option('user_merge_csv_data', [
-        'header' => $header,
-        'lines' => $lines,
-        'total' => count($lines),
-        'processed' => 0,
-        'imported' => 0,
-        'errors' => [],
-    ], false);
-
-    wp_send_json_success([
-        'session_id' => $session_id,
-        'total_lines' => count($lines),
-        'message' => 'CSV uploaded. Starting processing...',
-    ]);
-}
-
-add_action('wp_ajax_user_merge_process_csv_batch', 'ajax_user_merge_process_csv_batch');
-function ajax_user_merge_process_csv_batch() {
-    check_ajax_referer('user_merge_nonce', 'nonce');
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied');
-    }
-
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    
-    $csv_data = get_option('user_merge_csv_data');
-    $session_id = get_option('user_merge_session_id');
-    
-    if (!$csv_data || !$session_id) {
-        wp_send_json_error('No CSV data found. Please re-upload.');
-    }
-    
-    $header = $csv_data['header'];
-    $lines = $csv_data['lines'];
-    $processed = $csv_data['processed'];
-    $imported = $csv_data['imported'];
-    $errors = $csv_data['errors'];
-    $total = $csv_data['total'];
-    
-    // Column indices
-    $cols = [
-        'confidence' => array_search('confidence', $header),
-        'personnel_wp_id' => array_search('personnel wp id', $header),
-        'personnel_name' => array_search('personnel name', $header),
-        'personnel_email' => array_search('personnel email', $header),
-        'personnel_phone' => array_search('personnel phone', $header),
-        'personnel_id' => array_search('personnel_id', $header),
-        'expert_wp_id' => array_search('expert wp id', $header),
-        'expert_name' => array_search('expert name', $header),
-        'expert_email' => array_search('expert email', $header),
-        'expert_phone' => array_search('expert phone', $header),
-        'expert_source_id' => array_search('expert_source_id', $header),
-        'expert_writer_id' => array_search('expert_writer_id', $header),
-        'match_reasons' => array_search('match reasons', $header),
-    ];
-    
-    $batch_size = 10; // Process 10 rows at a time
-    $batch_end = min($processed + $batch_size, $total);
-    
-    for ($i = $processed; $i < $batch_end; $i++) {
-        $line = $lines[$i];
-        $line_num = $i + 2; // +2 for header row and 0-index
+    private function get_inline_styles() {
+        return '
+        .dum-wrap { max-width: 1400px; }
+        .dum-content { margin-top: 20px; }
+        .nav-tab .dum-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 5px; background: #2271b1; color: #fff; }
+        .nav-tab .dum-badge-secondary { background: #787c82; }
+        .nav-tab .dum-badge-success { background: #00a32a; }
+        .dum-notice { padding: 15px; margin: 20px 0; border-left: 4px solid #72aee6; background: #f0f6fc; }
+        .dum-notice-info { border-color: #72aee6; background: #f0f6fc; }
+        .dum-notice-warning { border-color: #dba617; background: #fcf9e8; }
+        .dum-notice-success { border-color: #00a32a; background: #edfaef; }
+        .dum-notice p { margin: 0; }
+        .dum-filters { display: flex; align-items: center; gap: 20px; padding: 15px; background: #fff; border: 1px solid #c3c4c7; border-bottom: none; }
+        .dum-filter-info { margin-left: auto; color: #646970; font-size: 13px; }
+        .dum-duplicate-list { display: flex; flex-direction: column; gap: 0; }
+        .dum-pair { background: #fff; border: 1px solid #c3c4c7; margin-bottom: -1px; }
+        .dum-pair:last-child { margin-bottom: 0; }
+        .dum-pair-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #f0f0f1; background: #f9f9f9; }
+        .dum-pair-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .dum-pair-actions .button { display: inline-flex; align-items: center; gap: 5px; }
+        .dum-pair-actions .dashicons { font-size: 16px; width: 16px; height: 16px; line-height: 1; }
+        .dum-confidence { font-weight: 600; padding: 5px 12px; border-radius: 4px; font-size: 12px; text-transform: uppercase; }
+        .dum-confidence-high { background: #d1fae5; color: #065f46; }
+        .dum-confidence-medium { background: #fef3c7; color: #92400e; }
+        .dum-confidence-low { background: #fee2e2; color: #991b1b; }
+        .dum-confidence-very-low { background: #f3f4f6; color: #4b5563; }
+        .dum-pair-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 15px 20px; }
+        .dum-user-summary h4 { margin: 0 0 8px 0; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .dum-user-summary p { margin: 0; font-size: 13px; color: #50575e; }
+        .dum-label { font-size: 10px; font-weight: 600; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; }
+        .dum-label-personnel { background: #dbeafe; color: #1e40af; }
+        .dum-label-expert { background: #fce7f3; color: #9d174d; }
+        .dum-edit-link { margin-left: 5px; color: #2271b1; text-decoration: none; }
+        .dum-edit-link .dashicons { font-size: 14px; width: 14px; height: 14px; }
+        .dum-warning { color: #b91c1c; font-size: 12px; font-style: italic; }
+        .dum-pair-details { border-top: 1px solid #e0e0e0; padding: 20px; background: #f9f9f9; }
+        .dum-match-reasons h4, .dum-posts-comparison h4 { margin: 0 0 10px 0; font-size: 14px; color: #1d2327; }
+        .dum-match-reasons p { margin: 0; font-size: 13px; line-height: 1.6; color: #50575e; }
+        .dum-posts-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .dum-posts-column { background: #fff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 4px; }
+        .dum-posts-list { min-height: 60px; }
+        .dum-post-list { margin: 0; padding: 0; list-style: none; max-height: 300px; overflow-y: auto; }
+        .dum-post-list li { padding: 8px 0; border-bottom: 1px solid #f0f0f1; font-size: 13px; }
+        .dum-post-list li:last-child { border-bottom: none; }
+        .dum-post-list a { color: #2271b1; text-decoration: none; }
+        .dum-post-list a:hover { text-decoration: underline; }
+        .dum-post-meta { display: block; margin-top: 3px; }
+        .dum-post-type { background: #f0f0f1; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #50575e; margin-right: 5px; }
+        .dum-credit-type { background: #e0f2fe; padding: 2px 6px; border-radius: 3px; font-size: 11px; color: #0369a1; }
+        .dum-no-posts { color: #6b7280; font-style: italic; margin: 10px 0; }
+        .dum-post-count { margin: 10px 0 0 0; font-size: 12px; color: #6b7280; font-weight: 500; }
+        .dum-pagination { display: flex; align-items: center; justify-content: center; gap: 15px; padding: 20px; background: #fff; border: 1px solid #c3c4c7; border-top: none; }
+        .dum-page-info { color: #646970; font-size: 13px; }
+        .dum-upload-section { background: #fff; padding: 30px; border: 1px solid #c3c4c7; }
+        .dum-upload-section h2 { margin-top: 0; }
+        .dum-column-list { background: #f6f7f7; padding: 15px 15px 15px 35px; margin: 15px 0; border-radius: 4px; }
+        .dum-column-list li { margin: 5px 0; font-size: 13px; }
+        .dum-column-list code { background: #e0e0e0; padding: 2px 6px; border-radius: 3px; }
+        .dum-upload-form { margin: 20px 0; }
+        #dum-upload-form { display: flex; gap: 15px; align-items: center; margin-top: 20px; }
+        #dum-csv-file { padding: 8px; border: 2px dashed #c3c4c7; border-radius: 4px; background: #f6f7f7; }
+        #dum-upload-progress { margin-top: 20px; display: flex; align-items: center; gap: 10px; color: #646970; }
+        #dum-upload-result { margin-top: 20px; }
+        .dum-data-management { margin-top: 40px; padding-top: 30px; border-top: 1px solid #e0e0e0; }
+        .dum-data-management h3 { color: #b91c1c; }
+        .dum-loading { display: flex; align-items: center; gap: 10px; padding: 20px; color: #646970; }
+        .dum-loading .spinner { float: none; margin: 0; }
+        .dum-toggle-details .dashicons { transition: transform 0.2s ease; }
+        .dum-toggle-details.active .dashicons { transform: rotate(180deg); }
+        .dum-pair.dum-removing { opacity: 0.5; pointer-events: none; }
+        .dum-pair.dum-removed { animation: slideOut 0.3s ease forwards; }
+        @keyframes slideOut { to { opacity: 0; max-height: 0; padding: 0; margin: 0; border: none; overflow: hidden; } }
+        .dum-success-message { display: inline-flex; align-items: center; gap: 5px; background: #d1fae5; color: #065f46; padding: 8px 15px; border-radius: 4px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         
-        if (empty(trim($line))) {
-            continue;
+        /* Modal Styles */
+        .dum-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 100000; display: flex; align-items: center; justify-content: center; }
+        .dum-modal { background: #fff; border-radius: 8px; max-width: 1200px; width: 95%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+        .dum-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px; border-bottom: 1px solid #e0e0e0; background: #f9f9f9; }
+        .dum-modal-header h2 { margin: 0; font-size: 18px; }
+        .dum-modal-close { background: none; border: none; cursor: pointer; padding: 5px; font-size: 20px; color: #646970; }
+        .dum-modal-close:hover { color: #1d2327; }
+        .dum-modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .dum-modal-footer { padding: 15px 20px; border-top: 1px solid #e0e0e0; background: #f9f9f9; display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* Comparison Table */
+        .dum-comparison-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .dum-comparison-table th, .dum-comparison-table td { padding: 10px 15px; text-align: left; border: 1px solid #e0e0e0; }
+        .dum-comparison-table th { background: #f0f0f1; font-weight: 600; }
+        .dum-comparison-table thead th:first-child { width: 180px; }
+        .dum-comparison-table .dum-col-personnel { background: #f0f9ff; }
+        .dum-comparison-table .dum-col-expert { background: #fff5f5; }
+        .dum-comparison-table .dum-col-match { width: 100px; text-align: center; }
+        .dum-row-exact { background: #ecfdf5 !important; }
+        .dum-row-similar { background: #fefce8 !important; }
+        .dum-row-different { background: #fff !important; }
+        .dum-match-exact { color: #059669; font-weight: 500; }
+        .dum-match-similar { color: #d97706; font-weight: 500; }
+        .dum-match-none { color: #6b7280; }
+        .dum-field-category { background: #1d2327 !important; color: #fff; font-weight: 600; }
+        .dum-field-category td { background: #1d2327 !important; color: #fff; }
+        .dum-empty-value { color: #9ca3af; font-style: italic; }
+        
+        @media screen and (max-width: 1200px) {
+            .dum-pair-summary { grid-template-columns: 1fr; }
+            .dum-posts-comparison { grid-template-columns: 1fr; }
         }
-        
-        $data = str_getcsv($line);
-        
-        $personnel_id = $cols['personnel_id'] !== false ? trim($data[$cols['personnel_id']] ?? '') : '';
-        $expert_wp_id = $cols['expert_wp_id'] !== false ? intval($data[$cols['expert_wp_id']] ?? 0) : 0;
-        
-        if (empty($personnel_id) || empty($expert_wp_id)) {
-            $errors[] = "Line {$line_num}: Missing personnel_id or expert_wp_id";
-            continue;
+        @media screen and (max-width: 782px) {
+            .dum-pair-header { flex-direction: column; gap: 15px; align-items: flex-start; }
+            .dum-filters { flex-direction: column; align-items: flex-start; }
+            .dum-filter-info { margin-left: 0; }
         }
-        
-        // Look up personnel WP ID
-        $personnel_wp_id = $cols['personnel_wp_id'] !== false ? intval($data[$cols['personnel_wp_id']] ?? 0) : 0;
-        if (!$personnel_wp_id) {
-            $users = get_users(['meta_key' => 'personnel_id', 'meta_value' => $personnel_id, 'number' => 1, 'fields' => 'ID']);
-            $personnel_wp_id = !empty($users) ? intval($users[0]) : 0;
-        }
-        
-        if (!$personnel_wp_id) {
-            $errors[] = "Line {$line_num}: Personnel ID '{$personnel_id}' not found";
-            continue;
-        }
-        
-        // Verify expert exists
-        $expert_user = get_user_by('ID', $expert_wp_id);
-        if (!$expert_user) {
-            $errors[] = "Line {$line_num}: Expert WP ID {$expert_wp_id} not found";
-            continue;
-        }
-        
-        // Count affected posts and cache them
-        $affected_posts = find_posts_referencing_user($expert_wp_id);
-        $affected_posts_for_cache = array_map(function($p) {
-            return [
-                'post_id' => $p['post_id'],
-                'post_title' => $p['post_title'],
-                'post_type' => $p['post_type'],
-                'repeater' => $p['repeater'],
-                'user_field' => $p['user_field'],
-                'meta_key' => $p['meta_key'],
-                'row_index' => $p['row_index'],
-            ];
-        }, $affected_posts);
-
-        // Parse confidence
-        $confidence = $cols['confidence'] !== false ? intval(str_replace('%', '', $data[$cols['confidence']] ?? '0')) : 0;
-        
-        $wpdb->insert($table_name, [
-            'session_id' => $session_id,
-            'csv_line' => $line_num,
-            'confidence' => $confidence,
-            'match_reasons' => $cols['match_reasons'] !== false ? ($data[$cols['match_reasons']] ?? '') : '',
-            'personnel_wp_id' => $personnel_wp_id,
-            'personnel_name' => $cols['personnel_name'] !== false ? ($data[$cols['personnel_name']] ?? '') : '',
-            'personnel_email' => $cols['personnel_email'] !== false ? ($data[$cols['personnel_email']] ?? '') : '',
-            'personnel_phone' => $cols['personnel_phone'] !== false ? ($data[$cols['personnel_phone']] ?? '') : '',
-            'personnel_id' => $personnel_id,
-            'expert_wp_id' => $expert_wp_id,
-            'expert_name' => $cols['expert_name'] !== false ? ($data[$cols['expert_name']] ?? '') : '',
-            'expert_email' => $cols['expert_email'] !== false ? ($data[$cols['expert_email']] ?? '') : '',
-            'expert_phone' => $cols['expert_phone'] !== false ? ($data[$cols['expert_phone']] ?? '') : '',
-            'expert_source_id' => $cols['expert_source_id'] !== false ? ($data[$cols['expert_source_id']] ?? '') : '',
-            'expert_writer_id' => $cols['expert_writer_id'] !== false ? ($data[$cols['expert_writer_id']] ?? '') : '',
-            'affected_posts_count' => count($affected_posts),
-            'affected_posts_cache' => json_encode($affected_posts_for_cache),
-            'status' => 'pending',
-        ]);
-        
-        $imported++;
-    }
-    
-    $processed = $batch_end;
-    $is_complete = $processed >= $total;
-    $progress = $total > 0 ? round(($processed / $total) * 100) : 100;
-    
-    // Update stored data
-    $csv_data['processed'] = $processed;
-    $csv_data['imported'] = $imported;
-    $csv_data['errors'] = $errors;
-    update_option('user_merge_csv_data', $csv_data, false);
-    
-    if ($is_complete) {
-        delete_option('user_merge_csv_data');
-    }
-    
-    wp_send_json_success([
-        'processed' => $processed,
-        'total' => $total,
-        'imported' => $imported,
-        'errors_count' => count($errors),
-        'progress' => $progress,
-        'is_complete' => $is_complete,
-    ]);
-}
-
-add_action('wp_ajax_user_merge_get_queue', 'ajax_user_merge_get_queue');
-function ajax_user_merge_get_queue() {
-    check_ajax_referer('user_merge_nonce', 'nonce');
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied');
+        ';
     }
 
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    $session_id = get_option('user_merge_session_id');
-    
-    if (!$session_id) {
-        wp_send_json_error('No active session. Please upload a CSV.');
-    }
-    
-    $filter = isset($_POST['filter']) ? sanitize_text_field($_POST['filter']) : 'pending';
-    $page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
-    $per_page = 50;
-    $offset = ($page - 1) * $per_page;
-
-    $where_status = '';
-    if ($filter === 'pending') {
-        $where_status = "AND status = 'pending'";
-    } elseif ($filter === 'merged') {
-        $where_status = "AND status = 'merged'";
-    } elseif ($filter === 'rejected') {
-        $where_status = "AND status = 'rejected'";
-    }
-    
-    $rows = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM $table_name 
-         WHERE session_id = %s $where_status 
-         ORDER BY confidence DESC, id ASC
-         LIMIT %d OFFSET %d",
-        $session_id,
-        $per_page,
-        $offset
-    ), ARRAY_A);
-    
-    // Get counts
-    $counts = $wpdb->get_row($wpdb->prepare(
-        "SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN status = 'merged' THEN 1 ELSE 0 END) as merged,
-            SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
-         FROM $table_name WHERE session_id = %s",
-        $session_id
-    ), ARRAY_A);
-    
-    // Get filtered count for pagination
-    $filtered_count = $wpdb->get_var($wpdb->prepare(
-        "SELECT COUNT(*) FROM $table_name WHERE session_id = %s $where_status",
-        $session_id
-    ));
-
-    // Enrich with current affected posts count and edit links
-    foreach ($rows as &$row) {
-        $row['personnel_edit_url'] = get_edit_user_link($row['personnel_wp_id']);
-        $row['expert_edit_url'] = get_edit_user_link($row['expert_wp_id']);
-        
-        // Use cached affected posts instead of re-querying
-        if ($row['status'] === 'pending' && !empty($row['affected_posts_cache'])) {
-            $cached_posts = json_decode($row['affected_posts_cache'], true);
-            if (is_array($cached_posts)) {
-                $row['affected_posts'] = array_map(function($p) {
-                    return [
-                        'id' => $p['post_id'],
-                        'title' => $p['post_title'],
-                        'type' => $p['post_type'],
-                        'field' => $p['repeater'] . '[' . $p['row_index'] . ']',
-                        'edit_url' => get_edit_post_link($p['post_id'], 'raw'),
-                    ];
-                }, $cached_posts);
-            } else {
-                $row['affected_posts'] = [];
-            }
-        } else {
-            $row['affected_posts'] = [];
-        }
-        // Remove the cache from response to reduce payload size
-        unset($row['affected_posts_cache']);
-    }
-    
-    wp_send_json_success([
-        'rows' => $rows,
-        'counts' => $counts,
-        'session_id' => $session_id,
-        'pagination' => [
-            'page' => $page,
-            'per_page' => $per_page,
-            'total' => intval($filtered_count),
-            'total_pages' => ceil($filtered_count / $per_page),
-        ],
-    ]);
-}
-
-add_action('wp_ajax_user_merge_process_single', 'ajax_user_merge_process_single');
-function ajax_user_merge_process_single() {
-    check_ajax_referer('user_merge_nonce', 'nonce');
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied');
-    }
-
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    
-    $row_id = intval($_POST['row_id'] ?? 0);
-    $action = sanitize_text_field($_POST['merge_action'] ?? '');
-    $delete_expert = isset($_POST['delete_expert']) && $_POST['delete_expert'] === 'true';
-    
-    if (!$row_id || !in_array($action, ['merge', 'reject'])) {
-        wp_send_json_error('Invalid parameters');
-    }
-    
-    $row = $wpdb->get_row($wpdb->prepare(
-        "SELECT * FROM $table_name WHERE id = %d",
-        $row_id
-    ), ARRAY_A);
-    
-    if (!$row) {
-        wp_send_json_error('Row not found');
-    }
-    
-    if ($row['status'] !== 'pending') {
-        wp_send_json_error('Row already processed');
-    }
-    
-    $log = [];
-    $stats = ['posts_updated' => 0, 'rows_removed' => 0, 'expert_deleted' => false];
-    
-    if ($action === 'reject') {
-        $wpdb->update($table_name, [
-            'status' => 'rejected',
-            'processed_at' => current_time('mysql'),
-        ], ['id' => $row_id]);
-        
-        $log[] = "Rejected pair: {$row['personnel_name']} <- {$row['expert_name']}";
-        
-        wp_send_json_success([
-            'status' => 'rejected',
-            'log' => $log,
-            'stats' => $stats,
-        ]);
-        return;
-    }
-    
-    // Process merge
-    $affected_posts = find_posts_referencing_user($row['expert_wp_id']);
-    $modified_posts = [];
-    
-    if (empty($affected_posts)) {
-        $log[] = "No posts found referencing Expert WP#{$row['expert_wp_id']}";
-    } else {
-        $log[] = "Processing " . count($affected_posts) . " post reference(s)";
-        
-        foreach ($affected_posts as $post_ref) {
-            $result = reassign_user_in_post(
-                $post_ref['post_id'],
-                $post_ref['meta_key'],
-                $row['expert_wp_id'],
-                $row['personnel_wp_id'],
-                $post_ref['repeater'],
-                $post_ref['user_field'],
-                $post_ref['row_index']
-            );
+    private function get_inline_scripts() {
+        return '
+        (function($) {
+            "use strict";
             
-            if ($result['success']) {
-                $modified_posts[$post_ref['post_id']] = true;
+            $(document).ready(function() { DUM.init(); });
+            
+            var DUM = {
+                init: function() {
+                    this.bindToggleDetails();
+                    this.bindDismissPair();
+                    this.bindRestorePair();
+                    this.bindLoadPosts();
+                    this.bindMergePair();
+                    this.bindUploadForm();
+                    this.bindClearData();
+                    this.bindConfidenceFilter();
+                    this.bindCompareUsers();
+                    this.bindModalClose();
+                },
                 
-                if (isset($result['action']) && $result['action'] === 'remove') {
-                    $stats['rows_removed']++;
-                    $log[] = "✓ Removed duplicate from {$post_ref['post_type']} \"{$post_ref['post_title']}\"";
-                } else {
-                    $stats['posts_updated']++;
-                    $log[] = "✓ Updated {$post_ref['post_type']} \"{$post_ref['post_title']}\"";
-                }
-            } else {
-                $log[] = "✗ Failed: {$post_ref['post_title']} - {$result['message']}";
-            }
-        }
-        
-        // Flush caches
-        foreach (array_keys($modified_posts) as $post_id) {
-            flush_post_and_trigger_save($post_id);
-        }
-    }
-    
-    // Delete expert if requested
-    if ($delete_expert) {
-        $expert_user = get_user_by('ID', $row['expert_wp_id']);
-        if ($expert_user) {
-            $deleted = wp_delete_user($row['expert_wp_id'], $row['personnel_wp_id']);
-            if ($deleted) {
-                $stats['expert_deleted'] = true;
-                $log[] = "✓ Deleted Expert User WP#{$row['expert_wp_id']} ({$expert_user->display_name})";
-            } else {
-                $log[] = "✗ Failed to delete Expert User";
-            }
-        }
-    }
-    
-    // Update row status
-    $wpdb->update($table_name, [
-        'status' => 'merged',
-        'processed_at' => current_time('mysql'),
-    ], ['id' => $row_id]);
-    
-    wp_send_json_success([
-        'status' => 'merged',
-        'log' => $log,
-        'stats' => $stats,
-    ]);
-}
-
-add_action('wp_ajax_user_merge_clear_session', 'ajax_user_merge_clear_session');
-function ajax_user_merge_clear_session() {
-    check_ajax_referer('user_merge_nonce', 'nonce');
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied');
-    }
-
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    $session_id = get_option('user_merge_session_id');
-    
-    if ($session_id) {
-        $wpdb->delete($table_name, ['session_id' => $session_id]);
-    }
-    
-    delete_option('user_merge_session_id');
-    
-    wp_send_json_success(['message' => 'Session cleared']);
-}
-
-add_action('wp_ajax_user_merge_check_session', 'ajax_user_merge_check_session');
-function ajax_user_merge_check_session() {
-    check_ajax_referer('user_merge_nonce', 'nonce');
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Permission denied');
-    }
-
-    global $wpdb;
-    $table_name = user_merge_get_table_name();
-    
-    // Ensure table exists
-    user_merge_create_table();
-    
-    $session_id = get_option('user_merge_session_id');
-    
-    if (!$session_id) {
-        wp_send_json_success(['has_session' => false]);
-        return;
-    }
-    
-    $counts = $wpdb->get_row($wpdb->prepare(
-        "SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN status = 'merged' THEN 1 ELSE 0 END) as merged,
-            SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected
-         FROM $table_name WHERE session_id = %s",
-        $session_id
-    ), ARRAY_A);
-    
-    wp_send_json_success([
-        'has_session' => intval($counts['total']) > 0,
-        'counts' => $counts,
-        'session_id' => $session_id,
-    ]);
-}
-
-/**
- * ---------------------------------------------------------------------------------
- * 6. Admin Page
- * ---------------------------------------------------------------------------------
- */
-
-add_action('admin_menu', function() {
-    add_users_page(
-        'User Merge Utility',
-        'User Merge',
-        'manage_options',
-        'user-merge-utility',
-        'render_user_merge_page'
-    );
-});
-
-function render_user_merge_page() {
-    $nonce = wp_create_nonce('user_merge_nonce');
-    ?>
-    <div class="wrap">
-        <h1>🔀 User Merge Utility</h1>
-        <p>Review and merge duplicate user pairs one at a time. Progress is saved automatically.</p>
-
-        <!-- Upload Section -->
-        <div id="upload-section" style="background:#fff; padding:20px; border:1px solid #ddd; margin-bottom:20px; max-width:600px;">
-            <h2 style="margin-top:0;">📁 Upload CSV</h2>
-            <p>Upload a CSV file from the Duplicate Detection tool.</p>
-            <input type="file" id="csv-file" accept=".csv" style="margin-bottom:10px;"><br>
-            <button id="upload-csv" class="button button-primary">Upload & Parse CSV</button>
-            <div id="upload-progress" style="display:none; margin-top:15px;">
-                <div style="background:#f0f0f0; border-radius:4px; height:20px; overflow:hidden;">
-                    <div id="upload-progress-bar" style="background:#2271b1; height:100%; width:0%; transition:width 0.3s;"></div>
-                </div>
-                <p id="upload-progress-text" style="margin:5px 0 0; font-size:12px; color:#666;">Initializing...</p>
-            </div>
-            <div id="upload-status" style="margin-top:10px;"></div>
-        </div>
-
-        <!-- Existing Session Notice -->
-        <div id="session-notice" style="display:none; background:#f0f6fc; border:1px solid #2271b1; padding:15px; margin-bottom:20px; max-width:600px;">
-            <strong>📋 Existing Session Found</strong>
-            <p id="session-info"></p>
-            <button id="resume-session" class="button button-primary">Resume Working</button>
-            <button id="clear-session" class="button">Start Fresh (Clear All)</button>
-        </div>
-
-        <!-- Queue Section -->
-        <div id="queue-section" style="display:none;">
-            <!-- Stats Bar -->
-            <div style="background:#fff; padding:15px 20px; border:1px solid #ddd; margin-bottom:20px; display:flex; gap:30px; align-items:center; flex-wrap:wrap;">
-                <div><strong>Total:</strong> <span id="count-total">0</span></div>
-                <div style="color:#2271b1;"><strong>Pending:</strong> <span id="count-pending">0</span></div>
-                <div style="color:#00a32a;"><strong>Merged:</strong> <span id="count-merged">0</span></div>
-                <div style="color:#d63638;"><strong>Rejected:</strong> <span id="count-rejected">0</span></div>
-                <div style="margin-left:auto;">
-                    <label><input type="checkbox" id="delete-experts-global"> Delete experts after merge</label>
-                </div>
-            </div>
-            
-            <!-- Filter Tabs -->
-            <div style="margin-bottom:15px;">
-                <button class="button filter-btn active" data-filter="pending">Pending</button>
-                <button class="button filter-btn" data-filter="merged">Merged</button>
-                <button class="button filter-btn" data-filter="rejected">Rejected</button>
-                <button class="button filter-btn" data-filter="all">All</button>
-            </div>
-
-            <!-- Queue Table -->
-            <div id="queue-table-container" style="background:#fff; border:1px solid #ddd;"></div>
-            
-            <!-- Pagination -->
-            <div id="pagination-container" style="margin-top:15px; display:flex; gap:10px; align-items:center;"></div>
-             
-            <!-- Action Log -->
-            <div id="action-log" style="display:none; margin-top:20px; background:#1e1e1e; color:#d4d4d4; padding:15px; max-height:200px; overflow-y:auto; font-family:monospace; font-size:12px;"></div>
-        </div>
-    </div>
-
-    <style>
-        .queue-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .queue-table th {
-            background: #f0f0f1;
-            padding: 12px 10px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #c3c4c7;
-            position: sticky;
-            top: 0;
-        }
-        .queue-table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #dcdcde;
-            vertical-align: top;
-        }
-        .queue-table tr:hover {
-            background: #f6f7f7;
-        }
-        .queue-table tr.status-merged {
-            background: #f0f9f0;
-        }
-        .queue-table tr.status-rejected {
-            background: #fafafa;
-            opacity: 0.7;
-        }
-        .confidence-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        .confidence-high { background: #d63638; color: #fff; }
-        .confidence-medium { background: #2271b1; color: #fff; }
-        .confidence-low { background: #50575e; color: #fff; }
-        
-        .user-card {
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 5px;
-        }
-        .user-card .name {
-            font-weight: 600;
-            color: #1d2327;
-        }
-        .user-card .meta {
-            font-size: 11px;
-            color: #646970;
-            margin-top: 4px;
-        }
-        .user-card .meta a {
-            color: #2271b1;
-        }
-        
-        .match-reasons {
-            font-size: 11px;
-            color: #646970;
-            max-width: 250px;
-        }
-        .match-reasons li {
-            margin-bottom: 3px;
-        }
-        
-        .affected-posts {
-            font-size: 11px;
-        }
-        .affected-posts .post-item {
-            background: #f0f0f1;
-            padding: 3px 6px;
-            margin: 2px 0;
-            border-radius: 3px;
-        }
-        .affected-posts .post-type {
-            background: #dcdcde;
-            padding: 1px 4px;
-            border-radius: 2px;
-            font-size: 9px;
-            text-transform: uppercase;
-            margin-right: 4px;
-        }
-        
-        .action-buttons {
-            white-space: nowrap;
-        }
-        .action-buttons .button {
-            margin: 2px;
-        }
-        .btn-merge { background: #00a32a !important; border-color: #00a32a !important; color: #fff !important; }
-        .btn-merge:hover { background: #008a20 !important; }
-        .btn-reject { background: #d63638 !important; border-color: #d63638 !important; color: #fff !important; }
-        .btn-reject:hover { background: #b32d2e !important; }
-        
-        .filter-btn.active {
-            background: #2271b1;
-            border-color: #2271b1;
-            color: #fff;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        .status-merged { background: #00a32a; color: #fff; }
-        .status-rejected { background: #50575e; color: #fff; }
-        .status-pending { background: #2271b1; color: #fff; }
-        
-        .processing-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255,255,255,0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-        }
-
-        .pagination-btn {
-            min-width: 36px;
-        }
-        .pagination-btn.active {
-            background: #2271b1;
-            border-color: #2271b1;
-            color: #fff;
-        }
-        .pagination-info {
-            color: #666;
-            font-size: 13px;
-        }
-    </style>
-
-    <script>
-    jQuery(document).ready(function($) {
-        const nonce = '<?php echo $nonce; ?>';
-        let currentFilter = 'pending';
-        let currentPage = 1;
-
-        // Check for existing session on load
-        checkSession();
-
-        function checkSession() {
-            $.post(ajaxurl, {
-                action: 'user_merge_check_session',
-                nonce: nonce
-            }, function(response) {
-                if (response.success && response.data.has_session) {
-                    const counts = response.data.counts;
-                    $('#session-info').html(`
-                        <strong>${counts.total}</strong> pairs loaded: 
-                        ${counts.pending} pending, ${counts.merged} merged, ${counts.rejected} rejected
-                    `);
-                    $('#session-notice').show();
-                    $('#upload-section').hide();
-                }
-            });
-        }
-
-        function log(message, type = 'info') {
-            const $log = $('#action-log');
-            const colors = {info: '#9cdcfe', success: '#4ec9b0', warning: '#dcdcaa', error: '#f14c4c'};
-            $log.show().append(`<div style="color:${colors[type]}">${message}</div>`);
-            $log.scrollTop($log[0].scrollHeight);
-        }
-
-        function loadQueue(page) {
-            page = page || 1;
-            currentPage = page;
-            
-            $('#queue-table-container').html('<p style="padding:20px;color:#666;">Loading...</p>');
-            
-            $.post(ajaxurl, {
-                action: 'user_merge_get_queue',
-                nonce: nonce,
-                filter: currentFilter,
-                page: page
-            }, function(response) {
-                if (!response.success) {
-                    $('#queue-table-container').html('<p style="padding:20px;color:red;">Error: ' + response.data + '</p>');
-                    return;
-                }
-                
-                const data = response.data;
-                updateCounts(data.counts);
-                renderTable(data.rows);
-                renderPagination(data.pagination);
-            }).fail(function() {
-                $('#queue-table-container').html('<p style="padding:20px;color:red;">Failed to load queue. Please refresh the page.</p>');
-            });
-        }
-
-        function updateCounts(counts) {
-            $('#count-total').text(counts.total || 0);
-            $('#count-pending').text(counts.pending || 0);
-            $('#count-merged').text(counts.merged || 0);
-            $('#count-rejected').text(counts.rejected || 0);
-        }
-
-        function renderPagination(pagination) {
-            if (!pagination || pagination.total_pages <= 1) {
-                $('#pagination-container').empty();
-                return;
-            }
-            
-            let html = '<span class="pagination-info">Page ' + pagination.page + ' of ' + pagination.total_pages + ' (' + pagination.total + ' items)</span>';
-            html += '<div style="display:flex; gap:5px;">';
-            
-            if (pagination.page > 1) {
-                html += '<button class="button pagination-btn" data-page="' + (pagination.page - 1) + '">&laquo; Prev</button>';
-            }
-            
-            const startPage = Math.max(1, pagination.page - 3);
-            const endPage = Math.min(pagination.total_pages, pagination.page + 3);
-            
-            if (startPage > 1) {
-                html += '<button class="button pagination-btn" data-page="1">1</button>';
-                if (startPage > 2) html += '<span style="padding:0 5px;">...</span>';
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                const activeClass = i === pagination.page ? ' active' : '';
-                html += '<button class="button pagination-btn' + activeClass + '" data-page="' + i + '">' + i + '</button>';
-            }
-            
-            if (endPage < pagination.total_pages) {
-                if (endPage < pagination.total_pages - 1) html += '<span style="padding:0 5px;">...</span>';
-                html += '<button class="button pagination-btn" data-page="' + pagination.total_pages + '">' + pagination.total_pages + '</button>';
-            }
-            
-            if (pagination.page < pagination.total_pages) {
-                html += '<button class="button pagination-btn" data-page="' + (pagination.page + 1) + '">Next &raquo;</button>';
-            }
-            
-            html += '</div>';
-            $('#pagination-container').html(html);
-        }
-
-        function renderTable(rows) {
-            if (!rows.length) {
-                $('#queue-table-container').html('<p style="padding:20px;color:#666;">No items found.</p>');
-                return;
-            }
-
-            let html = `
-                <table class="queue-table">
-                    <thead>
-                        <tr>
-                            <th style="width:60px">Conf.</th>
-                            <th style="width:200px">Personnel (Target)</th>
-                            <th style="width:200px">Expert (Source)</th>
-                            <th>Match Reasons</th>
-                            <th style="width:180px">Affected Posts</th>
-                            <th style="width:130px">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            rows.forEach(row => {
-                const confClass = row.confidence >= 70 ? 'high' : (row.confidence >= 50 ? 'medium' : 'low');
-                const statusClass = `status-${row.status}`;
-                
-                // Parse match reasons
-                let reasonsHtml = '<ul class="match-reasons" style="margin:0;padding-left:15px;">';
-                if (row.match_reasons) {
-                    row.match_reasons.split(';').forEach(r => {
-                        if (r.trim()) reasonsHtml += `<li>${escapeHtml(r.trim())}</li>`;
+                bindToggleDetails: function() {
+                    $(document).on("click", ".dum-toggle-details", function(e) {
+                        e.preventDefault();
+                        var $btn = $(this);
+                        var $pair = $btn.closest(".dum-pair");
+                        var $details = $pair.find(".dum-pair-details");
+                        $btn.toggleClass("active");
+                        $details.slideToggle(200);
                     });
-                }
-                reasonsHtml += '</ul>';
+                },
                 
-                // Affected posts
-                let postsHtml = '';
-                if (row.status === 'pending' && row.affected_posts && row.affected_posts.length) {
-                    postsHtml = '<div class="affected-posts">';
-                    row.affected_posts.slice(0, 5).forEach(p => {
-                        postsHtml += `<div class="post-item"><span class="post-type">${p.type}</span><a href="${p.edit_url}" target="_blank">${escapeHtml(p.title)}</a></div>`;
+                bindCompareUsers: function() {
+                    $(document).on("click", ".dum-compare-users", function(e) {
+                        e.preventDefault();
+                        var $btn = $(this);
+                        var personnelId = $btn.data("personnel-id");
+                        var expertId = $btn.data("expert-id");
+                        
+                        DUM.showModal("Loading comparison...", "<div class=\"dum-loading\"><span class=\"spinner is-active\"></span> " + dumAjax.strings.loading + "</div>");
+                        
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: {
+                                action: "dum_get_user_comparison",
+                                nonce: dumAjax.nonce,
+                                personnel_id: personnelId,
+                                expert_id: expertId
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    DUM.showModal("Detailed User Comparison", response.data.html);
+                                } else {
+                                    DUM.closeModal();
+                                    DUM.showNotice(response.data.message || dumAjax.strings.error, "error");
+                                }
+                            },
+                            error: function() {
+                                DUM.closeModal();
+                                DUM.showNotice(dumAjax.strings.error, "error");
+                            }
+                        });
                     });
-                    if (row.affected_posts.length > 5) {
-                        postsHtml += `<div style="color:#666;">+${row.affected_posts.length - 5} more</div>`;
-                    }
-                    postsHtml += '</div>';
-                } else if (row.affected_posts_count > 0) {
-                    postsHtml = `<span style="color:#666;">${row.affected_posts_count} post(s)</span>`;
-                } else {
-                    postsHtml = '<span style="color:#999;">None</span>';
-                }
+                },
                 
-                // Actions
-                let actionsHtml = '';
-                if (row.status === 'pending') {
-                    actionsHtml = `
-                        <div class="action-buttons">
-                            <button class="button btn-merge" data-id="${row.id}" data-action="merge">✓ Merge</button>
-                            <button class="button btn-reject" data-id="${row.id}" data-action="reject">✗ Reject</button>
-                        </div>
-                    `;
-                } else {
-                    actionsHtml = `<span class="status-badge status-${row.status}">${row.status}</span>`;
-                }
-
-                html += `
-                    <tr class="${statusClass}" data-row-id="${row.id}">
-                        <td><span class="confidence-badge confidence-${confClass}">${row.confidence}%</span></td>
-                        <td>
-                            <div class="user-card">
-                                <div class="name">${escapeHtml(row.personnel_name)}</div>
-                                <div class="meta">
-                                    WP#${row.personnel_wp_id}<br>
-                                    ID: ${row.personnel_id}<br>
-                                    ${row.personnel_email}<br>
-                                    ${row.personnel_phone ? row.personnel_phone + '<br>' : ''}
-                                    <a href="${row.personnel_edit_url}" target="_blank">Edit</a>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="user-card">
-                                <div class="name">${escapeHtml(row.expert_name)}</div>
-                                <div class="meta">
-                                    WP#${row.expert_wp_id}<br>
-                                    ${row.expert_source_id ? 'Src: ' + row.expert_source_id + '<br>' : ''}
-                                    ${row.expert_writer_id ? 'Writer: ' + row.expert_writer_id + '<br>' : ''}
-                                    ${row.expert_email}<br>
-                                    ${row.expert_phone ? row.expert_phone + '<br>' : ''}
-                                    <a href="${row.expert_edit_url}" target="_blank">Edit</a>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${reasonsHtml}</td>
-                        <td>${postsHtml}</td>
-                        <td>${actionsHtml}</td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table>';
-            $('#queue-table-container').html(html);
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Upload CSV
-        $('#upload-csv').on('click', function() {
-            const file = $('#csv-file')[0].files[0];
-            if (!file) {
-                alert('Please select a CSV file.');
-                return;
-            }
-
-            const $btn = $(this);
-            $btn.prop('disabled', true).text('Uploading...');
-            $('#upload-progress').show();
-            $('#upload-progress-bar').css('width', '0%');
-            $('#upload-progress-text').text('Reading file...');
-            $('#upload-status').empty();
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                $('#upload-progress-text').text('Uploading CSV...');
+                showModal: function(title, content) {
+                    this.closeModal();
+                    var modal = $("<div class=\"dum-modal-overlay\"><div class=\"dum-modal\"><div class=\"dum-modal-header\"><h2>" + title + "</h2><button type=\"button\" class=\"dum-modal-close\">&times;</button></div><div class=\"dum-modal-body\">" + content + "</div><div class=\"dum-modal-footer\"><button type=\"button\" class=\"button dum-modal-close-btn\">Close</button></div></div></div>");
+                    $("body").append(modal);
+                    $("body").css("overflow", "hidden");
+                },
                 
-                $.post(ajaxurl, {
-                    action: 'user_merge_upload_csv',
-                    nonce: nonce,
-                    csv_content: e.target.result
-                }, function(response) {
-                    if (response.success) {
-                        $('#upload-progress-text').text(`Processing 0 / ${response.data.total_lines} rows...`);
-                        processCsvBatch(response.data.total_lines);
+                closeModal: function() {
+                    $(".dum-modal-overlay").remove();
+                    $("body").css("overflow", "");
+                },
+                
+                bindModalClose: function() {
+                    $(document).on("click", ".dum-modal-close, .dum-modal-close-btn", function(e) {
+                        e.preventDefault();
+                        DUM.closeModal();
+                    });
+                    $(document).on("click", ".dum-modal-overlay", function(e) {
+                        if ($(e.target).hasClass("dum-modal-overlay")) {
+                            DUM.closeModal();
+                        }
+                    });
+                    $(document).on("keydown", function(e) {
+                        if (e.key === "Escape") {
+                            DUM.closeModal();
+                        }
+                    });
+                },
+                
+                bindDismissPair: function() {
+                    $(document).on("click", ".dum-dismiss-pair", function(e) {
+                        e.preventDefault();
+                        if (!confirm(dumAjax.strings.confirmDismiss)) return;
+                        var $btn = $(this);
+                        var $pair = $btn.closest(".dum-pair");
+                        var index = $btn.data("index");
+                        $pair.addClass("dum-removing");
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: { action: "dum_dismiss_pair", nonce: dumAjax.nonce, index: index },
+                            success: function(response) {
+                                if (response.success) {
+                                    $pair.addClass("dum-removed");
+                                    setTimeout(function() {
+                                        $pair.remove();
+                                        DUM.updateBadgeCount("review", response.data.remaining);
+                                        DUM.showNotice(dumAjax.strings.dismissSuccess, "success");
+                                    }, 300);
+                                } else {
+                                    $pair.removeClass("dum-removing");
+                                    DUM.showNotice(response.data.message || dumAjax.strings.error, "error");
+                                }
+                            },
+                            error: function() {
+                                $pair.removeClass("dum-removing");
+                                DUM.showNotice(dumAjax.strings.error, "error");
+                            }
+                        });
+                    });
+                },
+                
+                bindRestorePair: function() {
+                    $(document).on("click", ".dum-restore-pair", function(e) {
+                        e.preventDefault();
+                        var $btn = $(this);
+                        var $row = $btn.closest("tr");
+                        var index = $btn.data("index");
+                        $btn.prop("disabled", true).text("Restoring...");
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: { action: "dum_restore_pair", nonce: dumAjax.nonce, index: index },
+                            success: function(response) {
+                                if (response.success) {
+                                    $row.fadeOut(300, function() { $(this).remove(); });
+                                    DUM.showNotice(dumAjax.strings.restoreSuccess, "success");
+                                } else {
+                                    $btn.prop("disabled", false).html("<span class=\"dashicons dashicons-undo\"></span> Restore");
+                                    DUM.showNotice(response.data.message || dumAjax.strings.error, "error");
+                                }
+                            },
+                            error: function() {
+                                $btn.prop("disabled", false).html("<span class=\"dashicons dashicons-undo\"></span> Restore");
+                                DUM.showNotice(dumAjax.strings.error, "error");
+                            }
+                        });
+                    });
+                },
+                
+                bindLoadPosts: function() {
+                    $(document).on("click", ".dum-load-posts", function(e) {
+                        e.preventDefault();
+                        var $btn = $(this);
+                        var userId = $btn.data("user-id");
+                        var targetId = $btn.data("target");
+                        var $container = $("#" + targetId);
+                        $container.html("<div class=\"dum-loading\"><span class=\"spinner is-active\"></span> " + dumAjax.strings.loading + "</div>");
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: { action: "dum_get_user_posts", nonce: dumAjax.nonce, user_id: userId },
+                            success: function(response) {
+                                if (response.success) {
+                                    $container.html(response.data.html);
+                                } else {
+                                    $container.html("<p class=\"dum-error\">" + (response.data.message || dumAjax.strings.error) + "</p>");
+                                }
+                            },
+                            error: function() {
+                                $container.html("<p class=\"dum-error\">" + dumAjax.strings.error + "</p>");
+                            }
+                        });
+                    });
+                },
+                
+                bindMergePair: function() {
+                    $(document).on("click", ".dum-merge-pair", function(e) {
+                        e.preventDefault();
+                        if (!confirm(dumAjax.strings.confirmMerge)) return;
+                        var $btn = $(this);
+                        var $pair = $btn.closest(".dum-pair");
+                        var personnelId = $btn.data("personnel-id");
+                        var expertId = $btn.data("expert-id");
+                        var index = $btn.data("index");
+                        $btn.prop("disabled", true).html("<span class=\"spinner is-active\" style=\"float:none;margin:0 5px 0 0;\"></span> Merging...");
+                        $pair.addClass("dum-removing");
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: { action: "dum_merge_users", nonce: dumAjax.nonce, personnel_id: personnelId, expert_id: expertId, index: index },
+                            success: function(response) {
+                                if (response.success) {
+                                    $pair.addClass("dum-removed");
+                                    setTimeout(function() {
+                                        $pair.remove();
+                                        DUM.updateBadgeCount("review", response.data.remaining);
+                                        DUM.showNotice(response.data.message || dumAjax.strings.mergeSuccess, "success");
+                                    }, 300);
+                                } else {
+                                    $pair.removeClass("dum-removing");
+                                    $btn.prop("disabled", false).html("<span class=\"dashicons dashicons-migrate\"></span> Merge Users");
+                                    DUM.showNotice(response.data.message || dumAjax.strings.error, "error");
+                                }
+                            },
+                            error: function() {
+                                $pair.removeClass("dum-removing");
+                                $btn.prop("disabled", false).html("<span class=\"dashicons dashicons-migrate\"></span> Merge Users");
+                                DUM.showNotice(dumAjax.strings.error, "error");
+                            }
+                        });
+                    });
+                },
+                
+                bindUploadForm: function() {
+                    $("#dum-upload-form").on("submit", function(e) {
+                        e.preventDefault();
+                        var $form = $(this);
+                        var $progress = $("#dum-upload-progress");
+                        var $result = $("#dum-upload-result");
+                        var formData = new FormData(this);
+                        formData.append("action", "dum_upload_csv");
+                        formData.append("nonce", dumAjax.nonce);
+                        $form.find("button").prop("disabled", true);
+                        $progress.show();
+                        $result.empty();
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function(response) {
+                                $form.find("button").prop("disabled", false);
+                                $progress.hide();
+                                if (response.success) {
+                                    $result.html("<div class=\"dum-notice dum-notice-success\"><p>" + response.data.message + "</p></div>");
+                                    setTimeout(function() { window.location.href = "?page=duplicate-user-manager&tab=review"; }, 1500);
+                                } else {
+                                    $result.html("<div class=\"dum-notice dum-notice-warning\"><p>" + (response.data.message || dumAjax.strings.error) + "</p></div>");
+                                }
+                            },
+                            error: function() {
+                                $form.find("button").prop("disabled", false);
+                                $progress.hide();
+                                $result.html("<div class=\"dum-notice dum-notice-warning\"><p>" + dumAjax.strings.error + "</p></div>");
+                            }
+                        });
+                    });
+                },
+                
+                bindClearData: function() {
+                    $("#dum-clear-data").on("click", function(e) {
+                        e.preventDefault();
+                        if (!confirm(dumAjax.strings.confirmClear)) return;
+                        var $btn = $(this);
+                        $btn.prop("disabled", true).text("Clearing...");
+                        $.ajax({
+                            url: dumAjax.ajaxurl,
+                            type: "POST",
+                            data: { action: "dum_clear_data", nonce: dumAjax.nonce },
+                            success: function(response) {
+                                if (response.success) {
+                                    window.location.reload();
+                                } else {
+                                    $btn.prop("disabled", false).html("<span class=\"dashicons dashicons-trash\"></span> Clear All Data");
+                                    DUM.showNotice(response.data.message || dumAjax.strings.error, "error");
+                                }
+                            },
+                            error: function() {
+                                $btn.prop("disabled", false).html("<span class=\"dashicons dashicons-trash\"></span> Clear All Data");
+                                DUM.showNotice(dumAjax.strings.error, "error");
+                            }
+                        });
+                    });
+                },
+                
+                bindConfidenceFilter: function() {
+                    $("#dum-confidence-filter").on("change", function() {
+                        var minConfidence = parseInt($(this).val()) || 0;
+                        $(".dum-pair").each(function() {
+                            var $pair = $(this);
+                            var confidence = parseInt($pair.data("confidence")) || 0;
+                            if (minConfidence === 0 || confidence >= minConfidence) {
+                                $pair.show();
+                            } else {
+                                $pair.hide();
+                            }
+                        });
+                        var visible = $(".dum-pair:visible").length;
+                        var total = $(".dum-pair").length;
+                        $(".dum-filter-info").text("Showing " + visible + " of " + total + " pairs" + (minConfidence > 0 ? " (filtered)" : ""));
+                    });
+                },
+                
+                updateBadgeCount: function(tab, count) {
+                    var $badge = $(".nav-tab[href*=\"tab=" + tab + "\"] .dum-badge");
+                    if (count > 0) {
+                        if ($badge.length) $badge.text(count);
                     } else {
-                        $btn.prop('disabled', false).text('Upload & Parse CSV');
-                        $('#upload-progress').hide();
-                        $('#upload-status').html(`<span style="color:red;">Error: ${response.data}</span>`);
+                        $badge.remove();
                     }
-                }).fail(function() {
-                    $btn.prop('disabled', false).text('Upload & Parse CSV');
-                    $('#upload-progress').hide();
-                    $('#upload-status').html('<span style="color:red;">Upload failed. Please try again.</span>');
-                });
+                },
+                
+                showNotice: function(message, type) {
+                    var $notice = $("<div class=\"dum-notice dum-notice-" + type + " dum-temp-notice\"><p>" + message + "</p></div>");
+                    $(".dum-content").prepend($notice);
+                    setTimeout(function() { $notice.fadeOut(300, function() { $(this).remove(); }); }, 4000);
+                }
             };
-            reader.readAsText(file);
-        });
+            
+            window.DUM = DUM;
+        })(jQuery);
+        ';
+    }
 
-        function processCsvBatch(totalLines) {
-            $.post(ajaxurl, {
-                action: 'user_merge_process_csv_batch',
-                nonce: nonce
-            }, function(response) {
-                if (!response.success) {
-                    $('#upload-csv').prop('disabled', false).text('Upload & Parse CSV');
-                    $('#upload-progress').hide();
-                    $('#upload-status').html(`<span style="color:red;">Error: ${response.data}</span>`);
-                    return;
+    public function render_admin_page() {
+        $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'review';
+        $duplicates = get_option(self::OPTION_DUPLICATES, []);
+        $dismissed = get_option(self::OPTION_DISMISSED, []);
+        $merged = get_option(self::OPTION_MERGED, []);
+        
+        ?>
+        <div class="wrap dum-wrap">
+            <h1>Duplicate User Manager</h1>
+            
+            <nav class="nav-tab-wrapper">
+                <a href="?page=duplicate-user-manager&tab=review" class="nav-tab <?php echo $current_tab === 'review' ? 'nav-tab-active' : ''; ?>">
+                    Review Duplicates
+                    <?php if (!empty($duplicates)): ?><span class="dum-badge"><?php echo count($duplicates); ?></span><?php endif; ?>
+                </a>
+                <a href="?page=duplicate-user-manager&tab=dismissed" class="nav-tab <?php echo $current_tab === 'dismissed' ? 'nav-tab-active' : ''; ?>">
+                    Dismissed
+                    <?php if (!empty($dismissed)): ?><span class="dum-badge dum-badge-secondary"><?php echo count($dismissed); ?></span><?php endif; ?>
+                </a>
+                <a href="?page=duplicate-user-manager&tab=merged" class="nav-tab <?php echo $current_tab === 'merged' ? 'nav-tab-active' : ''; ?>">
+                    Merged
+                    <?php if (!empty($merged)): ?><span class="dum-badge dum-badge-success"><?php echo count($merged); ?></span><?php endif; ?>
+                </a>
+                <a href="?page=duplicate-user-manager&tab=upload" class="nav-tab <?php echo $current_tab === 'upload' ? 'nav-tab-active' : ''; ?>">
+                    Upload CSV
+                </a>
+            </nav>
+
+            <div class="dum-content">
+                <?php
+                switch ($current_tab) {
+                    case 'dismissed':
+                        $this->render_dismissed_tab($dismissed);
+                        break;
+                    case 'merged':
+                        $this->render_merged_tab($merged);
+                        break;
+                    case 'upload':
+                        $this->render_upload_tab();
+                        break;
+                    default:
+                        $this->render_review_tab($duplicates);
+                        break;
                 }
-                
-                const data = response.data;
-                $('#upload-progress-bar').css('width', data.progress + '%');
-                $('#upload-progress-text').text(`Processing ${data.processed} / ${data.total} rows... (${data.imported} imported)`);
-                
-                if (data.is_complete) {
-                    $('#upload-csv').prop('disabled', false).text('Upload & Parse CSV');
-                    
-                    let msg = `✓ Imported ${data.imported} pairs.`;
-                    if (data.errors_count > 0) {
-                        msg += ` ${data.errors_count} rows skipped.`;
-                    }
-                    $('#upload-status').html(`<span style="color:green;">${msg}</span>`);
-                    
-                    setTimeout(function() {
-                        $('#upload-section').hide();
-                        $('#session-notice').hide();
-                        $('#queue-section').show();
-                        $('#upload-progress').hide();
-                        loadQueue();
-                    }, 500);
-                } else {
-                    processCsvBatch(totalLines);
-                }
-            }).fail(function() {
-                $('#upload-csv').prop('disabled', false).text('Upload & Parse CSV');
-                $('#upload-progress').hide();
-                $('#upload-status').html('<span style="color:red;">Processing failed. Please try again.</span>');
-            });
+                ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    private function render_review_tab($duplicates) {
+        if (empty($duplicates)) {
+            echo '<div class="dum-notice dum-notice-info"><p>No duplicate pairs to review. <a href="?page=duplicate-user-manager&tab=upload">Upload a CSV file</a> to get started.</p></div>';
+            return;
         }
 
-        // Resume session
-        $('#resume-session').on('click', function() {
-            $('#session-notice').hide();
-            $('#upload-section').hide();
-            $('#queue-section').show();
-            loadQueue();
-        });
+        $total_items = count($duplicates);
+        $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $total_pages = ceil($total_items / self::ITEMS_PER_PAGE);
+        $offset = ($current_page - 1) * self::ITEMS_PER_PAGE;
+        $paged_duplicates = array_slice($duplicates, $offset, self::ITEMS_PER_PAGE, true);
+        ?>
+        <div class="dum-filters">
+            <label>Filter by confidence:
+                <select id="dum-confidence-filter">
+                    <option value="">All</option>
+                    <option value="100">100%</option>
+                    <option value="90">90%+</option>
+                    <option value="70">70%+</option>
+                    <option value="50">50%+</option>
+                </select>
+            </label>
+            <span class="dum-filter-info">Showing <?php echo $offset + 1; ?>-<?php echo min($offset + self::ITEMS_PER_PAGE, $total_items); ?> of <?php echo $total_items; ?> pairs</span>
+        </div>
 
-        // Clear session
-        $('#clear-session').on('click', function() {
-            if (!confirm('This will delete all progress. Are you sure?')) return;
+        <div class="dum-duplicate-list">
+            <?php foreach ($paged_duplicates as $index => $pair): ?>
+                <?php $this->render_duplicate_pair($pair, $index); ?>
+            <?php endforeach; ?>
+        </div>
+
+        <?php $this->render_pagination($current_page, $total_pages, 'review');
+    }
+
+    private function render_duplicate_pair($pair, $index) {
+        $confidence = isset($pair['confidence']) ? $pair['confidence'] : 'N/A';
+        $confidence_class = $this->get_confidence_class($confidence);
+        $personnel_user = get_user_by('ID', $pair['personnel_wp_id']);
+        $expert_user = get_user_by('ID', $pair['expert_wp_id']);
+        ?>
+        <div class="dum-pair" data-index="<?php echo esc_attr($index); ?>" data-confidence="<?php echo esc_attr(intval($confidence)); ?>">
+            <div class="dum-pair-header">
+                <div class="dum-confidence <?php echo esc_attr($confidence_class); ?>"><?php echo esc_html($confidence); ?> confidence</div>
+                <div class="dum-pair-actions">
+                    <button type="button" class="button dum-compare-users" 
+                            data-personnel-id="<?php echo esc_attr($pair['personnel_wp_id']); ?>"
+                            data-expert-id="<?php echo esc_attr($pair['expert_wp_id']); ?>">
+                        <span class="dashicons dashicons-editor-table"></span> Compare Fields
+                    </button>
+                    <button type="button" class="button dum-toggle-details">
+                        <span class="dashicons dashicons-arrow-down-alt2"></span> Posts
+                    </button>
+                    <button type="button" class="button dum-dismiss-pair" data-index="<?php echo esc_attr($index); ?>">
+                        <span class="dashicons dashicons-dismiss"></span> Not a Match
+                    </button>
+                    <button type="button" class="button button-primary dum-merge-pair" 
+                            data-personnel-id="<?php echo esc_attr($pair['personnel_wp_id']); ?>"
+                            data-expert-id="<?php echo esc_attr($pair['expert_wp_id']); ?>"
+                            data-index="<?php echo esc_attr($index); ?>">
+                        <span class="dashicons dashicons-migrate"></span> Merge Users
+                    </button>
+                </div>
+            </div>
             
-            $.post(ajaxurl, {
-                action: 'user_merge_clear_session',
-                nonce: nonce
-            }, function(response) {
-                if (response.success) {
-                    $('#session-notice').hide();
-                    $('#upload-section').show();
-                    $('#queue-section').hide();
-                    $('#action-log').empty().hide();
+            <div class="dum-pair-summary">
+                <div class="dum-user-summary">
+                    <h4>
+                        <span class="dum-label dum-label-personnel">Personnel</span>
+                        <?php echo esc_html($pair['personnel_name']); ?>
+                        <?php if ($personnel_user): ?>
+                            <a href="<?php echo esc_url(get_edit_user_link($personnel_user->ID)); ?>" target="_blank" class="dum-edit-link"><span class="dashicons dashicons-external"></span></a>
+                        <?php else: ?>
+                            <span class="dum-warning">User not found!</span>
+                        <?php endif; ?>
+                    </h4>
+                    <p><?php echo esc_html($pair['personnel_email'] ?? 'No email'); ?> &bull; ID: <?php echo esc_html($pair['personnel_wp_id']); ?></p>
+                </div>
+                <div class="dum-user-summary">
+                    <h4>
+                        <span class="dum-label dum-label-expert">Expert</span>
+                        <?php echo esc_html($pair['expert_name']); ?>
+                        <?php if ($expert_user): ?>
+                            <a href="<?php echo esc_url(get_edit_user_link($expert_user->ID)); ?>" target="_blank" class="dum-edit-link"><span class="dashicons dashicons-external"></span></a>
+                        <?php else: ?>
+                            <span class="dum-warning">User not found!</span>
+                        <?php endif; ?>
+                    </h4>
+                    <p><?php echo esc_html($pair['expert_email'] ?? 'No email'); ?> &bull; ID: <?php echo esc_html($pair['expert_wp_id']); ?></p>
+                </div>
+            </div>
+
+            <div class="dum-pair-details" style="display: none;">
+                <div class="dum-match-reasons">
+                    <h4>Match Reasons</h4>
+                    <p><?php echo esc_html($pair['match_reasons'] ?? 'N/A'); ?></p>
+                </div>
+                
+                <div class="dum-posts-comparison">
+                    <div class="dum-posts-column">
+                        <h4>Personnel User Posts</h4>
+                        <div class="dum-posts-list" id="dum-posts-personnel-<?php echo esc_attr($pair['personnel_wp_id']); ?>">
+                            <button type="button" class="button dum-load-posts" data-user-id="<?php echo esc_attr($pair['personnel_wp_id']); ?>" data-target="dum-posts-personnel-<?php echo esc_attr($pair['personnel_wp_id']); ?>">Load Posts</button>
+                        </div>
+                    </div>
+                    <div class="dum-posts-column">
+                        <h4>Expert User Posts</h4>
+                        <div class="dum-posts-list" id="dum-posts-expert-<?php echo esc_attr($pair['expert_wp_id']); ?>">
+                            <button type="button" class="button dum-load-posts" data-user-id="<?php echo esc_attr($pair['expert_wp_id']); ?>" data-target="dum-posts-expert-<?php echo esc_attr($pair['expert_wp_id']); ?>">Load Posts</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    public function ajax_get_user_comparison() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $personnel_id = isset($_POST['personnel_id']) ? intval($_POST['personnel_id']) : 0;
+        $expert_id = isset($_POST['expert_id']) ? intval($_POST['expert_id']) : 0;
+        
+        if (!$personnel_id || !$expert_id) {
+            wp_send_json_error(['message' => 'Invalid user IDs.']);
+        }
+
+        $personnel_user = get_user_by('ID', $personnel_id);
+        $expert_user = get_user_by('ID', $expert_id);
+        
+        if (!$personnel_user || !$expert_user) {
+            wp_send_json_error(['message' => 'One or both users not found.']);
+        }
+
+        $html = $this->generate_user_comparison_html($personnel_user, $expert_user);
+        
+        wp_send_json_success(['html' => $html]);
+    }
+
+    private function generate_user_comparison_html($personnel_user, $expert_user) {
+        $personnel_meta = get_user_meta($personnel_user->ID);
+        $expert_meta = get_user_meta($expert_user->ID);
+        
+        // Define field categories and fields to compare
+        $field_groups = [
+            'Basic Info' => [
+                'ID' => [$personnel_user->ID, $expert_user->ID],
+                'user_login' => [$personnel_user->user_login, $expert_user->user_login],
+                'user_email' => [$personnel_user->user_email, $expert_user->user_email],
+                'display_name' => [$personnel_user->display_name, $expert_user->display_name],
+                'user_nicename' => [$personnel_user->user_nicename, $expert_user->user_nicename],
+                'user_registered' => [$personnel_user->user_registered, $expert_user->user_registered],
+                'user_url' => [$personnel_user->user_url, $expert_user->user_url],
+            ],
+            'Name Fields' => [
+                'first_name' => [$this->get_meta_value($personnel_meta, 'first_name'), $this->get_meta_value($expert_meta, 'first_name')],
+                'last_name' => [$this->get_meta_value($personnel_meta, 'last_name'), $this->get_meta_value($expert_meta, 'last_name')],
+                'nickname' => [$this->get_meta_value($personnel_meta, 'nickname'), $this->get_meta_value($expert_meta, 'nickname')],
+            ],
+            'Contact Info' => [
+                'phone' => [$this->get_meta_value($personnel_meta, 'phone'), $this->get_meta_value($expert_meta, 'phone')],
+                'phone_number' => [$this->get_meta_value($personnel_meta, 'phone_number'), $this->get_meta_value($expert_meta, 'phone_number')],
+                'mobile' => [$this->get_meta_value($personnel_meta, 'mobile'), $this->get_meta_value($expert_meta, 'mobile')],
+            ],
+            'Role & Capabilities' => [
+                'roles' => [implode(', ', $personnel_user->roles), implode(', ', $expert_user->roles)],
+            ],
+            'Description' => [
+                'description' => [$this->get_meta_value($personnel_meta, 'description'), $this->get_meta_value($expert_meta, 'description')],
+            ],
+        ];
+
+        // Add ACF fields if they exist
+        $acf_fields = $this->get_common_acf_fields($personnel_user->ID, $expert_user->ID);
+        if (!empty($acf_fields)) {
+            $field_groups['ACF/Custom Fields'] = $acf_fields;
+        }
+
+        ob_start();
+        ?>
+        <table class="dum-comparison-table">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th class="dum-col-personnel">Personnel User</th>
+                    <th class="dum-col-expert">Expert User</th>
+                    <th class="dum-col-match">Match</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($field_groups as $category => $fields): ?>
+                    <tr class="dum-field-category">
+                        <td colspan="4"><?php echo esc_html($category); ?></td>
+                    </tr>
+                    <?php foreach ($fields as $field_name => $values): 
+                        $val1 = $values[0];
+                        $val2 = $values[1];
+                        $match = $this->compare_values($val1, $val2);
+                    ?>
+                    <tr class="<?php echo esc_attr($match['class']); ?>">
+                        <td><strong><?php echo esc_html($field_name); ?></strong></td>
+                        <td class="dum-col-personnel"><?php echo $this->format_value($val1); ?></td>
+                        <td class="dum-col-expert"><?php echo $this->format_value($val2); ?></td>
+                        <td class="dum-col-match">
+                            <?php if ($match['exact']): ?>
+                                <span class="dum-match-exact">✓ Exact</span>
+                            <?php elseif ($match['similar']): ?>
+                                <span class="dum-match-similar">~ Similar</span>
+                            <?php else: ?>
+                                <span class="dum-match-none">✗ Different</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php
+        return ob_get_clean();
+    }
+
+    private function get_meta_value($meta, $key) {
+        return isset($meta[$key][0]) ? $meta[$key][0] : '';
+    }
+
+    private function format_value($value) {
+        if ($value === '' || $value === null) {
+            return '<span class="dum-empty-value">(empty)</span>';
+        }
+        if (strlen($value) > 200) {
+            return esc_html(substr($value, 0, 200)) . '...';
+        }
+        return esc_html($value);
+    }
+
+    private function get_common_acf_fields($user_id_1, $user_id_2) {
+        if (!function_exists('get_field_objects')) {
+            return [];
+        }
+
+        $fields = [];
+        $field_objects_1 = get_field_objects('user_' . $user_id_1);
+        $field_objects_2 = get_field_objects('user_' . $user_id_2);
+        
+        if (!$field_objects_1 && !$field_objects_2) {
+            return [];
+        }
+
+        $all_field_names = array_unique(array_merge(
+            $field_objects_1 ? array_keys($field_objects_1) : [],
+            $field_objects_2 ? array_keys($field_objects_2) : []
+        ));
+
+        foreach ($all_field_names as $field_name) {
+            $val1 = get_field($field_name, 'user_' . $user_id_1);
+            $val2 = get_field($field_name, 'user_' . $user_id_2);
+            
+            // Convert arrays/objects to string for display
+            if (is_array($val1)) $val1 = json_encode($val1);
+            if (is_array($val2)) $val2 = json_encode($val2);
+            if (is_object($val1)) $val1 = json_encode($val1);
+            if (is_object($val2)) $val2 = json_encode($val2);
+            
+            $fields[$field_name] = [$val1, $val2];
+        }
+
+        return $fields;
+    }
+
+    private function compare_values($val1, $val2) {
+        $val1_str = is_string($val1) ? strtolower(trim($val1)) : strval($val1);
+        $val2_str = is_string($val2) ? strtolower(trim($val2)) : strval($val2);
+        
+        // Both empty
+        if (($val1 === '' || $val1 === null) && ($val2 === '' || $val2 === null)) {
+            return ['exact' => true, 'similar' => false, 'class' => 'dum-row-exact'];
+        }
+        
+        // One empty, one not
+        if (($val1 === '' || $val1 === null) || ($val2 === '' || $val2 === null)) {
+            return ['exact' => false, 'similar' => false, 'class' => 'dum-row-different'];
+        }
+        
+        // Normalize phone numbers
+        $val1_normalized = preg_replace('/[^0-9]/', '', $val1_str);
+        $val2_normalized = preg_replace('/[^0-9]/', '', $val2_str);
+        
+        if ($val1_str === $val2_str || ($val1_normalized === $val2_normalized && !empty($val1_normalized) && strlen($val1_normalized) >= 7)) {
+            return ['exact' => true, 'similar' => false, 'class' => 'dum-row-exact'];
+        }
+        
+        similar_text($val1_str, $val2_str, $percent);
+        if ($percent > 70) {
+            return ['exact' => false, 'similar' => true, 'class' => 'dum-row-similar'];
+        }
+        
+        return ['exact' => false, 'similar' => false, 'class' => 'dum-row-different'];
+    }
+
+    private function get_confidence_class($confidence) {
+        $value = intval(str_replace('%', '', $confidence));
+        if ($value >= 90) return 'dum-confidence-high';
+        if ($value >= 70) return 'dum-confidence-medium';
+        if ($value >= 50) return 'dum-confidence-low';
+        return 'dum-confidence-very-low';
+    }
+
+    private function render_pagination($current_page, $total_pages, $tab) {
+        if ($total_pages <= 1) return;
+        ?>
+        <div class="dum-pagination">
+            <?php if ($current_page > 1): ?>
+                <a href="<?php echo esc_url(add_query_arg(['tab' => $tab, 'paged' => $current_page - 1])); ?>" class="button">&laquo; Previous</a>
+            <?php endif; ?>
+            <span class="dum-page-info">Page <?php echo $current_page; ?> of <?php echo $total_pages; ?></span>
+            <?php if ($current_page < $total_pages): ?>
+                <a href="<?php echo esc_url(add_query_arg(['tab' => $tab, 'paged' => $current_page + 1])); ?>" class="button">Next &raquo;</a>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    private function render_dismissed_tab($dismissed) {
+        if (empty($dismissed)) {
+            echo '<div class="dum-notice dum-notice-info"><p>No dismissed pairs.</p></div>';
+            return;
+        }
+
+        $total_items = count($dismissed);
+        $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $total_pages = ceil($total_items / self::ITEMS_PER_PAGE);
+        $offset = ($current_page - 1) * self::ITEMS_PER_PAGE;
+        $paged_dismissed = array_slice($dismissed, $offset, self::ITEMS_PER_PAGE, true);
+        ?>
+        <div class="dum-dismissed-list">
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>Confidence</th>
+                        <th>Personnel User</th>
+                        <th>Expert User</th>
+                        <th>Dismissed At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($paged_dismissed as $index => $pair): ?>
+                    <tr data-index="<?php echo esc_attr($index); ?>">
+                        <td><?php echo esc_html($pair['confidence']); ?></td>
+                        <td><?php echo esc_html($pair['personnel_name']); ?><br><small>ID: <?php echo esc_html($pair['personnel_wp_id']); ?></small></td>
+                        <td><?php echo esc_html($pair['expert_name']); ?><br><small>ID: <?php echo esc_html($pair['expert_wp_id']); ?></small></td>
+                        <td><?php echo esc_html($pair['dismissed_at'] ?? 'N/A'); ?></td>
+                        <td><button type="button" class="button dum-restore-pair" data-index="<?php echo esc_attr($index); ?>"><span class="dashicons dashicons-undo"></span> Restore</button></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php $this->render_pagination($current_page, $total_pages, 'dismissed');
+    }
+
+    private function render_merged_tab($merged) {
+        if (empty($merged)) {
+            echo '<div class="dum-notice dum-notice-info"><p>No merged pairs yet.</p></div>';
+            return;
+        }
+
+        $total_items = count($merged);
+        $current_page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $total_pages = ceil($total_items / self::ITEMS_PER_PAGE);
+        $offset = ($current_page - 1) * self::ITEMS_PER_PAGE;
+        $paged_merged = array_slice($merged, $offset, self::ITEMS_PER_PAGE, true);
+        ?>
+        <div class="dum-merged-list">
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>Personnel User</th>
+                        <th>Expert User (merged)</th>
+                        <th>Posts Transferred</th>
+                        <th>Merged At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($paged_merged as $pair): ?>
+                    <tr>
+                        <td><?php echo esc_html($pair['personnel_name']); ?><br><small>ID: <?php echo esc_html($pair['personnel_wp_id']); ?></small></td>
+                        <td><?php echo esc_html($pair['expert_name']); ?><br><small>ID: <?php echo esc_html($pair['expert_wp_id']); ?></small></td>
+                        <td><?php echo esc_html($pair['posts_transferred'] ?? 0); ?></td>
+                        <td><?php echo esc_html($pair['merged_at'] ?? 'N/A'); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php $this->render_pagination($current_page, $total_pages, 'merged');
+    }
+
+    private function render_upload_tab() {
+        $duplicates = get_option(self::OPTION_DUPLICATES, []);
+        ?>
+        <div class="dum-upload-section">
+            <h2>Upload Duplicate Users CSV</h2>
+            
+            <?php if (!empty($duplicates)): ?>
+            <div class="dum-notice dum-notice-warning">
+                <p><strong>Note:</strong> You already have <?php echo count($duplicates); ?> duplicate pairs loaded. Uploading a new CSV will replace the existing data.</p>
+            </div>
+            <?php endif; ?>
+
+            <div class="dum-upload-form">
+                <p>Upload a CSV file containing potential duplicate users. The CSV should have the following columns:</p>
+                <ul class="dum-column-list">
+                    <li><code>Confidence</code> - Match confidence percentage</li>
+                    <li><code>Personnel WP ID</code> - WordPress user ID for personnel</li>
+                    <li><code>Personnel Name</code> - Display name</li>
+                    <li><code>Personnel Email</code> - Email address</li>
+                    <li><code>Personnel Phone</code> - Phone number</li>
+                    <li><code>personnel_id</code> - Custom personnel ID</li>
+                    <li><code>Expert WP ID</code> - WordPress user ID for expert</li>
+                    <li><code>Expert Name</code> - Display name</li>
+                    <li><code>Expert Email</code> - Email address</li>
+                    <li><code>Expert Phone</code> - Phone number</li>
+                    <li><code>expert_source_id</code> - Expert source ID</li>
+                    <li><code>expert_writer_id</code> - Expert writer ID</li>
+                    <li><code>Match Reasons</code> - Description of why matched</li>
+                </ul>
+
+                <form id="dum-upload-form" enctype="multipart/form-data">
+                    <input type="file" name="csv_file" id="dum-csv-file" accept=".csv" required>
+                    <button type="submit" class="button button-primary"><span class="dashicons dashicons-upload"></span> Upload CSV</button>
+                </form>
+                
+                <div id="dum-upload-progress" style="display: none;">
+                    <span class="spinner is-active"></span>
+                    <span>Processing CSV file...</span>
+                </div>
+                
+                <div id="dum-upload-result"></div>
+            </div>
+
+            <?php if (!empty($duplicates)): ?>
+            <div class="dum-data-management">
+                <h3>Data Management</h3>
+                <p>Clear all duplicate data and start fresh:</p>
+                <button type="button" id="dum-clear-data" class="button button-secondary"><span class="dashicons dashicons-trash"></span> Clear All Data</button>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    public function ajax_upload_csv() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Permission denied.']);
+        if (!isset($_FILES['csv_file'])) wp_send_json_error(['message' => 'No file uploaded.']);
+
+        $file = $_FILES['csv_file'];
+        if ($file['error'] !== UPLOAD_ERR_OK) wp_send_json_error(['message' => 'File upload error.']);
+
+        $csv_data = file_get_contents($file['tmp_name']);
+        $csv_data = preg_replace('/^\xEF\xBB\xBF/', '', $csv_data);
+        
+        $lines = explode("\n", $csv_data);
+        $header = str_getcsv(array_shift($lines));
+        
+        $header_map = [
+            'Confidence' => 'confidence',
+            'Personnel WP ID' => 'personnel_wp_id',
+            'Personnel Name' => 'personnel_name',
+            'Personnel Email' => 'personnel_email',
+            'Personnel Phone' => 'personnel_phone',
+            'personnel_id' => 'personnel_id',
+            'Expert WP ID' => 'expert_wp_id',
+            'Expert Name' => 'expert_name',
+            'Expert Email' => 'expert_email',
+            'Expert Phone' => 'expert_phone',
+            'expert_source_id' => 'expert_source_id',
+            'expert_writer_id' => 'expert_writer_id',
+            'Match Reasons' => 'match_reasons',
+        ];
+
+        $duplicates = [];
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+            $row = str_getcsv($line);
+            if (count($row) < count($header)) continue;
+            
+            $pair = [];
+            foreach ($header as $i => $col) {
+                $key = isset($header_map[$col]) ? $header_map[$col] : $col;
+                $pair[$key] = isset($row[$i]) ? $row[$i] : '';
+            }
+            
+            if (empty($pair['personnel_wp_id']) || empty($pair['expert_wp_id'])) continue;
+            $duplicates[] = $pair;
+        }
+
+        if (empty($duplicates)) wp_send_json_error(['message' => 'No valid duplicate pairs found in CSV.']);
+
+        update_option(self::OPTION_DUPLICATES, $duplicates);
+        wp_send_json_success(['message' => sprintf('Successfully imported %d duplicate pairs.', count($duplicates)), 'count' => count($duplicates)]);
+    }
+
+    public function ajax_clear_data() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Permission denied.']);
+        delete_option(self::OPTION_DUPLICATES);
+        delete_option(self::OPTION_DISMISSED);
+        delete_option(self::OPTION_MERGED);
+        wp_send_json_success(['message' => 'All data cleared.']);
+    }
+
+    public function ajax_dismiss_pair() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Permission denied.']);
+
+        $index = isset($_POST['index']) ? intval($_POST['index']) : -1;
+        $duplicates = get_option(self::OPTION_DUPLICATES, []);
+        $dismissed = get_option(self::OPTION_DISMISSED, []);
+        
+        if (!isset($duplicates[$index])) wp_send_json_error(['message' => 'Invalid pair index.']);
+
+        $pair = $duplicates[$index];
+        $pair['dismissed_at'] = current_time('mysql');
+        $dismissed[] = $pair;
+        unset($duplicates[$index]);
+        $duplicates = array_values($duplicates);
+        
+        update_option(self::OPTION_DUPLICATES, $duplicates);
+        update_option(self::OPTION_DISMISSED, $dismissed);
+        wp_send_json_success(['message' => 'Pair dismissed.', 'remaining' => count($duplicates)]);
+    }
+
+    public function ajax_restore_pair() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Permission denied.']);
+
+        $index = isset($_POST['index']) ? intval($_POST['index']) : -1;
+        $duplicates = get_option(self::OPTION_DUPLICATES, []);
+        $dismissed = get_option(self::OPTION_DISMISSED, []);
+        
+        if (!isset($dismissed[$index])) wp_send_json_error(['message' => 'Invalid pair index.']);
+
+        $pair = $dismissed[$index];
+        unset($pair['dismissed_at']);
+        $duplicates[] = $pair;
+        unset($dismissed[$index]);
+        $dismissed = array_values($dismissed);
+        
+        update_option(self::OPTION_DUPLICATES, $duplicates);
+        update_option(self::OPTION_DISMISSED, $dismissed);
+        wp_send_json_success(['message' => 'Pair restored.']);
+    }
+
+    public function ajax_get_user_posts() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Permission denied.']);
+
+        $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
+        if (!$user_id) wp_send_json_error(['message' => 'Invalid user ID.']);
+
+        $posts = $this->get_posts_for_user($user_id);
+        
+        ob_start();
+        if (empty($posts)) {
+            echo '<p class="dum-no-posts">No posts found for this user.</p>';
+        } else {
+            echo '<ul class="dum-post-list">';
+            foreach ($posts as $post) {
+                $post_type_obj = get_post_type_object($post['post_type']);
+                $post_type_label = $post_type_obj ? $post_type_obj->labels->singular_name : $post['post_type'];
+                ?>
+                <li>
+                    <a href="<?php echo esc_url(get_edit_post_link($post['id'])); ?>" target="_blank"><?php echo esc_html($post['title']); ?></a>
+                    <span class="dum-post-meta">
+                        <span class="dum-post-type"><?php echo esc_html($post_type_label); ?></span>
+                        <span class="dum-credit-type"><?php echo esc_html($post['credit_type']); ?></span>
+                    </span>
+                </li>
+                <?php
+            }
+            echo '</ul>';
+            echo '<p class="dum-post-count">Total: ' . count($posts) . ' post(s)</p>';
+        }
+        $html = ob_get_clean();
+        wp_send_json_success(['html' => $html, 'count' => count($posts)]);
+    }
+
+    private function get_posts_for_user($user_id) {
+        global $wpdb;
+        $posts = [];
+        
+        foreach ($this->credit_fields as $post_type => $fields) {
+            foreach ($fields as $repeater_field => $user_subfield) {
+                $results = $wpdb->get_results($wpdb->prepare(
+                    "SELECT DISTINCT p.ID, p.post_title, p.post_type, pm.meta_key
+                     FROM {$wpdb->posts} p
+                     INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+                     WHERE p.post_type = %s
+                     AND p.post_status IN ('publish', 'draft', 'pending')
+                     AND pm.meta_key LIKE %s
+                     AND pm.meta_value = %s",
+                    $post_type,
+                    $wpdb->esc_like($repeater_field) . '_%_' . $user_subfield,
+                    $user_id
+                ), ARRAY_A);
+                
+                foreach ($results as $result) {
+                    $key = $result['ID'] . '_' . $repeater_field;
+                    if (!isset($posts[$key])) {
+                        $posts[$key] = [
+                            'id' => $result['ID'],
+                            'title' => $result['post_title'],
+                            'post_type' => $result['post_type'],
+                            'credit_type' => ucfirst(str_replace('_', ' ', $repeater_field)),
+                            'field' => $repeater_field,
+                            'meta_key' => $result['meta_key']
+                        ];
+                    }
                 }
-            });
-        });
+            }
+        }
+        return array_values($posts);
+    }
 
-        // Filter buttons
-        $('.filter-btn').on('click', function() {
-            $('.filter-btn').removeClass('active');
-            $(this).addClass('active');
-            currentFilter = $(this).data('filter');
-            loadQueue();
-        });
+    public function ajax_merge_users() {
+        check_ajax_referer('dum_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Permission denied.']);
 
-        // Pagination buttons
-                $(document).on('click', '.pagination-btn', function() {
-                    const page = $(this).data('page');
-                    loadQueue(page);
-                    $('html, body').animate({ scrollTop: $('#queue-table-container').offset().top - 50 }, 200);
-                });
+        $personnel_id = isset($_POST['personnel_id']) ? intval($_POST['personnel_id']) : 0;
+        $expert_id = isset($_POST['expert_id']) ? intval($_POST['expert_id']) : 0;
+        $index = isset($_POST['index']) ? intval($_POST['index']) : -1;
+        
+        if (!$personnel_id || !$expert_id) wp_send_json_error(['message' => 'Invalid user IDs.']);
 
-        // Merge/Reject actions
-        $(document).on('click', '.btn-merge, .btn-reject', function() {
-            const $btn = $(this);
-            const rowId = $btn.data('id');
-            const action = $btn.data('action');
-            const deleteExpert = $('#delete-experts-global').is(':checked');
-            const $row = $btn.closest('tr');
-            
-            $btn.prop('disabled', true);
-            $row.css('opacity', '0.5');
-            
-            $.post(ajaxurl, {
-                action: 'user_merge_process_single',
-                nonce: nonce,
-                row_id: rowId,
-                merge_action: action,
-                delete_expert: deleteExpert ? 'true' : 'false'
-            }, function(response) {
-                if (response.success) {
-                    response.data.log.forEach(msg => {
-                        const type = msg.includes('✓') ? 'success' : (msg.includes('✗') ? 'error' : 'info');
-                        log(msg, type);
-                    });
-                    
-                    // Refresh the table
-                    loadQueue();
-                } else {
-                    alert('Error: ' + response.data);
-                    $btn.prop('disabled', false);
-                    $row.css('opacity', '1');
-                }
-            }).fail(function() {
-                alert('AJAX error');
-                $btn.prop('disabled', false);
-                $row.css('opacity', '1');
-            });
-        });
-    });
-    </script>
-    <?php
+        $expert_posts = $this->get_posts_for_user($expert_id);
+        $transferred = 0;
+        $errors = [];
+        
+        foreach ($expert_posts as $post_data) {
+            $result = $this->transfer_credit($post_data, $expert_id, $personnel_id);
+            if ($result === true) {
+                $transferred++;
+            } else {
+                $errors[] = $result;
+            }
+        }
+
+        $duplicates = get_option(self::OPTION_DUPLICATES, []);
+        $merged = get_option(self::OPTION_MERGED, []);
+        
+        if (isset($duplicates[$index])) {
+            $pair = $duplicates[$index];
+            $pair['merged_at'] = current_time('mysql');
+            $pair['posts_transferred'] = $transferred;
+            $merged[] = $pair;
+            unset($duplicates[$index]);
+            $duplicates = array_values($duplicates);
+            update_option(self::OPTION_DUPLICATES, $duplicates);
+            update_option(self::OPTION_MERGED, $merged);
+        }
+
+        $message = sprintf('Merged successfully. Transferred %d post credit(s) from expert to personnel user.', $transferred);
+        if (!empty($errors)) {
+            $message .= ' Some errors occurred: ' . implode(', ', array_slice($errors, 0, 3));
+        }
+
+        wp_send_json_success(['message' => $message, 'transferred' => $transferred, 'remaining' => count($duplicates)]);
+    }
+
+    private function transfer_credit($post_data, $old_user_id, $new_user_id) {
+        $post_id = $post_data['id'];
+        $repeater_field = $post_data['field'];
+        $post_type = get_post_type($post_id);
+        
+        if (!isset($this->credit_fields[$post_type][$repeater_field])) {
+            return "Unknown field configuration for {$repeater_field}";
+        }
+        
+        $user_subfield = $this->credit_fields[$post_type][$repeater_field];
+        $count = get_post_meta($post_id, $repeater_field, true);
+        if (!$count) $count = 0;
+        
+        $updated = false;
+        for ($i = 0; $i < $count; $i++) {
+            $meta_key = $repeater_field . '_' . $i . '_' . $user_subfield;
+            $current_value = get_post_meta($post_id, $meta_key, true);
+            if ($current_value == $old_user_id) {
+                update_post_meta($post_id, $meta_key, $new_user_id);
+                $updated = true;
+            }
+        }
+        
+        if ($updated) {
+            wp_update_post([
+                'ID' => $post_id,
+                'post_modified' => current_time('mysql'),
+                'post_modified_gmt' => current_time('mysql', true),
+            ]);
+            clean_post_cache($post_id);
+            if (function_exists('acf_save_post')) {
+                do_action('acf/save_post', $post_id);
+            }
+        }
+        return true;
+    }
 }
+
+new Duplicate_User_Manager();
