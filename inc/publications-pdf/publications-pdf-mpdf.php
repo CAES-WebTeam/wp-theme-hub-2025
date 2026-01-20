@@ -107,79 +107,6 @@ function ensure_image_dimensions($content)
     );
 }
 
-// Convert before/after image sliders to PDF-friendly static images
-function convert_beforeafter_sliders_for_pdf($content)
-{
-    // 1. Remove the standalone <style> block containing beforeafter/slider styles
-    $content = preg_replace(
-        '/<style>[^<]*\.beforeafter[^<]*<\/style>/is',
-        '',
-        $content
-    );
-
-    // 2. Remove the <script> block for slider functionality
-    $content = preg_replace(
-        '/<script>[^<]*container\.style\.setProperty[^<]*<\/script>/is',
-        '',
-        $content
-    );
-
-    // 3. Convert each beforeafter div to simple stacked figures
-    $content = preg_replace_callback(
-        '/<div class="beforeafter">(.*?)<\/div>\s*(?=<div class="beforeafter">|<script|$)/is',
-        function ($matches) {
-            $block = $matches[1];
-
-            // Extract image sources - look for both image-before and image-after
-            $images = [];
-            if (preg_match('/<img[^>]*class="image-before[^"]*"[^>]*src="([^"]+)"[^>]*>/i', $block, $m)) {
-                $images[] = $m[1];
-            }
-            if (preg_match('/<img[^>]*class="image-after[^"]*"[^>]*src="([^"]+)"[^>]*>/i', $block, $m)) {
-                $images[] = $m[1];
-            }
-
-            // Extract captions from the <p><strong>Figure X.</strong>...</p> elements
-            $captions = [];
-            if (preg_match_all('/<p><strong>(Figure \d+\.)<\/strong>\s*(.*?)<\/p>/i', $block, $cap_matches, PREG_SET_ORDER)) {
-                foreach ($cap_matches as $cap) {
-                    $captions[] = '<strong>' . $cap[1] . '</strong> ' . trim($cap[2]);
-                }
-            }
-
-            if (count($images) < 2) {
-                return $matches[0]; // Return unchanged if we can't find both images
-            }
-
-            // Build simple PDF-friendly output
-            $output = '<div style="margin: 20px 0;">';
-
-            // First image with caption
-            $output .= '<figure style="margin: 0 0 15px 0; text-align: center;">';
-            $output .= '<img src="' . $images[0] . '" style="max-width: 100%; height: auto;" />';
-            if (isset($captions[0])) {
-                $output .= '<figcaption style="font-size: 12px; margin-top: 5px; text-align: left;">' . $captions[0] . '</figcaption>';
-            }
-            $output .= '</figure>';
-
-            // Second image with caption
-            $output .= '<figure style="margin: 0 0 15px 0; text-align: center;">';
-            $output .= '<img src="' . $images[1] . '" style="max-width: 100%; height: auto;" />';
-            if (isset($captions[1])) {
-                $output .= '<figcaption style="font-size: 12px; margin-top: 5px; text-align: left;">' . $captions[1] . '</figcaption>';
-            }
-            $output .= '</figure>';
-
-            $output .= '</div>';
-
-            return $output;
-        },
-        $content
-    );
-
-    return $content;
-}
-
 // Calculate appropriate title font size based on length
 function calculate_title_font_size($title, $has_subtitle = false)
 {
@@ -226,13 +153,10 @@ function calculate_title_font_size($title, $has_subtitle = false)
 // Enhanced table and content processing for mPDF
 function process_content_for_mpdf($content)
 {
-    // 0. CONVERT BEFORE/AFTER SLIDERS TO STATIC IMAGES (must be first)
-    $content = convert_beforeafter_sliders_for_pdf($content);
-
-    // 1. ENSURE ALL IMAGES HAVE DIMENSIONS
+    // 0. ENSURE ALL IMAGES HAVE DIMENSIONS
     $content = ensure_image_dimensions($content);
 
-    // 2. IMAGE HANDLING
+    // 1. IMAGE HANDLING
     // This logic intelligently identifies legacy image containers
     $content = preg_replace_callback(
         '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">.*?(<img[^>]+>)(.*?)<\/div>/is',
