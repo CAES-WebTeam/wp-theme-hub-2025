@@ -59,15 +59,21 @@ ul.is-style-caes-hub-list-none {
 
 // Use checkbox for ul
 ul.is-style-caes-hub-list-checkbox {
-    list-style: none;
-    padding-left: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5em;
+
     li {
-        display: flex;
+
         &::before {
             content: "☐";
             font-size: var(--wp--preset--font-size--large);
-            flex-shrink: 0;
-            margin-right: 0.5em;
+            line-height: 1;
+        }
+
+        &>ol,
+        &>ul {
+            grid-column: 2;
         }
     }
 }
