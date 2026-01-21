@@ -134,10 +134,12 @@ function convert_beforeafter_sliders_for_pdf($content)
             // Extract image sources - look for both image-before and image-after
             $images = [];
             if (preg_match('/<img[^>]*class="image-before[^"]*"[^>]*src="([^"]+)"[^>]*>/i', $block, $m)) {
-                $images[] = $m[1];
+                // Convert http to https to avoid redirect issues
+                $images[] = preg_replace('/^http:\/\//', 'https://', $m[1]);
             }
             if (preg_match('/<img[^>]*class="image-after[^"]*"[^>]*src="([^"]+)"[^>]*>/i', $block, $m)) {
-                $images[] = $m[1];
+                // Convert http to https to avoid redirect issues
+                $images[] = preg_replace('/^http:\/\//', 'https://', $m[1]);
             }
 
             // Extract captions from the <p><strong>Figure X.</strong>...</p> elements
@@ -229,6 +231,13 @@ function process_content_for_mpdf($content)
 {
     // 0. CONVERT BEFORE/AFTER SLIDERS TO STATIC IMAGES (must be first)
     $content = convert_beforeafter_sliders_for_pdf($content);
+
+    // 0.5. CONVERT HTTP TO HTTPS FOR ALL IMAGES (mPDF doesn't follow redirects)
+    $content = preg_replace(
+        '/<img([^>]*?)src=["\']http:\/\//i',
+        '<img$1src="https://',
+        $content
+    );
 
     // 1. ENSURE ALL IMAGES HAVE DIMENSIONS
     $content = ensure_image_dimensions($content);
