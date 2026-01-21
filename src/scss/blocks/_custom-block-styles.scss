@@ -59,11 +59,11 @@ ul.is-style-caes-hub-list-none {
 
 // Use checkbox for ul
 ul.is-style-caes-hub-list-checkbox {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.5em;
 
     li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.5em;
 
         &::before {
             content: "☐";
