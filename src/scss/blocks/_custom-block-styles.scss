@@ -49,6 +49,7 @@
 ul.is-style-caes-hub-list-none {
     padding-inline-start: 0;
     list-style: none;
+
     ul {
         list-style: none;
         list-style: none;
@@ -59,10 +60,13 @@ ul.is-style-caes-hub-list-none {
 // Use checkbox for ul
 ul.is-style-caes-hub-list-checkbox {
     list-style: none;
+    padding-left: 1.5em;
 
-    li::marker {
+    li::before {
         content: "☐ ";
         font-size: var(--wp--preset--font-size--large);
+        margin-left: -1.5em;
+        margin-right: 0.5em;
     }
 }
 
@@ -219,6 +223,7 @@ ul.is-style-caes-hub-list-checkbox {
     margin-inline-start: calc((100% - var(--wp--style--global--content-size)) / 2 - var(--wp--preset--spacing--70));
     width: 100%;
 }
+
 .is-style-caes-hub-align-right-40 {
     float: right;
     max-width: calc(var(--wp--style--global--content-size) * 0.4) !important;
@@ -240,7 +245,7 @@ ul.is-style-caes-hub-list-checkbox {
     top: 0;
     right: 0;
     width: 40px;
-    height: 100%; 
+    height: 100%;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64.237 150.678' preserveAspectRatio='none'%3E%3Cpath d='M10 150.678l54.238-75.339L10 0H0l54.238 75.339L0 150.678z' fill='%23fff' style='isolation:isolate'/%3E%3C/svg%3E");
     background-size: 100% 100%;
     background-repeat: no-repeat;
@@ -285,6 +290,6 @@ ul.is-style-caes-hub-list-checkbox {
     text-indent: -40px;
 }
 
-.is-layout-constrained > :where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
+.is-layout-constrained> :where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
     max-width: calc(var(--wp--style--global--content-size) - 40px) !important;
 }
