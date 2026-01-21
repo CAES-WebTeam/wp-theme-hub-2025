@@ -60,13 +60,15 @@ ul.is-style-caes-hub-list-none {
 // Use checkbox for ul
 ul.is-style-caes-hub-list-checkbox {
     list-style: none;
-    padding-left: 1.5em;
-
-    li::before {
-        content: "☐ ";
-        font-size: var(--wp--preset--font-size--large);
-        margin-left: -1.5em;
-        margin-right: 0.5em;
+    padding-left: 0;
+    li {
+        display: flex;
+        &::before {
+            content: "☐";
+            font-size: var(--wp--preset--font-size--large);
+            flex-shrink: 0;
+            margin-right: 0.5em;
+        }
     }
 }
 
