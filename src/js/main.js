@@ -2,9 +2,9 @@
 import Parvus from 'parvus';
 
 /*** SAFARI PARVUS FLASH FIX - RUN IMMEDIATELY */
-(function() {
+(function () {
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  
+
   if (isSafari) {
     // Inject CSS immediately
     const style = document.createElement('style');
@@ -80,7 +80,69 @@ document.addEventListener('DOMContentLoaded', function () {
   const main = document.querySelector('main');
   main.appendChild(toTopButton);
 
+  // Check if Shorthand caption is currently visible
+  function isShorthandCaptionVisible() {
+    const captions = document.querySelectorAll('.MediaRenderer__fixedCaption');
+    for (const caption of captions) {
+      const style = window.getComputedStyle(caption);
+      if (style.display !== 'none' && parseFloat(style.opacity) > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Update button visibility based on scroll AND caption state
+  function updateToTopVisibility() {
+    const captionVisible = isShorthandCaptionVisible();
+
+    if (captionVisible) {
+      toTopButton.classList.add('caes-hub-to-top-caption-hidden');
+    } else {
+      toTopButton.classList.remove('caes-hub-to-top-caption-hidden');
+    }
+  }
+
+  // Watch for Shorthand caption changes
+  const captionObserver = new MutationObserver(updateToTopVisibility);
+
+  // Observe existing captions
+  document.querySelectorAll('.MediaRenderer__fixedCaption').forEach(caption => {
+    captionObserver.observe(caption, {
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+  });
+
+  // Also watch for dynamically added captions (Shorthand loads content dynamically)
+  const bodyObserver = new MutationObserver((mutations) => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType === 1) {
+          const captions = node.querySelectorAll?.('.MediaRenderer__fixedCaption') || [];
+          captions.forEach(caption => {
+            captionObserver.observe(caption, {
+              attributes: true,
+              attributeFilter: ['style', 'class']
+            });
+          });
+          if (node.classList?.contains('MediaRenderer__fixedCaption')) {
+            captionObserver.observe(node, {
+              attributes: true,
+              attributeFilter: ['style', 'class']
+            });
+          }
+        }
+      });
+    });
+    updateToTopVisibility();
+  });
+
+  bodyObserver.observe(document.body, { childList: true, subtree: true });
+
   window.addEventListener('scroll', function () {
+    updateToTopVisibility(); // Also check on scroll
+
     if (window.scrollY > window.innerHeight / 2) {
       if (!toTopButton.classList.contains('caes-hub-to-top-visible')) {
         toTopButton.classList.add('caes-hub-to-top-visible');
