@@ -834,6 +834,7 @@ function custom_external_event_url($url, $post = null)
 // Apply this filter to custom post type links
 add_filter('post_type_link', 'custom_external_event_url', 100, 2);
 
+<?php
 /**
  * Custom Topic Archive Titles
  * 
@@ -853,9 +854,10 @@ add_filter('post_type_link', 'custom_external_event_url', 100, 2);
 /**
  * Modify Yoast SEO document title for topic archives.
  * 
- * Pattern: {Term Title} {Suffix} {Page} {Sep} {Site Name}
- * - News (post): "Agriculture Stories - Page 2 | CAES News"
- * - Publications: "Agriculture Resources - Page 2 | CAES News"
+ * Examples (assuming separator is |):
+ * - Page 1: "Agriculture Stories | CAES News"
+ * - Page 2: "Agriculture Stories | Page 2 of 5 | CAES News"
+ * - Publications Page 3: "Agriculture Resources | Page 3 of 8 | CAES News"
  * 
  * @param string $title The original Yoast title.
  * @return string Modified title.
@@ -903,21 +905,33 @@ function caes_custom_topic_archive_title($title)
     }
 
     // Handle pagination
-    $paged = get_query_var('paged', 0);
-    $page_part = '';
-    if ($paged > 1) {
-        $page_part = ' - Page ' . $paged;
-    }
+    global $wp_query;
+    $paged = get_query_var('paged', 1);
+    $paged = $paged < 1 ? 1 : $paged;
+    $max_pages = $wp_query->max_num_pages ?? 1;
 
-    // Construct: "Term Title Suffix - Page X | Site Name"
-    $new_title = sprintf(
-        '%s %s%s %s %s',
-        $term_title,
-        $suffix,
-        $page_part,
-        $sep,
-        $site_name
-    );
+    if ($paged > 1 && $max_pages > 1) {
+        // "Agriculture Stories | Page 2 of 5 | Site Name"
+        $new_title = sprintf(
+            '%s %s %s Page %d of %d %s %s',
+            $term_title,
+            $suffix,
+            $sep,
+            $paged,
+            $max_pages,
+            $sep,
+            $site_name
+        );
+    } else {
+        // "Agriculture Stories | Site Name"
+        $new_title = sprintf(
+            '%s %s %s %s',
+            $term_title,
+            $suffix,
+            $sep,
+            $site_name
+        );
+    }
 
     return $new_title;
 }
@@ -960,7 +974,7 @@ function caes_custom_topic_archive_heading($title)
             $suffix = 'Resources';
             break;
         case 'shorthand_story':
-            $suffix = 'Stories';
+            $suffix = 'Features';
             break;
         default:
             // Return just the term name if post type is unknown
