@@ -834,7 +834,6 @@ function custom_external_event_url($url, $post = null)
 // Apply this filter to custom post type links
 add_filter('post_type_link', 'custom_external_event_url', 100, 2);
 
-<?php
 /**
  * Custom Topic Archive Titles
  * 
