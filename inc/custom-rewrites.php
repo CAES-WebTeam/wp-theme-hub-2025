@@ -855,8 +855,11 @@ add_filter('post_type_link', 'custom_external_event_url', 100, 2);
  * 
  * Examples (assuming separator is |):
  * - Page 1: "Agriculture Stories | CAES News"
- * - Page 2: "Agriculture Stories | Page 2 of 5 | CAES News"
- * - Publications Page 3: "Agriculture Resources | Page 3 of 8 | CAES News"
+ * - Page 2: "Agriculture Stories | Page 2 | CAES News"
+ * - Publications Page 3: "Agriculture Resources | Page 3 | CAES News"
+ * 
+ * Supports both standard /page/X/ URLs and Query Loop block 
+ * pagination (?query-X-page=Y).
  * 
  * @param string $title The original Yoast title.
  * @return string Modified title.
@@ -903,21 +906,31 @@ function caes_custom_topic_archive_title($title)
         $sep = YoastSEO()->helpers->options->get_title_separator();
     }
 
-    // Handle pagination
-    global $wp_query;
-    $paged = get_query_var('paged', 1);
-    $paged = $paged < 1 ? 1 : $paged;
-    $max_pages = $wp_query->max_num_pages ?? 1;
+    // Handle pagination (supports both standard /page/X/ and Query Loop ?query-X-page=Y)
+    $paged = 1;
+    
+    // Check for Query Loop block pagination (query-{id}-page parameter)
+    foreach ($_GET as $key => $value) {
+        if (preg_match('/^query-\d+-page$/', $key)) {
+            $paged = absint($value);
+            break;
+        }
+    }
+    
+    // Fall back to standard pagination if no Query Loop param found
+    if ($paged === 1) {
+        $paged = get_query_var('paged', 1);
+        $paged = $paged < 1 ? 1 : $paged;
+    }
 
-    if ($paged > 1 && $max_pages > 1) {
-        // "Agriculture Stories | Page 2 of 5 | Site Name"
+    if ($paged > 1) {
+        // "Agriculture Stories | Page 2 | Site Name"
         $new_title = sprintf(
-            '%s %s %s Page %d of %d %s %s',
+            '%s %s %s Page %d %s %s',
             $term_title,
             $suffix,
             $sep,
             $paged,
-            $max_pages,
             $sep,
             $site_name
         );
@@ -983,3 +996,4 @@ function caes_custom_topic_archive_heading($title)
     return sprintf('%s %s', $term->name, $suffix);
 }
 add_filter('get_the_archive_title', 'caes_custom_topic_archive_heading');
+
