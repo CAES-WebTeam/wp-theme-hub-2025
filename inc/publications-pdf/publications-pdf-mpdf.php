@@ -183,6 +183,44 @@ function convert_beforeafter_sliders_for_pdf($content)
     return $content;
 }
 
+// Convert wp-block-cover blocks to simple images for PDF
+function convert_cover_blocks_for_pdf($content)
+{
+    // Match wp-block-cover divs and extract the background image
+    $content = preg_replace_callback(
+        '/<div[^>]*class="[^"]*wp-block-cover[^"]*"[^>]*>((?:[^<]++|<(?!div\b|\/div>)[^>]*+>|<div[^>]*+>(?1)<\/div>)*+)<\/div>/is',
+        function ($matches) {
+            $block = $matches[1];
+
+            // Extract the cover image
+            if (preg_match('/<img[^>]*class="[^"]*wp-block-cover__image-background[^"]*"[^>]*>/i', $block, $img_match)) {
+                $img_tag = $img_match[0];
+
+                // Extract src and alt
+                $src = '';
+                $alt = '';
+                if (preg_match('/src="([^"]+)"/i', $img_tag, $src_match)) {
+                    $src = preg_replace('/^http:\/\//', 'https://', $src_match[1]);
+                }
+                if (preg_match('/alt="([^"]*)"/i', $img_tag, $alt_match)) {
+                    $alt = $alt_match[1];
+                }
+
+                if (!empty($src)) {
+                    // Return a simple image tag
+                    return '<img src="' . $src . '" alt="' . $alt . '" style="max-width: 100%; height: auto;" />';
+                }
+            }
+
+            // If no image found, return empty (remove the cover block)
+            return '';
+        },
+        $content
+    );
+
+    return $content;
+}
+
 // Calculate appropriate title font size based on length
 function calculate_title_font_size($title, $has_subtitle = false)
 {
@@ -231,6 +269,9 @@ function process_content_for_mpdf($content)
 {
     // 0. CONVERT BEFORE/AFTER SLIDERS TO STATIC IMAGES (must be first)
     $content = convert_beforeafter_sliders_for_pdf($content);
+
+    // 0.25. CONVERT WP-BLOCK-COVER TO SIMPLE IMAGES
+    $content = convert_cover_blocks_for_pdf($content);
 
     // 0.5. CONVERT HTTP TO HTTPS FOR ALL IMAGES (mPDF doesn't follow redirects)
     $content = preg_replace(
