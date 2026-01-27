@@ -360,7 +360,7 @@ function process_content_for_mpdf($content)
     // Force tradegothic on captions via inline style (debug test)
     $content = preg_replace(
         '/<caption>/i',
-        '<caption style="font-family: oswald, sans-serif;">',
+        '<caption style="font-family: tradegothic, sans-serif;">',
         $content
     );
 
@@ -409,7 +409,7 @@ function get_mpdf_styles()
         table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.1; padding: 8px; }
         table th, table td { border: 1px solid #ddd; padding:8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
-        table caption, table figcaption { font-family: "oswald", sans-serif; text-align: center; font-size: 16px; margin-bottom: 8px; font-weight: 300; }
+        table caption, table figcaption { font-family: "tradegothic", sans-serif; text-align: center; font-size: 16px; margin-bottom: 8px; font-weight: 300; }
 
         /* UPDATED MATH STYLES */
         /* Target the parent container, the class, and specific MathML children */
@@ -688,12 +688,6 @@ function generate_publication_pdf_file_mpdf($post_id)
                     'B' => 'TradeGothicLTStd-Bold.ttf',
                     'I' => 'TradeGothicLTStd-Obl.ttf',
                     'BI' => 'TradeGothicLTStd-BoldObl.ttf'
-                ],
-                'oswald' => [
-                    'R' => 'Oswald-Light.ttf',
-                    'B' => 'Oswald-SemiBold.ttf',
-                    'I' => 'Oswald-Light.ttf',
-                    'BI' => 'Oswald-SemiBold.ttf'
                 ]
             ],
             'default_font' => 'georgia',
