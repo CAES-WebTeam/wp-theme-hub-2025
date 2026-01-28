@@ -73,8 +73,20 @@ const Edit = ({
     overlayOpacity,
     minHeight
   } = attributes;
-  const [expandedFrame, setExpandedFrame] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
+  const [isPreviewMode, setIsPreviewMode] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [showOverlayColorPicker, setShowOverlayColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+
+  // Auto-add first frame when block is inserted
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (frames.length === 0) {
+      setAttributes({
+        frames: [{
+          ...DEFAULT_FRAME,
+          id: generateFrameId()
+        }]
+      });
+    }
+  }, []);
 
   // Add a new frame
   const addFrame = () => {
@@ -85,7 +97,6 @@ const Edit = ({
     setAttributes({
       frames: [...frames, newFrame]
     });
-    setExpandedFrame(frames.length);
   };
 
   // Remove a frame
@@ -95,9 +106,6 @@ const Edit = ({
     setAttributes({
       frames: newFrames
     });
-    if (expandedFrame === frameIndex) {
-      setExpandedFrame(null);
-    }
   };
 
   // Update a frame's properties
@@ -120,7 +128,6 @@ const Edit = ({
     setAttributes({
       frames: newFrames
     });
-    setExpandedFrame(frameIndex - 1);
   };
 
   // Move frame down
@@ -131,7 +138,6 @@ const Edit = ({
     setAttributes({
       frames: newFrames
     });
-    setExpandedFrame(frameIndex + 1);
   };
 
   // Handle image selection
@@ -158,7 +164,6 @@ const Edit = ({
   // Calculate overlay rgba
   const getOverlayRgba = () => {
     const opacity = overlayOpacity / 100;
-    // Parse hex color
     const hex = overlayColor.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
@@ -167,7 +172,8 @@ const Edit = ({
   };
 
   // Get first frame's image for preview
-  const previewImage = frames.length > 0 && frames[0].desktopImage ? frames[0].desktopImage.url : null;
+  const firstFrame = frames.length > 0 ? frames[0] : null;
+  const previewImage = firstFrame?.desktopImage?.url || null;
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
     className: 'caes-reveal-block',
     style: {
@@ -193,469 +199,532 @@ const Edit = ({
     },
     "aria-label": label
   });
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Settings', 'caes-reveal'),
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+
+  // Shared Inspector Controls (shown in both modes)
+  const sharedInspectorControls = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Settings', 'caes-reveal'),
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '16px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
           style: {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
+            minWidth: '100px'
           },
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-            style: {
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px'
-            },
-            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-              style: {
-                minWidth: '100px'
-              },
-              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Color', 'caes-reveal')
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-              style: {
-                position: 'relative'
-              },
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(ColorSwatchButton, {
-                color: overlayColor,
-                onClick: () => setShowOverlayColorPicker(!showOverlayColorPicker),
-                label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select overlay color', 'caes-reveal')
-              }), showOverlayColorPicker && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Popover, {
-                position: "bottom left",
-                onClose: () => setShowOverlayColorPicker(false),
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-                  style: {
-                    padding: '16px'
-                  },
-                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ColorPicker, {
-                    color: overlayColor,
-                    onChange: color => setAttributes({
-                      overlayColor: color
-                    }),
-                    enableAlpha: false
-                  })
-                })
-              })]
-            })]
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
-            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Opacity', 'caes-reveal'),
-            value: overlayOpacity,
-            onChange: value => setAttributes({
-              overlayOpacity: value
-            }),
-            min: 0,
-            max: 100,
-            step: 5
-          })]
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Layout', 'caes-reveal'),
-        initialOpen: false,
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Minimum Height', 'caes-reveal'),
-          value: minHeight,
-          options: [{
-            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Full viewport (100vh)', 'caes-reveal'),
-            value: '100vh'
-          }, {
-            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('75% viewport', 'caes-reveal'),
-            value: '75vh'
-          }, {
-            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('50% viewport', 'caes-reveal'),
-            value: '50vh'
-          }, {
-            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Auto (content height)', 'caes-reveal'),
-            value: 'auto'
-          }],
-          onChange: value => setAttributes({
-            minHeight: value
-          })
-        })
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frames', 'caes-reveal'),
-        initialOpen: true,
-        children: [frames.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
-          status: "warning",
-          isDismissible: false,
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add at least one frame to display a background.', 'caes-reveal')
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Color', 'caes-reveal')
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           style: {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
+            position: 'relative'
           },
-          children: [frames.map((frame, index) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-            className: "reveal-frame-item",
-            style: {
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              overflow: 'hidden',
-              backgroundColor: '#f9f9f9'
-            },
-            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
-              type: "button",
-              onClick: () => setExpandedFrame(expandedFrame === index ? null : index),
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(ColorSwatchButton, {
+            color: overlayColor,
+            onClick: () => setShowOverlayColorPicker(!showOverlayColorPicker),
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select overlay color', 'caes-reveal')
+          }), showOverlayColorPicker && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Popover, {
+            position: "bottom left",
+            onClose: () => setShowOverlayColorPicker(false),
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
               style: {
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                width: '100%',
-                padding: '12px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                textAlign: 'left'
+                padding: '16px'
               },
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-                style: {
-                  width: '48px',
-                  height: '48px',
-                  backgroundColor: '#ddd',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  flexShrink: 0
-                },
-                children: frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                  src: frame.desktopImage.sizes?.thumbnail?.url || frame.desktopImage.url,
-                  alt: "",
-                  style: {
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }
-                })
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                style: {
-                  flexGrow: 1
-                },
-                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("strong", {
-                  children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", index + 1]
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-                  style: {
-                    fontSize: '12px',
-                    color: '#666'
-                  },
-                  children: frame.transition.type !== 'none' ? `${frame.transition.type} (${frame.transition.speed}ms)` : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No transition', 'caes-reveal')
-                })]
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-                style: {
-                  fontSize: '20px'
-                },
-                children: expandedFrame === index ? '−' : '+'
-              })]
-            }), expandedFrame === index && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-              style: {
-                padding: '12px',
-                borderTop: '1px solid #ddd'
-              },
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                style: {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px'
-                },
-                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("label", {
-                    style: {
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: 500
-                    },
-                    children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Desktop Image', 'caes-reveal'), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-                      style: {
-                        color: '#cc0000'
-                      },
-                      children: " *"
-                    })]
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUploadCheck, {
-                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUpload, {
-                      onSelect: media => onSelectImage(index, 'desktopImage', media),
-                      allowedTypes: ['image'],
-                      value: frame.desktopImage?.id,
-                      render: ({
-                        open
-                      }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-                        children: frame.desktopImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                          style: {
-                            position: 'relative'
-                          },
-                          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                            src: frame.desktopImage.sizes?.medium?.url || frame.desktopImage.url,
-                            alt: frame.desktopImage.alt,
-                            style: {
-                              width: '100%',
-                              height: 'auto',
-                              borderRadius: '4px'
-                            }
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalHStack, {
-                            spacing: 2,
-                            style: {
-                              marginTop: '8px'
-                            },
-                            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                              variant: "secondary",
-                              onClick: open,
-                              size: "small",
-                              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Replace', 'caes-reveal')
-                            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                              variant: "secondary",
-                              isDestructive: true,
-                              onClick: () => onRemoveImage(index, 'desktopImage'),
-                              size: "small",
-                              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
-                            })]
-                          })]
-                        }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                          variant: "secondary",
-                          onClick: open,
-                          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Image', 'caes-reveal')
-                        })
-                      })
-                    })
-                  }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-                    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal'),
-                    value: frame.desktopImage.alt || '',
-                    onChange: value => {
-                      const updatedImage = {
-                        ...frame.desktopImage,
-                        alt: value
-                      };
-                      updateFrame(index, {
-                        desktopImage: updatedImage
-                      });
-                    },
-                    style: {
-                      marginTop: '8px'
-                    }
-                  })]
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
-                    style: {
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: 500
-                    },
-                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Mobile Image (optional)', 'caes-reveal')
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUploadCheck, {
-                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUpload, {
-                      onSelect: media => onSelectImage(index, 'mobileImage', media),
-                      allowedTypes: ['image'],
-                      value: frame.mobileImage?.id,
-                      render: ({
-                        open
-                      }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-                        children: frame.mobileImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                          style: {
-                            position: 'relative'
-                          },
-                          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                            src: frame.mobileImage.sizes?.thumbnail?.url || frame.mobileImage.url,
-                            alt: frame.mobileImage.alt,
-                            style: {
-                              width: '80px',
-                              height: '80px',
-                              objectFit: 'cover',
-                              borderRadius: '4px'
-                            }
-                          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalHStack, {
-                            spacing: 2,
-                            style: {
-                              marginTop: '8px'
-                            },
-                            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                              variant: "secondary",
-                              onClick: open,
-                              size: "small",
-                              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Replace', 'caes-reveal')
-                            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                              variant: "secondary",
-                              isDestructive: true,
-                              onClick: () => onRemoveImage(index, 'mobileImage'),
-                              size: "small",
-                              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
-                            })]
-                          })]
-                        }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                          variant: "secondary",
-                          onClick: open,
-                          size: "small",
-                          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Mobile Image', 'caes-reveal')
-                        })
-                      })
-                    })
-                  }), frame.mobileImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-                    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal'),
-                    value: frame.mobileImage.alt || '',
-                    onChange: value => {
-                      const updatedImage = {
-                        ...frame.mobileImage,
-                        alt: value
-                      };
-                      updateFrame(index, {
-                        mobileImage: updatedImage
-                      });
-                    },
-                    style: {
-                      marginTop: '8px'
-                    }
-                  })]
-                }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
-                    style: {
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: 500
-                    },
-                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Focal Point', 'caes-reveal')
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FocalPointPicker, {
-                    url: frame.desktopImage.url,
-                    value: frame.focalPoint,
-                    onChange: value => updateFrame(index, {
-                      focalPoint: value
-                    })
-                  })]
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
-                    style: {
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: 500
-                    },
-                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Transition', 'caes-reveal')
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
-                    value: frame.transition.type,
-                    options: TRANSITION_OPTIONS,
-                    onChange: value => updateFrame(index, {
-                      transition: {
-                        ...frame.transition,
-                        type: value
-                      }
-                    })
-                  }), frame.transition.type !== 'none' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
-                    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Speed (ms)', 'caes-reveal'),
-                    value: frame.transition.speed,
-                    onChange: value => updateFrame(index, {
-                      transition: {
-                        ...frame.transition,
-                        speed: value
-                      }
-                    }),
-                    min: 100,
-                    max: 2000,
-                    step: 50
-                  })]
-                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalHStack, {
-                  spacing: 2,
-                  style: {
-                    borderTop: '1px solid #ddd',
-                    paddingTop: '12px'
-                  },
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                    variant: "secondary",
-                    onClick: () => moveFrameUp(index),
-                    disabled: index === 0,
-                    icon: "arrow-up-alt2",
-                    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move Up', 'caes-reveal'),
-                    size: "small"
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                    variant: "secondary",
-                    onClick: () => moveFrameDown(index),
-                    disabled: index === frames.length - 1,
-                    icon: "arrow-down-alt2",
-                    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move Down', 'caes-reveal'),
-                    size: "small"
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                    variant: "secondary",
-                    isDestructive: true,
-                    onClick: () => removeFrame(index),
-                    icon: "trash",
-                    label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove Frame', 'caes-reveal'),
-                    size: "small",
-                    style: {
-                      marginLeft: 'auto'
-                    }
-                  })]
-                })]
+              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ColorPicker, {
+                color: overlayColor,
+                onChange: color => setAttributes({
+                  overlayColor: color
+                }),
+                enableAlpha: false
               })
-            })]
-          }, frame.id)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-            variant: "primary",
-            onClick: addFrame,
-            style: {
-              width: '100%'
-            },
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Frame', 'caes-reveal')
+            })
           })]
         })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Opacity', 'caes-reveal'),
+        value: overlayOpacity,
+        onChange: value => setAttributes({
+          overlayOpacity: value
+        }),
+        min: 0,
+        max: 100,
+        step: 5
       })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-      ...blockProps,
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        className: "reveal-background-preview",
-        style: {
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0,
-          overflow: 'hidden'
-        },
-        children: [previewImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-          src: previewImage,
-          alt: "",
-          style: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: frames[0]?.focalPoint ? `${frames[0].focalPoint.x * 100}% ${frames[0].focalPoint.y * 100}%` : 'center'
-          }
-        }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-          style: {
-            width: '100%',
-            height: '100%',
-            backgroundColor: '#e0e0e0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#666'
-          },
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add frames in the sidebar to set background images', 'caes-reveal')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-          className: "reveal-overlay-preview",
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Layout', 'caes-reveal'),
+      initialOpen: false,
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Minimum Height', 'caes-reveal'),
+        value: minHeight,
+        options: [{
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Full viewport (100vh)', 'caes-reveal'),
+          value: '100vh'
+        }, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('75% viewport', 'caes-reveal'),
+          value: '75vh'
+        }, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('50% viewport', 'caes-reveal'),
+          value: '50vh'
+        }, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Auto (content height)', 'caes-reveal'),
+          value: 'auto'
+        }],
+        onChange: value => setAttributes({
+          minHeight: value
+        })
+      })
+    })]
+  });
+
+  // PREVIEW MODE
+  if (isPreviewMode) {
+    return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarButton, {
+            onClick: () => setIsPreviewMode(false),
+            icon: "edit",
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit', 'caes-reveal')
+          })
+        })
+      }), sharedInspectorControls, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        ...blockProps,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          className: "reveal-background-preview",
           style: {
             position: 'absolute',
             inset: 0,
-            backgroundColor: getOverlayRgba(),
-            pointerEvents: 'none'
+            zIndex: 0,
+            overflow: 'hidden'
+          },
+          children: [previewImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+            src: previewImage,
+            alt: "",
+            style: {
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: firstFrame?.focalPoint ? `${firstFrame.focalPoint.x * 100}% ${firstFrame.focalPoint.y * 100}%` : 'center'
+            }
+          }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            style: {
+              width: '100%',
+              height: '100%',
+              backgroundColor: '#e0e0e0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666'
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No frames added yet', 'caes-reveal')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            className: "reveal-overlay-preview",
+            style: {
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: getOverlayRgba(),
+              pointerEvents: 'none'
+            }
+          })]
+        }), frames.length > 1 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          style: {
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: '#fff',
+            padding: '4px 10px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            zIndex: 10
+          },
+          children: [frames.length, " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('frames', 'caes-reveal')]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+          className: "reveal-content-editor",
+          style: {
+            position: 'relative',
+            zIndex: 1,
+            minHeight: '200px',
+            padding: 'var(--wp--preset--spacing--50, 2rem)'
+          },
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+            template: [['core/paragraph', {
+              placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add content that will scroll over the background...', 'caes-reveal')
+            }]],
+            templateLock: false
+          })
+        })]
+      })]
+    });
+  }
+
+  // EDIT MODE
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarButton, {
+          onClick: () => setIsPreviewMode(true),
+          icon: "visibility",
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Preview', 'caes-reveal')
+        })
+      })
+    }), sharedInspectorControls, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+      ...blockProps,
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        className: "caes-reveal-editor",
+        style: {
+          backgroundColor: '#fff',
+          padding: '20px',
+          minHeight: '300px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          className: "reveal-header",
+          style: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid #ddd'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
+            style: {
+              margin: 0,
+              fontSize: '14px',
+              fontWeight: 600,
+              fontFamily: 'monospace'
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Reveal Block', 'caes-reveal')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            style: {
+              display: 'flex',
+              gap: '8px'
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              onClick: () => setIsPreviewMode(true),
+              variant: "secondary",
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Preview', 'caes-reveal')
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              onClick: addFrame,
+              variant: "primary",
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Frame', 'caes-reveal')
+            })]
+          })]
+        }), frames.length === 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
+          status: "warning",
+          isDismissible: false,
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add a frame to set a background image.', 'caes-reveal')
+        }), frames.map((frame, frameIndex) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(FrameEditor, {
+          frame: frame,
+          frameIndex: frameIndex,
+          totalFrames: frames.length,
+          onUpdate: updates => updateFrame(frameIndex, updates),
+          onRemove: () => removeFrame(frameIndex),
+          onMoveUp: () => moveFrameUp(frameIndex),
+          onMoveDown: () => moveFrameDown(frameIndex),
+          onSelectImage: (imageType, media) => onSelectImage(frameIndex, imageType, media),
+          onRemoveImage: imageType => onRemoveImage(frameIndex, imageType)
+        }, frame.id))]
+      })
+    })]
+  });
+};
+
+// Frame Editor Component
+const FrameEditor = ({
+  frame,
+  frameIndex,
+  totalFrames,
+  onUpdate,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  onSelectImage,
+  onRemoveImage
+}) => {
+  const [isExpanded, setIsExpanded] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+    className: "reveal-frame-editor",
+    style: {
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      padding: '16px',
+      marginBottom: '16px',
+      backgroundColor: '#f9f9f9'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+      className: "frame-header",
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: isExpanded ? '16px' : 0,
+        paddingBottom: isExpanded ? '12px' : 0,
+        borderBottom: isExpanded ? '1px solid #ddd' : 'none'
+      },
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+          style: {
+            width: '48px',
+            height: '48px',
+            backgroundColor: '#ddd',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            flexShrink: 0
+          },
+          children: frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+            src: frame.desktopImage.sizes?.thumbnail?.url || frame.desktopImage.url,
+            alt: "",
+            style: {
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("strong", {
+            children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", frameIndex + 1]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            style: {
+              fontSize: '12px',
+              color: '#666'
+            },
+            children: frame.transition.type !== 'none' ? `${frame.transition.type} (${frame.transition.speed}ms)` : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No transition', 'caes-reveal')
+          })]
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          display: 'flex',
+          gap: '8px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          onClick: () => setIsExpanded(!isExpanded),
+          variant: "secondary",
+          icon: isExpanded ? 'arrow-up-alt2' : 'arrow-down-alt2',
+          label: isExpanded ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Collapse', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Expand', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          onClick: onMoveUp,
+          variant: "secondary",
+          disabled: frameIndex === 0,
+          icon: "arrow-up-alt",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move Up', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          onClick: onMoveDown,
+          variant: "secondary",
+          disabled: frameIndex === totalFrames - 1,
+          icon: "arrow-down-alt",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move Down', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          onClick: onRemove,
+          variant: "secondary",
+          isDestructive: true,
+          disabled: totalFrames === 1,
+          icon: "trash",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove Frame', 'caes-reveal')
+        })]
+      })]
+    }), isExpanded && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+      className: "frame-content",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          marginBottom: '20px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("label", {
+          style: {
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 500
+          },
+          children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Desktop Image', 'caes-reveal'), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+            style: {
+              color: '#cc0000'
+            },
+            children: " *"
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUploadCheck, {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUpload, {
+            onSelect: media => onSelectImage('desktopImage', media),
+            allowedTypes: ['image'],
+            value: frame.desktopImage?.id,
+            render: ({
+              open
+            }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+              children: frame.desktopImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                  src: frame.desktopImage.sizes?.medium?.url || frame.desktopImage.url,
+                  alt: frame.desktopImage.alt,
+                  style: {
+                    maxWidth: '100%',
+                    maxHeight: '200px',
+                    borderRadius: '4px',
+                    marginBottom: '8px'
+                  }
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+                  style: {
+                    display: 'flex',
+                    gap: '8px'
+                  },
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+                    variant: "secondary",
+                    onClick: open,
+                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Replace', 'caes-reveal')
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+                    variant: "secondary",
+                    isDestructive: true,
+                    onClick: () => onRemoveImage('desktopImage'),
+                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
+                  })]
+                })]
+              }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+                variant: "secondary",
+                onClick: open,
+                children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Image', 'caes-reveal')
+              })
+            })
+          })
+        }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal'),
+          value: frame.desktopImage.alt || '',
+          onChange: value => {
+            const updatedImage = {
+              ...frame.desktopImage,
+              alt: value
+            };
+            onUpdate({
+              desktopImage: updatedImage
+            });
+          },
+          style: {
+            marginTop: '12px'
           }
         })]
-      }), frames.length > 1 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        className: "reveal-frame-indicator",
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         style: {
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          color: '#fff',
-          padding: '4px 10px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          zIndex: 10
+          marginBottom: '20px'
         },
-        children: [frames.length, " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('frames', 'caes-reveal')]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
-        className: "reveal-content-editor",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
+          style: {
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 500
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Mobile Image (optional)', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUploadCheck, {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUpload, {
+            onSelect: media => onSelectImage('mobileImage', media),
+            allowedTypes: ['image'],
+            value: frame.mobileImage?.id,
+            render: ({
+              open
+            }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+              children: frame.mobileImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                  src: frame.mobileImage.sizes?.thumbnail?.url || frame.mobileImage.url,
+                  alt: frame.mobileImage.alt,
+                  style: {
+                    width: '80px',
+                    height: '80px',
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    marginBottom: '8px'
+                  }
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+                  style: {
+                    display: 'flex',
+                    gap: '8px'
+                  },
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+                    variant: "secondary",
+                    onClick: open,
+                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Replace', 'caes-reveal')
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+                    variant: "secondary",
+                    isDestructive: true,
+                    onClick: () => onRemoveImage('mobileImage'),
+                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
+                  })]
+                })]
+              }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+                variant: "secondary",
+                onClick: open,
+                children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Mobile Image', 'caes-reveal')
+              })
+            })
+          })
+        }), frame.mobileImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal'),
+          value: frame.mobileImage.alt || '',
+          onChange: value => {
+            const updatedImage = {
+              ...frame.mobileImage,
+              alt: value
+            };
+            onUpdate({
+              mobileImage: updatedImage
+            });
+          },
+          style: {
+            marginTop: '12px'
+          }
+        })]
+      }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         style: {
-          position: 'relative',
-          zIndex: 1,
-          minHeight: '200px'
+          marginBottom: '20px'
         },
-        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
-          template: [['core/paragraph', {
-            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add content that will scroll over the background...', 'caes-reveal')
-          }]],
-          templateLock: false
-        })
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
+          style: {
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 500
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Focal Point', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FocalPointPicker, {
+          url: frame.desktopImage.url,
+          value: frame.focalPoint,
+          onChange: value => onUpdate({
+            focalPoint: value
+          })
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          paddingTop: '16px',
+          borderTop: '1px solid #ddd'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
+          style: {
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 500
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Transition', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          value: frame.transition.type,
+          options: TRANSITION_OPTIONS,
+          onChange: value => onUpdate({
+            transition: {
+              ...frame.transition,
+              type: value
+            }
+          })
+        }), frame.transition.type !== 'none' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Speed (ms)', 'caes-reveal'),
+          value: frame.transition.speed,
+          onChange: value => onUpdate({
+            transition: {
+              ...frame.transition,
+              speed: value
+            }
+          }),
+          min: 100,
+          max: 2000,
+          step: 50
+        })]
       })]
     })]
   });
