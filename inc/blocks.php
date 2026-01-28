@@ -108,5 +108,8 @@ function caes_hub_block_init()
 	// Filtered topics
 	register_block_type(get_template_directory() . '/blocks/build/blocks/filtered-topics');
 
+	// Reveal
+	register_block_type(get_template_directory() . '/blocks/build/blocks/reveal');
+
 }
 add_action('init', 'caes_hub_block_init');
