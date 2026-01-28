@@ -145,11 +145,13 @@
 
 				if ( isInView ) {
 					// Block is in viewport - fix background
+					block.classList.add( 'is-in-view' );
 					background.classList.add( 'is-fixed' );
 					// Trigger initial frame update
 					updateActiveFrame();
 				} else {
 					// Block left viewport - unfix background
+					block.classList.remove( 'is-in-view' );
 					background.classList.remove( 'is-fixed' );
 
 					// Reset to first or last frame based on scroll direction
