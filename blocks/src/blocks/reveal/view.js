@@ -31,10 +31,11 @@
 		/**
 		 * Apply transition to a frame
 		 *
-		 * @param {HTMLElement} frame     The frame element
-		 * @param {boolean}     isActive  Whether frame should be active
+		 * @param {HTMLElement} frame          The frame element
+		 * @param {boolean}     isActive       Whether frame should be active
+		 * @param {HTMLElement} previousFrame  The previously active frame (if any)
 		 */
-		function applyTransition( frame, isActive ) {
+		function applyTransition( frame, isActive, previousFrame ) {
 			const transitionType = frame.dataset.transitionType || 'fade';
 			const transitionSpeed = parseInt( frame.dataset.transitionSpeed, 10 ) || 500;
 
@@ -62,11 +63,20 @@
 						initialTransform = '';
 				}
 
+				// For directional transitions, keep previous frame visible underneath
+				const isDirectional = [ 'up', 'down', 'left', 'right' ].includes( transitionType );
+
 				if ( initialTransform && ! prefersReducedMotion ) {
+					// Keep previous frame visible but behind
+					if ( previousFrame ) {
+						previousFrame.style.zIndex = '1';
+					}
+					
 					// Disable transition temporarily to set initial position
 					frame.style.transitionDuration = '0ms';
 					frame.style.transform = initialTransform;
-					frame.style.opacity = '0';
+					frame.style.opacity = '1'; // Start visible but off-screen
+					frame.style.zIndex = '2'; // Ensure new frame is on top
 
 					// Force reflow to apply initial state
 					frame.offsetHeight;
@@ -79,8 +89,17 @@
 				frame.classList.add( 'is-active' );
 				frame.style.opacity = '1';
 				frame.style.transform = 'translate(0, 0)';
+
+				// For directional transitions, hide previous frame after animation completes
+				if ( isDirectional && previousFrame && ! prefersReducedMotion ) {
+					setTimeout( () => {
+						previousFrame.style.opacity = '0';
+						previousFrame.style.zIndex = '';
+						frame.style.zIndex = '';
+					}, duration );
+				}
 			} else {
-				// Fade out (no directional exit, just opacity)
+				// Fade out non-active frames
 				frame.classList.remove( 'is-active' );
 				frame.style.opacity = '0';
 			}
@@ -117,9 +136,28 @@
 
 			// Update frames if index changed
 			if ( newFrameIndex !== currentFrameIndex ) {
+				const previousFrame = frames[ currentFrameIndex ];
+				const newFrame = frames[ newFrameIndex ];
+				
+				// Apply transition to new active frame
+				applyTransition( newFrame, true, previousFrame );
+				
+				// Mark other frames as inactive (but skip the previous frame for directional transitions)
+				const newTransitionType = newFrame.dataset.transitionType || 'fade';
+				const isDirectional = [ 'up', 'down', 'left', 'right' ].includes( newTransitionType );
+				
 				frames.forEach( ( frame, index ) => {
-					applyTransition( frame, index === newFrameIndex );
+					if ( index !== newFrameIndex ) {
+						// For directional transitions, don't touch the previous frame - setTimeout handles it
+						if ( isDirectional && index === currentFrameIndex ) {
+							frame.classList.remove( 'is-active' );
+							// Keep opacity at 1 until setTimeout fires
+						} else {
+							applyTransition( frame, false, null );
+						}
+					}
 				} );
+				
 				currentFrameIndex = newFrameIndex;
 			}
 
