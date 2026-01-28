@@ -11,9 +11,15 @@ $overlay_color   = $attributes['overlayColor'] ?? '#000000';
 $overlay_opacity = $attributes['overlayOpacity'] ?? 30;
 $min_height      = $attributes['minHeight'] ?? '100vh';
 
-// Early return if no frames
+// Early return if no frames - but still output content
 if ( empty( $frames ) ) {
-	return '';
+	$wrapper_attributes = get_block_wrapper_attributes( [ 'class' => 'caes-reveal' ] );
+	printf(
+		'<div %s><div class="reveal-content">%s</div></div>',
+		$wrapper_attributes,
+		$content
+	);
+	return;
 }
 
 // Generate unique ID for this block instance
@@ -55,6 +61,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
  * @param array $image Image data array.
  * @return string Srcset attribute value.
  */
+if ( ! function_exists( 'caes_reveal_build_srcset' ) ) :
 function caes_reveal_build_srcset( $image ) {
 	if ( empty( $image ) || empty( $image['url'] ) ) {
 		return '';
@@ -91,6 +98,7 @@ function caes_reveal_build_srcset( $image ) {
 
 	return implode( ', ', $srcset_parts );
 }
+endif;
 
 /**
  * Generate duotone filter CSS
@@ -99,6 +107,7 @@ function caes_reveal_build_srcset( $image ) {
  * @param string $frame_id Frame identifier.
  * @return array Filter ID and CSS.
  */
+if ( ! function_exists( 'caes_reveal_get_duotone_filter' ) ) :
 function caes_reveal_get_duotone_filter( $duotone, $frame_id ) {
 	if ( empty( $duotone ) || ! is_array( $duotone ) ) {
 		return [ '', '' ];
@@ -142,6 +151,7 @@ function caes_reveal_get_duotone_filter( $duotone, $frame_id ) {
 
 	return [ $filter_id, $svg ];
 }
+endif;
 ?>
 
 <div <?php echo $wrapper_attributes; ?> data-frames="<?php echo esc_attr( wp_json_encode( $frames_data ) ); ?>">
@@ -219,6 +229,6 @@ function caes_reveal_get_duotone_filter( $duotone, $frame_id ) {
 	</div>
 
 	<div class="reveal-content">
-		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		<?php echo $content; ?>
 	</div>
 </div>
