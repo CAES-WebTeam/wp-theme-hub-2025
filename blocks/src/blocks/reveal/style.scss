@@ -90,18 +90,18 @@
 	}
 
 	// Full-width alignment adjustments
-	&.alignfull {
-		width: 100vw;
-		max-width: 100vw;
-		margin-left: calc(-50vw + 50%);
-		margin-right: calc(-50vw + 50%);
+	// &.alignfull {
+	// 	width: 100vw;
+	// 	max-width: 100vw;
+	// 	margin-left: calc(-50vw + 50%);
+	// 	margin-right: calc(-50vw + 50%);
 
-		.reveal-background {
-			left: 0;
-			right: 0;
-			width: 100vw;
-		}
-	}
+	// 	.reveal-background {
+	// 		left: 0;
+	// 		right: 0;
+	// 		width: 100vw;
+	// 	}
+	// }
 
 	// Wide alignment
 	&.alignwide {
