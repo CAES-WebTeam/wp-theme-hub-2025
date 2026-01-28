@@ -6,7 +6,6 @@ import {
 	MediaUpload,
 	MediaUploadCheck,
 	useSetting,
-	__experimentalDuotonePicker as DuotonePicker,
 } from '@wordpress/block-editor';
 import {
 	Button,
@@ -16,10 +15,10 @@ import {
 	FocalPointPicker,
 	ColorPicker,
 	Popover,
-	__experimentalHStack as HStack,
-	__experimentalVStack as VStack,
 	TextControl,
 	Notice,
+	DuotonePicker,
+	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
 
@@ -168,8 +167,8 @@ const Edit = ( { attributes, setAttributes } ) => {
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Overlay Settings', 'caes-reveal' ) }>
-					<VStack spacing={ 4 }>
-						<HStack alignment="left">
+					<div style={ { display: 'flex', flexDirection: 'column', gap: '16px' } }>
+						<div style={ { display: 'flex', alignItems: 'center', gap: '12px' } }>
 							<span style={ { minWidth: '100px' } }>
 								{ __( 'Overlay Color', 'caes-reveal' ) }
 							</span>
@@ -194,7 +193,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									</Popover>
 								) }
 							</div>
-						</HStack>
+						</div>
 						<RangeControl
 							label={ __( 'Overlay Opacity', 'caes-reveal' ) }
 							value={ overlayOpacity }
@@ -203,7 +202,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							max={ 100 }
 							step={ 5 }
 						/>
-					</VStack>
+					</div>
 				</PanelBody>
 
 				<PanelBody title={ __( 'Layout', 'caes-reveal' ) } initialOpen={ false }>
@@ -227,7 +226,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						</Notice>
 					) }
 
-					<VStack spacing={ 3 }>
+					<div style={ { display: 'flex', flexDirection: 'column', gap: '12px' } }>
 						{ frames.map( ( frame, index ) => (
 							<div
 								key={ frame.id }
@@ -297,7 +296,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 								{ /* Expanded Content */ }
 								{ expandedFrame === index && (
 									<div style={ { padding: '12px', borderTop: '1px solid #ddd' } }>
-										<VStack spacing={ 4 }>
+										<div style={ { display: 'flex', flexDirection: 'column', gap: '16px' } }>
 											{ /* Desktop Image */ }
 											<div>
 												<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
@@ -515,7 +514,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 													style={ { marginLeft: 'auto' } }
 												/>
 											</HStack>
-										</VStack>
+										</div>
 									</div>
 								) }
 							</div>
@@ -524,7 +523,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						<Button variant="primary" onClick={ addFrame } style={ { width: '100%' } }>
 							{ __( 'Add Frame', 'caes-reveal' ) }
 						</Button>
-					</VStack>
+					</div>
 				</PanelBody>
 			</InspectorControls>
 
