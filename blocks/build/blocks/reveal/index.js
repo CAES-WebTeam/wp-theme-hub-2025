@@ -76,9 +76,6 @@ const Edit = ({
   const [expandedFrame, setExpandedFrame] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
   const [showOverlayColorPicker, setShowOverlayColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
 
-  // Get theme duotone palettes
-  const duotonePalette = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useSetting)('color.duotone') || [];
-
   // Add a new frame
   const addFrame = () => {
     const newFrame = {
@@ -518,32 +515,6 @@ const Edit = ({
                     onChange: value => updateFrame(index, {
                       focalPoint: value
                     })
-                  })]
-                }), duotonePalette.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
-                    style: {
-                      display: 'block',
-                      marginBottom: '8px',
-                      fontWeight: 500
-                    },
-                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter', 'caes-reveal')
-                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
-                    duotonePalette: duotonePalette,
-                    disableCustomDuotone: false,
-                    value: frame.duotone,
-                    onChange: value => updateFrame(index, {
-                      duotone: value
-                    })
-                  }), frame.duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-                    variant: "link",
-                    isDestructive: true,
-                    onClick: () => updateFrame(index, {
-                      duotone: null
-                    }),
-                    style: {
-                      marginTop: '8px'
-                    },
-                    children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Clear Duotone', 'caes-reveal')
                   })]
                 }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
                   children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {

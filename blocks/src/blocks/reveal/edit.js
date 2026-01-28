@@ -5,7 +5,6 @@ import {
 	InspectorControls,
 	MediaUpload,
 	MediaUploadCheck,
-	useSetting,
 } from '@wordpress/block-editor';
 import {
 	Button,
@@ -17,7 +16,6 @@ import {
 	Popover,
 	TextControl,
 	Notice,
-	DuotonePicker,
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { useState } from '@wordpress/element';
@@ -51,9 +49,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 	const { frames, overlayColor, overlayOpacity, minHeight } = attributes;
 	const [ expandedFrame, setExpandedFrame ] = useState( null );
 	const [ showOverlayColorPicker, setShowOverlayColorPicker ] = useState( false );
-
-	// Get theme duotone palettes
-	const duotonePalette = useSetting( 'color.duotone' ) || [];
 
 	// Add a new frame
 	const addFrame = () => {
@@ -428,31 +423,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 														value={ frame.focalPoint }
 														onChange={ ( value ) => updateFrame( index, { focalPoint: value } ) }
 													/>
-												</div>
-											) }
-
-											{ /* Duotone */ }
-											{ duotonePalette.length > 0 && (
-												<div>
-													<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-														{ __( 'Duotone Filter', 'caes-reveal' ) }
-													</label>
-													<DuotonePicker
-														duotonePalette={ duotonePalette }
-														disableCustomDuotone={ false }
-														value={ frame.duotone }
-														onChange={ ( value ) => updateFrame( index, { duotone: value } ) }
-													/>
-													{ frame.duotone && (
-														<Button
-															variant="link"
-															isDestructive
-															onClick={ () => updateFrame( index, { duotone: null } ) }
-															style={ { marginTop: '8px' } }
-														>
-															{ __( 'Clear Duotone', 'caes-reveal' ) }
-														</Button>
-													) }
 												</div>
 											) }
 
