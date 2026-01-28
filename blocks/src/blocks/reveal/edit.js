@@ -35,7 +35,8 @@ const DEFAULT_FRAME = {
 	id: '',
 	desktopImage: null,
 	mobileImage: null,
-	focalPoint: { x: 0.5, y: 0.5 },
+	desktopFocalPoint: { x: 0.5, y: 0.5 },
+	mobileFocalPoint: { x: 0.5, y: 0.5 },
 	duotone: null,
 	transition: {
 		type: 'fade',
@@ -253,8 +254,8 @@ const Edit = ( { attributes, setAttributes } ) => {
 									width: '100%',
 									height: '100%',
 									objectFit: 'cover',
-									objectPosition: firstFrame?.focalPoint
-										? `${ firstFrame.focalPoint.x * 100 }% ${ firstFrame.focalPoint.y * 100 }%`
+									objectPosition: firstFrame?.desktopFocalPoint
+										? `${ firstFrame.desktopFocalPoint.x * 100 }% ${ firstFrame.desktopFocalPoint.y * 100 }%`
 										: 'center',
 								} }
 							/>
@@ -653,6 +654,19 @@ const FrameEditor = ( {
 								placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
 								disabled={ ! frame.desktopImage }
 							/>
+
+							{ frame.desktopImage && (
+								<div style={ { marginTop: '16px' } }>
+									<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' } }>
+										{ __( 'Set Focus', 'caes-reveal' ) }
+									</label>
+									<FocalPointPicker
+										url={ frame.desktopImage.url }
+										value={ frame.desktopFocalPoint || { x: 0.5, y: 0.5 } }
+										onChange={ ( value ) => onUpdate( { desktopFocalPoint: value } ) }
+									/>
+								</div>
+							) }
 						</div>
 
 						{ /* Mobile Image Column */ }
@@ -789,22 +803,21 @@ const FrameEditor = ( {
 								placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
 								disabled={ ! frame.mobileImage }
 							/>
+
+							{ frame.mobileImage && (
+								<div style={ { marginTop: '16px' } }>
+									<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' } }>
+										{ __( 'Set Focus', 'caes-reveal' ) }
+									</label>
+									<FocalPointPicker
+										url={ frame.mobileImage.url }
+										value={ frame.mobileFocalPoint || { x: 0.5, y: 0.5 } }
+										onChange={ ( value ) => onUpdate( { mobileFocalPoint: value } ) }
+									/>
+								</div>
+							) }
 						</div>
 					</div>
-
-					{ /* Focal Point */ }
-					{ frame.desktopImage && (
-						<div style={ { marginBottom: '20px' } }>
-							<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-								{ __( 'Focal Point', 'caes-reveal' ) }
-							</label>
-							<FocalPointPicker
-								url={ frame.desktopImage.url }
-								value={ frame.focalPoint }
-								onChange={ ( value ) => onUpdate( { focalPoint: value } ) }
-							/>
-						</div>
-					) }
 
 					{ /* Transition Settings */ }
 					<div

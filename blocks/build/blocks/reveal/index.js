@@ -50,7 +50,11 @@ const DEFAULT_FRAME = {
   id: '',
   desktopImage: null,
   mobileImage: null,
-  focalPoint: {
+  desktopFocalPoint: {
+    x: 0.5,
+    y: 0.5
+  },
+  mobileFocalPoint: {
     x: 0.5,
     y: 0.5
   },
@@ -305,7 +309,7 @@ const Edit = ({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: firstFrame?.focalPoint ? `${firstFrame.focalPoint.x * 100}% ${firstFrame.focalPoint.y * 100}%` : 'center'
+              objectPosition: firstFrame?.desktopFocalPoint ? `${firstFrame.desktopFocalPoint.x * 100}% ${firstFrame.desktopFocalPoint.y * 100}%` : 'center'
             }
           }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
             style: {
@@ -725,6 +729,28 @@ const FrameEditor = ({
             },
             placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Describe media for screenreaders', 'caes-reveal'),
             disabled: !frame.desktopImage
+          }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            style: {
+              marginTop: '16px'
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
+              style: {
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 500,
+                fontSize: '13px'
+              },
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus', 'caes-reveal')
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FocalPointPicker, {
+              url: frame.desktopImage.url,
+              value: frame.desktopFocalPoint || {
+                x: 0.5,
+                y: 0.5
+              },
+              onChange: value => onUpdate({
+                desktopFocalPoint: value
+              })
+            })]
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           style: {
@@ -908,25 +934,29 @@ const FrameEditor = ({
             },
             placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Describe media for screenreaders', 'caes-reveal'),
             disabled: !frame.mobileImage
+          }), frame.mobileImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            style: {
+              marginTop: '16px'
+            },
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
+              style: {
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 500,
+                fontSize: '13px'
+              },
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus', 'caes-reveal')
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FocalPointPicker, {
+              url: frame.mobileImage.url,
+              value: frame.mobileFocalPoint || {
+                x: 0.5,
+                y: 0.5
+              },
+              onChange: value => onUpdate({
+                mobileFocalPoint: value
+              })
+            })]
           })]
-        })]
-      }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        style: {
-          marginBottom: '20px'
-        },
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
-          style: {
-            display: 'block',
-            marginBottom: '8px',
-            fontWeight: 500
-          },
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Focal Point', 'caes-reveal')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FocalPointPicker, {
-          url: frame.desktopImage.url,
-          value: frame.focalPoint,
-          onChange: value => onUpdate({
-            focalPoint: value
-          })
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         style: {

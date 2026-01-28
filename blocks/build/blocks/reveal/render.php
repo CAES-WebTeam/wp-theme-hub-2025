@@ -36,9 +36,10 @@ $overlay_rgba = sprintf( 'rgba(%d, %d, %d, %s)', $r, $g, $b, $overlay_opacity / 
 $frames_data = array_map(
 	function ( $frame, $index ) {
 		return [
-			'index'      => $index,
-			'transition' => $frame['transition'] ?? [ 'type' => 'fade', 'speed' => 500 ],
-			'focalPoint' => $frame['focalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ],
+			'index'             => $index,
+			'transition'        => $frame['transition'] ?? [ 'type' => 'fade', 'speed' => 500 ],
+			'desktopFocalPoint' => $frame['desktopFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ],
+			'mobileFocalPoint'  => $frame['mobileFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ],
 		];
 	},
 	$frames,
@@ -169,11 +170,12 @@ endif;
 
 	<div class="reveal-background" aria-hidden="true">
 		<?php foreach ( $frames as $index => $frame ) :
-			$desktop_image = $frame['desktopImage'] ?? null;
-			$mobile_image  = $frame['mobileImage'] ?? null;
-			$focal_point   = $frame['focalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
-			$transition    = $frame['transition'] ?? [ 'type' => 'fade', 'speed' => 500 ];
-			$duotone       = $frame['duotone'] ?? null;
+			$desktop_image       = $frame['desktopImage'] ?? null;
+			$mobile_image        = $frame['mobileImage'] ?? null;
+			$desktop_focal_point = $frame['desktopFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
+			$mobile_focal_point  = $frame['mobileFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
+			$transition          = $frame['transition'] ?? [ 'type' => 'fade', 'speed' => 500 ];
+			$duotone             = $frame['duotone'] ?? null;
 
 			if ( empty( $desktop_image ) ) {
 				continue;
@@ -181,8 +183,10 @@ endif;
 
 			// Build inline styles
 			$frame_styles = [];
-			$frame_styles[] = sprintf( '--focal-x: %s%%', ( $focal_point['x'] ?? 0.5 ) * 100 );
-			$frame_styles[] = sprintf( '--focal-y: %s%%', ( $focal_point['y'] ?? 0.5 ) * 100 );
+			$frame_styles[] = sprintf( '--desktop-focal-x: %s%%', ( $desktop_focal_point['x'] ?? 0.5 ) * 100 );
+			$frame_styles[] = sprintf( '--desktop-focal-y: %s%%', ( $desktop_focal_point['y'] ?? 0.5 ) * 100 );
+			$frame_styles[] = sprintf( '--mobile-focal-x: %s%%', ( $mobile_focal_point['x'] ?? 0.5 ) * 100 );
+			$frame_styles[] = sprintf( '--mobile-focal-y: %s%%', ( $mobile_focal_point['y'] ?? 0.5 ) * 100 );
 			$frame_styles[] = sprintf( '--transition-speed: %dms', $transition['speed'] ?? 500 );
 
 			// Duotone filter
@@ -229,6 +233,6 @@ endif;
 	</div>
 
 	<div class="reveal-content">
-		<?php echo $content; ?>
+		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	</div>
 </div>
