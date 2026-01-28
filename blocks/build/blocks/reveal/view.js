@@ -27,147 +27,50 @@
       return;
     }
     const frameCount = frames.length;
-    let currentFrameIndex = 0;
     let ticking = false;
 
     /**
-     * Get the exit transform for a direction (rewind - go back to where it entered from)
+     * Calculate styles for the entering frame based on type and progress
+     * @param {string} type Transition type (up, down, left, right, fade)
+     * @param {number} progress 0 to 1
+     * @return {object} Object with opacity and transform properties
      */
-    function getExitTransform(direction) {
-      switch (direction) {
+    function getTransitionStyles(type, progress) {
+      // Force fade for reduced motion
+      if (prefersReducedMotion) {
+        type = 'fade';
+      }
+      let styles = {
+        opacity: '1',
+        transform: 'translate(0, 0)'
+      };
+      switch (type) {
+        case 'fade':
+          styles.opacity = progress.toFixed(3);
+          styles.transform = 'translate(0, 0)';
+          break;
         case 'up':
-          return 'translateY(100%)';
-        // Came from bottom, go back to bottom
+          // Enter from bottom
+          styles.transform = `translateY(${(1 - progress) * 100}%)`;
+          break;
         case 'down':
-          return 'translateY(-100%)';
-        // Came from top, go back to top
+          // Enter from top
+          styles.transform = `translateY(${(1 - progress) * -100}%)`;
+          break;
         case 'left':
-          return 'translateX(100%)';
-        // Came from right, go back to right
+          // Enter from right
+          styles.transform = `translateX(${(1 - progress) * 100}%)`;
+          break;
         case 'right':
-          return 'translateX(-100%)';
-        // Came from left, go back to left
+          // Enter from left
+          styles.transform = `translateX(${(1 - progress) * -100}%)`;
+          break;
         default:
-          return '';
+          // None or unknown
+          styles.opacity = progress >= 0.5 ? '1' : '0';
+          break;
       }
-    }
-
-    /**
-     * Get the enter transform for a direction
-     */
-    function getEnterTransform(direction) {
-      switch (direction) {
-        case 'up':
-          return 'translateY(100%)';
-        // Enter from bottom
-        case 'down':
-          return 'translateY(-100%)';
-        // Enter from top
-        case 'left':
-          return 'translateX(100%)';
-        // Enter from right
-        case 'right':
-          return 'translateX(-100%)';
-        // Enter from left
-        default:
-          return '';
-      }
-    }
-
-    /**
-     * Apply forward transition (scrolling down) - new frame slides in over old frame
-     */
-    function applyForwardTransition(newFrame, oldFrame) {
-      const transitionType = newFrame.dataset.transitionType || 'fade';
-      const transitionSpeed = parseInt(newFrame.dataset.transitionSpeed, 10) || 500;
-      const duration = prefersReducedMotion ? 0 : transitionSpeed;
-      const isDirectional = ['up', 'down', 'left', 'right'].includes(transitionType);
-      const initialTransform = getEnterTransform(transitionType);
-      if (isDirectional && initialTransform && !prefersReducedMotion) {
-        // Keep old frame visible underneath
-        if (oldFrame) {
-          oldFrame.style.zIndex = '1';
-          oldFrame.style.opacity = '1';
-        }
-
-        // Position new frame off-screen
-        newFrame.style.transitionDuration = '0ms';
-        newFrame.style.transform = initialTransform;
-        newFrame.style.opacity = '1';
-        newFrame.style.zIndex = '2';
-        newFrame.offsetHeight; // Force reflow
-
-        // Animate new frame in
-        newFrame.style.transitionDuration = `${duration}ms`;
-        newFrame.classList.add('is-active');
-        newFrame.style.transform = 'translate(0, 0)';
-
-        // Clean up old frame after animation
-        if (oldFrame) {
-          setTimeout(() => {
-            oldFrame.classList.remove('is-active');
-            oldFrame.style.opacity = '0';
-            oldFrame.style.zIndex = '';
-            newFrame.style.zIndex = '';
-          }, duration);
-        }
-      } else {
-        // Fade transition
-        newFrame.style.transitionDuration = `${duration}ms`;
-        newFrame.classList.add('is-active');
-        newFrame.style.opacity = '1';
-        newFrame.style.transform = 'translate(0, 0)';
-        if (oldFrame) {
-          oldFrame.style.transitionDuration = `${duration}ms`;
-          oldFrame.classList.remove('is-active');
-          oldFrame.style.opacity = '0';
-        }
-      }
-    }
-
-    /**
-     * Apply reverse transition (scrolling up) - old frame slides out, revealing new frame underneath
-     */
-    function applyReverseTransition(newFrame, oldFrame) {
-      const transitionType = oldFrame?.dataset.transitionType || 'fade';
-      const transitionSpeed = parseInt(oldFrame?.dataset.transitionSpeed, 10) || 500;
-      const duration = prefersReducedMotion ? 0 : transitionSpeed;
-      const isDirectional = ['up', 'down', 'left', 'right'].includes(transitionType);
-      const exitTransform = getExitTransform(transitionType);
-      if (isDirectional && exitTransform && oldFrame && !prefersReducedMotion) {
-        // Make new frame visible underneath immediately
-        newFrame.style.transitionDuration = '0ms';
-        newFrame.style.transform = 'translate(0, 0)';
-        newFrame.style.opacity = '1';
-        newFrame.style.zIndex = '1';
-        newFrame.classList.add('is-active');
-        newFrame.offsetHeight; // Force reflow
-
-        // Old frame slides out
-        oldFrame.style.zIndex = '2';
-        oldFrame.style.transitionDuration = `${duration}ms`;
-        oldFrame.style.transform = exitTransform;
-
-        // Clean up after animation
-        setTimeout(() => {
-          oldFrame.classList.remove('is-active');
-          oldFrame.style.opacity = '0';
-          oldFrame.style.transform = '';
-          oldFrame.style.zIndex = '';
-          newFrame.style.zIndex = '';
-        }, duration);
-      } else {
-        // Fade transition
-        newFrame.style.transitionDuration = `${duration}ms`;
-        newFrame.classList.add('is-active');
-        newFrame.style.opacity = '1';
-        newFrame.style.transform = 'translate(0, 0)';
-        if (oldFrame) {
-          oldFrame.style.transitionDuration = `${duration}ms`;
-          oldFrame.classList.remove('is-active');
-          oldFrame.style.opacity = '0';
-        }
-      }
+      return styles;
     }
 
     /**
@@ -180,44 +83,53 @@
       const blockHeight = block.offsetHeight;
 
       // Calculate scroll progress through the block
-      // Progress is 0 when block top is at viewport top
-      // Progress is 1 when block bottom is at viewport bottom
       const scrollableDistance = blockHeight - viewportHeight;
       if (scrollableDistance <= 0) {
         ticking = false;
         return;
       }
 
-      // How far we've scrolled into the block (blockTop is negative when scrolled past top)
+      // How far we've scrolled into the block
       const scrolledDistance = Math.max(0, -blockTop);
+      // 0.0 to 1.0
       const scrollProgress = Math.min(1, scrolledDistance / scrollableDistance);
 
-      // Determine which frame should be active
-      const newFrameIndex = Math.min(frameCount - 1, Math.floor(scrollProgress * frameCount));
+      // Map 0..1 to 0..(Frames-1)
+      const totalTransitions = frameCount - 1;
+      // Ensure we don't go out of bounds
+      const virtualScroll = Math.min(totalTransitions, scrollProgress * totalTransitions);
 
-      // Update frames if index changed
-      if (newFrameIndex !== currentFrameIndex) {
-        const oldFrame = frames[currentFrameIndex];
-        const newFrame = frames[newFrameIndex];
-        const isScrollingDown = newFrameIndex > currentFrameIndex;
+      // Determine which frames are involved
+      const currentIndex = Math.floor(virtualScroll);
+      const nextIndex = Math.min(frameCount - 1, currentIndex + 1);
+      const localProgress = virtualScroll - currentIndex;
 
-        // Hide any frames that aren't involved in the transition
-        frames.forEach((frame, index) => {
-          if (index !== newFrameIndex && index !== currentFrameIndex) {
-            frame.classList.remove('is-active');
-            frame.style.opacity = '0';
-            frame.style.zIndex = '';
-          }
-        });
-
-        // Apply appropriate transition based on scroll direction
-        if (isScrollingDown) {
-          applyForwardTransition(newFrame, oldFrame);
+      // Update all frames
+      frames.forEach((frame, index) => {
+        // Kill CSS transitions so we can scrub manually
+        frame.style.transitionDuration = '0ms';
+        if (index === currentIndex) {
+          // This is the "bottom" frame of the current stack
+          // It stays static and fully visible behind the entering frame
+          frame.classList.add('is-active');
+          frame.style.opacity = '1';
+          frame.style.transform = 'translate(0, 0)';
+          frame.style.zIndex = '1';
+        } else if (index === nextIndex && nextIndex !== currentIndex) {
+          // This is the "top" frame entering the stack
+          const type = frame.dataset.transitionType || 'fade';
+          const styles = getTransitionStyles(type, localProgress);
+          frame.classList.add('is-active');
+          frame.style.opacity = styles.opacity;
+          frame.style.transform = styles.transform;
+          frame.style.zIndex = '2';
         } else {
-          applyReverseTransition(newFrame, oldFrame);
+          // Frames not involved in the current transition pair
+          frame.classList.remove('is-active');
+          frame.style.opacity = '0';
+          frame.style.zIndex = '0';
         }
-        currentFrameIndex = newFrameIndex;
-      }
+      });
       ticking = false;
     }
 
@@ -236,21 +148,10 @@
       passive: true
     });
 
-    // Initial state - ensure first frame is visible
-    frames.forEach((frame, index) => {
-      if (index === 0) {
-        frame.classList.add('is-active');
-        frame.style.opacity = '1';
-      } else {
-        frame.classList.remove('is-active');
-        frame.style.opacity = '0';
-      }
-    });
-
-    // Initial scroll state check
+    // Initial state
     updateActiveFrame();
 
-    // Store cleanup function on element for potential future use
+    // Store cleanup function on element
     block._revealCleanup = function () {
       window.removeEventListener('scroll', onScroll);
     };
