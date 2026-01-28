@@ -35,6 +35,7 @@
 		 * @param {boolean}     isActive  Whether frame should be active
 		 */
 		function applyTransition( frame, isActive ) {
+			const transitionType = frame.dataset.transitionType || 'fade';
 			const transitionSpeed = parseInt( frame.dataset.transitionSpeed, 10 ) || 500;
 
 			// Set transition duration (or 0 for reduced motion)
@@ -42,10 +43,44 @@
 			frame.style.transitionDuration = `${ duration }ms`;
 
 			if ( isActive ) {
+				// Set initial position based on transition type (before animating in)
+				let initialTransform = '';
+				switch ( transitionType ) {
+					case 'up':
+						initialTransform = 'translateY(100%)';
+						break;
+					case 'down':
+						initialTransform = 'translateY(-100%)';
+						break;
+					case 'left':
+						initialTransform = 'translateX(100%)';
+						break;
+					case 'right':
+						initialTransform = 'translateX(-100%)';
+						break;
+					default:
+						initialTransform = '';
+				}
+
+				if ( initialTransform && ! prefersReducedMotion ) {
+					// Disable transition temporarily to set initial position
+					frame.style.transitionDuration = '0ms';
+					frame.style.transform = initialTransform;
+					frame.style.opacity = '0';
+
+					// Force reflow to apply initial state
+					frame.offsetHeight;
+
+					// Re-enable transition and animate to final position
+					frame.style.transitionDuration = `${ duration }ms`;
+				}
+
+				// Animate to visible, centered position
 				frame.classList.add( 'is-active' );
 				frame.style.opacity = '1';
 				frame.style.transform = 'translate(0, 0)';
 			} else {
+				// Fade out (no directional exit, just opacity)
 				frame.classList.remove( 'is-active' );
 				frame.style.opacity = '0';
 			}
