@@ -29,79 +29,138 @@
 		let ticking = false;
 
 		/**
-		 * Apply transition to a frame
-		 *
-		 * @param {HTMLElement} frame          The frame element
-		 * @param {boolean}     isActive       Whether frame should be active
-		 * @param {HTMLElement} previousFrame  The previously active frame (if any)
+		 * Get the exit transform for a direction (rewind - go back to where it entered from)
 		 */
-		function applyTransition( frame, isActive, previousFrame ) {
-			const transitionType = frame.dataset.transitionType || 'fade';
-			const transitionSpeed = parseInt( frame.dataset.transitionSpeed, 10 ) || 500;
+		function getExitTransform( direction ) {
+			switch ( direction ) {
+				case 'up':
+					return 'translateY(100%)'; // Came from bottom, go back to bottom
+				case 'down':
+					return 'translateY(-100%)'; // Came from top, go back to top
+				case 'left':
+					return 'translateX(100%)'; // Came from right, go back to right
+				case 'right':
+					return 'translateX(-100%)'; // Came from left, go back to left
+				default:
+					return '';
+			}
+		}
 
-			// Set transition duration (or 0 for reduced motion)
+		/**
+		 * Get the enter transform for a direction
+		 */
+		function getEnterTransform( direction ) {
+			switch ( direction ) {
+				case 'up':
+					return 'translateY(100%)'; // Enter from bottom
+				case 'down':
+					return 'translateY(-100%)'; // Enter from top
+				case 'left':
+					return 'translateX(100%)'; // Enter from right
+				case 'right':
+					return 'translateX(-100%)'; // Enter from left
+				default:
+					return '';
+			}
+		}
+
+		/**
+		 * Apply forward transition (scrolling down) - new frame slides in over old frame
+		 */
+		function applyForwardTransition( newFrame, oldFrame ) {
+			const transitionType = newFrame.dataset.transitionType || 'fade';
+			const transitionSpeed = parseInt( newFrame.dataset.transitionSpeed, 10 ) || 500;
 			const duration = prefersReducedMotion ? 0 : transitionSpeed;
-			frame.style.transitionDuration = `${ duration }ms`;
+			const isDirectional = [ 'up', 'down', 'left', 'right' ].includes( transitionType );
+			const initialTransform = getEnterTransform( transitionType );
 
-			if ( isActive ) {
-				// Set initial position based on transition type (before animating in)
-				let initialTransform = '';
-				switch ( transitionType ) {
-					case 'up':
-						initialTransform = 'translateY(100%)';
-						break;
-					case 'down':
-						initialTransform = 'translateY(-100%)';
-						break;
-					case 'left':
-						initialTransform = 'translateX(100%)';
-						break;
-					case 'right':
-						initialTransform = 'translateX(-100%)';
-						break;
-					default:
-						initialTransform = '';
+			if ( isDirectional && initialTransform && ! prefersReducedMotion ) {
+				// Keep old frame visible underneath
+				if ( oldFrame ) {
+					oldFrame.style.zIndex = '1';
+					oldFrame.style.opacity = '1';
 				}
 
-				// For directional transitions, keep previous frame visible underneath
-				const isDirectional = [ 'up', 'down', 'left', 'right' ].includes( transitionType );
+				// Position new frame off-screen
+				newFrame.style.transitionDuration = '0ms';
+				newFrame.style.transform = initialTransform;
+				newFrame.style.opacity = '1';
+				newFrame.style.zIndex = '2';
+				newFrame.offsetHeight; // Force reflow
 
-				if ( initialTransform && ! prefersReducedMotion ) {
-					// Keep previous frame visible but behind
-					if ( previousFrame ) {
-						previousFrame.style.zIndex = '1';
-					}
-					
-					// Disable transition temporarily to set initial position
-					frame.style.transitionDuration = '0ms';
-					frame.style.transform = initialTransform;
-					frame.style.opacity = '1'; // Start visible but off-screen
-					frame.style.zIndex = '2'; // Ensure new frame is on top
+				// Animate new frame in
+				newFrame.style.transitionDuration = `${ duration }ms`;
+				newFrame.classList.add( 'is-active' );
+				newFrame.style.transform = 'translate(0, 0)';
 
-					// Force reflow to apply initial state
-					frame.offsetHeight;
-
-					// Re-enable transition and animate to final position
-					frame.style.transitionDuration = `${ duration }ms`;
-				}
-
-				// Animate to visible, centered position
-				frame.classList.add( 'is-active' );
-				frame.style.opacity = '1';
-				frame.style.transform = 'translate(0, 0)';
-
-				// For directional transitions, hide previous frame after animation completes
-				if ( isDirectional && previousFrame && ! prefersReducedMotion ) {
+				// Clean up old frame after animation
+				if ( oldFrame ) {
 					setTimeout( () => {
-						previousFrame.style.opacity = '0';
-						previousFrame.style.zIndex = '';
-						frame.style.zIndex = '';
+						oldFrame.classList.remove( 'is-active' );
+						oldFrame.style.opacity = '0';
+						oldFrame.style.zIndex = '';
+						newFrame.style.zIndex = '';
 					}, duration );
 				}
 			} else {
-				// Fade out non-active frames
-				frame.classList.remove( 'is-active' );
-				frame.style.opacity = '0';
+				// Fade transition
+				newFrame.style.transitionDuration = `${ duration }ms`;
+				newFrame.classList.add( 'is-active' );
+				newFrame.style.opacity = '1';
+				newFrame.style.transform = 'translate(0, 0)';
+
+				if ( oldFrame ) {
+					oldFrame.style.transitionDuration = `${ duration }ms`;
+					oldFrame.classList.remove( 'is-active' );
+					oldFrame.style.opacity = '0';
+				}
+			}
+		}
+
+		/**
+		 * Apply reverse transition (scrolling up) - old frame slides out, revealing new frame underneath
+		 */
+		function applyReverseTransition( newFrame, oldFrame ) {
+			const transitionType = oldFrame?.dataset.transitionType || 'fade';
+			const transitionSpeed = parseInt( oldFrame?.dataset.transitionSpeed, 10 ) || 500;
+			const duration = prefersReducedMotion ? 0 : transitionSpeed;
+			const isDirectional = [ 'up', 'down', 'left', 'right' ].includes( transitionType );
+			const exitTransform = getExitTransform( transitionType );
+
+			if ( isDirectional && exitTransform && oldFrame && ! prefersReducedMotion ) {
+				// Make new frame visible underneath immediately
+				newFrame.style.transitionDuration = '0ms';
+				newFrame.style.transform = 'translate(0, 0)';
+				newFrame.style.opacity = '1';
+				newFrame.style.zIndex = '1';
+				newFrame.classList.add( 'is-active' );
+				newFrame.offsetHeight; // Force reflow
+
+				// Old frame slides out
+				oldFrame.style.zIndex = '2';
+				oldFrame.style.transitionDuration = `${ duration }ms`;
+				oldFrame.style.transform = exitTransform;
+
+				// Clean up after animation
+				setTimeout( () => {
+					oldFrame.classList.remove( 'is-active' );
+					oldFrame.style.opacity = '0';
+					oldFrame.style.transform = '';
+					oldFrame.style.zIndex = '';
+					newFrame.style.zIndex = '';
+				}, duration );
+			} else {
+				// Fade transition
+				newFrame.style.transitionDuration = `${ duration }ms`;
+				newFrame.classList.add( 'is-active' );
+				newFrame.style.opacity = '1';
+				newFrame.style.transform = 'translate(0, 0)';
+
+				if ( oldFrame ) {
+					oldFrame.style.transitionDuration = `${ duration }ms`;
+					oldFrame.classList.remove( 'is-active' );
+					oldFrame.style.opacity = '0';
+				}
 			}
 		}
 
@@ -136,27 +195,25 @@
 
 			// Update frames if index changed
 			if ( newFrameIndex !== currentFrameIndex ) {
-				const previousFrame = frames[ currentFrameIndex ];
+				const oldFrame = frames[ currentFrameIndex ];
 				const newFrame = frames[ newFrameIndex ];
+				const isScrollingDown = newFrameIndex > currentFrameIndex;
 				
-				// Apply transition to new active frame
-				applyTransition( newFrame, true, previousFrame );
-				
-				// Mark other frames as inactive (but skip the previous frame for directional transitions)
-				const newTransitionType = newFrame.dataset.transitionType || 'fade';
-				const isDirectional = [ 'up', 'down', 'left', 'right' ].includes( newTransitionType );
-				
+				// Hide any frames that aren't involved in the transition
 				frames.forEach( ( frame, index ) => {
-					if ( index !== newFrameIndex ) {
-						// For directional transitions, don't touch the previous frame - setTimeout handles it
-						if ( isDirectional && index === currentFrameIndex ) {
-							frame.classList.remove( 'is-active' );
-							// Keep opacity at 1 until setTimeout fires
-						} else {
-							applyTransition( frame, false, null );
-						}
+					if ( index !== newFrameIndex && index !== currentFrameIndex ) {
+						frame.classList.remove( 'is-active' );
+						frame.style.opacity = '0';
+						frame.style.zIndex = '';
 					}
 				} );
+
+				// Apply appropriate transition based on scroll direction
+				if ( isScrollingDown ) {
+					applyForwardTransition( newFrame, oldFrame );
+				} else {
+					applyReverseTransition( newFrame, oldFrame );
+				}
 				
 				currentFrameIndex = newFrameIndex;
 			}
