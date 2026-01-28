@@ -19,32 +19,57 @@
     }
     const frameCount = frames.length;
     let ticking = false;
+
+    /**
+     * Get transition styles for the incoming frame.
+     * 
+     * For wipe transitions, we use clip-path: inset() to reveal the image.
+     * The image stays stationary; only the clipping boundary moves.
+     * 
+     * clip-path: inset(top right bottom left)
+     * - 'up' wipe: reveals from bottom to top, so we clip from top
+     * - 'down' wipe: reveals from top to bottom, so we clip from bottom
+     * - 'left' wipe: reveals from right to left, so we clip from left
+     * - 'right' wipe: reveals from left to right, so we clip from right
+     */
     function getTransitionStyles(type, progress) {
       if (prefersReducedMotion) {
         type = 'fade';
       }
+
+      // Default: fully visible, no clipping
       let styles = {
         opacity: '1',
-        transform: 'translate(0, 0)'
+        clipPath: 'inset(0 0 0 0)'
       };
+
+      // Calculate the remaining amount to clip (inverse of progress)
+      const clipAmount = ((1 - progress) * 100).toFixed(2);
       switch (type) {
         case 'fade':
           styles.opacity = progress.toFixed(3);
+          styles.clipPath = 'none';
           break;
         case 'up':
-          styles.transform = `translateY(${(1 - progress) * 100}%)`;
+          // Wipe upward: reveal from bottom, clip from top
+          styles.clipPath = `inset(${clipAmount}% 0 0 0)`;
           break;
         case 'down':
-          styles.transform = `translateY(${(1 - progress) * -100}%)`;
+          // Wipe downward: reveal from top, clip from bottom
+          styles.clipPath = `inset(0 0 ${clipAmount}% 0)`;
           break;
         case 'left':
-          styles.transform = `translateX(${(1 - progress) * 100}%)`;
+          // Wipe leftward: reveal from right, clip from left
+          styles.clipPath = `inset(0 0 0 ${clipAmount}%)`;
           break;
         case 'right':
-          styles.transform = `translateX(${(1 - progress) * -100}%)`;
+          // Wipe rightward: reveal from left, clip from right
+          styles.clipPath = `inset(0 ${clipAmount}% 0 0)`;
           break;
         default:
+          // 'none' or unknown: hard cut at 50%
           styles.opacity = progress >= 0.5 ? '1' : '0';
+          styles.clipPath = 'none';
           break;
       }
       return styles;
@@ -75,23 +100,24 @@
         // Kill CSS transitions to allow manual scrubbing
         frame.style.transitionDuration = '0ms';
         if (index === currentIndex) {
-          // Current base frame
+          // Current base frame - fully visible, no clipping
           frame.classList.add('is-active');
           frame.style.opacity = '1';
-          frame.style.transform = 'translate(0, 0)';
+          frame.style.clipPath = 'none';
           frame.style.zIndex = '1';
         } else if (index === nextIndex && nextIndex !== currentIndex) {
-          // Incoming frame
+          // Incoming frame - apply wipe/fade transition
           const type = frame.dataset.transitionType || 'fade';
           const styles = getTransitionStyles(type, localProgress);
           frame.classList.add('is-active');
           frame.style.opacity = styles.opacity;
-          frame.style.transform = styles.transform;
+          frame.style.clipPath = styles.clipPath;
           frame.style.zIndex = '2';
         } else {
-          // Inactive frames
+          // Inactive frames - fully clipped/hidden
           frame.classList.remove('is-active');
           frame.style.opacity = '0';
+          frame.style.clipPath = 'inset(0 0 0 0)';
           frame.style.zIndex = '0';
         }
       });

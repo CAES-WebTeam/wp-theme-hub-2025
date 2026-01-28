@@ -28,10 +28,11 @@
 		position: absolute;
 		inset: 0;
 		opacity: 0;
-		transition-property: opacity, transform;
+		clip-path: inset(0 0 0 0); // Fully clipped by default
+		transition-property: opacity, clip-path;
 		transition-timing-function: ease-out;
 		transition-duration: var(--transition-speed, 500ms);
-		will-change: opacity, transform;
+		will-change: opacity, clip-path;
 
 		&.is-active {
 			opacity: 1;
@@ -103,12 +104,12 @@
 .reveal-frame {
 	// Fade (default) - just opacity, handled above
 
-	// Directional transitions - initial states set by JS
+	// Wipe transitions - use clip-path for reveal effect
 	&[data-transition-type="up"],
 	&[data-transition-type="down"],
 	&[data-transition-type="left"],
 	&[data-transition-type="right"] {
-		transition-property: opacity, transform;
+		transition-property: opacity, clip-path;
 	}
 }
 
