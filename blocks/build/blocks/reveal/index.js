@@ -46,6 +46,16 @@ const TRANSITION_OPTIONS = [{
   label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Right', 'caes-reveal'),
   value: 'right'
 }];
+const SPEED_OPTIONS = [{
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Slow', 'caes-reveal'),
+  value: 'slow'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Normal', 'caes-reveal'),
+  value: 'normal'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Fast', 'caes-reveal'),
+  value: 'fast'
+}];
 const DEFAULT_FRAME = {
   id: '',
   desktopImage: null,
@@ -60,8 +70,8 @@ const DEFAULT_FRAME = {
   },
   duotone: null,
   transition: {
-    type: 'fade',
-    speed: 500
+    type: 'fade'
+    // Speed is now handled globally
   }
 };
 const generateFrameId = () => {
@@ -75,7 +85,8 @@ const Edit = ({
     frames,
     overlayColor,
     overlayOpacity,
-    minHeight
+    minHeight,
+    scrollSpeed
   } = attributes;
   const [isPreviewMode, setIsPreviewMode] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [showOverlayColorPicker, setShowOverlayColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
@@ -175,13 +186,28 @@ const Edit = ({
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
+  // Calculate min-height based on speed for the editor view
+  // This mimics the logic in render.php to give an accurate preview of scroll distance
+  const getCalculatedMinHeight = () => {
+    // If user manually set a minHeight override (not default '100vh' or 'auto'), you might want to respect that.
+    // However, the previous code had a specific 'Layout' control for this.
+    // If you want the "Scroll Speed" to drive the height, we should use that logic here.
+
+    const count = Math.max(1, frames.length);
+    let multiplier = 100; // Normal
+
+    if (scrollSpeed === 'slow') multiplier = 150;
+    if (scrollSpeed === 'fast') multiplier = 75;
+    return `${count * multiplier}vh`;
+  };
+
   // Get first frame's image for preview
   const firstFrame = frames.length > 0 ? frames[0] : null;
   const previewImage = firstFrame?.desktopImage?.url || null;
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
     className: 'caes-reveal-block',
     style: {
-      '--reveal-min-height': minHeight
+      '--reveal-min-height': getCalculatedMinHeight() // Use calculated height based on speed
     }
   });
 
@@ -206,9 +232,20 @@ const Edit = ({
 
   // Shared Inspector Controls (shown in both modes)
   const sharedInspectorControls = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Block Settings', 'caes-reveal'),
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Scroll Speed', 'caes-reveal'),
+        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Determines how much scrolling is required to transition between all frames.', 'caes-reveal'),
+        value: scrollSpeed || 'normal',
+        options: SPEED_OPTIONS,
+        onChange: value => setAttributes({
+          scrollSpeed: value
+        })
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
       title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Settings', 'caes-reveal'),
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         style: {
           display: 'flex',
           alignItems: 'center',
@@ -245,16 +282,7 @@ const Edit = ({
             })
           })]
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
-        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Opacity', 'caes-reveal'),
-        value: overlayOpacity,
-        onChange: value => setAttributes({
-          overlayOpacity: value
-        }),
-        min: 0,
-        max: 100,
-        step: 5
-      })]
+      })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
       title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Layout', 'caes-reveal'),
       initialOpen: false,
@@ -276,7 +304,8 @@ const Edit = ({
         }],
         onChange: value => setAttributes({
           minHeight: value
-        })
+        }),
+        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This controls the CSS min-height property directly. The scrollable distance is now automatically calculated based on the Scroll Speed setting.', 'caes-reveal')
       })
     })]
   });
@@ -499,7 +528,7 @@ const FrameEditor = ({
               fontSize: '12px',
               color: '#666'
             },
-            children: frame.transition.type !== 'none' ? `${frame.transition.type} (${frame.transition.speed}ms)` : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No transition', 'caes-reveal')
+            children: frame.transition.type !== 'none' ? `${frame.transition.type}` : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No transition', 'caes-reveal')
           })]
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
@@ -1011,18 +1040,6 @@ const FrameEditor = ({
               type: value
             }
           })
-        }), frame.transition.type !== 'none' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Speed (ms)', 'caes-reveal'),
-          value: frame.transition.speed,
-          onChange: value => onUpdate({
-            transition: {
-              ...frame.transition,
-              speed: value
-            }
-          }),
-          min: 100,
-          max: 2000,
-          step: 50
         })]
       })]
     })]
@@ -1186,7 +1203,7 @@ module.exports = window["wp"]["i18n"];
   \**************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal","version":"0.1.0","title":"Reveal","category":"media","icon":"cover-image","description":"Full-window fixed background that transitions between frames as the user scrolls through content.","keywords":["reveal","scroll","parallax","immersive","background","storytelling"],"textdomain":"caes-reveal","attributes":{"frames":{"type":"array","default":[],"items":{"type":"object"}},"overlayColor":{"type":"string","default":"#000000"},"overlayOpacity":{"type":"number","default":30},"minHeight":{"type":"string","default":"100vh"}},"supports":{"align":["full","wide"],"html":false,"color":{"text":true,"background":false},"spacing":{"padding":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php","viewScript":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal","version":"0.1.0","title":"Reveal","category":"media","icon":"cover-image","description":"Full-window fixed background that transitions between frames as the user scrolls through content.","keywords":["reveal","scroll","parallax","immersive","background","storytelling"],"textdomain":"caes-reveal","attributes":{"frames":{"type":"array","default":[],"items":{"type":"object"}},"overlayColor":{"type":"string","default":"#000000"},"overlayOpacity":{"type":"number","default":30},"minHeight":{"type":"string","default":"100vh"},"scrollSpeed":{"type":"string","default":"normal","enum":["slow","normal","fast"]}},"supports":{"align":["full","wide"],"html":false,"color":{"text":true,"background":false},"spacing":{"padding":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css"}');
 
 /***/ })
 

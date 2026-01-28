@@ -28,6 +28,11 @@
 		"minHeight": {
 			"type": "string",
 			"default": "100vh"
+		},
+		"scrollSpeed": {
+			"type": "string",
+			"default": "normal",
+			"enum": [ "slow", "normal", "fast" ]
 		}
 	},
 	"supports": {
@@ -43,7 +48,5 @@
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css",
-	"render": "file:./render.php",
-	"viewScript": "file:./view.js"
+	"style": "file:./style-index.css"
 }

@@ -10,7 +10,6 @@ import {
 import {
 	Button,
 	PanelBody,
-	RangeControl,
 	SelectControl,
 	FocalPointPicker,
 	ColorPicker,
@@ -31,6 +30,12 @@ const TRANSITION_OPTIONS = [
 	{ label: __( 'Right', 'caes-reveal' ), value: 'right' },
 ];
 
+const SPEED_OPTIONS = [
+	{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
+	{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
+	{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
+];
+
 const DEFAULT_FRAME = {
 	id: '',
 	desktopImage: null,
@@ -40,7 +45,7 @@ const DEFAULT_FRAME = {
 	duotone: null,
 	transition: {
 		type: 'fade',
-		speed: 500,
+		// Speed is now handled globally
 	},
 };
 
@@ -49,7 +54,7 @@ const generateFrameId = () => {
 };
 
 const Edit = ( { attributes, setAttributes } ) => {
-	const { frames, overlayColor, overlayOpacity, minHeight } = attributes;
+	const { frames, overlayColor, overlayOpacity, minHeight, scrollSpeed } = attributes;
 	const [ isPreviewMode, setIsPreviewMode ] = useState( false );
 	const [ showOverlayColorPicker, setShowOverlayColorPicker ] = useState( false );
 
@@ -134,6 +139,22 @@ const Edit = ( { attributes, setAttributes } ) => {
 		return `rgba(${ r }, ${ g }, ${ b }, ${ opacity })`;
 	};
 
+	// Calculate min-height based on speed for the editor view
+	// This mimics the logic in render.php to give an accurate preview of scroll distance
+	const getCalculatedMinHeight = () => {
+		// If user manually set a minHeight override (not default '100vh' or 'auto'), you might want to respect that.
+		// However, the previous code had a specific 'Layout' control for this.
+		// If you want the "Scroll Speed" to drive the height, we should use that logic here.
+		
+		const count = Math.max( 1, frames.length );
+		let multiplier = 100; // Normal
+
+		if ( scrollSpeed === 'slow' ) multiplier = 150;
+		if ( scrollSpeed === 'fast' ) multiplier = 75;
+
+		return `${ count * multiplier }vh`;
+	};
+
 	// Get first frame's image for preview
 	const firstFrame = frames.length > 0 ? frames[ 0 ] : null;
 	const previewImage = firstFrame?.desktopImage?.url || null;
@@ -141,7 +162,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 	const blockProps = useBlockProps( {
 		className: 'caes-reveal-block',
 		style: {
-			'--reveal-min-height': minHeight,
+			'--reveal-min-height': getCalculatedMinHeight(), // Use calculated height based on speed
 		},
 	} );
 
@@ -165,6 +186,16 @@ const Edit = ( { attributes, setAttributes } ) => {
 	// Shared Inspector Controls (shown in both modes)
 	const sharedInspectorControls = (
 		<InspectorControls>
+			<PanelBody title={ __( 'Block Settings', 'caes-reveal' ) }>
+				<SelectControl
+					label={ __( 'Scroll Speed', 'caes-reveal' ) }
+					help={ __( 'Determines how much scrolling is required to transition between all frames.', 'caes-reveal' ) }
+					value={ scrollSpeed || 'normal' }
+					options={ SPEED_OPTIONS }
+					onChange={ ( value ) => setAttributes( { scrollSpeed: value } ) }
+				/>
+			</PanelBody>
+
 			<PanelBody title={ __( 'Overlay Settings', 'caes-reveal' ) }>
 				<div style={ { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' } }>
 					<span style={ { minWidth: '100px' } }>
@@ -192,14 +223,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 						) }
 					</div>
 				</div>
-				<RangeControl
-					label={ __( 'Overlay Opacity', 'caes-reveal' ) }
-					value={ overlayOpacity }
-					onChange={ ( value ) => setAttributes( { overlayOpacity: value } ) }
-					min={ 0 }
-					max={ 100 }
-					step={ 5 }
-				/>
 			</PanelBody>
 
 			<PanelBody title={ __( 'Layout', 'caes-reveal' ) } initialOpen={ false }>
@@ -213,6 +236,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 						{ label: __( 'Auto (content height)', 'caes-reveal' ), value: 'auto' },
 					] }
 					onChange={ ( value ) => setAttributes( { minHeight: value } ) }
+					help={ __( 'This controls the CSS min-height property directly. The scrollable distance is now automatically calculated based on the Scroll Speed setting.', 'caes-reveal' ) }
 				/>
 			</PanelBody>
 		</InspectorControls>
@@ -469,7 +493,7 @@ const FrameEditor = ( {
 						<strong>{ __( 'Frame', 'caes-reveal' ) } { frameIndex + 1 }</strong>
 						<div style={ { fontSize: '12px', color: '#666' } }>
 							{ frame.transition.type !== 'none'
-								? `${ frame.transition.type } (${ frame.transition.speed }ms)`
+								? `${ frame.transition.type }`
 								: __( 'No transition', 'caes-reveal' )
 							}
 						</div>
@@ -850,20 +874,6 @@ const FrameEditor = ( {
 								} )
 							}
 						/>
-						{ frame.transition.type !== 'none' && (
-							<RangeControl
-								label={ __( 'Speed (ms)', 'caes-reveal' ) }
-								value={ frame.transition.speed }
-								onChange={ ( value ) =>
-									onUpdate( {
-										transition: { ...frame.transition, speed: value },
-									} )
-								}
-								min={ 100 }
-								max={ 2000 }
-								step={ 50 }
-							/>
-						) }
 					</div>
 				</div>
 			) }
