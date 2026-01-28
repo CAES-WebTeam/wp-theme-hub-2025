@@ -9,7 +9,19 @@
 $frames          = $attributes['frames'] ?? [];
 $overlay_color   = $attributes['overlayColor'] ?? '#000000';
 $overlay_opacity = $attributes['overlayOpacity'] ?? 30;
-$min_height      = $attributes['minHeight'] ?? '100vh';
+$scroll_speed    = $attributes['scrollSpeed'] ?? 'normal';
+
+// Calculate Min Height based on Speed setting
+$frame_count = count( $frames );
+$vh_multiplier = 100; // Normal
+
+if ( 'slow' === $scroll_speed ) {
+	$vh_multiplier = 150;
+} elseif ( 'fast' === $scroll_speed ) {
+	$vh_multiplier = 75;
+}
+
+$calculated_min_height = ( $frame_count * $vh_multiplier ) . 'vh';
 
 // Early return if no frames - but still output content
 if ( empty( $frames ) ) {
@@ -37,7 +49,7 @@ $frames_data = array_map(
 	function ( $frame, $index ) {
 		return [
 			'index'             => $index,
-			'transition'        => $frame['transition'] ?? [ 'type' => 'fade', 'speed' => 500 ],
+			'transition'        => $frame['transition'] ?? [ 'type' => 'fade' ],
 			'desktopFocalPoint' => $frame['desktopFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ],
 			'mobileFocalPoint'  => $frame['mobileFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ],
 		];
@@ -52,7 +64,7 @@ $wrapper_attributes = get_block_wrapper_attributes(
 	[
 		'id'    => $block_id,
 		'class' => $wrapper_classes,
-		'style' => sprintf( '--reveal-min-height: %s;', esc_attr( $min_height ) ),
+		'style' => sprintf( '--reveal-min-height: %s;', esc_attr( $calculated_min_height ) ),
 	]
 );
 
@@ -174,7 +186,7 @@ endif;
 			$mobile_image        = $frame['mobileImage'] ?? null;
 			$desktop_focal_point = $frame['desktopFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
 			$mobile_focal_point  = $frame['mobileFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
-			$transition          = $frame['transition'] ?? [ 'type' => 'fade', 'speed' => 500 ];
+			$transition          = $frame['transition'] ?? [ 'type' => 'fade' ];
 			$duotone             = $frame['duotone'] ?? null;
 
 			if ( empty( $desktop_image ) ) {
@@ -187,7 +199,6 @@ endif;
 			$frame_styles[] = sprintf( '--desktop-focal-y: %s%%', ( $desktop_focal_point['y'] ?? 0.5 ) * 100 );
 			$frame_styles[] = sprintf( '--mobile-focal-x: %s%%', ( $mobile_focal_point['x'] ?? 0.5 ) * 100 );
 			$frame_styles[] = sprintf( '--mobile-focal-y: %s%%', ( $mobile_focal_point['y'] ?? 0.5 ) * 100 );
-			$frame_styles[] = sprintf( '--transition-speed: %dms', $transition['speed'] ?? 500 );
 
 			// Duotone filter
 			if ( ! empty( $duotone ) ) {
@@ -207,7 +218,6 @@ endif;
 				class="<?php echo esc_attr( $frame_classes ); ?>"
 				data-index="<?php echo esc_attr( $index ); ?>"
 				data-transition-type="<?php echo esc_attr( $transition['type'] ?? 'fade' ); ?>"
-				data-transition-speed="<?php echo esc_attr( $transition['speed'] ?? 500 ); ?>"
 				style="<?php echo esc_attr( $frame_style_attr ); ?>"
 			>
 				<picture>
