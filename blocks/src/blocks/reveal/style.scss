@@ -1,37 +1,26 @@
 /**
  * Frontend styles for Reveal Block
+ *
+ * Uses clip-path to create a "window" effect where the fixed background
+ * is only visible within the block's bounds, creating smooth scroll behavior.
  */
 
 .caes-reveal {
 	position: relative;
 	min-height: var(--reveal-min-height, 100vh);
+	
+	// clip-path creates a clipping context that clips fixed children to parent bounds
+	clip-path: inset(0);
 
-	// Background container - default state (Phase 1: Enter)
+	// Background container - always fixed, clipped by parent
 	.reveal-background {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		left: 0;
 		right: 0;
 		height: 100vh;
 		z-index: 0;
 		overflow: hidden;
-
-		// Phase 2: Fixed - background freezes while content scrolls
-		&.is-fixed {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			width: 100%;
-			height: 100vh;
-		}
-	}
-
-	// Phase 3: Exit - background pins to bottom and scrolls away
-	&.is-past-end .reveal-background {
-		position: absolute;
-		top: auto;
-		bottom: 0;
 	}
 
 	// Individual frames
@@ -101,25 +90,22 @@
 	}
 
 	// Full-width alignment adjustments
-	// &.alignfull {
-	// 	width: 100vw;
-	// 	max-width: 100vw;
-	// 	margin-left: calc(-50vw + 50%);
-	// 	margin-right: calc(-50vw + 50%);
+	&.alignfull {
+		width: 100vw;
+		max-width: 100vw;
+		margin-left: calc(-50vw + 50%);
+		margin-right: calc(-50vw + 50%);
 
-	// 	.reveal-background.is-fixed {
-	// 		left: 0;
-	// 		right: 0;
-	// 		width: 100vw;
-	// 	}
-	// }
+		.reveal-background {
+			left: 0;
+			right: 0;
+			width: 100vw;
+		}
+	}
 
 	// Wide alignment
 	&.alignwide {
-		// Let theme handle wide alignment width
-		// Background should still cover full area
-		.reveal-background.is-fixed {
-			// Maintain full viewport coverage when fixed
+		.reveal-background {
 			left: 0;
 			right: 0;
 			width: 100vw;
@@ -140,18 +126,6 @@
 	}
 }
 
-// Ensure proper stacking when fixed
-.caes-reveal .reveal-background.is-fixed {
-	// Keep behind site header if it exists
-	z-index: 0;
-}
-
-// Handle multiple reveal blocks on same page
-// Each block's fixed background should only show when that block is active
-.caes-reveal:not(.is-in-view) .reveal-background.is-fixed {
-	visibility: hidden;
-}
-
 // Accessibility: ensure focus states are visible
 .caes-reveal {
 	a:focus,
@@ -164,8 +138,11 @@
 // Print styles - show first frame only, no fixed positioning
 @media print {
 	.caes-reveal {
+		clip-path: none;
+		
 		.reveal-background {
 			position: absolute !important;
+			height: 100%;
 		}
 
 		.reveal-frame {
