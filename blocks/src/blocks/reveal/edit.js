@@ -509,124 +509,287 @@ const FrameEditor = ( {
 			{ /* Expanded Content */ }
 			{ isExpanded && (
 				<div className="frame-content">
-					{ /* Desktop Image */ }
-					<div style={ { marginBottom: '20px' } }>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ __( 'Desktop Image', 'caes-reveal' ) }
-							<span style={ { color: '#cc0000' } }> *</span>
-						</label>
-						<MediaUploadCheck>
-							<MediaUpload
-								onSelect={ ( media ) => onSelectImage( 'desktopImage', media ) }
-								allowedTypes={ [ 'image' ] }
-								value={ frame.desktopImage?.id }
-								render={ ( { open } ) => (
-									<>
-										{ frame.desktopImage ? (
-											<div>
+					{ /* Side-by-side Image Columns */ }
+					<div
+						style={ {
+							display: 'grid',
+							gridTemplateColumns: '1fr 1fr',
+							gap: '24px',
+							marginBottom: '20px',
+						} }
+					>
+						{ /* Desktop Image Column */ }
+						<div
+							style={ {
+								padding: '16px',
+								backgroundColor: '#fff',
+								border: '1px solid #e0e0e0',
+								borderRadius: '4px',
+							} }
+						>
+							<div style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' } }>
+								<span className="dashicons dashicons-desktop" style={ { fontSize: '20px' } }></span>
+								<div>
+									<strong style={ { display: 'block' } }>{ __( 'Wide Screens', 'caes-reveal' ) }</strong>
+									<span style={ { fontSize: '12px', color: '#666' } }>
+										{ __( 'Computers, Large Tablets Etc.', 'caes-reveal' ) }
+									</span>
+								</div>
+							</div>
+
+							<p style={ { margin: '0 0 4px 0', fontSize: '13px', color: '#1e1e1e' } }>
+								{ __( 'Background image (will be cropped to screen)', 'caes-reveal' ) }
+								<span style={ { color: '#cc0000' } }> *</span>
+							</p>
+							<p style={ { margin: '0 0 12px 0', fontSize: '12px', color: '#757575' } }>
+								{ __( 'Recommended: JPEG @ 2560 x 1440px', 'caes-reveal' ) }
+							</p>
+
+							<MediaUploadCheck>
+								<MediaUpload
+									onSelect={ ( media ) => onSelectImage( 'desktopImage', media ) }
+									allowedTypes={ [ 'image' ] }
+									value={ frame.desktopImage?.id }
+									render={ ( { open } ) => (
+										<div
+											onClick={ open }
+											style={ {
+												border: '2px dashed #c4c4c4',
+												borderRadius: '4px',
+												padding: '20px',
+												textAlign: 'center',
+												cursor: 'pointer',
+												backgroundColor: '#fafafa',
+												marginBottom: '12px',
+												minHeight: '150px',
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'center',
+												justifyContent: 'center',
+											} }
+										>
+											{ frame.desktopImage ? (
 												<img
 													src={ frame.desktopImage.sizes?.medium?.url || frame.desktopImage.url }
 													alt={ frame.desktopImage.alt }
 													style={ {
 														maxWidth: '100%',
-														maxHeight: '200px',
+														maxHeight: '150px',
 														borderRadius: '4px',
-														marginBottom: '8px',
 													} }
 												/>
-												<div style={ { display: 'flex', gap: '8px' } }>
-													<Button variant="secondary" onClick={ open }>
-														{ __( 'Replace', 'caes-reveal' ) }
-													</Button>
-													<Button
-														variant="secondary"
-														isDestructive
-														onClick={ () => onRemoveImage( 'desktopImage' ) }
-													>
-														{ __( 'Remove', 'caes-reveal' ) }
-													</Button>
-												</div>
-											</div>
-										) : (
-											<Button variant="secondary" onClick={ open }>
-												{ __( 'Select Image', 'caes-reveal' ) }
-											</Button>
-										) }
-									</>
-								) }
-							/>
-						</MediaUploadCheck>
-						{ frame.desktopImage && (
+											) : (
+												<>
+													<span className="dashicons dashicons-upload" style={ { fontSize: '24px', color: '#757575', marginBottom: '8px' } }></span>
+													<span style={ { color: '#757575', fontSize: '13px' } }>{ __( 'DRAG & DROP', 'caes-reveal' ) }</span>
+													<div style={ { display: 'flex', gap: '8px', marginTop: '12px' } }>
+														<Button variant="secondary" onClick={ open }>
+															{ __( 'Upload', 'caes-reveal' ) }
+														</Button>
+														<Button variant="secondary" onClick={ open }>
+															{ __( 'Media Library', 'caes-reveal' ) }
+														</Button>
+													</div>
+												</>
+											) }
+										</div>
+									) }
+								/>
+							</MediaUploadCheck>
+
+							{ frame.desktopImage && (
+								<div style={ { display: 'flex', gap: '8px', marginBottom: '12px' } }>
+									<MediaUploadCheck>
+										<MediaUpload
+											onSelect={ ( media ) => onSelectImage( 'desktopImage', media ) }
+											allowedTypes={ [ 'image' ] }
+											value={ frame.desktopImage?.id }
+											render={ ( { open } ) => (
+												<Button variant="secondary" onClick={ open } size="small">
+													{ __( 'Replace', 'caes-reveal' ) }
+												</Button>
+											) }
+										/>
+									</MediaUploadCheck>
+									<Button
+										variant="secondary"
+										isDestructive
+										onClick={ () => onRemoveImage( 'desktopImage' ) }
+										size="small"
+									>
+										{ __( 'Remove', 'caes-reveal' ) }
+									</Button>
+								</div>
+							) }
+
 							<TextControl
-								label={ __( 'Alt Text', 'caes-reveal' ) }
-								value={ frame.desktopImage.alt || '' }
+								label={
+									<>
+										{ __( 'Caption', 'caes-reveal' ) }
+										<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'optional', 'caes-reveal' ) })</span>
+									</>
+								}
+								value={ frame.desktopImage?.caption || '' }
+								onChange={ ( value ) => {
+									const updatedImage = { ...frame.desktopImage, caption: value };
+									onUpdate( { desktopImage: updatedImage } );
+								} }
+								placeholder={ __( 'Add a caption', 'caes-reveal' ) }
+								disabled={ ! frame.desktopImage }
+							/>
+
+							<TextControl
+								label={
+									<>
+										{ __( 'Alt Text', 'caes-reveal' ) }
+										<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'recommended', 'caes-reveal' ) })</span>
+									</>
+								}
+								value={ frame.desktopImage?.alt || '' }
 								onChange={ ( value ) => {
 									const updatedImage = { ...frame.desktopImage, alt: value };
 									onUpdate( { desktopImage: updatedImage } );
 								} }
-								style={ { marginTop: '12px' } }
+								placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
+								disabled={ ! frame.desktopImage }
 							/>
-						) }
-					</div>
+						</div>
 
-					{ /* Mobile Image */ }
-					<div style={ { marginBottom: '20px' } }>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ __( 'Mobile Image (optional)', 'caes-reveal' ) }
-						</label>
-						<MediaUploadCheck>
-							<MediaUpload
-								onSelect={ ( media ) => onSelectImage( 'mobileImage', media ) }
-								allowedTypes={ [ 'image' ] }
-								value={ frame.mobileImage?.id }
-								render={ ( { open } ) => (
-									<>
-										{ frame.mobileImage ? (
-											<div>
+						{ /* Mobile Image Column */ }
+						<div
+							style={ {
+								padding: '16px',
+								backgroundColor: '#fff',
+								border: '1px solid #e0e0e0',
+								borderRadius: '4px',
+							} }
+						>
+							<div style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' } }>
+								<span className="dashicons dashicons-smartphone" style={ { fontSize: '20px' } }></span>
+								<div>
+									<strong style={ { display: 'block' } }>{ __( 'Tall Screens', 'caes-reveal' ) }</strong>
+									<span style={ { fontSize: '12px', color: '#666' } }>
+										{ __( 'Devices In Portrait Orientation', 'caes-reveal' ) }
+									</span>
+								</div>
+							</div>
+
+							<p style={ { margin: '0 0 4px 0', fontSize: '13px', color: '#1e1e1e' } }>
+								{ __( 'Background image (will be cropped to screen)', 'caes-reveal' ) }
+							</p>
+							<p style={ { margin: '0 0 12px 0', fontSize: '12px', color: '#757575' } }>
+								{ __( 'Recommended: JPEG @ 1080 x 1920px', 'caes-reveal' ) }
+							</p>
+
+							<MediaUploadCheck>
+								<MediaUpload
+									onSelect={ ( media ) => onSelectImage( 'mobileImage', media ) }
+									allowedTypes={ [ 'image' ] }
+									value={ frame.mobileImage?.id }
+									render={ ( { open } ) => (
+										<div
+											onClick={ open }
+											style={ {
+												border: '2px dashed #c4c4c4',
+												borderRadius: '4px',
+												padding: '20px',
+												textAlign: 'center',
+												cursor: 'pointer',
+												backgroundColor: '#fafafa',
+												marginBottom: '12px',
+												minHeight: '150px',
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'center',
+												justifyContent: 'center',
+											} }
+										>
+											{ frame.mobileImage ? (
 												<img
-													src={ frame.mobileImage.sizes?.thumbnail?.url || frame.mobileImage.url }
+													src={ frame.mobileImage.sizes?.medium?.url || frame.mobileImage.url }
 													alt={ frame.mobileImage.alt }
 													style={ {
-														width: '80px',
-														height: '80px',
-														objectFit: 'cover',
+														maxWidth: '100%',
+														maxHeight: '150px',
 														borderRadius: '4px',
-														marginBottom: '8px',
 													} }
 												/>
-												<div style={ { display: 'flex', gap: '8px' } }>
-													<Button variant="secondary" onClick={ open }>
-														{ __( 'Replace', 'caes-reveal' ) }
-													</Button>
-													<Button
-														variant="secondary"
-														isDestructive
-														onClick={ () => onRemoveImage( 'mobileImage' ) }
-													>
-														{ __( 'Remove', 'caes-reveal' ) }
-													</Button>
-												</div>
-											</div>
-										) : (
-											<Button variant="secondary" onClick={ open }>
-												{ __( 'Select Mobile Image', 'caes-reveal' ) }
-											</Button>
-										) }
-									</>
-								) }
-							/>
-						</MediaUploadCheck>
-						{ frame.mobileImage && (
+											) : (
+												<>
+													<span className="dashicons dashicons-upload" style={ { fontSize: '24px', color: '#757575', marginBottom: '8px' } }></span>
+													<span style={ { color: '#757575', fontSize: '13px' } }>{ __( 'DRAG & DROP', 'caes-reveal' ) }</span>
+													<div style={ { display: 'flex', gap: '8px', marginTop: '12px' } }>
+														<Button variant="secondary" onClick={ open }>
+															{ __( 'Upload', 'caes-reveal' ) }
+														</Button>
+														<Button variant="secondary" onClick={ open }>
+															{ __( 'Media Library', 'caes-reveal' ) }
+														</Button>
+													</div>
+												</>
+											) }
+										</div>
+									) }
+								/>
+							</MediaUploadCheck>
+
+							{ frame.mobileImage && (
+								<div style={ { display: 'flex', gap: '8px', marginBottom: '12px' } }>
+									<MediaUploadCheck>
+										<MediaUpload
+											onSelect={ ( media ) => onSelectImage( 'mobileImage', media ) }
+											allowedTypes={ [ 'image' ] }
+											value={ frame.mobileImage?.id }
+											render={ ( { open } ) => (
+												<Button variant="secondary" onClick={ open } size="small">
+													{ __( 'Replace', 'caes-reveal' ) }
+												</Button>
+											) }
+										/>
+									</MediaUploadCheck>
+									<Button
+										variant="secondary"
+										isDestructive
+										onClick={ () => onRemoveImage( 'mobileImage' ) }
+										size="small"
+									>
+										{ __( 'Remove', 'caes-reveal' ) }
+									</Button>
+								</div>
+							) }
+
 							<TextControl
-								label={ __( 'Alt Text', 'caes-reveal' ) }
-								value={ frame.mobileImage.alt || '' }
+								label={
+									<>
+										{ __( 'Caption', 'caes-reveal' ) }
+										<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'optional', 'caes-reveal' ) })</span>
+									</>
+								}
+								value={ frame.mobileImage?.caption || '' }
+								onChange={ ( value ) => {
+									const updatedImage = { ...frame.mobileImage, caption: value };
+									onUpdate( { mobileImage: updatedImage } );
+								} }
+								placeholder={ __( 'Add a caption', 'caes-reveal' ) }
+								disabled={ ! frame.mobileImage }
+							/>
+
+							<TextControl
+								label={
+									<>
+										{ __( 'Alt Text', 'caes-reveal' ) }
+										<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'recommended', 'caes-reveal' ) })</span>
+									</>
+								}
+								value={ frame.mobileImage?.alt || '' }
 								onChange={ ( value ) => {
 									const updatedImage = { ...frame.mobileImage, alt: value };
 									onUpdate( { mobileImage: updatedImage } );
 								} }
-								style={ { marginTop: '12px' } }
+								placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
+								disabled={ ! frame.mobileImage }
 							/>
-						) }
+						</div>
 					</div>
 
 					{ /* Focal Point */ }
