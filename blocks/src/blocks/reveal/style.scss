@@ -80,6 +80,11 @@
 			line-height: 1.4;
 			z-index: 3; // Above overlay
 
+			.reveal-caption-wrap {
+				max-width: var(--wp--style--global--wide-size);
+			}
+			
+
 			// Desktop caption visible by default
 			.reveal-caption-desktop {
 				display: block;
