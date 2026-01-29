@@ -21,7 +21,7 @@
 		z-index: 0;
 		overflow: hidden; // Clip frames during directional transitions
 
-		@media screen and (max-width: 768px) {
+		@media screen and (min-width: 768px) {
 			// Accounting for sidebar
 			width: calc(100% - 222px);
 			left: 222px;
