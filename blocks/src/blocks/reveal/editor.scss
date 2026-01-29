@@ -1,224 +1,177 @@
-/**
- * Editor styles for Reveal Block
- */
+/* Reveal Block Editor Styles */
 
-.caes-reveal-block {
+.caes-reveal-editor {
 	position: relative;
-	min-height: var(--reveal-min-height, 100vh);
-	overflow: hidden;
-	border: 2px solid #2271b1;
-	background-color: #f0f0f0;
+	min-height: 400px;
+}
 
-	// Background preview
-	.reveal-background-preview {
-		position: absolute;
-		inset: 0;
-		z-index: 0;
+/* Editor Layout - Side by side preview and content */
+.reveal-editor-layout {
+	display: grid;
+	grid-template-columns: 300px 1fr;
+	gap: 20px;
+	min-height: 400px;
 
-		img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-	}
-
-	// Overlay preview
-	.reveal-overlay-preview {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-	}
-
-	// Frame indicator badge
-	.reveal-frame-indicator {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		background-color: rgba(0, 0, 0, 0.7);
-		color: #fff;
-		padding: 4px 10px;
-		border-radius: 4px;
-		font-size: 12px;
-		z-index: 10;
-		pointer-events: none;
-	}
-
-	// Inner content area
-	.reveal-content-editor {
-		position: relative;
-		z-index: 1;
-		min-height: 200px;
-		padding: var(--wp--preset--spacing--50, 2rem);
-
-		// Ensure inner blocks are editable
-		.block-editor-inner-blocks {
-			min-height: 150px;
-		}
-
-		// Give text some contrast over background
-		.block-editor-block-list__layout {
-			> * {
-				// Add subtle text shadow for readability if needed
-				// text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-			}
-		}
-	}
-
-	// When no background is set
-	&.has-no-background {
-		.reveal-background-preview {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			background-color: #e0e0e0;
-			color: #666;
-			font-size: 14px;
-			text-align: center;
-			padding: 20px;
-		}
+	@media (max-width: 1200px) {
+		grid-template-columns: 1fr;
 	}
 }
 
-// Sidebar frame list styles
-.reveal-frame-item {
-	border: 1px solid #ddd;
+/* Background Preview Column */
+.reveal-background-preview {
+	position: sticky;
+	top: 100px;
+	height: fit-content;
+	max-height: calc(100vh - 200px);
+	overflow-y: auto;
+	border: 2px solid #ddd;
 	border-radius: 4px;
+	background: #f9f9f9;
+}
+
+.reveal-frame-preview {
+	position: relative;
+	aspect-ratio: 16 / 9;
 	overflow: hidden;
-	background-color: #f9f9f9;
+	border-bottom: 2px solid #ddd;
 
-	// Frame header button
-	> button {
-		display: flex;
-		align-items: center;
-		gap: 12px;
+	&:last-child {
+		border-bottom: none;
+	}
+
+	img {
 		width: 100%;
-		padding: 12px;
-		border: none;
-		background: none;
-		cursor: pointer;
-		text-align: left;
-		transition: background-color 0.15s ease;
-
-		&:hover {
-			background-color: #f0f0f0;
-		}
-
-		&:focus {
-			outline: 2px solid #2271b1;
-			outline-offset: -2px;
-		}
-	}
-
-	// Thumbnail container
-	.frame-thumbnail {
-		width: 48px;
-		height: 48px;
-		background-color: #ddd;
-		border-radius: 4px;
-		overflow: hidden;
-		flex-shrink: 0;
-
-		img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-	}
-
-	// Frame info
-	.frame-info {
-		flex-grow: 1;
-
-		strong {
-			display: block;
-			font-size: 13px;
-		}
-
-		span {
-			font-size: 12px;
-			color: #666;
-		}
-	}
-
-	// Expand icon
-	.frame-expand-icon {
-		font-size: 20px;
-		color: #666;
-		transition: transform 0.15s ease;
-	}
-
-	&.is-expanded .frame-expand-icon {
-		transform: rotate(180deg);
+		height: 100%;
+		object-fit: cover;
 	}
 }
 
-// Image picker in sidebar
-.reveal-image-picker {
-	.image-preview {
-		position: relative;
-		margin-bottom: 8px;
+.reveal-overlay-preview {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	pointer-events: none;
+}
 
-		img {
-			width: 100%;
-			height: auto;
-			border-radius: 4px;
-		}
+.reveal-frame-label {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	background: rgba(0, 0, 0, 0.7);
+	color: #fff;
+	padding: 4px 8px;
+	font-size: 11px;
+	font-weight: 600;
+	border-radius: 2px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.reveal-frame-placeholder {
+	aspect-ratio: 16 / 9;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #e0e0e0;
+	color: #666;
+	border-bottom: 2px solid #ddd;
+	
+	&:last-child {
+		border-bottom: none;
 	}
 
-	.image-actions {
+	p {
+		margin: 0;
+		font-size: 13px;
+		font-weight: 500;
+	}
+}
+
+.reveal-placeholder {
+	padding: 40px 20px;
+	text-align: center;
+	color: #666;
+
+	p {
+		margin: 0;
+		font-size: 14px;
+	}
+}
+
+/* Content Editor Column */
+.reveal-content-editor {
+	min-height: 400px;
+
+	.components-notice {
+		margin-bottom: 20px;
+	}
+}
+
+/* Frame Manager Modal */
+.reveal-frame-manager-modal {
+	.components-modal__content {
+		padding-bottom: 0;
+	}
+
+	.components-tab-panel__tabs {
+		border-bottom: 1px solid #ddd;
+		margin-bottom: 0;
+	}
+
+	.components-tab-panel__tabs-item {
+		padding: 12px 16px;
+		
+		&.is-active {
+			border-bottom-color: #2271b1;
+			font-weight: 600;
+		}
+	}
+}
+
+/* Image Tabs Styling */
+.reveal-image-tabs {
+	.components-tab-panel__tabs {
 		display: flex;
 		gap: 8px;
-		margin-top: 8px;
+		margin-bottom: 0;
+		border-bottom: 1px solid #ddd;
 	}
-}
 
-// Focal point picker customization
-.components-focal-point-picker-wrapper {
-	margin-top: 8px;
-}
+	.components-tab-panel__tabs-item {
+		flex: 1;
+		padding: 12px;
+		text-align: center;
+		background: #f9f9f9;
+		border: 1px solid #ddd;
+		border-bottom: none;
+		border-radius: 4px 4px 0 0;
+		cursor: pointer;
+		transition: all 0.2s;
 
-// Duotone picker in sidebar
-.reveal-duotone-picker {
-	.components-duotone-picker__color-indicator {
-		margin-bottom: 8px;
-	}
-}
-
-// Transition settings
-.reveal-transition-settings {
-	padding-top: 12px;
-	border-top: 1px solid #ddd;
-	margin-top: 12px;
-
-	.components-select-control {
-		margin-bottom: 12px;
-	}
-}
-
-// Frame action buttons
-.reveal-frame-actions {
-	display: flex;
-	gap: 8px;
-	padding-top: 12px;
-	border-top: 1px solid #ddd;
-	margin-top: 12px;
-
-	.is-destructive {
-		margin-left: auto;
-	}
-}
-
-// Responsive adjustments for sidebar
-@media screen and (max-width: 782px) {
-	.reveal-frame-item {
-		> button {
-			padding: 8px;
-			gap: 8px;
+		&:hover {
+			background: #f0f0f0;
 		}
 
-		.frame-thumbnail {
-			width: 40px;
-			height: 40px;
+		&.is-active {
+			background: #fff;
+			border-bottom-color: #fff;
+			position: relative;
+			bottom: -1px;
+			font-weight: 600;
 		}
+	}
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+	.reveal-background-preview {
+		position: static;
+		max-height: 400px;
+	}
+
+	.reveal-editor-layout {
+		grid-template-columns: 1fr;
 	}
 }

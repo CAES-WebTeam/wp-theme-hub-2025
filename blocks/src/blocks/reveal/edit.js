@@ -23,6 +23,7 @@ import {
 	DuotonePicker,
 	DuotoneSwatch,
 	RangeControl,
+	TabPanel,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
@@ -30,21 +31,14 @@ import { createBlock } from '@wordpress/blocks';
 
 /**
  * Generate duotone SVG filter markup - matches WordPress core implementation.
- * Uses feColorMatrix for grayscale conversion, then feComponentTransfer for color mapping.
- *
- * @param {string[]} duotone - Array of two hex colors [shadow, highlight]
- * @param {string} filterId - Unique ID for the filter
- * @returns {JSX.Element|null} SVG element with filter definition
  */
 const getDuotoneFilter = ( duotone, filterId ) => {
 	if ( ! duotone || duotone.length < 2 ) {
 		return null;
 	}
 
-	// Convert hex colors to RGB values (0-1 range)
 	const parseColor = ( hex ) => {
 		let color = hex.replace( '#', '' );
-		// Handle 3-character hex
 		if ( color.length === 3 ) {
 			color = color[ 0 ] + color[ 0 ] + color[ 1 ] + color[ 1 ] + color[ 2 ] + color[ 2 ];
 		}
@@ -97,7 +91,6 @@ const TRANSITION_OPTIONS = [
 	{ label: __( 'Right', 'caes-reveal' ), value: 'right' },
 ];
 
-// Duotone presets - common duotone combinations
 const DUOTONE_PALETTE = [
 	{ colors: [ '#000000', '#ffffff' ], name: 'Grayscale', slug: 'grayscale' },
 	{ colors: [ '#000000', '#7f7f7f' ], name: 'Dark grayscale', slug: 'dark-grayscale' },
@@ -109,7 +102,6 @@ const DUOTONE_PALETTE = [
 	{ colors: [ '#0d3b66', '#faf0ca' ], name: 'Navy and cream', slug: 'navy-cream' },
 ];
 
-// Color palette for custom duotone creation
 const COLOR_PALETTE = [
 	{ color: '#000000', name: 'Black', slug: 'black' },
 	{ color: '#ffffff', name: 'White', slug: 'white' },
@@ -147,8 +139,8 @@ const generateFrameId = () => {
 };
 
 const Edit = ( { attributes, setAttributes, clientId } ) => {
-	const { frames, overlayColor, overlayOpacity, minHeight } = attributes;
-	const [ isPreviewMode, setIsPreviewMode ] = useState( false );
+	const { frames, overlayColor, overlayOpacity } = attributes;
+	const [ showFrameManager, setShowFrameManager ] = useState( false );
 	const [ showOverlayColorPicker, setShowOverlayColorPicker ] = useState( false );
 
 	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
@@ -174,7 +166,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			return;
 		}
 
-		// Check if we need to update inner blocks
 		const needsUpdate =
 			innerBlocks.length !== frames.length ||
 			innerBlocks.some(
@@ -186,7 +177,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 
 		if ( needsUpdate ) {
 			const newInnerBlocks = frames.map( ( frame, index ) => {
-				// Try to preserve existing content if the block exists
 				const existingBlock = innerBlocks.find(
 					( b ) => b.name === 'caes-hub/reveal-frames' && b.attributes.frameIndex === index
 				);
@@ -202,7 +192,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 					};
 				}
 
-				// Create new block
 				return createBlock( 'caes-hub/reveal-frames', {
 					frameIndex: index,
 					frameLabel: `Frame ${ index + 1 } Content`,
@@ -213,7 +202,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}
 	}, [ frames.length, clientId ] );
 
-	// Add a new frame
 	const addFrame = () => {
 		const newFrame = {
 			...DEFAULT_FRAME,
@@ -222,24 +210,21 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		setAttributes( { frames: [ ...frames, newFrame ] } );
 	};
 
-	// Remove a frame
 	const removeFrame = ( frameIndex ) => {
 		if ( frames.length === 1 ) {
-			return; // Don't allow removing the last frame
+			return;
 		}
 		const newFrames = [ ...frames ];
 		newFrames.splice( frameIndex, 1 );
 		setAttributes( { frames: newFrames } );
 	};
 
-	// Update a frame's properties
 	const updateFrame = ( frameIndex, updates ) => {
 		const newFrames = [ ...frames ];
 		newFrames[ frameIndex ] = { ...newFrames[ frameIndex ], ...updates };
 		setAttributes( { frames: newFrames } );
 	};
 
-	// Move frame up
 	const moveFrameUp = ( frameIndex ) => {
 		if ( frameIndex === 0 ) return;
 		const newFrames = [ ...frames ];
@@ -250,7 +235,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		setAttributes( { frames: newFrames } );
 	};
 
-	// Move frame down
 	const moveFrameDown = ( frameIndex ) => {
 		if ( frameIndex === frames.length - 1 ) return;
 		const newFrames = [ ...frames ];
@@ -261,11 +245,10 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		setAttributes( { frames: newFrames } );
 	};
 
-	// Duplicate a frame
 	const duplicateFrame = ( frameIndex ) => {
 		const frameToDuplicate = frames[ frameIndex ];
 		const duplicatedFrame = {
-			...JSON.parse( JSON.stringify( frameToDuplicate ) ), // Deep clone
+			...JSON.parse( JSON.stringify( frameToDuplicate ) ),
 			id: generateFrameId(),
 		};
 		const newFrames = [ ...frames ];
@@ -273,7 +256,6 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		setAttributes( { frames: newFrames } );
 	};
 
-	// Handle image selection
 	const onSelectImage = ( frameIndex, imageType, media ) => {
 		const imageData = {
 			id: media.id,
@@ -285,12 +267,10 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		updateFrame( frameIndex, { [ imageType ]: imageData } );
 	};
 
-	// Handle image removal
 	const onRemoveImage = ( frameIndex, imageType ) => {
 		updateFrame( frameIndex, { [ imageType ]: null } );
 	};
 
-	// Calculate overlay rgba
 	const getOverlayRgba = () => {
 		const opacity = overlayOpacity / 100;
 		const hex = overlayColor.replace( '#', '' );
@@ -300,67 +280,23 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		return `rgba(${ r }, ${ g }, ${ b }, ${ opacity })`;
 	};
 
-	// Calculate min-height based on per-frame transition speeds
-	const getCalculatedMinHeight = () => {
-		const count = Math.max( 1, frames.length );
-		const speedMultipliers = { slow: 1.5, normal: 1, fast: 0.5 };
-		let totalVh = 100;
-
-		for ( let i = 1; i < count; i++ ) {
-			const speed = frames[ i ]?.transition?.speed || 'normal';
-			const multiplier = speedMultipliers[ speed ] || 1;
-			totalVh += 100 * multiplier;
-		}
-
-		return `${ totalVh }vh`;
-	};
-
 	const blockProps = useBlockProps( {
 		className: 'caes-reveal-editor',
-		style: {
-			'--reveal-min-height': getCalculatedMinHeight(),
-		},
 	} );
 
 	return (
-		<div { ...blockProps }>
+		<>
 			<BlockControls>
 				<ToolbarGroup>
 					<ToolbarButton
-						icon={ isPreviewMode ? 'edit' : 'visibility' }
-						label={ isPreviewMode ? __( 'Edit', 'caes-reveal' ) : __( 'Preview', 'caes-reveal' ) }
-						onClick={ () => setIsPreviewMode( ! isPreviewMode ) }
+						icon="admin-generic"
+						label={ __( 'Manage Frames', 'caes-reveal' ) }
+						onClick={ () => setShowFrameManager( true ) }
 					/>
 				</ToolbarGroup>
 			</BlockControls>
 
 			<InspectorControls>
-				<PanelBody title={ __( 'Frames', 'caes-reveal' ) } initialOpen={ true }>
-					<p style={ { marginBottom: '12px', fontSize: '13px', color: '#757575' } }>
-						{ __( 'Each frame creates a full-window background that transitions as users scroll.', 'caes-reveal' ) }
-					</p>
-
-					{ frames.map( ( frame, index ) => (
-						<FramePanel
-							key={ frame.id || index }
-							frame={ frame }
-							index={ index }
-							totalFrames={ frames.length }
-							onUpdate={ ( updates ) => updateFrame( index, updates ) }
-							onRemove={ () => removeFrame( index ) }
-							onMoveUp={ () => moveFrameUp( index ) }
-							onMoveDown={ () => moveFrameDown( index ) }
-							onDuplicate={ () => duplicateFrame( index ) }
-							onSelectImage={ ( imageType, media ) => onSelectImage( index, imageType, media ) }
-							onRemoveImage={ ( imageType ) => onRemoveImage( index, imageType ) }
-						/>
-					) ) }
-
-					<Button variant="secondary" onClick={ addFrame } style={ { width: '100%', marginTop: '12px' } }>
-						{ __( 'Add Frame', 'caes-reveal' ) }
-					</Button>
-				</PanelBody>
-
 				<PanelBody title={ __( 'Overlay', 'caes-reveal' ) } initialOpen={ false }>
 					<div style={ { marginBottom: '16px' } }>
 						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
@@ -419,56 +355,108 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 				</PanelBody>
 			</InspectorControls>
 
-			{ isPreviewMode ? (
-				<div className="reveal-preview">
-					<Notice status="info" isDismissible={ false }>
-						{ __( 'Preview mode: Scroll to see frame transitions', 'caes-reveal' ) }
-					</Notice>
-					<div className="reveal-background">
-						{ frames.map( ( frame, index ) => {
-							if ( ! frame.desktopImage ) {
-								return null;
-							}
+			<div { ...blockProps }>
+				<div className="reveal-editor-layout">
+					{/* Background frames preview */}
+					<div className="reveal-background-preview">
+						{ frames.length === 0 ? (
+							<div className="reveal-placeholder">
+								<p>{ __( 'Click "Manage Frames" to add background images', 'caes-reveal' ) }</p>
+							</div>
+						) : (
+							frames.map( ( frame, index ) => {
+								if ( ! frame.desktopImage ) {
+									return (
+										<div key={ frame.id || index } className="reveal-frame-placeholder">
+											<p>{ __( 'Frame', 'caes-reveal' ) } { index + 1 }: { __( 'No image', 'caes-reveal' ) }</p>
+										</div>
+									);
+								}
 
-							const filterId = `preview-${ clientId }-${ index }`;
-							const desktopDuotone = frame.desktopDuotone || frame.duotone;
+								const filterId = `editor-${ clientId }-${ index }`;
+								const desktopDuotone = frame.desktopDuotone || frame.duotone;
 
-							return (
-								<div key={ frame.id || index } className="reveal-frame">
-									{ desktopDuotone && getDuotoneFilter( desktopDuotone, filterId ) }
-									<img
-										src={ frame.desktopImage.url }
-										alt={ frame.desktopImage.alt || '' }
-										style={ {
-											objectPosition: `${ ( frame.desktopFocalPoint?.x || 0.5 ) * 100 }% ${ (
-												frame.desktopFocalPoint?.y || 0.5
-											) * 100 }%`,
-											filter: desktopDuotone ? `url(#${ filterId })` : undefined,
-										} }
-									/>
-									<div className="reveal-overlay" style={ { background: getOverlayRgba() } } />
-								</div>
-							);
-						} ) }
+								return (
+									<div key={ frame.id || index } className="reveal-frame-preview">
+										{ desktopDuotone && getDuotoneFilter( desktopDuotone, filterId ) }
+										<img
+											src={ frame.desktopImage.url }
+											alt={ frame.desktopImage.alt || '' }
+											style={ {
+												objectPosition: `${ ( frame.desktopFocalPoint?.x || 0.5 ) * 100 }% ${ (
+													frame.desktopFocalPoint?.y || 0.5
+												) * 100 }%`,
+												filter: desktopDuotone ? `url(#${ filterId })` : undefined,
+											} }
+										/>
+										<div className="reveal-overlay-preview" style={ { background: getOverlayRgba() } } />
+										<div className="reveal-frame-label">
+											{ __( 'Frame', 'caes-reveal' ) } { index + 1 }
+										</div>
+									</div>
+								);
+							} )
+						) }
 					</div>
-					<div className="reveal-content">
-						<InnerBlocks />
+
+					{/* Content editing area */}
+					<div className="reveal-content-editor">
+						<Notice status="info" isDismissible={ false }>
+							{ __( 'Add content to each frame container below. Content will appear over the background images as users scroll.', 'caes-reveal' ) }
+						</Notice>
+						<InnerBlocks allowedBlocks={ [ 'caes-hub/reveal-frames' ] } />
 					</div>
 				</div>
-			) : (
-				<div className="reveal-editor-mode">
-					<Notice status="info" isDismissible={ false }>
-						{ __( 'Add content to each frame using the containers below. Content will appear/disappear as users scroll through frames.', 'caes-reveal' ) }
-					</Notice>
-					<InnerBlocks allowedBlocks={ [ 'caes-hub/reveal-frames' ] } />
-				</div>
+			</div>
+
+			{/* Frame Manager Modal */}
+			{ showFrameManager && (
+				<Modal
+					title={ __( 'Manage Frames', 'caes-reveal' ) }
+					onRequestClose={ () => setShowFrameManager( false ) }
+					className="reveal-frame-manager-modal"
+					style={ { maxWidth: '900px', width: '90vw' } }
+				>
+					<div style={ { padding: '20px 0' } }>
+						<p style={ { marginBottom: '20px', color: '#757575' } }>
+							{ __( 'Configure background images and transitions for each frame. Add content to frames in the editor.', 'caes-reveal' ) }
+						</p>
+
+						{ frames.map( ( frame, index ) => (
+							<FrameManagerPanel
+								key={ frame.id || index }
+								frame={ frame }
+								index={ index }
+								totalFrames={ frames.length }
+								onUpdate={ ( updates ) => updateFrame( index, updates ) }
+								onRemove={ () => removeFrame( index ) }
+								onMoveUp={ () => moveFrameUp( index ) }
+								onMoveDown={ () => moveFrameDown( index ) }
+								onDuplicate={ () => duplicateFrame( index ) }
+								onSelectImage={ ( imageType, media ) => onSelectImage( index, imageType, media ) }
+								onRemoveImage={ ( imageType ) => onRemoveImage( index, imageType ) }
+								clientId={ clientId }
+							/>
+						) ) }
+
+						<Button variant="primary" onClick={ addFrame } style={ { width: '100%', marginTop: '20px' } }>
+							{ __( 'Add Frame', 'caes-reveal' ) }
+						</Button>
+
+						<div style={ { marginTop: '20px', textAlign: 'right' } }>
+							<Button variant="secondary" onClick={ () => setShowFrameManager( false ) }>
+								{ __( 'Done', 'caes-reveal' ) }
+							</Button>
+						</div>
+					</div>
+				</Modal>
 			) }
-		</div>
+		</>
 	);
 };
 
-// Frame Panel Component
-const FramePanel = ( {
+// Frame Manager Panel Component (used in modal)
+const FrameManagerPanel = ( {
 	frame,
 	index,
 	totalFrames,
@@ -479,8 +467,9 @@ const FramePanel = ( {
 	onDuplicate,
 	onSelectImage,
 	onRemoveImage,
+	clientId,
 } ) => {
-	const [ isOpen, setIsOpen ] = useState( index === 0 );
+	const [ activeTab, setActiveTab ] = useState( 'desktop' );
 	const [ focalPointModal, setFocalPointModal ] = useState( null );
 	const [ duotoneModal, setDuotoneModal ] = useState( null );
 
@@ -489,23 +478,25 @@ const FramePanel = ( {
 			style={ {
 				border: '1px solid #ddd',
 				borderRadius: '4px',
-				marginBottom: '12px',
+				marginBottom: '20px',
 				background: '#fff',
 			} }
 		>
+			{/* Header */}
 			<div
 				style={ {
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
-					padding: '12px',
-					cursor: 'pointer',
-					borderBottom: isOpen ? '1px solid #ddd' : 'none',
+					padding: '16px',
+					borderBottom: '1px solid #ddd',
+					background: '#f9f9f9',
 				} }
-				onClick={ () => setIsOpen( ! isOpen ) }
 			>
-				<strong>{ __( 'Frame', 'caes-reveal' ) } { index + 1 }</strong>
-				<div style={ { display: 'flex', gap: '8px' } } onClick={ ( e ) => e.stopPropagation() }>
+				<strong style={ { fontSize: '16px' } }>
+					{ __( 'Frame', 'caes-reveal' ) } { index + 1 }
+				</strong>
+				<div style={ { display: 'flex', gap: '8px' } }>
 					{ index > 0 && (
 						<Button size="small" icon="arrow-up-alt2" onClick={ onMoveUp } label={ __( 'Move up', 'caes-reveal' ) } />
 					) }
@@ -525,372 +516,346 @@ const FramePanel = ( {
 				</div>
 			</div>
 
-			{ isOpen && (
-				<div style={ { padding: '16px' } }>
-					{ /* Desktop Image */ }
-					<div style={ { marginBottom: '20px' } }>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ __( 'Desktop Image', 'caes-reveal' ) }
-							<span style={ { fontWeight: 'normal', color: '#e65054' } }> *</span>
-						</label>
-						<MediaUploadCheck>
-							{ ! frame.desktopImage ? (
-								<MediaUpload
-									onSelect={ ( media ) => onSelectImage( 'desktopImage', media ) }
-									allowedTypes={ [ 'image' ] }
-									render={ ( { open } ) => (
-										<Button variant="secondary" onClick={ open } style={ { width: '100%' } }>
-											{ __( 'Select Image', 'caes-reveal' ) }
-										</Button>
-									) }
+			{/* Content */}
+			<div style={ { padding: '20px' } }>
+				<TabPanel
+					className="reveal-image-tabs"
+					activeClass="is-active"
+					onSelect={ ( tabName ) => setActiveTab( tabName ) }
+					tabs={ [
+						{
+							name: 'desktop',
+							title: __( 'Wide Screens', 'caes-reveal' ),
+							className: 'tab-desktop',
+						},
+						{
+							name: 'mobile',
+							title: __( 'Tall Screens', 'caes-reveal' ),
+							className: 'tab-mobile',
+						},
+						{
+							name: 'transition',
+							title: __( 'Transition', 'caes-reveal' ),
+							className: 'tab-transition',
+						},
+					] }
+				>
+					{ ( tab ) => (
+						<div style={ { paddingTop: '20px' } }>
+							{ tab.name === 'desktop' && (
+								<ImagePanel
+									frame={ frame }
+									imageType="desktop"
+									onSelectImage={ onSelectImage }
+									onRemoveImage={ onRemoveImage }
+									onUpdate={ onUpdate }
+									setFocalPointModal={ setFocalPointModal }
+									setDuotoneModal={ setDuotoneModal }
+									clientId={ clientId }
+									frameIndex={ index }
+									isRequired={ true }
 								/>
-							) : (
-								<div>
-									<div style={ { marginBottom: '12px' } }>
-										{ ( () => {
-											const filterId = `editor-${ frame.id }-desktop`;
-											const duotone = frame.desktopDuotone || frame.duotone;
-											return (
-												<>
-													{ duotone && getDuotoneFilter( duotone, filterId ) }
-													<img
-														src={ frame.desktopImage.url }
-														alt={ frame.desktopImage.alt }
-														style={ {
-															maxWidth: '100%',
-															maxHeight: '150px',
-															borderRadius: '4px',
-															filter: duotone ? `url(#${ filterId })` : undefined,
-														} }
-													/>
-												</>
-											);
-										} )() }
-									</div>
-									<div style={ { display: 'flex', gap: '8px', marginBottom: '12px' } }>
-										<MediaUpload
-											onSelect={ ( media ) => onSelectImage( 'desktopImage', media ) }
-											allowedTypes={ [ 'image' ] }
-											value={ frame.desktopImage?.id }
-											render={ ( { open } ) => (
-												<Button variant="secondary" onClick={ open } size="small">
-													{ __( 'Replace', 'caes-reveal' ) }
-												</Button>
-											) }
-										/>
-										<Button variant="secondary" isDestructive onClick={ () => onRemoveImage( 'desktopImage' ) } size="small">
-											{ __( 'Remove', 'caes-reveal' ) }
-										</Button>
-									</div>
-
-									<TextControl
-										label={
-											<>
-												{ __( 'Caption', 'caes-reveal' ) }
-												<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'optional', 'caes-reveal' ) })</span>
-											</>
-										}
-										value={ frame.desktopImage?.caption || '' }
-										onChange={ ( value ) => {
-											const updatedImage = { ...frame.desktopImage, caption: value };
-											onUpdate( { desktopImage: updatedImage } );
-										} }
-										placeholder={ __( 'Add a caption', 'caes-reveal' ) }
-									/>
-
-									<TextControl
-										label={
-											<>
-												{ __( 'Alt Text', 'caes-reveal' ) }
-												<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'recommended', 'caes-reveal' ) })</span>
-											</>
-										}
-										value={ frame.desktopImage?.alt || '' }
-										onChange={ ( value ) => {
-											const updatedImage = { ...frame.desktopImage, alt: value };
-											onUpdate( { desktopImage: updatedImage } );
-										} }
-										placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
-									/>
-
-									<div style={ { display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap', alignItems: 'center' } }>
-										<Button variant="secondary" onClick={ () => setFocalPointModal( 'desktop' ) } icon="image-crop">
-											{ __( 'Set Focus Point', 'caes-reveal' ) }
-										</Button>
-										<Button variant="secondary" onClick={ () => setDuotoneModal( 'desktop' ) } icon="admin-appearance">
-											{ frame.desktopDuotone || frame.duotone
-												? __( 'Edit Filter', 'caes-reveal' )
-												: __( 'Add Filter', 'caes-reveal' ) }
-										</Button>
-										{ ( frame.desktopDuotone || frame.duotone ) && (
-											<DuotoneSwatch values={ frame.desktopDuotone || frame.duotone } />
-										) }
-									</div>
-								</div>
 							) }
-						</MediaUploadCheck>
-					</div>
-
-					{ /* Mobile Image */ }
-					<div style={ { marginBottom: '20px' } }>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ __( 'Mobile Image', 'caes-reveal' ) }
-							<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'optional', 'caes-reveal' ) })</span>
-						</label>
-						<p style={ { fontSize: '13px', color: '#757575', marginBottom: '12px' } }>
-							{ __( 'Provide a different image optimized for portrait/mobile screens.', 'caes-reveal' ) }
-						</p>
-						<MediaUploadCheck>
-							{ ! frame.mobileImage ? (
-								<MediaUpload
-									onSelect={ ( media ) => onSelectImage( 'mobileImage', media ) }
-									allowedTypes={ [ 'image' ] }
-									render={ ( { open } ) => (
-										<Button variant="secondary" onClick={ open } style={ { width: '100%' } }>
-											{ __( 'Select Image', 'caes-reveal' ) }
-										</Button>
-									) }
+							{ tab.name === 'mobile' && (
+								<ImagePanel
+									frame={ frame }
+									imageType="mobile"
+									onSelectImage={ onSelectImage }
+									onRemoveImage={ onRemoveImage }
+									onUpdate={ onUpdate }
+									setFocalPointModal={ setFocalPointModal }
+									setDuotoneModal={ setDuotoneModal }
+									clientId={ clientId }
+									frameIndex={ index }
+									isRequired={ false }
 								/>
-							) : (
-								<div>
-									<div style={ { marginBottom: '12px' } }>
-										{ ( () => {
-											const filterId = `editor-${ frame.id }-mobile`;
-											const duotone = frame.mobileDuotone;
-											return (
-												<>
-													{ duotone && getDuotoneFilter( duotone, filterId ) }
-													<img
-														src={ frame.mobileImage.url }
-														alt={ frame.mobileImage.alt }
-														style={ {
-															maxWidth: '100%',
-															maxHeight: '150px',
-															borderRadius: '4px',
-															filter: duotone ? `url(#${ filterId })` : undefined,
-														} }
-													/>
-												</>
-											);
-										} )() }
-									</div>
-									<div style={ { display: 'flex', gap: '8px' } }>
-										<MediaUpload
-											onSelect={ ( media ) => onSelectImage( 'mobileImage', media ) }
-											allowedTypes={ [ 'image' ] }
-											value={ frame.mobileImage?.id }
-											render={ ( { open } ) => (
-												<Button variant="secondary" onClick={ open } size="small">
-													{ __( 'Replace', 'caes-reveal' ) }
-												</Button>
-											) }
-										/>
-										<Button variant="secondary" isDestructive onClick={ () => onRemoveImage( 'mobileImage' ) } size="small">
-											{ __( 'Remove', 'caes-reveal' ) }
-										</Button>
-									</div>
-
-									<TextControl
-										label={
-											<>
-												{ __( 'Caption', 'caes-reveal' ) }
-												<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'optional', 'caes-reveal' ) })</span>
-											</>
-										}
-										value={ frame.mobileImage?.caption || '' }
-										onChange={ ( value ) => {
-											const updatedImage = { ...frame.mobileImage, caption: value };
-											onUpdate( { mobileImage: updatedImage } );
-										} }
-										placeholder={ __( 'Add a caption', 'caes-reveal' ) }
-										disabled={ ! frame.mobileImage }
-									/>
-
-									<TextControl
-										label={
-											<>
-												{ __( 'Alt Text', 'caes-reveal' ) }
-												<span style={ { fontWeight: 'normal', color: '#757575' } }> ({ __( 'recommended', 'caes-reveal' ) })</span>
-											</>
-										}
-										value={ frame.mobileImage?.alt || '' }
-										onChange={ ( value ) => {
-											const updatedImage = { ...frame.mobileImage, alt: value };
-											onUpdate( { mobileImage: updatedImage } );
-										} }
-										placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
-										disabled={ ! frame.mobileImage }
-									/>
-
-									{ frame.mobileImage && (
-										<div style={ { display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap', alignItems: 'center' } }>
-											<Button variant="secondary" onClick={ () => setFocalPointModal( 'mobile' ) } icon="image-crop">
-												{ __( 'Set Focus Point', 'caes-reveal' ) }
-											</Button>
-											<Button variant="secondary" onClick={ () => setDuotoneModal( 'mobile' ) } icon="admin-appearance">
-												{ frame.mobileDuotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
-											</Button>
-											{ frame.mobileDuotone && <DuotoneSwatch values={ frame.mobileDuotone } /> }
-										</div>
-									) }
-								</div>
 							) }
-						</MediaUploadCheck>
-					</div>
-
-					{ /* Transition Settings */ }
-					<div
-						style={ {
-							paddingTop: '16px',
-							borderTop: '1px solid #ddd',
-						} }
-					>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ __( 'Transition', 'caes-reveal' ) }
-						</label>
-						<div style={ { display: 'flex', gap: '16px' } }>
-							<div style={ { flex: 1 } }>
-								<SelectControl
-									label={ __( 'Type', 'caes-reveal' ) }
-									value={ frame.transition.type }
-									options={ TRANSITION_OPTIONS }
-									onChange={ ( value ) =>
-										onUpdate( {
-											transition: { ...frame.transition, type: value },
-										} )
-									}
-								/>
-							</div>
-							<div style={ { flex: 1 } }>
-								<SelectControl
-									label={ __( 'Speed', 'caes-reveal' ) }
-									value={ frame.transition.speed || 'normal' }
-									options={ [
-										{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
-										{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
-										{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
-									] }
-									onChange={ ( value ) =>
-										onUpdate( {
-											transition: { ...frame.transition, speed: value },
-										} )
-									}
-								/>
-							</div>
+							{ tab.name === 'transition' && (
+								<TransitionPanel frame={ frame } onUpdate={ onUpdate } />
+							) }
 						</div>
-					</div>
-				</div>
-			) }
+					) }
+				</TabPanel>
+			</div>
 
-			{ /* Focal Point Modal */ }
+			{/* Modals */}
 			{ focalPointModal && (
-				<Modal
-					title={
-						focalPointModal === 'desktop'
-							? __( 'Set Focus Point — Wide Screens', 'caes-reveal' )
-							: __( 'Set Focus Point — Tall Screens', 'caes-reveal' )
-					}
-					onRequestClose={ () => setFocalPointModal( null ) }
-					style={ { maxWidth: '600px', width: '100%' } }
-				>
-					<div style={ { padding: '8px 0' } }>
-						<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
-							{ __(
-								'Click on the image to set the focal point. This determines which part of the image stays visible when cropped to fit the screen.',
-								'caes-reveal'
-							) }
-						</p>
-
-						{ focalPointModal === 'desktop' && frame.desktopImage && (
-							<FocalPointPicker
-								url={ frame.desktopImage.url }
-								value={ frame.desktopFocalPoint || { x: 0.5, y: 0.5 } }
-								onChange={ ( value ) => onUpdate( { desktopFocalPoint: value } ) }
-							/>
-						) }
-
-						{ focalPointModal === 'mobile' && frame.mobileImage && (
-							<FocalPointPicker
-								url={ frame.mobileImage.url }
-								value={ frame.mobileFocalPoint || { x: 0.5, y: 0.5 } }
-								onChange={ ( value ) => onUpdate( { mobileFocalPoint: value } ) }
-							/>
-						) }
-
-						<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'flex-end' } }>
-							<Button variant="primary" onClick={ () => setFocalPointModal( null ) }>
-								{ __( 'Done', 'caes-reveal' ) }
-							</Button>
-						</div>
-					</div>
-				</Modal>
+				<FocalPointModal
+					frame={ frame }
+					imageType={ focalPointModal }
+					onUpdate={ onUpdate }
+					onClose={ () => setFocalPointModal( null ) }
+				/>
 			) }
 
-			{ /* Duotone Modal */ }
 			{ duotoneModal && (
-				<Modal
-					title={
-						duotoneModal === 'desktop'
-							? __( 'Duotone Filter — Wide Screens', 'caes-reveal' )
-							: __( 'Duotone Filter — Tall Screens', 'caes-reveal' )
-					}
-					onRequestClose={ () => setDuotoneModal( null ) }
-					style={ { maxWidth: '400px', width: '100%' } }
-				>
-					<div style={ { padding: '8px 0' } }>
-						<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
-							{ __(
-								'Apply a duotone color filter to this image. The first color replaces shadows, the second replaces highlights.',
-								'caes-reveal'
-							) }
-						</p>
-
-						{ duotoneModal === 'desktop' && (
-							<DuotonePicker
-								duotonePalette={ DUOTONE_PALETTE }
-								colorPalette={ COLOR_PALETTE }
-								value={ frame.desktopDuotone || frame.duotone || undefined }
-								onChange={ ( value ) => onUpdate( { desktopDuotone: value, duotone: null } ) }
-							/>
-						) }
-
-						{ duotoneModal === 'mobile' && (
-							<DuotonePicker
-								duotonePalette={ DUOTONE_PALETTE }
-								colorPalette={ COLOR_PALETTE }
-								value={ frame.mobileDuotone || undefined }
-								onChange={ ( value ) => onUpdate( { mobileDuotone: value } ) }
-							/>
-						) }
-
-						<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'space-between' } }>
-							{ ( ( duotoneModal === 'desktop' && ( frame.desktopDuotone || frame.duotone ) ) ||
-								( duotoneModal === 'mobile' && frame.mobileDuotone ) ) && (
-								<Button
-									variant="tertiary"
-									isDestructive
-									onClick={ () => {
-										if ( duotoneModal === 'desktop' ) {
-											onUpdate( { desktopDuotone: null, duotone: null } );
-										} else {
-											onUpdate( { mobileDuotone: null } );
-										}
-										setDuotoneModal( null );
-									} }
-								>
-									{ __( 'Remove Filter', 'caes-reveal' ) }
-								</Button>
-							) }
-							<div style={ { marginLeft: 'auto' } }>
-								<Button variant="primary" onClick={ () => setDuotoneModal( null ) }>
-									{ __( 'Done', 'caes-reveal' ) }
-								</Button>
-							</div>
-						</div>
-					</div>
-				</Modal>
+				<DuotoneModal
+					frame={ frame }
+					imageType={ duotoneModal }
+					onUpdate={ onUpdate }
+					onClose={ () => setDuotoneModal( null ) }
+				/>
 			) }
 		</div>
+	);
+};
+
+// Image Panel Component
+const ImagePanel = ( {
+	frame,
+	imageType,
+	onSelectImage,
+	onRemoveImage,
+	onUpdate,
+	setFocalPointModal,
+	setDuotoneModal,
+	clientId,
+	frameIndex,
+	isRequired,
+} ) => {
+	const imageKey = imageType === 'desktop' ? 'desktopImage' : 'mobileImage';
+	const focalKey = imageType === 'desktop' ? 'desktopFocalPoint' : 'mobileFocalPoint';
+	const duotoneKey = imageType === 'desktop' ? 'desktopDuotone' : 'mobileDuotone';
+	const image = frame[ imageKey ];
+	const duotone = imageType === 'desktop' ? ( frame.desktopDuotone || frame.duotone ) : frame.mobileDuotone;
+
+	return (
+		<div>
+			<MediaUploadCheck>
+				{ ! image ? (
+					<div>
+						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
+							{ imageType === 'desktop' ? __( 'Image', 'caes-reveal' ) : __( 'Image (optional)', 'caes-reveal' ) }
+							{ isRequired && <span style={ { color: '#e65054' } }> *</span> }
+						</label>
+						{ imageType === 'mobile' && (
+							<p style={ { fontSize: '13px', color: '#757575', marginBottom: '12px' } }>
+								{ __( 'Provide a different image optimized for portrait/mobile screens.', 'caes-reveal' ) }
+							</p>
+						) }
+						<MediaUpload
+							onSelect={ ( media ) => onSelectImage( imageType + 'Image', media ) }
+							allowedTypes={ [ 'image' ] }
+							render={ ( { open } ) => (
+								<Button variant="secondary" onClick={ open } style={ { width: '100%', height: '200px' } }>
+									{ __( 'Select Image', 'caes-reveal' ) }
+								</Button>
+							) }
+						/>
+					</div>
+				) : (
+					<div>
+						{/* Image Preview */}
+						<div style={ { marginBottom: '16px' } }>
+							{ ( () => {
+								const filterId = `manager-${ clientId }-${ frameIndex }-${ imageType }`;
+								return (
+									<>
+										{ duotone && getDuotoneFilter( duotone, filterId ) }
+										<img
+											src={ image.url }
+											alt={ image.alt }
+											style={ {
+												width: '100%',
+												height: 'auto',
+												maxHeight: '300px',
+												objectFit: 'cover',
+												borderRadius: '4px',
+												filter: duotone ? `url(#${ filterId })` : undefined,
+											} }
+										/>
+									</>
+								);
+							} )() }
+						</div>
+
+						{/* Image Actions */}
+						<div style={ { display: 'flex', gap: '8px', marginBottom: '16px' } }>
+							<MediaUpload
+								onSelect={ ( media ) => onSelectImage( imageType + 'Image', media ) }
+								allowedTypes={ [ 'image' ] }
+								value={ image?.id }
+								render={ ( { open } ) => (
+									<Button variant="secondary" onClick={ open }>
+										{ __( 'Replace', 'caes-reveal' ) }
+									</Button>
+								) }
+							/>
+							<Button variant="secondary" isDestructive onClick={ () => onRemoveImage( imageType + 'Image' ) }>
+								{ __( 'Remove', 'caes-reveal' ) }
+							</Button>
+						</div>
+
+						{/* Caption */}
+						<TextControl
+							label={ __( 'Caption', 'caes-reveal' ) + ' (' + __( 'optional', 'caes-reveal' ) + ')' }
+							value={ image?.caption || '' }
+							onChange={ ( value ) => {
+								const updatedImage = { ...image, caption: value };
+								onUpdate( { [ imageKey ]: updatedImage } );
+							} }
+							placeholder={ __( 'Add a caption', 'caes-reveal' ) }
+						/>
+
+						{/* Alt Text */}
+						<TextControl
+							label={ __( 'Alt Text', 'caes-reveal' ) + ' (' + __( 'recommended', 'caes-reveal' ) + ')' }
+							value={ image?.alt || '' }
+							onChange={ ( value ) => {
+								const updatedImage = { ...image, alt: value };
+								onUpdate( { [ imageKey ]: updatedImage } );
+							} }
+							placeholder={ __( 'Describe media for screenreaders', 'caes-reveal' ) }
+						/>
+
+						{/* Focus & Filter Buttons */}
+						<div style={ { display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'center' } }>
+							<Button variant="secondary" onClick={ () => setFocalPointModal( imageType ) } icon="image-crop">
+								{ __( 'Set Focus Point', 'caes-reveal' ) }
+							</Button>
+							<Button variant="secondary" onClick={ () => setDuotoneModal( imageType ) } icon="admin-appearance">
+								{ duotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
+							</Button>
+							{ duotone && <DuotoneSwatch values={ duotone } /> }
+						</div>
+					</div>
+				) }
+			</MediaUploadCheck>
+		</div>
+	);
+};
+
+// Transition Panel Component
+const TransitionPanel = ( { frame, onUpdate } ) => {
+	return (
+		<div style={ { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' } }>
+			<SelectControl
+				label={ __( 'Type', 'caes-reveal' ) }
+				value={ frame.transition.type }
+				options={ TRANSITION_OPTIONS }
+				onChange={ ( value ) =>
+					onUpdate( {
+						transition: { ...frame.transition, type: value },
+					} )
+				}
+			/>
+			<SelectControl
+				label={ __( 'Speed', 'caes-reveal' ) }
+				value={ frame.transition.speed || 'normal' }
+				options={ [
+					{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
+					{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
+					{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
+				] }
+				onChange={ ( value ) =>
+					onUpdate( {
+						transition: { ...frame.transition, speed: value },
+					} )
+				}
+			/>
+		</div>
+	);
+};
+
+// Focal Point Modal
+const FocalPointModal = ( { frame, imageType, onUpdate, onClose } ) => {
+	const imageKey = imageType === 'desktop' ? 'desktopImage' : 'mobileImage';
+	const focalKey = imageType === 'desktop' ? 'desktopFocalPoint' : 'mobileFocalPoint';
+	const image = frame[ imageKey ];
+
+	if ( ! image ) {
+		return null;
+	}
+
+	return (
+		<Modal
+			title={
+				imageType === 'desktop'
+					? __( 'Set Focus Point — Wide Screens', 'caes-reveal' )
+					: __( 'Set Focus Point — Tall Screens', 'caes-reveal' )
+			}
+			onRequestClose={ onClose }
+			style={ { maxWidth: '600px', width: '100%' } }
+		>
+			<div style={ { padding: '8px 0' } }>
+				<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
+					{ __( 'Click on the image to set the focal point. This determines which part of the image stays visible when cropped to fit the screen.', 'caes-reveal' ) }
+				</p>
+
+				<FocalPointPicker
+					url={ image.url }
+					value={ frame[ focalKey ] || { x: 0.5, y: 0.5 } }
+					onChange={ ( value ) => onUpdate( { [ focalKey ]: value } ) }
+				/>
+
+				<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'flex-end' } }>
+					<Button variant="primary" onClick={ onClose }>
+						{ __( 'Done', 'caes-reveal' ) }
+					</Button>
+				</div>
+			</div>
+		</Modal>
+	);
+};
+
+// Duotone Modal
+const DuotoneModal = ( { frame, imageType, onUpdate, onClose } ) => {
+	const duotoneKey = imageType === 'desktop' ? 'desktopDuotone' : 'mobileDuotone';
+	const duotone = imageType === 'desktop' ? ( frame.desktopDuotone || frame.duotone ) : frame.mobileDuotone;
+
+	return (
+		<Modal
+			title={
+				imageType === 'desktop'
+					? __( 'Duotone Filter — Wide Screens', 'caes-reveal' )
+					: __( 'Duotone Filter — Tall Screens', 'caes-reveal' )
+			}
+			onRequestClose={ onClose }
+			style={ { maxWidth: '400px', width: '100%' } }
+		>
+			<div style={ { padding: '8px 0' } }>
+				<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
+					{ __( 'Apply a duotone color filter to this image. The first color replaces shadows, the second replaces highlights.', 'caes-reveal' ) }
+				</p>
+
+				<DuotonePicker
+					duotonePalette={ DUOTONE_PALETTE }
+					colorPalette={ COLOR_PALETTE }
+					value={ duotone || undefined }
+					onChange={ ( value ) => {
+						if ( imageType === 'desktop' ) {
+							onUpdate( { desktopDuotone: value, duotone: null } );
+						} else {
+							onUpdate( { mobileDuotone: value } );
+						}
+					} }
+				/>
+
+				<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'space-between' } }>
+					{ duotone && (
+						<Button
+							variant="tertiary"
+							isDestructive
+							onClick={ () => {
+								if ( imageType === 'desktop' ) {
+									onUpdate( { desktopDuotone: null, duotone: null } );
+								} else {
+									onUpdate( { mobileDuotone: null } );
+								}
+								onClose();
+							} }
+						>
+							{ __( 'Remove Filter', 'caes-reveal' ) }
+						</Button>
+					) }
+					<div style={ { marginLeft: 'auto' } }>
+						<Button variant="primary" onClick={ onClose }>
+							{ __( 'Done', 'caes-reveal' ) }
+						</Button>
+					</div>
+				</div>
+			</div>
+		</Modal>
 	);
 };
 
