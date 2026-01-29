@@ -94,12 +94,6 @@ const TRANSITION_OPTIONS = [
 	{ label: __( 'Right', 'caes-reveal' ), value: 'right' },
 ];
 
-const SPEED_OPTIONS = [
-	{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
-	{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
-	{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
-];
-
 // Duotone presets - common duotone combinations
 const DUOTONE_PALETTE = [
 	{ colors: [ '#000000', '#ffffff' ], name: 'Grayscale', slug: 'grayscale' },
@@ -150,7 +144,7 @@ const generateFrameId = () => {
 };
 
 const Edit = ( { attributes, setAttributes } ) => {
-	const { frames, overlayColor, overlayOpacity, minHeight, scrollSpeed } = attributes;
+	const { frames, overlayColor, overlayOpacity, minHeight } = attributes;
 	const [ isPreviewMode, setIsPreviewMode ] = useState( false );
 	const [ showOverlayColorPicker, setShowOverlayColorPicker ] = useState( false );
 
@@ -247,20 +241,24 @@ const Edit = ( { attributes, setAttributes } ) => {
 		return `rgba(${ r }, ${ g }, ${ b }, ${ opacity })`;
 	};
 
-	// Calculate min-height based on speed for the editor view
+	// Calculate min-height based on per-frame transition speeds
 	// This mimics the logic in render.php to give an accurate preview of scroll distance
 	const getCalculatedMinHeight = () => {
-		// If user manually set a minHeight override (not default '100vh' or 'auto'), you might want to respect that.
-		// However, the previous code had a specific 'Layout' control for this.
-		// If you want the "Scroll Speed" to drive the height, we should use that logic here.
-		
 		const count = Math.max( 1, frames.length );
-		let multiplier = 100; // Normal
+		
+		// Sum up the weights based on each frame's transition speed
+		// First frame doesn't have an incoming transition, so start with base viewport
+		let totalWeight = 100; // Base for first frame
+		
+		const speedMultipliers = { slow: 1.5, normal: 1, fast: 0.5 };
+		
+		for ( let i = 1; i < frames.length; i++ ) {
+			const speed = frames[ i ]?.transition?.speed || 'normal';
+			const multiplier = speedMultipliers[ speed ] || 1;
+			totalWeight += 100 * multiplier;
+		}
 
-		if ( scrollSpeed === 'slow' ) multiplier = 150;
-		if ( scrollSpeed === 'fast' ) multiplier = 75;
-
-		return `${ count * multiplier }vh`;
+		return `${ totalWeight }vh`;
 	};
 
 	// Get first frame's image for preview
@@ -294,16 +292,6 @@ const Edit = ( { attributes, setAttributes } ) => {
 	// Shared Inspector Controls (shown in both modes)
 	const sharedInspectorControls = (
 		<InspectorControls>
-			<PanelBody title={ __( 'Block Settings', 'caes-reveal' ) }>
-				<SelectControl
-					label={ __( 'Scroll Speed', 'caes-reveal' ) }
-					help={ __( 'Determines how much scrolling is required to transition between all frames.', 'caes-reveal' ) }
-					value={ scrollSpeed || 'normal' }
-					options={ SPEED_OPTIONS }
-					onChange={ ( value ) => setAttributes( { scrollSpeed: value } ) }
-				/>
-			</PanelBody>
-
 			<PanelBody title={ __( 'Overlay Settings', 'caes-reveal' ) }>
 				<div style={ { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' } }>
 					<span style={ { minWidth: '100px' } }>

@@ -116,16 +116,6 @@ const TRANSITION_OPTIONS = [{
   label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Right', 'caes-reveal'),
   value: 'right'
 }];
-const SPEED_OPTIONS = [{
-  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Slow', 'caes-reveal'),
-  value: 'slow'
-}, {
-  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Normal', 'caes-reveal'),
-  value: 'normal'
-}, {
-  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Fast', 'caes-reveal'),
-  value: 'fast'
-}];
 
 // Duotone presets - common duotone combinations
 const DUOTONE_PALETTE = [{
@@ -254,8 +244,7 @@ const Edit = ({
     frames,
     overlayColor,
     overlayOpacity,
-    minHeight,
-    scrollSpeed
+    minHeight
   } = attributes;
   const [isPreviewMode, setIsPreviewMode] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [showOverlayColorPicker, setShowOverlayColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
@@ -370,19 +359,26 @@ const Edit = ({
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
 
-  // Calculate min-height based on speed for the editor view
+  // Calculate min-height based on per-frame transition speeds
   // This mimics the logic in render.php to give an accurate preview of scroll distance
   const getCalculatedMinHeight = () => {
-    // If user manually set a minHeight override (not default '100vh' or 'auto'), you might want to respect that.
-    // However, the previous code had a specific 'Layout' control for this.
-    // If you want the "Scroll Speed" to drive the height, we should use that logic here.
-
     const count = Math.max(1, frames.length);
-    let multiplier = 100; // Normal
 
-    if (scrollSpeed === 'slow') multiplier = 150;
-    if (scrollSpeed === 'fast') multiplier = 75;
-    return `${count * multiplier}vh`;
+    // Sum up the weights based on each frame's transition speed
+    // First frame doesn't have an incoming transition, so start with base viewport
+    let totalWeight = 100; // Base for first frame
+
+    const speedMultipliers = {
+      slow: 1.5,
+      normal: 1,
+      fast: 0.5
+    };
+    for (let i = 1; i < frames.length; i++) {
+      const speed = frames[i]?.transition?.speed || 'normal';
+      const multiplier = speedMultipliers[speed] || 1;
+      totalWeight += 100 * multiplier;
+    }
+    return `${totalWeight}vh`;
   };
 
   // Get first frame's image for preview
@@ -416,18 +412,7 @@ const Edit = ({
 
   // Shared Inspector Controls (shown in both modes)
   const sharedInspectorControls = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
-      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Block Settings', 'caes-reveal'),
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
-        label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Scroll Speed', 'caes-reveal'),
-        help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Determines how much scrolling is required to transition between all frames.', 'caes-reveal'),
-        value: scrollSpeed || 'normal',
-        options: SPEED_OPTIONS,
-        onChange: value => setAttributes({
-          scrollSpeed: value
-        })
-      })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
       title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Settings', 'caes-reveal'),
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         style: {

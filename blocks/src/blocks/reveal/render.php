@@ -9,19 +9,26 @@
 $frames          = $attributes['frames'] ?? [];
 $overlay_color   = $attributes['overlayColor'] ?? '#000000';
 $overlay_opacity = $attributes['overlayOpacity'] ?? 30;
-$scroll_speed    = $attributes['scrollSpeed'] ?? 'normal';
 
-// Calculate Min Height based on Speed setting
+// Calculate Min Height based on per-frame transition speeds
 $frame_count = count( $frames );
-$vh_multiplier = 100; // Normal
+$speed_multipliers = [
+	'slow'   => 1.5,
+	'normal' => 1,
+	'fast'   => 0.5,
+];
 
-if ( 'slow' === $scroll_speed ) {
-	$vh_multiplier = 150;
-} elseif ( 'fast' === $scroll_speed ) {
-	$vh_multiplier = 75;
+// Start with base viewport for first frame
+$total_vh = 100;
+
+// Add viewport height for each transition based on its speed
+for ( $i = 1; $i < $frame_count; $i++ ) {
+	$speed = $frames[ $i ]['transition']['speed'] ?? 'normal';
+	$multiplier = $speed_multipliers[ $speed ] ?? 1;
+	$total_vh += 100 * $multiplier;
 }
 
-$calculated_min_height = ( $frame_count * $vh_multiplier ) . 'vh';
+$calculated_min_height = $total_vh . 'vh';
 
 // Early return if no frames - but still output content
 if ( empty( $frames ) ) {
