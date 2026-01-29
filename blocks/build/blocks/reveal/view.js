@@ -5,7 +5,7 @@
 /**
  * Reveal Block Frontend JavaScript
  *
- * Handles scroll-triggered frame transitions.
+ * Handles scroll-triggered frame transitions and frame-specific content visibility.
  */
 
 (function () {
@@ -14,11 +14,13 @@
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function initRevealBlock(block) {
     const frames = block.querySelectorAll('.reveal-frame');
+    const frameContents = block.querySelectorAll('.reveal-frame-content');
     if (frames.length === 0) {
       return;
     }
     const frameCount = frames.length;
     let ticking = false;
+    let currentActiveIndex = 0;
 
     // Build frame weights based on transition speed
     // slow = 1.5x scroll distance, normal = 1x, fast = 0.5x
@@ -103,6 +105,30 @@
       }
       return styles;
     }
+
+    /**
+     * Update frame content visibility with smooth transitions
+     */
+    function updateFrameContentVisibility(targetIndex) {
+      if (targetIndex === currentActiveIndex) {
+        return; // No change needed
+      }
+      frameContents.forEach(content => {
+        const contentIndex = parseInt(content.dataset.frameIndex, 10);
+        if (contentIndex === targetIndex) {
+          // Show this content
+          content.style.opacity = '1';
+          content.style.pointerEvents = 'auto';
+          content.setAttribute('aria-hidden', 'false');
+        } else {
+          // Hide this content
+          content.style.opacity = '0';
+          content.style.pointerEvents = 'none';
+          content.setAttribute('aria-hidden', 'true');
+        }
+      });
+      currentActiveIndex = targetIndex;
+    }
     function updateActiveFrame() {
       const blockRect = block.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
@@ -144,6 +170,8 @@
         localProgress = 0;
       }
       const nextIndex = Math.min(frameCount - 1, currentIndex + 1);
+
+      // Update background frames
       frames.forEach((frame, index) => {
         // Kill CSS transitions to allow manual scrubbing
         frame.style.transitionDuration = '0ms';
@@ -169,6 +197,11 @@
           frame.style.zIndex = '0';
         }
       });
+
+      // Determine which content should be visible based on transition progress
+      // Show content for the frame we're currently on or transitioning to
+      const targetContentIndex = localProgress > 0.5 ? nextIndex : currentIndex;
+      updateFrameContentVisibility(targetContentIndex);
       ticking = false;
     }
     function onScroll() {
@@ -177,6 +210,20 @@
         ticking = true;
       }
     }
+
+    // Initialize frame content visibility
+    frameContents.forEach((content, index) => {
+      content.style.transition = 'opacity 0.3s ease';
+      if (index === 0) {
+        content.style.opacity = '1';
+        content.style.pointerEvents = 'auto';
+        content.setAttribute('aria-hidden', 'false');
+      } else {
+        content.style.opacity = '0';
+        content.style.pointerEvents = 'none';
+        content.setAttribute('aria-hidden', 'true');
+      }
+    });
     window.addEventListener('scroll', onScroll, {
       passive: true
     });

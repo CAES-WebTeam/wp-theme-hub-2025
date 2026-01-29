@@ -190,6 +190,33 @@ if (! function_exists('caes_reveal_get_duotone_filter')) :
 		return [$filter_id, $svg];
 	}
 endif;
+
+/**
+ * Parse inner blocks to extract frame-specific content
+ *
+ * @param string $content Block content HTML
+ * @return array Array of content indexed by frame number
+ */
+function caes_reveal_parse_frame_content($content)
+{
+	$frame_contents = [];
+
+	// Match all frame content blocks
+	$pattern = '/<div[^>]*class="[^"]*reveal-frame-content[^"]*"[^>]*data-frame-index="(\d+)"[^>]*>(.*?)<\/div>/s';
+
+	if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
+		foreach ($matches as $match) {
+			$frame_index = (int) $match[1];
+			$frame_content = $match[2];
+			$frame_contents[$frame_index] = $frame_content;
+		}
+	}
+
+	return $frame_contents;
+}
+
+// Parse frame-specific content from inner blocks
+$frame_contents = caes_reveal_parse_frame_content($content);
 ?>
 
 <div <?php echo $wrapper_attributes; ?> data-frames="<?php echo esc_attr(wp_json_encode($frames_data)); ?>">
@@ -333,7 +360,13 @@ endif;
 	</div>
 
 	<div class="reveal-content">
-		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped 
-		?>
+		<?php foreach ($frames as $index => $frame) : ?>
+			<?php if (isset($frame_contents[$index])) : ?>
+				<div class="reveal-frame-content" data-frame-index="<?php echo esc_attr($index); ?>">
+					<?php echo $frame_contents[$index]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped 
+					?>
+				</div>
+			<?php endif; ?>
+		<?php endforeach; ?>
 	</div>
 </div>
