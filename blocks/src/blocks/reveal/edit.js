@@ -541,19 +541,53 @@ const FrameEditor = ( {
 							borderRadius: '4px',
 							overflow: 'hidden',
 							flexShrink: 0,
+							position: 'relative',
 						} }
 					>
-						{ frame.desktopImage && (
-							<img
-								src={ frame.desktopImage.sizes?.thumbnail?.url || frame.desktopImage.url }
-								alt=""
-								style={ {
-									width: '100%',
-									height: '100%',
-									objectFit: 'cover',
-								} }
-							/>
-						) }
+						{ frame.desktopImage && ( () => {
+							const duotone = frame.desktopDuotone || frame.duotone;
+							let filterStyle = undefined;
+							let svgFilter = null;
+							const filterId = `thumb-duotone-${ frameIndex }`;
+
+							if ( duotone && duotone.length === 2 ) {
+								const s = duotone[ 0 ].replace( '#', '' );
+								const h = duotone[ 1 ].replace( '#', '' );
+								const sr = parseInt( s.slice( 0, 2 ), 16 ) / 255;
+								const sg = parseInt( s.slice( 2, 4 ), 16 ) / 255;
+								const sb = parseInt( s.slice( 4, 6 ), 16 ) / 255;
+								const hr = parseInt( h.slice( 0, 2 ), 16 ) / 255;
+								const hg = parseInt( h.slice( 2, 4 ), 16 ) / 255;
+								const hb = parseInt( h.slice( 4, 6 ), 16 ) / 255;
+								const values = `${ hr - sr } ${ sr } 0 0 ${ sr } ${ hg - sg } ${ sg } 0 0 ${ sg } ${ hb - sb } ${ sb } 0 0 ${ sb } 0 0 0 1 0`;
+								filterStyle = `url(#${ filterId })`;
+								svgFilter = (
+									<svg style={ { position: 'absolute', width: 0, height: 0 } } aria-hidden="true">
+										<defs>
+											<filter id={ filterId }>
+												<feColorMatrix type="matrix" values={ values } />
+											</filter>
+										</defs>
+									</svg>
+								);
+							}
+
+							return (
+								<>
+									{ svgFilter }
+									<img
+										src={ frame.desktopImage.sizes?.thumbnail?.url || frame.desktopImage.url }
+										alt=""
+										style={ {
+											width: '100%',
+											height: '100%',
+											objectFit: 'cover',
+											filter: filterStyle,
+										} }
+									/>
+								</>
+							);
+						} )() }
 					</div>
 					<div>
 						<strong>{ __( 'Frame', 'caes-reveal' ) } { frameIndex + 1 }</strong>
