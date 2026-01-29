@@ -554,7 +554,7 @@ const FrameEditor = ( {
 								borderRadius: '4px',
 							} }
 						>
-							<div style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' } }>
+							<div style={ { display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px', lineHeight: '1' } }>
 								<span className="dashicons dashicons-desktop" style={ { fontSize: '20px' } }></span>
 								<div>
 									<strong style={ { display: 'block' } }>{ __( 'Wide Screens', 'caes-reveal' ) }</strong>
@@ -708,7 +708,7 @@ const FrameEditor = ( {
 								borderRadius: '4px',
 							} }
 						>
-							<div style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' } }>
+							<div style={ { display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px', lineHeight: '1' } }>
 								<span className="dashicons dashicons-smartphone" style={ { fontSize: '20px' } }></span>
 								<div>
 									<strong style={ { display: 'block' } }>{ __( 'Tall Screens', 'caes-reveal' ) }</strong>
