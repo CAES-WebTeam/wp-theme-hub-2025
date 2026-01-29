@@ -51,10 +51,29 @@
 			object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
 		}
 
-		// Mobile focal point
+		// Desktop/Mobile separate image handling
+		.reveal-frame-desktop {
+			display: block;
+			object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
+		}
+
+		.reveal-frame-mobile {
+			display: none;
+			object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
+		}
+
+		// Mobile: swap which image is visible
 		@media screen and (max-width: 768px) {
 			img {
 				object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
+			}
+
+			.reveal-frame-desktop {
+				display: none;
+			}
+
+			.reveal-frame-mobile {
+				display: block;
 			}
 		}
 	}

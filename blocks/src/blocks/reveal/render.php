@@ -169,10 +169,18 @@ endif;
 
 <div <?php echo $wrapper_attributes; ?> data-frames="<?php echo esc_attr( wp_json_encode( $frames_data ) ); ?>">
 	<?php
-	// Output duotone SVG filters
+	// Output duotone SVG filters for both desktop and mobile
 	foreach ( $frames as $index => $frame ) :
-		if ( ! empty( $frame['duotone'] ) ) :
-			list( $filter_id, $svg ) = caes_reveal_get_duotone_filter( $frame['duotone'], $block_id . '-' . $index );
+		// Desktop duotone filter
+		if ( ! empty( $frame['desktopDuotone'] ) ) :
+			list( $filter_id, $svg ) = caes_reveal_get_duotone_filter( $frame['desktopDuotone'], $block_id . '-' . $index . '-desktop' );
+			if ( $svg ) :
+				echo $svg;
+			endif;
+		endif;
+		// Mobile duotone filter
+		if ( ! empty( $frame['mobileDuotone'] ) ) :
+			list( $filter_id, $svg ) = caes_reveal_get_duotone_filter( $frame['mobileDuotone'], $block_id . '-' . $index . '-mobile' );
 			if ( $svg ) :
 				echo $svg;
 			endif;
@@ -187,24 +195,19 @@ endif;
 			$desktop_focal_point = $frame['desktopFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
 			$mobile_focal_point  = $frame['mobileFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
 			$transition          = $frame['transition'] ?? [ 'type' => 'fade' ];
-			$duotone             = $frame['duotone'] ?? null;
+			$desktop_duotone     = $frame['desktopDuotone'] ?? null;
+			$mobile_duotone      = $frame['mobileDuotone'] ?? null;
 
 			if ( empty( $desktop_image ) ) {
 				continue;
 			}
 
-			// Build inline styles
+			// Build inline styles for the frame container
 			$frame_styles = [];
 			$frame_styles[] = sprintf( '--desktop-focal-x: %s%%', ( $desktop_focal_point['x'] ?? 0.5 ) * 100 );
 			$frame_styles[] = sprintf( '--desktop-focal-y: %s%%', ( $desktop_focal_point['y'] ?? 0.5 ) * 100 );
 			$frame_styles[] = sprintf( '--mobile-focal-x: %s%%', ( $mobile_focal_point['x'] ?? 0.5 ) * 100 );
 			$frame_styles[] = sprintf( '--mobile-focal-y: %s%%', ( $mobile_focal_point['y'] ?? 0.5 ) * 100 );
-
-			// Duotone filter
-			if ( ! empty( $duotone ) ) {
-				$filter_id = 'duotone-' . $block_id . '-' . $index;
-				$frame_styles[] = sprintf( 'filter: url(#%s)', esc_attr( $filter_id ) );
-			}
 
 			$frame_style_attr = implode( '; ', $frame_styles );
 
@@ -213,6 +216,25 @@ endif;
 			if ( $index === 0 ) {
 				$frame_classes .= ' is-active';
 			}
+
+			// Desktop image styles (with duotone if set)
+			$desktop_img_styles = [];
+			if ( ! empty( $desktop_duotone ) ) {
+				$desktop_img_styles[] = sprintf( 'filter: url(#duotone-%s-%d-desktop)', esc_attr( $block_id ), $index );
+			}
+			$desktop_img_style_attr = ! empty( $desktop_img_styles ) ? implode( '; ', $desktop_img_styles ) : '';
+
+			// Mobile image styles (with duotone if set)
+			$mobile_img_styles = [];
+			if ( ! empty( $mobile_duotone ) ) {
+				$mobile_img_styles[] = sprintf( 'filter: url(#duotone-%s-%d-mobile)', esc_attr( $block_id ), $index );
+			}
+			$mobile_img_style_attr = ! empty( $mobile_img_styles ) ? implode( '; ', $mobile_img_styles ) : '';
+
+			// Determine if we need separate desktop/mobile images (when duotones differ or mobile image exists)
+			$has_mobile_image = ! empty( $mobile_image ) && ! empty( $mobile_image['url'] );
+			$duotones_differ = $desktop_duotone !== $mobile_duotone;
+			$use_separate_images = $has_mobile_image || $duotones_differ;
 			?>
 			<div
 				class="<?php echo esc_attr( $frame_classes ); ?>"
@@ -220,13 +242,33 @@ endif;
 				data-transition-type="<?php echo esc_attr( $transition['type'] ?? 'fade' ); ?>"
 				style="<?php echo esc_attr( $frame_style_attr ); ?>"
 			>
-				<picture>
-					<?php if ( ! empty( $mobile_image ) && ! empty( $mobile_image['url'] ) ) : ?>
-						<source
-							media="(max-width: 768px)"
-							srcset="<?php echo esc_url( set_url_scheme( $mobile_image['url'] ) ); ?>"
-						>
-					<?php endif; ?>
+				<?php if ( $use_separate_images ) : ?>
+					<?php // Desktop image - hidden on mobile ?>
+					<img
+						class="reveal-frame-desktop"
+						src="<?php echo esc_url( set_url_scheme( $desktop_image['url'] ) ); ?>"
+						srcset="<?php echo caes_reveal_build_srcset( $desktop_image ); ?>"
+						sizes="100vw"
+						alt="<?php echo esc_attr( $desktop_image['alt'] ?? '' ); ?>"
+						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
+						decoding="async"
+						<?php if ( $desktop_img_style_attr ) : ?>
+							style="<?php echo esc_attr( $desktop_img_style_attr ); ?>"
+						<?php endif; ?>
+					>
+					<?php // Mobile image - hidden on desktop ?>
+					<img
+						class="reveal-frame-mobile"
+						src="<?php echo esc_url( set_url_scheme( $has_mobile_image ? $mobile_image['url'] : $desktop_image['url'] ) ); ?>"
+						alt="<?php echo esc_attr( $has_mobile_image ? ( $mobile_image['alt'] ?? '' ) : ( $desktop_image['alt'] ?? '' ) ); ?>"
+						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
+						decoding="async"
+						<?php if ( $mobile_img_style_attr ) : ?>
+							style="<?php echo esc_attr( $mobile_img_style_attr ); ?>"
+						<?php endif; ?>
+					>
+				<?php else : ?>
+					<?php // Single image when no mobile-specific needs ?>
 					<img
 						src="<?php echo esc_url( set_url_scheme( $desktop_image['url'] ) ); ?>"
 						srcset="<?php echo caes_reveal_build_srcset( $desktop_image ); ?>"
@@ -234,8 +276,11 @@ endif;
 						alt="<?php echo esc_attr( $desktop_image['alt'] ?? '' ); ?>"
 						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
 						decoding="async"
+						<?php if ( $desktop_img_style_attr ) : ?>
+							style="<?php echo esc_attr( $desktop_img_style_attr ); ?>"
+						<?php endif; ?>
 					>
-				</picture>
+				<?php endif; ?>
 			</div>
 		<?php endforeach; ?>
 

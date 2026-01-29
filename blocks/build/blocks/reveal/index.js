@@ -166,7 +166,8 @@ const DEFAULT_FRAME = {
     x: 0.5,
     y: 0.5
   },
-  duotone: null,
+  desktopDuotone: null,
+  mobileDuotone: null,
   transition: {
     type: 'fade'
     // Speed is now handled globally
@@ -576,7 +577,8 @@ const FrameEditor = ({
 }) => {
   const [isExpanded, setIsExpanded] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [focalPointModal, setFocalPointModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null); // 'desktop' | 'mobile' | null
-  const [showDuotoneModal, setShowDuotoneModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+  const [duotoneModal, setDuotoneModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null); // 'desktop' | 'mobile' | null
+
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
     className: "reveal-frame-editor",
     style: {
@@ -875,14 +877,27 @@ const FrameEditor = ({
             },
             placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Describe media for screenreaders', 'caes-reveal'),
             disabled: !frame.desktopImage
-          }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-            variant: "secondary",
-            onClick: () => setFocalPointModal('desktop'),
+          }), frame.desktopImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
             style: {
-              marginTop: '12px'
+              display: 'flex',
+              gap: '8px',
+              marginTop: '12px',
+              flexWrap: 'wrap',
+              alignItems: 'center'
             },
-            icon: "image-crop",
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point', 'caes-reveal')
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "secondary",
+              onClick: () => setFocalPointModal('desktop'),
+              icon: "image-crop",
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point', 'caes-reveal')
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "secondary",
+              onClick: () => setDuotoneModal('desktop'),
+              icon: "admin-appearance",
+              children: frame.desktopDuotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
+            }), frame.desktopDuotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
+              values: frame.desktopDuotone
+            })]
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           style: {
@@ -1083,14 +1098,27 @@ const FrameEditor = ({
             },
             placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Describe media for screenreaders', 'caes-reveal'),
             disabled: !frame.mobileImage
-          }), frame.mobileImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-            variant: "secondary",
-            onClick: () => setFocalPointModal('mobile'),
+          }), frame.mobileImage && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
             style: {
-              marginTop: '12px'
+              display: 'flex',
+              gap: '8px',
+              marginTop: '12px',
+              flexWrap: 'wrap',
+              alignItems: 'center'
             },
-            icon: "image-crop",
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point', 'caes-reveal')
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "secondary",
+              onClick: () => setFocalPointModal('mobile'),
+              icon: "image-crop",
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point', 'caes-reveal')
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "secondary",
+              onClick: () => setDuotoneModal('mobile'),
+              icon: "admin-appearance",
+              children: frame.mobileDuotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
+            }), frame.mobileDuotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
+              values: frame.mobileDuotone
+            })]
           })]
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
@@ -1114,43 +1142,6 @@ const FrameEditor = ({
               type: value
             }
           })
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-        style: {
-          paddingTop: '16px',
-          borderTop: '1px solid #ddd'
-        },
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
-          style: {
-            display: 'block',
-            marginBottom: '8px',
-            fontWeight: 500
-          },
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter', 'caes-reveal')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
-          style: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          },
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-            variant: "secondary",
-            onClick: () => setShowDuotoneModal(true),
-            icon: "admin-appearance",
-            children: frame.duotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
-          }), frame.duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
-              values: frame.duotone
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
-              variant: "tertiary",
-              isDestructive: true,
-              onClick: () => onUpdate({
-                duotone: null
-              }),
-              icon: "no-alt",
-              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove filter', 'caes-reveal')
-            })]
-          })]
         })]
       })]
     }), focalPointModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
@@ -1202,9 +1193,9 @@ const FrameEditor = ({
           })
         })]
       })
-    }), showDuotoneModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
-      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter', 'caes-reveal'),
-      onRequestClose: () => setShowDuotoneModal(false),
+    }), duotoneModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
+      title: duotoneModal === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter — Wide Screens', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter — Tall Screens', 'caes-reveal'),
+      onRequestClose: () => setDuotoneModal(null),
       style: {
         maxWidth: '400px',
         width: '100%'
@@ -1219,13 +1210,20 @@ const FrameEditor = ({
             color: '#757575',
             fontSize: '13px'
           },
-          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Apply a duotone color filter to this frame. The first color replaces shadows, the second replaces highlights.', 'caes-reveal')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Apply a duotone color filter to this image. The first color replaces shadows, the second replaces highlights.', 'caes-reveal')
+        }), duotoneModal === 'desktop' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
           duotonePalette: DUOTONE_PALETTE,
           colorPalette: COLOR_PALETTE,
-          value: frame.duotone || undefined,
+          value: frame.desktopDuotone || undefined,
           onChange: value => onUpdate({
-            duotone: value
+            desktopDuotone: value
+          })
+        }), duotoneModal === 'mobile' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
+          duotonePalette: DUOTONE_PALETTE,
+          colorPalette: COLOR_PALETTE,
+          value: frame.mobileDuotone || undefined,
+          onChange: value => onUpdate({
+            mobileDuotone: value
           })
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           style: {
@@ -1233,14 +1231,20 @@ const FrameEditor = ({
             display: 'flex',
             justifyContent: 'space-between'
           },
-          children: [frame.duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          children: [(duotoneModal === 'desktop' && frame.desktopDuotone || duotoneModal === 'mobile' && frame.mobileDuotone) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
             variant: "tertiary",
             isDestructive: true,
             onClick: () => {
-              onUpdate({
-                duotone: null
-              });
-              setShowDuotoneModal(false);
+              if (duotoneModal === 'desktop') {
+                onUpdate({
+                  desktopDuotone: null
+                });
+              } else {
+                onUpdate({
+                  mobileDuotone: null
+                });
+              }
+              setDuotoneModal(null);
             },
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove Filter', 'caes-reveal')
           }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
@@ -1249,7 +1253,7 @@ const FrameEditor = ({
             },
             children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
               variant: "primary",
-              onClick: () => setShowDuotoneModal(false),
+              onClick: () => setDuotoneModal(null),
               children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Done', 'caes-reveal')
             })
           })]

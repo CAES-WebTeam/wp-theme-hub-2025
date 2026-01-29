@@ -76,7 +76,8 @@ const DEFAULT_FRAME = {
 	mobileImage: null,
 	desktopFocalPoint: { x: 0.5, y: 0.5 },
 	mobileFocalPoint: { x: 0.5, y: 0.5 },
-	duotone: null,
+	desktopDuotone: null,
+	mobileDuotone: null,
 	transition: {
 		type: 'fade',
 		// Speed is now handled globally
@@ -476,7 +477,7 @@ const FrameEditor = ( {
 } ) => {
 	const [ isExpanded, setIsExpanded ] = useState( false );
 	const [ focalPointModal, setFocalPointModal ] = useState( null ); // 'desktop' | 'mobile' | null
-	const [ showDuotoneModal, setShowDuotoneModal ] = useState( false );
+	const [ duotoneModal, setDuotoneModal ] = useState( null ); // 'desktop' | 'mobile' | null
 
 	return (
 		<div
@@ -722,14 +723,25 @@ const FrameEditor = ( {
 							/>
 
 							{ frame.desktopImage && (
-								<Button
-									variant="secondary"
-									onClick={ () => setFocalPointModal( 'desktop' ) }
-									style={ { marginTop: '12px' } }
-									icon="image-crop"
-								>
-									{ __( 'Set Focus Point', 'caes-reveal' ) }
-								</Button>
+								<div style={ { display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap', alignItems: 'center' } }>
+									<Button
+										variant="secondary"
+										onClick={ () => setFocalPointModal( 'desktop' ) }
+										icon="image-crop"
+									>
+										{ __( 'Set Focus Point', 'caes-reveal' ) }
+									</Button>
+									<Button
+										variant="secondary"
+										onClick={ () => setDuotoneModal( 'desktop' ) }
+										icon="admin-appearance"
+									>
+										{ frame.desktopDuotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
+									</Button>
+									{ frame.desktopDuotone && (
+										<DuotoneSwatch values={ frame.desktopDuotone } />
+									) }
+								</div>
 							) }
 						</div>
 
@@ -875,14 +887,25 @@ const FrameEditor = ( {
 							/>
 
 							{ frame.mobileImage && (
-								<Button
-									variant="secondary"
-									onClick={ () => setFocalPointModal( 'mobile' ) }
-									style={ { marginTop: '12px' } }
-									icon="image-crop"
-								>
-									{ __( 'Set Focus Point', 'caes-reveal' ) }
-								</Button>
+								<div style={ { display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap', alignItems: 'center' } }>
+									<Button
+										variant="secondary"
+										onClick={ () => setFocalPointModal( 'mobile' ) }
+										icon="image-crop"
+									>
+										{ __( 'Set Focus Point', 'caes-reveal' ) }
+									</Button>
+									<Button
+										variant="secondary"
+										onClick={ () => setDuotoneModal( 'mobile' ) }
+										icon="admin-appearance"
+									>
+										{ frame.mobileDuotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
+									</Button>
+									{ frame.mobileDuotone && (
+										<DuotoneSwatch values={ frame.mobileDuotone } />
+									) }
+								</div>
 							) }
 						</div>
 					</div>
@@ -906,39 +929,6 @@ const FrameEditor = ( {
 								} )
 							}
 						/>
-					</div>
-
-					{ /* Duotone Filter */ }
-					<div
-						style={ {
-							paddingTop: '16px',
-							borderTop: '1px solid #ddd',
-						} }
-					>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ __( 'Duotone Filter', 'caes-reveal' ) }
-						</label>
-						<div style={ { display: 'flex', alignItems: 'center', gap: '12px' } }>
-							<Button
-								variant="secondary"
-								onClick={ () => setShowDuotoneModal( true ) }
-								icon="admin-appearance"
-							>
-								{ frame.duotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
-							</Button>
-							{ frame.duotone && (
-								<>
-									<DuotoneSwatch values={ frame.duotone } />
-									<Button
-										variant="tertiary"
-										isDestructive
-										onClick={ () => onUpdate( { duotone: null } ) }
-										icon="no-alt"
-										label={ __( 'Remove filter', 'caes-reveal' ) }
-									/>
-								</>
-							) }
-						</div>
 					</div>
 				</div>
 			) }
@@ -988,32 +978,51 @@ const FrameEditor = ( {
 			) }
 
 			{ /* Duotone Modal */ }
-			{ showDuotoneModal && (
+			{ duotoneModal && (
 				<Modal
-					title={ __( 'Duotone Filter', 'caes-reveal' ) }
-					onRequestClose={ () => setShowDuotoneModal( false ) }
+					title={
+						duotoneModal === 'desktop'
+							? __( 'Duotone Filter — Wide Screens', 'caes-reveal' )
+							: __( 'Duotone Filter — Tall Screens', 'caes-reveal' )
+					}
+					onRequestClose={ () => setDuotoneModal( null ) }
 					style={ { maxWidth: '400px', width: '100%' } }
 				>
 					<div style={ { padding: '8px 0' } }>
 						<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
-							{ __( 'Apply a duotone color filter to this frame. The first color replaces shadows, the second replaces highlights.', 'caes-reveal' ) }
+							{ __( 'Apply a duotone color filter to this image. The first color replaces shadows, the second replaces highlights.', 'caes-reveal' ) }
 						</p>
 						
-						<DuotonePicker
-							duotonePalette={ DUOTONE_PALETTE }
-							colorPalette={ COLOR_PALETTE }
-							value={ frame.duotone || undefined }
-							onChange={ ( value ) => onUpdate( { duotone: value } ) }
-						/>
+						{ duotoneModal === 'desktop' && (
+							<DuotonePicker
+								duotonePalette={ DUOTONE_PALETTE }
+								colorPalette={ COLOR_PALETTE }
+								value={ frame.desktopDuotone || undefined }
+								onChange={ ( value ) => onUpdate( { desktopDuotone: value } ) }
+							/>
+						) }
+
+						{ duotoneModal === 'mobile' && (
+							<DuotonePicker
+								duotonePalette={ DUOTONE_PALETTE }
+								colorPalette={ COLOR_PALETTE }
+								value={ frame.mobileDuotone || undefined }
+								onChange={ ( value ) => onUpdate( { mobileDuotone: value } ) }
+							/>
+						) }
 
 						<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'space-between' } }>
-							{ frame.duotone && (
+							{ ( ( duotoneModal === 'desktop' && frame.desktopDuotone ) || ( duotoneModal === 'mobile' && frame.mobileDuotone ) ) && (
 								<Button
 									variant="tertiary"
 									isDestructive
 									onClick={ () => {
-										onUpdate( { duotone: null } );
-										setShowDuotoneModal( false );
+										if ( duotoneModal === 'desktop' ) {
+											onUpdate( { desktopDuotone: null } );
+										} else {
+											onUpdate( { mobileDuotone: null } );
+										}
+										setDuotoneModal( null );
 									} }
 								>
 									{ __( 'Remove Filter', 'caes-reveal' ) }
@@ -1022,7 +1031,7 @@ const FrameEditor = ( {
 							<div style={ { marginLeft: 'auto' } }>
 								<Button
 									variant="primary"
-									onClick={ () => setShowDuotoneModal( false ) }
+									onClick={ () => setDuotoneModal( null ) }
 								>
 									{ __( 'Done', 'caes-reveal' ) }
 								</Button>
