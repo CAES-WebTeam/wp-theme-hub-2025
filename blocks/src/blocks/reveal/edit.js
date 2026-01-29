@@ -21,6 +21,7 @@ import {
 	Modal,
 	DuotonePicker,
 	DuotoneSwatch,
+	RangeControl,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -318,6 +319,14 @@ const Edit = ( { attributes, setAttributes } ) => {
 						) }
 					</div>
 				</div>
+				<RangeControl
+					label={ __( 'Overlay Opacity', 'caes-reveal' ) }
+					value={ overlayOpacity }
+					onChange={ ( value ) => setAttributes( { overlayOpacity: value } ) }
+					min={ 0 }
+					max={ 100 }
+					step={ 5 }
+				/>
 			</PanelBody>
 
 			<PanelBody title={ __( 'Layout', 'caes-reveal' ) } initialOpen={ false }>
