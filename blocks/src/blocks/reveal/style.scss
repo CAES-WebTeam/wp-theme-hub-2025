@@ -8,7 +8,7 @@
 .caes-reveal {
 	position: relative;
 	min-height: var(--reveal-min-height, 100vh);
-	
+
 	// clip-path creates a clipping context that clips fixed children to parent bounds
 	clip-path: inset(0);
 
@@ -16,11 +16,16 @@
 	.reveal-background {
 		position: fixed;
 		top: 0;
-		left: 0;
 		right: 0;
 		height: 100vh;
 		z-index: 0;
 		overflow: hidden; // Clip frames during directional transitions
+
+		@media screen and (max-width: 768px) {
+			// Accounting for sidebar
+			width: calc(100% - 222px);
+			left: 222px;
+		}
 	}
 
 	// Individual frames (using figure element for accessibility)
@@ -127,11 +132,11 @@
 		min-height: inherit;
 
 		// Ensure content has some padding by default
-		> *:first-child {
+		>*:first-child {
 			margin-top: 0;
 		}
 
-		> *:last-child {
+		>*:last-child {
 			margin-bottom: 0;
 		}
 	}
@@ -168,6 +173,7 @@
 
 // Accessibility: ensure focus states are visible
 .caes-reveal {
+
 	a:focus,
 	button:focus {
 		outline: 2px solid currentColor;
@@ -179,7 +185,7 @@
 @media print {
 	.caes-reveal {
 		clip-path: none;
-		
+
 		.reveal-background {
 			position: absolute !important;
 			height: 100%;
