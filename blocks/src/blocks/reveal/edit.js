@@ -19,6 +19,8 @@ import {
 	ToolbarGroup,
 	ToolbarButton,
 	Modal,
+	DuotonePicker,
+	DuotoneSwatch,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -35,6 +37,37 @@ const SPEED_OPTIONS = [
 	{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
 	{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
 	{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
+];
+
+// Duotone presets - common duotone combinations
+const DUOTONE_PALETTE = [
+	{ colors: [ '#000000', '#ffffff' ], name: 'Grayscale', slug: 'grayscale' },
+	{ colors: [ '#000000', '#7f7f7f' ], name: 'Dark grayscale', slug: 'dark-grayscale' },
+	{ colors: [ '#12128c', '#ffcc00' ], name: 'Blue and yellow', slug: 'blue-yellow' },
+	{ colors: [ '#8c00b7', '#fcff41' ], name: 'Purple and yellow', slug: 'purple-yellow' },
+	{ colors: [ '#000097', '#ff4747' ], name: 'Blue and red', slug: 'blue-red' },
+	{ colors: [ '#004b23', '#99e2b4' ], name: 'Green tones', slug: 'green-tones' },
+	{ colors: [ '#99154e', '#f7b2d9' ], name: 'Magenta tones', slug: 'magenta-tones' },
+	{ colors: [ '#0d3b66', '#faf0ca' ], name: 'Navy and cream', slug: 'navy-cream' },
+];
+
+// Color palette for custom duotone creation
+const COLOR_PALETTE = [
+	{ color: '#000000', name: 'Black', slug: 'black' },
+	{ color: '#ffffff', name: 'White', slug: 'white' },
+	{ color: '#7f7f7f', name: 'Gray', slug: 'gray' },
+	{ color: '#ff4747', name: 'Red', slug: 'red' },
+	{ color: '#fcff41', name: 'Yellow', slug: 'yellow' },
+	{ color: '#ffcc00', name: 'Gold', slug: 'gold' },
+	{ color: '#000097', name: 'Blue', slug: 'blue' },
+	{ color: '#12128c', name: 'Navy', slug: 'navy' },
+	{ color: '#8c00b7', name: 'Purple', slug: 'purple' },
+	{ color: '#004b23', name: 'Dark Green', slug: 'dark-green' },
+	{ color: '#99e2b4', name: 'Light Green', slug: 'light-green' },
+	{ color: '#99154e', name: 'Magenta', slug: 'magenta' },
+	{ color: '#f7b2d9', name: 'Pink', slug: 'pink' },
+	{ color: '#0d3b66', name: 'Dark Blue', slug: 'dark-blue' },
+	{ color: '#faf0ca', name: 'Cream', slug: 'cream' },
 ];
 
 const DEFAULT_FRAME = {
@@ -443,6 +476,7 @@ const FrameEditor = ( {
 } ) => {
 	const [ isExpanded, setIsExpanded ] = useState( false );
 	const [ focalPointModal, setFocalPointModal ] = useState( null ); // 'desktop' | 'mobile' | null
+	const [ showDuotoneModal, setShowDuotoneModal ] = useState( false );
 
 	return (
 		<div
@@ -873,6 +907,39 @@ const FrameEditor = ( {
 							}
 						/>
 					</div>
+
+					{ /* Duotone Filter */ }
+					<div
+						style={ {
+							paddingTop: '16px',
+							borderTop: '1px solid #ddd',
+						} }
+					>
+						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
+							{ __( 'Duotone Filter', 'caes-reveal' ) }
+						</label>
+						<div style={ { display: 'flex', alignItems: 'center', gap: '12px' } }>
+							<Button
+								variant="secondary"
+								onClick={ () => setShowDuotoneModal( true ) }
+								icon="admin-appearance"
+							>
+								{ frame.duotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
+							</Button>
+							{ frame.duotone && (
+								<>
+									<DuotoneSwatch values={ frame.duotone } />
+									<Button
+										variant="tertiary"
+										isDestructive
+										onClick={ () => onUpdate( { duotone: null } ) }
+										icon="no-alt"
+										label={ __( 'Remove filter', 'caes-reveal' ) }
+									/>
+								</>
+							) }
+						</div>
+					</div>
 				</div>
 			) }
 
@@ -915,6 +982,51 @@ const FrameEditor = ( {
 							>
 								{ __( 'Done', 'caes-reveal' ) }
 							</Button>
+						</div>
+					</div>
+				</Modal>
+			) }
+
+			{ /* Duotone Modal */ }
+			{ showDuotoneModal && (
+				<Modal
+					title={ __( 'Duotone Filter', 'caes-reveal' ) }
+					onRequestClose={ () => setShowDuotoneModal( false ) }
+					style={ { maxWidth: '400px', width: '100%' } }
+				>
+					<div style={ { padding: '8px 0' } }>
+						<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
+							{ __( 'Apply a duotone color filter to this frame. The first color replaces shadows, the second replaces highlights.', 'caes-reveal' ) }
+						</p>
+						
+						<DuotonePicker
+							duotonePalette={ DUOTONE_PALETTE }
+							colorPalette={ COLOR_PALETTE }
+							value={ frame.duotone || undefined }
+							onChange={ ( value ) => onUpdate( { duotone: value } ) }
+						/>
+
+						<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'space-between' } }>
+							{ frame.duotone && (
+								<Button
+									variant="tertiary"
+									isDestructive
+									onClick={ () => {
+										onUpdate( { duotone: null } );
+										setShowDuotoneModal( false );
+									} }
+								>
+									{ __( 'Remove Filter', 'caes-reveal' ) }
+								</Button>
+							) }
+							<div style={ { marginLeft: 'auto' } }>
+								<Button
+									variant="primary"
+									onClick={ () => setShowDuotoneModal( false ) }
+								>
+									{ __( 'Done', 'caes-reveal' ) }
+								</Button>
+							</div>
 						</div>
 					</div>
 				</Modal>

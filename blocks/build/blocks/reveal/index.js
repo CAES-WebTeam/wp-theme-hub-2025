@@ -56,6 +56,104 @@ const SPEED_OPTIONS = [{
   label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Fast', 'caes-reveal'),
   value: 'fast'
 }];
+
+// Duotone presets - common duotone combinations
+const DUOTONE_PALETTE = [{
+  colors: ['#000000', '#ffffff'],
+  name: 'Grayscale',
+  slug: 'grayscale'
+}, {
+  colors: ['#000000', '#7f7f7f'],
+  name: 'Dark grayscale',
+  slug: 'dark-grayscale'
+}, {
+  colors: ['#12128c', '#ffcc00'],
+  name: 'Blue and yellow',
+  slug: 'blue-yellow'
+}, {
+  colors: ['#8c00b7', '#fcff41'],
+  name: 'Purple and yellow',
+  slug: 'purple-yellow'
+}, {
+  colors: ['#000097', '#ff4747'],
+  name: 'Blue and red',
+  slug: 'blue-red'
+}, {
+  colors: ['#004b23', '#99e2b4'],
+  name: 'Green tones',
+  slug: 'green-tones'
+}, {
+  colors: ['#99154e', '#f7b2d9'],
+  name: 'Magenta tones',
+  slug: 'magenta-tones'
+}, {
+  colors: ['#0d3b66', '#faf0ca'],
+  name: 'Navy and cream',
+  slug: 'navy-cream'
+}];
+
+// Color palette for custom duotone creation
+const COLOR_PALETTE = [{
+  color: '#000000',
+  name: 'Black',
+  slug: 'black'
+}, {
+  color: '#ffffff',
+  name: 'White',
+  slug: 'white'
+}, {
+  color: '#7f7f7f',
+  name: 'Gray',
+  slug: 'gray'
+}, {
+  color: '#ff4747',
+  name: 'Red',
+  slug: 'red'
+}, {
+  color: '#fcff41',
+  name: 'Yellow',
+  slug: 'yellow'
+}, {
+  color: '#ffcc00',
+  name: 'Gold',
+  slug: 'gold'
+}, {
+  color: '#000097',
+  name: 'Blue',
+  slug: 'blue'
+}, {
+  color: '#12128c',
+  name: 'Navy',
+  slug: 'navy'
+}, {
+  color: '#8c00b7',
+  name: 'Purple',
+  slug: 'purple'
+}, {
+  color: '#004b23',
+  name: 'Dark Green',
+  slug: 'dark-green'
+}, {
+  color: '#99e2b4',
+  name: 'Light Green',
+  slug: 'light-green'
+}, {
+  color: '#99154e',
+  name: 'Magenta',
+  slug: 'magenta'
+}, {
+  color: '#f7b2d9',
+  name: 'Pink',
+  slug: 'pink'
+}, {
+  color: '#0d3b66',
+  name: 'Dark Blue',
+  slug: 'dark-blue'
+}, {
+  color: '#faf0ca',
+  name: 'Cream',
+  slug: 'cream'
+}];
 const DEFAULT_FRAME = {
   id: '',
   desktopImage: null,
@@ -478,7 +576,7 @@ const FrameEditor = ({
 }) => {
   const [isExpanded, setIsExpanded] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [focalPointModal, setFocalPointModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null); // 'desktop' | 'mobile' | null
-
+  const [showDuotoneModal, setShowDuotoneModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
     className: "reveal-frame-editor",
     style: {
@@ -1017,6 +1115,43 @@ const FrameEditor = ({
             }
           })
         })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          paddingTop: '16px',
+          borderTop: '1px solid #ddd'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("label", {
+          style: {
+            display: 'block',
+            marginBottom: '8px',
+            fontWeight: 500
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "secondary",
+            onClick: () => setShowDuotoneModal(true),
+            icon: "admin-appearance",
+            children: frame.duotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
+          }), frame.duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
+              values: frame.duotone
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "tertiary",
+              isDestructive: true,
+              onClick: () => onUpdate({
+                duotone: null
+              }),
+              icon: "no-alt",
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove filter', 'caes-reveal')
+            })]
+          })]
+        })]
       })]
     }), focalPointModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
       title: focalPointModal === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point — Wide Screens', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point — Tall Screens', 'caes-reveal'),
@@ -1065,6 +1200,59 @@ const FrameEditor = ({
             onClick: () => setFocalPointModal(null),
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Done', 'caes-reveal')
           })
+        })]
+      })
+    }), showDuotoneModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
+      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter', 'caes-reveal'),
+      onRequestClose: () => setShowDuotoneModal(false),
+      style: {
+        maxWidth: '400px',
+        width: '100%'
+      },
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        style: {
+          padding: '8px 0'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+          style: {
+            margin: '0 0 16px 0',
+            color: '#757575',
+            fontSize: '13px'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Apply a duotone color filter to this frame. The first color replaces shadows, the second replaces highlights.', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
+          duotonePalette: DUOTONE_PALETTE,
+          colorPalette: COLOR_PALETTE,
+          value: frame.duotone || undefined,
+          onChange: value => onUpdate({
+            duotone: value
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          style: {
+            marginTop: '20px',
+            display: 'flex',
+            justifyContent: 'space-between'
+          },
+          children: [frame.duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "tertiary",
+            isDestructive: true,
+            onClick: () => {
+              onUpdate({
+                duotone: null
+              });
+              setShowDuotoneModal(false);
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove Filter', 'caes-reveal')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            style: {
+              marginLeft: 'auto'
+            },
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "primary",
+              onClick: () => setShowDuotoneModal(false),
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Done', 'caes-reveal')
+            })
+          })]
         })]
       })
     })]
