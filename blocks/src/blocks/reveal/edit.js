@@ -141,7 +141,7 @@ const DEFAULT_FRAME = {
 	mobileDuotone: null,
 	transition: {
 		type: 'fade',
-		// Speed is now handled globally
+		speed: 'normal',
 	},
 };
 
@@ -1050,15 +1050,36 @@ const FrameEditor = ( {
 						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
 							{ __( 'Transition', 'caes-reveal' ) }
 						</label>
-						<SelectControl
-							value={ frame.transition.type }
-							options={ TRANSITION_OPTIONS }
-							onChange={ ( value ) =>
-								onUpdate( {
-									transition: { ...frame.transition, type: value },
-								} )
-							}
-						/>
+						<div style={ { display: 'flex', gap: '16px' } }>
+							<div style={ { flex: 1 } }>
+								<SelectControl
+									label={ __( 'Type', 'caes-reveal' ) }
+									value={ frame.transition.type }
+									options={ TRANSITION_OPTIONS }
+									onChange={ ( value ) =>
+										onUpdate( {
+											transition: { ...frame.transition, type: value },
+										} )
+									}
+								/>
+							</div>
+							<div style={ { flex: 1 } }>
+								<SelectControl
+									label={ __( 'Speed', 'caes-reveal' ) }
+									value={ frame.transition.speed || 'normal' }
+									options={ [
+										{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
+										{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
+										{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
+									] }
+									onChange={ ( value ) =>
+										onUpdate( {
+											transition: { ...frame.transition, speed: value },
+										} )
+									}
+								/>
+							</div>
+						</div>
 					</div>
 				</div>
 			) }

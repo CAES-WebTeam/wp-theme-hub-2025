@@ -253,11 +253,13 @@ endif;
 			$has_mobile_image = ! empty( $mobile_image ) && ! empty( $mobile_image['url'] );
 			$duotones_differ = $desktop_duotone !== $mobile_duotone;
 			$use_separate_images = $has_mobile_image || $duotones_differ;
+			$transition_speed = $transition['speed'] ?? 'normal';
 			?>
 			<div
 				class="<?php echo esc_attr( $frame_classes ); ?>"
 				data-index="<?php echo esc_attr( $index ); ?>"
 				data-transition-type="<?php echo esc_attr( $transition['type'] ?? 'fade' ); ?>"
+				data-transition-speed="<?php echo esc_attr( $transition_speed ); ?>"
 				style="<?php echo esc_attr( $frame_style_attr ); ?>"
 			>
 				<?php if ( $use_separate_images ) : ?>

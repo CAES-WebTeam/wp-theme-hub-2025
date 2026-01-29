@@ -239,8 +239,8 @@ const DEFAULT_FRAME = {
   desktopDuotone: null,
   mobileDuotone: null,
   transition: {
-    type: 'fade'
-    // Speed is now handled globally
+    type: 'fade',
+    speed: 'normal'
   }
 };
 const generateFrameId = () => {
@@ -1261,15 +1261,51 @@ const FrameEditor = ({
             fontWeight: 500
           },
           children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Transition', 'caes-reveal')
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
-          value: frame.transition.type,
-          options: TRANSITION_OPTIONS,
-          onChange: value => onUpdate({
-            transition: {
-              ...frame.transition,
-              type: value
-            }
-          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+          style: {
+            display: 'flex',
+            gap: '16px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            style: {
+              flex: 1
+            },
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Type', 'caes-reveal'),
+              value: frame.transition.type,
+              options: TRANSITION_OPTIONS,
+              onChange: value => onUpdate({
+                transition: {
+                  ...frame.transition,
+                  type: value
+                }
+              })
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            style: {
+              flex: 1
+            },
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Speed', 'caes-reveal'),
+              value: frame.transition.speed || 'normal',
+              options: [{
+                label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Slow', 'caes-reveal'),
+                value: 'slow'
+              }, {
+                label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Normal', 'caes-reveal'),
+                value: 'normal'
+              }, {
+                label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Fast', 'caes-reveal'),
+                value: 'fast'
+              }],
+              onChange: value => onUpdate({
+                transition: {
+                  ...frame.transition,
+                  speed: value
+                }
+              })
+            })
+          })]
         })]
       })]
     }), focalPointModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {

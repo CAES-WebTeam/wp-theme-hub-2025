@@ -20,6 +20,35 @@
     const frameCount = frames.length;
     let ticking = false;
 
+    // Build frame weights based on transition speed
+    // slow = 1.5x scroll distance, normal = 1x, fast = 0.5x
+    const speedMultipliers = {
+      slow: 1.5,
+      normal: 1,
+      fast: 0.5
+    };
+    const frameWeights = [];
+    let totalWeight = 0;
+    frames.forEach((frame, index) => {
+      if (index === 0) {
+        // First frame has no incoming transition
+        frameWeights.push(0);
+      } else {
+        const speed = frame.dataset.transitionSpeed || 'normal';
+        const weight = speedMultipliers[speed] || 1;
+        frameWeights.push(weight);
+        totalWeight += weight;
+      }
+    });
+
+    // Calculate cumulative positions (0 to 1) for each frame transition
+    const framePositions = [0]; // First frame starts at 0
+    let cumulative = 0;
+    for (let i = 1; i < frameCount; i++) {
+      cumulative += frameWeights[i] / totalWeight;
+      framePositions.push(cumulative);
+    }
+
     /**
      * Get transition styles for the incoming frame.
      * 
@@ -90,12 +119,31 @@
         scrollProgress = Math.min(1, scrolledDistance / scrollableDistance);
       }
 
-      // Map 0..1 to 0..(Frames-1)
-      const totalTransitions = Math.max(0, frameCount - 1);
-      const virtualScroll = Math.min(totalTransitions, scrollProgress * totalTransitions);
-      const currentIndex = Math.floor(virtualScroll);
+      // Find which transition we're in based on weighted positions
+      let currentIndex = 0;
+      let localProgress = 0;
+      for (let i = 1; i < frameCount; i++) {
+        if (scrollProgress >= framePositions[i]) {
+          currentIndex = i;
+        } else {
+          // We're in the transition from (i-1) to i
+          currentIndex = i - 1;
+          const transitionStart = framePositions[i - 1] || 0;
+          const transitionEnd = framePositions[i];
+          const transitionLength = transitionEnd - transitionStart;
+          if (transitionLength > 0) {
+            localProgress = (scrollProgress - transitionStart) / transitionLength;
+          }
+          break;
+        }
+      }
+
+      // If we've scrolled past all transitions, we're on the last frame
+      if (scrollProgress >= 1) {
+        currentIndex = frameCount - 1;
+        localProgress = 0;
+      }
       const nextIndex = Math.min(frameCount - 1, currentIndex + 1);
-      const localProgress = virtualScroll - currentIndex;
       frames.forEach((frame, index) => {
         // Kill CSS transitions to allow manual scrubbing
         frame.style.transitionDuration = '0ms';
@@ -105,7 +153,7 @@
           frame.style.opacity = '1';
           frame.style.clipPath = 'none';
           frame.style.zIndex = '1';
-        } else if (index === nextIndex && nextIndex !== currentIndex) {
+        } else if (index === nextIndex && nextIndex !== currentIndex && localProgress > 0) {
           // Incoming frame - apply wipe/fade transition
           const type = frame.dataset.transitionType || 'fade';
           const styles = getTransitionStyles(type, localProgress);
