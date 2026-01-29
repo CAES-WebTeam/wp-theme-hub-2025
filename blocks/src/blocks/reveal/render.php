@@ -197,23 +197,25 @@ endif;
  * @param string $content Block content HTML
  * @return array Array of content indexed by frame number
  */
-function caes_reveal_parse_frame_content($content)
-{
-	$frame_contents = [];
+if (! function_exists('caes_reveal_parse_frame_content')) :
+	function caes_reveal_parse_frame_content($content)
+	{
+		$frame_contents = [];
 
-	// Match all frame content blocks
-	$pattern = '/<div[^>]*class="[^"]*reveal-frame-content[^"]*"[^>]*data-frame-index="(\d+)"[^>]*>(.*?)<\/div>/s';
+		// Match all frame content blocks
+		$pattern = '/<div[^>]*class="[^"]*reveal-frame-content[^"]*"[^>]*data-frame-index="(\d+)"[^>]*>(.*?)<\/div>/s';
 
-	if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
-		foreach ($matches as $match) {
-			$frame_index = (int) $match[1];
-			$frame_content = $match[2];
-			$frame_contents[$frame_index] = $frame_content;
+		if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
+			foreach ($matches as $match) {
+				$frame_index = (int) $match[1];
+				$frame_content = $match[2];
+				$frame_contents[$frame_index] = $frame_content;
+			}
 		}
-	}
 
-	return $frame_contents;
-}
+		return $frame_contents;
+	}
+endif;
 
 // Parse frame-specific content from inner blocks
 $frame_contents = caes_reveal_parse_frame_content($content);
