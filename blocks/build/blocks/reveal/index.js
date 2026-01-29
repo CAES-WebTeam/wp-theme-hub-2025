@@ -27,6 +27,76 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * Generate duotone SVG filter markup - matches WordPress core implementation.
+ * Uses feColorMatrix for grayscale conversion, then feComponentTransfer for color mapping.
+ *
+ * @param {string[]} duotone - Array of two hex colors [shadow, highlight]
+ * @param {string} filterId - Unique ID for the filter
+ * @returns {JSX.Element|null} SVG element with filter definition
+ */
+
+const getDuotoneFilter = (duotone, filterId) => {
+  if (!duotone || duotone.length < 2) {
+    return null;
+  }
+
+  // Convert hex colors to RGB values (0-1 range)
+  const parseColor = hex => {
+    let color = hex.replace('#', '');
+    // Handle 3-character hex
+    if (color.length === 3) {
+      color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2];
+    }
+    return {
+      r: parseInt(color.slice(0, 2), 16) / 255,
+      g: parseInt(color.slice(2, 4), 16) / 255,
+      b: parseInt(color.slice(4, 6), 16) / 255
+    };
+  };
+  const shadow = parseColor(duotone[0]);
+  const highlight = parseColor(duotone[1]);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 0 0",
+    width: "0",
+    height: "0",
+    focusable: "false",
+    role: "none",
+    style: {
+      visibility: 'hidden',
+      position: 'absolute',
+      left: '-9999px',
+      overflow: 'hidden'
+    },
+    "aria-hidden": "true",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("filter", {
+        id: filterId,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
+          colorInterpolationFilters: "sRGB",
+          type: "matrix",
+          values: ".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("feComponentTransfer", {
+          colorInterpolationFilters: "sRGB",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncR", {
+            type: "table",
+            tableValues: `${shadow.r} ${highlight.r}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncG", {
+            type: "table",
+            tableValues: `${shadow.g} ${highlight.g}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncB", {
+            type: "table",
+            tableValues: `${shadow.b} ${highlight.b}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncA", {
+            type: "table",
+            tableValues: "0 1"
+          })]
+        })]
+      })
+    })
+  });
+};
 const TRANSITION_OPTIONS = [{
   label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('None', 'caes-reveal'),
   value: 'none'
@@ -411,22 +481,8 @@ const Edit = ({
 
   // PREVIEW MODE
   if (isPreviewMode) {
-    // Generate duotone filter ID and values for preview
-    // Check for new desktopDuotone or legacy duotone property
     const previewDuotoneId = 'preview-duotone-filter';
     const activeDuotone = firstFrame?.desktopDuotone || firstFrame?.duotone;
-    let duotoneFilterValues = null;
-    if (activeDuotone && activeDuotone.length === 2) {
-      const s = activeDuotone[0].replace('#', '');
-      const h = activeDuotone[1].replace('#', '');
-      const sr = parseInt(s.slice(0, 2), 16) / 255;
-      const sg = parseInt(s.slice(2, 4), 16) / 255;
-      const sb = parseInt(s.slice(4, 6), 16) / 255;
-      const hr = parseInt(h.slice(0, 2), 16) / 255;
-      const hg = parseInt(h.slice(2, 4), 16) / 255;
-      const hb = parseInt(h.slice(4, 6), 16) / 255;
-      duotoneFilterValues = `${hr - sr} ${sr} 0 0 ${sr} ${hg - sg} ${sg} 0 0 ${sg} ${hb - sb} ${sb} 0 0 ${sb} 0 0 0 1 0`;
-    }
     return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
         children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
@@ -438,23 +494,7 @@ const Edit = ({
         })
       }), sharedInspectorControls, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         ...blockProps,
-        children: [duotoneFilterValues && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
-          style: {
-            position: 'absolute',
-            width: 0,
-            height: 0
-          },
-          "aria-hidden": "true",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("filter", {
-              id: previewDuotoneId,
-              children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
-                type: "matrix",
-                values: duotoneFilterValues
-              })
-            })
-          })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        children: [getDuotoneFilter(activeDuotone, previewDuotoneId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           className: "reveal-background-preview",
           style: {
             position: 'absolute',
@@ -470,7 +510,7 @@ const Edit = ({
               height: '100%',
               objectFit: 'cover',
               objectPosition: firstFrame?.desktopFocalPoint ? `${firstFrame.desktopFocalPoint.x * 100}% ${firstFrame.desktopFocalPoint.y * 100}%` : 'center',
-              filter: duotoneFilterValues ? `url(#${previewDuotoneId})` : undefined
+              filter: activeDuotone ? `url(#${previewDuotoneId})` : undefined
             }
           }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
             style: {
@@ -649,47 +689,16 @@ const FrameEditor = ({
           },
           children: frame.desktopImage && (() => {
             const duotone = frame.desktopDuotone || frame.duotone;
-            let filterStyle = undefined;
-            let svgFilter = null;
             const filterId = `thumb-duotone-${frameIndex}`;
-            if (duotone && duotone.length === 2) {
-              const s = duotone[0].replace('#', '');
-              const h = duotone[1].replace('#', '');
-              const sr = parseInt(s.slice(0, 2), 16) / 255;
-              const sg = parseInt(s.slice(2, 4), 16) / 255;
-              const sb = parseInt(s.slice(4, 6), 16) / 255;
-              const hr = parseInt(h.slice(0, 2), 16) / 255;
-              const hg = parseInt(h.slice(2, 4), 16) / 255;
-              const hb = parseInt(h.slice(4, 6), 16) / 255;
-              const values = `${hr - sr} ${sr} 0 0 ${sr} ${hg - sg} ${sg} 0 0 ${sg} ${hb - sb} ${sb} 0 0 ${sb} 0 0 0 1 0`;
-              filterStyle = `url(#${filterId})`;
-              svgFilter = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
-                style: {
-                  position: 'absolute',
-                  width: 0,
-                  height: 0
-                },
-                "aria-hidden": "true",
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
-                  children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("filter", {
-                    id: filterId,
-                    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
-                      type: "matrix",
-                      values: values
-                    })
-                  })
-                })
-              });
-            }
             return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-              children: [svgFilter, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+              children: [getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
                 src: frame.desktopImage.sizes?.thumbnail?.url || frame.desktopImage.url,
                 alt: "",
                 style: {
                   width: '100%',
                   height: '100%',
                   objectFit: 'cover',
-                  filter: filterStyle
+                  filter: duotone ? `url(#${filterId})` : undefined
                 }
               })]
             });
@@ -873,47 +882,16 @@ const FrameEditor = ({
                 },
                 children: (() => {
                   const duotone = frame.desktopDuotone || frame.duotone;
-                  let filterStyle = undefined;
-                  let svgFilter = null;
                   const filterId = `desktop-preview-duotone-${frameIndex}`;
-                  if (duotone && duotone.length === 2) {
-                    const s = duotone[0].replace('#', '');
-                    const h = duotone[1].replace('#', '');
-                    const sr = parseInt(s.slice(0, 2), 16) / 255;
-                    const sg = parseInt(s.slice(2, 4), 16) / 255;
-                    const sb = parseInt(s.slice(4, 6), 16) / 255;
-                    const hr = parseInt(h.slice(0, 2), 16) / 255;
-                    const hg = parseInt(h.slice(2, 4), 16) / 255;
-                    const hb = parseInt(h.slice(4, 6), 16) / 255;
-                    const values = `${hr - sr} ${sr} 0 0 ${sr} ${hg - sg} ${sg} 0 0 ${sg} ${hb - sb} ${sb} 0 0 ${sb} 0 0 0 1 0`;
-                    filterStyle = `url(#${filterId})`;
-                    svgFilter = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
-                      style: {
-                        position: 'absolute',
-                        width: 0,
-                        height: 0
-                      },
-                      "aria-hidden": "true",
-                      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
-                        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("filter", {
-                          id: filterId,
-                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
-                            type: "matrix",
-                            values: values
-                          })
-                        })
-                      })
-                    });
-                  }
                   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-                    children: [svgFilter, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                    children: [getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
                       src: frame.desktopImage.sizes?.medium?.url || frame.desktopImage.url,
                       alt: frame.desktopImage.alt,
                       style: {
                         maxWidth: '100%',
                         maxHeight: '150px',
                         borderRadius: '4px',
-                        filter: filterStyle
+                        filter: duotone ? `url(#${filterId})` : undefined
                       }
                     })]
                   });
@@ -1133,47 +1111,16 @@ const FrameEditor = ({
                 },
                 children: (() => {
                   const duotone = frame.mobileDuotone;
-                  let filterStyle = undefined;
-                  let svgFilter = null;
                   const filterId = `mobile-preview-duotone-${frameIndex}`;
-                  if (duotone && duotone.length === 2) {
-                    const s = duotone[0].replace('#', '');
-                    const h = duotone[1].replace('#', '');
-                    const sr = parseInt(s.slice(0, 2), 16) / 255;
-                    const sg = parseInt(s.slice(2, 4), 16) / 255;
-                    const sb = parseInt(s.slice(4, 6), 16) / 255;
-                    const hr = parseInt(h.slice(0, 2), 16) / 255;
-                    const hg = parseInt(h.slice(2, 4), 16) / 255;
-                    const hb = parseInt(h.slice(4, 6), 16) / 255;
-                    const values = `${hr - sr} ${sr} 0 0 ${sr} ${hg - sg} ${sg} 0 0 ${sg} ${hb - sb} ${sb} 0 0 ${sb} 0 0 0 1 0`;
-                    filterStyle = `url(#${filterId})`;
-                    svgFilter = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
-                      style: {
-                        position: 'absolute',
-                        width: 0,
-                        height: 0
-                      },
-                      "aria-hidden": "true",
-                      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
-                        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("filter", {
-                          id: filterId,
-                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
-                            type: "matrix",
-                            values: values
-                          })
-                        })
-                      })
-                    });
-                  }
                   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
-                    children: [svgFilter, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                    children: [getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
                       src: frame.mobileImage.sizes?.medium?.url || frame.mobileImage.url,
                       alt: frame.mobileImage.alt,
                       style: {
                         maxWidth: '100%',
                         maxHeight: '150px',
                         borderRadius: '4px',
-                        filter: filterStyle
+                        filter: duotone ? `url(#${filterId})` : undefined
                       }
                     })]
                   });

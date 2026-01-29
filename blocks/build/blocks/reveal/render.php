@@ -114,53 +114,70 @@ function caes_reveal_build_srcset( $image ) {
 endif;
 
 /**
- * Generate duotone filter CSS
+ * Generate duotone filter SVG - matches WordPress core implementation
  *
- * @param array  $duotone  Duotone settings.
- * @param string $frame_id Frame identifier.
- * @return array Filter ID and CSS.
+ * @param array  $duotone  Duotone settings (array of two hex colors).
+ * @param string $filter_id Filter identifier.
+ * @return array Filter ID and SVG markup.
  */
 if ( ! function_exists( 'caes_reveal_get_duotone_filter' ) ) :
-function caes_reveal_get_duotone_filter( $duotone, $frame_id ) {
-	if ( empty( $duotone ) || ! is_array( $duotone ) ) {
+function caes_reveal_get_duotone_filter( $duotone, $filter_id ) {
+	if ( empty( $duotone ) || ! is_array( $duotone ) || count( $duotone ) < 2 ) {
 		return [ '', '' ];
 	}
 
-	$filter_id = 'duotone-' . $frame_id;
+	// Parse the two colors and convert to RGB values (0-1 range)
+	$duotone_values = [
+		'r' => [],
+		'g' => [],
+		'b' => [],
+	];
 
-	// Parse colors - duotone is array of two hex colors
-	$colors = $duotone;
-	if ( count( $colors ) < 2 ) {
-		return [ '', '' ];
+	foreach ( $duotone as $color_str ) {
+		$color_str = ltrim( $color_str, '#' );
+		
+		// Handle 3-character hex
+		if ( strlen( $color_str ) === 3 ) {
+			$color_str = $color_str[0] . $color_str[0] . $color_str[1] . $color_str[1] . $color_str[2] . $color_str[2];
+		}
+
+		$duotone_values['r'][] = hexdec( substr( $color_str, 0, 2 ) ) / 255;
+		$duotone_values['g'][] = hexdec( substr( $color_str, 2, 2 ) ) / 255;
+		$duotone_values['b'][] = hexdec( substr( $color_str, 4, 2 ) ) / 255;
 	}
 
-	// Convert hex to RGB values (0-1 range)
-	$shadow_hex    = ltrim( $colors[0], '#' );
-	$highlight_hex = ltrim( $colors[1], '#' );
-
-	$shadow_r    = hexdec( substr( $shadow_hex, 0, 2 ) ) / 255;
-	$shadow_g    = hexdec( substr( $shadow_hex, 2, 2 ) ) / 255;
-	$shadow_b    = hexdec( substr( $shadow_hex, 4, 2 ) ) / 255;
-	$highlight_r = hexdec( substr( $highlight_hex, 0, 2 ) ) / 255;
-	$highlight_g = hexdec( substr( $highlight_hex, 2, 2 ) ) / 255;
-	$highlight_b = hexdec( substr( $highlight_hex, 4, 2 ) ) / 255;
-
-	$svg = sprintf(
-		'<svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
-			<filter id="%s">
-				<feColorMatrix type="matrix" values="
-					%f %f 0 0 %f
-					%f %f 0 0 %f
-					%f %f 0 0 %f
-					0 0 0 1 0
-				"/>
+	ob_start();
+	?>
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 0 0"
+		width="0"
+		height="0"
+		focusable="false"
+		role="none"
+		style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;"
+	>
+		<defs>
+			<filter id="<?php echo esc_attr( $filter_id ); ?>">
+				<feColorMatrix
+					color-interpolation-filters="sRGB"
+					type="matrix"
+					values=".299 .587 .114 0 0
+					        .299 .587 .114 0 0
+					        .299 .587 .114 0 0
+					        0 0 0 1 0"
+				/>
+				<feComponentTransfer color-interpolation-filters="sRGB">
+					<feFuncR type="table" tableValues="<?php echo esc_attr( implode( ' ', $duotone_values['r'] ) ); ?>" />
+					<feFuncG type="table" tableValues="<?php echo esc_attr( implode( ' ', $duotone_values['g'] ) ); ?>" />
+					<feFuncB type="table" tableValues="<?php echo esc_attr( implode( ' ', $duotone_values['b'] ) ); ?>" />
+					<feFuncA type="table" tableValues="0 1" />
+				</feComponentTransfer>
 			</filter>
-		</svg>',
-		esc_attr( $filter_id ),
-		$highlight_r - $shadow_r, $shadow_r, 0, $shadow_r,
-		$highlight_g - $shadow_g, $shadow_g, 0, $shadow_g,
-		$highlight_b - $shadow_b, $shadow_b, 0, $shadow_b
-	);
+		</defs>
+	</svg>
+	<?php
+	$svg = ob_get_clean();
 
 	return [ $filter_id, $svg ];
 }
