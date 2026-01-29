@@ -437,7 +437,18 @@ const Edit = ({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: firstFrame?.desktopFocalPoint ? `${firstFrame.desktopFocalPoint.x * 100}% ${firstFrame.desktopFocalPoint.y * 100}%` : 'center'
+              objectPosition: firstFrame?.desktopFocalPoint ? `${firstFrame.desktopFocalPoint.x * 100}% ${firstFrame.desktopFocalPoint.y * 100}%` : 'center',
+              filter: firstFrame?.desktopDuotone ? `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg'><filter id='d'><feColorMatrix type='matrix' values='${(() => {
+                const s = firstFrame.desktopDuotone[0].replace('#', '');
+                const h = firstFrame.desktopDuotone[1].replace('#', '');
+                const sr = parseInt(s.slice(0, 2), 16) / 255;
+                const sg = parseInt(s.slice(2, 4), 16) / 255;
+                const sb = parseInt(s.slice(4, 6), 16) / 255;
+                const hr = parseInt(h.slice(0, 2), 16) / 255;
+                const hg = parseInt(h.slice(2, 4), 16) / 255;
+                const hb = parseInt(h.slice(4, 6), 16) / 255;
+                return `${hr - sr} ${sr} 0 0 ${sr} ${hg - sg} ${sg} 0 0 ${sg} ${hb - sb} ${sb} 0 0 ${sb} 0 0 0 1 0`;
+              })()}'/></filter></svg>`)}#d")` : undefined
             }
           }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
             style: {
