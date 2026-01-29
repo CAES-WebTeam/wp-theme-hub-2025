@@ -171,9 +171,10 @@ endif;
 	<?php
 	// Output duotone SVG filters for both desktop and mobile
 	foreach ( $frames as $index => $frame ) :
-		// Desktop duotone filter
-		if ( ! empty( $frame['desktopDuotone'] ) ) :
-			list( $filter_id, $svg ) = caes_reveal_get_duotone_filter( $frame['desktopDuotone'], $block_id . '-' . $index . '-desktop' );
+		// Desktop duotone filter (check new property first, then legacy)
+		$desktop_duotone = $frame['desktopDuotone'] ?? $frame['duotone'] ?? null;
+		if ( ! empty( $desktop_duotone ) ) :
+			list( $filter_id, $svg ) = caes_reveal_get_duotone_filter( $desktop_duotone, $block_id . '-' . $index . '-desktop' );
 			if ( $svg ) :
 				echo $svg;
 			endif;
@@ -195,7 +196,7 @@ endif;
 			$desktop_focal_point = $frame['desktopFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
 			$mobile_focal_point  = $frame['mobileFocalPoint'] ?? [ 'x' => 0.5, 'y' => 0.5 ];
 			$transition          = $frame['transition'] ?? [ 'type' => 'fade' ];
-			$desktop_duotone     = $frame['desktopDuotone'] ?? null;
+			$desktop_duotone     = $frame['desktopDuotone'] ?? $frame['duotone'] ?? null;
 			$mobile_duotone      = $frame['mobileDuotone'] ?? null;
 
 			if ( empty( $desktop_image ) ) {

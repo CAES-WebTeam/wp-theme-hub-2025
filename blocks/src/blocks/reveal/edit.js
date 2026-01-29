@@ -280,11 +280,13 @@ const Edit = ( { attributes, setAttributes } ) => {
 	// PREVIEW MODE
 	if ( isPreviewMode ) {
 		// Generate duotone filter ID and values for preview
+		// Check for new desktopDuotone or legacy duotone property
 		const previewDuotoneId = 'preview-duotone-filter';
+		const activeDuotone = firstFrame?.desktopDuotone || firstFrame?.duotone;
 		let duotoneFilterValues = null;
-		if ( firstFrame?.desktopDuotone && firstFrame.desktopDuotone.length === 2 ) {
-			const s = firstFrame.desktopDuotone[ 0 ].replace( '#', '' );
-			const h = firstFrame.desktopDuotone[ 1 ].replace( '#', '' );
+		if ( activeDuotone && activeDuotone.length === 2 ) {
+			const s = activeDuotone[ 0 ].replace( '#', '' );
+			const h = activeDuotone[ 1 ].replace( '#', '' );
 			const sr = parseInt( s.slice( 0, 2 ), 16 ) / 255;
 			const sg = parseInt( s.slice( 2, 4 ), 16 ) / 255;
 			const sb = parseInt( s.slice( 4, 6 ), 16 ) / 255;
@@ -763,10 +765,10 @@ const FrameEditor = ( {
 										onClick={ () => setDuotoneModal( 'desktop' ) }
 										icon="admin-appearance"
 									>
-										{ frame.desktopDuotone ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
+										{ ( frame.desktopDuotone || frame.duotone ) ? __( 'Edit Filter', 'caes-reveal' ) : __( 'Add Filter', 'caes-reveal' ) }
 									</Button>
-									{ frame.desktopDuotone && (
-										<DuotoneSwatch values={ frame.desktopDuotone } />
+									{ ( frame.desktopDuotone || frame.duotone ) && (
+										<DuotoneSwatch values={ frame.desktopDuotone || frame.duotone } />
 									) }
 								</div>
 							) }
@@ -1024,8 +1026,8 @@ const FrameEditor = ( {
 							<DuotonePicker
 								duotonePalette={ DUOTONE_PALETTE }
 								colorPalette={ COLOR_PALETTE }
-								value={ frame.desktopDuotone || undefined }
-								onChange={ ( value ) => onUpdate( { desktopDuotone: value } ) }
+								value={ frame.desktopDuotone || frame.duotone || undefined }
+								onChange={ ( value ) => onUpdate( { desktopDuotone: value, duotone: null } ) }
 							/>
 						) }
 
@@ -1039,13 +1041,13 @@ const FrameEditor = ( {
 						) }
 
 						<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'space-between' } }>
-							{ ( ( duotoneModal === 'desktop' && frame.desktopDuotone ) || ( duotoneModal === 'mobile' && frame.mobileDuotone ) ) && (
+							{ ( ( duotoneModal === 'desktop' && ( frame.desktopDuotone || frame.duotone ) ) || ( duotoneModal === 'mobile' && frame.mobileDuotone ) ) && (
 								<Button
 									variant="tertiary"
 									isDestructive
 									onClick={ () => {
 										if ( duotoneModal === 'desktop' ) {
-											onUpdate( { desktopDuotone: null } );
+											onUpdate( { desktopDuotone: null, duotone: null } );
 										} else {
 											onUpdate( { mobileDuotone: null } );
 										}

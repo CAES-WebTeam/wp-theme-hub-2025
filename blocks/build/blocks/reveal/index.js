@@ -412,11 +412,13 @@ const Edit = ({
   // PREVIEW MODE
   if (isPreviewMode) {
     // Generate duotone filter ID and values for preview
+    // Check for new desktopDuotone or legacy duotone property
     const previewDuotoneId = 'preview-duotone-filter';
+    const activeDuotone = firstFrame?.desktopDuotone || firstFrame?.duotone;
     let duotoneFilterValues = null;
-    if (firstFrame?.desktopDuotone && firstFrame.desktopDuotone.length === 2) {
-      const s = firstFrame.desktopDuotone[0].replace('#', '');
-      const h = firstFrame.desktopDuotone[1].replace('#', '');
+    if (activeDuotone && activeDuotone.length === 2) {
+      const s = activeDuotone[0].replace('#', '');
+      const h = activeDuotone[1].replace('#', '');
       const sr = parseInt(s.slice(0, 2), 16) / 255;
       const sg = parseInt(s.slice(2, 4), 16) / 255;
       const sb = parseInt(s.slice(4, 6), 16) / 255;
@@ -925,9 +927,9 @@ const FrameEditor = ({
               variant: "secondary",
               onClick: () => setDuotoneModal('desktop'),
               icon: "admin-appearance",
-              children: frame.desktopDuotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
-            }), frame.desktopDuotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
-              values: frame.desktopDuotone
+              children: frame.desktopDuotone || frame.duotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
+            }), (frame.desktopDuotone || frame.duotone) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
+              values: frame.desktopDuotone || frame.duotone
             })]
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
@@ -1245,9 +1247,10 @@ const FrameEditor = ({
         }), duotoneModal === 'desktop' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
           duotonePalette: DUOTONE_PALETTE,
           colorPalette: COLOR_PALETTE,
-          value: frame.desktopDuotone || undefined,
+          value: frame.desktopDuotone || frame.duotone || undefined,
           onChange: value => onUpdate({
-            desktopDuotone: value
+            desktopDuotone: value,
+            duotone: null
           })
         }), duotoneModal === 'mobile' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
           duotonePalette: DUOTONE_PALETTE,
@@ -1262,13 +1265,14 @@ const FrameEditor = ({
             display: 'flex',
             justifyContent: 'space-between'
           },
-          children: [(duotoneModal === 'desktop' && frame.desktopDuotone || duotoneModal === 'mobile' && frame.mobileDuotone) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          children: [(duotoneModal === 'desktop' && (frame.desktopDuotone || frame.duotone) || duotoneModal === 'mobile' && frame.mobileDuotone) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
             variant: "tertiary",
             isDestructive: true,
             onClick: () => {
               if (duotoneModal === 'desktop') {
                 onUpdate({
-                  desktopDuotone: null
+                  desktopDuotone: null,
+                  duotone: null
                 });
               } else {
                 onUpdate({
