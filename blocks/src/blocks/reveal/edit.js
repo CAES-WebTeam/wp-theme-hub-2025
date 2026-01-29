@@ -208,6 +208,18 @@ const Edit = ( { attributes, setAttributes } ) => {
 		setAttributes( { frames: newFrames } );
 	};
 
+	// Duplicate a frame
+	const duplicateFrame = ( frameIndex ) => {
+		const frameToDuplicate = frames[ frameIndex ];
+		const duplicatedFrame = {
+			...JSON.parse( JSON.stringify( frameToDuplicate ) ), // Deep clone
+			id: generateFrameId(),
+		};
+		const newFrames = [ ...frames ];
+		newFrames.splice( frameIndex + 1, 0, duplicatedFrame );
+		setAttributes( { frames: newFrames } );
+	};
+
 	// Handle image selection
 	const onSelectImage = ( frameIndex, imageType, media ) => {
 		const imageData = {
@@ -527,6 +539,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 							totalFrames={ frames.length }
 							onUpdate={ ( updates ) => updateFrame( frameIndex, updates ) }
 							onRemove={ () => removeFrame( frameIndex ) }
+							onDuplicate={ () => duplicateFrame( frameIndex ) }
 							onMoveUp={ () => moveFrameUp( frameIndex ) }
 							onMoveDown={ () => moveFrameDown( frameIndex ) }
 							onSelectImage={ ( imageType, media ) => onSelectImage( frameIndex, imageType, media ) }
@@ -546,6 +559,7 @@ const FrameEditor = ( {
 	totalFrames,
 	onUpdate,
 	onRemove,
+	onDuplicate,
 	onMoveUp,
 	onMoveDown,
 	onSelectImage,
@@ -642,6 +656,12 @@ const FrameEditor = ( {
 						disabled={ frameIndex === totalFrames - 1 }
 						icon="arrow-down-alt"
 						label={ __( 'Move Down', 'caes-reveal' ) }
+					/>
+					<Button
+						onClick={ onDuplicate }
+						variant="secondary"
+						icon="admin-page"
+						label={ __( 'Duplicate Frame', 'caes-reveal' ) }
 					/>
 					<Button
 						onClick={ onRemove }

@@ -324,6 +324,21 @@ const Edit = ({
     });
   };
 
+  // Duplicate a frame
+  const duplicateFrame = frameIndex => {
+    const frameToDuplicate = frames[frameIndex];
+    const duplicatedFrame = {
+      ...JSON.parse(JSON.stringify(frameToDuplicate)),
+      // Deep clone
+      id: generateFrameId()
+    };
+    const newFrames = [...frames];
+    newFrames.splice(frameIndex + 1, 0, duplicatedFrame);
+    setAttributes({
+      frames: newFrames
+    });
+  };
+
   // Handle image selection
   const onSelectImage = (frameIndex, imageType, media) => {
     const imageData = {
@@ -635,6 +650,7 @@ const Edit = ({
           totalFrames: frames.length,
           onUpdate: updates => updateFrame(frameIndex, updates),
           onRemove: () => removeFrame(frameIndex),
+          onDuplicate: () => duplicateFrame(frameIndex),
           onMoveUp: () => moveFrameUp(frameIndex),
           onMoveDown: () => moveFrameDown(frameIndex),
           onSelectImage: (imageType, media) => onSelectImage(frameIndex, imageType, media),
@@ -652,6 +668,7 @@ const FrameEditor = ({
   totalFrames,
   onUpdate,
   onRemove,
+  onDuplicate,
   onMoveUp,
   onMoveDown,
   onSelectImage,
@@ -745,6 +762,11 @@ const FrameEditor = ({
           disabled: frameIndex === totalFrames - 1,
           icon: "arrow-down-alt",
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move Down', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          onClick: onDuplicate,
+          variant: "secondary",
+          icon: "admin-page",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duplicate Frame', 'caes-reveal')
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
           onClick: onRemove,
           variant: "secondary",
