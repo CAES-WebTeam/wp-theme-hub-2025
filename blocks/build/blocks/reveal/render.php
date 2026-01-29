@@ -261,8 +261,13 @@ endif;
 			$duotones_differ = $desktop_duotone !== $mobile_duotone;
 			$use_separate_images = $has_mobile_image || $duotones_differ;
 			$transition_speed = $transition['speed'] ?? 'normal';
+
+			// Get captions
+			$desktop_caption = $desktop_image['caption'] ?? '';
+			$mobile_caption = $has_mobile_image ? ( $mobile_image['caption'] ?? '' ) : $desktop_caption;
+			$has_caption = ! empty( $desktop_caption ) || ! empty( $mobile_caption );
 			?>
-			<div
+			<figure
 				class="<?php echo esc_attr( $frame_classes ); ?>"
 				data-index="<?php echo esc_attr( $index ); ?>"
 				data-transition-type="<?php echo esc_attr( $transition['type'] ?? 'fade' ); ?>"
@@ -308,7 +313,18 @@ endif;
 						<?php endif; ?>
 					>
 				<?php endif; ?>
-			</div>
+
+				<?php if ( $has_caption ) : ?>
+					<figcaption class="reveal-frame-caption">
+						<?php if ( $use_separate_images && $desktop_caption !== $mobile_caption ) : ?>
+							<span class="reveal-caption-desktop"><?php echo esc_html( $desktop_caption ); ?></span>
+							<span class="reveal-caption-mobile"><?php echo esc_html( $mobile_caption ); ?></span>
+						<?php else : ?>
+							<?php echo esc_html( $desktop_caption ); ?>
+						<?php endif; ?>
+					</figcaption>
+				<?php endif; ?>
+			</figure>
 		<?php endforeach; ?>
 
 		<div class="reveal-overlay" style="background-color: <?php echo esc_attr( $overlay_rgba ); ?>;"></div>

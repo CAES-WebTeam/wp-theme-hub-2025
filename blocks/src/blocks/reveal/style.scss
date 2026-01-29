@@ -23,7 +23,7 @@
 		overflow: hidden; // Clip frames during directional transitions
 	}
 
-	// Individual frames
+	// Individual frames (using figure element for accessibility)
 	.reveal-frame {
 		position: absolute;
 		inset: 0;
@@ -33,6 +33,7 @@
 		transition-timing-function: ease-out;
 		transition-duration: var(--transition-speed, 500ms);
 		will-change: opacity, clip-path;
+		margin: 0; // Reset figure default margin
 
 		&.is-active {
 			opacity: 1;
@@ -62,7 +63,30 @@
 			object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
 		}
 
-		// Mobile: swap which image is visible
+		// Caption styling
+		.reveal-frame-caption {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 1rem 1.5rem;
+			background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
+			color: #ffffff;
+			font-size: 0.875rem;
+			line-height: 1.4;
+			z-index: 5;
+
+			// Desktop caption visible by default
+			.reveal-caption-desktop {
+				display: block;
+			}
+
+			.reveal-caption-mobile {
+				display: none;
+			}
+		}
+
+		// Mobile: swap which image and caption is visible
 		@media screen and (max-width: 768px) {
 			img {
 				object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
@@ -74,6 +98,16 @@
 
 			.reveal-frame-mobile {
 				display: block;
+			}
+
+			.reveal-frame-caption {
+				.reveal-caption-desktop {
+					display: none;
+				}
+
+				.reveal-caption-mobile {
+					display: block;
+				}
 			}
 		}
 	}
