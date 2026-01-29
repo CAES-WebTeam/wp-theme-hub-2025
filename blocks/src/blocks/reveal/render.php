@@ -238,14 +238,14 @@ endif;
 			// Desktop image styles (with duotone if set)
 			$desktop_img_styles = [];
 			if ( ! empty( $desktop_duotone ) ) {
-				$desktop_img_styles[] = sprintf( 'filter: url(#duotone-%s-%d-desktop)', esc_attr( $block_id ), $index );
+				$desktop_img_styles[] = sprintf( 'filter: url(#%s-%d-desktop)', esc_attr( $block_id ), $index );
 			}
 			$desktop_img_style_attr = ! empty( $desktop_img_styles ) ? implode( '; ', $desktop_img_styles ) : '';
 
 			// Mobile image styles (with duotone if set)
 			$mobile_img_styles = [];
 			if ( ! empty( $mobile_duotone ) ) {
-				$mobile_img_styles[] = sprintf( 'filter: url(#duotone-%s-%d-mobile)', esc_attr( $block_id ), $index );
+				$mobile_img_styles[] = sprintf( 'filter: url(#%s-%d-mobile)', esc_attr( $block_id ), $index );
 			}
 			$mobile_img_style_attr = ! empty( $mobile_img_styles ) ? implode( '; ', $mobile_img_styles ) : '';
 
