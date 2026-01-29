@@ -78,7 +78,7 @@
 			background: rgba(0, 0, 0, 0.8);
 			color: var(--wp--preset--color--base);
 			line-height: 1.4;
-			z-index: 15; // Above overlay (z-index: 10)
+			z-index: 3; // Above overlay
 			max-width: var(--wp--style--global--wide-size);
 
 			// Desktop caption visible by default
@@ -89,6 +89,14 @@
 			.reveal-caption-mobile {
 				display: none;
 			}
+		}
+
+		// Overlay - inside each frame, between image and caption
+		.reveal-overlay {
+			position: absolute;
+			inset: 0;
+			pointer-events: none;
+			z-index: 2; // Above image, below caption
 		}
 
 		// Mobile: swap which image and caption is visible
@@ -115,14 +123,6 @@
 				}
 			}
 		}
-	}
-
-	// Overlay - must stay above frames during transitions
-	.reveal-overlay {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		z-index: 10;
 	}
 
 	// Content container

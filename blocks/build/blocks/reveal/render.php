@@ -324,10 +324,10 @@ endif;
 						<?php endif; ?>
 					</figcaption>
 				<?php endif; ?>
+
+				<div class="reveal-overlay" style="background-color: <?php echo esc_attr( $overlay_rgba ); ?>;"></div>
 			</figure>
 		<?php endforeach; ?>
-
-		<div class="reveal-overlay" style="background-color: <?php echo esc_attr( $overlay_rgba ); ?>;"></div>
 	</div>
 
 	<div class="reveal-content">
