@@ -1128,17 +1128,56 @@ const FrameEditor = ({
                   padding: '12px',
                   backgroundColor: '#fafafa',
                   marginBottom: '8px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  position: 'relative'
                 },
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-                  src: frame.mobileImage.sizes?.medium?.url || frame.mobileImage.url,
-                  alt: frame.mobileImage.alt,
-                  style: {
-                    maxWidth: '100%',
-                    maxHeight: '150px',
-                    borderRadius: '4px'
+                children: (() => {
+                  const duotone = frame.mobileDuotone;
+                  let filterStyle = undefined;
+                  let svgFilter = null;
+                  const filterId = `mobile-preview-duotone-${frameIndex}`;
+                  if (duotone && duotone.length === 2) {
+                    const s = duotone[0].replace('#', '');
+                    const h = duotone[1].replace('#', '');
+                    const sr = parseInt(s.slice(0, 2), 16) / 255;
+                    const sg = parseInt(s.slice(2, 4), 16) / 255;
+                    const sb = parseInt(s.slice(4, 6), 16) / 255;
+                    const hr = parseInt(h.slice(0, 2), 16) / 255;
+                    const hg = parseInt(h.slice(2, 4), 16) / 255;
+                    const hb = parseInt(h.slice(4, 6), 16) / 255;
+                    const values = `${hr - sr} ${sr} 0 0 ${sr} ${hg - sg} ${sg} 0 0 ${sg} ${hb - sb} ${sb} 0 0 ${sb} 0 0 0 1 0`;
+                    filterStyle = `url(#${filterId})`;
+                    svgFilter = /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
+                      style: {
+                        position: 'absolute',
+                        width: 0,
+                        height: 0
+                      },
+                      "aria-hidden": "true",
+                      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
+                        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("filter", {
+                          id: filterId,
+                          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
+                            type: "matrix",
+                            values: values
+                          })
+                        })
+                      })
+                    });
                   }
-                })
+                  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+                    children: [svgFilter, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+                      src: frame.mobileImage.sizes?.medium?.url || frame.mobileImage.url,
+                      alt: frame.mobileImage.alt,
+                      style: {
+                        maxWidth: '100%',
+                        maxHeight: '150px',
+                        borderRadius: '4px',
+                        filter: filterStyle
+                      }
+                    })]
+                  });
+                })()
               }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
                 style: {
                   display: 'flex',
