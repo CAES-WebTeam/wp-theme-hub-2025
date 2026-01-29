@@ -279,6 +279,21 @@ const Edit = ( { attributes, setAttributes } ) => {
 
 	// PREVIEW MODE
 	if ( isPreviewMode ) {
+		// Generate duotone filter ID and values for preview
+		const previewDuotoneId = 'preview-duotone-filter';
+		let duotoneFilterValues = null;
+		if ( firstFrame?.desktopDuotone && firstFrame.desktopDuotone.length === 2 ) {
+			const s = firstFrame.desktopDuotone[ 0 ].replace( '#', '' );
+			const h = firstFrame.desktopDuotone[ 1 ].replace( '#', '' );
+			const sr = parseInt( s.slice( 0, 2 ), 16 ) / 255;
+			const sg = parseInt( s.slice( 2, 4 ), 16 ) / 255;
+			const sb = parseInt( s.slice( 4, 6 ), 16 ) / 255;
+			const hr = parseInt( h.slice( 0, 2 ), 16 ) / 255;
+			const hg = parseInt( h.slice( 2, 4 ), 16 ) / 255;
+			const hb = parseInt( h.slice( 4, 6 ), 16 ) / 255;
+			duotoneFilterValues = `${ hr - sr } ${ sr } 0 0 ${ sr } ${ hg - sg } ${ sg } 0 0 ${ sg } ${ hb - sb } ${ sb } 0 0 ${ sb } 0 0 0 1 0`;
+		}
+
 		return (
 			<>
 				<BlockControls>
@@ -295,6 +310,17 @@ const Edit = ( { attributes, setAttributes } ) => {
 				{ sharedInspectorControls }
 
 				<div { ...blockProps }>
+					{ /* SVG Duotone Filter Definition */ }
+					{ duotoneFilterValues && (
+						<svg style={ { position: 'absolute', width: 0, height: 0 } } aria-hidden="true">
+							<defs>
+								<filter id={ previewDuotoneId }>
+									<feColorMatrix type="matrix" values={ duotoneFilterValues } />
+								</filter>
+							</defs>
+						</svg>
+					) }
+
 					{ /* Background Preview */ }
 					<div
 						className="reveal-background-preview"
@@ -316,19 +342,7 @@ const Edit = ( { attributes, setAttributes } ) => {
 									objectPosition: firstFrame?.desktopFocalPoint
 										? `${ firstFrame.desktopFocalPoint.x * 100 }% ${ firstFrame.desktopFocalPoint.y * 100 }%`
 										: 'center',
-									filter: firstFrame?.desktopDuotone
-										? `url("data:image/svg+xml,${ encodeURIComponent( `<svg xmlns='http://www.w3.org/2000/svg'><filter id='d'><feColorMatrix type='matrix' values='${ ( () => {
-											const s = firstFrame.desktopDuotone[ 0 ].replace( '#', '' );
-											const h = firstFrame.desktopDuotone[ 1 ].replace( '#', '' );
-											const sr = parseInt( s.slice( 0, 2 ), 16 ) / 255;
-											const sg = parseInt( s.slice( 2, 4 ), 16 ) / 255;
-											const sb = parseInt( s.slice( 4, 6 ), 16 ) / 255;
-											const hr = parseInt( h.slice( 0, 2 ), 16 ) / 255;
-											const hg = parseInt( h.slice( 2, 4 ), 16 ) / 255;
-											const hb = parseInt( h.slice( 4, 6 ), 16 ) / 255;
-											return `${ hr - sr } ${ sr } 0 0 ${ sr } ${ hg - sg } ${ sg } 0 0 ${ sg } ${ hb - sb } ${ sb } 0 0 ${ sb } 0 0 0 1 0`;
-										} )() }'/></filter></svg>` ) }#d")`
-										: undefined,
+									filter: duotoneFilterValues ? `url(#${ previewDuotoneId })` : undefined,
 								} }
 							/>
 						) : (
