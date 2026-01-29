@@ -18,6 +18,7 @@ import {
 	Notice,
 	ToolbarGroup,
 	ToolbarButton,
+	Modal,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -441,6 +442,7 @@ const FrameEditor = ( {
 	onRemoveImage,
 } ) => {
 	const [ isExpanded, setIsExpanded ] = useState( false );
+	const [ focalPointModal, setFocalPointModal ] = useState( null ); // 'desktop' | 'mobile' | null
 
 	return (
 		<div
@@ -686,16 +688,14 @@ const FrameEditor = ( {
 							/>
 
 							{ frame.desktopImage && (
-								<div style={ { marginTop: '16px' } }>
-									<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' } }>
-										{ __( 'Set Focus', 'caes-reveal' ) }
-									</label>
-									<FocalPointPicker
-										url={ frame.desktopImage.url }
-										value={ frame.desktopFocalPoint || { x: 0.5, y: 0.5 } }
-										onChange={ ( value ) => onUpdate( { desktopFocalPoint: value } ) }
-									/>
-								</div>
+								<Button
+									variant="secondary"
+									onClick={ () => setFocalPointModal( 'desktop' ) }
+									style={ { marginTop: '12px' } }
+									icon="image-crop"
+								>
+									{ __( 'Set Focus Point', 'caes-reveal' ) }
+								</Button>
 							) }
 						</div>
 
@@ -841,21 +841,19 @@ const FrameEditor = ( {
 							/>
 
 							{ frame.mobileImage && (
-								<div style={ { marginTop: '16px' } }>
-									<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' } }>
-										{ __( 'Set Focus', 'caes-reveal' ) }
-									</label>
-									<FocalPointPicker
-										url={ frame.mobileImage.url }
-										value={ frame.mobileFocalPoint || { x: 0.5, y: 0.5 } }
-										onChange={ ( value ) => onUpdate( { mobileFocalPoint: value } ) }
-									/>
-								</div>
+								<Button
+									variant="secondary"
+									onClick={ () => setFocalPointModal( 'mobile' ) }
+									style={ { marginTop: '12px' } }
+									icon="image-crop"
+								>
+									{ __( 'Set Focus Point', 'caes-reveal' ) }
+								</Button>
 							) }
 						</div>
 					</div>
 
-					{ /* Transition Settings */ }
+						{ /* Transition Settings */ }
 					<div
 						style={ {
 							paddingTop: '16px',
@@ -876,6 +874,50 @@ const FrameEditor = ( {
 						/>
 					</div>
 				</div>
+			) }
+
+			{ /* Focal Point Modal */ }
+			{ focalPointModal && (
+				<Modal
+					title={
+						focalPointModal === 'desktop'
+							? __( 'Set Focus Point — Wide Screens', 'caes-reveal' )
+							: __( 'Set Focus Point — Tall Screens', 'caes-reveal' )
+					}
+					onRequestClose={ () => setFocalPointModal( null ) }
+					style={ { maxWidth: '600px', width: '100%' } }
+				>
+					<div style={ { padding: '8px 0' } }>
+						<p style={ { margin: '0 0 16px 0', color: '#757575', fontSize: '13px' } }>
+							{ __( 'Click on the image to set the focal point. This determines which part of the image stays visible when cropped to fit the screen.', 'caes-reveal' ) }
+						</p>
+						
+						{ focalPointModal === 'desktop' && frame.desktopImage && (
+							<FocalPointPicker
+								url={ frame.desktopImage.url }
+								value={ frame.desktopFocalPoint || { x: 0.5, y: 0.5 } }
+								onChange={ ( value ) => onUpdate( { desktopFocalPoint: value } ) }
+							/>
+						) }
+						
+						{ focalPointModal === 'mobile' && frame.mobileImage && (
+							<FocalPointPicker
+								url={ frame.mobileImage.url }
+								value={ frame.mobileFocalPoint || { x: 0.5, y: 0.5 } }
+								onChange={ ( value ) => onUpdate( { mobileFocalPoint: value } ) }
+							/>
+						) }
+
+						<div style={ { marginTop: '20px', display: 'flex', justifyContent: 'flex-end' } }>
+							<Button
+								variant="primary"
+								onClick={ () => setFocalPointModal( null ) }
+							>
+								{ __( 'Done', 'caes-reveal' ) }
+							</Button>
+						</div>
+					</div>
+				</Modal>
 			) }
 		</div>
 	);
