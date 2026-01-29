@@ -78,7 +78,7 @@
 			background: rgba(0, 0, 0, 0.8);
 			color: var(--wp--preset--color--base);
 			line-height: 1.4;
-			z-index: 5;
+			z-index: 15; // Above overlay (z-index: 10)
 			max-width: var(--wp--style--global--wide-size);
 
 			// Desktop caption visible by default
