@@ -107,6 +107,7 @@
     flex-direction: column;
     width: 100%;
     transition: transform 0.3s ease;
+    overflow: hidden;
 }
 
 /* Default full screen - fade in instead of slide */
