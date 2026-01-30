@@ -109,7 +109,8 @@
 
     @media (max-width: 768px) {
         overflow-y: scroll;
-        height: calc(100vh + var(--wp--preset--spacing--60));
+        height: 100vh;
+        height: 100dvh;
     }
 }
 
