@@ -104,11 +104,11 @@
         z-index: 9998;
         background-color: var(--wp--preset--color--base);
         height: 100vh;
-        // overflow: hidden;
+        overflow: hidden;
 
         .flyout-content {
             height: calc(100vh - (var(--wp--preset--spacing--60) * 2));
-            // overflow-y: auto;
+            overflow-y: auto;
             box-sizing: border-box;
         }
     }
@@ -153,13 +153,13 @@
             box-shadow: none;
             border: none;
             background: rgba(0, 0, 0, 0.02);
-            // height: auto;
-            // max-height: none;
-            // overflow: visible;
+            height: auto;
+            max-height: none;
+            overflow: visible;
             .flyout-content {
-                // height: auto;
-                // max-height: none;
-                // overflow: visible;
+                height: auto;
+                max-height: none;
+                overflow: visible;
             }
         }
     }
