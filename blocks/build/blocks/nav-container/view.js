@@ -53,23 +53,26 @@ function initNavigation(nav) {
       }
     });
 
-    // Hover to open (with delay) - covers the entire nav item
-    item.addEventListener('mouseenter', function () {
-      clearTimeout(hoverTimer);
-      hoverTimer = setTimeout(() => {
-        if (!isOpen) {
-          openFlyout();
-        }
-      }, hoverDelay);
-    });
+    // Detect if device supports hover (not touch-only)
+    const canHover = window.matchMedia('(hover: hover)').matches;
 
-    // Mouse leave to close - but only when leaving the entire nav item (including flyout)
-    item.addEventListener('mouseleave', function () {
-      clearTimeout(hoverTimer);
-      if (isOpen) {
-        closeFlyout();
-      }
-    });
+    // Hover to open (with delay) - only on devices that support hover
+    if (canHover) {
+      item.addEventListener('mouseenter', function () {
+        clearTimeout(hoverTimer);
+        hoverTimer = setTimeout(() => {
+          if (!isOpen) {
+            openFlyout();
+          }
+        }, hoverDelay);
+      });
+      item.addEventListener('mouseleave', function () {
+        clearTimeout(hoverTimer);
+        if (isOpen) {
+          closeFlyout();
+        }
+      });
+    }
 
     // Close when focus leaves the entire submenu (for keyboard users)
     item.addEventListener('focusout', function (e) {
