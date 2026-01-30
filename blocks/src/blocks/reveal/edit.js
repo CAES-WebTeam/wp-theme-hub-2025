@@ -23,7 +23,6 @@ import {
 	DuotonePicker,
 	DuotoneSwatch,
 	RangeControl,
-	TabPanel,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
@@ -469,7 +468,6 @@ const FrameManagerPanel = ( {
 	onRemoveImage,
 	clientId,
 } ) => {
-	const [ activeTab, setActiveTab ] = useState( 'desktop' );
 	const [ focalPointModal, setFocalPointModal ] = useState( null );
 	const [ duotoneModal, setDuotoneModal ] = useState( null );
 
@@ -518,64 +516,78 @@ const FrameManagerPanel = ( {
 
 			{/* Content */}
 			<div style={ { padding: '20px' } }>
-				<TabPanel
-					className="reveal-image-tabs"
-					activeClass="is-active"
-					onSelect={ ( tabName ) => setActiveTab( tabName ) }
-					tabs={ [
-						{
-							name: 'desktop',
-							title: __( 'Wide Screens', 'caes-reveal' ),
-							className: 'tab-desktop',
-						},
-						{
-							name: 'mobile',
-							title: __( 'Tall Screens', 'caes-reveal' ),
-							className: 'tab-mobile',
-						},
-						{
-							name: 'transition',
-							title: __( 'Transition', 'caes-reveal' ),
-							className: 'tab-transition',
-						},
-					] }
+				{/* Desktop and Mobile Images Side by Side */}
+				<div style={ { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' } }>
+					{/* Desktop Image Column */}
+					<div>
+						<ImagePanel
+							frame={ frame }
+							imageType="desktop"
+							onSelectImage={ onSelectImage }
+							onRemoveImage={ onRemoveImage }
+							onUpdate={ onUpdate }
+							setFocalPointModal={ setFocalPointModal }
+							setDuotoneModal={ setDuotoneModal }
+							clientId={ clientId }
+							frameIndex={ index }
+							isRequired={ true }
+						/>
+					</div>
+
+					{/* Mobile Image Column */}
+					<div>
+						<ImagePanel
+							frame={ frame }
+							imageType="mobile"
+							onSelectImage={ onSelectImage }
+							onRemoveImage={ onRemoveImage }
+							onUpdate={ onUpdate }
+							setFocalPointModal={ setFocalPointModal }
+							setDuotoneModal={ setDuotoneModal }
+							clientId={ clientId }
+							frameIndex={ index }
+							isRequired={ false }
+						/>
+					</div>
+				</div>
+
+				{/* Transition Settings */}
+				<div
+					style={ {
+						paddingTop: '20px',
+						borderTop: '1px solid #ddd',
+					} }
 				>
-					{ ( tab ) => (
-						<div style={ { paddingTop: '20px' } }>
-							{ tab.name === 'desktop' && (
-								<ImagePanel
-									frame={ frame }
-									imageType="desktop"
-									onSelectImage={ onSelectImage }
-									onRemoveImage={ onRemoveImage }
-									onUpdate={ onUpdate }
-									setFocalPointModal={ setFocalPointModal }
-									setDuotoneModal={ setDuotoneModal }
-									clientId={ clientId }
-									frameIndex={ index }
-									isRequired={ true }
-								/>
-							) }
-							{ tab.name === 'mobile' && (
-								<ImagePanel
-									frame={ frame }
-									imageType="mobile"
-									onSelectImage={ onSelectImage }
-									onRemoveImage={ onRemoveImage }
-									onUpdate={ onUpdate }
-									setFocalPointModal={ setFocalPointModal }
-									setDuotoneModal={ setDuotoneModal }
-									clientId={ clientId }
-									frameIndex={ index }
-									isRequired={ false }
-								/>
-							) }
-							{ tab.name === 'transition' && (
-								<TransitionPanel frame={ frame } onUpdate={ onUpdate } />
-							) }
-						</div>
-					) }
-				</TabPanel>
+					<label style={ { display: 'block', marginBottom: '12px', fontWeight: 500, fontSize: '14px' } }>
+						{ __( 'Transition', 'caes-reveal' ) }
+					</label>
+					<div style={ { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' } }>
+						<SelectControl
+							label={ __( 'Type', 'caes-reveal' ) }
+							value={ frame.transition.type }
+							options={ TRANSITION_OPTIONS }
+							onChange={ ( value ) =>
+								onUpdate( {
+									transition: { ...frame.transition, type: value },
+								} )
+							}
+						/>
+						<SelectControl
+							label={ __( 'Speed', 'caes-reveal' ) }
+							value={ frame.transition.speed || 'normal' }
+							options={ [
+								{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
+								{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
+								{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
+							] }
+							onChange={ ( value ) =>
+								onUpdate( {
+									transition: { ...frame.transition, speed: value },
+								} )
+							}
+						/>
+					</div>
+				</div>
 			</div>
 
 			{/* Modals */}
@@ -621,18 +633,37 @@ const ImagePanel = ( {
 
 	return (
 		<div>
+			{/* Header with icon and title */}
+			<div style={ { marginBottom: '16px' } }>
+				<div style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' } }>
+					<span style={ { fontSize: '20px' } }>
+						{ imageType === 'desktop' ? '🖥️' : '📱' }
+					</span>
+					<h3 style={ { margin: 0, fontSize: '16px', fontWeight: 600 } }>
+						{ imageType === 'desktop' ? __( 'Wide Screens', 'caes-reveal' ) : __( 'Tall Screens', 'caes-reveal' ) }
+					</h3>
+				</div>
+				<p style={ { margin: 0, fontSize: '13px', color: '#757575' } }>
+					{ imageType === 'desktop' 
+						? __( 'Computers, Large Tablets Etc.', 'caes-reveal' )
+						: __( 'Devices In Portrait Orientation', 'caes-reveal' )
+					}
+				</p>
+			</div>
+
+			<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px', color: '#1e1e1e' } }>
+				{ __( 'Background image (will be cropped to screen)', 'caes-reveal' ) }
+			</label>
+			<p style={ { margin: '0 0 12px', fontSize: '12px', color: '#757575' } }>
+				{ imageType === 'desktop'
+					? __( 'Recommended: JPEG @ 2560 x 1440px', 'caes-reveal' )
+					: __( 'Recommended: JPEG @ 1080 x 1920px', 'caes-reveal' )
+				}
+			</p>
+
 			<MediaUploadCheck>
 				{ ! image ? (
 					<div>
-						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
-							{ imageType === 'desktop' ? __( 'Image', 'caes-reveal' ) : __( 'Image (optional)', 'caes-reveal' ) }
-							{ isRequired && <span style={ { color: '#e65054' } }> *</span> }
-						</label>
-						{ imageType === 'mobile' && (
-							<p style={ { fontSize: '13px', color: '#757575', marginBottom: '12px' } }>
-								{ __( 'Provide a different image optimized for portrait/mobile screens.', 'caes-reveal' ) }
-							</p>
-						) }
 						<MediaUpload
 							onSelect={ ( media ) => onSelectImage( imageType + 'Image', media ) }
 							allowedTypes={ [ 'image' ] }
@@ -721,38 +752,6 @@ const ImagePanel = ( {
 					</div>
 				) }
 			</MediaUploadCheck>
-		</div>
-	);
-};
-
-// Transition Panel Component
-const TransitionPanel = ( { frame, onUpdate } ) => {
-	return (
-		<div style={ { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' } }>
-			<SelectControl
-				label={ __( 'Type', 'caes-reveal' ) }
-				value={ frame.transition.type }
-				options={ TRANSITION_OPTIONS }
-				onChange={ ( value ) =>
-					onUpdate( {
-						transition: { ...frame.transition, type: value },
-					} )
-				}
-			/>
-			<SelectControl
-				label={ __( 'Speed', 'caes-reveal' ) }
-				value={ frame.transition.speed || 'normal' }
-				options={ [
-					{ label: __( 'Slow', 'caes-reveal' ), value: 'slow' },
-					{ label: __( 'Normal', 'caes-reveal' ), value: 'normal' },
-					{ label: __( 'Fast', 'caes-reveal' ), value: 'fast' },
-				] }
-				onChange={ ( value ) =>
-					onUpdate( {
-						transition: { ...frame.transition, speed: value },
-					} )
-				}
-			/>
 		</div>
 	);
 };

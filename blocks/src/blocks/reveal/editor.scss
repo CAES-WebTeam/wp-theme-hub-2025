@@ -114,54 +114,6 @@
 	.components-modal__content {
 		padding-bottom: 0;
 	}
-
-	.components-tab-panel__tabs {
-		border-bottom: 1px solid #ddd;
-		margin-bottom: 0;
-	}
-
-	.components-tab-panel__tabs-item {
-		padding: 12px 16px;
-		
-		&.is-active {
-			border-bottom-color: #2271b1;
-			font-weight: 600;
-		}
-	}
-}
-
-/* Image Tabs Styling */
-.reveal-image-tabs {
-	.components-tab-panel__tabs {
-		display: flex;
-		gap: 8px;
-		margin-bottom: 0;
-		border-bottom: 1px solid #ddd;
-	}
-
-	.components-tab-panel__tabs-item {
-		flex: 1;
-		padding: 12px;
-		text-align: center;
-		background: #f9f9f9;
-		border: 1px solid #ddd;
-		border-bottom: none;
-		border-radius: 4px 4px 0 0;
-		cursor: pointer;
-		transition: all 0.2s;
-
-		&:hover {
-			background: #f0f0f0;
-		}
-
-		&.is-active {
-			background: #fff;
-			border-bottom-color: #fff;
-			position: relative;
-			bottom: -1px;
-			font-weight: 600;
-		}
-	}
 }
 
 /* Responsive adjustments */
