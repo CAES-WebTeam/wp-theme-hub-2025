@@ -507,15 +507,25 @@ const FrameManagerPanel = ( {
 								flexShrink: 0,
 							} }
 						>
-							<img
-								src={ frame.desktopImage.url }
-								alt=""
-								style={ {
-									width: '100%',
-									height: '100%',
-									objectFit: 'cover',
-								} }
-							/>
+							{ ( () => {
+								const filterId = `thumbnail-${ clientId }-${ index }`;
+								const duotone = frame.desktopDuotone || frame.duotone;
+								return (
+									<>
+										{ duotone && getDuotoneFilter( duotone, filterId ) }
+										<img
+											src={ frame.desktopImage.url }
+											alt=""
+											style={ {
+												width: '100%',
+												height: '100%',
+												objectFit: 'cover',
+												filter: duotone ? `url(#${ filterId })` : undefined,
+											} }
+										/>
+									</>
+								);
+							} )() }
 						</div>
 					) : (
 						<div
@@ -737,6 +747,10 @@ const ImagePanel = ( {
 						<div style={ { marginBottom: '16px' } }>
 							{ ( () => {
 								const filterId = `manager-${ clientId }-${ frameIndex }-${ imageType }`;
+								// Different aspect ratios for desktop vs mobile
+								const aspectRatio = imageType === 'desktop' ? '16 / 9' : '9 / 16';
+								const maxHeight = imageType === 'desktop' ? '250px' : '400px';
+								
 								return (
 									<>
 										{ duotone && getDuotoneFilter( duotone, filterId ) }
@@ -746,7 +760,8 @@ const ImagePanel = ( {
 											style={ {
 												width: '100%',
 												height: 'auto',
-												maxHeight: '300px',
+												maxHeight: maxHeight,
+												aspectRatio: aspectRatio,
 												objectFit: 'cover',
 												borderRadius: '4px',
 												filter: duotone ? `url(#${ filterId })` : undefined,

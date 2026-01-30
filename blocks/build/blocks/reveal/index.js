@@ -605,15 +605,22 @@ const FrameManagerPanel = ({
             border: '1px solid #ddd',
             flexShrink: 0
           },
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
-            src: frame.desktopImage.url,
-            alt: "",
-            style: {
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }
-          })
+          children: (() => {
+            const filterId = `thumbnail-${clientId}-${index}`;
+            const duotone = frame.desktopDuotone || frame.duotone;
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+              children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
+                src: frame.desktopImage.url,
+                alt: "",
+                style: {
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  filter: duotone ? `url(#${filterId})` : undefined
+                }
+              })]
+            });
+          })()
         }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
           style: {
             width: '60px',
@@ -867,6 +874,9 @@ const ImagePanel = ({
           },
           children: (() => {
             const filterId = `manager-${clientId}-${frameIndex}-${imageType}`;
+            // Different aspect ratios for desktop vs mobile
+            const aspectRatio = imageType === 'desktop' ? '16 / 9' : '9 / 16';
+            const maxHeight = imageType === 'desktop' ? '250px' : '400px';
             return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
               children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
                 src: image.url,
@@ -874,7 +884,8 @@ const ImagePanel = ({
                 style: {
                   width: '100%',
                   height: 'auto',
-                  maxHeight: '300px',
+                  maxHeight: maxHeight,
+                  aspectRatio: aspectRatio,
                   objectFit: 'cover',
                   borderRadius: '4px',
                   filter: duotone ? `url(#${filterId})` : undefined
