@@ -569,6 +569,7 @@ const FrameManagerPanel = ({
   onRemoveImage,
   clientId
 }) => {
+  const [isOpen, setIsOpen] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [focalPointModal, setFocalPointModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
   const [duotoneModal, setDuotoneModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
@@ -584,19 +585,63 @@ const FrameManagerPanel = ({
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '16px',
-        borderBottom: '1px solid #ddd',
-        background: '#f9f9f9'
+        borderBottom: isOpen ? '1px solid #ddd' : 'none',
+        background: '#f9f9f9',
+        cursor: 'pointer'
       },
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("strong", {
+      onClick: () => setIsOpen(!isOpen),
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
         style: {
-          fontSize: '16px'
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
         },
-        children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", index + 1]
+        children: [frame.desktopImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            width: '60px',
+            height: '40px',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            border: '1px solid #ddd',
+            flexShrink: 0
+          },
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
+            src: frame.desktopImage.url,
+            alt: "",
+            style: {
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }
+          })
+        }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            width: '60px',
+            height: '40px',
+            borderRadius: '4px',
+            border: '1px solid #ddd',
+            background: '#e0e0e0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '10px',
+            color: '#666',
+            flexShrink: 0
+          },
+          children: "No image"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("strong", {
+          style: {
+            fontSize: '16px'
+          },
+          children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", index + 1]
+        })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
         style: {
           display: 'flex',
-          gap: '8px'
+          gap: '8px',
+          alignItems: 'center'
         },
+        onClick: e => e.stopPropagation(),
         children: [index > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
           size: "small",
           icon: "arrow-up-alt2",
@@ -618,9 +663,17 @@ const FrameManagerPanel = ({
           onClick: onRemove,
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal'),
           isDestructive: true
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          size: "small",
+          icon: isOpen ? 'arrow-up-alt2' : 'arrow-down-alt2',
+          onClick: e => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          },
+          label: isOpen ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Collapse', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Expand', 'caes-reveal')
         })]
       })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+    }), isOpen && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
       style: {
         padding: '20px'
       },

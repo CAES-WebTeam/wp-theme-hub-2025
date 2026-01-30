@@ -468,6 +468,7 @@ const FrameManagerPanel = ( {
 	onRemoveImage,
 	clientId,
 } ) => {
+	const [ isOpen, setIsOpen ] = useState( false );
 	const [ focalPointModal, setFocalPointModal ] = useState( null );
 	const [ duotoneModal, setDuotoneModal ] = useState( null );
 
@@ -487,14 +488,59 @@ const FrameManagerPanel = ( {
 					justifyContent: 'space-between',
 					alignItems: 'center',
 					padding: '16px',
-					borderBottom: '1px solid #ddd',
+					borderBottom: isOpen ? '1px solid #ddd' : 'none',
 					background: '#f9f9f9',
+					cursor: 'pointer',
 				} }
+				onClick={ () => setIsOpen( ! isOpen ) }
 			>
-				<strong style={ { fontSize: '16px' } }>
-					{ __( 'Frame', 'caes-reveal' ) } { index + 1 }
-				</strong>
-				<div style={ { display: 'flex', gap: '8px' } }>
+				<div style={ { display: 'flex', alignItems: 'center', gap: '12px' } }>
+					{/* Thumbnail */}
+					{ frame.desktopImage ? (
+						<div
+							style={ {
+								width: '60px',
+								height: '40px',
+								borderRadius: '4px',
+								overflow: 'hidden',
+								border: '1px solid #ddd',
+								flexShrink: 0,
+							} }
+						>
+							<img
+								src={ frame.desktopImage.url }
+								alt=""
+								style={ {
+									width: '100%',
+									height: '100%',
+									objectFit: 'cover',
+								} }
+							/>
+						</div>
+					) : (
+						<div
+							style={ {
+								width: '60px',
+								height: '40px',
+								borderRadius: '4px',
+								border: '1px solid #ddd',
+								background: '#e0e0e0',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								fontSize: '10px',
+								color: '#666',
+								flexShrink: 0,
+							} }
+						>
+							No image
+						</div>
+					) }
+					<strong style={ { fontSize: '16px' } }>
+						{ __( 'Frame', 'caes-reveal' ) } { index + 1 }
+					</strong>
+				</div>
+				<div style={ { display: 'flex', gap: '8px', alignItems: 'center' } } onClick={ ( e ) => e.stopPropagation() }>
 					{ index > 0 && (
 						<Button size="small" icon="arrow-up-alt2" onClick={ onMoveUp } label={ __( 'Move up', 'caes-reveal' ) } />
 					) }
@@ -511,11 +557,21 @@ const FrameManagerPanel = ( {
 							isDestructive
 						/>
 					) }
+					<Button
+						size="small"
+						icon={ isOpen ? 'arrow-up-alt2' : 'arrow-down-alt2' }
+						onClick={ ( e ) => {
+							e.stopPropagation();
+							setIsOpen( ! isOpen );
+						} }
+						label={ isOpen ? __( 'Collapse', 'caes-reveal' ) : __( 'Expand', 'caes-reveal' ) }
+					/>
 				</div>
 			</div>
 
 			{/* Content */}
-			<div style={ { padding: '20px' } }>
+			{ isOpen && (
+				<div style={ { padding: '20px' } }>
 				{/* Desktop and Mobile Images Side by Side */}
 				<div style={ { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' } }>
 					{/* Desktop Image Column */}
@@ -589,6 +645,7 @@ const FrameManagerPanel = ( {
 					</div>
 				</div>
 			</div>
+			) }
 
 			{/* Modals */}
 			{ focalPointModal && (
