@@ -153,10 +153,13 @@
             box-shadow: none;
             border: none;
             background: rgba(0, 0, 0, 0.02);
-            overflow: auto;
+            height: auto;
+            max-height: none;
+            overflow: visible;
             .flyout-content {
                 height: auto;
-                overflow-y: auto;
+                max-height: none;
+                overflow: visible;
             }
         }
     }
@@ -180,8 +183,9 @@
 // Print view
 
 @media print {
-  .wp-block-caes-hub-field-report-navigation,
-  .wp-block-caes-hub-field-report-nav-flyout {
-    display: none;
-  }
+
+    .wp-block-caes-hub-field-report-navigation,
+    .wp-block-caes-hub-field-report-nav-flyout {
+        display: none;
+    }
 }
