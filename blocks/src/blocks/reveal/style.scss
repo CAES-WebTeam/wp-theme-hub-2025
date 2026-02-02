@@ -1,27 +1,20 @@
 /**
- * Frontend styles for Reveal Block - Sticky Approach v3
+ * Frontend styles for Reveal Block - Sticky Approach v4
  *
- * Key insight: The section needs to be tall enough for content to scroll THROUGH
- * the viewport while the background stays pinned.
- * 
- * Section height = 100vh (background) + 100vh (scroll distance for content to travel)
- * Content starts at bottom of viewport, scrolls up and out the top
+ * Fixed:
+ * - Content doesn't peek early (full 100vh padding-top)
+ * - Section height adapts to content height
  */
 
 .caes-reveal {
 	position: relative;
 }
 
-// Each frame section - must be tall enough for content to scroll through
+// Each frame section
 .reveal-frame-section {
 	position: relative;
-	// Minimum height: viewport + space for content to scroll through
-	// The content will add to this naturally
-	min-height: 200vh;
-}
-
-// Last section doesn't need extra scroll room - content just scrolls away
-.reveal-frame-section:last-child {
+	// Height will be set by JS based on content height
+	// Fallback min-height if JS doesn't run
 	min-height: 100vh;
 }
 
@@ -123,22 +116,16 @@
 	// Pull up to overlap the sticky background
 	margin-top: -100vh;
 	
-	// This is the key: padding-top pushes content down so it STARTS at the bottom
-	// of the viewport when the section first comes into view
-	padding-top: calc(100vh - 100px); // Start near bottom, with a little peek
+	// Full viewport padding so content starts completely off-screen at bottom
+	padding-top: 100vh;
 	
-	// Padding on sides for content
+	// Padding on sides and bottom
 	padding-left: 2rem;
 	padding-right: 2rem;
 	padding-bottom: 2rem;
 	
-	// Min-height ensures there's enough scroll distance
-	min-height: 100vh;
-	
-	// Content needs to be interactive
 	pointer-events: auto;
 	
-	// Make content readable over background
 	> * {
 		position: relative;
 		z-index: 1;
@@ -157,7 +144,7 @@
 // Reduced motion
 @media (prefers-reduced-motion: reduce) {
 	.reveal-frame-content {
-		// Could disable opacity animations here
+		opacity: 1 !important;
 	}
 }
 
@@ -165,7 +152,8 @@
 @media print {
 	.caes-reveal {
 		.reveal-frame-section {
-			min-height: auto;
+			min-height: auto !important;
+			height: auto !important;
 			page-break-inside: avoid;
 		}
 		
@@ -178,7 +166,6 @@
 		.reveal-frame-content {
 			margin-top: 0;
 			padding-top: 2rem;
-			min-height: auto;
 		}
 
 		.reveal-overlay {
