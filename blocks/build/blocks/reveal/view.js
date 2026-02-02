@@ -2,99 +2,211 @@
 /*!***********************************!*\
   !*** ./src/blocks/reveal/view.js ***!
   \***********************************/
+/**
+ * Reveal Block Frontend JavaScript
+ * 
+ * Mimics Shorthand's reveal behavior:
+ * 1. Frame 1 background visible, content fades in
+ * 2. Content fades out as you scroll
+ * 3. Frame 2 background transitions in (wipe/fade)
+ * 4. Frame 2 content fades in
+ * 5. Repeat...
+ */
+
 (function () {
   'use strict';
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function initRevealBlock(block) {
-    const stage = block.querySelector('.reveal-stage');
-    const triggers = block.querySelectorAll('.reveal-trigger');
     const frames = block.querySelectorAll('.reveal-frame');
-    const contents = block.querySelectorAll('.reveal-frame-content');
-    if (!triggers.length || !frames.length) return;
+    const frameContents = block.querySelectorAll('.reveal-frame-content');
+    if (frames.length === 0) {
+      return;
+    }
+    const frameCount = frames.length;
     let ticking = false;
+
+    // Parse transition data from frames
+    // Each frame (except first) has a transition type and speed
+    const transitions = [];
+    frames.forEach((frame, index) => {
+      transitions.push({
+        type: frame.dataset.transitionType || 'fade',
+        speed: frame.dataset.transitionSpeed || 'normal'
+      });
+    });
+
+    // Speed affects what portion of scroll the transition takes
+    // Shorthand uses ~0.35 (35%) for transitions
+    const speedMultipliers = {
+      slow: 0.4,
+      normal: 0.25,
+      fast: 0.15
+    };
+
+    /**
+     * Get clip-path style for wipe transitions
+     */
+    function getTransitionStyles(type, progress) {
+      if (prefersReducedMotion) {
+        type = 'fade';
+      }
+      const clipAmount = ((1 - progress) * 100).toFixed(2);
+      switch (type) {
+        case 'fade':
+          return {
+            opacity: progress,
+            clipPath: 'none'
+          };
+        case 'up':
+          return {
+            opacity: 1,
+            clipPath: `inset(${clipAmount}% 0 0 0)`
+          };
+        case 'down':
+          return {
+            opacity: 1,
+            clipPath: `inset(0 0 ${clipAmount}% 0)`
+          };
+        case 'left':
+          return {
+            opacity: 1,
+            clipPath: `inset(0 0 0 ${clipAmount}%)`
+          };
+        case 'right':
+          return {
+            opacity: 1,
+            clipPath: `inset(0 ${clipAmount}% 0 0)`
+          };
+        default:
+          return {
+            opacity: progress >= 0.5 ? 1 : 0,
+            clipPath: 'none'
+          };
+      }
+    }
+
+    /**
+     * Main scroll handler
+     */
     function updateOnScroll() {
+      const blockRect = block.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
+      const blockHeight = block.offsetHeight;
 
-      // Iterate over every trigger to determine state
-      triggers.forEach((trigger, index) => {
-        const rect = trigger.getBoundingClientRect();
-        const frame = frames[index];
-        const content = contents[index];
+      // Calculate scroll progress through the block (0 to 1)
+      const scrollableDistance = blockHeight - viewportHeight;
+      const scrolledDistance = Math.max(0, -blockRect.top);
+      const scrollProgress = scrollableDistance > 0 ? Math.min(1, scrolledDistance / scrollableDistance) : 0;
 
-        // Calculate LOCAL progress for this specific slide
-        // 0 = Trigger top is at bottom of viewport (entering)
-        // 1 = Trigger bottom is at bottom of viewport (leaving)
-        // We actually want: 0 = Trigger top at TOP of viewport.
+      // Divide scroll into segments for each frame
+      // Each segment: [content fade in] [content visible] [content fade out] [bg transition]
+      const segmentSize = 1 / frameCount;
 
-        // Logic: How far has the trigger top moved up past the viewport top?
-        // When rect.top == 0, progress = 0.
-        // When rect.top == -(rect.height - viewportHeight), progress = 1.
-        // This assumes the trigger is taller than the viewport (which it is, min 100vh).
+      // For each frame, calculate its state
+      frames.forEach((frame, index) => {
+        const segmentStart = index * segmentSize;
+        const segmentEnd = (index + 1) * segmentSize;
+        const transitionSize = speedMultipliers[transitions[index].speed] || 0.25;
 
-        let progress = -rect.top / (rect.height - viewportHeight);
+        // Within this frame's segment:
+        // - First 15%: content fades in
+        // - Middle: content fully visible
+        // - Last transitionSize%: content fades out + next bg transitions in
+        const contentFadeInEnd = segmentStart + segmentSize * 0.15;
+        const contentFadeOutStart = segmentEnd - segmentSize * transitionSize;
+        const bgTransitionStart = contentFadeOutStart;
+        frame.style.transitionDuration = '0ms';
 
-        // Clamp progress
-        const clampedProgress = Math.max(0, Math.min(1, progress));
-
-        // --- 1. Background Transitions ---
-
-        // Frame 0 is the base, it handles differently (always visible unless covered)
-        if (index === 0) {
+        // Determine background visibility
+        if (scrollProgress < segmentStart) {
+          // Before this frame's segment - hidden
+          frame.style.opacity = '0';
+          frame.style.clipPath = 'inset(0 0 0 0)';
+          frame.style.zIndex = '0';
+          frame.style.display = 'none';
+        } else if (scrollProgress >= segmentStart && scrollProgress < bgTransitionStart) {
+          // In this frame's content phase - fully visible
           frame.style.opacity = '1';
-        } else {
-          // Transition Logic for frames > 0
-          // Transition happens in the first 30% of the trigger
-          const transitionEnd = 0.3;
-          const transitionProgress = Math.min(1, clampedProgress / transitionEnd);
-          const type = frame.dataset.transitionType || 'fade';
-          if (prefersReducedMotion) {
-            frame.style.opacity = transitionProgress >= 1 ? '1' : '0';
-          } else if (type === 'wipe') {
-            // Wipe Up Effect
+          frame.style.clipPath = 'none';
+          frame.style.zIndex = '1';
+          frame.style.display = 'block';
+          frame.classList.add('is-active');
+        } else if (scrollProgress >= bgTransitionStart && scrollProgress < segmentEnd && index < frameCount - 1) {
+          // Transitioning out (next frame transitioning in)
+          // This frame stays visible as base
+          frame.style.opacity = '1';
+          frame.style.clipPath = 'none';
+          frame.style.zIndex = '1';
+          frame.style.display = 'block';
+          frame.classList.add('is-active');
+        } else if (scrollProgress >= segmentEnd) {
+          // After this frame's segment
+          if (index === frameCount - 1) {
+            // Last frame stays visible
             frame.style.opacity = '1';
-            // 100% -> 0% (inset from top)
-            const clipVal = (1 - transitionProgress) * 100;
-            frame.style.clipPath = `inset(${clipVal}% 0 0 0)`;
-          } else {
-            // Fade Effect
-            frame.style.opacity = transitionProgress;
             frame.style.clipPath = 'none';
+            frame.style.zIndex = '1';
+            frame.style.display = 'block';
+            frame.classList.add('is-active');
+          } else {
+            // Previous frames get hidden
+            frame.style.opacity = '0';
+            frame.style.display = 'none';
+            frame.style.zIndex = '0';
+            frame.classList.remove('is-active');
           }
         }
 
-        // --- 2. Content Transitions ---
-
-        if (content) {
-          // Content Logic:
-          // Fade In: 10% - 30%
-          // Stay: 30% - 70%
-          // Fade Out: 70% - 90%
-
-          let opacity = 0;
-          if (clampedProgress > 0.1 && clampedProgress < 0.9) {
-            if (clampedProgress < 0.3) {
-              // Fading in
-              opacity = (clampedProgress - 0.1) / 0.2;
-            } else if (clampedProgress > 0.7) {
-              // Fading out
-              opacity = 1 - (clampedProgress - 0.7) / 0.2;
-            } else {
-              // Fully visible
-              opacity = 1;
-            }
-          }
-          content.style.opacity = opacity;
-          // Prevent hidden content from blocking clicks
-          content.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
-
-          // Optional: subtle vertical shift for content
-          if (!prefersReducedMotion) {
-            const translateY = (1 - opacity) * 20;
-            content.children[0].style.transform = `translateY(${translateY}px)`;
-            content.children[0].style.transition = 'transform 0.1s linear';
+        // Handle incoming transition for frames after first
+        if (index > 0) {
+          const prevSegmentEnd = index * segmentSize;
+          const prevTransitionSize = speedMultipliers[transitions[index].speed] || 0.25;
+          const prevBgTransitionStart = prevSegmentEnd - segmentSize * prevTransitionSize;
+          if (scrollProgress >= prevBgTransitionStart && scrollProgress < prevSegmentEnd) {
+            // This frame is transitioning in
+            const transitionProgress = (scrollProgress - prevBgTransitionStart) / (prevSegmentEnd - prevBgTransitionStart);
+            const styles = getTransitionStyles(transitions[index].type, transitionProgress);
+            frame.style.opacity = styles.opacity;
+            frame.style.clipPath = styles.clipPath;
+            frame.style.zIndex = '2';
+            frame.style.display = 'block';
+            frame.classList.add('is-active');
           }
         }
+      });
+
+      // Handle content opacity
+      frameContents.forEach((content, index) => {
+        const segmentStart = index * segmentSize;
+        const segmentEnd = (index + 1) * segmentSize;
+        const transitionSize = speedMultipliers[transitions[index]?.speed] || 0.25;
+        const contentFadeInStart = segmentStart;
+        const contentFadeInEnd = segmentStart + segmentSize * 0.15;
+        const contentFadeOutStart = segmentEnd - segmentSize * transitionSize;
+        const contentFadeOutEnd = segmentEnd;
+        let opacity = 0;
+        if (scrollProgress < contentFadeInStart) {
+          opacity = 0;
+        } else if (scrollProgress >= contentFadeInStart && scrollProgress < contentFadeInEnd) {
+          // Fading in
+          opacity = (scrollProgress - contentFadeInStart) / (contentFadeInEnd - contentFadeInStart);
+        } else if (scrollProgress >= contentFadeInEnd && scrollProgress < contentFadeOutStart) {
+          // Fully visible
+          opacity = 1;
+        } else if (scrollProgress >= contentFadeOutStart && scrollProgress < contentFadeOutEnd) {
+          // Fading out
+          opacity = 1 - (scrollProgress - contentFadeOutStart) / (contentFadeOutEnd - contentFadeOutStart);
+        } else {
+          opacity = 0;
+        }
+
+        // Last frame content stays visible at end
+        if (index === frameCount - 1 && scrollProgress >= contentFadeInEnd) {
+          opacity = 1;
+        }
+        content.style.opacity = opacity;
+        content.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
       });
       ticking = false;
     }
@@ -104,20 +216,38 @@
         ticking = true;
       }
     }
+
+    // Initialize
+    frameContents.forEach(content => {
+      content.style.transition = 'none';
+      content.style.opacity = '0';
+    });
+
+    // First frame starts visible
+    if (frames[0]) {
+      frames[0].style.opacity = '1';
+      frames[0].style.clipPath = 'none';
+      frames[0].style.display = 'block';
+      frames[0].classList.add('is-active');
+    }
     window.addEventListener('scroll', onScroll, {
       passive: true
     });
     window.addEventListener('resize', updateOnScroll);
-
-    // Initial call
     updateOnScroll();
+    block._revealCleanup = function () {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', updateOnScroll);
+    };
   }
-
-  // Initialize on load
-  document.addEventListener('DOMContentLoaded', function () {
-    const blocks = document.querySelectorAll('.caes-reveal');
-    blocks.forEach(initRevealBlock);
-  });
+  function initAllBlocks() {
+    document.querySelectorAll('.caes-reveal').forEach(initRevealBlock);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllBlocks);
+  } else {
+    initAllBlocks();
+  }
 })();
 /******/ })()
 ;
