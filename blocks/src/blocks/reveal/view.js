@@ -69,42 +69,17 @@
 			const blockTop = scrollTop + blockRect.top;
 			const blockBottom = blockTop + block.offsetHeight;
 
-			// Check if we're in or near the reveal block
-			const beforeBlock = scrollTop < blockTop;
-			const afterBlock = scrollTop > blockBottom;
+			// Check if we're in the reveal block
 			const inBlock = scrollTop >= blockTop && scrollTop <= blockBottom;
 
-			// Calculate fade for entering/exiting block
-			let blockFade = 1;
-			if (beforeBlock) {
-				// Not reached block yet - all hidden
+			if (!inBlock) {
+				// Not in block - hide all backgrounds
 				backgrounds.forEach((bg) => {
 					bg.style.opacity = 0;
 					bg.style.zIndex = 5;
 				});
 				ticking = false;
 				return;
-			} else if (afterBlock) {
-				// Past block - all hidden
-				backgrounds.forEach((bg) => {
-					bg.style.opacity = 0;
-					bg.style.zIndex = 5;
-				});
-				ticking = false;
-				return;
-			} else if (inBlock) {
-				// In the block
-				const distanceIntoBlock = scrollTop - blockTop;
-				const distanceFromEnd = blockBottom - scrollTop;
-				
-				// Fade in over first viewport height
-				if (distanceIntoBlock < viewportHeight) {
-					blockFade = distanceIntoBlock / viewportHeight;
-				}
-				// Fade out over last viewport height
-				else if (distanceFromEnd < viewportHeight) {
-					blockFade = distanceFromEnd / viewportHeight;
-				}
 			}
 
 			let activeIndex = -1;
@@ -175,18 +150,18 @@
 				return;
 			}
 
-			// Apply background visibility with block fade
+			// Apply background visibility
 			backgrounds.forEach((bg, index) => {
 				const transitionType = bg.getAttribute('data-transition') || 'none';
 
 				if (index === activeIndex && transitionIndex === -1) {
 					// Active frame, no transition
-					bg.style.opacity = 1 * blockFade;
+					bg.style.opacity = 1;
 					bg.style.transform = 'none';
 					bg.style.zIndex = 10;
 				} else if (index === activeIndex && transitionIndex !== -1) {
 					// Active frame during transition - backdrop
-					bg.style.opacity = 1 * blockFade;
+					bg.style.opacity = 1;
 					bg.style.transform = 'none';
 					bg.style.zIndex = 9;
 				} else if (index === transitionIndex) {
@@ -194,22 +169,22 @@
 					bg.style.zIndex = 10;
 
 					if (transitionType === 'fade') {
-						bg.style.opacity = transitionProgress * blockFade;
+						bg.style.opacity = transitionProgress;
 						bg.style.transform = 'none';
 					} else if (transitionType === 'left') {
 						const x = (1 - transitionProgress) * 100;
 						bg.style.transform = `translate3d(${x}%, 0, 0)`;
-						bg.style.opacity = 1 * blockFade;
+						bg.style.opacity = 1;
 					} else if (transitionType === 'right') {
 						const x = -(1 - transitionProgress) * 100;
 						bg.style.transform = `translate3d(${x}%, 0, 0)`;
-						bg.style.opacity = 1 * blockFade;
+						bg.style.opacity = 1;
 					} else if (transitionType === 'up') {
 						const y = (1 - transitionProgress) * 100;
 						bg.style.transform = `translate3d(0, ${y}%, 0)`;
-						bg.style.opacity = 1 * blockFade;
+						bg.style.opacity = 1;
 					} else {
-						bg.style.opacity = transitionProgress * blockFade;
+						bg.style.opacity = transitionProgress;
 						bg.style.transform = 'none';
 					}
 				} else {
