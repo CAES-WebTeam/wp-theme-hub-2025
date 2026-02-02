@@ -88,11 +88,26 @@ const Edit = ( { attributes, context, clientId } ) => {
 	const blockProps = useBlockProps( {
 		className: 'reveal-frames-editor',
 		'data-frame-label': frameLabel,
+		style: {
+			position: 'relative',
+			minHeight: '400px',
+			borderRadius: '4px',
+			overflow: 'hidden',
+			marginBottom: '8px',
+		},
 	} );
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{
 			className: 'reveal-frames-content',
+			style: {
+				position: 'relative',
+				zIndex: 5,
+				minHeight: '350px',
+				padding: '60px 40px 40px',
+				display: 'flex',
+				flexDirection: 'column',
+			},
 		},
 		{
 			templateLock: false,
@@ -104,12 +119,26 @@ const Edit = ( { attributes, context, clientId } ) => {
 		<div { ...blockProps }>
 			{/* Background image layer */}
 			{ desktopImage ? (
-				<div className="reveal-frames-background">
+				<div
+					className="reveal-frames-background"
+					style={ {
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						zIndex: 0,
+						overflow: 'hidden',
+					} }
+				>
 					{ desktopDuotone && getDuotoneFilter( desktopDuotone, filterId ) }
 					<img
 						src={ desktopImage.url }
 						alt=""
 						style={ {
+							width: '100%',
+							height: '100%',
+							objectFit: 'cover',
 							objectPosition: `${ desktopFocalPoint.x * 100 }% ${ desktopFocalPoint.y * 100 }%`,
 							filter: desktopDuotone ? `url(#${ filterId })` : undefined,
 						} }
@@ -117,17 +146,69 @@ const Edit = ( { attributes, context, clientId } ) => {
 					{/* Overlay */}
 					<div
 						className="reveal-frames-overlay"
-						style={ { background: getOverlayRgba( overlayColor, overlayOpacity ) } }
+						style={ {
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							background: getOverlayRgba( overlayColor, overlayOpacity ),
+							pointerEvents: 'none',
+						} }
 					/>
 				</div>
 			) : (
-				<div className="reveal-frames-no-image">
-					<span>{ __( 'No background image', 'caes-reveal' ) }</span>
+				<div
+					className="reveal-frames-no-image"
+					style={ {
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						zIndex: 0,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						background: 'linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%)',
+						border: '2px dashed #ccc',
+						borderRadius: '4px',
+					} }
+				>
+					<span
+						style={ {
+							color: '#757575',
+							fontSize: '14px',
+							fontWeight: 500,
+							padding: '12px 20px',
+							background: 'rgba(255, 255, 255, 0.9)',
+							borderRadius: '4px',
+						} }
+					>
+						{ __( 'No background image', 'caes-reveal' ) }
+					</span>
 				</div>
 			) }
 
 			{/* Frame label */}
-			<div className="reveal-frames-label">
+			<div
+				className="reveal-frames-label"
+				style={ {
+					position: 'absolute',
+					top: '12px',
+					left: '12px',
+					zIndex: 10,
+					background: 'rgba(0, 0, 0, 0.75)',
+					color: '#fff',
+					padding: '6px 12px',
+					fontSize: '12px',
+					fontWeight: 600,
+					borderRadius: '4px',
+					textTransform: 'uppercase',
+					letterSpacing: '0.5px',
+					pointerEvents: 'none',
+				} }
+			>
 				{ frameLabel || __( 'Frame Content', 'caes-reveal' ) }
 			</div>
 

@@ -124,10 +124,25 @@ const Edit = ({
   const filterId = `reveal-frame-editor-${clientId}`;
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
     className: 'reveal-frames-editor',
-    'data-frame-label': frameLabel
+    'data-frame-label': frameLabel,
+    style: {
+      position: 'relative',
+      minHeight: '400px',
+      borderRadius: '4px',
+      overflow: 'hidden',
+      marginBottom: '8px'
+    }
   });
   const innerBlocksProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useInnerBlocksProps)({
-    className: 'reveal-frames-content'
+    className: 'reveal-frames-content',
+    style: {
+      position: 'relative',
+      zIndex: 5,
+      minHeight: '350px',
+      padding: '60px 40px 40px',
+      display: 'flex',
+      flexDirection: 'column'
+    }
   }, {
     templateLock: false,
     renderAppender: _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks.ButtonBlockAppender
@@ -136,26 +151,81 @@ const Edit = ({
     ...blockProps,
     children: [desktopImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
       className: "reveal-frames-background",
+      style: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0,
+        overflow: 'hidden'
+      },
       children: [desktopDuotone && getDuotoneFilter(desktopDuotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("img", {
         src: desktopImage.url,
         alt: "",
         style: {
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
           objectPosition: `${desktopFocalPoint.x * 100}% ${desktopFocalPoint.y * 100}%`,
           filter: desktopDuotone ? `url(#${filterId})` : undefined
         }
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
         className: "reveal-frames-overlay",
         style: {
-          background: getOverlayRgba(overlayColor, overlayOpacity)
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: getOverlayRgba(overlayColor, overlayOpacity),
+          pointerEvents: 'none'
         }
       })]
     }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
       className: "reveal-frames-no-image",
+      style: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%)',
+        border: '2px dashed #ccc',
+        borderRadius: '4px'
+      },
       children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+        style: {
+          color: '#757575',
+          fontSize: '14px',
+          fontWeight: 500,
+          padding: '12px 20px',
+          background: 'rgba(255, 255, 255, 0.9)',
+          borderRadius: '4px'
+        },
         children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No background image', 'caes-reveal')
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
       className: "reveal-frames-label",
+      style: {
+        position: 'absolute',
+        top: '12px',
+        left: '12px',
+        zIndex: 10,
+        background: 'rgba(0, 0, 0, 0.75)',
+        color: '#fff',
+        padding: '6px 12px',
+        fontSize: '12px',
+        fontWeight: 600,
+        borderRadius: '4px',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+        pointerEvents: 'none'
+      },
       children: frameLabel || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame Content', 'caes-reveal')
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
       ...innerBlocksProps
