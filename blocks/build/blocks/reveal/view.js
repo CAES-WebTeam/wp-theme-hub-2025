@@ -108,87 +108,100 @@
     }
     function updateOnScroll() {
       const viewportHeight = window.innerHeight;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-      // Loop through every section to determine visibility and transitions
+      // Determine which section we're currently "in" based on scroll position
+      let activeIndex = 0;
+      let transitionProgress = 0;
+      let inTransition = false;
+      let nextIndex = -1;
       sections.forEach((section, index) => {
-        const bg = section.querySelector('.reveal-frame-background');
-        const content = section.querySelector('.reveal-frame-content');
-        const transitionType = bg.getAttribute('data-transition') || 'none';
         const rect = section.getBoundingClientRect();
+        const sectionTop = scrollTop + rect.top;
+        const content = section.querySelector('.reveal-frame-content');
 
-        // Determine if content is visible (using your existing logic)
+        // Check if content is visible
         const contentOpacity = getContentOpacity(content);
         const contentVisible = contentOpacity > 0;
 
-        // Calculate section progress: where section top is relative to viewport
-        // progress = 0 when section.top = viewportHeight (just entering)
-        // progress = 1 when section.top = 0 (fully entered)
-        let sectionProgress = (viewportHeight - rect.top) / viewportHeight;
-        sectionProgress = Math.max(0, Math.min(1, sectionProgress));
+        // Update content opacity
+        content.style.opacity = Math.max(0, Math.min(1, contentOpacity));
 
-        // First frame: always visible, highest z-index initially
-        if (index === 0) {
-          bg.style.opacity = 1;
-          bg.style.transform = 'none';
-          // Z-index decreases as we scroll past it
-          bg.style.zIndex = contentVisible ? 10 : 5;
-          return;
-        }
+        // Determine active section
+        // A section is active if we're within its bounds and its content is visible
+        if (scrollTop >= sectionTop - viewportHeight && scrollTop < sectionTop + section.offsetHeight) {
+          if (contentVisible) {
+            activeIndex = index;
+          } else if (index < sections.length - 1) {
+            // We're in the gap between sections - transition zone
+            inTransition = true;
+            activeIndex = index;
+            nextIndex = index + 1;
 
-        // For subsequent frames:
-        // - Keep them hidden until their content has scrolled away (transition zone)
-        // - Then transition them in
-        // - Keep them visible until next frame takes over
+            // Calculate transition progress based on how far through the gap we are
+            // The gap is the space between when content fades out and next content fades in
+            const nextSection = sections[index + 1];
+            const nextContent = nextSection.querySelector('.reveal-frame-content');
+            const nextContentOpacity = getContentOpacity(nextContent);
 
-        // Determine if we're in the "transition zone" (between content sections)
-        // This is when current content is gone but section is still entering
-        const inTransitionZone = !contentVisible && sectionProgress < 1;
-        const fullyEntered = sectionProgress >= 1;
-
-        // Calculate transition progress within the transition zone
-        // Start transitioning once content is fully scrolled away
-        let transitionProgress = 0;
-        if (inTransitionZone || fullyEntered) {
-          // Transition happens in the gap after content scrolls away
-          // Map sectionProgress to transitionProgress
-          transitionProgress = fullyEntered ? 1 : sectionProgress;
-        }
-
-        // Z-index management: active frame on top, but always below content (which is z-index 100)
-        if (contentVisible || fullyEntered) {
-          bg.style.zIndex = 10; // Active - highest background layer
-        } else if (inTransitionZone) {
-          bg.style.zIndex = 9; // Transitioning in
-        } else {
-          bg.style.zIndex = 5; // Not visible yet
-        }
-
-        // Apply transitions
-        if (transitionType === 'fade') {
-          bg.style.opacity = transitionProgress;
-          bg.style.transform = 'none';
-        } else if (transitionType === 'left') {
-          const x = (1 - transitionProgress) * 100;
-          bg.style.transform = `translate3d(${x}%, 0, 0)`;
-          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
-        } else if (transitionType === 'right') {
-          const x = -(1 - transitionProgress) * 100;
-          bg.style.transform = `translate3d(${x}%, 0, 0)`;
-          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
-        } else if (transitionType === 'up') {
-          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
-          bg.style.transform = 'none';
-        } else {
-          // 'none' - just appear
-          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
-          bg.style.transform = 'none';
+            // Transition progresses as we move through the gap
+            const sectionProgress = (scrollTop - sectionTop) / section.offsetHeight;
+            transitionProgress = Math.max(0, Math.min(1, sectionProgress));
+          }
         }
       });
 
-      // Handle Content Opacity
-      contents.forEach(content => {
-        const opacity = getContentOpacity(content);
-        content.style.opacity = Math.max(0, Math.min(1, opacity));
+      // Now apply visibility and transitions to all backgrounds
+      sections.forEach((section, index) => {
+        const bg = section.querySelector('.reveal-frame-background');
+        const transitionType = bg.getAttribute('data-transition') || 'none';
+        if (index === activeIndex && !inTransition) {
+          // This is the active frame - fully visible
+          bg.style.opacity = 1;
+          bg.style.transform = 'none';
+          bg.style.zIndex = 10;
+        } else if (index === activeIndex && inTransition && index === 0) {
+          // First frame during transition - fade out
+          bg.style.opacity = 1 - transitionProgress;
+          bg.style.transform = 'none';
+          bg.style.zIndex = 9;
+        } else if (index === activeIndex && inTransition) {
+          // Current frame during transition - keep visible as backdrop
+          bg.style.opacity = 1;
+          bg.style.transform = 'none';
+          bg.style.zIndex = 9;
+        } else if (index === nextIndex && inTransition) {
+          // Next frame transitioning in
+          bg.style.zIndex = 10;
+          if (transitionType === 'fade') {
+            bg.style.opacity = transitionProgress;
+            bg.style.transform = 'none';
+          } else if (transitionType === 'left') {
+            // Slide in from right
+            const x = (1 - transitionProgress) * 100;
+            bg.style.transform = `translate3d(${x}%, 0, 0)`;
+            bg.style.opacity = 1;
+          } else if (transitionType === 'right') {
+            // Slide in from left
+            const x = -(1 - transitionProgress) * 100;
+            bg.style.transform = `translate3d(${x}%, 0, 0)`;
+            bg.style.opacity = 1;
+          } else if (transitionType === 'up') {
+            // Slide up from bottom
+            const y = (1 - transitionProgress) * 100;
+            bg.style.transform = `translate3d(0, ${y}%, 0)`;
+            bg.style.opacity = 1;
+          } else {
+            // 'none' - just fade in
+            bg.style.opacity = transitionProgress;
+            bg.style.transform = 'none';
+          }
+        } else {
+          // All other frames - hidden
+          bg.style.opacity = 0;
+          bg.style.transform = 'none';
+          bg.style.zIndex = 5;
+        }
       });
       ticking = false;
     }
@@ -207,6 +220,15 @@
     contents.forEach(content => {
       content.style.transition = 'none';
     });
+
+    // Set initial state - first frame visible
+    if (sections.length > 0) {
+      const firstBg = sections[0].querySelector('.reveal-frame-background');
+      if (firstBg) {
+        firstBg.style.opacity = 1;
+        firstBg.style.zIndex = 10;
+      }
+    }
 
     // Set initial heights
     setSectionHeights();
