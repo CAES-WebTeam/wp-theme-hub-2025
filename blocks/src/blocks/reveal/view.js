@@ -1,81 +1,82 @@
 /**
- * Reveal Block Frontend JavaScript - Sticky Approach
+ * Reveal Block Frontend JavaScript - Sticky Approach v5
  * 
- * CSS sticky positioning handles the main behavior:
- * - Background stays pinned while content scrolls through
- * - Background scrolls away naturally when content is done
- * 
- * This JS handles:
- * - Content opacity fade (optional smoothing)
- * - Any future transition effects between frames
+ * CSS sticky does the heavy lifting. This JS just:
+ * 1. Adds smooth opacity fade to content as it enters/exits
+ * 2. (Future: transition effects between frames)
  */
 
 ( function () {
 	'use strict';
 
 	function initRevealBlock( block ) {
-		const sections = block.querySelectorAll( '.reveal-frame-section' );
 		const contents = block.querySelectorAll( '.reveal-frame-content' );
 
-		if ( sections.length === 0 ) {
+		if ( contents.length === 0 ) {
 			return;
 		}
 
 		let ticking = false;
 
 		/**
-		 * Calculate content opacity based on position in viewport
-		 * Fades in from bottom, fades out at top
+		 * Calculate content opacity based on its position in viewport
 		 */
 		function getContentOpacity( element ) {
 			const rect = element.getBoundingClientRect();
 			const viewportHeight = window.innerHeight;
 			
-			// Fade zones
-			const fadeInStart = viewportHeight * 0.85;  // Start fading in when top is at 85% down
-			const fadeInEnd = viewportHeight * 0.6;    // Fully visible when top is at 60% down
-			const fadeOutStart = viewportHeight * 0.2; // Start fading out when top is at 20% down
-			const fadeOutEnd = 0;                       // Fully faded when top hits 0
+			// Get the actual content inside (not the padding)
+			const contentChildren = element.children;
+			if ( contentChildren.length === 0 ) {
+				return 1;
+			}
 			
-			const elementTop = rect.top;
+			// Find the bounding box of actual content
+			let contentTop = Infinity;
+			let contentBottom = -Infinity;
 			
-			// Below viewport
-			if ( elementTop > viewportHeight ) {
+			for ( let child of contentChildren ) {
+				const childRect = child.getBoundingClientRect();
+				if ( childRect.top < contentTop ) contentTop = childRect.top;
+				if ( childRect.bottom > contentBottom ) contentBottom = childRect.bottom;
+			}
+			
+			// If we couldn't find content, use element bounds
+			if ( contentTop === Infinity ) {
+				contentTop = rect.top;
+				contentBottom = rect.bottom;
+			}
+			
+			const fadeZone = viewportHeight * 0.2; // 20% of viewport for fade
+			
+			// Content fully below viewport
+			if ( contentTop >= viewportHeight ) {
 				return 0;
 			}
 			
-			// Above viewport
-			if ( rect.bottom < 0 ) {
+			// Content fully above viewport  
+			if ( contentBottom <= 0 ) {
 				return 0;
 			}
 			
-			// Fading in (entering from bottom)
-			if ( elementTop > fadeInEnd ) {
-				if ( elementTop > fadeInStart ) {
-					return 0;
-				}
-				return 1 - ( ( elementTop - fadeInEnd ) / ( fadeInStart - fadeInEnd ) );
+			// Fading in from bottom
+			if ( contentTop > viewportHeight - fadeZone ) {
+				return ( viewportHeight - contentTop ) / fadeZone;
 			}
 			
-			// Fading out (exiting at top)
-			if ( elementTop < fadeOutStart ) {
-				if ( elementTop < fadeOutEnd ) {
-					return Math.max( 0, rect.bottom / ( viewportHeight * 0.3 ) );
-				}
-				return elementTop / fadeOutStart;
+			// Fading out at top
+			if ( contentBottom < fadeZone ) {
+				return contentBottom / fadeZone;
 			}
 			
 			// Fully visible
 			return 1;
 		}
 
-		/**
-		 * Update on scroll
-		 */
 		function updateOnScroll() {
 			contents.forEach( ( content ) => {
 				const opacity = getContentOpacity( content );
-				content.style.opacity = opacity;
+				content.style.opacity = Math.max( 0, Math.min( 1, opacity ) );
 			} );
 
 			ticking = false;
@@ -88,19 +89,16 @@
 			}
 		}
 
-		// Initialize - start with content visible (CSS handles initial state)
+		// Initialize
 		contents.forEach( ( content ) => {
 			content.style.transition = 'none';
 		} );
 
-		// Set up scroll listener
 		window.addEventListener( 'scroll', onScroll, { passive: true } );
 		window.addEventListener( 'resize', updateOnScroll );
 		
-		// Initial update
 		updateOnScroll();
 
-		// Cleanup
 		block._revealCleanup = function () {
 			window.removeEventListener( 'scroll', onScroll );
 			window.removeEventListener( 'resize', updateOnScroll );
