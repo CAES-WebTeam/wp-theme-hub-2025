@@ -115,49 +115,84 @@
             const viewportHeight = window.innerHeight;
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-            // Determine which section we're currently "in" based on scroll position
+            // Track which frames should be visible and at what progress
             let activeIndex = 0;
             let transitionProgress = 0;
             let inTransition = false;
             let nextIndex = -1;
 
+            // First, update all content opacity
+            contents.forEach((content) => {
+                const opacity = getContentOpacity(content);
+                content.style.opacity = Math.max(0, Math.min(1, opacity));
+            });
+
+            // Determine current state by finding which section we're in
             sections.forEach((section, index) => {
                 const rect = section.getBoundingClientRect();
                 const sectionTop = scrollTop + rect.top;
+                const sectionBottom = sectionTop + section.offsetHeight;
                 const content = section.querySelector('.reveal-frame-content');
                 
                 // Check if content is visible
                 const contentOpacity = getContentOpacity(content);
-                const contentVisible = contentOpacity > 0;
+                const contentVisible = contentOpacity > 0.1; // Small threshold
 
-                // Update content opacity
-                content.style.opacity = Math.max(0, Math.min(1, contentOpacity));
-
-                // Determine active section
-                // A section is active if we're within its bounds and its content is visible
-                if (scrollTop >= sectionTop - viewportHeight && scrollTop < sectionTop + section.offsetHeight) {
+                // Determine if we're in this section
+                if (scrollTop >= sectionTop && scrollTop < sectionBottom) {
                     if (contentVisible) {
+                        // We're viewing this section's content
                         activeIndex = index;
+                        inTransition = false;
                     } else if (index < sections.length - 1) {
-                        // We're in the gap between sections - transition zone
+                        // Content has scrolled away, we're in transition zone
                         inTransition = true;
                         activeIndex = index;
                         nextIndex = index + 1;
                         
-                        // Calculate transition progress based on how far through the gap we are
-                        // The gap is the space between when content fades out and next content fades in
-                        const nextSection = sections[index + 1];
-                        const nextContent = nextSection.querySelector('.reveal-frame-content');
-                        const nextContentOpacity = getContentOpacity(nextContent);
+                        // Get speed attribute from the NEXT frame (the one transitioning in)
+                        const nextBg = sections[nextIndex].querySelector('.reveal-frame-background');
+                        const speed = nextBg.getAttribute('data-speed') || 'normal';
                         
-                        // Transition progresses as we move through the gap
-                        const sectionProgress = (scrollTop - sectionTop) / section.offsetHeight;
-                        transitionProgress = Math.max(0, Math.min(1, sectionProgress));
+                        // Base transition distance (how much scroll needed for transition)
+                        // Adjust based on speed:
+                        // - slow: 2.0 viewport heights (more scrolling needed)
+                        // - normal: 1.5 viewport heights
+                        // - fast: 1.0 viewport height (less scrolling needed)
+                        let transitionDistance;
+                        if (speed === 'slow') {
+                            transitionDistance = 2.0 * viewportHeight;
+                        } else if (speed === 'fast') {
+                            transitionDistance = 1.0 * viewportHeight;
+                        } else {
+                            transitionDistance = 1.5 * viewportHeight;
+                        }
+                        
+                        // Calculate how far into the transition zone we are
+                        // Find where content ended
+                        const contentChildren = content.children;
+                        let contentBottom = sectionTop;
+                        
+                        for (let child of contentChildren) {
+                            const childRect = child.getBoundingClientRect();
+                            const childBottom = scrollTop + childRect.bottom;
+                            if (childBottom > contentBottom) {
+                                contentBottom = childBottom;
+                            }
+                        }
+                        
+                        // Transition starts after content scrolls past top of viewport
+                        const transitionStart = contentBottom - viewportHeight;
+                        const transitionEnd = transitionStart + transitionDistance;
+                        
+                        // Calculate progress through transition zone (0 to 1)
+                        transitionProgress = (scrollTop - transitionStart) / transitionDistance;
+                        transitionProgress = Math.max(0, Math.min(1, transitionProgress));
                     }
                 }
             });
 
-            // Now apply visibility and transitions to all backgrounds
+            // Apply visibility and transitions to all backgrounds
             sections.forEach((section, index) => {
                 const bg = section.querySelector('.reveal-frame-background');
                 const transitionType = bg.getAttribute('data-transition') || 'none';
@@ -167,18 +202,13 @@
                     bg.style.opacity = 1;
                     bg.style.transform = 'none';
                     bg.style.zIndex = 10;
-                } else if (index === activeIndex && inTransition && index === 0) {
-                    // First frame during transition - fade out
-                    bg.style.opacity = 1 - transitionProgress;
-                    bg.style.transform = 'none';
-                    bg.style.zIndex = 9;
                 } else if (index === activeIndex && inTransition) {
-                    // Current frame during transition - keep visible as backdrop
+                    // Current frame during transition - stay visible as backdrop
                     bg.style.opacity = 1;
                     bg.style.transform = 'none';
                     bg.style.zIndex = 9;
                 } else if (index === nextIndex && inTransition) {
-                    // Next frame transitioning in
+                    // Next frame transitioning in - this is the key animation
                     bg.style.zIndex = 10;
                     
                     if (transitionType === 'fade') {
