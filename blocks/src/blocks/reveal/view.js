@@ -42,17 +42,17 @@
 				const speed = bg.getAttribute('data-speed') || 'normal';
 				let transitionDistance;
 				if (speed === 'slow') {
-					transitionDistance = 2.0 * viewportHeight;
+					transitionDistance = 2.5 * viewportHeight;
 				} else if (speed === 'fast') {
-					transitionDistance = 1.0 * viewportHeight;
+					transitionDistance = 1.2 * viewportHeight;
 				} else {
-					transitionDistance = 1.5 * viewportHeight;
+					transitionDistance = 2.0 * viewportHeight;
 				}
 
 				// Section height: viewport (for content to enter) + content height + viewport (for content to exit) + transition space
-				// The last section doesn't need transition space
+				// The last section needs extra space to scroll the background away
 				if (index === sections.length - 1) {
-					section.style.height = (viewportHeight * 2 + contentHeight) + 'px';
+					section.style.height = (viewportHeight * 3 + contentHeight) + 'px';
 				} else {
 					section.style.height = (viewportHeight * 2 + contentHeight + transitionDistance) + 'px';
 				}
@@ -65,10 +65,26 @@
 		function updateOnScroll() {
 			const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 			const viewportHeight = window.innerHeight;
+			const blockRect = block.getBoundingClientRect();
+			const blockTop = scrollTop + blockRect.top;
+			const blockBottom = blockTop + block.offsetHeight;
+
+			// Check if we're even in the reveal block
+			const inBlock = scrollTop >= blockTop && scrollTop <= blockBottom;
 
 			let activeIndex = -1;
 			let transitionIndex = -1;
 			let transitionProgress = 0;
+
+			if (!inBlock) {
+				// Not in block - hide all backgrounds
+				backgrounds.forEach((bg) => {
+					bg.style.opacity = 0;
+					bg.style.zIndex = 5;
+				});
+				ticking = false;
+				return;
+			}
 
 			// Find which section we're currently in
 			sections.forEach((section, index) => {
@@ -97,11 +113,11 @@
 						
 						let transitionDistance;
 						if (speed === 'slow') {
-							transitionDistance = 2.0 * viewportHeight;
+							transitionDistance = 2.5 * viewportHeight;
 						} else if (speed === 'fast') {
-							transitionDistance = 1.0 * viewportHeight;
+							transitionDistance = 1.2 * viewportHeight;
 						} else {
-							transitionDistance = 1.5 * viewportHeight;
+							transitionDistance = 2.0 * viewportHeight;
 						}
 
 						// Transition starts when content is fully gone
@@ -118,13 +134,28 @@
 						const progressIntoTransition = scrollTop - transitionStart;
 						transitionProgress = progressIntoTransition / transitionDistance;
 						transitionProgress = Math.max(0, Math.min(1, transitionProgress));
+					} else if (index === sections.length - 1) {
+						// Last section - check if content has scrolled away
+						const contentGone = contentRect.bottom < viewportHeight * 0.15;
+						if (contentGone) {
+							// Content gone, keep background visible until we scroll past section
+							activeIndex = index;
+						} else {
+							// Content still visible
+							activeIndex = index;
+						}
 					}
 				}
 			});
 
-			// Default to first frame if nothing found
+			// If no active frame found and we're in the block, don't show anything
 			if (activeIndex === -1) {
-				activeIndex = 0;
+				backgrounds.forEach((bg) => {
+					bg.style.opacity = 0;
+					bg.style.zIndex = 5;
+				});
+				ticking = false;
+				return;
 			}
 
 			// Apply background visibility
@@ -189,12 +220,6 @@
 
 		// Initialize
 		setSectionHeights();
-
-		// Set initial state - first frame visible
-		if (backgrounds.length > 0) {
-			backgrounds[0].style.opacity = 1;
-			backgrounds[0].style.zIndex = 10;
-		}
 
 		// Set up listeners
 		window.addEventListener('scroll', onScroll, { passive: true });
