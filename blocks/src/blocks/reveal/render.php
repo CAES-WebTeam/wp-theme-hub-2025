@@ -5,6 +5,26 @@
  * @package CAES_Reveal
  */
 
+// --- HELPER FUNCTION (Must be defined before use) ---
+if (!function_exists('caes_reveal_hex2rgba')) {
+    function caes_reveal_hex2rgba($color, $opacity = false) {
+        $default = 'rgb(0,0,0)';
+        if (empty($color)) return $default; 
+        if ($color[0] == '#' ) $color = substr( $color, 1 );
+        if (strlen($color) == 6) $hex = array( $color[0] . $color[1], $color[2] . $color[3], $color[4] . $color[5] );
+        elseif (strlen($color) == 3) $hex = array( $color[0] . $color[0], $color[1] . $color[1], $color[2] . $color[2] );
+        else return $default;
+        $rgb =  array_map('hexdec', $hex);
+        if($opacity !== false){
+            if(abs($opacity) > 1) $opacity = 1.0;
+            $output = 'rgba('.implode(",",$rgb).','.$opacity.')';
+        } else {
+            $output = 'rgb('.implode(",",$rgb).')';
+        }
+        return $output;
+    }
+}
+
 // Get block attributes
 $frames          = $attributes['frames'] ?? [];
 $overlay_color   = $attributes['overlayColor'] ?? '#000000';
@@ -38,27 +58,10 @@ if (empty($frames)) {
 }
 
 $block_id = 'reveal-' . wp_unique_id();
-$overlay_rgba = hex2rgba($overlay_color, $overlay_opacity / 100);
 
-// Helper function for RGBA
-if (!function_exists('hex2rgba')) {
-    function hex2rgba($color, $opacity = false) {
-        $default = 'rgb(0,0,0)';
-        if (empty($color)) return $default; 
-        if ($color[0] == '#' ) $color = substr( $color, 1 );
-        if (strlen($color) == 6) $hex = array( $color[0] . $color[1], $color[2] . $color[3], $color[4] . $color[5] );
-        elseif (strlen($color) == 3) $hex = array( $color[0] . $color[0], $color[1] . $color[1], $color[2] . $color[2] );
-        else return $default;
-        $rgb =  array_map('hexdec', $hex);
-        if($opacity !== false){
-            if(abs($opacity) > 1) $opacity = 1.0;
-            $output = 'rgba('.implode(",",$rgb).','.$opacity.')';
-        } else {
-            $output = 'rgb('.implode(",",$rgb).')';
-        }
-        return $output;
-    }
-}
+// Now we can safely call the function
+$overlay_rgba = caes_reveal_hex2rgba($overlay_color, $overlay_opacity / 100);
+
 ?>
 
 <div <?php echo $wrapper_attributes; ?>>
