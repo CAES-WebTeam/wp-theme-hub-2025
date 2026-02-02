@@ -8,25 +8,14 @@
 
 .caes-reveal {
 	position: relative;
-	// min-height will be set by JS
-	
-	&.is-fixed {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		width: 100%;
-		height: 100vh;
-		z-index: 100;
-	}
 }
 
-// Each frame section - just containers, height not important
+// Each frame section
 .reveal-frame-section {
-	position: absolute;
-	top: 0;
-	width: 100%;
-	pointer-events: none;
+	position: relative;
+	// Height will be set by JS based on content height
+	// Fallback min-height if JS doesn't run
+	min-height: 100vh;
 }
 
 // The background wrapper - fixed so all frames can occupy the same space
@@ -127,26 +116,23 @@
 	}
 }
 
-// Content that gets transformed to scroll through viewport
+// Content that scrolls over the sticky background
 .reveal-frame-content {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	min-height: 100vh;
-	z-index: 150; // Above backgrounds
+	position: relative;
+	z-index: 100; // Must be higher than background z-index values (managed by JS)
 	
-	// Padding on sides
+	// Pull up to overlap the sticky background
+	margin-top: -100vh;
+	
+	// Full viewport padding so content starts completely off-screen at bottom
+	padding-top: 100vh;
+	
+	// Padding on sides and bottom
 	padding-left: 2rem;
 	padding-right: 2rem;
-	padding-top: 0;
 	padding-bottom: 2rem;
 	
 	pointer-events: auto;
-	
-	// Will be transformed by JS
-	transform: translateY(100vh);
-	opacity: 0;
 	
 	> * {
 		position: relative;
@@ -173,26 +159,19 @@
 // Print styles
 @media print {
 	.caes-reveal {
-		position: relative !important;
-		min-height: auto !important;
-		
 		.reveal-frame-section {
-			position: relative !important;
 			min-height: auto !important;
+			height: auto !important;
 			page-break-inside: avoid;
 		}
 		
 		.reveal-frame-background {
-			position: relative !important;
-			height: auto !important;
+			position: relative;
+			height: auto;
 			min-height: 300px;
-			opacity: 1 !important;
 		}
 
 		.reveal-frame-content {
-			position: relative !important;
-			transform: none !important;
-			opacity: 1 !important;
 			margin-top: 0;
 			padding-top: 2rem;
 		}

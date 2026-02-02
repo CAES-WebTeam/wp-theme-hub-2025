@@ -3,13 +3,7 @@
   !*** ./src/blocks/reveal/view.js ***!
   \***********************************/
 /**
- * Reveal Block Frontend JavaScript - Fixed Scroll Approach
- * 
- * Behavior:
- * 1. Block starts as normal flow
- * 2. When block reaches top of viewport, it becomes fixed
- * 3. While fixed, scroll controls: content position, frame transitions
- * 4. When complete, block unfixes and normal scroll resumes
+ * Reveal Block Frontend JavaScript - Simple Fixed Background Approach
  */
 
 (function () {
@@ -23,20 +17,16 @@
       return;
     }
     let ticking = false;
-    let blockFixed = false;
-    let virtualHeight = 0;
 
     /**
-     * Calculate total virtual height needed for all frames
+     * Set section heights based on content
      */
-    function calculateVirtualHeight() {
+    function setSectionHeights() {
       const viewportHeight = window.innerHeight;
-      let totalHeight = 0;
       sections.forEach((section, index) => {
         const content = section.querySelector('.reveal-frame-content');
         const bg = section.querySelector('.reveal-frame-background');
-
-        // Get actual content height
+        if (!content) return;
         const contentChildren = content.children;
         let contentHeight = 0;
         for (let child of contentChildren) {
@@ -44,172 +34,108 @@
           const style = window.getComputedStyle(child);
           contentHeight += parseInt(style.marginTop) + parseInt(style.marginBottom);
         }
-        contentHeight = Math.max(contentHeight, 100);
+        contentHeight = Math.max(contentHeight, 200);
 
-        // For each frame we need:
-        // 1. One viewport height + content height to scroll content through
-        totalHeight += viewportHeight + contentHeight;
+        // Get transition distance for this section
+        const speed = bg.getAttribute('data-speed') || 'normal';
+        let transitionDistance;
+        if (speed === 'slow') {
+          transitionDistance = 2.0 * viewportHeight;
+        } else if (speed === 'fast') {
+          transitionDistance = 1.0 * viewportHeight;
+        } else {
+          transitionDistance = 1.5 * viewportHeight;
+        }
 
-        // 2. Transition distance to next frame (except for last frame)
-        if (index < sections.length - 1) {
-          const speed = bg.getAttribute('data-speed') || 'normal';
-          let transitionDistance;
-          if (speed === 'slow') {
-            transitionDistance = 2.0 * viewportHeight;
-          } else if (speed === 'fast') {
-            transitionDistance = 1.0 * viewportHeight;
-          } else {
-            transitionDistance = 1.5 * viewportHeight;
-          }
-          totalHeight += transitionDistance;
+        // Section height: viewport (for content to enter) + content height + viewport (for content to exit) + transition space
+        // The last section doesn't need transition space
+        if (index === sections.length - 1) {
+          section.style.height = viewportHeight * 2 + contentHeight + 'px';
+        } else {
+          section.style.height = viewportHeight * 2 + contentHeight + transitionDistance + 'px';
         }
       });
-      virtualHeight = totalHeight;
-
-      // Set block's height to create scroll space
-      block.style.minHeight = virtualHeight + 'px';
     }
 
     /**
-     * Update based on scroll position
+     * Update on scroll
      */
     function updateOnScroll() {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const viewportHeight = window.innerHeight;
-      const blockRect = block.getBoundingClientRect();
-      const blockTop = scrollTop + blockRect.top;
-
-      // Determine if block should be fixed
-      const shouldFix = blockRect.top <= 0 && blockRect.bottom > viewportHeight;
-      if (shouldFix && !blockFixed) {
-        // Fix the block
-        blockFixed = true;
-        block.classList.add('is-fixed');
-      } else if (!shouldFix && blockFixed) {
-        // Unfix the block
-        blockFixed = false;
-        block.classList.remove('is-fixed');
-      }
-      if (!blockFixed) {
-        // Not fixed - reset all frames to default state
-        backgrounds.forEach((bg, index) => {
-          if (index === 0) {
-            bg.style.opacity = 1;
-            bg.style.transform = 'none';
-            bg.style.zIndex = 10;
-          } else {
-            bg.style.opacity = 0;
-            bg.style.transform = 'none';
-            bg.style.zIndex = 5;
-          }
-        });
-        contents.forEach(content => {
-          content.style.transform = 'translateY(100vh)';
-          content.style.opacity = 0;
-        });
-        ticking = false;
-        return;
-      }
-
-      // Calculate virtual scroll (how far through the fixed experience)
-      const virtualScroll = scrollTop - blockTop;
-
-      // Track state
-      let currentFrameIndex = 0;
-      let accumulatedHeight = 0;
-      let inTransition = false;
+      let activeIndex = -1;
+      let transitionIndex = -1;
       let transitionProgress = 0;
-      let nextFrameIndex = -1;
 
-      // Determine which frame we're in and calculate states
+      // Find which section we're currently in
       sections.forEach((section, index) => {
+        const rect = section.getBoundingClientRect();
+        const sectionTop = scrollTop + rect.top;
+        const sectionBottom = sectionTop + section.offsetHeight;
         const content = section.querySelector('.reveal-frame-content');
-        const bg = section.querySelector('.reveal-frame-background');
+        const contentRect = content.getBoundingClientRect();
 
-        // Calculate content height
-        const contentChildren = content.children;
-        let contentHeight = 0;
-        for (let child of contentChildren) {
-          contentHeight += child.offsetHeight;
-          const style = window.getComputedStyle(child);
-          contentHeight += parseInt(style.marginTop) + parseInt(style.marginBottom);
-        }
-        contentHeight = Math.max(contentHeight, 100);
-        const frameContentHeight = viewportHeight + contentHeight;
+        // Is scroll position within this section?
+        if (scrollTop >= sectionTop && scrollTop < sectionBottom) {
+          // Check if content is visible (has some part in viewport)
+          const contentVisible = contentRect.bottom > viewportHeight * 0.15 && contentRect.top < viewportHeight * 0.85;
+          if (contentVisible) {
+            // Content is visible, this is the active frame
+            activeIndex = index;
+          } else if (index < sections.length - 1) {
+            // Content not visible but we're in this section = transition zone
+            activeIndex = index;
+            transitionIndex = index + 1;
 
-        // Get transition distance for this frame
-        const speed = bg.getAttribute('data-speed') || 'normal';
-        let transitionDistance = 0;
-        if (index < sections.length - 1) {
-          if (speed === 'slow') {
-            transitionDistance = 2.0 * viewportHeight;
-          } else if (speed === 'fast') {
-            transitionDistance = 1.0 * viewportHeight;
-          } else {
-            transitionDistance = 1.5 * viewportHeight;
+            // Calculate transition progress
+            const bg = sections[transitionIndex].querySelector('.reveal-frame-background');
+            const speed = bg.getAttribute('data-speed') || 'normal';
+            let transitionDistance;
+            if (speed === 'slow') {
+              transitionDistance = 2.0 * viewportHeight;
+            } else if (speed === 'fast') {
+              transitionDistance = 1.0 * viewportHeight;
+            } else {
+              transitionDistance = 1.5 * viewportHeight;
+            }
+
+            // Transition starts when content is fully gone
+            // That's at: sectionTop + 2*viewportHeight + contentHeight
+            const contentChildren = content.children;
+            let contentHeight = 0;
+            for (let child of contentChildren) {
+              contentHeight += child.offsetHeight;
+              const style = window.getComputedStyle(child);
+              contentHeight += parseInt(style.marginTop) + parseInt(style.marginBottom);
+            }
+            const transitionStart = sectionTop + 2 * viewportHeight + contentHeight;
+            const progressIntoTransition = scrollTop - transitionStart;
+            transitionProgress = progressIntoTransition / transitionDistance;
+            transitionProgress = Math.max(0, Math.min(1, transitionProgress));
           }
         }
-        const frameStartHeight = accumulatedHeight;
-        const frameEndHeight = frameStartHeight + frameContentHeight;
-        const transitionEndHeight = frameEndHeight + transitionDistance;
-
-        // Check where we are in this frame
-        if (virtualScroll >= frameStartHeight && virtualScroll < frameEndHeight) {
-          // We're in this frame's content
-          currentFrameIndex = index;
-
-          // Calculate content position (scroll from bottom to top)
-          const frameProgress = (virtualScroll - frameStartHeight) / frameContentHeight;
-          const contentOffset = frameProgress * (viewportHeight + contentHeight) - viewportHeight;
-          content.style.transform = `translateY(${-contentOffset}px)`;
-
-          // Fade content in/out at edges
-          if (frameProgress < 0.15) {
-            content.style.opacity = frameProgress / 0.15;
-          } else if (frameProgress > 0.85) {
-            content.style.opacity = (1 - frameProgress) / 0.15;
-          } else {
-            content.style.opacity = 1;
-          }
-        } else if (virtualScroll >= frameEndHeight && virtualScroll < transitionEndHeight && index < sections.length - 1) {
-          // We're in transition to next frame
-          currentFrameIndex = index;
-          nextFrameIndex = index + 1;
-          inTransition = true;
-          const transitionVirtualScroll = virtualScroll - frameEndHeight;
-          transitionProgress = transitionVirtualScroll / transitionDistance;
-          transitionProgress = Math.max(0, Math.min(1, transitionProgress));
-
-          // Hide current frame's content
-          content.style.opacity = 0;
-          content.style.transform = 'translateY(-100vh)';
-        } else {
-          // Content is not visible
-          content.style.opacity = 0;
-          if (virtualScroll < frameStartHeight) {
-            content.style.transform = 'translateY(100vh)';
-          } else {
-            content.style.transform = 'translateY(-100vh)';
-          }
-        }
-        accumulatedHeight = transitionEndHeight;
       });
 
-      // Apply frame visibility and transitions
+      // Default to first frame if nothing found
+      if (activeIndex === -1) {
+        activeIndex = 0;
+      }
+
+      // Apply background visibility
       backgrounds.forEach((bg, index) => {
         const transitionType = bg.getAttribute('data-transition') || 'none';
-        if (index === currentFrameIndex && !inTransition) {
-          // Active frame
+        if (index === activeIndex && transitionIndex === -1) {
+          // Active frame, no transition
           bg.style.opacity = 1;
           bg.style.transform = 'none';
           bg.style.zIndex = 10;
-        } else if (index === currentFrameIndex && inTransition) {
-          // Current frame during transition - backdrop
+        } else if (index === activeIndex && transitionIndex !== -1) {
+          // Active frame during transition - backdrop
           bg.style.opacity = 1;
           bg.style.transform = 'none';
           bg.style.zIndex = 9;
-        } else if (index === nextFrameIndex && inTransition) {
-          // Next frame transitioning in
+        } else if (index === transitionIndex) {
+          // Frame transitioning in
           bg.style.zIndex = 10;
           if (transitionType === 'fade') {
             bg.style.opacity = transitionProgress;
@@ -231,7 +157,7 @@
             bg.style.transform = 'none';
           }
         } else {
-          // Hidden frames
+          // Hidden
           bg.style.opacity = 0;
           bg.style.transform = 'none';
           bg.style.zIndex = 5;
@@ -246,28 +172,18 @@
       }
     }
     function onResize() {
-      calculateVirtualHeight();
+      setSectionHeights();
       updateOnScroll();
     }
 
     // Initialize
-    calculateVirtualHeight();
+    setSectionHeights();
 
-    // Set initial state
-    backgrounds.forEach((bg, index) => {
-      if (index === 0) {
-        bg.style.opacity = 1;
-        bg.style.zIndex = 10;
-      } else {
-        bg.style.opacity = 0;
-        bg.style.zIndex = 5;
-      }
-    });
-    contents.forEach(content => {
-      content.style.transform = 'translateY(100vh)';
-      content.style.opacity = 0;
-      content.style.transition = 'none';
-    });
+    // Set initial state - first frame visible
+    if (backgrounds.length > 0) {
+      backgrounds[0].style.opacity = 1;
+      backgrounds[0].style.zIndex = 10;
+    }
 
     // Set up listeners
     window.addEventListener('scroll', onScroll, {
@@ -281,7 +197,7 @@
     block.querySelectorAll('img').forEach(img => {
       if (!img.complete) {
         img.addEventListener('load', () => {
-          calculateVirtualHeight();
+          setSectionHeights();
           updateOnScroll();
         });
       }
