@@ -154,11 +154,11 @@
           transitionProgress = fullyEntered ? 1 : sectionProgress;
         }
 
-        // Z-index management: active frame on top
+        // Z-index management: active frame on top, but always below content (which is z-index 100)
         if (contentVisible || fullyEntered) {
-          bg.style.zIndex = 10;
+          bg.style.zIndex = 10; // Active - highest background layer
         } else if (inTransitionZone) {
-          bg.style.zIndex = 9; // Transitioning in, but below active content
+          bg.style.zIndex = 9; // Transitioning in
         } else {
           bg.style.zIndex = 5; // Not visible yet
         }
