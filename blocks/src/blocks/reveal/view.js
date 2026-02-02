@@ -1,7 +1,12 @@
 /**
  * Reveal Block Frontend JavaScript
- *
- * Handles scroll-triggered frame transitions and frame-specific content visibility.
+ * 
+ * Mimics Shorthand's reveal behavior:
+ * 1. Frame 1 background visible, content fades in
+ * 2. Content fades out as you scroll
+ * 3. Frame 2 background transitions in (wipe/fade)
+ * 4. Frame 2 content fades in
+ * 5. Repeat...
  */
 
 ( function () {
@@ -19,229 +24,215 @@
 
 		const frameCount = frames.length;
 		let ticking = false;
-		let currentActiveIndex = 0;
 
-		// Build frame weights based on transition speed
-		// slow = 1.5x scroll distance, normal = 1x, fast = 0.5x
-		const speedMultipliers = { slow: 1.5, normal: 1, fast: 0.5 };
-		const frameWeights = [];
-		let totalWeight = 0;
-
+		// Parse transition data from frames
+		// Each frame (except first) has a transition type and speed
+		const transitions = [];
 		frames.forEach( ( frame, index ) => {
-			if ( index === 0 ) {
-				// First frame has no incoming transition
-				frameWeights.push( 0 );
-			} else {
-				const speed = frame.dataset.transitionSpeed || 'normal';
-				const weight = speedMultipliers[ speed ] || 1;
-				frameWeights.push( weight );
-				totalWeight += weight;
-			}
+			transitions.push( {
+				type: frame.dataset.transitionType || 'fade',
+				speed: frame.dataset.transitionSpeed || 'normal'
+			} );
 		} );
 
-		// Calculate cumulative positions (0 to 1) for each frame transition
-		const framePositions = [ 0 ]; // First frame starts at 0
-		let cumulative = 0;
-		for ( let i = 1; i < frameCount; i++ ) {
-			cumulative += frameWeights[ i ] / totalWeight;
-			framePositions.push( cumulative );
-		}
+		// Speed affects what portion of scroll the transition takes
+		// Shorthand uses ~0.35 (35%) for transitions
+		const speedMultipliers = { slow: 0.4, normal: 0.25, fast: 0.15 };
 
 		/**
-		 * Get transition styles for the incoming frame.
-		 * 
-		 * For wipe transitions, we use clip-path: inset() to reveal the image.
-		 * The image stays stationary; only the clipping boundary moves.
-		 * 
-		 * clip-path: inset(top right bottom left)
-		 * - 'up' wipe: reveals from bottom to top, so we clip from top
-		 * - 'down' wipe: reveals from top to bottom, so we clip from bottom
-		 * - 'left' wipe: reveals from right to left, so we clip from left
-		 * - 'right' wipe: reveals from left to right, so we clip from right
+		 * Get clip-path style for wipe transitions
 		 */
 		function getTransitionStyles( type, progress ) {
 			if ( prefersReducedMotion ) {
 				type = 'fade';
 			}
 
-			// Default: fully visible, no clipping
-			let styles = {
-				opacity: '1',
-				clipPath: 'inset(0 0 0 0)'
-			};
-
-			// Calculate the remaining amount to clip (inverse of progress)
 			const clipAmount = ( ( 1 - progress ) * 100 ).toFixed( 2 );
 
 			switch ( type ) {
 				case 'fade':
-					styles.opacity = progress.toFixed( 3 );
-					styles.clipPath = 'none';
-					break;
+					return { opacity: progress, clipPath: 'none' };
 				case 'up':
-					// Wipe upward: reveal from bottom, clip from top
-					styles.clipPath = `inset(${ clipAmount }% 0 0 0)`;
-					break;
+					return { opacity: 1, clipPath: `inset(${ clipAmount }% 0 0 0)` };
 				case 'down':
-					// Wipe downward: reveal from top, clip from bottom
-					styles.clipPath = `inset(0 0 ${ clipAmount }% 0)`;
-					break;
+					return { opacity: 1, clipPath: `inset(0 0 ${ clipAmount }% 0)` };
 				case 'left':
-					// Wipe leftward: reveal from right, clip from left
-					styles.clipPath = `inset(0 0 0 ${ clipAmount }%)`;
-					break;
+					return { opacity: 1, clipPath: `inset(0 0 0 ${ clipAmount }%)` };
 				case 'right':
-					// Wipe rightward: reveal from left, clip from right
-					styles.clipPath = `inset(0 ${ clipAmount }% 0 0)`;
-					break;
+					return { opacity: 1, clipPath: `inset(0 ${ clipAmount }% 0 0)` };
 				default:
-					// 'none' or unknown: hard cut at 50%
-					styles.opacity = progress >= 0.5 ? '1' : '0';
-					styles.clipPath = 'none';
-					break;
+					return { opacity: progress >= 0.5 ? 1 : 0, clipPath: 'none' };
 			}
-
-			return styles;
 		}
 
 		/**
-		 * Update frame content visibility with smooth transitions
+		 * Main scroll handler
 		 */
-		function updateFrameContentVisibility( targetIndex ) {
-			if ( targetIndex === currentActiveIndex ) {
-				return; // No change needed
-			}
-
-			frameContents.forEach( ( content ) => {
-				const contentIndex = parseInt( content.dataset.frameIndex, 10 );
-				
-				if ( contentIndex === targetIndex ) {
-					// Show this content
-					content.style.opacity = '1';
-					content.style.pointerEvents = 'auto';
-					content.setAttribute( 'aria-hidden', 'false' );
-				} else {
-					// Hide this content
-					content.style.opacity = '0';
-					content.style.pointerEvents = 'none';
-					content.setAttribute( 'aria-hidden', 'true' );
-				}
-			} );
-
-			currentActiveIndex = targetIndex;
-		}
-
-		function updateActiveFrame() {
+		function updateOnScroll() {
 			const blockRect = block.getBoundingClientRect();
 			const viewportHeight = window.innerHeight;
-			const blockTop = blockRect.top;
 			const blockHeight = block.offsetHeight;
 
-			// Calculate scroll progress through entire block (0 to 1)
+			// Calculate scroll progress through the block (0 to 1)
 			const scrollableDistance = blockHeight - viewportHeight;
-			const scrolledDistance = Math.max( 0, -blockTop );
+			const scrolledDistance = Math.max( 0, -blockRect.top );
+			const scrollProgress = scrollableDistance > 0 
+				? Math.min( 1, scrolledDistance / scrollableDistance ) 
+				: 0;
 
-			let scrollProgress = 0;
-			if ( scrollableDistance > 0 ) {
-				scrollProgress = Math.min( 1, scrolledDistance / scrollableDistance );
-			}
-
-			// Each frame gets an equal segment of scroll
-			// Within each segment: 80% content hold, 20% transition to next
-			const CONTENT_PHASE = 0.8;
-			const TRANSITION_PHASE = 0.2;
-
+			// Divide scroll into segments for each frame
+			// Each segment: [content fade in] [content visible] [content fade out] [bg transition]
 			const segmentSize = 1 / frameCount;
-			
-			// Find which frame segment we're in
-			const rawIndex = scrollProgress / segmentSize;
-			const currentIndex = Math.min( frameCount - 1, Math.floor( rawIndex ) );
-			const progressInSegment = rawIndex - currentIndex; // 0 to 1 within this segment
 
-			let localProgress = 0; // Transition progress (0 = not started, 1 = complete)
-			let isInTransition = false;
-
-			if ( progressInSegment > CONTENT_PHASE && currentIndex < frameCount - 1 ) {
-				// We're in the transition phase of this segment
-				isInTransition = true;
-				// Map the transition portion (0.8-1.0) to (0-1)
-				localProgress = ( progressInSegment - CONTENT_PHASE ) / TRANSITION_PHASE;
-			}
-
-			const nextIndex = Math.min( frameCount - 1, currentIndex + 1 );
-
-			// Update background frames
+			// For each frame, calculate its state
 			frames.forEach( ( frame, index ) => {
+				const segmentStart = index * segmentSize;
+				const segmentEnd = ( index + 1 ) * segmentSize;
+				const transitionSize = speedMultipliers[ transitions[ index ].speed ] || 0.25;
+				
+				// Within this frame's segment:
+				// - First 15%: content fades in
+				// - Middle: content fully visible
+				// - Last transitionSize%: content fades out + next bg transitions in
+				const contentFadeInEnd = segmentStart + ( segmentSize * 0.15 );
+				const contentFadeOutStart = segmentEnd - ( segmentSize * transitionSize );
+				const bgTransitionStart = contentFadeOutStart;
+
 				frame.style.transitionDuration = '0ms';
 
-				if ( index === currentIndex ) {
-					// Current base frame - fully visible
-					frame.classList.add( 'is-active' );
-					frame.style.opacity = '1';
-					frame.style.clipPath = 'none';
-					frame.style.zIndex = '1';
-				} else if ( index === nextIndex && isInTransition && localProgress > 0 ) {
-					// Next frame - transitioning in
-					const type = frame.dataset.transitionType || 'fade';
-					const styles = getTransitionStyles( type, localProgress );
-					
-					frame.classList.add( 'is-active' );
-					frame.style.opacity = styles.opacity;
-					frame.style.clipPath = styles.clipPath;
-					frame.style.zIndex = '2';
-				} else {
-					// Inactive frames
-					frame.classList.remove( 'is-active' );
+				// Determine background visibility
+				if ( scrollProgress < segmentStart ) {
+					// Before this frame's segment - hidden
 					frame.style.opacity = '0';
 					frame.style.clipPath = 'inset(0 0 0 0)';
 					frame.style.zIndex = '0';
+					frame.style.display = 'none';
+				} else if ( scrollProgress >= segmentStart && scrollProgress < bgTransitionStart ) {
+					// In this frame's content phase - fully visible
+					frame.style.opacity = '1';
+					frame.style.clipPath = 'none';
+					frame.style.zIndex = '1';
+					frame.style.display = 'block';
+					frame.classList.add( 'is-active' );
+				} else if ( scrollProgress >= bgTransitionStart && scrollProgress < segmentEnd && index < frameCount - 1 ) {
+					// Transitioning out (next frame transitioning in)
+					// This frame stays visible as base
+					frame.style.opacity = '1';
+					frame.style.clipPath = 'none';
+					frame.style.zIndex = '1';
+					frame.style.display = 'block';
+					frame.classList.add( 'is-active' );
+				} else if ( scrollProgress >= segmentEnd ) {
+					// After this frame's segment
+					if ( index === frameCount - 1 ) {
+						// Last frame stays visible
+						frame.style.opacity = '1';
+						frame.style.clipPath = 'none';
+						frame.style.zIndex = '1';
+						frame.style.display = 'block';
+						frame.classList.add( 'is-active' );
+					} else {
+						// Previous frames get hidden
+						frame.style.opacity = '0';
+						frame.style.display = 'none';
+						frame.style.zIndex = '0';
+						frame.classList.remove( 'is-active' );
+					}
+				}
+
+				// Handle incoming transition for frames after first
+				if ( index > 0 ) {
+					const prevSegmentEnd = index * segmentSize;
+					const prevTransitionSize = speedMultipliers[ transitions[ index ].speed ] || 0.25;
+					const prevBgTransitionStart = prevSegmentEnd - ( segmentSize * prevTransitionSize );
+
+					if ( scrollProgress >= prevBgTransitionStart && scrollProgress < prevSegmentEnd ) {
+						// This frame is transitioning in
+						const transitionProgress = ( scrollProgress - prevBgTransitionStart ) / ( prevSegmentEnd - prevBgTransitionStart );
+						const styles = getTransitionStyles( transitions[ index ].type, transitionProgress );
+						
+						frame.style.opacity = styles.opacity;
+						frame.style.clipPath = styles.clipPath;
+						frame.style.zIndex = '2';
+						frame.style.display = 'block';
+						frame.classList.add( 'is-active' );
+					}
 				}
 			} );
 
-			// Content: show current frame's content during content phase,
-			// switch to next frame's content when transition is > 50% complete
-			const targetContentIndex = ( isInTransition && localProgress > 0.5 ) ? nextIndex : currentIndex;
-			updateFrameContentVisibility( targetContentIndex );
+			// Handle content opacity
+			frameContents.forEach( ( content, index ) => {
+				const segmentStart = index * segmentSize;
+				const segmentEnd = ( index + 1 ) * segmentSize;
+				const transitionSize = speedMultipliers[ transitions[ index ]?.speed ] || 0.25;
+				
+				const contentFadeInStart = segmentStart;
+				const contentFadeInEnd = segmentStart + ( segmentSize * 0.15 );
+				const contentFadeOutStart = segmentEnd - ( segmentSize * transitionSize );
+				const contentFadeOutEnd = segmentEnd;
+
+				let opacity = 0;
+
+				if ( scrollProgress < contentFadeInStart ) {
+					opacity = 0;
+				} else if ( scrollProgress >= contentFadeInStart && scrollProgress < contentFadeInEnd ) {
+					// Fading in
+					opacity = ( scrollProgress - contentFadeInStart ) / ( contentFadeInEnd - contentFadeInStart );
+				} else if ( scrollProgress >= contentFadeInEnd && scrollProgress < contentFadeOutStart ) {
+					// Fully visible
+					opacity = 1;
+				} else if ( scrollProgress >= contentFadeOutStart && scrollProgress < contentFadeOutEnd ) {
+					// Fading out
+					opacity = 1 - ( ( scrollProgress - contentFadeOutStart ) / ( contentFadeOutEnd - contentFadeOutStart ) );
+				} else {
+					opacity = 0;
+				}
+
+				// Last frame content stays visible at end
+				if ( index === frameCount - 1 && scrollProgress >= contentFadeInEnd ) {
+					opacity = 1;
+				}
+
+				content.style.opacity = opacity;
+				content.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+			} );
 
 			ticking = false;
 		}
 
 		function onScroll() {
 			if ( ! ticking ) {
-				window.requestAnimationFrame( updateActiveFrame );
+				window.requestAnimationFrame( updateOnScroll );
 				ticking = true;
 			}
 		}
 
-		// Initialize frame content visibility
-		frameContents.forEach( ( content, index ) => {
-			content.style.transition = 'opacity 0.3s ease';
-			if ( index === 0 ) {
-				content.style.opacity = '1';
-				content.style.pointerEvents = 'auto';
-				content.setAttribute( 'aria-hidden', 'false' );
-			} else {
-				content.style.opacity = '0';
-				content.style.pointerEvents = 'none';
-				content.setAttribute( 'aria-hidden', 'true' );
-			}
+		// Initialize
+		frameContents.forEach( ( content ) => {
+			content.style.transition = 'none';
+			content.style.opacity = '0';
 		} );
 
-		window.addEventListener( 'scroll', onScroll, { passive: true } );
-		window.addEventListener( 'resize', updateActiveFrame );
+		// First frame starts visible
+		if ( frames[ 0 ] ) {
+			frames[ 0 ].style.opacity = '1';
+			frames[ 0 ].style.clipPath = 'none';
+			frames[ 0 ].style.display = 'block';
+			frames[ 0 ].classList.add( 'is-active' );
+		}
 
-		// Run immediately to set initial state
-		updateActiveFrame();
+		window.addEventListener( 'scroll', onScroll, { passive: true } );
+		window.addEventListener( 'resize', updateOnScroll );
+		updateOnScroll();
 
 		block._revealCleanup = function () {
 			window.removeEventListener( 'scroll', onScroll );
-			window.removeEventListener( 'resize', updateActiveFrame );
+			window.removeEventListener( 'resize', updateOnScroll );
 		};
 	}
 
 	function initAllBlocks() {
-		const blocks = document.querySelectorAll( '.caes-reveal' );
-		blocks.forEach( initRevealBlock );
+		document.querySelectorAll( '.caes-reveal' ).forEach( initRevealBlock );
 	}
 
 	if ( document.readyState === 'loading' ) {
