@@ -109,55 +109,83 @@
     function updateOnScroll() {
       const viewportHeight = window.innerHeight;
 
-      // Loop through every section
+      // Loop through every section to determine visibility and transitions
       sections.forEach((section, index) => {
         const bg = section.querySelector('.reveal-frame-background');
+        const content = section.querySelector('.reveal-frame-content');
         const transitionType = bg.getAttribute('data-transition') || 'none';
+        const rect = section.getBoundingClientRect();
 
-        // 1. First frame always visible, no transition needed
+        // Determine if content is visible (using your existing logic)
+        const contentOpacity = getContentOpacity(content);
+        const contentVisible = contentOpacity > 0;
+
+        // Calculate section progress: where section top is relative to viewport
+        // progress = 0 when section.top = viewportHeight (just entering)
+        // progress = 1 when section.top = 0 (fully entered)
+        let sectionProgress = (viewportHeight - rect.top) / viewportHeight;
+        sectionProgress = Math.max(0, Math.min(1, sectionProgress));
+
+        // First frame: always visible, highest z-index initially
         if (index === 0) {
           bg.style.opacity = 1;
           bg.style.transform = 'none';
+          // Z-index decreases as we scroll past it
+          bg.style.zIndex = contentVisible ? 10 : 5;
           return;
         }
 
-        // 2. Calculate Progress
-        // When rect.top is at viewportHeight, the section is just entering (0%)
-        // When rect.top is at 0, the section is fully covering the previous one (100%)
-        const rect = section.getBoundingClientRect();
+        // For subsequent frames:
+        // - Keep them hidden until their content has scrolled away (transition zone)
+        // - Then transition them in
+        // - Keep them visible until next frame takes over
 
-        // Calculate raw progress (0 to 1)
-        let progress = (viewportHeight - rect.top) / viewportHeight;
-        progress = Math.max(0, Math.min(1, progress));
+        // Determine if we're in the "transition zone" (between content sections)
+        // This is when current content is gone but section is still entering
+        const inTransitionZone = !contentVisible && sectionProgress < 1;
+        const fullyEntered = sectionProgress >= 1;
 
-        // 3. Apply Transitions based on the dropdown choice
+        // Calculate transition progress within the transition zone
+        // Start transitioning once content is fully scrolled away
+        let transitionProgress = 0;
+        if (inTransitionZone || fullyEntered) {
+          // Transition happens in the gap after content scrolls away
+          // Map sectionProgress to transitionProgress
+          transitionProgress = fullyEntered ? 1 : sectionProgress;
+        }
+
+        // Z-index management: active frame on top
+        if (contentVisible || fullyEntered) {
+          bg.style.zIndex = 10;
+        } else if (inTransitionZone) {
+          bg.style.zIndex = 9; // Transitioning in, but below active content
+        } else {
+          bg.style.zIndex = 5; // Not visible yet
+        }
+
+        // Apply transitions
         if (transitionType === 'fade') {
-          // Logic: Frame stays fixed, but opacity goes 0 -> 1
-          bg.style.opacity = progress;
-          bg.style.transform = 'none'; // No movement, just fade
+          bg.style.opacity = transitionProgress;
+          bg.style.transform = 'none';
         } else if (transitionType === 'left') {
-          // Logic: Slide in from the Right (100% -> 0%)
-          const x = (1 - progress) * 100;
+          const x = (1 - transitionProgress) * 100;
           bg.style.transform = `translate3d(${x}%, 0, 0)`;
-          bg.style.opacity = 1;
+          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
         } else if (transitionType === 'right') {
-          // Logic: Slide in from the Left (-100% -> 0%)
-          const x = -(1 - progress) * 100;
+          const x = -(1 - transitionProgress) * 100;
           bg.style.transform = `translate3d(${x}%, 0, 0)`;
-          bg.style.opacity = 1;
+          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
         } else if (transitionType === 'up') {
-          // Logic: Standard scroll (sticky default), but we can accelerate it
-          // effectively standard behavior, ensure opacity is 1
-          bg.style.opacity = 1;
+          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
           bg.style.transform = 'none';
         } else {
-          // Default 'none' behavior
-          bg.style.opacity = 1;
+          // 'none' - just appear
+          bg.style.opacity = transitionProgress > 0 ? 1 : 0;
           bg.style.transform = 'none';
         }
       });
 
-      // 4. Handle Content Opacity (Your existing text fade logic)
+      // Handle Content Opacity
       contents.forEach(content => {
         const opacity = getContentOpacity(content);
         content.style.opacity = Math.max(0, Math.min(1, opacity));

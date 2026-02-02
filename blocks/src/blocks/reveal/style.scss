@@ -25,9 +25,9 @@
     height: 100vh;
     width: 100%;
     overflow: hidden;
-    z-index: 0;
+    // z-index will be managed dynamically by JavaScript
     
-    /* NEW: Hardware acceleration for smoother animations */
+    /* Hardware acceleration for smoother animations */
     will-change: transform, opacity;
     
     /* Ensure default state is full opacity unless JS changes it */
