@@ -8,6 +8,9 @@
 
 .caes-reveal {
 	position: relative;
+	// Remove any default margins/padding that could offset sticky positioning
+	margin: 0;
+	padding: 0;
 }
 
 // Each frame section
@@ -16,6 +19,12 @@
 	// Height will be set by JS based on content height
 	// Fallback min-height if JS doesn't run
 	min-height: 100vh;
+	
+	// First section should have no offset
+	&[data-frame-index="0"] {
+		margin: 0;
+		padding: 0;
+	}
 }
 
 // The background wrapper
@@ -36,6 +45,9 @@
 .reveal-frame-section[data-frame-index="0"] .reveal-frame-background {
     position: sticky !important;
     opacity: 1 !important;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 10;
 }
 
