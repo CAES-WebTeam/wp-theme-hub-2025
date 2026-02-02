@@ -34,8 +34,9 @@
 
 // First frame is sticky - scrolls naturally then sticks
 .reveal-frame-section:first-child .reveal-frame-background {
-    position: sticky;
-    opacity: 1;
+    position: sticky !important;
+    opacity: 1 !important;
+    z-index: 10;
 }
 
 // All other frames are fixed - always at viewport top
