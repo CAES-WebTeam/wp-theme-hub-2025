@@ -50,15 +50,9 @@
         // - 100vh for the content to scroll completely through the viewport
         // But we subtract 100vh because content has margin-top: -100vh
 
-        const isLastSection = index === sections.length - 1;
-        let sectionHeight;
-        if (isLastSection) {
-          // Last section: just needs enough for content to scroll away naturally
-          sectionHeight = viewportHeight + contentHeight;
-        } else {
-          // Other sections: need full scroll-through distance
-          sectionHeight = viewportHeight + contentHeight + viewportHeight;
-        }
+        // Uniform height calculation for ALL sections (including the last one)
+        // This ensures the background stays sticky while content scrolls through
+        const sectionHeight = viewportHeight + contentHeight + viewportHeight;
         section.style.height = sectionHeight + 'px';
       });
     }
