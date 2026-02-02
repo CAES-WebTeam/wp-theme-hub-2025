@@ -5,8 +5,7 @@
 /**
  * Reveal Block Frontend JavaScript
  *
- * Simple approach: content scrolls naturally, JS only handles
- * background frame transitions based on which content is in view.
+ * Handles scroll-triggered frame transitions and frame-specific content visibility.
  */
 
 (function () {
@@ -19,166 +18,222 @@
     if (frames.length === 0) {
       return;
     }
-    let currentFrameIndex = 0;
+    const frameCount = frames.length;
+    let ticking = false;
+    let currentActiveIndex = 0;
 
-    /**
-     * Apply transition styles to incoming frame.
-     */
-    function applyTransition(frame, type, progress) {
-      if (prefersReducedMotion) {
-        type = 'fade';
+    // Build frame weights based on transition speed
+    // slow = 1.5x scroll distance, normal = 1x, fast = 0.5x
+    const speedMultipliers = {
+      slow: 1.5,
+      normal: 1,
+      fast: 0.5
+    };
+    const frameWeights = [];
+    let totalWeight = 0;
+    frames.forEach((frame, index) => {
+      if (index === 0) {
+        // First frame has no incoming transition
+        frameWeights.push(0);
+      } else {
+        const speed = frame.dataset.transitionSpeed || 'normal';
+        const weight = speedMultipliers[speed] || 1;
+        frameWeights.push(weight);
+        totalWeight += weight;
       }
-      const clipAmount = ((1 - progress) * 100).toFixed(2);
-      switch (type) {
-        case 'fade':
-          frame.style.opacity = progress.toFixed(3);
-          frame.style.clipPath = 'none';
-          break;
-        case 'up':
-          frame.style.opacity = '1';
-          frame.style.clipPath = `inset(${clipAmount}% 0 0 0)`;
-          break;
-        case 'down':
-          frame.style.opacity = '1';
-          frame.style.clipPath = `inset(0 0 ${clipAmount}% 0)`;
-          break;
-        case 'left':
-          frame.style.opacity = '1';
-          frame.style.clipPath = `inset(0 0 0 ${clipAmount}%)`;
-          break;
-        case 'right':
-          frame.style.opacity = '1';
-          frame.style.clipPath = `inset(0 ${clipAmount}% 0 0)`;
-          break;
-        default:
-          frame.style.opacity = progress >= 0.5 ? '1' : '0';
-          frame.style.clipPath = 'none';
-          break;
-      }
+    });
+
+    // Calculate cumulative positions (0 to 1) for each frame transition
+    const framePositions = [0]; // First frame starts at 0
+    let cumulative = 0;
+    for (let i = 1; i < frameCount; i++) {
+      cumulative += frameWeights[i] / totalWeight;
+      framePositions.push(cumulative);
     }
 
     /**
-     * Update which background frame is visible based on content position.
+     * Get transition styles for the incoming frame.
+     * 
+     * For wipe transitions, we use clip-path: inset() to reveal the image.
+     * The image stays stationary; only the clipping boundary moves.
+     * 
+     * clip-path: inset(top right bottom left)
+     * - 'up' wipe: reveals from bottom to top, so we clip from top
+     * - 'down' wipe: reveals from top to bottom, so we clip from bottom
+     * - 'left' wipe: reveals from right to left, so we clip from left
+     * - 'right' wipe: reveals from left to right, so we clip from right
      */
-    function updateFrames() {
-      const viewportHeight = window.innerHeight;
-      const viewportCenter = viewportHeight / 2;
+    function getTransitionStyles(type, progress) {
+      if (prefersReducedMotion) {
+        type = 'fade';
+      }
 
-      // Find which content block is most in view (closest to viewport center)
-      let activeIndex = 0;
-      let closestDistance = Infinity;
-      frameContents.forEach((content, index) => {
-        const rect = content.getBoundingClientRect();
-        const contentCenter = rect.top + rect.height / 2;
-        const distance = Math.abs(contentCenter - viewportCenter);
+      // Default: fully visible, no clipping
+      let styles = {
+        opacity: '1',
+        clipPath: 'inset(0 0 0 0)'
+      };
 
-        // Only consider if content is at least partially visible
-        if (rect.bottom > 0 && rect.top < viewportHeight) {
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            activeIndex = index;
-          }
+      // Calculate the remaining amount to clip (inverse of progress)
+      const clipAmount = ((1 - progress) * 100).toFixed(2);
+      switch (type) {
+        case 'fade':
+          styles.opacity = progress.toFixed(3);
+          styles.clipPath = 'none';
+          break;
+        case 'up':
+          // Wipe upward: reveal from bottom, clip from top
+          styles.clipPath = `inset(${clipAmount}% 0 0 0)`;
+          break;
+        case 'down':
+          // Wipe downward: reveal from top, clip from bottom
+          styles.clipPath = `inset(0 0 ${clipAmount}% 0)`;
+          break;
+        case 'left':
+          // Wipe leftward: reveal from right, clip from left
+          styles.clipPath = `inset(0 0 0 ${clipAmount}%)`;
+          break;
+        case 'right':
+          // Wipe rightward: reveal from left, clip from right
+          styles.clipPath = `inset(0 ${clipAmount}% 0 0)`;
+          break;
+        default:
+          // 'none' or unknown: hard cut at 50%
+          styles.opacity = progress >= 0.5 ? '1' : '0';
+          styles.clipPath = 'none';
+          break;
+      }
+      return styles;
+    }
+
+    /**
+     * Update frame content visibility with smooth transitions
+     */
+    function updateFrameContentVisibility(targetIndex) {
+      if (targetIndex === currentActiveIndex) {
+        return; // No change needed
+      }
+      frameContents.forEach(content => {
+        const contentIndex = parseInt(content.dataset.frameIndex, 10);
+        if (contentIndex === targetIndex) {
+          // Show this content
+          content.style.opacity = '1';
+          content.style.pointerEvents = 'auto';
+          content.setAttribute('aria-hidden', 'false');
+        } else {
+          // Hide this content
+          content.style.opacity = '0';
+          content.style.pointerEvents = 'none';
+          content.setAttribute('aria-hidden', 'true');
         }
       });
+      currentActiveIndex = targetIndex;
+    }
+    function updateActiveFrame() {
+      const blockRect = block.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const blockTop = blockRect.top;
+      const blockHeight = block.offsetHeight;
 
-      // Also check: if we're past all content, stay on last frame
-      const lastContent = frameContents[frameContents.length - 1];
-      if (lastContent) {
-        const lastRect = lastContent.getBoundingClientRect();
-        if (lastRect.bottom < viewportCenter) {
-          activeIndex = frameContents.length - 1;
-        }
+      // Calculate scroll progress
+      const scrollableDistance = blockHeight - viewportHeight;
+      const scrolledDistance = Math.max(0, -blockTop);
+      let scrollProgress = 0;
+
+      // Avoid division by zero if block fits perfectly in viewport
+      if (scrollableDistance > 0) {
+        scrollProgress = Math.min(1, scrolledDistance / scrollableDistance);
       }
 
-      // Check if first content hasn't entered yet
-      const firstContent = frameContents[0];
-      if (firstContent) {
-        const firstRect = firstContent.getBoundingClientRect();
-        if (firstRect.top > viewportCenter) {
-          activeIndex = 0;
-        }
-      }
-
-      // Calculate transition progress between frames
-      let transitionProgress = 1;
-      let transitioningToIndex = activeIndex;
-      if (activeIndex < frameContents.length - 1) {
-        const currentContent = frameContents[activeIndex];
-        const nextContent = frameContents[activeIndex + 1];
-        if (currentContent && nextContent) {
-          const currentRect = currentContent.getBoundingClientRect();
-          const nextRect = nextContent.getBoundingClientRect();
-
-          // Transition starts when current content center passes viewport center
-          // and ends when next content center reaches viewport center
-          const currentCenter = currentRect.top + currentRect.height / 2;
-          const nextCenter = nextRect.top + nextRect.height / 2;
-          if (currentCenter < viewportCenter && nextCenter > viewportCenter) {
-            // We're in a transition zone
-            const transitionZone = nextCenter - currentCenter;
-            const progressInZone = viewportCenter - currentCenter;
-            transitionProgress = Math.max(0, Math.min(1, progressInZone / transitionZone));
-            transitioningToIndex = activeIndex + 1;
+      // Find which transition we're in based on weighted positions
+      let currentIndex = 0;
+      let localProgress = 0;
+      for (let i = 1; i < frameCount; i++) {
+        if (scrollProgress >= framePositions[i]) {
+          currentIndex = i;
+        } else {
+          // We're in the transition from (i-1) to i
+          currentIndex = i - 1;
+          const transitionStart = framePositions[i - 1] || 0;
+          const transitionEnd = framePositions[i];
+          const transitionLength = transitionEnd - transitionStart;
+          if (transitionLength > 0) {
+            localProgress = (scrollProgress - transitionStart) / transitionLength;
           }
+          break;
         }
       }
 
-      // Update frame visibility
+      // If we've scrolled past all transitions, we're on the last frame
+      if (scrollProgress >= 1) {
+        currentIndex = frameCount - 1;
+        localProgress = 0;
+      }
+      const nextIndex = Math.min(frameCount - 1, currentIndex + 1);
+
+      // Update background frames
       frames.forEach((frame, index) => {
-        // Disable CSS transitions for manual scrubbing
+        // Kill CSS transitions to allow manual scrubbing
         frame.style.transitionDuration = '0ms';
-        if (index < activeIndex) {
-          // Past frames: hidden
-          frame.classList.remove('is-active');
-          frame.style.opacity = '0';
-          frame.style.clipPath = 'inset(0 0 0 0)';
-          frame.style.zIndex = '0';
-        } else if (index === activeIndex) {
-          // Current frame: fully visible
+        if (index === currentIndex) {
+          // Current base frame - fully visible, no clipping
           frame.classList.add('is-active');
           frame.style.opacity = '1';
           frame.style.clipPath = 'none';
           frame.style.zIndex = '1';
-        } else if (index === transitioningToIndex && transitionProgress > 0 && transitionProgress < 1) {
-          // Next frame: transitioning in
+        } else if (index === nextIndex && nextIndex !== currentIndex && localProgress > 0) {
+          // Incoming frame - apply wipe/fade transition
           const type = frame.dataset.transitionType || 'fade';
+          const styles = getTransitionStyles(type, localProgress);
           frame.classList.add('is-active');
+          frame.style.opacity = styles.opacity;
+          frame.style.clipPath = styles.clipPath;
           frame.style.zIndex = '2';
-          applyTransition(frame, type, transitionProgress);
         } else {
-          // Future frames: hidden
+          // Inactive frames - fully clipped/hidden
           frame.classList.remove('is-active');
           frame.style.opacity = '0';
-          frame.style.clipPath = 'inset(0 0 100% 0)';
+          frame.style.clipPath = 'inset(0 0 0 0)';
           frame.style.zIndex = '0';
         }
       });
-      currentFrameIndex = activeIndex;
-    }
 
-    // Throttle scroll updates
-    let ticking = false;
+      // Determine which content should be visible based on transition progress
+      // Show content for the frame we're currently on or transitioning to
+      const targetContentIndex = localProgress > 0.5 ? nextIndex : currentIndex;
+      updateFrameContentVisibility(targetContentIndex);
+      ticking = false;
+    }
     function onScroll() {
       if (!ticking) {
-        window.requestAnimationFrame(() => {
-          updateFrames();
-          ticking = false;
-        });
+        window.requestAnimationFrame(updateActiveFrame);
         ticking = true;
       }
     }
+
+    // Initialize frame content visibility
+    frameContents.forEach((content, index) => {
+      content.style.transition = 'opacity 0.3s ease';
+      if (index === 0) {
+        content.style.opacity = '1';
+        content.style.pointerEvents = 'auto';
+        content.setAttribute('aria-hidden', 'false');
+      } else {
+        content.style.opacity = '0';
+        content.style.pointerEvents = 'none';
+        content.setAttribute('aria-hidden', 'true');
+      }
+    });
     window.addEventListener('scroll', onScroll, {
       passive: true
     });
-    window.addEventListener('resize', updateFrames);
+    window.addEventListener('resize', updateActiveFrame);
 
-    // Initial update
-    updateFrames();
-
-    // Cleanup function
+    // Run immediately to set initial state
+    updateActiveFrame();
     block._revealCleanup = function () {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', updateFrames);
+      window.removeEventListener('resize', updateActiveFrame);
     };
   }
   function initAllBlocks() {
