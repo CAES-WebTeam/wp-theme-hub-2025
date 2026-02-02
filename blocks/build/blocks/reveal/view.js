@@ -5,11 +5,7 @@
 /**
  * Reveal Block Frontend JavaScript
  *
- * Each frame has two scroll phases:
- * 1. HOLD - Background stays while content is visible (content scrolls naturally)
- * 2. TRANSITION - Background transitions to next frame
- *
- * The transition only happens AFTER the content has scrolled off.
+ * Handles scroll-triggered frame transitions and frame-specific content visibility.
  */
 
 (function () {
@@ -26,24 +22,59 @@
     let ticking = false;
     let currentActiveIndex = 0;
 
-    // Speed multipliers affect transition duration
+    // Build frame weights based on transition speed
+    // slow = 1.5x scroll distance, normal = 1x, fast = 0.5x
     const speedMultipliers = {
       slow: 1.5,
       normal: 1,
       fast: 0.5
     };
+    const frameWeights = [];
+    let totalWeight = 0;
+    frames.forEach((frame, index) => {
+      if (index === 0) {
+        // First frame has no incoming transition
+        frameWeights.push(0);
+      } else {
+        const speed = frame.dataset.transitionSpeed || 'normal';
+        const weight = speedMultipliers[speed] || 1;
+        frameWeights.push(weight);
+        totalWeight += weight;
+      }
+    });
+
+    // Calculate cumulative positions (0 to 1) for each frame transition
+    const framePositions = [0]; // First frame starts at 0
+    let cumulative = 0;
+    for (let i = 1; i < frameCount; i++) {
+      cumulative += frameWeights[i] / totalWeight;
+      framePositions.push(cumulative);
+    }
 
     /**
      * Get transition styles for the incoming frame.
+     * 
+     * For wipe transitions, we use clip-path: inset() to reveal the image.
+     * The image stays stationary; only the clipping boundary moves.
+     * 
+     * clip-path: inset(top right bottom left)
+     * - 'up' wipe: reveals from bottom to top, so we clip from top
+     * - 'down' wipe: reveals from top to bottom, so we clip from bottom
+     * - 'left' wipe: reveals from right to left, so we clip from left
+     * - 'right' wipe: reveals from left to right, so we clip from right
      */
     function getTransitionStyles(type, progress) {
       if (prefersReducedMotion) {
         type = 'fade';
       }
+
+      // Default: fully visible, no clipping
       let styles = {
         opacity: '1',
         clipPath: 'inset(0 0 0 0)'
       };
+
+      // Calculate the remaining amount to clip (inverse of progress)
       const clipAmount = ((1 - progress) * 100).toFixed(2);
       switch (type) {
         case 'fade':
@@ -51,18 +82,23 @@
           styles.clipPath = 'none';
           break;
         case 'up':
+          // Wipe upward: reveal from bottom, clip from top
           styles.clipPath = `inset(${clipAmount}% 0 0 0)`;
           break;
         case 'down':
+          // Wipe downward: reveal from top, clip from bottom
           styles.clipPath = `inset(0 0 ${clipAmount}% 0)`;
           break;
         case 'left':
+          // Wipe leftward: reveal from right, clip from left
           styles.clipPath = `inset(0 0 0 ${clipAmount}%)`;
           break;
         case 'right':
+          // Wipe rightward: reveal from left, clip from right
           styles.clipPath = `inset(0 ${clipAmount}% 0 0)`;
           break;
         default:
+          // 'none' or unknown: hard cut at 50%
           styles.opacity = progress >= 0.5 ? '1' : '0';
           styles.clipPath = 'none';
           break;
@@ -71,19 +107,21 @@
     }
 
     /**
-     * Update frame content visibility
+     * Update frame content visibility with smooth transitions
      */
     function updateFrameContentVisibility(targetIndex) {
       if (targetIndex === currentActiveIndex) {
-        return;
+        return; // No change needed
       }
       frameContents.forEach(content => {
         const contentIndex = parseInt(content.dataset.frameIndex, 10);
         if (contentIndex === targetIndex) {
+          // Show this content
           content.style.opacity = '1';
           content.style.pointerEvents = 'auto';
           content.setAttribute('aria-hidden', 'false');
         } else {
+          // Hide this content
           content.style.opacity = '0';
           content.style.pointerEvents = 'none';
           content.setAttribute('aria-hidden', 'true');
@@ -91,113 +129,54 @@
       });
       currentActiveIndex = targetIndex;
     }
-
-    /**
-     * Main update function - determines active frame and transition progress
-     * 
-     * Sequence for each frame:
-     * 1. Previous content scrolls off top
-     * 2. Background transitions to new frame (in the gap)
-     * 3. New content scrolls in from bottom
-     * 4. Repeat
-     */
     function updateActiveFrame() {
+      const blockRect = block.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      let activeFrameIndex = 0;
-      let transitionProgress = 0;
-      let nextFrameIndex = -1;
+      const blockTop = blockRect.top;
+      const blockHeight = block.offsetHeight;
 
-      // Loop through content blocks to find which one is "active"
-      for (let i = 0; i < frameContents.length; i++) {
-        const content = frameContents[i];
-        const rect = content.getBoundingClientRect();
-
-        // Get the transition zone height for transitioning TO this frame
-        const thisFrame = frames[i];
-        const transitionSpeed = thisFrame ? thisFrame.dataset.transitionSpeed || 'normal' : 'normal';
-        const transitionMultiplier = speedMultipliers[transitionSpeed] || 1;
-        const transitionZoneHeight = viewportHeight * 0.6 * transitionMultiplier;
-
-        // Check if this content's top has entered the viewport
-        const contentTopEntered = rect.top < viewportHeight;
-        if (i === 0) {
-          // First frame - always active until its content leaves
-          if (rect.bottom > 0) {
-            activeFrameIndex = 0;
-            break;
-          }
-          // First content has left, check for transition to frame 2
-          continue;
-        }
-
-        // For frames 2+:
-        // The transition should happen BEFORE content enters
-        // Transition zone is above this content (between prev content and this one)
-
-        const prevContent = frameContents[i - 1];
-        const prevRect = prevContent.getBoundingClientRect();
-
-        // Previous content has scrolled off top
-        if (prevRect.bottom <= 0) {
-          // We're either transitioning or fully on this frame
-
-          // Calculate how far into the transition zone we are
-          // Transition starts when prev content bottom hits 0
-          // Transition ends when this content top reaches a threshold (e.g., 80% down viewport)
-          const transitionEndPoint = viewportHeight * 0.8;
-          if (rect.top > transitionEndPoint) {
-            // Still transitioning - prev content gone, this content not yet visible
-            // Progress based on how close this content's top is to the end point
-            const distanceToEnd = rect.top - transitionEndPoint;
-            transitionProgress = Math.max(0, Math.min(1, 1 - distanceToEnd / transitionZoneHeight));
-            activeFrameIndex = i - 1;
-            nextFrameIndex = i;
-            break;
-          } else {
-            // Transition complete, this frame is now active
-            activeFrameIndex = i;
-
-            // Check if THIS content is leaving and we need to transition to next
-            if (rect.bottom <= 0 && i < frameContents.length - 1) {
-              // This content has left, start next transition
-              continue;
-            }
-            break;
-          }
-        } else {
-          // Previous content still visible, stay on previous frame
-          activeFrameIndex = i - 1;
-          break;
-        }
+      // Calculate scroll progress through entire block (0 to 1)
+      const scrollableDistance = blockHeight - viewportHeight;
+      const scrolledDistance = Math.max(0, -blockTop);
+      let scrollProgress = 0;
+      if (scrollableDistance > 0) {
+        scrollProgress = Math.min(1, scrolledDistance / scrollableDistance);
       }
 
-      // Handle scrolling past all content
-      const lastContent = frameContents[frameContents.length - 1];
-      if (lastContent) {
-        const lastRect = lastContent.getBoundingClientRect();
-        if (lastRect.bottom <= 0) {
-          activeFrameIndex = frameCount - 1;
-          transitionProgress = 0;
-          nextFrameIndex = -1;
-        }
-      }
+      // Each frame gets an equal segment of scroll
+      // Within each segment: 80% content hold, 20% transition to next
+      const CONTENT_PHASE = 0.8;
+      const TRANSITION_PHASE = 0.2;
+      const segmentSize = 1 / frameCount;
 
-      // Clamp to valid range
-      activeFrameIndex = Math.max(0, Math.min(frameCount - 1, activeFrameIndex));
+      // Find which frame segment we're in
+      const rawIndex = scrollProgress / segmentSize;
+      const currentIndex = Math.min(frameCount - 1, Math.floor(rawIndex));
+      const progressInSegment = rawIndex - currentIndex; // 0 to 1 within this segment
+
+      let localProgress = 0; // Transition progress (0 = not started, 1 = complete)
+      let isInTransition = false;
+      if (progressInSegment > CONTENT_PHASE && currentIndex < frameCount - 1) {
+        // We're in the transition phase of this segment
+        isInTransition = true;
+        // Map the transition portion (0.8-1.0) to (0-1)
+        localProgress = (progressInSegment - CONTENT_PHASE) / TRANSITION_PHASE;
+      }
+      const nextIndex = Math.min(frameCount - 1, currentIndex + 1);
 
       // Update background frames
       frames.forEach((frame, index) => {
         frame.style.transitionDuration = '0ms';
-        if (index === activeFrameIndex) {
-          // Active frame - fully visible
+        if (index === currentIndex) {
+          // Current base frame - fully visible
           frame.classList.add('is-active');
           frame.style.opacity = '1';
           frame.style.clipPath = 'none';
           frame.style.zIndex = '1';
-        } else if (index === nextFrameIndex && transitionProgress > 0) {
+        } else if (index === nextIndex && isInTransition && localProgress > 0) {
           // Next frame - transitioning in
           const type = frame.dataset.transitionType || 'fade';
-          const styles = getTransitionStyles(type, transitionProgress);
+          const styles = getTransitionStyles(type, localProgress);
           frame.classList.add('is-active');
           frame.style.opacity = styles.opacity;
           frame.style.clipPath = styles.clipPath;
@@ -211,12 +190,10 @@
         }
       });
 
-      // Content visibility: show content only when its frame is fully active (not transitioning)
-      let visibleContentIndex = activeFrameIndex;
-      if (nextFrameIndex >= 0 && transitionProgress >= 1) {
-        visibleContentIndex = nextFrameIndex;
-      }
-      updateFrameContentVisibility(visibleContentIndex);
+      // Content: show current frame's content during content phase,
+      // switch to next frame's content when transition is > 50% complete
+      const targetContentIndex = isInTransition && localProgress > 0.5 ? nextIndex : currentIndex;
+      updateFrameContentVisibility(targetContentIndex);
       ticking = false;
     }
     function onScroll() {
@@ -226,7 +203,7 @@
       }
     }
 
-    // Initialize content visibility
+    // Initialize frame content visibility
     frameContents.forEach((content, index) => {
       content.style.transition = 'opacity 0.3s ease';
       if (index === 0) {
@@ -244,7 +221,7 @@
     });
     window.addEventListener('resize', updateActiveFrame);
 
-    // Initial update
+    // Run immediately to set initial state
     updateActiveFrame();
     block._revealCleanup = function () {
       window.removeEventListener('scroll', onScroll);
