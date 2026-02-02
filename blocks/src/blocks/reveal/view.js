@@ -96,6 +96,12 @@
 
 		/**
 		 * Main update function - determines active frame and transition progress
+		 * 
+		 * Sequence for each frame:
+		 * 1. Previous content scrolls off top
+		 * 2. Background transitions to new frame (in the gap)
+		 * 3. New content scrolls in from bottom
+		 * 4. Repeat
 		 */
 		function updateActiveFrame() {
 			const viewportHeight = window.innerHeight;
@@ -109,42 +115,72 @@
 				const content = frameContents[ i ];
 				const rect = content.getBoundingClientRect();
 				
-				// Get the transition zone height for the NEXT frame
-				const nextFrame = frames[ i + 1 ];
-				const transitionSpeed = nextFrame ? ( nextFrame.dataset.transitionSpeed || 'normal' ) : 'normal';
+				// Get the transition zone height for transitioning TO this frame
+				const thisFrame = frames[ i ];
+				const transitionSpeed = thisFrame ? ( thisFrame.dataset.transitionSpeed || 'normal' ) : 'normal';
 				const transitionMultiplier = speedMultipliers[ transitionSpeed ] || 1;
-				const transitionZoneHeight = viewportHeight * 0.5 * transitionMultiplier;
+				const transitionZoneHeight = viewportHeight * 0.6 * transitionMultiplier;
 
-				// Content top is above viewport bottom = content has entered
-				// Content bottom is above 0 = content hasn't fully left
-				const contentEntered = rect.top < viewportHeight;
-				const contentNotFullyGone = rect.bottom > -transitionZoneHeight;
-
-				if ( contentEntered && contentNotFullyGone ) {
-					activeFrameIndex = i;
-
-					// Check if we're in the transition zone (content bottom is above viewport top)
-					if ( rect.bottom < 0 && i < frameContents.length - 1 ) {
-						// Content has scrolled off top, we're in transition zone
-						// Progress: 0 when content just left, 1 when transition zone ends
-						transitionProgress = Math.min( 1, Math.abs( rect.bottom ) / transitionZoneHeight );
-						nextFrameIndex = i + 1;
+				// Check if this content's top has entered the viewport
+				const contentTopEntered = rect.top < viewportHeight;
+				
+				if ( i === 0 ) {
+					// First frame - always active until its content leaves
+					if ( rect.bottom > 0 ) {
+						activeFrameIndex = 0;
+						break;
 					}
+					// First content has left, check for transition to frame 2
+					continue;
+				}
+
+				// For frames 2+:
+				// The transition should happen BEFORE content enters
+				// Transition zone is above this content (between prev content and this one)
+				
+				const prevContent = frameContents[ i - 1 ];
+				const prevRect = prevContent.getBoundingClientRect();
+				
+				// Previous content has scrolled off top
+				if ( prevRect.bottom <= 0 ) {
+					// We're either transitioning or fully on this frame
 					
-					break;
-				} else if ( !contentEntered ) {
-					// This content hasn't entered yet, stay on previous frame
-					activeFrameIndex = Math.max( 0, i - 1 );
+					// Calculate how far into the transition zone we are
+					// Transition starts when prev content bottom hits 0
+					// Transition ends when this content top reaches a threshold (e.g., 80% down viewport)
+					const transitionEndPoint = viewportHeight * 0.8;
+					
+					if ( rect.top > transitionEndPoint ) {
+						// Still transitioning - prev content gone, this content not yet visible
+						// Progress based on how close this content's top is to the end point
+						const distanceToEnd = rect.top - transitionEndPoint;
+						transitionProgress = Math.max( 0, Math.min( 1, 1 - ( distanceToEnd / transitionZoneHeight ) ) );
+						activeFrameIndex = i - 1;
+						nextFrameIndex = i;
+						break;
+					} else {
+						// Transition complete, this frame is now active
+						activeFrameIndex = i;
+						
+						// Check if THIS content is leaving and we need to transition to next
+						if ( rect.bottom <= 0 && i < frameContents.length - 1 ) {
+							// This content has left, start next transition
+							continue;
+						}
+						break;
+					}
+				} else {
+					// Previous content still visible, stay on previous frame
+					activeFrameIndex = i - 1;
 					break;
 				}
 			}
 
-			// If we've scrolled past everything, show last frame
+			// Handle scrolling past all content
 			const lastContent = frameContents[ frameContents.length - 1 ];
 			if ( lastContent ) {
 				const lastRect = lastContent.getBoundingClientRect();
-				const lastTransitionZone = viewportHeight * 0.5;
-				if ( lastRect.bottom < -lastTransitionZone ) {
+				if ( lastRect.bottom <= 0 ) {
 					activeFrameIndex = frameCount - 1;
 					transitionProgress = 0;
 					nextFrameIndex = -1;
@@ -153,13 +189,6 @@
 
 			// Clamp to valid range
 			activeFrameIndex = Math.max( 0, Math.min( frameCount - 1, activeFrameIndex ) );
-
-			// If transition is complete, move to next frame
-			if ( transitionProgress >= 1 && nextFrameIndex > 0 ) {
-				activeFrameIndex = nextFrameIndex;
-				transitionProgress = 0;
-				nextFrameIndex = -1;
-			}
 
 			// Update background frames
 			frames.forEach( ( frame, index ) => {
@@ -189,8 +218,11 @@
 				}
 			} );
 
-			// Update content visibility
-			const visibleContentIndex = ( transitionProgress > 0.5 && nextFrameIndex >= 0 ) ? nextFrameIndex : activeFrameIndex;
+			// Content visibility: show content only when its frame is fully active (not transitioning)
+			let visibleContentIndex = activeFrameIndex;
+			if ( nextFrameIndex >= 0 && transitionProgress >= 1 ) {
+				visibleContentIndex = nextFrameIndex;
+			}
 			updateFrameContentVisibility( visibleContentIndex );
 
 			ticking = false;

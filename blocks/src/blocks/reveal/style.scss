@@ -146,13 +146,15 @@
 		}
 	}
 
-	// Each frame's content block needs min-height to create scroll distance
+	// Each frame's content block - full viewport height with content at bottom
+	// This creates the effect of content scrolling in from the bottom
 	.reveal-frame-content {
 		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
+		justify-content: flex-end; // Content starts at bottom, scrolls up into view
 		padding: 2rem;
+		padding-bottom: 15vh; // Give some breathing room at bottom
 		box-sizing: border-box;
 	}
 
