@@ -114,56 +114,59 @@
 		function updateOnScroll() {
             const viewportHeight = window.innerHeight;
 
+            // Loop through every section
             sections.forEach((section, index) => {
                 const bg = section.querySelector('.reveal-frame-background');
-                if (!bg) return;
-                
                 const transitionType = bg.getAttribute('data-transition') || 'none';
-                const rect = section.getBoundingClientRect();
                 
-                // --- LOGIC FOR FRAME 1 (Always Visible) ---
+                // 1. First frame always visible, no transition needed
                 if (index === 0) {
                     bg.style.opacity = 1;
                     bg.style.transform = 'none';
                     return;
                 }
 
-                // --- LOGIC FOR FRAMES 2+ ---
+                // 2. Calculate Progress
+                // When rect.top is at viewportHeight, the section is just entering (0%)
+                // When rect.top is at 0, the section is fully covering the previous one (100%)
+                const rect = section.getBoundingClientRect();
+                
+                // Calculate raw progress (0 to 1)
+                let progress = (viewportHeight - rect.top) / viewportHeight;
+                progress = Math.max(0, Math.min(1, progress));
 
-                // 1. Entering the screen (Coming from bottom)
-                if (rect.top > 0 && rect.top < viewportHeight) {
-                    
-                    // Calculate 0 to 1 progress (0 = just started entering, 1 = fully active)
-                    let progress = 1 - (rect.top / viewportHeight);
-
-                    if (transitionType === 'fade') {
-                        // THE FIX: "Pin" the image to the top of the viewport
-                        // We translate it UP by the exact amount the section is DOWN
-                        bg.style.transform = `translate3d(0, -${rect.top}px, 0)`;
-                        
-                        // Fade it in
-                        bg.style.opacity = progress;
-                    } 
-                    else {
-                        // Default sliding behavior (Normal)
-                        bg.style.transform = 'none';
-                        bg.style.opacity = 1;
-                    }
+                // 3. Apply Transitions based on the dropdown choice
+                if (transitionType === 'fade') {
+                    // Logic: Frame stays fixed, but opacity goes 0 -> 1
+                    bg.style.opacity = progress;
+                    bg.style.transform = 'none'; // No movement, just fade
                 } 
-                // 2. Fully Active (Stuck at top)
-                else if (rect.top <= 0) {
-                    bg.style.transform = 'none';
+                else if (transitionType === 'left') {
+                    // Logic: Slide in from the Right (100% -> 0%)
+                    const x = (1 - progress) * 100;
+                    bg.style.transform = `translate3d(${x}%, 0, 0)`;
                     bg.style.opacity = 1;
                 }
-                // 3. Below Screen (Not yet visible)
+                else if (transitionType === 'right') {
+                    // Logic: Slide in from the Left (-100% -> 0%)
+                    const x = -(1 - progress) * 100;
+                    bg.style.transform = `translate3d(${x}%, 0, 0)`;
+                    bg.style.opacity = 1;
+                }
+                else if (transitionType === 'up') {
+                    // Logic: Standard scroll (sticky default), but we can accelerate it
+                    // effectively standard behavior, ensure opacity is 1
+                    bg.style.opacity = 1; 
+                    bg.style.transform = 'none';
+                }
                 else {
-                    // Hide completely to prevent glitches
-                    bg.style.opacity = 0;
+                    // Default 'none' behavior
+                    bg.style.opacity = 1;
                     bg.style.transform = 'none';
                 }
             });
 
-            // Handle text opacity (Keep your existing logic)
+            // 4. Handle Content Opacity (Your existing text fade logic)
             contents.forEach((content) => {
                 const opacity = getContentOpacity(content);
                 content.style.opacity = Math.max(0, Math.min(1, opacity));

@@ -232,11 +232,8 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 		$desktop_caption = $desktop_image['caption'] ?? '';
 		$mobile_caption = $has_mobile_image ? ($mobile_image['caption'] ?? '') : $desktop_caption;
 		$has_caption = ! empty($desktop_caption) || ! empty($mobile_caption);
-
-		// Get transition for this specific frame
-		$transition = $frame['transition']['type'] ?? 'none';
 	?>
-		<div class="reveal-frame-background" data-transition="<?php echo esc_attr($transition); ?>">
+		<section class="reveal-frame-section" data-frame-index="<?php echo esc_attr($index); ?>">
 			<!-- Sticky background -->
 			<div class="reveal-frame-background"
 				data-transition="<?php echo esc_attr($transition_type); ?>"
@@ -293,6 +290,6 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 					<?php echo $frame_contents[$index]; ?>
 				<?php endif; ?>
 			</div>
-			</section>
-		<?php endforeach; ?>
-		</div>
+		</section>
+	<?php endforeach; ?>
+</div>
