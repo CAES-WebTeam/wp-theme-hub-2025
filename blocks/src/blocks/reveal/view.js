@@ -1,12 +1,12 @@
 /**
  * Reveal Block Frontend JavaScript
  * 
- * Improved to more closely match Shorthand's behavior:
- * - Content starts completely hidden (opacity: 0)
- * - Content fades in AFTER the background is fully visible
- * - Content fades out BEFORE the next background transitions in
- * - Background transitions use clip-path for wipes
- * - Transition percentages match Shorthand's 0.35 (35%) pattern
+ * Correctly mimics Shorthand's behavior:
+ * - Content scrolls NATURALLY through the viewport (not faded in place)
+ * - JavaScript only controls opacity based on content's ACTUAL position
+ * - Content fades in as it enters viewport from below
+ * - Content fades out as it exits viewport at top
+ * - Background transitions happen at the right time based on content position
  */
 
 ( function () {
@@ -26,30 +26,16 @@
 		let ticking = false;
 
 		// Parse transition data from frames
-		// Shorthand uses format: "0.35 fade;0.35 up" where 0.35 is the transition percentage
 		const transitions = [];
 		frames.forEach( ( frame, index ) => {
-			const speed = frame.dataset.transitionSpeed || 'normal';
 			transitions.push( {
 				type: frame.dataset.transitionType || 'fade',
-				speed: speed,
-				// Convert speed to percentage (like Shorthand's 0.35)
-				percentage: getTransitionPercentage( speed )
+				speed: frame.dataset.transitionSpeed || 'normal'
 			} );
 		} );
 
-		/**
-		 * Get transition percentage based on speed setting
-		 * Shorthand uses 0.35 (35%) as default
-		 */
-		function getTransitionPercentage( speed ) {
-			switch ( speed ) {
-				case 'slow': return 0.45;
-				case 'fast': return 0.20;
-				case 'normal':
-				default: return 0.35;
-			}
-		}
+		// Speed affects how much of the transition zone is used
+		const speedMultipliers = { slow: 0.5, normal: 0.35, fast: 0.2 };
 
 		/**
 		 * Get clip-path style for wipe transitions
@@ -78,175 +64,177 @@
 		}
 
 		/**
-		 * Calculate content opacity based on scroll position within frame segment
-		 * Content fades in after background, fades out before next transition
+		 * Calculate opacity based on element's actual position in viewport
+		 * This lets content scroll naturally while fading in/out at edges
 		 */
-		function getContentOpacity( scrollProgress, segmentStart, segmentEnd, transitionPercentage ) {
-			const segmentLength = segmentEnd - segmentStart;
+		function getContentOpacityFromPosition( element ) {
+			const rect = element.getBoundingClientRect();
+			const viewportHeight = window.innerHeight;
 			
-			// Content fade-in starts slightly after segment starts (10% into segment)
-			const fadeInStart = segmentStart + ( segmentLength * 0.05 );
-			const fadeInEnd = segmentStart + ( segmentLength * 0.20 );
+			// Define fade zones (percentage of viewport height)
+			const fadeInZone = viewportHeight * 0.25;  // Bottom 25% of viewport
+			const fadeOutZone = viewportHeight * 0.15; // Top 15% of viewport
 			
-			// Content fade-out ends when background transition starts
-			const fadeOutStart = segmentEnd - ( segmentLength * transitionPercentage ) - ( segmentLength * 0.05 );
-			const fadeOutEnd = segmentEnd - ( segmentLength * transitionPercentage );
-
-			if ( scrollProgress < fadeInStart ) {
-				return 0;
-			} else if ( scrollProgress < fadeInEnd ) {
-				// Fading in
-				return ( scrollProgress - fadeInStart ) / ( fadeInEnd - fadeInStart );
-			} else if ( scrollProgress < fadeOutStart ) {
-				// Fully visible
-				return 1;
-			} else if ( scrollProgress < fadeOutEnd ) {
-				// Fading out
-				return 1 - ( ( scrollProgress - fadeOutStart ) / ( fadeOutEnd - fadeOutStart ) );
-			} else {
+			// Element's vertical center
+			const elementCenter = rect.top + ( rect.height / 2 );
+			
+			// Fully off-screen below
+			if ( rect.top >= viewportHeight ) {
 				return 0;
 			}
+			
+			// Fully off-screen above
+			if ( rect.bottom <= 0 ) {
+				return 0;
+			}
+			
+			// Fading in from bottom
+			if ( rect.top > viewportHeight - fadeInZone ) {
+				const distanceIntoFadeZone = viewportHeight - rect.top;
+				return Math.min( 1, distanceIntoFadeZone / fadeInZone );
+			}
+			
+			// Fading out at top
+			if ( rect.top < fadeOutZone && rect.bottom > 0 ) {
+				// Use element top position for fade out
+				const distanceFromTop = rect.top;
+				if ( distanceFromTop < 0 ) {
+					// Element is partially off-screen at top
+					const visibleHeight = rect.bottom;
+					return Math.min( 1, visibleHeight / ( rect.height * 0.5 ) );
+				}
+				return Math.min( 1, distanceFromTop / fadeOutZone );
+			}
+			
+			// Fully visible
+			return 1;
+		}
+
+		/**
+		 * Determine which frame should be active based on content positions
+		 */
+		function getActiveFrameIndex() {
+			const viewportCenter = window.innerHeight / 2;
+			let closestIndex = 0;
+			let closestDistance = Infinity;
+
+			frameContents.forEach( ( content, index ) => {
+				const rect = content.getBoundingClientRect();
+				const contentCenter = rect.top + ( rect.height / 2 );
+				const distance = Math.abs( contentCenter - viewportCenter );
+				
+				// Only consider if content is at least partially in viewport
+				if ( rect.bottom > 0 && rect.top < window.innerHeight ) {
+					if ( distance < closestDistance ) {
+						closestDistance = distance;
+						closestIndex = index;
+					}
+				}
+			} );
+
+			// Also check if we're at the very start or end
+			const firstContent = frameContents[ 0 ];
+			const lastContent = frameContents[ frameContents.length - 1 ];
+			
+			if ( firstContent ) {
+				const firstRect = firstContent.getBoundingClientRect();
+				if ( firstRect.top > viewportCenter ) {
+					closestIndex = 0;
+				}
+			}
+			
+			if ( lastContent ) {
+				const lastRect = lastContent.getBoundingClientRect();
+				if ( lastRect.bottom < viewportCenter ) {
+					closestIndex = frameContents.length - 1;
+				}
+			}
+
+			return closestIndex;
+		}
+
+		/**
+		 * Calculate background transition progress based on content positions
+		 */
+		function getBackgroundTransitionProgress( fromIndex, toIndex ) {
+			if ( fromIndex >= frameContents.length || toIndex >= frameContents.length ) {
+				return 0;
+			}
+
+			const fromContent = frameContents[ fromIndex ];
+			const toContent = frameContents[ toIndex ];
+			
+			if ( ! fromContent || ! toContent ) {
+				return 0;
+			}
+
+			const fromRect = fromContent.getBoundingClientRect();
+			const toRect = toContent.getBoundingClientRect();
+			const viewportHeight = window.innerHeight;
+			
+			// Transition starts when "from" content is in upper portion of screen
+			// and "to" content is entering from below
+			const transitionZone = viewportHeight * 0.4; // 40% of viewport
+			const transitionStart = viewportHeight * 0.3; // Starts at 30% from top
+			
+			// If the "from" content top is above the transition start point
+			if ( fromRect.top < transitionStart && toRect.top < viewportHeight ) {
+				// Calculate how far through the transition we are
+				const progress = ( transitionStart - fromRect.top ) / transitionZone;
+				return Math.max( 0, Math.min( 1, progress ) );
+			}
+			
+			return 0;
 		}
 
 		/**
 		 * Main scroll handler
 		 */
 		function updateOnScroll() {
-			const blockRect = block.getBoundingClientRect();
-			const viewportHeight = window.innerHeight;
-			const blockHeight = block.offsetHeight;
+			const activeIndex = getActiveFrameIndex();
 
-			// Calculate scroll progress through the block (0 to 1)
-			// Progress = 0 when block top is at viewport bottom
-			// Progress = 1 when block bottom is at viewport top
-			const scrollableDistance = blockHeight - viewportHeight;
-			const scrolledDistance = Math.max( 0, -blockRect.top );
-			const scrollProgress = scrollableDistance > 0 
-				? Math.min( 1, scrolledDistance / scrollableDistance ) 
-				: 0;
-
-			// Calculate segment boundaries for each frame
-			const segmentSize = 1 / frameCount;
-
-			// Process each frame
-			frames.forEach( ( frame, index ) => {
-				const segmentStart = index * segmentSize;
-				const segmentEnd = ( index + 1 ) * segmentSize;
-				const transitionPct = transitions[ index ].percentage;
-				const transitionStart = segmentEnd - ( segmentSize * transitionPct );
-				const isFirstFrame = index === 0;
-				const isLastFrame = index === frameCount - 1;
-
-				// Disable CSS transitions - we're controlling everything via JS
-				frame.style.transitionDuration = '0ms';
-
-				// Determine background state
-				let bgOpacity = 0;
-				let bgClipPath = 'inset(100% 0 0 0)'; // Start fully clipped
-				let bgZIndex = 0;
-				let bgDisplay = 'none';
-
-				if ( isFirstFrame ) {
-					// First frame: visible from start, no transition in
-					if ( scrollProgress < transitionStart ) {
-						bgOpacity = 1;
-						bgClipPath = 'none';
-						bgZIndex = 1;
-						bgDisplay = 'block';
-					} else if ( scrollProgress < segmentEnd ) {
-						// Transitioning out (next frame coming in)
-						bgOpacity = 1;
-						bgClipPath = 'none';
-						bgZIndex = 1;
-						bgDisplay = 'block';
-					} else {
-						// Completely past this frame
-						bgOpacity = 0;
-						bgDisplay = 'none';
-						bgZIndex = 0;
-					}
-				} else {
-					// Subsequent frames: transition in during previous frame's transition period
-					const prevSegmentEnd = segmentStart;
-					const prevTransitionPct = transitions[ index ].percentage;
-					const incomingTransitionStart = prevSegmentEnd - ( segmentSize * prevTransitionPct );
-
-					if ( scrollProgress < incomingTransitionStart ) {
-						// Before this frame's transition starts
-						bgOpacity = 0;
-						bgDisplay = 'none';
-						bgZIndex = 0;
-					} else if ( scrollProgress < prevSegmentEnd ) {
-						// This frame is transitioning IN
-						const transitionProgress = ( scrollProgress - incomingTransitionStart ) / ( prevSegmentEnd - incomingTransitionStart );
-						const styles = getTransitionStyles( transitions[ index ].type, transitionProgress );
-						bgOpacity = styles.opacity;
-						bgClipPath = styles.clipPath;
-						bgZIndex = 2; // On top during transition
-						bgDisplay = 'block';
-					} else if ( scrollProgress < transitionStart || isLastFrame ) {
-						// Fully visible
-						bgOpacity = 1;
-						bgClipPath = 'none';
-						bgZIndex = 1;
-						bgDisplay = 'block';
-					} else if ( scrollProgress < segmentEnd && !isLastFrame ) {
-						// Transitioning out (stays as base layer)
-						bgOpacity = 1;
-						bgClipPath = 'none';
-						bgZIndex = 1;
-						bgDisplay = 'block';
-					} else if ( !isLastFrame ) {
-						// Completely past this frame
-						bgOpacity = 0;
-						bgDisplay = 'none';
-						bgZIndex = 0;
-					}
-				}
-
-				// Apply background styles
-				frame.style.opacity = bgOpacity;
-				frame.style.clipPath = bgClipPath;
-				frame.style.zIndex = bgZIndex;
-				frame.style.display = bgDisplay;
-
-				if ( bgDisplay === 'block' && bgOpacity > 0.5 ) {
-					frame.classList.add( 'is-active' );
-				} else {
-					frame.classList.remove( 'is-active' );
-				}
+			// Update content opacity based on actual position
+			frameContents.forEach( ( content, index ) => {
+				const opacity = getContentOpacityFromPosition( content );
+				content.style.opacity = opacity;
+				content.style.pointerEvents = opacity > 0.3 ? 'auto' : 'none';
 			} );
 
-			// Handle content opacity separately
-			frameContents.forEach( ( content, index ) => {
-				const segmentStart = index * segmentSize;
-				const segmentEnd = ( index + 1 ) * segmentSize;
-				const isLastFrame = index === frameCount - 1;
-				
-				// Get next frame's transition percentage for fade-out timing
-				const nextTransitionPct = transitions[ index + 1 ]?.percentage || transitions[ index ].percentage;
+			// Update background frames
+			frames.forEach( ( frame, index ) => {
+				frame.style.transitionDuration = '0ms';
 
-				let opacity;
-				
-				if ( isLastFrame ) {
-					// Last frame: fade in but don't fade out
-					const fadeInStart = segmentStart + ( segmentSize * 0.05 );
-					const fadeInEnd = segmentStart + ( segmentSize * 0.20 );
+				if ( index === activeIndex ) {
+					// This is the active frame
+					frame.style.opacity = '1';
+					frame.style.clipPath = 'none';
+					frame.style.zIndex = '1';
+					frame.style.display = 'block';
+					frame.classList.add( 'is-active' );
+				} else if ( index === activeIndex + 1 ) {
+					// This is the NEXT frame - check if it should be transitioning in
+					const transitionProgress = getBackgroundTransitionProgress( activeIndex, index );
 					
-					if ( scrollProgress < fadeInStart ) {
-						opacity = 0;
-					} else if ( scrollProgress < fadeInEnd ) {
-						opacity = ( scrollProgress - fadeInStart ) / ( fadeInEnd - fadeInStart );
+					if ( transitionProgress > 0 ) {
+						const styles = getTransitionStyles( transitions[ index ].type, transitionProgress );
+						frame.style.opacity = styles.opacity;
+						frame.style.clipPath = styles.clipPath;
+						frame.style.zIndex = '2'; // Above current active
+						frame.style.display = 'block';
+						frame.classList.add( 'is-active' );
 					} else {
-						opacity = 1;
+						frame.style.opacity = '0';
+						frame.style.display = 'none';
+						frame.style.zIndex = '0';
+						frame.classList.remove( 'is-active' );
 					}
 				} else {
-					opacity = getContentOpacity( scrollProgress, segmentStart, segmentEnd, nextTransitionPct );
+					// Not active, not transitioning
+					frame.style.opacity = '0';
+					frame.style.display = 'none';
+					frame.style.zIndex = '0';
+					frame.classList.remove( 'is-active' );
 				}
-
-				// Apply content styles
-				content.style.opacity = opacity;
-				content.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
 			} );
 
 			ticking = false;
@@ -259,36 +247,29 @@
 			}
 		}
 
-		// Initialize: all content starts hidden
+		// Initialize
 		frameContents.forEach( ( content ) => {
-			content.style.transition = 'none';
 			content.style.opacity = '0';
+			// Remove any transition on opacity so it responds instantly to scroll
+			content.style.transition = 'none';
 		} );
 
-		// All frames start hidden except the first
-		frames.forEach( ( frame, index ) => {
-			frame.style.transition = 'none';
-			if ( index === 0 ) {
-				frame.style.opacity = '1';
-				frame.style.clipPath = 'none';
-				frame.style.display = 'block';
-				frame.style.zIndex = '1';
-				frame.classList.add( 'is-active' );
-			} else {
-				frame.style.opacity = '0';
-				frame.style.display = 'none';
-				frame.style.zIndex = '0';
-			}
-		} );
+		// First frame visible
+		if ( frames[ 0 ] ) {
+			frames[ 0 ].style.opacity = '1';
+			frames[ 0 ].style.clipPath = 'none';
+			frames[ 0 ].style.display = 'block';
+			frames[ 0 ].classList.add( 'is-active' );
+		}
 
-		// Set up scroll listener
+		// Set up event listeners
 		window.addEventListener( 'scroll', onScroll, { passive: true } );
 		window.addEventListener( 'resize', updateOnScroll );
 		
 		// Initial update
 		updateOnScroll();
 
-		// Cleanup function for WordPress block editor
+		// Cleanup function
 		block._revealCleanup = function () {
 			window.removeEventListener( 'scroll', onScroll );
 			window.removeEventListener( 'resize', updateOnScroll );
