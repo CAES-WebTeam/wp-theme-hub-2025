@@ -20,12 +20,18 @@
 
 // The sticky background wrapper
 .reveal-frame-background {
-	position: sticky;
-	top: 0;
-	height: 100vh;
-	width: 100%;
-	overflow: hidden;
-	z-index: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    z-index: 0;
+    
+    /* NEW: Hardware acceleration for smoother animations */
+    will-change: transform, opacity;
+    
+    /* Ensure default state is full opacity unless JS changes it */
+    opacity: 1; 
 }
 
 // Individual frame (image container)

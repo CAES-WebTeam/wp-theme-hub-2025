@@ -176,6 +176,8 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 	// Output duotone SVG filters
 	foreach ($frames as $index => $frame) :
 		$desktop_duotone = $frame['desktopDuotone'] ?? $frame['duotone'] ?? null;
+		$transition_type  = $frame['transition']['type'] ?? 'none';
+		$transition_speed = $frame['transition']['speed'] ?? 'normal';
 		if (! empty($desktop_duotone)) :
 			list($filter_id, $svg) = caes_reveal_get_duotone_filter($desktop_duotone, $block_id . '-' . $index . '-desktop');
 			if ($svg) echo $svg;
@@ -233,7 +235,9 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 	?>
 		<section class="reveal-frame-section" data-frame-index="<?php echo esc_attr($index); ?>">
 			<!-- Sticky background -->
-			<div class="reveal-frame-background">
+			<div class="reveal-frame-background"
+				data-transition="<?php echo esc_attr($transition_type); ?>"
+				data-speed="<?php echo esc_attr($transition_speed); ?>">
 				<figure class="reveal-frame" style="<?php echo esc_attr($frame_style_attr); ?>">
 					<?php if ($use_separate_images) : ?>
 						<img
@@ -244,14 +248,14 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 							alt="<?php echo esc_attr($desktop_image['alt'] ?? ''); ?>"
 							loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
 							decoding="async"
-							<?php if ($desktop_img_style_attr) : ?>style="<?php echo esc_attr($desktop_img_style_attr); ?>"<?php endif; ?>>
+							<?php if ($desktop_img_style_attr) : ?>style="<?php echo esc_attr($desktop_img_style_attr); ?>" <?php endif; ?>>
 						<img
 							class="reveal-frame-mobile"
 							src="<?php echo esc_url(set_url_scheme($has_mobile_image ? $mobile_image['url'] : $desktop_image['url'])); ?>"
 							alt="<?php echo esc_attr($has_mobile_image ? ($mobile_image['alt'] ?? '') : ($desktop_image['alt'] ?? '')); ?>"
 							loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
 							decoding="async"
-							<?php if ($mobile_img_style_attr) : ?>style="<?php echo esc_attr($mobile_img_style_attr); ?>"<?php endif; ?>>
+							<?php if ($mobile_img_style_attr) : ?>style="<?php echo esc_attr($mobile_img_style_attr); ?>" <?php endif; ?>>
 					<?php else : ?>
 						<img
 							src="<?php echo esc_url(set_url_scheme($desktop_image['url'])); ?>"
@@ -260,7 +264,7 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 							alt="<?php echo esc_attr($desktop_image['alt'] ?? ''); ?>"
 							loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
 							decoding="async"
-							<?php if ($desktop_img_style_attr) : ?>style="<?php echo esc_attr($desktop_img_style_attr); ?>"<?php endif; ?>>
+							<?php if ($desktop_img_style_attr) : ?>style="<?php echo esc_attr($desktop_img_style_attr); ?>" <?php endif; ?>>
 					<?php endif; ?>
 
 					<div class="reveal-overlay" style="background-color: <?php echo esc_attr($overlay_rgba); ?>;"></div>
