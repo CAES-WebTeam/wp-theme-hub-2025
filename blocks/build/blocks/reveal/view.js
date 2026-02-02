@@ -67,20 +67,46 @@
       const blockTop = scrollTop + blockRect.top;
       const blockBottom = blockTop + block.offsetHeight;
 
-      // Check if we're even in the reveal block
+      // Check if we're in or near the reveal block
+      const beforeBlock = scrollTop < blockTop;
+      const afterBlock = scrollTop > blockBottom;
       const inBlock = scrollTop >= blockTop && scrollTop <= blockBottom;
-      let activeIndex = -1;
-      let transitionIndex = -1;
-      let transitionProgress = 0;
-      if (!inBlock) {
-        // Not in block - hide all backgrounds
+
+      // Calculate fade for entering/exiting block
+      let blockFade = 1;
+      if (beforeBlock) {
+        // Not reached block yet - all hidden
         backgrounds.forEach(bg => {
           bg.style.opacity = 0;
           bg.style.zIndex = 5;
         });
         ticking = false;
         return;
+      } else if (afterBlock) {
+        // Past block - all hidden
+        backgrounds.forEach(bg => {
+          bg.style.opacity = 0;
+          bg.style.zIndex = 5;
+        });
+        ticking = false;
+        return;
+      } else if (inBlock) {
+        // In the block
+        const distanceIntoBlock = scrollTop - blockTop;
+        const distanceFromEnd = blockBottom - scrollTop;
+
+        // Fade in over first viewport height
+        if (distanceIntoBlock < viewportHeight) {
+          blockFade = distanceIntoBlock / viewportHeight;
+        }
+        // Fade out over last viewport height
+        else if (distanceFromEnd < viewportHeight) {
+          blockFade = distanceFromEnd / viewportHeight;
+        }
       }
+      let activeIndex = -1;
+      let transitionIndex = -1;
+      let transitionProgress = 0;
 
       // Find which section we're currently in
       sections.forEach((section, index) => {
@@ -115,7 +141,6 @@
             }
 
             // Transition starts when content is fully gone
-            // That's at: sectionTop + 2*viewportHeight + contentHeight
             const contentChildren = content.children;
             let contentHeight = 0;
             for (let child of contentChildren) {
@@ -128,20 +153,13 @@
             transitionProgress = progressIntoTransition / transitionDistance;
             transitionProgress = Math.max(0, Math.min(1, transitionProgress));
           } else if (index === sections.length - 1) {
-            // Last section - check if content has scrolled away
-            const contentGone = contentRect.bottom < viewportHeight * 0.15;
-            if (contentGone) {
-              // Content gone, keep background visible until we scroll past section
-              activeIndex = index;
-            } else {
-              // Content still visible
-              activeIndex = index;
-            }
+            // Last section - keep active
+            activeIndex = index;
           }
         }
       });
 
-      // If no active frame found and we're in the block, don't show anything
+      // If no active frame found, hide all
       if (activeIndex === -1) {
         backgrounds.forEach(bg => {
           bg.style.opacity = 0;
@@ -151,39 +169,39 @@
         return;
       }
 
-      // Apply background visibility
+      // Apply background visibility with block fade
       backgrounds.forEach((bg, index) => {
         const transitionType = bg.getAttribute('data-transition') || 'none';
         if (index === activeIndex && transitionIndex === -1) {
           // Active frame, no transition
-          bg.style.opacity = 1;
+          bg.style.opacity = 1 * blockFade;
           bg.style.transform = 'none';
           bg.style.zIndex = 10;
         } else if (index === activeIndex && transitionIndex !== -1) {
           // Active frame during transition - backdrop
-          bg.style.opacity = 1;
+          bg.style.opacity = 1 * blockFade;
           bg.style.transform = 'none';
           bg.style.zIndex = 9;
         } else if (index === transitionIndex) {
           // Frame transitioning in
           bg.style.zIndex = 10;
           if (transitionType === 'fade') {
-            bg.style.opacity = transitionProgress;
+            bg.style.opacity = transitionProgress * blockFade;
             bg.style.transform = 'none';
           } else if (transitionType === 'left') {
             const x = (1 - transitionProgress) * 100;
             bg.style.transform = `translate3d(${x}%, 0, 0)`;
-            bg.style.opacity = 1;
+            bg.style.opacity = 1 * blockFade;
           } else if (transitionType === 'right') {
             const x = -(1 - transitionProgress) * 100;
             bg.style.transform = `translate3d(${x}%, 0, 0)`;
-            bg.style.opacity = 1;
+            bg.style.opacity = 1 * blockFade;
           } else if (transitionType === 'up') {
             const y = (1 - transitionProgress) * 100;
             bg.style.transform = `translate3d(0, ${y}%, 0)`;
-            bg.style.opacity = 1;
+            bg.style.opacity = 1 * blockFade;
           } else {
-            bg.style.opacity = transitionProgress;
+            bg.style.opacity = transitionProgress * blockFade;
             bg.style.transform = 'none';
           }
         } else {
