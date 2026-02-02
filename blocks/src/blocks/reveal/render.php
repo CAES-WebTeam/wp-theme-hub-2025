@@ -202,14 +202,34 @@ if (! function_exists('caes_reveal_parse_frame_content')) :
 	{
 		$frame_contents = [];
 
-		// Match all frame content blocks
-		$pattern = '/<div[^>]*class="[^"]*reveal-frame-content[^"]*"[^>]*data-frame-index="(\d+)"[^>]*>(.*?)<\/div>/s';
+		// Use DOMDocument for reliable HTML parsing
+		if (empty($content)) {
+			return $frame_contents;
+		}
 
-		if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
-			foreach ($matches as $match) {
-				$frame_index = (int) $match[1];
-				$frame_content = $match[2];
-				$frame_contents[$frame_index] = $frame_content;
+		// Suppress warnings for malformed HTML
+		libxml_use_internal_errors(true);
+		
+		$doc = new DOMDocument();
+		// Wrap in container and use UTF-8 encoding
+		$doc->loadHTML('<?xml encoding="UTF-8"><div id="parse-wrapper">' . $content . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+		
+		libxml_clear_errors();
+
+		$xpath = new DOMXPath($doc);
+		
+		// Find all frame content divs
+		$frame_divs = $xpath->query('//div[contains(@class, "reveal-frame-content")]');
+
+		foreach ($frame_divs as $div) {
+			$frame_index = $div->getAttribute('data-frame-index');
+			if ($frame_index !== '') {
+				// Get inner HTML
+				$inner_html = '';
+				foreach ($div->childNodes as $child) {
+					$inner_html .= $doc->saveHTML($child);
+				}
+				$frame_contents[(int) $frame_index] = $inner_html;
 			}
 		}
 

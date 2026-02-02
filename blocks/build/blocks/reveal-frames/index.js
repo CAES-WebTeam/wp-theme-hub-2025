@@ -329,7 +329,7 @@ module.exports = window["wp"]["i18n"];
   \*********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal-frames","version":"0.1.0","title":"Reveal Frames","parent":["caes-hub/reveal"],"category":"media","description":"Container for content specific to a single frame.","textdomain":"caes-reveal","usesContext":["caes-hub/reveal-frames","caes-hub/reveal-overlayColor","caes-hub/reveal-overlayOpacity"],"attributes":{"frameIndex":{"type":"number","default":0},"frameLabel":{"type":"string","default":""}},"supports":{"html":false,"reusable":false,"lock":false},"editorScript":"file:./index.js","editorStyle":"file:./index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal-frames","version":"0.1.0","title":"Reveal Frames","parent":["caes-hub/reveal"],"category":"media","description":"Container for content specific to a single frame.","textdomain":"caes-reveal","usesContext":["caes-hub/reveal-frames","caes-hub/reveal-overlayColor","caes-hub/reveal-overlayOpacity"],"attributes":{"frameIndex":{"type":"number","default":0},"frameLabel":{"type":"string","default":""}},"supports":{"html":false,"reusable":false,"lock":false},"editorScript":"file:./index.js","editorStyle":"file:./index.css","render":"file:./render.php"}');
 
 /***/ })
 
