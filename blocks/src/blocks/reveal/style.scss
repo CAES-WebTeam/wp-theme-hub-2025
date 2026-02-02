@@ -146,6 +146,16 @@
 		}
 	}
 
+	// Each frame's content block needs min-height to create scroll distance
+	.reveal-frame-content {
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		padding: 2rem;
+		box-sizing: border-box;
+	}
+
 	// Reduced motion: instant transitions
 	@media (prefers-reduced-motion: reduce) {
 		.reveal-frame {
