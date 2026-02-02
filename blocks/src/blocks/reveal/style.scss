@@ -18,7 +18,7 @@
 	min-height: 100vh;
 }
 
-// The background wrapper - first frame sticky, rest fixed
+// The background wrapper
 .reveal-frame-background {
     top: 0;
     left: 0;
@@ -30,18 +30,18 @@
     
     /* Hardware acceleration for smoother animations */
     will-change: transform, opacity;
-    
-    /* First frame is sticky - scrolls naturally then sticks */
-    .reveal-frame-section:first-child & {
-        position: sticky;
-        opacity: 1; // Visible from the start
-    }
-    
-    /* All other frames are fixed - always at viewport top */
-    .reveal-frame-section:not(:first-child) & {
-        position: fixed;
-        opacity: 0; // Hidden until transition
-    }
+}
+
+// First frame is sticky - scrolls naturally then sticks
+.reveal-frame-section:first-child .reveal-frame-background {
+    position: sticky;
+    opacity: 1;
+}
+
+// All other frames are fixed - always at viewport top
+.reveal-frame-section:not(:first-child) .reveal-frame-background {
+    position: fixed;
+    opacity: 0;
 }
 
 // Individual frame (image container)
