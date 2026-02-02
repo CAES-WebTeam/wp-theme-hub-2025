@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Server-side rendering for the Reveal block
  *
@@ -11,384 +10,115 @@ $frames          = $attributes['frames'] ?? [];
 $overlay_color   = $attributes['overlayColor'] ?? '#000000';
 $overlay_opacity = $attributes['overlayOpacity'] ?? 30;
 
-// Calculate Min Height based on per-frame transition speeds
-$frame_count = count($frames);
+// Speed definitions
 $speed_multipliers = [
-	'slow'   => 1.5,
-	'normal' => 1,
-	'fast'   => 0.5,
+    'slow'   => 1.5,
+    'normal' => 1.0,
+    'fast'   => 0.75,
 ];
 
-// Start with base viewport for first frame
-$total_vh = 100;
-
-// Add viewport height for each transition based on its speed
-for ($i = 1; $i < $frame_count; $i++) {
-	$speed = $frames[$i]['transition']['speed'] ?? 'normal';
-	$multiplier = $speed_multipliers[$speed] ?? 1;
-	$total_vh += 100 * $multiplier;
+// Calculate Total Height for the wrapper
+$total_vh = 0;
+foreach ($frames as $i => $frame) {
+    // First frame gets base height, subsequent frames add height based on transition speed
+    $speed = $frame['transition']['speed'] ?? 'normal';
+    $multiplier = $speed_multipliers[$speed] ?? 1;
+    // Ensure minimum scrollable area (100vh minimum per slide)
+    $total_vh += 100 * $multiplier;
 }
 
-$calculated_min_height = $total_vh . 'vh';
+// Wrapper needs the full height of all triggers combined
+$wrapper_attributes = get_block_wrapper_attributes([
+    'class' => 'caes-reveal', 
+    'style' => "height: {$total_vh}vh;"
+]);
 
-// Early return if no frames - but still output content
 if (empty($frames)) {
-	$wrapper_attributes = get_block_wrapper_attributes(['class' => 'caes-reveal']);
-	printf(
-		'<div %s><div class="reveal-content">%s</div></div>',
-		$wrapper_attributes,
-		$content
-	);
-	return;
+    return;
 }
 
-// Generate unique ID for this block instance
 $block_id = 'reveal-' . wp_unique_id();
+$overlay_rgba = hex2rgba($overlay_color, $overlay_opacity / 100);
 
-// Calculate overlay rgba
-$hex = ltrim($overlay_color, '#');
-$r   = hexdec(substr($hex, 0, 2));
-$g   = hexdec(substr($hex, 2, 2));
-$b   = hexdec(substr($hex, 4, 2));
-$overlay_rgba = sprintf('rgba(%d, %d, %d, %s)', $r, $g, $b, $overlay_opacity / 100);
-
-// Prepare frames data for JS
-$frames_data = array_map(
-	function ($frame, $index) {
-		return [
-			'index'             => $index,
-			'transition'        => $frame['transition'] ?? ['type' => 'fade'],
-			'desktopFocalPoint' => $frame['desktopFocalPoint'] ?? ['x' => 0.5, 'y' => 0.5],
-			'mobileFocalPoint'  => $frame['mobileFocalPoint'] ?? ['x' => 0.5, 'y' => 0.5],
-		];
-	},
-	$frames,
-	array_keys($frames)
-);
-
-// Get wrapper attributes
-$wrapper_classes = 'caes-reveal';
-$wrapper_attributes = get_block_wrapper_attributes(
-	[
-		'id'    => $block_id,
-		'class' => $wrapper_classes,
-		'style' => sprintf('--reveal-min-height: %s;', esc_attr($calculated_min_height)),
-	]
-);
-
-/**
- * Helper function to build srcset for an image
- *
- * @param array $image Image data array.
- * @return string Srcset attribute value.
- */
-if (! function_exists('caes_reveal_build_srcset')) :
-	function caes_reveal_build_srcset($image)
-	{
-		if (empty($image) || empty($image['url'])) {
-			return '';
-		}
-
-		$srcset_parts = [];
-
-		// Get URLs with protocol fix
-		$full_url         = set_url_scheme($image['url']);
-		$large_url        = set_url_scheme($image['sizes']['large']['url'] ?? $image['url']);
-		$medium_large_url = set_url_scheme($image['sizes']['medium_large']['url'] ?? $large_url);
-
-		// Get actual widths
-		$full_width         = $image['width'] ?? 1920;
-		$large_width        = $image['sizes']['large']['width'] ?? $full_width;
-		$medium_large_width = $image['sizes']['medium_large']['width'] ?? $large_width;
-
-		// Build srcset avoiding duplicates
-		$added_urls = [];
-
-		if (! in_array($medium_large_url, $added_urls, true)) {
-			$srcset_parts[] = esc_url($medium_large_url) . ' ' . esc_attr($medium_large_width) . 'w';
-			$added_urls[]   = $medium_large_url;
-		}
-
-		if (! in_array($large_url, $added_urls, true)) {
-			$srcset_parts[] = esc_url($large_url) . ' ' . esc_attr($large_width) . 'w';
-			$added_urls[]   = $large_url;
-		}
-
-		if (! in_array($full_url, $added_urls, true)) {
-			$srcset_parts[] = esc_url($full_url) . ' ' . esc_attr($full_width) . 'w';
-		}
-
-		return implode(', ', $srcset_parts);
-	}
-endif;
-
-/**
- * Generate duotone filter SVG - matches WordPress core implementation
- *
- * @param array  $duotone  Duotone settings (array of two hex colors).
- * @param string $filter_id Filter identifier.
- * @return array Filter ID and SVG markup.
- */
-if (! function_exists('caes_reveal_get_duotone_filter')) :
-	function caes_reveal_get_duotone_filter($duotone, $filter_id)
-	{
-		if (empty($duotone) || ! is_array($duotone) || count($duotone) < 2) {
-			return ['', ''];
-		}
-
-		// Parse the two colors and convert to RGB values (0-1 range)
-		$duotone_values = [
-			'r' => [],
-			'g' => [],
-			'b' => [],
-		];
-
-		foreach ($duotone as $color_str) {
-			$color_str = ltrim($color_str, '#');
-
-			// Handle 3-character hex
-			if (strlen($color_str) === 3) {
-				$color_str = $color_str[0] . $color_str[0] . $color_str[1] . $color_str[1] . $color_str[2] . $color_str[2];
-			}
-
-			$duotone_values['r'][] = hexdec(substr($color_str, 0, 2)) / 255;
-			$duotone_values['g'][] = hexdec(substr($color_str, 2, 2)) / 255;
-			$duotone_values['b'][] = hexdec(substr($color_str, 4, 2)) / 255;
-		}
-
-		ob_start();
-?>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			viewBox="0 0 0 0"
-			width="0"
-			height="0"
-			focusable="false"
-			role="none"
-			style="visibility: hidden; position: absolute; left: -9999px; overflow: hidden;">
-			<defs>
-				<filter id="<?php echo esc_attr($filter_id); ?>">
-					<feColorMatrix
-						color-interpolation-filters="sRGB"
-						type="matrix"
-						values=".299 .587 .114 0 0
-					        .299 .587 .114 0 0
-					        .299 .587 .114 0 0
-					        0 0 0 1 0" />
-					<feComponentTransfer color-interpolation-filters="sRGB">
-						<feFuncR type="table" tableValues="<?php echo esc_attr(implode(' ', $duotone_values['r'])); ?>" />
-						<feFuncG type="table" tableValues="<?php echo esc_attr(implode(' ', $duotone_values['g'])); ?>" />
-						<feFuncB type="table" tableValues="<?php echo esc_attr(implode(' ', $duotone_values['b'])); ?>" />
-						<feFuncA type="table" tableValues="0 1" />
-					</feComponentTransfer>
-				</filter>
-			</defs>
-		</svg>
-<?php
-		$svg = ob_get_clean();
-
-		return [$filter_id, $svg];
-	}
-endif;
-
-/**
- * Parse inner blocks to extract frame-specific content
- *
- * @param string $content Block content HTML
- * @return array Array of content indexed by frame number
- */
-if (! function_exists('caes_reveal_parse_frame_content')) :
-	function caes_reveal_parse_frame_content($content)
-	{
-		$frame_contents = [];
-
-		// Use DOMDocument for reliable HTML parsing
-		if (empty($content)) {
-			return $frame_contents;
-		}
-
-		// Suppress warnings for malformed HTML
-		libxml_use_internal_errors(true);
-		
-		$doc = new DOMDocument();
-		// Wrap in container and use UTF-8 encoding
-		$doc->loadHTML('<?xml encoding="UTF-8"><div id="parse-wrapper">' . $content . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-		
-		libxml_clear_errors();
-
-		$xpath = new DOMXPath($doc);
-		
-		// Find all frame content divs
-		$frame_divs = $xpath->query('//div[contains(@class, "reveal-frame-content")]');
-
-		foreach ($frame_divs as $div) {
-			$frame_index = $div->getAttribute('data-frame-index');
-			if ($frame_index !== '') {
-				// Get inner HTML
-				$inner_html = '';
-				foreach ($div->childNodes as $child) {
-					$inner_html .= $doc->saveHTML($child);
-				}
-				$frame_contents[(int) $frame_index] = $inner_html;
-			}
-		}
-
-		return $frame_contents;
-	}
-endif;
-
-// Parse frame-specific content from inner blocks
-$frame_contents = caes_reveal_parse_frame_content($content);
+// Helper function for RGBA
+if (!function_exists('hex2rgba')) {
+    function hex2rgba($color, $opacity = false) {
+        $default = 'rgb(0,0,0)';
+        if (empty($color)) return $default; 
+        if ($color[0] == '#' ) $color = substr( $color, 1 );
+        if (strlen($color) == 6) $hex = array( $color[0] . $color[1], $color[2] . $color[3], $color[4] . $color[5] );
+        elseif (strlen($color) == 3) $hex = array( $color[0] . $color[0], $color[1] . $color[1], $color[2] . $color[2] );
+        else return $default;
+        $rgb =  array_map('hexdec', $hex);
+        if($opacity !== false){
+            if(abs($opacity) > 1) $opacity = 1.0;
+            $output = 'rgba('.implode(",",$rgb).','.$opacity.')';
+        } else {
+            $output = 'rgb('.implode(",",$rgb).')';
+        }
+        return $output;
+    }
+}
 ?>
 
-<div <?php echo $wrapper_attributes; ?> data-frames="<?php echo esc_attr(wp_json_encode($frames_data)); ?>">
-	<?php
-	// Output duotone SVG filters for both desktop and mobile
-	foreach ($frames as $index => $frame) :
-		// Desktop duotone filter (check new property first, then legacy)
-		$desktop_duotone = $frame['desktopDuotone'] ?? $frame['duotone'] ?? null;
-		if (! empty($desktop_duotone)) :
-			list($filter_id, $svg) = caes_reveal_get_duotone_filter($desktop_duotone, $block_id . '-' . $index . '-desktop');
-			if ($svg) :
-				echo $svg;
-			endif;
-		endif;
-		// Mobile duotone filter
-		if (! empty($frame['mobileDuotone'])) :
-			list($filter_id, $svg) = caes_reveal_get_duotone_filter($frame['mobileDuotone'], $block_id . '-' . $index . '-mobile');
-			if ($svg) :
-				echo $svg;
-			endif;
-		endif;
-	endforeach;
-	?>
+<div <?php echo $wrapper_attributes; ?>>
 
-	<div class="reveal-background" aria-hidden="true">
-		<?php foreach ($frames as $index => $frame) :
-			$desktop_image       = $frame['desktopImage'] ?? null;
-			$mobile_image        = $frame['mobileImage'] ?? null;
-			$desktop_focal_point = $frame['desktopFocalPoint'] ?? ['x' => 0.5, 'y' => 0.5];
-			$mobile_focal_point  = $frame['mobileFocalPoint'] ?? ['x' => 0.5, 'y' => 0.5];
-			$transition          = $frame['transition'] ?? ['type' => 'fade'];
-			$desktop_duotone     = $frame['desktopDuotone'] ?? $frame['duotone'] ?? null;
-			$mobile_duotone      = $frame['mobileDuotone'] ?? null;
+    <div class="reveal-stage" style="position: sticky; top: 0; width: 100%; height: 100vh; overflow: hidden;">
+        
+        <?php foreach ($frames as $index => $frame) : 
+            $img = $frame['image'] ?? null;
+            $bg_style = 'opacity: 0; z-index: ' . (10 + $index) . ';';
+            if ($index === 0) $bg_style = 'opacity: 1; z-index: 10;'; // First frame visible by default
+            
+            $transition_type = $frame['transition']['type'] ?? 'fade';
+        ?>
+            <figure class="reveal-frame" 
+                    id="<?php echo $block_id . '-frame-' . $index; ?>"
+                    data-index="<?php echo $index; ?>"
+                    data-transition-type="<?php echo esc_attr($transition_type); ?>"
+                    style="<?php echo $bg_style; ?> position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; transition: none;">
+                
+                <?php if ($img) : ?>
+                    <img class="reveal-img" 
+                         src="<?php echo esc_url($img['url']); ?>" 
+                         alt="<?php echo esc_attr($img['alt'] ?? ''); ?>"
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>">
+                <?php endif; ?>
+                
+                <div class="reveal-overlay" style="position:absolute; inset:0; background-color: <?php echo esc_attr($overlay_rgba); ?>;"></div>
+            </figure>
+        <?php endforeach; ?>
 
-			if (empty($desktop_image)) {
-				continue;
-			}
+        <div class="reveal-content-layer" style="position: absolute; inset: 0; z-index: 100; pointer-events: none;">
+            <?php foreach ($frames as $index => $frame) : ?>
+                <div class="reveal-frame-content" 
+                     data-index="<?php echo $index; ?>"
+                     style="opacity: 0; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                    <div class="content-inner" style="pointer-events: auto; max-width: 800px; padding: 2rem;">
+                        <?php echo wp_kses_post($frame['content'] ?? ''); ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
 
-			// Build inline styles for the frame container
-			$frame_styles = [];
-			$frame_styles[] = sprintf('--desktop-focal-x: %s%%', ($desktop_focal_point['x'] ?? 0.5) * 100);
-			$frame_styles[] = sprintf('--desktop-focal-y: %s%%', ($desktop_focal_point['y'] ?? 0.5) * 100);
-			$frame_styles[] = sprintf('--mobile-focal-x: %s%%', ($mobile_focal_point['x'] ?? 0.5) * 100);
-			$frame_styles[] = sprintf('--mobile-focal-y: %s%%', ($mobile_focal_point['y'] ?? 0.5) * 100);
+    </div>
 
-			$frame_style_attr = implode('; ', $frame_styles);
+    <div class="reveal-triggers" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+        <?php 
+        $current_top = 0;
+        foreach ($frames as $index => $frame): 
+            $speed = $frame['transition']['speed'] ?? 'normal';
+            $multiplier = $speed_multipliers[$speed] ?? 1;
+            $height = 100 * $multiplier;
+        ?>
+            <div class="reveal-trigger" 
+                 data-index="<?php echo $index; ?>"
+                 style="position: absolute; top: <?php echo $current_top; ?>vh; height: <?php echo $height; ?>vh; width: 100%;">
+            </div>
+        <?php 
+            $current_top += $height;
+        endforeach; ?>
+    </div>
 
-			// Build classes
-			$frame_classes = 'reveal-frame';
-			if ($index === 0) {
-				$frame_classes .= ' is-active';
-			}
-
-			// Desktop image styles (with duotone if set)
-			$desktop_img_styles = [];
-			if (! empty($desktop_duotone)) {
-				$desktop_img_styles[] = sprintf('filter: url(#%s-%d-desktop)', esc_attr($block_id), $index);
-			}
-			$desktop_img_style_attr = ! empty($desktop_img_styles) ? implode('; ', $desktop_img_styles) : '';
-
-			// Mobile image styles (with duotone if set)
-			$mobile_img_styles = [];
-			if (! empty($mobile_duotone)) {
-				$mobile_img_styles[] = sprintf('filter: url(#%s-%d-mobile)', esc_attr($block_id), $index);
-			}
-			$mobile_img_style_attr = ! empty($mobile_img_styles) ? implode('; ', $mobile_img_styles) : '';
-
-			// Determine if we need separate desktop/mobile images (when duotones differ or mobile image exists)
-			$has_mobile_image = ! empty($mobile_image) && ! empty($mobile_image['url']);
-			$duotones_differ = $desktop_duotone !== $mobile_duotone;
-			$use_separate_images = $has_mobile_image || $duotones_differ;
-			$transition_speed = $transition['speed'] ?? 'normal';
-
-			// Get captions
-			$desktop_caption = $desktop_image['caption'] ?? '';
-			$mobile_caption = $has_mobile_image ? ($mobile_image['caption'] ?? '') : $desktop_caption;
-			$has_caption = ! empty($desktop_caption) || ! empty($mobile_caption);
-		?>
-			<figure
-				class="<?php echo esc_attr($frame_classes); ?>"
-				data-index="<?php echo esc_attr($index); ?>"
-				data-transition-type="<?php echo esc_attr($transition['type'] ?? 'fade'); ?>"
-				data-transition-speed="<?php echo esc_attr($transition_speed); ?>"
-				style="<?php echo esc_attr($frame_style_attr); ?>">
-				<?php if ($use_separate_images) : ?>
-					<?php // Desktop image - hidden on mobile 
-					?>
-					<img
-						class="reveal-frame-desktop"
-						src="<?php echo esc_url(set_url_scheme($desktop_image['url'])); ?>"
-						srcset="<?php echo caes_reveal_build_srcset($desktop_image); ?>"
-						sizes="100vw"
-						alt="<?php echo esc_attr($desktop_image['alt'] ?? ''); ?>"
-						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-						decoding="async"
-						<?php if ($desktop_img_style_attr) : ?>
-						style="<?php echo esc_attr($desktop_img_style_attr); ?>"
-						<?php endif; ?>>
-					<?php // Mobile image - hidden on desktop 
-					?>
-					<img
-						class="reveal-frame-mobile"
-						src="<?php echo esc_url(set_url_scheme($has_mobile_image ? $mobile_image['url'] : $desktop_image['url'])); ?>"
-						alt="<?php echo esc_attr($has_mobile_image ? ($mobile_image['alt'] ?? '') : ($desktop_image['alt'] ?? '')); ?>"
-						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-						decoding="async"
-						<?php if ($mobile_img_style_attr) : ?>
-						style="<?php echo esc_attr($mobile_img_style_attr); ?>"
-						<?php endif; ?>>
-				<?php else : ?>
-					<?php // Single image when no mobile-specific needs 
-					?>
-					<img
-						src="<?php echo esc_url(set_url_scheme($desktop_image['url'])); ?>"
-						srcset="<?php echo caes_reveal_build_srcset($desktop_image); ?>"
-						sizes="100vw"
-						alt="<?php echo esc_attr($desktop_image['alt'] ?? ''); ?>"
-						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-						decoding="async"
-						<?php if ($desktop_img_style_attr) : ?>
-						style="<?php echo esc_attr($desktop_img_style_attr); ?>"
-						<?php endif; ?>>
-				<?php endif; ?>
-
-				<?php if ($has_caption) : ?>
-					<figcaption class="reveal-frame-caption">
-						<div class="reveal-caption-wrap">
-							<?php if ($use_separate_images && $desktop_caption !== $mobile_caption) : ?>
-								<span class="reveal-caption-desktop"><?php echo esc_html($desktop_caption); ?></span>
-								<span class="reveal-caption-mobile"><?php echo esc_html($mobile_caption); ?></span>
-							<?php else : ?>
-								<?php echo esc_html($desktop_caption); ?>
-							<?php endif; ?>
-						</div>
-					</figcaption>
-				<?php endif; ?>
-
-				<div class="reveal-overlay" style="background-color: <?php echo esc_attr($overlay_rgba); ?>;"></div>
-			</figure>
-		<?php endforeach; ?>
-	</div>
-
-	<div class="reveal-content">
-		<?php foreach ($frames as $index => $frame) : ?>
-			<?php if (isset($frame_contents[$index])) : ?>
-				<div class="reveal-frame-content" data-frame-index="<?php echo esc_attr($index); ?>">
-					<?php echo $frame_contents[$index]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped 
-					?>
-				</div>
-			<?php endif; ?>
-		<?php endforeach; ?>
-	</div>
 </div>
