@@ -1,196 +1,154 @@
 /**
- * Frontend styles for Reveal Block
+ * Frontend styles for Reveal Block - Sticky Approach
  *
- * Uses clip-path to create a "window" effect where the fixed background
- * is only visible within the block's bounds, creating smooth scroll behavior.
+ * Each frame is a container with:
+ * - A sticky background that pins while content scrolls through
+ * - Content that flows naturally and scrolls through the pinned background
  */
 
 .caes-reveal {
 	position: relative;
-	min-height: var(--reveal-min-height, 100vh);
 
-	// clip-path creates a clipping context that clips fixed children to parent bounds
+	// The main container doesn't need clip-path anymore
+	// Each frame handles its own clipping
+}
+
+// Each frame section - contains both background and content
+.reveal-frame-section {
+	position: relative;
+	// Height is set by content naturally, plus extra scroll room
+	// This will be calculated: content height + 100vh for scroll-through
+}
+
+// The sticky background wrapper
+.reveal-frame-background {
+	position: sticky;
+	top: 0;
+	height: 100vh;
+	width: 100%;
+	overflow: hidden;
+	z-index: 0;
+
+	// Clip to viewport bounds
 	clip-path: inset(0);
+}
 
-	// Background container - always fixed, clipped by parent
-	.reveal-background {
-		position: fixed;
-		top: 0;
+// Individual frame images
+.reveal-frame {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
+	}
+
+	// Desktop/Mobile image handling
+	.reveal-frame-desktop {
+		display: block;
+		object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
+	}
+
+	.reveal-frame-mobile {
+		display: none;
+		object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
+	}
+
+	// Overlay
+	.reveal-overlay {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 2;
+	}
+
+	// Caption
+	.reveal-frame-caption {
+		position: absolute;
+		bottom: 0;
+		left: 0;
 		right: 0;
-		height: 100vh;
-		z-index: 0;
-		overflow: hidden; // Clip frames during directional transitions
+		padding: 1rem 1.5rem;
+		background: rgba(0, 0, 0, 0.5);
+		color: var(--wp--preset--color--base, #fff);
+		line-height: 1.4;
+		z-index: 3;
 
-		@media screen and (min-width: 768px) {
-			// Accounting for sidebar
-			width: calc(100% - 222px);
-			left: 222px;
+		.reveal-caption-wrap {
+			max-width: var(--wp--style--global--wide-size, 1200px);
+			margin: 0 auto;
+		}
+
+		.reveal-caption-desktop {
+			display: block;
+		}
+
+		.reveal-caption-mobile {
+			display: none;
 		}
 	}
 
-	// Individual frames (using figure element for accessibility)
-	.reveal-frame {
-		position: absolute;
-		inset: 0;
-		opacity: 0;
-		clip-path: inset(0 0 0 0); // Fully clipped by default
-		transition-property: opacity, clip-path;
-		transition-timing-function: ease-out;
-		transition-duration: var(--transition-speed, 500ms);
-		will-change: opacity, clip-path;
-		margin: 0; // Reset figure default margin
-
-		&.is-active {
-			opacity: 1;
-		}
-
-		picture {
-			display: block;
-			width: 100%;
-			height: 100%;
-		}
-
+	// Mobile styles
+	@media screen and (max-width: 768px) {
 		img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-			object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
-		}
-
-		// Desktop/Mobile separate image handling
-		.reveal-frame-desktop {
-			display: block;
-			object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
-		}
-
-		.reveal-frame-mobile {
-			display: none;
 			object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
 		}
 
-		// Caption styling
+		.reveal-frame-desktop {
+			display: none;
+		}
+
+		.reveal-frame-mobile {
+			display: block;
+		}
+
 		.reveal-frame-caption {
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			padding: 1rem 1.5rem;
-			background: rgba(0, 0, 0, 0.5);
-			color: var(--wp--preset--color--base);
-			line-height: 1.4;
-			z-index: 3; // Above overlay
-
-			.reveal-caption-wrap {
-				max-width: var(--wp--style--global--wide-size);
-				margin: 0 auto;
-			}
-			
-
-			// Desktop caption visible by default
 			.reveal-caption-desktop {
-				display: block;
+				display: none;
 			}
 
 			.reveal-caption-mobile {
-				display: none;
-			}
-		}
-
-		// Overlay - inside each frame, between image and caption
-		.reveal-overlay {
-			position: absolute;
-			inset: 0;
-			pointer-events: none;
-			z-index: 2; // Above image, below caption
-		}
-
-		// Mobile: swap which image and caption is visible
-		@media screen and (max-width: 768px) {
-			img {
-				object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
-			}
-
-			.reveal-frame-desktop {
-				display: none;
-			}
-
-			.reveal-frame-mobile {
 				display: block;
 			}
-
-			.reveal-frame-caption {
-				.reveal-caption-desktop {
-					display: none;
-				}
-
-				.reveal-caption-mobile {
-					display: block;
-				}
-			}
 		}
 	}
+}
 
-	// Content container
-	.reveal-content {
-		position: relative;
-		z-index: 2;
-		min-height: inherit;
-
-		// Ensure content has some padding by default
-		>*:first-child {
-			margin-top: 0;
-		}
-
-		>*:last-child {
-			margin-bottom: 0;
-		}
+// Content that scrolls over the sticky background
+.reveal-frame-content {
+	position: relative;
+	z-index: 1;
+	
+	// Offset to start below the sticky background
+	margin-top: -100vh;
+	
+	// Padding so content starts at bottom of viewport and has room to scroll
+	padding-top: 100vh;  // Push content down so it enters from bottom
+	padding-bottom: 20vh; // Some breathing room at bottom
+	padding-left: 2rem;
+	padding-right: 2rem;
+	
+	// Content should be visible above background
+	pointer-events: auto;
+	
+	// Inner content wrapper
+	> * {
+		// Add background/styling to content blocks if needed for readability
 	}
+}
 
-	// Each frame's content block - full viewport height with content at bottom
-	// This creates the effect of content scrolling in from the bottom
+// Last frame - content scrolls away with background
+.reveal-frame-section:last-child {
 	.reveal-frame-content {
-		min-height: 100vh;
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-end; // Content starts at bottom, scrolls up into view
-		padding: 2rem;
-		padding-bottom: 15vh; // Give some breathing room at bottom
-		box-sizing: border-box;
-	}
-
-	// Reduced motion: instant transitions
-	@media (prefers-reduced-motion: reduce) {
-		.reveal-frame {
-			transition-duration: 0ms !important;
-		}
-	}
-
-	// Wide alignment
-	&.alignwide {
-		.reveal-background {
-			left: 0;
-			right: 0;
-			width: 100vw;
-		}
+		padding-bottom: 2rem; // Less padding, scrolls away naturally
 	}
 }
 
-// Transition type variations (applied via JS)
-.reveal-frame {
-	// Fade (default) - just opacity, handled above
-
-	// Wipe transitions - use clip-path for reveal effect
-	&[data-transition-type="up"],
-	&[data-transition-type="down"],
-	&[data-transition-type="left"],
-	&[data-transition-type="right"] {
-		transition-property: opacity, clip-path;
-	}
-}
-
-// Accessibility: ensure focus states are visible
+// Accessibility
 .caes-reveal {
-
 	a:focus,
 	button:focus {
 		outline: 2px solid currentColor;
@@ -198,23 +156,24 @@
 	}
 }
 
-// Print styles - show first frame only, no fixed positioning
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+	.reveal-frame {
+		transition: none !important;
+	}
+}
+
+// Print styles
 @media print {
 	.caes-reveal {
-		clip-path: none;
-
-		.reveal-background {
-			position: absolute !important;
-			height: 100%;
+		.reveal-frame-background {
+			position: relative;
+			height: auto;
 		}
 
-		.reveal-frame {
-			display: none;
-
-			&:first-child {
-				display: block;
-				opacity: 1 !important;
-			}
+		.reveal-frame-content {
+			margin-top: 0;
+			padding-top: 2rem;
 		}
 
 		.reveal-overlay {
