@@ -21,27 +21,145 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * Generate duotone SVG filter markup - matches WordPress core implementation.
+ */
+
+const getDuotoneFilter = (duotone, filterId) => {
+  if (!duotone || duotone.length < 2) {
+    return null;
+  }
+  const parseColor = hex => {
+    let color = hex.replace('#', '');
+    if (color.length === 3) {
+      color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2];
+    }
+    return {
+      r: parseInt(color.slice(0, 2), 16) / 255,
+      g: parseInt(color.slice(2, 4), 16) / 255,
+      b: parseInt(color.slice(4, 6), 16) / 255
+    };
+  };
+  const shadow = parseColor(duotone[0]);
+  const highlight = parseColor(duotone[1]);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 0 0",
+    width: "0",
+    height: "0",
+    focusable: "false",
+    role: "none",
+    style: {
+      visibility: 'hidden',
+      position: 'absolute',
+      left: '-9999px',
+      overflow: 'hidden'
+    },
+    "aria-hidden": "true",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("defs", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("filter", {
+        id: filterId,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("feColorMatrix", {
+          colorInterpolationFilters: "sRGB",
+          type: "matrix",
+          values: ".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("feComponentTransfer", {
+          colorInterpolationFilters: "sRGB",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("feFuncR", {
+            type: "table",
+            tableValues: `${shadow.r} ${highlight.r}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("feFuncG", {
+            type: "table",
+            tableValues: `${shadow.g} ${highlight.g}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("feFuncB", {
+            type: "table",
+            tableValues: `${shadow.b} ${highlight.b}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("feFuncA", {
+            type: "table",
+            tableValues: "0 1"
+          })]
+        })]
+      })
+    })
+  });
+};
+
+/**
+ * Convert overlay color and opacity to rgba string.
+ */
+const getOverlayRgba = (overlayColor, overlayOpacity) => {
+  if (!overlayColor) {
+    return 'transparent';
+  }
+  const opacity = (overlayOpacity || 0) / 100;
+  const hex = overlayColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
 const Edit = ({
   attributes,
+  context,
   clientId
 }) => {
   const {
+    frameIndex,
     frameLabel
   } = attributes;
+
+  // Get frame data from parent context
+  const frames = context['caes-hub/reveal-frames'] || [];
+  const overlayColor = context['caes-hub/reveal-overlayColor'] || '#000000';
+  const overlayOpacity = context['caes-hub/reveal-overlayOpacity'] || 30;
+
+  // Get this frame's data
+  const frame = frames[frameIndex] || null;
+  const desktopImage = frame?.desktopImage || null;
+  const desktopFocalPoint = frame?.desktopFocalPoint || {
+    x: 0.5,
+    y: 0.5
+  };
+  const desktopDuotone = frame?.desktopDuotone || frame?.duotone || null;
+  const filterId = `reveal-frame-editor-${clientId}`;
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
     className: 'reveal-frames-editor',
     'data-frame-label': frameLabel
   });
-  const innerBlocksProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useInnerBlocksProps)(blockProps, {
+  const innerBlocksProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useInnerBlocksProps)({
+    className: 'reveal-frames-content'
+  }, {
     templateLock: false,
     renderAppender: _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks.ButtonBlockAppender
   });
   return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
-    ...innerBlocksProps,
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+    ...blockProps,
+    children: [desktopImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxs)("div", {
+      className: "reveal-frames-background",
+      children: [desktopDuotone && getDuotoneFilter(desktopDuotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("img", {
+        src: desktopImage.url,
+        alt: "",
+        style: {
+          objectPosition: `${desktopFocalPoint.x * 100}% ${desktopFocalPoint.y * 100}%`,
+          filter: desktopDuotone ? `url(#${filterId})` : undefined
+        }
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+        className: "reveal-frames-overlay",
+        style: {
+          background: getOverlayRgba(overlayColor, overlayOpacity)
+        }
+      })]
+    }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+      className: "reveal-frames-no-image",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("span", {
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No background image', 'caes-reveal')
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
       className: "reveal-frames-label",
       children: frameLabel || (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame Content', 'caes-reveal')
-    }), innerBlocksProps.children]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_2__.jsx)("div", {
+      ...innerBlocksProps
+    })]
   });
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Edit);
@@ -141,7 +259,7 @@ module.exports = window["wp"]["i18n"];
   \*********************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal-frames","version":"0.1.0","title":"Reveal Frames","parent":["caes-hub/reveal"],"category":"media","description":"Container for content specific to a single frame.","textdomain":"caes-reveal","attributes":{"frameIndex":{"type":"number","default":0},"frameLabel":{"type":"string","default":""}},"supports":{"html":false,"reusable":false,"lock":false},"editorScript":"file:./index.js","editorStyle":"file:./index.css"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal-frames","version":"0.1.0","title":"Reveal Frames","parent":["caes-hub/reveal"],"category":"media","description":"Container for content specific to a single frame.","textdomain":"caes-reveal","usesContext":["caes-hub/reveal-frames","caes-hub/reveal-overlayColor","caes-hub/reveal-overlayOpacity"],"attributes":{"frameIndex":{"type":"number","default":0},"frameLabel":{"type":"string","default":""}},"supports":{"html":false,"reusable":false,"lock":false},"editorScript":"file:./index.js","editorStyle":"file:./index.css"}');
 
 /***/ })
 

@@ -384,8 +384,26 @@ const Edit = ({
           onClick: () => setShowFrameManager(true)
         })
       })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frames', 'caes-reveal'),
+        initialOpen: true,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+          style: {
+            marginBottom: '12px',
+            color: '#757575',
+            fontSize: '13px'
+          },
+          children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This block has', 'caes-reveal'), " ", frames.length, " ", frames.length === 1 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('frame', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('frames', 'caes-reveal'), "."]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          variant: "secondary",
+          onClick: () => setShowFrameManager(true),
+          style: {
+            width: '100%'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Manage Frames', 'caes-reveal')
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
         title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay', 'caes-reveal'),
         initialOpen: false,
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
@@ -447,59 +465,14 @@ const Edit = ({
             }
           })]
         })]
-      })
+      })]
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
       ...blockProps,
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
-        className: "reveal-editor-layout",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
-          className: "reveal-background-preview",
-          children: frames.length === 0 ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
-            className: "reveal-placeholder",
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
-              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Click "Manage Frames" to add background images', 'caes-reveal')
-            })
-          }) : frames.map((frame, index) => {
-            if (!frame.desktopImage) {
-              return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
-                className: "reveal-frame-placeholder",
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
-                  children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", index + 1, ": ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No image', 'caes-reveal')]
-                })
-              }, frame.id || index);
-            }
-            const filterId = `editor-${clientId}-${index}`;
-            const desktopDuotone = frame.desktopDuotone || frame.duotone;
-            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
-              className: "reveal-frame-preview",
-              children: [desktopDuotone && getDuotoneFilter(desktopDuotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
-                src: frame.desktopImage.url,
-                alt: frame.desktopImage.alt || '',
-                style: {
-                  objectPosition: `${(frame.desktopFocalPoint?.x || 0.5) * 100}% ${(frame.desktopFocalPoint?.y || 0.5) * 100}%`,
-                  filter: desktopDuotone ? `url(#${filterId})` : undefined
-                }
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
-                className: "reveal-overlay-preview",
-                style: {
-                  background: getOverlayRgba()
-                }
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
-                className: "reveal-frame-label",
-                children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", index + 1]
-              })]
-            }, frame.id || index);
-          })
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
-          className: "reveal-content-editor",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Notice, {
-            status: "info",
-            isDismissible: false,
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add content to each frame container below. Content will appear over the background images as users scroll.', 'caes-reveal')
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
-            allowedBlocks: ['caes-hub/reveal-frames']
-          })]
-        })]
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+        className: "reveal-editor-content",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+          allowedBlocks: ['caes-hub/reveal-frames']
+        })
       })
     }), showFrameManager && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
       title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Manage Frames', 'caes-reveal'),
@@ -1275,7 +1248,7 @@ module.exports = window["wp"]["i18n"];
   \**************************************/
 /***/ ((module) => {
 
-module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal","version":"0.2.0","title":"Reveal","category":"media","icon":"cover-image","description":"Full-window fixed background that transitions between frames as the user scrolls through content.","keywords":["reveal","scroll","parallax","immersive","background","storytelling"],"textdomain":"caes-reveal","attributes":{"frames":{"type":"array","default":[],"items":{"type":"object"}},"overlayColor":{"type":"string","default":"#000000"},"overlayOpacity":{"type":"number","default":30},"minHeight":{"type":"string","default":"100vh"},"scrollSpeed":{"type":"string","default":"normal","enum":["slow","normal","fast"]}},"supports":{"align":["full","wide"],"html":false,"color":{"text":true,"background":false},"spacing":{"padding":true}},"providesContext":{"caes-hub/reveal-frames":"frames"},"render":"file:./render.php","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js"}');
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal","version":"0.2.0","title":"Reveal","category":"media","icon":"cover-image","description":"Full-window fixed background that transitions between frames as the user scrolls through content.","keywords":["reveal","scroll","parallax","immersive","background","storytelling"],"textdomain":"caes-reveal","attributes":{"frames":{"type":"array","default":[],"items":{"type":"object"}},"overlayColor":{"type":"string","default":"#000000"},"overlayOpacity":{"type":"number","default":30},"minHeight":{"type":"string","default":"100vh"},"scrollSpeed":{"type":"string","default":"normal","enum":["slow","normal","fast"]}},"supports":{"align":["full","wide"],"html":false,"color":{"text":true,"background":false},"spacing":{"padding":true}},"providesContext":{"caes-hub/reveal-frames":"frames","caes-hub/reveal-overlayColor":"overlayColor","caes-hub/reveal-overlayOpacity":"overlayOpacity"},"render":"file:./render.php","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js"}');
 
 /***/ })
 

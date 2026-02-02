@@ -10,6 +10,11 @@
   "category": "media",
   "description": "Container for content specific to a single frame.",
   "textdomain": "caes-reveal",
+  "usesContext": [
+    "caes-hub/reveal-frames",
+    "caes-hub/reveal-overlayColor",
+    "caes-hub/reveal-overlayOpacity"
+  ],
   "attributes": {
     "frameIndex": {
       "type": "number",

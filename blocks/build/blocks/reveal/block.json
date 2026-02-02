@@ -61,7 +61,9 @@
     }
   },
   "providesContext": {
-    "caes-hub/reveal-frames": "frames"
+    "caes-hub/reveal-frames": "frames",
+    "caes-hub/reveal-overlayColor": "overlayColor",
+    "caes-hub/reveal-overlayOpacity": "overlayOpacity"
   },
   "render": "file:./render.php",
   "editorScript": "file:./index.js",

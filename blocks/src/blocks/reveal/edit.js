@@ -16,7 +16,6 @@ import {
 	ColorPicker,
 	Popover,
 	TextControl,
-	Notice,
 	ToolbarGroup,
 	ToolbarButton,
 	Modal,
@@ -296,6 +295,19 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			</BlockControls>
 
 			<InspectorControls>
+				<PanelBody title={ __( 'Frames', 'caes-reveal' ) } initialOpen={ true }>
+					<p style={ { marginBottom: '12px', color: '#757575', fontSize: '13px' } }>
+						{ __( 'This block has', 'caes-reveal' ) } { frames.length } { frames.length === 1 ? __( 'frame', 'caes-reveal' ) : __( 'frames', 'caes-reveal' ) }.
+					</p>
+					<Button
+						variant="secondary"
+						onClick={ () => setShowFrameManager( true ) }
+						style={ { width: '100%' } }
+					>
+						{ __( 'Manage Frames', 'caes-reveal' ) }
+					</Button>
+				</PanelBody>
+
 				<PanelBody title={ __( 'Overlay', 'caes-reveal' ) } initialOpen={ false }>
 					<div style={ { marginBottom: '16px' } }>
 						<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500 } }>
@@ -355,56 +367,8 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="reveal-editor-layout">
-					{/* Background frames preview */}
-					<div className="reveal-background-preview">
-						{ frames.length === 0 ? (
-							<div className="reveal-placeholder">
-								<p>{ __( 'Click "Manage Frames" to add background images', 'caes-reveal' ) }</p>
-							</div>
-						) : (
-							frames.map( ( frame, index ) => {
-								if ( ! frame.desktopImage ) {
-									return (
-										<div key={ frame.id || index } className="reveal-frame-placeholder">
-											<p>{ __( 'Frame', 'caes-reveal' ) } { index + 1 }: { __( 'No image', 'caes-reveal' ) }</p>
-										</div>
-									);
-								}
-
-								const filterId = `editor-${ clientId }-${ index }`;
-								const desktopDuotone = frame.desktopDuotone || frame.duotone;
-
-								return (
-									<div key={ frame.id || index } className="reveal-frame-preview">
-										{ desktopDuotone && getDuotoneFilter( desktopDuotone, filterId ) }
-										<img
-											src={ frame.desktopImage.url }
-											alt={ frame.desktopImage.alt || '' }
-											style={ {
-												objectPosition: `${ ( frame.desktopFocalPoint?.x || 0.5 ) * 100 }% ${ (
-													frame.desktopFocalPoint?.y || 0.5
-												) * 100 }%`,
-												filter: desktopDuotone ? `url(#${ filterId })` : undefined,
-											} }
-										/>
-										<div className="reveal-overlay-preview" style={ { background: getOverlayRgba() } } />
-										<div className="reveal-frame-label">
-											{ __( 'Frame', 'caes-reveal' ) } { index + 1 }
-										</div>
-									</div>
-								);
-							} )
-						) }
-					</div>
-
-					{/* Content editing area */}
-					<div className="reveal-content-editor">
-						<Notice status="info" isDismissible={ false }>
-							{ __( 'Add content to each frame container below. Content will appear over the background images as users scroll.', 'caes-reveal' ) }
-						</Notice>
-						<InnerBlocks allowedBlocks={ [ 'caes-hub/reveal-frames' ] } />
-					</div>
+				<div className="reveal-editor-content">
+					<InnerBlocks allowedBlocks={ [ 'caes-hub/reveal-frames' ] } />
 				</div>
 			</div>
 
