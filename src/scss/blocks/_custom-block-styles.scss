@@ -60,6 +60,7 @@ ul.is-style-caes-hub-list-none {
 // Use checkbox for ul
 ul.is-style-caes-hub-list-checkbox {
     padding: 0;
+    list-style: none;
 
     li {
         position: relative;
@@ -71,7 +72,7 @@ ul.is-style-caes-hub-list-checkbox {
             line-height: 1;
             position: absolute;
             left: 0;
-            top: 0.1em; // Fine-tune vertical alignment as needed
+            top: -0.1rem;
         }
 
         > ol,
