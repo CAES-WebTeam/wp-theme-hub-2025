@@ -162,6 +162,11 @@
 	}
 }
 
+/* Fix color picker popover appearing behind modal */
+.components-modal__frame .components-popover {
+	z-index: 1000001 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 782px) {
 	.reveal-frames-editor {
