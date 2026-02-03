@@ -164,7 +164,7 @@ $reveal-mobile-breakpoint: 782px;
 }
 
 .reveal-caption-wrap {
-	max-width: $reveal-content-max-width;
+	// max-width: $reveal-content-max-width;
 	margin: 0 auto;
 }
 
@@ -224,7 +224,7 @@ $reveal-mobile-breakpoint: 782px;
 .reveal-frame-content {
 	position: relative;
 	width: 100%;
-	max-width: $reveal-content-max-width;
+	// max-width: $reveal-content-max-width;
 	margin: 0 auto;
 	padding: $reveal-content-padding;
 	box-sizing: border-box;
