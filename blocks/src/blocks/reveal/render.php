@@ -284,10 +284,10 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 						<figcaption class="reveal-frame-caption">
 							<div class="reveal-caption-wrap">
 								<?php if ($use_separate_images && $desktop_caption !== $mobile_caption) : ?>
-									<span class="reveal-caption-desktop"><?php echo esc_html($desktop_caption); ?></span>
-									<span class="reveal-caption-mobile"><?php echo esc_html($mobile_caption); ?></span>
+									<span class="reveal-caption-desktop"><?php echo wp_kses_post($desktop_caption); ?></span>
+									<span class="reveal-caption-mobile"><?php echo wp_kses_post($mobile_caption); ?></span>
 								<?php else : ?>
-									<?php echo esc_html($desktop_caption); ?>
+									<?php echo wp_kses_post($desktop_caption); ?>
 								<?php endif; ?>
 							</div>
 						</figcaption>

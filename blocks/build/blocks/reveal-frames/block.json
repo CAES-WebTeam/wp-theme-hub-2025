@@ -20,9 +20,13 @@
       "type": "number",
       "default": 0
     },
-    "frameLabel": {
+    "frameId": {
       "type": "string",
       "default": ""
+    },
+    "frameLabel": {
+      "type": "string",
+      "default": "Frame Content"
     }
   },
   "supports": {

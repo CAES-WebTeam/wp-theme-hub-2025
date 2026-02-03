@@ -6,6 +6,7 @@ import {
 	BlockControls,
 	MediaUpload,
 	MediaUploadCheck,
+	RichText,
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import {
@@ -23,7 +24,7 @@ import {
 	DuotoneSwatch,
 	RangeControl,
 } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { createBlock } from '@wordpress/blocks';
 
@@ -140,8 +141,11 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 	const { frames, overlayColor, overlayOpacity } = attributes;
 	const [ showFrameManager, setShowFrameManager ] = useState( false );
 	const [ showOverlayColorPicker, setShowOverlayColorPicker ] = useState( false );
+	
+	// Track if we're currently syncing to prevent loops
+	const isSyncingRef = useRef( false );
 
-	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
+	const { replaceInnerBlocks, updateBlockAttributes } = useDispatch( blockEditorStore );
 	const { innerBlocks } = useSelect(
 		( select ) => ( {
 			innerBlocks: select( blockEditorStore ).getBlocks( clientId ),
@@ -158,47 +162,100 @@ const Edit = ( { attributes, setAttributes, clientId } ) => {
 		}
 	}, [] );
 
-	// Sync frame content blocks with frames array
+	// Sync frames array with inner blocks order
+	// This handles when users reorder blocks via list view or drag/drop
 	useEffect( () => {
-		if ( frames.length === 0 ) {
+		if ( frames.length === 0 || isSyncingRef.current ) {
 			return;
 		}
 
+		// Get the frame IDs from inner blocks (based on their frameId attribute)
+		const innerBlockFrameIds = innerBlocks
+			.filter( ( block ) => block.name === 'caes-hub/reveal-frames' )
+			.map( ( block ) => block.attributes.frameId );
+
+		// Get the frame IDs from our frames array
+		const frameIds = frames.map( ( frame ) => frame.id );
+
+		// Check if inner blocks have been reordered
+		const hasBeenReordered = innerBlockFrameIds.length === frameIds.length &&
+			innerBlockFrameIds.every( ( id ) => frameIds.includes( id ) ) &&
+			innerBlockFrameIds.some( ( id, index ) => id !== frameIds[ index ] );
+
+		if ( hasBeenReordered ) {
+			// Reorder frames array to match inner blocks order
+			isSyncingRef.current = true;
+			const reorderedFrames = innerBlockFrameIds.map( ( id ) => 
+				frames.find( ( frame ) => frame.id === id )
+			).filter( Boolean );
+			
+			setAttributes( { frames: reorderedFrames } );
+			
+			// Update frameIndex on each inner block to match new order
+			innerBlocks.forEach( ( block, index ) => {
+				if ( block.name === 'caes-hub/reveal-frames' ) {
+					updateBlockAttributes( block.clientId, {
+						frameIndex: index,
+						frameLabel: `Frame ${ index + 1 } Content`,
+					} );
+				}
+			} );
+			
+			// Reset sync flag after a short delay
+			setTimeout( () => {
+				isSyncingRef.current = false;
+			}, 100 );
+			return;
+		}
+
+		// Check if we need to create/update inner blocks
 		const needsUpdate =
 			innerBlocks.length !== frames.length ||
 			innerBlocks.some(
 				( block, index ) =>
 					block.name !== 'caes-hub/reveal-frames' ||
 					block.attributes.frameIndex !== index ||
-					block.attributes.frameLabel !== `Frame ${ index + 1 } Content`
+					block.attributes.frameId !== frames[ index ]?.id
 			);
 
 		if ( needsUpdate ) {
+			isSyncingRef.current = true;
+			
 			const newInnerBlocks = frames.map( ( frame, index ) => {
+				// Try to find existing block by frameId first, then by frameIndex
 				const existingBlock = innerBlocks.find(
+					( b ) => b.name === 'caes-hub/reveal-frames' && b.attributes.frameId === frame.id
+				) || innerBlocks.find(
 					( b ) => b.name === 'caes-hub/reveal-frames' && b.attributes.frameIndex === index
 				);
 
 				if ( existingBlock ) {
-					return {
-						...existingBlock,
-						attributes: {
+					return createBlock(
+						'caes-hub/reveal-frames',
+						{
 							...existingBlock.attributes,
 							frameIndex: index,
+							frameId: frame.id,
 							frameLabel: `Frame ${ index + 1 } Content`,
 						},
-					};
+						existingBlock.innerBlocks
+					);
 				}
 
 				return createBlock( 'caes-hub/reveal-frames', {
 					frameIndex: index,
+					frameId: frame.id,
 					frameLabel: `Frame ${ index + 1 } Content`,
 				} );
 			} );
 
 			replaceInnerBlocks( clientId, newInnerBlocks, false );
+			
+			setTimeout( () => {
+				isSyncingRef.current = false;
+			}, 100 );
 		}
-	}, [ frames.length, clientId ] );
+	}, [ frames, innerBlocks, clientId ] );
 
 	const addFrame = () => {
 		const newFrame = {
@@ -753,16 +810,35 @@ const ImagePanel = ( {
 							</Button>
 						</div>
 
-						{/* Caption */}
-						<TextControl
-							label={ __( 'Caption', 'caes-reveal' ) + ' (' + __( 'optional', 'caes-reveal' ) + ')' }
-							value={ image?.caption || '' }
-							onChange={ ( value ) => {
-								const updatedImage = { ...image, caption: value };
-								onUpdate( { [ imageKey ]: updatedImage } );
-							} }
-							placeholder={ __( 'Add a caption', 'caes-reveal' ) }
-						/>
+						{/* Caption - Now using RichText for links */}
+						<div style={ { marginBottom: '16px' } }>
+							<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' } }>
+								{ __( 'Caption', 'caes-reveal' ) } ({ __( 'optional', 'caes-reveal' ) })
+							</label>
+							<div 
+								style={ { 
+									border: '1px solid #757575', 
+									borderRadius: '2px', 
+									padding: '8px 12px',
+									minHeight: '40px',
+									background: '#fff',
+								} }
+							>
+								<RichText
+									tagName="div"
+									value={ image?.caption || '' }
+									onChange={ ( value ) => {
+										const updatedImage = { ...image, caption: value };
+										onUpdate( { [ imageKey ]: updatedImage } );
+									} }
+									placeholder={ __( 'Add a caption (links supported)', 'caes-reveal' ) }
+									allowedFormats={ [ 'core/bold', 'core/italic', 'core/link' ] }
+								/>
+							</div>
+							<p style={ { margin: '4px 0 0', fontSize: '12px', color: '#757575' } }>
+								{ __( 'Tip: Select text and click the link icon to add a link', 'caes-reveal' ) }
+							</p>
+						</div>
 
 						{/* Alt Text */}
 						<TextControl

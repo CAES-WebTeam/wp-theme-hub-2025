@@ -242,8 +242,12 @@ const Edit = ({
   } = attributes;
   const [showFrameManager, setShowFrameManager] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
   const [showOverlayColorPicker, setShowOverlayColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+
+  // Track if we're currently syncing to prevent loops
+  const isSyncingRef = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useRef)(false);
   const {
-    replaceInnerBlocks
+    replaceInnerBlocks,
+    updateBlockAttributes
   } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useDispatch)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.store);
   const {
     innerBlocks
@@ -263,33 +267,73 @@ const Edit = ({
     }
   }, []);
 
-  // Sync frame content blocks with frames array
+  // Sync frames array with inner blocks order
+  // This handles when users reorder blocks via list view or drag/drop
   (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
-    if (frames.length === 0) {
+    if (frames.length === 0 || isSyncingRef.current) {
       return;
     }
-    const needsUpdate = innerBlocks.length !== frames.length || innerBlocks.some((block, index) => block.name !== 'caes-hub/reveal-frames' || block.attributes.frameIndex !== index || block.attributes.frameLabel !== `Frame ${index + 1} Content`);
+
+    // Get the frame IDs from inner blocks (based on their frameId attribute)
+    const innerBlockFrameIds = innerBlocks.filter(block => block.name === 'caes-hub/reveal-frames').map(block => block.attributes.frameId);
+
+    // Get the frame IDs from our frames array
+    const frameIds = frames.map(frame => frame.id);
+
+    // Check if inner blocks have been reordered
+    const hasBeenReordered = innerBlockFrameIds.length === frameIds.length && innerBlockFrameIds.every(id => frameIds.includes(id)) && innerBlockFrameIds.some((id, index) => id !== frameIds[index]);
+    if (hasBeenReordered) {
+      // Reorder frames array to match inner blocks order
+      isSyncingRef.current = true;
+      const reorderedFrames = innerBlockFrameIds.map(id => frames.find(frame => frame.id === id)).filter(Boolean);
+      setAttributes({
+        frames: reorderedFrames
+      });
+
+      // Update frameIndex on each inner block to match new order
+      innerBlocks.forEach((block, index) => {
+        if (block.name === 'caes-hub/reveal-frames') {
+          updateBlockAttributes(block.clientId, {
+            frameIndex: index,
+            frameLabel: `Frame ${index + 1} Content`
+          });
+        }
+      });
+
+      // Reset sync flag after a short delay
+      setTimeout(() => {
+        isSyncingRef.current = false;
+      }, 100);
+      return;
+    }
+
+    // Check if we need to create/update inner blocks
+    const needsUpdate = innerBlocks.length !== frames.length || innerBlocks.some((block, index) => block.name !== 'caes-hub/reveal-frames' || block.attributes.frameIndex !== index || block.attributes.frameId !== frames[index]?.id);
     if (needsUpdate) {
+      isSyncingRef.current = true;
       const newInnerBlocks = frames.map((frame, index) => {
-        const existingBlock = innerBlocks.find(b => b.name === 'caes-hub/reveal-frames' && b.attributes.frameIndex === index);
+        // Try to find existing block by frameId first, then by frameIndex
+        const existingBlock = innerBlocks.find(b => b.name === 'caes-hub/reveal-frames' && b.attributes.frameId === frame.id) || innerBlocks.find(b => b.name === 'caes-hub/reveal-frames' && b.attributes.frameIndex === index);
         if (existingBlock) {
-          return {
-            ...existingBlock,
-            attributes: {
-              ...existingBlock.attributes,
-              frameIndex: index,
-              frameLabel: `Frame ${index + 1} Content`
-            }
-          };
+          return (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_5__.createBlock)('caes-hub/reveal-frames', {
+            ...existingBlock.attributes,
+            frameIndex: index,
+            frameId: frame.id,
+            frameLabel: `Frame ${index + 1} Content`
+          }, existingBlock.innerBlocks);
         }
         return (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_5__.createBlock)('caes-hub/reveal-frames', {
           frameIndex: index,
+          frameId: frame.id,
           frameLabel: `Frame ${index + 1} Content`
         });
       });
       replaceInnerBlocks(clientId, newInnerBlocks, false);
+      setTimeout(() => {
+        isSyncingRef.current = false;
+      }, 100);
     }
-  }, [frames.length, clientId]);
+  }, [frames, innerBlocks, clientId]);
   const addFrame = () => {
     const newFrame = {
       ...DEFAULT_FRAME,
@@ -889,19 +933,49 @@ const ImagePanel = ({
             onClick: () => onRemoveImage(imageType + 'Image'),
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
           })]
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
-          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal') + ')',
-          value: image?.caption || '',
-          onChange: value => {
-            const updatedImage = {
-              ...image,
-              caption: value
-            };
-            onUpdate({
-              [imageKey]: updatedImage
-            });
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            marginBottom: '16px'
           },
-          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add a caption', 'caes-reveal')
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("label", {
+            style: {
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 500,
+              fontSize: '13px'
+            },
+            children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption', 'caes-reveal'), " (", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal'), ")"]
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+            style: {
+              border: '1px solid #757575',
+              borderRadius: '2px',
+              padding: '8px 12px',
+              minHeight: '40px',
+              background: '#fff'
+            },
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.RichText, {
+              tagName: "div",
+              value: image?.caption || '',
+              onChange: value => {
+                const updatedImage = {
+                  ...image,
+                  caption: value
+                };
+                onUpdate({
+                  [imageKey]: updatedImage
+                });
+              },
+              placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add a caption (links supported)', 'caes-reveal'),
+              allowedFormats: ['core/bold', 'core/italic', 'core/link']
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+            style: {
+              margin: '4px 0 0',
+              fontSize: '12px',
+              color: '#757575'
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Tip: Select text and click the link icon to add a link', 'caes-reveal')
+          })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('recommended', 'caes-reveal') + ')',
           value: image?.alt || '',
