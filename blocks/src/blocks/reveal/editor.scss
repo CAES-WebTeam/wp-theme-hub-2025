@@ -163,7 +163,7 @@
 }
 
 /* Fix color picker popover appearing behind modal */
-.components-modal__frame .components-popover {
+.components-popover__fallback-container .components-popover {
 	z-index: 1000001 !important;
 }
 
