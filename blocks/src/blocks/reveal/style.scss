@@ -12,7 +12,7 @@
 // Variables
 // ============================================================================
 
-$reveal-content-max-width: 800px;
+$reveal-content-max-width: --wp--style--global--wide-size;
 $reveal-content-padding: 2rem;
 $reveal-caption-padding: 1rem 1.5rem;
 $reveal-caption-bg: rgba(0, 0, 0, 0.6);
@@ -24,9 +24,7 @@ $reveal-mobile-breakpoint: 782px;
 
 .caes-reveal {
 	position: relative;
-	width: 100%;
-	// Ensure the block creates a positioning context
-	// The height is determined by the sections container
+	width: calc(100% + (var(--wp--preset--spacing--50) * 2));
 }
 
 // ============================================================================
@@ -157,7 +155,6 @@ $reveal-mobile-breakpoint: 782px;
 	padding: $reveal-caption-padding;
 	background: $reveal-caption-bg;
 	color: #fff;
-	font-size: 0.875rem;
 	line-height: 1.4;
 	// Ensure caption is above overlay
 	z-index: 2;
