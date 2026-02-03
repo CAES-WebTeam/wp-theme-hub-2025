@@ -24,7 +24,7 @@ $reveal-mobile-breakpoint: 782px;
 
 .caes-reveal {
 	position: relative;
-	width: 100%;
+	width: calc(100% + (var(--wp--preset--spacing--50) * 2));
 	// Ensure the block creates a positioning context
 	// The height is determined by the sections container
 }
@@ -279,33 +279,6 @@ $reveal-mobile-breakpoint: 782px;
 	// Ensure inner blocks work properly
 	> * {
 		position: relative;
-	}
-}
-
-// ============================================================================
-// Block State Classes
-// ============================================================================
-
-.caes-reveal {
-	// Before the block reaches the top of viewport
-	&:not(.has-started) {
-		.reveal-backgrounds {
-			// Backgrounds scroll normally with the page
-		}
-	}
-	
-	// Block is active (sticky is engaged)
-	&.is-active {
-		.reveal-backgrounds {
-			// Sticky positioning handles this
-		}
-	}
-	
-	// Block has finished (scrolled past)
-	&.is-finished {
-		.reveal-backgrounds {
-			// Sticky will naturally release
-		}
 	}
 }
 
