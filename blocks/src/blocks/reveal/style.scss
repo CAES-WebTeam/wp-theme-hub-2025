@@ -27,9 +27,9 @@
 	}
 }
 
-// All backgrounds are fixed for perfect alignment
+// All backgrounds start as sticky - scroll naturally
 .reveal-frame-background {
-    position: fixed;
+    position: sticky;
     top: 0;
     left: 0;
     right: 0;
@@ -40,6 +40,11 @@
     
     /* Hardware acceleration for smoother animations */
     will-change: transform, opacity;
+}
+
+// When block is stuck at top, backgrounds become fixed for perfect alignment
+.caes-reveal.is-stuck .reveal-frame-background {
+    position: fixed;
 }
 
 // First frame starts visible

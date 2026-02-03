@@ -69,14 +69,30 @@
 			const blockTop = scrollTop + blockRect.top;
 			const blockBottom = blockTop + block.offsetHeight;
 
+			// Check if block should be "stuck" at top of viewport
+			const isStuck = blockRect.top <= 0 && blockRect.bottom > viewportHeight;
+			
+			// Toggle class for CSS to handle fixed positioning
+			if (isStuck) {
+				block.classList.add('is-stuck');
+			} else {
+				block.classList.remove('is-stuck');
+			}
+
 			// Check if we're in the reveal block
 			const inBlock = scrollTop >= blockTop && scrollTop <= blockBottom;
 
-			if (!inBlock) {
-				// Not in block - hide all backgrounds
-				backgrounds.forEach((bg) => {
-					bg.style.opacity = 0;
-					bg.style.zIndex = 5;
+			if (!inBlock || !isStuck) {
+				// Not in block or not stuck - show only first background
+				backgrounds.forEach((bg, index) => {
+					if (index === 0) {
+						bg.style.opacity = 1;
+						bg.style.zIndex = 10;
+						bg.style.transform = 'none';
+					} else {
+						bg.style.opacity = 0;
+						bg.style.zIndex = 5;
+					}
 				});
 				ticking = false;
 				return;
