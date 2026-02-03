@@ -103,6 +103,7 @@ const Edit = ({
   context,
   clientId
 }) => {
+  var _context$caesHubRev;
   const {
     frameIndex,
     frameLabel
@@ -111,7 +112,7 @@ const Edit = ({
   // Get frame data from parent context
   const frames = context['caes-hub/reveal-frames'] || [];
   const overlayColor = context['caes-hub/reveal-overlayColor'] || '#000000';
-  const overlayOpacity = context['caes-hub/reveal-overlayOpacity'] || 30;
+  const overlayOpacity = (_context$caesHubRev = context['caes-hub/reveal-overlayOpacity']) !== null && _context$caesHubRev !== void 0 ? _context$caesHubRev : 30;
 
   // Get this frame's data
   const frame = frames[frameIndex] || null;
