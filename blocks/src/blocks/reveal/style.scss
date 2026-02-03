@@ -156,6 +156,7 @@ $reveal-mobile-breakpoint: 782px;
 	background: $reveal-caption-bg;
 	color: #fff;
 	line-height: 1.4;
+	max-width: var(--wp--style--global--wide-size);
 	// Ensure caption is above overlay
 	z-index: 2;
 	
