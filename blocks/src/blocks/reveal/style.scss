@@ -156,7 +156,6 @@ $reveal-mobile-breakpoint: 782px;
 	background: $reveal-caption-bg;
 	color: #fff;
 	line-height: 1.4;
-	max-width: var(--wp--style--global--wide-size);
 	// Ensure caption is above overlay
 	z-index: 2;
 	
@@ -174,7 +173,7 @@ $reveal-mobile-breakpoint: 782px;
 }
 
 .reveal-caption-wrap {
-	max-width: $reveal-content-max-width;
+	max-width: var(--wp--style--global--wide-size);
 	margin: 0 auto;
 }
 
