@@ -395,7 +395,7 @@ function get_mpdf_styles()
 {
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
-        body { font-family: "georgia", serif; font-size: 16px; line-height: 1.6; color: #000; }
+        body { font-family: "georgia", serif; font-size: 16px; line-height: 1.4; color: #000; }
         
         h1, h2, h3, h4, h5, h6 { font-family: "georgia", serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
