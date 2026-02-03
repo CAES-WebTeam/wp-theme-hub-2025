@@ -70,12 +70,10 @@
       // Check if we're in the reveal block
       const inBlock = scrollTop >= blockTop && scrollTop <= blockBottom;
       if (!inBlock) {
-        // Not in block - hide frames 2+ (frame 1 stays visible as it's sticky)
-        backgrounds.forEach((bg, index) => {
-          if (index > 0) {
-            bg.style.opacity = 0;
-            bg.style.zIndex = 5;
-          }
+        // Not in block - hide all backgrounds
+        backgrounds.forEach(bg => {
+          bg.style.opacity = 0;
+          bg.style.zIndex = 5;
         });
         ticking = false;
         return;
@@ -143,20 +141,6 @@
       // Apply background visibility
       backgrounds.forEach((bg, index) => {
         const transitionType = bg.getAttribute('data-transition') || 'none';
-
-        // First frame is always visible (sticky positioning handles it)
-        if (index === 0) {
-          if (activeIndex === 0 && transitionIndex === -1) {
-            bg.style.zIndex = 10;
-          } else if (activeIndex === 0 && transitionIndex !== -1) {
-            bg.style.zIndex = 9; // Backdrop during transition
-          } else {
-            bg.style.zIndex = 5;
-          }
-          return;
-        }
-
-        // Frames 2+ use fixed positioning and need opacity control
         if (index === activeIndex && transitionIndex === -1) {
           // Active frame, no transition
           bg.style.opacity = 1;

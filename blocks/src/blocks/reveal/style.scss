@@ -27,8 +27,9 @@
 	}
 }
 
-// The background wrapper
+// All backgrounds are fixed for perfect alignment
 .reveal-frame-background {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -41,19 +42,14 @@
     will-change: transform, opacity;
 }
 
-// First frame is sticky - scrolls naturally then sticks
+// First frame starts visible
 .reveal-frame-section[data-frame-index="0"] .reveal-frame-background {
-    position: sticky !important;
-    opacity: 1 !important;
-    top: 0;
-    left: 0;
-    right: 0;
+    opacity: 1;
     z-index: 10;
 }
 
-// All other frames are fixed - always at viewport top
+// All other frames start hidden
 .reveal-frame-section:not([data-frame-index="0"]) .reveal-frame-background {
-    position: fixed;
     opacity: 0;
 }
 
