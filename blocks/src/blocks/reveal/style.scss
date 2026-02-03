@@ -24,7 +24,7 @@ $reveal-mobile-breakpoint: 782px;
 
 .caes-reveal {
 	position: relative;
-	width: calc(100% + (var(--wp--preset--spacing--50) * 2));
+	width: 100%;
 	// Ensure the block creates a positioning context
 	// The height is determined by the sections container
 }
@@ -157,13 +157,26 @@ $reveal-mobile-breakpoint: 782px;
 	padding: $reveal-caption-padding;
 	background: $reveal-caption-bg;
 	color: #fff;
+	font-size: 0.875rem;
 	line-height: 1.4;
 	// Ensure caption is above overlay
 	z-index: 2;
+	
+	a {
+		color: #fff;
+		text-decoration: underline;
+		text-decoration-color: rgba(255, 255, 255, 0.6);
+		transition: text-decoration-color 0.2s ease;
+		
+		&:hover,
+		&:focus {
+			text-decoration-color: #fff;
+		}
+	}
 }
 
 .reveal-caption-wrap {
-	max-width: var(--wp--style--global--wide-size);
+	max-width: $reveal-content-max-width;
 	margin: 0 auto;
 }
 
@@ -223,57 +236,12 @@ $reveal-mobile-breakpoint: 782px;
 .reveal-frame-content {
 	position: relative;
 	width: 100%;
-	// max-width: $reveal-content-max-width;
+	max-width: $reveal-content-max-width;
 	margin: 0 auto;
 	padding: $reveal-content-padding;
 	box-sizing: border-box;
 	// Re-enable pointer events for content
 	pointer-events: auto;
-	
-	// Content styling
-	// color: #fff;
-	// text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-	
-	// Headings
-	// h1, h2, h3, h4, h5, h6 {
-	// 	margin-top: 0;
-	// 	margin-bottom: 1rem;
-	// 	color: #fff;
-	// }
-	
-	// Paragraphs
-	// p {
-	// 	margin-top: 0;
-	// 	margin-bottom: 1rem;
-	// 	line-height: 1.6;
-		
-	// 	&:last-child {
-	// 		margin-bottom: 0;
-	// 	}
-	// }
-	
-	// Links
-	// a {
-	// 	color: #fff;
-	// 	text-decoration: underline;
-	// 	text-decoration-color: rgba(255, 255, 255, 0.5);
-	// 	transition: text-decoration-color 0.2s ease;
-		
-	// 	&:hover,
-	// 	&:focus {
-	// 		text-decoration-color: #fff;
-	// 	}
-	// }
-	
-	// Lists
-	// ul, ol {
-	// 	margin: 0 0 1rem;
-	// 	padding-left: 1.5rem;
-	// }
-	
-	// li {
-	// 	margin-bottom: 0.5rem;
-	// }
 	
 	// Ensure inner blocks work properly
 	> * {

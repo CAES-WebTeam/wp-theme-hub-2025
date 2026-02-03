@@ -6,7 +6,6 @@ import {
 	BlockControls,
 	MediaUpload,
 	MediaUploadCheck,
-	RichText,
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import {
@@ -810,34 +809,34 @@ const ImagePanel = ( {
 							</Button>
 						</div>
 
-						{/* Caption - Now using RichText for links */}
+						{/* Caption */}
+						<TextControl
+							label={ __( 'Caption', 'caes-reveal' ) + ' (' + __( 'optional', 'caes-reveal' ) + ')' }
+							value={ image?.captionText || image?.caption || '' }
+							onChange={ ( value ) => {
+								const updatedImage = { ...image, captionText: value };
+								onUpdate( { [ imageKey ]: updatedImage } );
+							} }
+							placeholder={ __( 'Add a caption', 'caes-reveal' ) }
+						/>
+
+						{/* Caption Link */}
 						<div style={ { marginBottom: '16px' } }>
-							<label style={ { display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' } }>
-								{ __( 'Caption', 'caes-reveal' ) } ({ __( 'optional', 'caes-reveal' ) })
-							</label>
-							<div 
-								style={ { 
-									border: '1px solid #757575', 
-									borderRadius: '2px', 
-									padding: '8px 12px',
-									minHeight: '40px',
-									background: '#fff',
+							<TextControl
+								label={ __( 'Caption Link URL', 'caes-reveal' ) + ' (' + __( 'optional', 'caes-reveal' ) + ')' }
+								value={ image?.captionLink || '' }
+								onChange={ ( value ) => {
+									const updatedImage = { ...image, captionLink: value };
+									onUpdate( { [ imageKey ]: updatedImage } );
 								} }
-							>
-								<RichText
-									tagName="div"
-									value={ image?.caption || '' }
-									onChange={ ( value ) => {
-										const updatedImage = { ...image, caption: value };
-										onUpdate( { [ imageKey ]: updatedImage } );
-									} }
-									placeholder={ __( 'Add a caption (links supported)', 'caes-reveal' ) }
-									allowedFormats={ [ 'core/bold', 'core/italic', 'core/link' ] }
-								/>
-							</div>
-							<p style={ { margin: '4px 0 0', fontSize: '12px', color: '#757575' } }>
-								{ __( 'Tip: Select text and click the link icon to add a link', 'caes-reveal' ) }
-							</p>
+								placeholder={ __( 'https://example.com', 'caes-reveal' ) }
+								type="url"
+							/>
+							{ image?.captionLink && (
+								<p style={ { margin: '4px 0 0', fontSize: '12px', color: '#757575' } }>
+									{ __( 'The entire caption will be linked.', 'caes-reveal' ) }
+								</p>
+							) }
 						</div>
 
 						{/* Alt Text */}

@@ -933,48 +933,44 @@ const ImagePanel = ({
             onClick: () => onRemoveImage(imageType + 'Image'),
             children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
           })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal') + ')',
+          value: image?.captionText || image?.caption || '',
+          onChange: value => {
+            const updatedImage = {
+              ...image,
+              captionText: value
+            };
+            onUpdate({
+              [imageKey]: updatedImage
+            });
+          },
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add a caption', 'caes-reveal')
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
           style: {
             marginBottom: '16px'
           },
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("label", {
-            style: {
-              display: 'block',
-              marginBottom: '8px',
-              fontWeight: 500,
-              fontSize: '13px'
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption Link URL', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal') + ')',
+            value: image?.captionLink || '',
+            onChange: value => {
+              const updatedImage = {
+                ...image,
+                captionLink: value
+              };
+              onUpdate({
+                [imageKey]: updatedImage
+              });
             },
-            children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption', 'caes-reveal'), " (", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal'), ")"]
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
-            style: {
-              border: '1px solid #757575',
-              borderRadius: '2px',
-              padding: '8px 12px',
-              minHeight: '40px',
-              background: '#fff'
-            },
-            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.RichText, {
-              tagName: "div",
-              value: image?.caption || '',
-              onChange: value => {
-                const updatedImage = {
-                  ...image,
-                  caption: value
-                };
-                onUpdate({
-                  [imageKey]: updatedImage
-                });
-              },
-              placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add a caption (links supported)', 'caes-reveal'),
-              allowedFormats: ['core/bold', 'core/italic', 'core/link']
-            })
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('https://example.com', 'caes-reveal'),
+            type: "url"
+          }), image?.captionLink && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
             style: {
               margin: '4px 0 0',
               fontSize: '12px',
               color: '#757575'
             },
-            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Tip: Select text and click the link icon to add a link', 'caes-reveal')
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('The entire caption will be linked.', 'caes-reveal')
           })]
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
           label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('recommended', 'caes-reveal') + ')',

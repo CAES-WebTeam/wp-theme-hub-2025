@@ -240,10 +240,16 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 			$duotones_differ = $desktop_duotone !== $mobile_duotone;
 			$use_separate_images = $has_mobile_image || $duotones_differ;
 
-			// Captions
-			$desktop_caption = $desktop_image['caption'] ?? '';
-			$mobile_caption = $has_mobile_image ? ($mobile_image['caption'] ?? '') : $desktop_caption;
-			$has_caption = ! empty($desktop_caption) || ! empty($mobile_caption);
+			// Captions - support both old (caption) and new (captionText + captionLink) formats
+			$desktop_caption_text = $desktop_image['captionText'] ?? $desktop_image['caption'] ?? '';
+			$desktop_caption_link = $desktop_image['captionLink'] ?? '';
+			$mobile_caption_text = $has_mobile_image 
+				? ($mobile_image['captionText'] ?? $mobile_image['caption'] ?? '') 
+				: $desktop_caption_text;
+			$mobile_caption_link = $has_mobile_image 
+				? ($mobile_image['captionLink'] ?? '') 
+				: $desktop_caption_link;
+			$has_caption = ! empty($desktop_caption_text) || ! empty($mobile_caption_text);
 		?>
 			<div class="reveal-frame-background<?php echo $index === 0 ? ' is-active' : ''; ?>"
 				data-frame-index="<?php echo esc_attr($index); ?>"
@@ -283,11 +289,27 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 					<?php if ($has_caption) : ?>
 						<figcaption class="reveal-frame-caption">
 							<div class="reveal-caption-wrap">
-								<?php if ($use_separate_images && $desktop_caption !== $mobile_caption) : ?>
-									<span class="reveal-caption-desktop"><?php echo wp_kses_post($desktop_caption); ?></span>
-									<span class="reveal-caption-mobile"><?php echo wp_kses_post($mobile_caption); ?></span>
+								<?php if ($use_separate_images && ($desktop_caption_text !== $mobile_caption_text || $desktop_caption_link !== $mobile_caption_link)) : ?>
+									<span class="reveal-caption-desktop">
+										<?php if (! empty($desktop_caption_link)) : ?>
+											<a href="<?php echo esc_url($desktop_caption_link); ?>"><?php echo esc_html($desktop_caption_text); ?></a>
+										<?php else : ?>
+											<?php echo esc_html($desktop_caption_text); ?>
+										<?php endif; ?>
+									</span>
+									<span class="reveal-caption-mobile">
+										<?php if (! empty($mobile_caption_link)) : ?>
+											<a href="<?php echo esc_url($mobile_caption_link); ?>"><?php echo esc_html($mobile_caption_text); ?></a>
+										<?php else : ?>
+											<?php echo esc_html($mobile_caption_text); ?>
+										<?php endif; ?>
+									</span>
 								<?php else : ?>
-									<?php echo wp_kses_post($desktop_caption); ?>
+									<?php if (! empty($desktop_caption_link)) : ?>
+										<a href="<?php echo esc_url($desktop_caption_link); ?>"><?php echo esc_html($desktop_caption_text); ?></a>
+									<?php else : ?>
+										<?php echo esc_html($desktop_caption_text); ?>
+									<?php endif; ?>
 								<?php endif; ?>
 							</div>
 						</figcaption>
