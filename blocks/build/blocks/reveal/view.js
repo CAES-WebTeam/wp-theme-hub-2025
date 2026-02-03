@@ -174,8 +174,8 @@
     }
 
     /**
-     * Apply transition effects to backgrounds
-     */
+    * Apply transition effects to backgrounds
+    */
     function applyBackgroundTransitions(activeIndex, transitioningToIndex, transitionProgress) {
       backgrounds.forEach((bg, index) => {
         const transitionType = bg.getAttribute('data-transition') || 'fade';
@@ -183,6 +183,7 @@
         // Reset transforms
         bg.style.transform = '';
         bg.style.opacity = '';
+        bg.style.clipPath = '';
         if (index === activeIndex && transitioningToIndex === -1) {
           // Active frame, no transition happening
           bg.classList.add('is-active');
@@ -207,20 +208,24 @@
               bg.style.opacity = transitionProgress;
               break;
             case 'left':
+              // Wipe from left edge toward right
               bg.style.opacity = '1';
-              bg.style.transform = `translate3d(${(1 - transitionProgress) * 100}%, 0, 0)`;
+              bg.style.clipPath = `inset(0 ${(1 - transitionProgress) * 100}% 0 0)`;
               break;
             case 'right':
+              // Wipe from right edge toward left
               bg.style.opacity = '1';
-              bg.style.transform = `translate3d(${(transitionProgress - 1) * 100}%, 0, 0)`;
+              bg.style.clipPath = `inset(0 0 0 ${(1 - transitionProgress) * 100}%)`;
               break;
             case 'up':
+              // Wipe from top edge downward
               bg.style.opacity = '1';
-              bg.style.transform = `translate3d(0, ${(1 - transitionProgress) * 100}%, 0)`;
+              bg.style.clipPath = `inset(0 0 ${(1 - transitionProgress) * 100}% 0)`;
               break;
             case 'down':
+              // Wipe from bottom edge upward
               bg.style.opacity = '1';
-              bg.style.transform = `translate3d(0, ${(transitionProgress - 1) * 100}%, 0)`;
+              bg.style.clipPath = `inset(${(1 - transitionProgress) * 100}% 0 0 0)`;
               break;
             case 'zoom':
               bg.style.opacity = transitionProgress;

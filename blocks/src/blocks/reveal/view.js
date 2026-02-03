@@ -50,7 +50,7 @@
 			sections.forEach((section, index) => {
 				const content = section.querySelector('.reveal-frame-content');
 				const bg = backgrounds[index];
-				
+
 				// Get content height
 				let contentHeight = 0;
 				if (content) {
@@ -124,13 +124,13 @@
 			const blockRect = block.getBoundingClientRect();
 			const blockTop = window.pageYOffset + blockRect.top;
 			const scrollTop = window.pageYOffset;
-			
+
 			// How far we've scrolled into the block
 			const scrollIntoBlock = scrollTop - blockTop;
-			
+
 			// Total scrollable distance within the block
 			const totalHeight = sectionsContainer.offsetHeight;
-			
+
 			return {
 				scrollIntoBlock,
 				totalHeight,
@@ -150,24 +150,24 @@
 		 */
 		function getCurrentFrameState(scrollIntoBlock) {
 			const viewportHeight = window.innerHeight;
-			
+
 			let activeIndex = 0;
 			let transitioningToIndex = -1;
 			let transitionProgress = 0;
 
 			for (let i = 0; i < frameData.length; i++) {
 				const frame = frameData[i];
-				
+
 				if (scrollIntoBlock >= frame.sectionStart && scrollIntoBlock < frame.sectionEnd) {
 					activeIndex = i;
-					
+
 					// Check if we're in the transition zone
 					if (!frame.isLastFrame && scrollIntoBlock >= frame.transitionStart) {
 						transitioningToIndex = i + 1;
 						const progressIntoTransition = scrollIntoBlock - frame.transitionStart;
 						transitionProgress = Math.min(1, Math.max(0, progressIntoTransition / frame.transitionDistance));
 					}
-					
+
 					break;
 				}
 			}
@@ -181,16 +181,17 @@
 		}
 
 		/**
-		 * Apply transition effects to backgrounds
-		 */
+ * Apply transition effects to backgrounds
+ */
 		function applyBackgroundTransitions(activeIndex, transitioningToIndex, transitionProgress) {
 			backgrounds.forEach((bg, index) => {
 				const transitionType = bg.getAttribute('data-transition') || 'fade';
-				
+
 				// Reset transforms
 				bg.style.transform = '';
 				bg.style.opacity = '';
-				
+				bg.style.clipPath = '';
+
 				if (index === activeIndex && transitioningToIndex === -1) {
 					// Active frame, no transition happening
 					bg.classList.add('is-active');
@@ -208,27 +209,31 @@
 					bg.classList.remove('is-active', 'is-transitioning-out');
 					bg.classList.add('is-transitioning-in');
 					bg.style.zIndex = '10';
-					
+
 					// Apply transition based on type
 					switch (transitionType) {
 						case 'fade':
 							bg.style.opacity = transitionProgress;
 							break;
 						case 'left':
+							// Wipe from left edge toward right
 							bg.style.opacity = '1';
-							bg.style.transform = `translate3d(${(1 - transitionProgress) * 100}%, 0, 0)`;
+							bg.style.clipPath = `inset(0 ${(1 - transitionProgress) * 100}% 0 0)`;
 							break;
 						case 'right':
+							// Wipe from right edge toward left
 							bg.style.opacity = '1';
-							bg.style.transform = `translate3d(${(transitionProgress - 1) * 100}%, 0, 0)`;
+							bg.style.clipPath = `inset(0 0 0 ${(1 - transitionProgress) * 100}%)`;
 							break;
 						case 'up':
+							// Wipe from top edge downward
 							bg.style.opacity = '1';
-							bg.style.transform = `translate3d(0, ${(1 - transitionProgress) * 100}%, 0)`;
+							bg.style.clipPath = `inset(0 0 ${(1 - transitionProgress) * 100}% 0)`;
 							break;
 						case 'down':
+							// Wipe from bottom edge upward
 							bg.style.opacity = '1';
-							bg.style.transform = `translate3d(0, ${(transitionProgress - 1) * 100}%, 0)`;
+							bg.style.clipPath = `inset(${(1 - transitionProgress) * 100}% 0 0 0)`;
 							break;
 						case 'zoom':
 							bg.style.opacity = transitionProgress;
@@ -258,11 +263,11 @@
 				// Calculate where content should be positioned
 				// Content starts at bottom of viewport, scrolls to top, then off top
 				const localScroll = scrollIntoBlock - frame.sectionStart;
-				
+
 				// Content enters when localScroll = 0 (at bottom)
 				// Content is centered when localScroll = viewportHeight * 0.15
 				// Content exits when localScroll = viewportHeight + contentHeight
-				
+
 				// The content div uses CSS to position itself, we just need to ensure
 				// the section is tall enough (which we do in calculateLayout)
 			});
@@ -317,7 +322,7 @@
 		 */
 		function init() {
 			calculateLayout();
-			
+
 			// Set up event listeners
 			window.addEventListener('scroll', onScroll, { passive: true });
 			window.addEventListener('resize', onResize, { passive: true });
