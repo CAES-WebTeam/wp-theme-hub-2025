@@ -891,9 +891,68 @@ const ImagePanel = ({
           },
           children: (() => {
             const filterId = `manager-${clientId}-${frameIndex}-${imageType}`;
-            // Different aspect ratios for desktop vs mobile
-            const aspectRatio = imageType === 'desktop' ? '16 / 9' : '9 / 16';
-            const maxHeight = imageType === 'desktop' ? '250px' : '400px';
+            if (imageType === 'mobile') {
+              // Mobile: Show full image with portrait frame overlay
+              return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+                style: {
+                  position: 'relative'
+                },
+                children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
+                  src: image.url,
+                  alt: image.alt,
+                  style: {
+                    width: '100%',
+                    height: 'auto',
+                    maxHeight: '250px',
+                    aspectRatio: '16 / 9',
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    filter: duotone ? `url(#${filterId})` : undefined
+                  }
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+                  style: {
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  },
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                    style: {
+                      flex: 1,
+                      background: 'rgba(0, 0, 0, 0.6)'
+                    }
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                    style: {
+                      width: '35%',
+                      borderLeft: '2px solid rgba(255, 255, 255, 0.8)',
+                      borderRight: '2px solid rgba(255, 255, 255, 0.8)'
+                    }
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                    style: {
+                      flex: 1,
+                      background: 'rgba(0, 0, 0, 0.6)'
+                    }
+                  })]
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                  style: {
+                    position: 'absolute',
+                    bottom: '8px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(0, 0, 0, 0.75)',
+                    color: '#fff',
+                    padding: '4px 8px',
+                    borderRadius: '3px',
+                    fontSize: '11px',
+                    fontWeight: 500
+                  },
+                  children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Portrait crop area', 'caes-reveal')
+                })]
+              });
+            }
+
+            // Desktop: Normal preview
             return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
               children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
                 src: image.url,
@@ -901,8 +960,8 @@ const ImagePanel = ({
                 style: {
                   width: '100%',
                   height: 'auto',
-                  maxHeight: maxHeight,
-                  aspectRatio: aspectRatio,
+                  maxHeight: '250px',
+                  aspectRatio: '16 / 9',
                   objectFit: 'cover',
                   borderRadius: '4px',
                   filter: duotone ? `url(#${filterId})` : undefined
