@@ -770,6 +770,11 @@ const ImagePanel = ({
 
 								if (imageType === 'mobile') {
 									// Mobile: Show full image with portrait frame overlay
+									const mobileFocalPoint = frame?.mobileFocalPoint || { x: 0.5, y: 0.5 };
+									const windowWidth = 35; // percent
+									const maxLeft = 100 - windowWidth; // 65%
+									const windowLeft = mobileFocalPoint.x * maxLeft;
+
 									return (
 										<div style={{ position: 'relative' }}>
 											{duotone && getDuotoneFilter(duotone, filterId)}
@@ -786,30 +791,48 @@ const ImagePanel = ({
 													filter: duotone ? `url(#${filterId})` : undefined,
 												}}
 											/>
-											{/* Portrait frame overlay - dims the sides */}
+											{/* Portrait frame overlay - dims outside the crop area */}
 											<div style={{
 												position: 'absolute',
 												inset: 0,
-												display: 'flex',
 												borderRadius: '4px',
 												overflow: 'hidden',
 											}}>
 												{/* Left dim */}
-												<div style={{ flex: 1, background: 'rgba(0, 0, 0, 0.6)' }} />
-												{/* Center clear area (portrait ratio) */}
 												<div style={{
-													width: '35%',
+													position: 'absolute',
+													top: 0,
+													bottom: 0,
+													left: 0,
+													width: `${windowLeft}%`,
+													background: 'rgba(0, 0, 0, 0.6)',
+												}} />
+												{/* Portrait window border */}
+												<div style={{
+													position: 'absolute',
+													top: 0,
+													bottom: 0,
+													left: `${windowLeft}%`,
+													width: `${windowWidth}%`,
 													borderLeft: '2px solid rgba(255, 255, 255, 0.8)',
 													borderRight: '2px solid rgba(255, 255, 255, 0.8)',
+													boxSizing: 'border-box',
 												}} />
 												{/* Right dim */}
-												<div style={{ flex: 1, background: 'rgba(0, 0, 0, 0.6)' }} />
+												<div style={{
+													position: 'absolute',
+													top: 0,
+													bottom: 0,
+													right: 0,
+													width: `${100 - windowLeft - windowWidth}%`,
+													background: 'rgba(0, 0, 0, 0.6)',
+												}} />
 											</div>
 											{/* Label */}
 											<div style={{
 												position: 'absolute',
 												bottom: '8px',
-												left: '50%',
+												left: `${windowLeft + (windowWidth / 2)}%`,
 												transform: 'translateX(-50%)',
 												background: 'rgba(0, 0, 0, 0.75)',
 												color: '#fff',
@@ -817,6 +840,7 @@ const ImagePanel = ({
 												borderRadius: '3px',
 												fontSize: '11px',
 												fontWeight: 500,
+												whiteSpace: 'nowrap',
 											}}>
 												{__('Portrait crop area', 'caes-reveal')}
 											</div>

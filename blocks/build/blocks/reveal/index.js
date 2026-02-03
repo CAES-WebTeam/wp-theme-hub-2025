@@ -893,6 +893,13 @@ const ImagePanel = ({
             const filterId = `manager-${clientId}-${frameIndex}-${imageType}`;
             if (imageType === 'mobile') {
               // Mobile: Show full image with portrait frame overlay
+              const mobileFocalPoint = frame?.mobileFocalPoint || {
+                x: 0.5,
+                y: 0.5
+              };
+              const windowWidth = 35; // percent
+              const maxLeft = 100 - windowWidth; // 65%
+              const windowLeft = mobileFocalPoint.x * maxLeft;
               return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
                 style: {
                   position: 'relative'
@@ -913,24 +920,36 @@ const ImagePanel = ({
                   style: {
                     position: 'absolute',
                     inset: 0,
-                    display: 'flex',
                     borderRadius: '4px',
                     overflow: 'hidden'
                   },
                   children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
                     style: {
-                      flex: 1,
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: `${windowLeft}%`,
                       background: 'rgba(0, 0, 0, 0.6)'
                     }
                   }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
                     style: {
-                      width: '35%',
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: `${windowLeft}%`,
+                      width: `${windowWidth}%`,
                       borderLeft: '2px solid rgba(255, 255, 255, 0.8)',
-                      borderRight: '2px solid rgba(255, 255, 255, 0.8)'
+                      borderRight: '2px solid rgba(255, 255, 255, 0.8)',
+                      boxSizing: 'border-box'
                     }
                   }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
                     style: {
-                      flex: 1,
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: `${100 - windowLeft - windowWidth}%`,
                       background: 'rgba(0, 0, 0, 0.6)'
                     }
                   })]
@@ -938,14 +957,15 @@ const ImagePanel = ({
                   style: {
                     position: 'absolute',
                     bottom: '8px',
-                    left: '50%',
+                    left: `${windowLeft + windowWidth / 2}%`,
                     transform: 'translateX(-50%)',
                     background: 'rgba(0, 0, 0, 0.75)',
                     color: '#fff',
                     padding: '4px 8px',
                     borderRadius: '3px',
                     fontSize: '11px',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap'
                   },
                   children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Portrait crop area', 'caes-reveal')
                 })]
