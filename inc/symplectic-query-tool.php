@@ -224,6 +224,46 @@ function symplectic_query_tool_enqueue_scripts($hook) {
         .symplectic-tab-content.active {
             display: block;
         }
+        .symplectic-debug-urls {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fffbcc;
+            border: 1px solid #e6db55;
+            border-radius: 5px;
+        }
+        .symplectic-debug-urls h4 {
+            margin: 0 0 10px 0;
+            color: #826200;
+        }
+        .symplectic-url-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .symplectic-url-item label {
+            display: block;
+            font-weight: 600;
+            color: #23282d;
+            margin-bottom: 5px;
+        }
+        .symplectic-url-item code {
+            display: block;
+            padding: 8px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            word-break: break-all;
+            font-size: 12px;
+            user-select: all;
+        }
+        .symplectic-url-item .copy-hint {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
     ');
     
     // Add inline JavaScript for AJAX functionality
@@ -258,6 +298,9 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                         if (response.success) {
                             var data = response.data;
                             var html = "<div class=\"symplectic-success\">Query successful!</div>";
+
+                            // Always show debug URLs first
+                            html += renderDebugUrls(data.diagnostic_info);
 
                             // Build tabbed interface
                             html += "<div class=\"symplectic-tabs\">";
@@ -311,8 +354,12 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                             if (typeof response.data === "string") {
                                 errorHtml = "<div class=\"symplectic-error\">Error: " + escapeHtml(response.data) + "</div>";
                             } else if (typeof response.data === "object" && response.data !== null) {
+                                // Show debug URLs first if available
+                                if (response.data.diagnostic_info) {
+                                    errorHtml += renderDebugUrls(response.data.diagnostic_info);
+                                }
                                 // Build detailed error display
-                                errorHtml = "<div class=\"symplectic-error\">";
+                                errorHtml += "<div class=\"symplectic-error\">";
 
                                 // Main error message
                                 if (response.data.error_type) {
@@ -412,6 +459,36 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     }
                 });
             });
+
+            function renderDebugUrls(diagnosticInfo) {
+                if (!diagnosticInfo) return "";
+
+                var html = "<div class=\"symplectic-debug-urls\">";
+                html += "<h4>API URLs Queried (click to select, then copy)</h4>";
+
+                if (diagnosticInfo.user_request_url) {
+                    html += "<div class=\"symplectic-url-item\">";
+                    html += "<label>1. User Query URL:</label>";
+                    html += "<code>" + escapeHtml(diagnosticInfo.user_request_url) + "</code>";
+                    html += "<div class=\"copy-hint\">Click the URL above to select it, then Ctrl+C to copy</div>";
+                    html += "</div>";
+                }
+
+                if (diagnosticInfo.relationships_request_url) {
+                    html += "<div class=\"symplectic-url-item\">";
+                    html += "<label>2. Relationships Query URL:</label>";
+                    html += "<code>" + escapeHtml(diagnosticInfo.relationships_request_url) + "</code>";
+                    html += "<div class=\"copy-hint\">Click the URL above to select it, then Ctrl+C to copy</div>";
+                    html += "</div>";
+                }
+
+                if (diagnosticInfo.timestamp) {
+                    html += "<div style=\"font-size: 11px; color: #666; margin-top: 10px;\">Query executed at: " + escapeHtml(diagnosticInfo.timestamp) + "</div>";
+                }
+
+                html += "</div>";
+                return html;
+            }
 
             function renderUserInfo(user) {
                 if (!user) return "<div class=\"symplectic-no-data\">No user information available.</div>";
