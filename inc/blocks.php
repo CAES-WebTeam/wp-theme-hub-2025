@@ -112,5 +112,9 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/reveal');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/reveal-frames');
 
+	// Motion Scroll
+	register_block_type(get_template_directory() . '/blocks/build/blocks/motion-scroll');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/motion-scroll-frame');
+
 }
 add_action('init', 'caes_hub_block_init');
