@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "caes-hub/reveal-frames",
 	"version": "0.1.0",
-	"title": "Reveal Frames",
+	"title": "Reveal Frame",
 	"parent": [
 		"caes-hub/reveal"
 	],

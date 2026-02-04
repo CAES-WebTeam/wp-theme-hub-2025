@@ -1,0 +1,339 @@
+/**
+ * Motion Scroll Block Frontend Styles
+ * 
+ * Split-layout with sticky media column and scrolling content column.
+ */
+
+// ============================================================================
+// Variables
+// ============================================================================
+
+$motion-scroll-mobile-breakpoint: 900px;
+$motion-scroll-content-padding: 2rem;
+$motion-scroll-caption-bg: rgba(0, 0, 0, 0.6);
+
+// ============================================================================
+// Main Container
+// ============================================================================
+
+.caes-motion-scroll {
+	position: relative;
+	width: 100%;
+	display: grid;
+	grid-template-columns: var(--motion-scroll-content-width, 50%) var(--motion-scroll-media-width, 50%);
+	
+	// Content on right side
+	&[data-content-position="right"] {
+		grid-template-columns: var(--motion-scroll-media-width, 50%) var(--motion-scroll-content-width, 50%);
+		
+		.motion-scroll-media {
+			order: 1;
+		}
+		
+		.motion-scroll-content {
+			order: 2;
+		}
+	}
+	
+	// Content on left side (default)
+	&[data-content-position="left"] {
+		.motion-scroll-content {
+			order: 1;
+		}
+		
+		.motion-scroll-media {
+			order: 2;
+		}
+	}
+}
+
+// ============================================================================
+// Media Column (Sticky)
+// ============================================================================
+
+.motion-scroll-media {
+	position: sticky;
+	top: 0;
+	height: 100vh;
+	overflow: hidden;
+}
+
+// ============================================================================
+// Individual Frames
+// ============================================================================
+
+.motion-scroll-frame {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	z-index: 5;
+	will-change: opacity, transform, clip-path;
+	
+	&.is-active {
+		opacity: 1;
+		z-index: 10;
+	}
+	
+	&.is-transitioning-in {
+		z-index: 10;
+	}
+	
+	&.is-transitioning-out {
+		opacity: 1;
+		z-index: 9;
+	}
+}
+
+// ============================================================================
+// Frame Figure (contains image, overlay, caption)
+// ============================================================================
+
+.motion-scroll-figure {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	
+	img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
+		user-select: none;
+		-webkit-user-drag: none;
+	}
+	
+	@media (max-width: $motion-scroll-mobile-breakpoint) {
+		img {
+			object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
+		}
+	}
+}
+
+// Desktop/Mobile image switching
+.motion-scroll-img-desktop {
+	display: block;
+	
+	@media (max-width: $motion-scroll-mobile-breakpoint) {
+		display: none;
+	}
+}
+
+.motion-scroll-img-mobile {
+	display: none;
+	
+	@media (max-width: $motion-scroll-mobile-breakpoint) {
+		display: block;
+	}
+}
+
+// ============================================================================
+// Overlay
+// ============================================================================
+
+.motion-scroll-overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+// ============================================================================
+// Caption
+// ============================================================================
+
+.motion-scroll-caption {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	padding: 1rem 1.5rem;
+	background: $motion-scroll-caption-bg;
+	color: #fff;
+	font-size: 0.875rem;
+	line-height: 1.4;
+	z-index: 2;
+	
+	a {
+		color: #fff;
+		text-decoration: underline;
+		text-decoration-color: rgba(255, 255, 255, 0.6);
+		transition: text-decoration-color 0.2s ease;
+		
+		&:hover,
+		&:focus {
+			text-decoration-color: #fff;
+		}
+	}
+}
+
+.motion-scroll-caption-desktop {
+	display: block;
+	
+	@media (max-width: $motion-scroll-mobile-breakpoint) {
+		display: none;
+	}
+}
+
+.motion-scroll-caption-mobile {
+	display: none;
+	
+	@media (max-width: $motion-scroll-mobile-breakpoint) {
+		display: block;
+	}
+}
+
+// ============================================================================
+// Content Column
+// ============================================================================
+
+.motion-scroll-content {
+	position: relative;
+	z-index: 2;
+}
+
+// ============================================================================
+// Content Sections
+// ============================================================================
+
+.motion-scroll-section {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	padding: $motion-scroll-content-padding;
+	box-sizing: border-box;
+}
+
+.motion-scroll-section-inner {
+	width: 100%;
+	max-width: 600px;
+	margin: 0 auto;
+	
+	// Typography defaults
+	h1, h2, h3, h4, h5, h6 {
+		margin-top: 0;
+		margin-bottom: 1rem;
+	}
+	
+	p {
+		margin-top: 0;
+		margin-bottom: 1rem;
+		line-height: 1.6;
+		
+		&:last-child {
+			margin-bottom: 0;
+		}
+	}
+	
+	a {
+		color: inherit;
+		text-decoration: underline;
+	}
+	
+	ul, ol {
+		margin: 0 0 1rem;
+		padding-left: 1.5rem;
+	}
+	
+	li {
+		margin-bottom: 0.5rem;
+	}
+}
+
+// ============================================================================
+// Mobile Layout
+// ============================================================================
+
+@media (max-width: $motion-scroll-mobile-breakpoint) {
+	.caes-motion-scroll {
+		display: block;
+		
+		&[data-content-position="left"],
+		&[data-content-position="right"] {
+			grid-template-columns: 1fr;
+		}
+	}
+	
+	.motion-scroll-media {
+		position: relative;
+		height: auto;
+		aspect-ratio: 16 / 9;
+		
+		// On mobile, only show one frame at a time (no sticky)
+		.motion-scroll-frame {
+			position: relative;
+			display: none;
+			
+			&.is-active {
+				display: block;
+			}
+		}
+	}
+	
+	// On mobile, interleave sections with their images
+	.motion-scroll-content {
+		display: contents;
+	}
+	
+	.motion-scroll-section {
+		min-height: auto;
+		padding: $motion-scroll-content-padding;
+		
+		// Show corresponding image before each section
+		&::before {
+			content: '';
+			display: block;
+		}
+	}
+}
+
+// ============================================================================
+// Reduced Motion
+// ============================================================================
+
+@media (prefers-reduced-motion: reduce) {
+	.motion-scroll-frame {
+		transition: opacity 0.1s ease !important;
+		transform: none !important;
+		clip-path: none !important;
+	}
+}
+
+// ============================================================================
+// Print Styles
+// ============================================================================
+
+@media print {
+	.caes-motion-scroll {
+		display: block;
+	}
+	
+	.motion-scroll-media {
+		position: relative;
+		height: auto;
+	}
+	
+	.motion-scroll-frame {
+		position: relative;
+		opacity: 1 !important;
+		page-break-inside: avoid;
+		margin-bottom: 1rem;
+		
+		&:not(:first-child) {
+			display: none;
+		}
+	}
+	
+	.motion-scroll-section {
+		min-height: auto;
+		page-break-inside: avoid;
+	}
+}
