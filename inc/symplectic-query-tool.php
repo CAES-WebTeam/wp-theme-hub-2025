@@ -39,7 +39,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
     // Add custom styles
     wp_add_inline_style('wp-admin', '
         .symplectic-query-tool-wrapper {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 20px 0;
         }
         .symplectic-form-group {
@@ -125,6 +125,105 @@ function symplectic_query_tool_enqueue_scripts($hook) {
             white-space: pre-wrap;
             word-wrap: break-word;
         }
+        .symplectic-section {
+            margin-top: 25px;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .symplectic-section h3 {
+            margin: 0 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #0073aa;
+            color: #23282d;
+            font-size: 16px;
+        }
+        .symplectic-section-count {
+            font-weight: normal;
+            color: #666;
+            font-size: 14px;
+        }
+        .symplectic-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+            border: 1px solid #e5e5e5;
+            border-radius: 3px;
+        }
+        .symplectic-item:last-child {
+            margin-bottom: 0;
+        }
+        .symplectic-item-title {
+            font-weight: 600;
+            color: #23282d;
+            margin-bottom: 5px;
+        }
+        .symplectic-item-meta {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .symplectic-item-meta span {
+            margin-right: 15px;
+        }
+        .symplectic-user-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .symplectic-user-field {
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 3px;
+        }
+        .symplectic-user-field label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        .symplectic-user-field value {
+            display: block;
+            font-weight: 500;
+            color: #23282d;
+        }
+        .symplectic-no-data {
+            color: #666;
+            font-style: italic;
+            padding: 10px;
+        }
+        .symplectic-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 0;
+        }
+        .symplectic-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-bottom: -1px;
+            background: #f5f5f5;
+            margin-right: 5px;
+            border-radius: 3px 3px 0 0;
+        }
+        .symplectic-tab.active {
+            background: #fff;
+            border-color: #ddd;
+            font-weight: 600;
+        }
+        .symplectic-tab-content {
+            display: none;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .symplectic-tab-content.active {
+            display: block;
+        }
     ');
     
     // Add inline JavaScript for AJAX functionality
@@ -132,20 +231,20 @@ function symplectic_query_tool_enqueue_scripts($hook) {
         jQuery(document).ready(function($) {
             $("#symplectic-query-form").on("submit", function(e) {
                 e.preventDefault();
-                
+
                 var proprietaryId = $("#proprietary-id").val().trim();
                 var resultsArea = $("#symplectic-results");
                 var submitButton = $("#symplectic-submit");
-                
+
                 if (!proprietaryId) {
                     resultsArea.html("<div class=\"symplectic-error\">Please enter a Proprietary ID.</div>");
                     return;
                 }
-                
+
                 // Show loading state
                 submitButton.prop("disabled", true).text("Querying...");
-                resultsArea.html("<div class=\"symplectic-loading\">Loading results...</div>");
-                
+                resultsArea.html("<div class=\"symplectic-loading\">Loading user data and related records...</div>");
+
                 // Make AJAX request to our PHP handler
                 $.ajax({
                     url: ajaxurl,
@@ -157,23 +256,64 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     },
                     success: function(response) {
                         if (response.success) {
-                            resultsArea.html(
-                                "<div class=\"symplectic-success\">Query successful!</div>" +
-                                "<div class=\"symplectic-json-output\">" + 
-                                    escapeHtml(JSON.stringify(response.data, null, 2)) + 
-                                "</div>"
-                            );
+                            var data = response.data;
+                            var html = "<div class=\"symplectic-success\">Query successful!</div>";
+
+                            // Build tabbed interface
+                            html += "<div class=\"symplectic-tabs\">";
+                            html += "<div class=\"symplectic-tab active\" data-tab=\"user\">User Info</div>";
+                            html += "<div class=\"symplectic-tab\" data-tab=\"publications\">Scholarly Works (" + (data.publications ? data.publications.length : 0) + ")</div>";
+                            html += "<div class=\"symplectic-tab\" data-tab=\"activities\">Distinctions & Awards (" + (data.activities ? data.activities.length : 0) + ")</div>";
+                            html += "<div class=\"symplectic-tab\" data-tab=\"teaching\">Courses Taught (" + (data.teaching_activities ? data.teaching_activities.length : 0) + ")</div>";
+                            html += "<div class=\"symplectic-tab\" data-tab=\"raw\">Raw JSON</div>";
+                            html += "</div>";
+
+                            // User Info Tab
+                            html += "<div class=\"symplectic-tab-content active\" data-tab=\"user\">";
+                            html += renderUserInfo(data.user_info);
+                            html += "</div>";
+
+                            // Publications Tab
+                            html += "<div class=\"symplectic-tab-content\" data-tab=\"publications\">";
+                            html += renderPublications(data.publications);
+                            html += "</div>";
+
+                            // Activities Tab (Distinctions & Awards)
+                            html += "<div class=\"symplectic-tab-content\" data-tab=\"activities\">";
+                            html += renderActivities(data.activities);
+                            html += "</div>";
+
+                            // Teaching Activities Tab
+                            html += "<div class=\"symplectic-tab-content\" data-tab=\"teaching\">";
+                            html += renderTeachingActivities(data.teaching_activities);
+                            html += "</div>";
+
+                            // Raw JSON Tab
+                            html += "<div class=\"symplectic-tab-content\" data-tab=\"raw\">";
+                            html += "<div class=\"symplectic-json-output\">" + escapeHtml(JSON.stringify(data, null, 2)) + "</div>";
+                            html += "</div>";
+
+                            resultsArea.html(html);
+
+                            // Tab click handlers
+                            $(".symplectic-tab").on("click", function() {
+                                var tab = $(this).data("tab");
+                                $(".symplectic-tab").removeClass("active");
+                                $(this).addClass("active");
+                                $(".symplectic-tab-content").removeClass("active");
+                                $(".symplectic-tab-content[data-tab=\"" + tab + "\"]").addClass("active");
+                            });
                         } else {
                             // Handle error response with detailed information
                             var errorHtml = "";
-                            
+
                             // Check if response.data is a string or object
                             if (typeof response.data === "string") {
                                 errorHtml = "<div class=\"symplectic-error\">Error: " + escapeHtml(response.data) + "</div>";
                             } else if (typeof response.data === "object" && response.data !== null) {
                                 // Build detailed error display
                                 errorHtml = "<div class=\"symplectic-error\">";
-                                
+
                                 // Main error message
                                 if (response.data.error_type) {
                                     errorHtml += "<strong>" + escapeHtml(response.data.error_type) + "</strong>";
@@ -185,12 +325,12 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                 } else {
                                     errorHtml += "<strong>API Request Failed</strong>";
                                 }
-                                
+
                                 errorHtml += "</div>";
-                                
+
                                 // Error details section
                                 errorHtml += "<div class=\"symplectic-error-details\">";
-                                
+
                                 // Status message
                                 if (response.data.status_message) {
                                     errorHtml += "<div class=\"symplectic-error-section\">";
@@ -198,7 +338,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                     errorHtml += "<p>" + escapeHtml(response.data.status_message) + "</p>";
                                     errorHtml += "</div>";
                                 }
-                                
+
                                 // Likely causes
                                 if (response.data.likely_causes && Array.isArray(response.data.likely_causes)) {
                                     errorHtml += "<div class=\"symplectic-error-section\">";
@@ -210,7 +350,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                     errorHtml += "</ul>";
                                     errorHtml += "</div>";
                                 }
-                                
+
                                 // Troubleshooting steps
                                 if (response.data.troubleshooting_steps && Array.isArray(response.data.troubleshooting_steps)) {
                                     errorHtml += "<div class=\"symplectic-error-section\">";
@@ -222,7 +362,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                     errorHtml += "</ul>";
                                     errorHtml += "</div>";
                                 }
-                                
+
                                 // Response body (if present and not too large)
                                 if (response.data.response_body) {
                                     errorHtml += "<div class=\"symplectic-error-section\">";
@@ -234,23 +374,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                     errorHtml += "<pre>" + escapeHtml(bodyText) + "</pre>";
                                     errorHtml += "</div>";
                                 }
-                                
-                                // Response headers
-                                if (response.data.response_headers) {
-                                    errorHtml += "<div class=\"symplectic-error-section\">";
-                                    errorHtml += "<h4>Response Headers:</h4>";
-                                    errorHtml += "<pre>" + escapeHtml(JSON.stringify(response.data.response_headers, null, 2)) + "</pre>";
-                                    errorHtml += "</div>";
-                                }
-                                
-                                // Diagnostic info
-                                if (response.data.diagnostic_info) {
-                                    errorHtml += "<div class=\"symplectic-error-section\">";
-                                    errorHtml += "<h4>Request Details:</h4>";
-                                    errorHtml += "<pre>" + escapeHtml(JSON.stringify(response.data.diagnostic_info, null, 2)) + "</pre>";
-                                    errorHtml += "</div>";
-                                }
-                                
+
                                 // Full error object (collapsed by default)
                                 errorHtml += "<div class=\"symplectic-error-section\">";
                                 errorHtml += "<h4>Full Error Details:</h4>";
@@ -259,13 +383,13 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                                 errorHtml += "<pre style=\"margin-top: 10px;\">" + escapeHtml(JSON.stringify(response.data, null, 2)) + "</pre>";
                                 errorHtml += "</details>";
                                 errorHtml += "</div>";
-                                
+
                                 errorHtml += "</div>";
                             } else {
                                 // Fallback for unexpected data types
                                 errorHtml = "<div class=\"symplectic-error\">An unknown error occurred. Please try again.</div>";
                             }
-                            
+
                             resultsArea.html(errorHtml);
                         }
                     },
@@ -273,14 +397,14 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                         var errorMessage = "<div class=\"symplectic-error\">";
                         errorMessage += "<strong>Request Failed:</strong> " + escapeHtml(error);
                         errorMessage += "</div>";
-                        
+
                         if (xhr.responseText) {
                             errorMessage += "<div class=\"symplectic-error-details\">";
                             errorMessage += "<h4>Server Response:</h4>";
                             errorMessage += "<pre>" + escapeHtml(xhr.responseText) + "</pre>";
                             errorMessage += "</div>";
                         }
-                        
+
                         resultsArea.html(errorMessage);
                     },
                     complete: function() {
@@ -288,13 +412,115 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     }
                 });
             });
-            
+
+            function renderUserInfo(user) {
+                if (!user) return "<div class=\"symplectic-no-data\">No user information available.</div>";
+
+                var html = "<div class=\"symplectic-section\">";
+                html += "<h3>User Information</h3>";
+                html += "<div class=\"symplectic-user-info\">";
+
+                var fields = [
+                    {label: "Name", value: (user.title || "") + " " + (user.first_name || "") + " " + (user.last_name || "")},
+                    {label: "Elements ID", value: user.id},
+                    {label: "Proprietary ID", value: user.proprietary_id},
+                    {label: "Username", value: user.username},
+                    {label: "Email", value: user.email},
+                    {label: "Position", value: user.position},
+                    {label: "Department", value: user.department},
+                    {label: "Primary Group", value: user.primary_group}
+                ];
+
+                fields.forEach(function(field) {
+                    if (field.value && field.value.trim() !== "") {
+                        html += "<div class=\"symplectic-user-field\">";
+                        html += "<label>" + escapeHtml(field.label) + "</label>";
+                        html += "<value>" + escapeHtml(field.value) + "</value>";
+                        html += "</div>";
+                    }
+                });
+
+                html += "</div></div>";
+                return html;
+            }
+
+            function renderPublications(publications) {
+                if (!publications || publications.length === 0) {
+                    return "<div class=\"symplectic-no-data\">No scholarly works found for this user.</div>";
+                }
+
+                var html = "<div class=\"symplectic-section\">";
+                html += "<h3>Scholarly and Creative Works <span class=\"symplectic-section-count\">(" + publications.length + " items)</span></h3>";
+
+                publications.forEach(function(pub) {
+                    html += "<div class=\"symplectic-item\">";
+                    html += "<div class=\"symplectic-item-title\">" + escapeHtml(pub.title || "Untitled") + "</div>";
+                    html += "<div class=\"symplectic-item-meta\">";
+                    if (pub.type) html += "<span><strong>Type:</strong> " + escapeHtml(pub.type) + "</span>";
+                    if (pub.publication_date) html += "<span><strong>Date:</strong> " + escapeHtml(pub.publication_date) + "</span>";
+                    if (pub.journal) html += "<span><strong>Journal:</strong> " + escapeHtml(pub.journal) + "</span>";
+                    if (pub.doi) html += "<span><strong>DOI:</strong> " + escapeHtml(pub.doi) + "</span>";
+                    html += "</div>";
+                    html += "</div>";
+                });
+
+                html += "</div>";
+                return html;
+            }
+
+            function renderActivities(activities) {
+                if (!activities || activities.length === 0) {
+                    return "<div class=\"symplectic-no-data\">No distinctions or awards found for this user.</div>";
+                }
+
+                var html = "<div class=\"symplectic-section\">";
+                html += "<h3>Distinctions and Awards <span class=\"symplectic-section-count\">(" + activities.length + " items)</span></h3>";
+
+                activities.forEach(function(activity) {
+                    html += "<div class=\"symplectic-item\">";
+                    html += "<div class=\"symplectic-item-title\">" + escapeHtml(activity.title || "Untitled Activity") + "</div>";
+                    html += "<div class=\"symplectic-item-meta\">";
+                    if (activity.type) html += "<span><strong>Type:</strong> " + escapeHtml(activity.type) + "</span>";
+                    if (activity.date) html += "<span><strong>Date:</strong> " + escapeHtml(activity.date) + "</span>";
+                    if (activity.description) html += "<div style=\"margin-top: 8px;\">" + escapeHtml(activity.description) + "</div>";
+                    html += "</div>";
+                    html += "</div>";
+                });
+
+                html += "</div>";
+                return html;
+            }
+
+            function renderTeachingActivities(activities) {
+                if (!activities || activities.length === 0) {
+                    return "<div class=\"symplectic-no-data\">No courses taught found for this user.</div>";
+                }
+
+                var html = "<div class=\"symplectic-section\">";
+                html += "<h3>Courses Taught <span class=\"symplectic-section-count\">(" + activities.length + " items)</span></h3>";
+
+                activities.forEach(function(course) {
+                    html += "<div class=\"symplectic-item\">";
+                    html += "<div class=\"symplectic-item-title\">" + escapeHtml(course.title || "Untitled Course") + "</div>";
+                    html += "<div class=\"symplectic-item-meta\">";
+                    if (course.course_code) html += "<span><strong>Code:</strong> " + escapeHtml(course.course_code) + "</span>";
+                    if (course.academic_year) html += "<span><strong>Year:</strong> " + escapeHtml(course.academic_year) + "</span>";
+                    if (course.term) html += "<span><strong>Term:</strong> " + escapeHtml(course.term) + "</span>";
+                    if (course.role) html += "<span><strong>Role:</strong> " + escapeHtml(course.role) + "</span>";
+                    html += "</div>";
+                    html += "</div>";
+                });
+
+                html += "</div>";
+                return html;
+            }
+
             function escapeHtml(text) {
                 // Handle non-string types
                 if (typeof text !== "string") {
                     text = String(text);
                 }
-                
+
                 var map = {
                     "&": "&amp;",
                     "<": "&lt;",
@@ -311,51 +537,14 @@ function symplectic_query_tool_enqueue_scripts($hook) {
 // AJAX handler for API requests
 add_action('wp_ajax_symplectic_query_api', 'symplectic_query_api_handler');
 
-function symplectic_query_api_handler() {
-    // Verify nonce for security
-    if (!wp_verify_nonce($_POST['nonce'], 'symplectic_query_nonce')) {
-        wp_send_json_error('Security check failed');
-        return;
-    }
-    
-    // Check user capabilities
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Insufficient permissions');
-        return;
-    }
-    
-    // Check if API credentials are defined in wp-config.php
-    if (!defined('SYMPLECTIC_API_USERNAME') || !defined('SYMPLECTIC_API_PASSWORD')) {
-        wp_send_json_error('API credentials not configured. Please add SYMPLECTIC_API_USERNAME and SYMPLECTIC_API_PASSWORD to wp-config.php');
-        return;
-    }
-    
-    $proprietary_id = sanitize_text_field($_POST['proprietary_id']);
-    
-    if (empty($proprietary_id)) {
-        wp_send_json_error('Proprietary ID is required');
-        return;
-    }
-    
-    // Build the API URL
-
-    // Test API base URL
-    // $api_url = 'https://uga-test.elements.symplectic.org:8093/secure-api/v6.13/users';
-
-    // Production API base URL
-    $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13';
-
-    // Final query URL
-    $api_url .= '?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
-    
-    // Get credentials from wp-config.php constants
+/**
+ * Helper function to make authenticated API requests to Symplectic Elements
+ */
+function symplectic_api_request($url) {
     $username = SYMPLECTIC_API_USERNAME;
     $password = SYMPLECTIC_API_PASSWORD;
-    
-    // Build authentication header
     $auth_string = base64_encode($username . ':' . $password);
-    
-    // Set up the API request with authentication
+
     $args = array(
         'headers' => array(
             'Authorization' => 'Basic ' . $auth_string,
@@ -364,125 +553,394 @@ function symplectic_query_api_handler() {
         'timeout' => 300,
         'sslverify' => true,
     );
-    
-    // Prepare detailed diagnostic information
+
+    return wp_remote_get($url, $args);
+}
+
+/**
+ * Extract user information from API response
+ */
+function symplectic_extract_user_info($user_data) {
+    if (empty($user_data)) return null;
+
+    return array(
+        'id' => isset($user_data['id']) ? $user_data['id'] : null,
+        'proprietary_id' => isset($user_data['proprietary-id']) ? $user_data['proprietary-id'] : null,
+        'username' => isset($user_data['username']) ? $user_data['username'] : null,
+        'title' => isset($user_data['title']) ? $user_data['title'] : null,
+        'first_name' => isset($user_data['first-name']) ? $user_data['first-name'] : null,
+        'last_name' => isset($user_data['last-name']) ? $user_data['last-name'] : null,
+        'email' => isset($user_data['email-address']) ? $user_data['email-address'] : null,
+        'position' => isset($user_data['position']) ? $user_data['position'] : null,
+        'department' => isset($user_data['department']) ? $user_data['department'] : null,
+        'primary_group' => isset($user_data['primary-group-descriptor']) ? $user_data['primary-group-descriptor'] : null,
+    );
+}
+
+/**
+ * Extract publications from relationships response
+ */
+function symplectic_extract_publications($relationships) {
+    $publications = array();
+
+    if (empty($relationships)) return $publications;
+
+    foreach ($relationships as $rel) {
+        // Check if this is a publication relationship
+        $category = isset($rel['related']['category']) ? $rel['related']['category'] : null;
+        if ($category !== 'publication') continue;
+
+        $object = isset($rel['related']['object']) ? $rel['related']['object'] : null;
+        if (empty($object)) continue;
+
+        $pub = array(
+            'id' => isset($object['id']) ? $object['id'] : null,
+            'title' => null,
+            'type' => isset($object['type-display-name']) ? $object['type-display-name'] : (isset($object['type']) ? $object['type'] : null),
+            'publication_date' => null,
+            'journal' => null,
+            'doi' => null,
+        );
+
+        // Extract fields from records
+        if (isset($object['records']) && is_array($object['records'])) {
+            foreach ($object['records'] as $record) {
+                if (isset($record['native'])) {
+                    $native = $record['native'];
+
+                    // Title
+                    if (empty($pub['title']) && isset($native['title']['text'])) {
+                        $pub['title'] = $native['title']['text'];
+                    }
+
+                    // Publication date
+                    if (empty($pub['publication_date']) && isset($native['publication-date']['date'])) {
+                        $date = $native['publication-date']['date'];
+                        $pub['publication_date'] = symplectic_format_date($date);
+                    }
+
+                    // Journal
+                    if (empty($pub['journal']) && isset($native['journal']['text'])) {
+                        $pub['journal'] = $native['journal']['text'];
+                    }
+
+                    // DOI
+                    if (empty($pub['doi']) && isset($native['doi']['text'])) {
+                        $pub['doi'] = $native['doi']['text'];
+                    }
+                }
+            }
+        }
+
+        $publications[] = $pub;
+    }
+
+    return $publications;
+}
+
+/**
+ * Extract activities (distinctions/awards) from relationships response
+ */
+function symplectic_extract_activities($relationships) {
+    $activities = array();
+
+    if (empty($relationships)) return $activities;
+
+    foreach ($relationships as $rel) {
+        // Check if this is an activity relationship
+        $category = isset($rel['related']['category']) ? $rel['related']['category'] : null;
+        if ($category !== 'activity') continue;
+
+        $object = isset($rel['related']['object']) ? $rel['related']['object'] : null;
+        if (empty($object)) continue;
+
+        $activity = array(
+            'id' => isset($object['id']) ? $object['id'] : null,
+            'title' => null,
+            'type' => isset($object['type-display-name']) ? $object['type-display-name'] : (isset($object['type']) ? $object['type'] : null),
+            'date' => null,
+            'description' => null,
+        );
+
+        // Extract fields from records
+        if (isset($object['records']) && is_array($object['records'])) {
+            foreach ($object['records'] as $record) {
+                if (isset($record['native'])) {
+                    $native = $record['native'];
+
+                    // Title
+                    if (empty($activity['title']) && isset($native['title']['text'])) {
+                        $activity['title'] = $native['title']['text'];
+                    }
+
+                    // Date
+                    if (empty($activity['date']) && isset($native['start-date']['date'])) {
+                        $activity['date'] = symplectic_format_date($native['start-date']['date']);
+                    }
+
+                    // Description
+                    if (empty($activity['description']) && isset($native['description']['text'])) {
+                        $activity['description'] = $native['description']['text'];
+                    }
+                }
+            }
+        }
+
+        $activities[] = $activity;
+    }
+
+    return $activities;
+}
+
+/**
+ * Extract teaching activities (courses) from relationships response
+ */
+function symplectic_extract_teaching_activities($relationships) {
+    $teaching = array();
+
+    if (empty($relationships)) return $teaching;
+
+    foreach ($relationships as $rel) {
+        // Check if this is a teaching-activity relationship
+        $category = isset($rel['related']['category']) ? $rel['related']['category'] : null;
+        if ($category !== 'teaching-activity') continue;
+
+        $object = isset($rel['related']['object']) ? $rel['related']['object'] : null;
+        if (empty($object)) continue;
+
+        $course = array(
+            'id' => isset($object['id']) ? $object['id'] : null,
+            'title' => null,
+            'course_code' => null,
+            'academic_year' => null,
+            'term' => null,
+            'role' => null,
+        );
+
+        // Extract fields from records
+        if (isset($object['records']) && is_array($object['records'])) {
+            foreach ($object['records'] as $record) {
+                if (isset($record['native'])) {
+                    $native = $record['native'];
+
+                    // Title/Course name
+                    if (empty($course['title']) && isset($native['title']['text'])) {
+                        $course['title'] = $native['title']['text'];
+                    }
+                    if (empty($course['title']) && isset($native['course-name']['text'])) {
+                        $course['title'] = $native['course-name']['text'];
+                    }
+
+                    // Course code
+                    if (empty($course['course_code']) && isset($native['course-code']['text'])) {
+                        $course['course_code'] = $native['course-code']['text'];
+                    }
+
+                    // Academic year
+                    if (empty($course['academic_year']) && isset($native['academic-year']['text'])) {
+                        $course['academic_year'] = $native['academic-year']['text'];
+                    }
+
+                    // Term
+                    if (empty($course['term']) && isset($native['term']['text'])) {
+                        $course['term'] = $native['term']['text'];
+                    }
+
+                    // Role
+                    if (empty($course['role']) && isset($native['role']['text'])) {
+                        $course['role'] = $native['role']['text'];
+                    }
+                }
+            }
+        }
+
+        $teaching[] = $course;
+    }
+
+    return $teaching;
+}
+
+/**
+ * Format date from API response
+ */
+function symplectic_format_date($date) {
+    if (empty($date)) return null;
+
+    $parts = array();
+    if (isset($date['year'])) $parts[] = $date['year'];
+    if (isset($date['month'])) array_unshift($parts, str_pad($date['month'], 2, '0', STR_PAD_LEFT));
+    if (isset($date['day'])) array_unshift($parts, str_pad($date['day'], 2, '0', STR_PAD_LEFT));
+
+    if (count($parts) === 3) {
+        return $parts[0] . '/' . $parts[1] . '/' . $parts[2]; // DD/MM/YYYY
+    } elseif (count($parts) === 2) {
+        return $parts[0] . '/' . $parts[1]; // MM/YYYY
+    } elseif (count($parts) === 1) {
+        return $parts[0]; // YYYY
+    }
+
+    return null;
+}
+
+function symplectic_query_api_handler() {
+    // Verify nonce for security
+    if (!wp_verify_nonce($_POST['nonce'], 'symplectic_query_nonce')) {
+        wp_send_json_error('Security check failed');
+        return;
+    }
+
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
+    // Check if API credentials are defined in wp-config.php
+    if (!defined('SYMPLECTIC_API_USERNAME') || !defined('SYMPLECTIC_API_PASSWORD')) {
+        wp_send_json_error('API credentials not configured. Please add SYMPLECTIC_API_USERNAME and SYMPLECTIC_API_PASSWORD to wp-config.php');
+        return;
+    }
+
+    $proprietary_id = sanitize_text_field($_POST['proprietary_id']);
+
+    if (empty($proprietary_id)) {
+        wp_send_json_error('Proprietary ID is required');
+        return;
+    }
+
+    // Base API URL
+    $api_base = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13';
+
+    // Step 1: Query for the user
+    $user_url = $api_base . '/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
+
     $diagnostic_info = array(
-        'request_url' => $api_url,
-        'request_method' => 'GET',
-        'username_length' => strlen($username),
-        'password_length' => strlen($password),
-        'auth_header_length' => strlen($auth_string),
+        'user_request_url' => $user_url,
         'timestamp' => current_time('mysql'),
     );
-    
-    // Make the API request
-    $response = wp_remote_get($api_url, $args);
-    
+
+    $user_response = symplectic_api_request($user_url);
+
     // Check for errors
-    if (is_wp_error($response)) {
+    if (is_wp_error($user_response)) {
         $error_data = array(
-            'error_message' => $response->get_error_message(),
-            'error_code' => $response->get_error_code(),
+            'error_message' => $user_response->get_error_message(),
+            'error_code' => $user_response->get_error_code(),
             'diagnostic_info' => $diagnostic_info,
         );
         wp_send_json_error($error_data);
         return;
     }
-    
-    $response_code = wp_remote_retrieve_response_code($response);
-    $response_body = wp_remote_retrieve_body($response);
-    $response_headers = wp_remote_retrieve_headers($response);
-    
-    // Enhanced error handling for non-200 responses
+
+    $response_code = wp_remote_retrieve_response_code($user_response);
+    $response_body = wp_remote_retrieve_body($user_response);
+    $response_headers = wp_remote_retrieve_headers($user_response);
+
+    // Handle non-200 responses
     if ($response_code !== 200) {
-        // Prepare detailed error information
         $error_details = array(
             'status_code' => $response_code,
-            'status_message' => wp_remote_retrieve_response_message($response),
+            'status_message' => wp_remote_retrieve_response_message($user_response),
             'response_body' => $response_body,
-            'response_headers' => array(
-                'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'Not provided',
-                'www_authenticate' => isset($response_headers['www-authenticate']) ? $response_headers['www-authenticate'] : 'Not provided',
-                'server' => isset($response_headers['server']) ? $response_headers['server'] : 'Not provided',
-            ),
             'diagnostic_info' => $diagnostic_info,
         );
-        
-        // Add specific guidance based on status code
+
         switch ($response_code) {
             case 401:
                 $error_details['error_type'] = 'Authentication Failed';
                 $error_details['likely_causes'] = array(
                     'Invalid username or password',
                     'Credentials expired or account disabled',
-                    'Username/password contains special characters not properly encoded',
                     'Account lacks API access permissions',
-                    'IP address not whitelisted (if API has IP restrictions)',
                 );
                 $error_details['troubleshooting_steps'] = array(
                     '1. Verify SYMPLECTIC_API_USERNAME and SYMPLECTIC_API_PASSWORD in wp-config.php',
                     '2. Check if credentials work in another API client (like Postman)',
-                    '3. Confirm the account has API access enabled in Symplectic Elements',
-                    '4. Check for typos, extra spaces, or hidden characters in credentials',
-                    '5. Contact Symplectic Elements administrator to verify account status',
-                );
-                break;
-            case 403:
-                $error_details['error_type'] = 'Access Forbidden';
-                $error_details['likely_causes'] = array(
-                    'Account lacks permissions for this API endpoint',
-                    'IP address blocked',
+                    '3. Contact Symplectic Elements administrator to verify account status',
                 );
                 break;
             case 404:
                 $error_details['error_type'] = 'Not Found';
                 $error_details['likely_causes'] = array(
+                    'User with this proprietary ID does not exist',
                     'API endpoint URL is incorrect',
-                    'API version v6.13 may not be available',
-                );
-                break;
-            case 500:
-            case 502:
-            case 503:
-                $error_details['error_type'] = 'Server Error';
-                $error_details['likely_causes'] = array(
-                    'Symplectic Elements API server is experiencing issues',
-                    'Database connection problems on server side',
                 );
                 break;
             default:
                 $error_details['error_type'] = 'HTTP Error ' . $response_code;
         }
-        
+
         wp_send_json_error($error_details);
         return;
     }
-    
-    // Success - parse and return the response
-    $data = json_decode($response_body, true);
-    
+
+    // Parse user response
+    $user_data = json_decode($response_body, true);
+
     if (json_last_error() !== JSON_ERROR_NONE) {
-        // If not JSON, return raw response with metadata
-        $result = array(
-            'raw_response' => $response_body,
-            'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
-            'response_length' => strlen($response_body),
-            'diagnostic_info' => $diagnostic_info,
-        );
-        wp_send_json_success($result);
-    } else {
-        // Return parsed JSON with metadata
-        $result = array(
-            'data' => $data,
-            'response_metadata' => array(
-                'response_code' => $response_code,
-                'content_type' => isset($response_headers['content-type']) ? $response_headers['content-type'] : 'unknown',
-                'response_size' => strlen($response_body),
-            ),
-            'diagnostic_info' => $diagnostic_info,
-        );
-        wp_send_json_success($result);
+        wp_send_json_error(array(
+            'error_type' => 'JSON Parse Error',
+            'error_message' => 'Failed to parse API response as JSON',
+            'raw_response' => substr($response_body, 0, 500),
+        ));
+        return;
     }
+
+    // Extract user from results
+    $user = null;
+    $user_id = null;
+
+    if (isset($user_data['results']) && is_array($user_data['results']) && count($user_data['results']) > 0) {
+        $user = $user_data['results'][0];
+        $user_id = isset($user['id']) ? $user['id'] : null;
+    }
+
+    if (!$user_id) {
+        wp_send_json_error(array(
+            'error_type' => 'User Not Found',
+            'error_message' => 'No user found with proprietary ID: ' . $proprietary_id,
+        ));
+        return;
+    }
+
+    // Extract user info
+    $user_info = symplectic_extract_user_info($user);
+
+    // Step 2: Get user relationships (publications, activities, teaching)
+    $relationships_url = $api_base . '/users/' . $user_id . '/relationships?detail=full&per-page=100';
+    $diagnostic_info['relationships_request_url'] = $relationships_url;
+
+    $rel_response = symplectic_api_request($relationships_url);
+
+    $publications = array();
+    $activities = array();
+    $teaching_activities = array();
+
+    if (!is_wp_error($rel_response) && wp_remote_retrieve_response_code($rel_response) === 200) {
+        $rel_body = wp_remote_retrieve_body($rel_response);
+        $rel_data = json_decode($rel_body, true);
+
+        if (isset($rel_data['results']) && is_array($rel_data['results'])) {
+            $relationships = $rel_data['results'];
+
+            // Extract different types of related objects
+            $publications = symplectic_extract_publications($relationships);
+            $activities = symplectic_extract_activities($relationships);
+            $teaching_activities = symplectic_extract_teaching_activities($relationships);
+        }
+    }
+
+    // Build final response
+    $result = array(
+        'user_info' => $user_info,
+        'publications' => $publications,
+        'activities' => $activities,
+        'teaching_activities' => $teaching_activities,
+        'raw_user_data' => $user,
+        'diagnostic_info' => $diagnostic_info,
+    );
+
+    wp_send_json_success($result);
 }
 
 // Render the admin page
@@ -503,9 +961,14 @@ define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
             <?php endif; ?>
             
             <div class="notice notice-info">
-                <p><strong>Purpose:</strong> This tool allows you to query user information from the Symplectic Elements API 
-                using a proprietary ID. Enter a proprietary ID below and click "Execute Query" to retrieve 
-                the full user details from the Symplectic Elements system.</p>
+                <p><strong>Purpose:</strong> This tool queries user information from the Symplectic Elements API
+                using a proprietary ID. It retrieves:</p>
+                <ul style="margin-left: 20px; list-style-type: disc;">
+                    <li>Basic user profile information</li>
+                    <li>Scholarly and creative works (publications)</li>
+                    <li>Distinctions and awards (activities)</li>
+                    <li>Courses taught (teaching activities)</li>
+                </ul>
             </div>
             
             <form id="symplectic-query-form" method="post">
@@ -534,7 +997,7 @@ define('SYMPLECTIC_API_PASSWORD', 'your_password_here');</pre>
                 <h2>Query Results</h2>
                 <div id="symplectic-results" class="empty">
                     <?php if ($credentials_configured): ?>
-                        No query executed yet. Enter a proprietary ID above and click "Execute Query" to see results.
+                        No query executed yet. Enter a proprietary ID above and click "Execute Query" to see user information, scholarly works, distinctions/awards, and courses taught.
                     <?php else: ?>
                         Please configure API credentials in wp-config.php before using this tool.
                     <?php endif; ?>
