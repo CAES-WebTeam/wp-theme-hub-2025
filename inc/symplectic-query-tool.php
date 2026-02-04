@@ -889,7 +889,7 @@ function symplectic_query_api_handler() {
     $api_base = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13';
 
     // Step 1: Query for the user
-    $user_url = $api_base . '/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
+    $user_url = $api_base . '/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full&format=json';
 
     $diagnostic_info = array(
         'user_request_url' => $user_url,
@@ -984,7 +984,7 @@ function symplectic_query_api_handler() {
     $user_info = symplectic_extract_user_info($user);
 
     // Step 2: Get user relationships (publications, activities, teaching)
-    $relationships_url = $api_base . '/users/' . $user_id . '/relationships?detail=full&per-page=25';
+    $relationships_url = $api_base . '/users/' . $user_id . '/relationships?detail=full&per-page=25&format=json';
     $diagnostic_info['relationships_request_url'] = $relationships_url;
 
     $rel_response = symplectic_api_request($relationships_url);
