@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.2.2 | 2026-02-04 | added smtp function that able to use smtp server | Mikey |
 | 1.2.1 | 2026-02-03 | Small style fixes for figcaptions and checklist bullet style | Ashley |
 | 1.2.0 | 2026-01-30 | Nav overflow fix on mobile, added change log, starting to list version number | Ashley |
 | | 2026-01-28 | Reveal block created | Ashley |
