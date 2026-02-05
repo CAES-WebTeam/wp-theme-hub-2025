@@ -1,7 +1,7 @@
 <?php
 /*
  *  Author: UGA - CAES OIT, Frankel Agency
- *  URL: hub.caes.uga.edu
+ *  URL: fieldreport.caes.uga.edu
  *  Custom functions, support, custom post types and more.
  */
 
