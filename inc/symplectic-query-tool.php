@@ -983,29 +983,10 @@ function symplectic_query_api_handler() {
     // Extract user info
     $user_info = symplectic_extract_user_info($user);
 
-    // Step 2: Get user relationships (publications, activities, teaching)
-    $relationships_url = $api_base . '/users/' . $user_id . '/relationships?detail=full&per-page=25&format=json';
-    $diagnostic_info['relationships_request_url'] = $relationships_url;
-
-    $rel_response = symplectic_api_request($relationships_url);
-
+    // Initialize empty arrays for related data (not querying relationships for now)
     $publications = array();
     $activities = array();
     $teaching_activities = array();
-
-    if (!is_wp_error($rel_response) && wp_remote_retrieve_response_code($rel_response) === 200) {
-        $rel_body = wp_remote_retrieve_body($rel_response);
-        $rel_data = json_decode($rel_body, true);
-
-        if (isset($rel_data['results']) && is_array($rel_data['results'])) {
-            $relationships = $rel_data['results'];
-
-            // Extract different types of related objects
-            $publications = symplectic_extract_publications($relationships);
-            $activities = symplectic_extract_activities($relationships);
-            $teaching_activities = symplectic_extract_teaching_activities($relationships);
-        }
-    }
 
     // Build final response
     $result = array(
