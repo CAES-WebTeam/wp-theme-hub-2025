@@ -614,323 +614,6 @@ function symplectic_query_tool_enqueue_scripts($hook) {
 // AJAX handler for API requests
 add_action('wp_ajax_symplectic_query_api', 'symplectic_query_api_handler');
 
-/**
- * Helper function to make authenticated API requests to Symplectic Elements
- */
-function symplectic_api_request($url) {
-    $username = SYMPLECTIC_API_USERNAME;
-    $password = SYMPLECTIC_API_PASSWORD;
-    $auth_string = base64_encode($username . ':' . $password);
-
-    $args = array(
-        'headers' => array(
-            'Authorization' => 'Basic ' . $auth_string,
-            'Accept' => 'application/xml',
-        ),
-        'timeout' => 300,
-        'sslverify' => true,
-    );
-
-    return wp_remote_get($url, $args);
-}
-
-/**
- * Parse XML response from Symplectic API and convert to array
- */
-function symplectic_parse_xml_response($xml_string) {
-    // Suppress XML parsing errors and handle them gracefully
-    libxml_use_internal_errors(true);
-
-    $xml = simplexml_load_string($xml_string);
-
-    if ($xml === false) {
-        $errors = libxml_get_errors();
-        libxml_clear_errors();
-        return null;
-    }
-
-    // Register the namespace
-    $xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-
-    // Get all user entries
-    $entries = $xml->xpath('//api:entry');
-
-    $results = array();
-    foreach ($entries as $entry) {
-        $user = array();
-
-        // Get the user ID from the entry attribute
-        $user['id'] = (string)$entry['id'];
-
-        // Extract fields
-        $fields = $entry->xpath('api:field');
-        foreach ($fields as $field) {
-            $field_name = (string)$field['name'];
-            $field_value = (string)$field;
-
-            // Map XML field names to array keys
-            switch ($field_name) {
-                case 'proprietary-id':
-                    $user['proprietary-id'] = $field_value;
-                    break;
-                case 'username':
-                    $user['username'] = $field_value;
-                    break;
-                case 'title':
-                    $user['title'] = $field_value;
-                    break;
-                case 'first-name':
-                    $user['first-name'] = $field_value;
-                    break;
-                case 'last-name':
-                    $user['last-name'] = $field_value;
-                    break;
-                case 'email-address':
-                    $user['email-address'] = $field_value;
-                    break;
-                case 'position':
-                    $user['position'] = $field_value;
-                    break;
-                case 'department':
-                    $user['department'] = $field_value;
-                    break;
-                case 'primary-group-descriptor':
-                    $user['primary-group-descriptor'] = $field_value;
-                    break;
-            }
-        }
-
-        $results[] = $user;
-    }
-
-    return array('results' => $results);
-}
-
-/**
- * Extract user information from API response
- */
-function symplectic_extract_user_info($user_data) {
-    if (empty($user_data)) return null;
-
-    return array(
-        'id' => isset($user_data['id']) ? $user_data['id'] : null,
-        'proprietary_id' => isset($user_data['proprietary-id']) ? $user_data['proprietary-id'] : null,
-        'username' => isset($user_data['username']) ? $user_data['username'] : null,
-        'title' => isset($user_data['title']) ? $user_data['title'] : null,
-        'first_name' => isset($user_data['first-name']) ? $user_data['first-name'] : null,
-        'last_name' => isset($user_data['last-name']) ? $user_data['last-name'] : null,
-        'email' => isset($user_data['email-address']) ? $user_data['email-address'] : null,
-        'position' => isset($user_data['position']) ? $user_data['position'] : null,
-        'department' => isset($user_data['department']) ? $user_data['department'] : null,
-        'primary_group' => isset($user_data['primary-group-descriptor']) ? $user_data['primary-group-descriptor'] : null,
-    );
-}
-
-/**
- * Extract publications from relationships response
- */
-function symplectic_extract_publications($relationships) {
-    $publications = array();
-
-    if (empty($relationships)) return $publications;
-
-    foreach ($relationships as $rel) {
-        // Check if this is a publication relationship
-        $category = isset($rel['related']['category']) ? $rel['related']['category'] : null;
-        if ($category !== 'publication') continue;
-
-        $object = isset($rel['related']['object']) ? $rel['related']['object'] : null;
-        if (empty($object)) continue;
-
-        $pub = array(
-            'id' => isset($object['id']) ? $object['id'] : null,
-            'title' => null,
-            'type' => isset($object['type-display-name']) ? $object['type-display-name'] : (isset($object['type']) ? $object['type'] : null),
-            'publication_date' => null,
-            'journal' => null,
-            'doi' => null,
-        );
-
-        // Extract fields from records
-        if (isset($object['records']) && is_array($object['records'])) {
-            foreach ($object['records'] as $record) {
-                if (isset($record['native'])) {
-                    $native = $record['native'];
-
-                    // Title
-                    if (empty($pub['title']) && isset($native['title']['text'])) {
-                        $pub['title'] = $native['title']['text'];
-                    }
-
-                    // Publication date
-                    if (empty($pub['publication_date']) && isset($native['publication-date']['date'])) {
-                        $date = $native['publication-date']['date'];
-                        $pub['publication_date'] = symplectic_format_date($date);
-                    }
-
-                    // Journal
-                    if (empty($pub['journal']) && isset($native['journal']['text'])) {
-                        $pub['journal'] = $native['journal']['text'];
-                    }
-
-                    // DOI
-                    if (empty($pub['doi']) && isset($native['doi']['text'])) {
-                        $pub['doi'] = $native['doi']['text'];
-                    }
-                }
-            }
-        }
-
-        $publications[] = $pub;
-    }
-
-    return $publications;
-}
-
-/**
- * Extract activities (distinctions/awards) from relationships response
- */
-function symplectic_extract_activities($relationships) {
-    $activities = array();
-
-    if (empty($relationships)) return $activities;
-
-    foreach ($relationships as $rel) {
-        // Check if this is an activity relationship
-        $category = isset($rel['related']['category']) ? $rel['related']['category'] : null;
-        if ($category !== 'activity') continue;
-
-        $object = isset($rel['related']['object']) ? $rel['related']['object'] : null;
-        if (empty($object)) continue;
-
-        $activity = array(
-            'id' => isset($object['id']) ? $object['id'] : null,
-            'title' => null,
-            'type' => isset($object['type-display-name']) ? $object['type-display-name'] : (isset($object['type']) ? $object['type'] : null),
-            'date' => null,
-            'description' => null,
-        );
-
-        // Extract fields from records
-        if (isset($object['records']) && is_array($object['records'])) {
-            foreach ($object['records'] as $record) {
-                if (isset($record['native'])) {
-                    $native = $record['native'];
-
-                    // Title
-                    if (empty($activity['title']) && isset($native['title']['text'])) {
-                        $activity['title'] = $native['title']['text'];
-                    }
-
-                    // Date
-                    if (empty($activity['date']) && isset($native['start-date']['date'])) {
-                        $activity['date'] = symplectic_format_date($native['start-date']['date']);
-                    }
-
-                    // Description
-                    if (empty($activity['description']) && isset($native['description']['text'])) {
-                        $activity['description'] = $native['description']['text'];
-                    }
-                }
-            }
-        }
-
-        $activities[] = $activity;
-    }
-
-    return $activities;
-}
-
-/**
- * Extract teaching activities (courses) from relationships response
- */
-function symplectic_extract_teaching_activities($relationships) {
-    $teaching = array();
-
-    if (empty($relationships)) return $teaching;
-
-    foreach ($relationships as $rel) {
-        // Check if this is a teaching-activity relationship
-        $category = isset($rel['related']['category']) ? $rel['related']['category'] : null;
-        if ($category !== 'teaching-activity') continue;
-
-        $object = isset($rel['related']['object']) ? $rel['related']['object'] : null;
-        if (empty($object)) continue;
-
-        $course = array(
-            'id' => isset($object['id']) ? $object['id'] : null,
-            'title' => null,
-            'course_code' => null,
-            'academic_year' => null,
-            'term' => null,
-            'role' => null,
-        );
-
-        // Extract fields from records
-        if (isset($object['records']) && is_array($object['records'])) {
-            foreach ($object['records'] as $record) {
-                if (isset($record['native'])) {
-                    $native = $record['native'];
-
-                    // Title/Course name
-                    if (empty($course['title']) && isset($native['title']['text'])) {
-                        $course['title'] = $native['title']['text'];
-                    }
-                    if (empty($course['title']) && isset($native['course-name']['text'])) {
-                        $course['title'] = $native['course-name']['text'];
-                    }
-
-                    // Course code
-                    if (empty($course['course_code']) && isset($native['course-code']['text'])) {
-                        $course['course_code'] = $native['course-code']['text'];
-                    }
-
-                    // Academic year
-                    if (empty($course['academic_year']) && isset($native['academic-year']['text'])) {
-                        $course['academic_year'] = $native['academic-year']['text'];
-                    }
-
-                    // Term
-                    if (empty($course['term']) && isset($native['term']['text'])) {
-                        $course['term'] = $native['term']['text'];
-                    }
-
-                    // Role
-                    if (empty($course['role']) && isset($native['role']['text'])) {
-                        $course['role'] = $native['role']['text'];
-                    }
-                }
-            }
-        }
-
-        $teaching[] = $course;
-    }
-
-    return $teaching;
-}
-
-/**
- * Format date from API response
- */
-function symplectic_format_date($date) {
-    if (empty($date)) return null;
-
-    $parts = array();
-    if (isset($date['year'])) $parts[] = $date['year'];
-    if (isset($date['month'])) array_unshift($parts, str_pad($date['month'], 2, '0', STR_PAD_LEFT));
-    if (isset($date['day'])) array_unshift($parts, str_pad($date['day'], 2, '0', STR_PAD_LEFT));
-
-    if (count($parts) === 3) {
-        return $parts[0] . '/' . $parts[1] . '/' . $parts[2]; // DD/MM/YYYY
-    } elseif (count($parts) === 2) {
-        return $parts[0] . '/' . $parts[1]; // MM/YYYY
-    } elseif (count($parts) === 1) {
-        return $parts[0]; // YYYY
-    }
-
-    return null;
-}
-
 function symplectic_query_api_handler() {
     // Verify nonce for security
     if (!wp_verify_nonce($_POST['nonce'], 'symplectic_query_nonce')) {
@@ -957,117 +640,99 @@ function symplectic_query_api_handler() {
         return;
     }
 
-    // Base API URL
-    $api_base = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13';
+    // Build API request
+    $api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
 
-    // Step 1: Query for the user (API returns XML, not JSON)
-    $user_url = $api_base . '/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
+    $username = SYMPLECTIC_API_USERNAME;
+    $password = SYMPLECTIC_API_PASSWORD;
 
-    $diagnostic_info = array(
-        'user_request_url' => $user_url,
-        'timestamp' => current_time('mysql'),
+    $args = array(
+        'headers' => array(
+            'Authorization' => 'Basic ' . base64_encode($username . ':' . $password),
+            'Accept' => 'application/xml',
+        ),
+        'timeout' => 30,
+        'sslverify' => true,
     );
 
-    $user_response = symplectic_api_request($user_url);
+    // Make API request
+    $response = wp_remote_get($api_url, $args);
 
     // Check for errors
-    if (is_wp_error($user_response)) {
-        $error_data = array(
-            'error_message' => $user_response->get_error_message(),
-            'error_code' => $user_response->get_error_code(),
-            'diagnostic_info' => $diagnostic_info,
-        );
-        wp_send_json_error($error_data);
+    if (is_wp_error($response)) {
+        wp_send_json_error(array(
+            'error_message' => $response->get_error_message(),
+            'api_url' => $api_url,
+        ));
         return;
     }
 
-    $response_code = wp_remote_retrieve_response_code($user_response);
-    $response_body = wp_remote_retrieve_body($user_response);
-    $response_headers = wp_remote_retrieve_headers($user_response);
+    $response_code = wp_remote_retrieve_response_code($response);
+    $response_body = wp_remote_retrieve_body($response);
 
     // Handle non-200 responses
     if ($response_code !== 200) {
-        $error_details = array(
-            'status_code' => $response_code,
-            'status_message' => wp_remote_retrieve_response_message($user_response),
-            'response_body' => $response_body,
-            'diagnostic_info' => $diagnostic_info,
-        );
-
-        switch ($response_code) {
-            case 401:
-                $error_details['error_type'] = 'Authentication Failed';
-                $error_details['likely_causes'] = array(
-                    'Invalid username or password',
-                    'Credentials expired or account disabled',
-                    'Account lacks API access permissions',
-                );
-                $error_details['troubleshooting_steps'] = array(
-                    '1. Verify SYMPLECTIC_API_USERNAME and SYMPLECTIC_API_PASSWORD in wp-config.php',
-                    '2. Check if credentials work in another API client (like Postman)',
-                    '3. Contact Symplectic Elements administrator to verify account status',
-                );
-                break;
-            case 404:
-                $error_details['error_type'] = 'Not Found';
-                $error_details['likely_causes'] = array(
-                    'User with this proprietary ID does not exist',
-                    'API endpoint URL is incorrect',
-                );
-                break;
-            default:
-                $error_details['error_type'] = 'HTTP Error ' . $response_code;
-        }
-
-        wp_send_json_error($error_details);
+        wp_send_json_error(array(
+            'error_type' => 'HTTP Error ' . $response_code,
+            'response_body' => substr($response_body, 0, 1000),
+            'api_url' => $api_url,
+        ));
         return;
     }
 
-    // Parse XML response
-    $user_data = symplectic_parse_xml_response($response_body);
+    // Parse XML response using SimpleXML
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($response_body);
 
-    if ($user_data === null) {
+    if ($xml === false) {
         wp_send_json_error(array(
             'error_type' => 'XML Parse Error',
-            'error_message' => 'Failed to parse API response as XML',
-            'raw_response' => substr($response_body, 0, 500),
+            'raw_response' => substr($response_body, 0, 1000),
+            'api_url' => $api_url,
         ));
         return;
     }
 
-    // Extract user from results
-    $user = null;
-    $user_id = null;
+    // Register namespace and extract basic user data
+    $xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+    $entries = $xml->xpath('//api:entry');
 
-    if (isset($user_data['results']) && is_array($user_data['results']) && count($user_data['results']) > 0) {
-        $user = $user_data['results'][0];
-        $user_id = isset($user['id']) ? $user['id'] : null;
-    }
-
-    if (!$user_id) {
+    if (empty($entries)) {
         wp_send_json_error(array(
-            'error_type' => 'User Not Found',
-            'error_message' => 'No user found with proprietary ID: ' . $proprietary_id,
+            'error_type' => 'No entries found',
+            'raw_response' => substr($response_body, 0, 1000),
+            'api_url' => $api_url,
         ));
         return;
     }
 
-    // Extract user info
-    $user_info = symplectic_extract_user_info($user);
+    // Extract user data from first entry
+    $entry = $entries[0];
+    $user_info = array(
+        'id' => (string)$entry['id'],
+    );
 
-    // Initialize empty arrays for related data (not querying relationships for now)
-    $publications = array();
-    $activities = array();
-    $teaching_activities = array();
+    // Extract field values
+    $entry->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+    $fields = $entry->xpath('api:field');
 
-    // Build final response
+    foreach ($fields as $field) {
+        $field_name = (string)$field['name'];
+        $field_value = (string)$field;
+        $user_info[$field_name] = $field_value;
+    }
+
+    // Return success with user data
     $result = array(
         'user_info' => $user_info,
-        'publications' => $publications,
-        'activities' => $activities,
-        'teaching_activities' => $teaching_activities,
-        'raw_user_data' => $user,
-        'diagnostic_info' => $diagnostic_info,
+        'publications' => array(),
+        'activities' => array(),
+        'teaching_activities' => array(),
+        'raw_user_data' => $user_info,
+        'diagnostic_info' => array(
+            'user_request_url' => $api_url,
+            'timestamp' => current_time('mysql'),
+        ),
     );
 
     wp_send_json_success($result);
