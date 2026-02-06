@@ -625,13 +625,85 @@ function symplectic_api_request($url) {
     $args = array(
         'headers' => array(
             'Authorization' => 'Basic ' . $auth_string,
-            'Accept' => 'application/json',
+            'Accept' => 'application/xml',
         ),
         'timeout' => 300,
         'sslverify' => true,
     );
 
     return wp_remote_get($url, $args);
+}
+
+/**
+ * Parse XML response from Symplectic API and convert to array
+ */
+function symplectic_parse_xml_response($xml_string) {
+    // Suppress XML parsing errors and handle them gracefully
+    libxml_use_internal_errors(true);
+
+    $xml = simplexml_load_string($xml_string);
+
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        libxml_clear_errors();
+        return null;
+    }
+
+    // Register the namespace
+    $xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+    // Get all user entries
+    $entries = $xml->xpath('//api:entry');
+
+    $results = array();
+    foreach ($entries as $entry) {
+        $user = array();
+
+        // Get the user ID from the entry attribute
+        $user['id'] = (string)$entry['id'];
+
+        // Extract fields
+        $fields = $entry->xpath('api:field');
+        foreach ($fields as $field) {
+            $field_name = (string)$field['name'];
+            $field_value = (string)$field;
+
+            // Map XML field names to array keys
+            switch ($field_name) {
+                case 'proprietary-id':
+                    $user['proprietary-id'] = $field_value;
+                    break;
+                case 'username':
+                    $user['username'] = $field_value;
+                    break;
+                case 'title':
+                    $user['title'] = $field_value;
+                    break;
+                case 'first-name':
+                    $user['first-name'] = $field_value;
+                    break;
+                case 'last-name':
+                    $user['last-name'] = $field_value;
+                    break;
+                case 'email-address':
+                    $user['email-address'] = $field_value;
+                    break;
+                case 'position':
+                    $user['position'] = $field_value;
+                    break;
+                case 'department':
+                    $user['department'] = $field_value;
+                    break;
+                case 'primary-group-descriptor':
+                    $user['primary-group-descriptor'] = $field_value;
+                    break;
+            }
+        }
+
+        $results[] = $user;
+    }
+
+    return array('results' => $results);
 }
 
 /**
@@ -888,8 +960,8 @@ function symplectic_query_api_handler() {
     // Base API URL
     $api_base = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13';
 
-    // Step 1: Query for the user
-    $user_url = $api_base . '/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full&format=json';
+    // Step 1: Query for the user (API returns XML, not JSON)
+    $user_url = $api_base . '/users?query=proprietary-id=%22' . urlencode($proprietary_id) . '%22&detail=full';
 
     $diagnostic_info = array(
         'user_request_url' => $user_url,
@@ -951,13 +1023,13 @@ function symplectic_query_api_handler() {
         return;
     }
 
-    // Parse user response
-    $user_data = json_decode($response_body, true);
+    // Parse XML response
+    $user_data = symplectic_parse_xml_response($response_body);
 
-    if (json_last_error() !== JSON_ERROR_NONE) {
+    if ($user_data === null) {
         wp_send_json_error(array(
-            'error_type' => 'JSON Parse Error',
-            'error_message' => 'Failed to parse API response as JSON',
+            'error_type' => 'XML Parse Error',
+            'error_message' => 'Failed to parse API response as XML',
             'raw_response' => substr($response_body, 0, 500),
         ));
         return;
