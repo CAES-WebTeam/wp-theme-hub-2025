@@ -128,7 +128,7 @@ const Edit = ({
     'data-frame-label': frameLabel,
     style: {
       position: 'relative',
-      minHeight: '400px',
+      minHeight: '100vh',
       borderRadius: '4px',
       overflow: 'hidden',
       marginBottom: '8px'
@@ -139,7 +139,7 @@ const Edit = ({
     style: {
       position: 'relative',
       zIndex: 5,
-      minHeight: '350px',
+      minHeight: '100vh',
       padding: '60px 40px 40px',
       display: 'flex',
       flexDirection: 'column'
