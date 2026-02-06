@@ -693,33 +693,26 @@ function symplectic_query_api_handler() {
         return;
     }
 
-    // Register namespace and extract basic user data
+    // Register namespace and extract user object
     $xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-    $entries = $xml->xpath('//api:entry');
+    $objects = $xml->xpath('//api:object[@category="user"]');
 
-    if (empty($entries)) {
+    if (empty($objects)) {
         wp_send_json_error(array(
-            'error_type' => 'No entries found',
+            'error_type' => 'No user object found',
             'raw_response' => substr($response_body, 0, 1000),
             'api_url' => $api_url,
         ));
         return;
     }
 
-    // Extract user data from first entry
-    $entry = $entries[0];
-    $user_info = array(
-        'id' => (string)$entry['id'],
-    );
+    // Extract user data from attributes of the first object
+    $object = $objects[0];
+    $user_info = array();
 
-    // Extract field values
-    $entry->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-    $fields = $entry->xpath('api:field');
-
-    foreach ($fields as $field) {
-        $field_name = (string)$field['name'];
-        $field_value = (string)$field;
-        $user_info[$field_name] = $field_value;
+    // Get all attributes
+    foreach ($object->attributes() as $attr_name => $attr_value) {
+        $user_info[$attr_name] = (string)$attr_value;
     }
 
     // Return success with user data
