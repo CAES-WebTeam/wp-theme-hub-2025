@@ -17,6 +17,10 @@
   ],
   "textdomain": "caes-reveal",
   "attributes": {
+    "align": {
+      "type": "string",
+      "default": "full"
+    },
     "frames": {
       "type": "array",
       "default": [],

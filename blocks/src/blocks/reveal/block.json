@@ -7,9 +7,20 @@
 	"category": "media",
 	"icon": "cover-image",
 	"description": "Full-window fixed background that transitions between frames as the user scrolls through content.",
-	"keywords": ["reveal", "scroll", "parallax", "immersive", "background", "storytelling"],
+	"keywords": [
+		"reveal",
+		"scroll",
+		"parallax",
+		"immersive",
+		"background",
+		"storytelling"
+	],
 	"textdomain": "caes-reveal",
 	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "full"
+		},
 		"frames": {
 			"type": "array",
 			"default": [],
@@ -32,11 +43,18 @@
 		"scrollSpeed": {
 			"type": "string",
 			"default": "normal",
-			"enum": [ "slow", "normal", "fast" ]
+			"enum": [
+				"slow",
+				"normal",
+				"fast"
+			]
 		}
 	},
 	"supports": {
-		"align": ["full", "wide"],
+		"align": [
+			"full",
+			"wide"
+		],
 		"html": false,
 		"color": {
 			"text": true,
