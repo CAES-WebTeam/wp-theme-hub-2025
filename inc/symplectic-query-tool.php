@@ -715,15 +715,78 @@ function symplectic_query_api_handler() {
         $user_info[$attr_name] = (string)$attr_value;
     }
 
-    // Return success with user data
+    // Get user ID for relationships call
+    $user_id = $user_info['id'];
+
+    // Initialize result arrays
+    $publications = array();
+    $activities = array();
+    $teaching_activities = array();
+    $relationships_error = null;
+
+    // Step 2: Try to get relationships (but don't fail if this errors)
+    if ($user_id) {
+        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?detail=full&per-page=25';
+
+        $relationships_response = wp_remote_get($relationships_url, $args);
+
+        if (!is_wp_error($relationships_response) && wp_remote_retrieve_response_code($relationships_response) === 200) {
+            $rel_body = wp_remote_retrieve_body($relationships_response);
+
+            libxml_use_internal_errors(true);
+            $rel_xml = simplexml_load_string($rel_body);
+
+            if ($rel_xml !== false) {
+                $rel_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                // Get all related objects
+                $related_objects = $rel_xml->xpath('//api:object');
+
+                if (!empty($related_objects)) {
+                    foreach ($related_objects as $rel_object) {
+                        $obj_data = array();
+
+                        // Get all attributes
+                        foreach ($rel_object->attributes() as $attr_name => $attr_value) {
+                            $obj_data[$attr_name] = (string)$attr_value;
+                        }
+
+                        // Sort by category
+                        $category = isset($obj_data['category']) ? $obj_data['category'] : null;
+
+                        if ($category === 'publication') {
+                            $publications[] = $obj_data;
+                        } elseif ($category === 'activity') {
+                            $activities[] = $obj_data;
+                        } elseif ($category === 'teaching-activity') {
+                            $teaching_activities[] = $obj_data;
+                        }
+                    }
+                }
+            } else {
+                $relationships_error = 'Failed to parse relationships XML response';
+            }
+        } else {
+            // Capture error but don't fail the whole request
+            if (is_wp_error($relationships_response)) {
+                $relationships_error = $relationships_response->get_error_message();
+            } else {
+                $relationships_error = 'Relationships API returned HTTP ' . wp_remote_retrieve_response_code($relationships_response);
+            }
+        }
+    }
+
+    // Return success with user data (and relationships if available)
     $result = array(
         'user_info' => $user_info,
-        'publications' => array(),
-        'activities' => array(),
-        'teaching_activities' => array(),
+        'publications' => $publications,
+        'activities' => $activities,
+        'teaching_activities' => $teaching_activities,
         'raw_user_data' => $user_info,
         'diagnostic_info' => array(
             'user_request_url' => $api_url,
+            'relationships_request_url' => isset($relationships_url) ? $relationships_url : null,
+            'relationships_error' => $relationships_error,
             'timestamp' => current_time('mysql'),
         ),
     );

@@ -1,0 +1,169 @@
+SYMPLECTIC ELEMENTS API - FIELDS TO PULL
+==========================================
+
+Current API Base URL: https://uga.elements.symplectic.org:8091/secure-api/v6.13
+
+MAIN CATEGORIES IN ELEMENTS API:
+- user (Profile)
+- publication (Scholarly and Creative Works)
+- grant (Sponsored Programs)
+- teaching-activity (Instruction/Courses Taught)
+- activity (Professional Activities/Distinctions & Awards)
+
+
+STATUS LEGEND:
+[X] = Implemented and working
+[ ] = Not yet implemented
+[?] = Needs investigation/clarification
+
+
+================================================================================
+1. USER DATA (Category: user)
+================================================================================
+Endpoint: /users?query=proprietary-id="[ID]"&detail=full
+
+[X] Basic user information
+    [X] ID
+    [X] Proprietary ID
+    [X] Username
+    [X] Name fields (first name, last name, title)
+    [X] Email address
+    [X] Position
+    [X] Department
+    [X] Primary group
+
+[ ] Bio/Overview
+    - Need to verify field name in XML response
+
+[ ] Keywords
+    - Need to verify field name/structure in XML response
+
+[ ] Degrees
+    - Need to verify field name/structure in XML response
+    - May require parsing nested structure
+
+[ ] Academic Appointments
+    - Need to verify field name/structure in XML response
+    - May require parsing nested structure
+
+
+================================================================================
+2. PROFESSIONAL ACTIVITIES (Category: activity)
+================================================================================
+Endpoint: /users/[USER_ID]/relationships?detail=full
+Filter by: category="activity", type="distinction/award"
+
+[ ] Distinctions and Awards
+    [ ] Name/Title
+    [ ] Date
+    [ ] Type (to verify it's distinction/award)
+    [ ] Description (if available)
+    [ ] Any other relevant metadata
+
+
+================================================================================
+3. COURSES TAUGHT (Category: teaching-activity)
+================================================================================
+Endpoint: /users/[USER_ID]/relationships?detail=full
+Filter by: category="teaching-activity", type="course taught"
+
+[ ] Course Information
+    [ ] Course name/title
+    [ ] Course code (if available)
+    [ ] Academic year
+    [ ] Term/Semester
+    [ ] Role (instructor, co-instructor, etc.)
+    [ ] Any other relevant metadata
+
+
+================================================================================
+4. SCHOLARLY AND CREATIVE WORKS (Category: publication)
+================================================================================
+Endpoint: /users/[USER_ID]/relationships?detail=full
+Filter by: category="publication"
+
+Publication Types to Include:
+- journal article
+- book
+- chapter
+- proceedings of conference (published)
+- professional/scholarly presentation (unpublished)
+
+[ ] Publication Information
+    [ ] Title
+    [ ] Type (article, book, chapter, etc.)
+    [ ] Authors/Contributors
+    [ ] Publication date
+    [ ] Journal name (for articles)
+    [ ] Book title (for chapters)
+    [ ] Conference name (for proceedings)
+    [ ] DOI (if available)
+    [ ] ISBN/ISSN (if available)
+    [ ] Abstract (if available)
+    [ ] URL/Link (if available)
+
+    [?] Citation count
+        - PRIORITY: This is specifically requested to help filter
+          which publications to display (out of potentially hundreds)
+        - Need to investigate if this is available in API response
+        - May need to verify field name with Sunshine
+
+
+================================================================================
+5. SPONSORED PROGRAMS/GRANTS (Category: grant)
+================================================================================
+Status: NOT CURRENTLY REQUESTED by Jesse
+- This category exists in Elements but was not in the original request
+- Keep in checklist for future reference
+
+[ ] Grant Information (if requested later)
+    [ ] Grant title
+    [ ] Funding source
+    [ ] Amount
+    [ ] Start/End dates
+    [ ] Role (PI, Co-PI, etc.)
+
+
+================================================================================
+IMPLEMENTATION NOTES:
+================================================================================
+
+1. API Structure:
+   - Initial call gets user basic info: /users?query=...
+   - Related data requires relationships call: /users/[ID]/relationships
+   - Use detail=full parameter for complete data
+   - May need per-page parameter to handle large result sets
+
+2. XML Parsing Notes:
+   - API returns XML (not JSON, despite format=json parameter)
+   - Use SimpleXML with namespace: http://www.symplectic.co.uk/publications/api
+   - User basic data is in <api:object> attributes
+   - Related data (publications, activities, etc.) will be in relationships response
+
+3. Current Implementation Status:
+   - Basic user API call is working
+   - Returns user attributes from <api:object> element
+   - Frontend tabs are in place for all data types
+   - Need to implement relationships endpoint calls
+
+4. Next Steps:
+   - Examine full XML response for user endpoint to find bio, keywords, degrees
+   - Implement relationships endpoint call
+   - Parse publications, activities, and teaching-activities from relationships
+   - Map XML structure to frontend display format
+
+5. Questions for Sunshine:
+   - Where is citation count data located in API response?
+   - Confirm field names for bio/overview, keywords in user response
+   - Verify structure for degrees and academic appointments
+
+
+================================================================================
+REFERENCE DOCUMENTS ATTACHED BY SUNSHINE:
+================================================================================
+- API Instructions (page 7 has example call)
+- Schema documentation
+- Postman Schema
+- List of Elements field names
+
+Next meeting: Schedule work session if needed to hash out details
