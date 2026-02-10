@@ -1,214 +1,428 @@
 /**
- * Reveal Block Frontend JavaScript
- *
- * Handles scroll-triggered frame transitions with support for
- * multiple transition types and reduced motion preferences.
+ * Reveal Block Frontend JavaScript - Single Sticky Container Approach
+ * 
+ * This approach uses ONE sticky container for all backgrounds.
+ * The container sticks when the block reaches the top of the viewport,
+ * and all transitions are handled via opacity/transform - never position changes.
+ * 
+ * Key benefits:
+ * - No position switching = no visual jumps
+ * - All backgrounds share the same coordinate space = perfect alignment
+ * - GPU-accelerated opacity/transform transitions = smooth animations
  */
 
-( function () {
+(function () {
 	'use strict';
 
-	// Check reduced motion preference
-	const prefersReducedMotion = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+	function debounce(fn, ms) {
+		let timer;
+		return function () {
+			clearTimeout(timer);
+			timer = setTimeout(fn, ms);
+		};
+	}
 
 	/**
-	 * Initialize a single Reveal block
-	 *
-	 * @param {HTMLElement} block The reveal block element
+	 * Initialize a single reveal block
 	 */
-	function initRevealBlock( block ) {
-		const background = block.querySelector( '.reveal-background' );
-		const content = block.querySelector( '.reveal-content' );
-		const frames = block.querySelectorAll( '.reveal-frame' );
+	function initRevealBlock(block) {
+		const backgroundsContainer = block.querySelector('.reveal-backgrounds');
+		const backgrounds = block.querySelectorAll('.reveal-frame-background');
+		const sectionsContainer = block.querySelector('.reveal-sections');
+		const sections = block.querySelectorAll('.reveal-frame-section');
 
-		if ( ! background || ! content || frames.length === 0 ) {
+		if (!backgroundsContainer || sections.length === 0) {
 			return;
 		}
 
-		const frameCount = frames.length;
-		let currentFrameIndex = 0;
-		let isInView = false;
+		// Configuration
+		const config = {
+			// How much of the viewport the content area takes up
+			contentViewportRatio: 0.7,
+			// Extra scroll distance after last content before unsticking
+			exitScrollDistance: 0.5, // viewport heights
+		};
+
 		let ticking = false;
+		let frameData = [];
+		let cachedTotalHeight = 0;
 
 		/**
-		 * Apply transition to a frame
-		 *
-		 * @param {HTMLElement} frame     The frame element
-		 * @param {boolean}     isActive  Whether frame should be active
-		 * @param {boolean}     isEntering Whether frame is entering (vs leaving)
+		 * Calculate layout metrics for each frame
 		 */
-		function applyTransition( frame, isActive, isEntering ) {
-			const transitionType = frame.dataset.transitionType || 'fade';
-			const transitionSpeed = parseInt( frame.dataset.transitionSpeed, 10 ) || 500;
+		function calculateLayout() {
+			const viewportHeight = window.innerHeight;
+			frameData = [];
 
-			// Set transition duration (or 0 for reduced motion)
-			const duration = prefersReducedMotion ? 0 : transitionSpeed;
-			frame.style.transitionDuration = `${ duration }ms`;
+			let cumulativeHeight = 0;
 
-			// Reset transform
-			frame.style.transform = '';
+			sections.forEach((section, index) => {
+				const content = section.querySelector('.reveal-frame-content');
+				const bg = backgrounds[index];
 
-			if ( isActive ) {
-				frame.classList.add( 'is-active' );
-				frame.style.opacity = '1';
-
-				// Apply entrance animation
-				if ( ! prefersReducedMotion && transitionType !== 'none' && transitionType !== 'fade' ) {
-					// Set initial position for entrance
-					const startPositions = {
-						up: 'translateY(100%)',
-						down: 'translateY(-100%)',
-						left: 'translateX(100%)',
-						right: 'translateX(-100%)',
-					};
-
-					if ( startPositions[ transitionType ] ) {
-						// Start from offset position
-						frame.style.transform = startPositions[ transitionType ];
-						// Force reflow
-						frame.offsetHeight; // eslint-disable-line no-unused-expressions
-						// Animate to center
-						frame.style.transform = 'translate(0, 0)';
+				// Get content height
+				let contentHeight = 0;
+				if (content) {
+					const contentChildren = content.children;
+					for (let child of contentChildren) {
+						contentHeight += child.offsetHeight;
+						const style = window.getComputedStyle(child);
+						contentHeight += parseInt(style.marginTop || 0) + parseInt(style.marginBottom || 0);
 					}
 				}
-			} else {
-				frame.classList.remove( 'is-active' );
-				frame.style.opacity = '0';
-			}
+				contentHeight = Math.max(contentHeight, 100);
+
+				// Get transition config
+				const speed = bg ? (bg.getAttribute('data-speed') || 'normal') : 'normal';
+				let transitionDistance;
+				switch (speed) {
+					case 'slow':
+						transitionDistance = viewportHeight * 2.5;
+						break;
+					case 'fast':
+						transitionDistance = viewportHeight * 1.0;
+						break;
+					default:
+						transitionDistance = viewportHeight * 1.8;
+				}
+
+				// Calculate section height:
+				// For frame 0: content starts centered, padding-top = (vh - contentHeight) / 2
+				// For other frames: content enters from bottom, padding-top = 100vh (CSS default)
+				// transitionDistance for the background transition (except last frame)
+				const isFirstFrame = index === 0;
+				const isLastFrame = index === sections.length - 1;
+
+				// How far content is pushed down within its section before scrolling begins
+				const initialPaddingTop = isFirstFrame
+					? Math.max(0, (viewportHeight - contentHeight) / 2)
+					: viewportHeight;
+
+				// Override CSS padding-top for the first frame so content starts centered
+				if (isFirstFrame) {
+					section.style.paddingTop = initialPaddingTop + 'px';
+				}
+
+				// How far user must scroll before content exits the top of the viewport
+				const scrollToExit = initialPaddingTop + contentHeight;
+
+				const sectionHeight = isLastFrame
+					? scrollToExit + (viewportHeight * config.exitScrollDistance)
+					: scrollToExit + transitionDistance;
+
+				frameData.push({
+					index,
+					section,
+					content,
+					background: bg,
+					contentHeight,
+					transitionDistance,
+					sectionHeight,
+					sectionStart: cumulativeHeight,
+					sectionEnd: cumulativeHeight + sectionHeight,
+					contentStart: cumulativeHeight,
+					contentEnd: cumulativeHeight + scrollToExit,
+					// Transition zone starts after content exits the top
+					transitionStart: cumulativeHeight + scrollToExit,
+					transitionEnd: cumulativeHeight + scrollToExit + transitionDistance,
+					isLastFrame,
+				});
+
+				cumulativeHeight += sectionHeight;
+
+				// Set section height
+				section.style.height = sectionHeight + 'px';
+			});
+
+			// Set total height for sections container
+			sectionsContainer.style.height = cumulativeHeight + 'px';
+			cachedTotalHeight = cumulativeHeight;
+
+			return cumulativeHeight;
 		}
 
 		/**
-		 * Update active frame based on scroll position
+		 * Get scroll progress within the reveal block (0 = top of block at top of viewport, 1 = end)
 		 */
-		function updateActiveFrame() {
+		function getBlockScrollProgress() {
 			const blockRect = block.getBoundingClientRect();
+			const blockTop = window.pageYOffset + blockRect.top;
+			const scrollTop = window.pageYOffset;
+
+			// How far we've scrolled into the block
+			const scrollIntoBlock = scrollTop - blockTop;
+
+			// Total scrollable distance within the block (cached to avoid forced reflow)
+			const totalHeight = cachedTotalHeight;
+
+			return {
+				scrollIntoBlock,
+				totalHeight,
+				blockTop,
+				blockRect,
+				// Is the block currently "active" (sticky container should be stuck)
+				isActive: blockRect.top <= 0 && blockRect.bottom > window.innerHeight,
+				// Has the block started (top is at or above viewport top)
+				hasStarted: blockRect.top <= 0,
+				// Is the block finished (bottom is at or above viewport bottom)
+				isFinished: blockRect.bottom <= window.innerHeight,
+			};
+		}
+
+		/**
+		 * Determine which frame is active and calculate transition progress
+		 */
+		function getCurrentFrameState(scrollIntoBlock) {
 			const viewportHeight = window.innerHeight;
 
-			// Calculate scroll progress through the block
-			// 0 = block just entered viewport at bottom
-			// 1 = block has left viewport at top
-			const blockHeight = block.offsetHeight;
-			const scrollStart = viewportHeight; // Block top at viewport bottom
-			const scrollEnd = -blockHeight; // Block bottom at viewport top
-			const scrollRange = scrollStart - scrollEnd;
-			const currentScroll = blockRect.top;
-			const scrollProgress = Math.max( 0, Math.min( 1, ( scrollStart - currentScroll ) / scrollRange ) );
+			let activeIndex = 0;
+			let transitioningToIndex = -1;
+			let transitionProgress = 0;
 
-			// Determine which frame should be active
-			// Divide scroll progress into equal segments for each frame
-			const newFrameIndex = Math.min(
-				frameCount - 1,
-				Math.floor( scrollProgress * frameCount )
-			);
+			for (let i = 0; i < frameData.length; i++) {
+				const frame = frameData[i];
 
-			// Update frames if index changed
-			if ( newFrameIndex !== currentFrameIndex ) {
-				const isScrollingDown = newFrameIndex > currentFrameIndex;
+				if (scrollIntoBlock >= frame.sectionStart && scrollIntoBlock < frame.sectionEnd) {
+					activeIndex = i;
 
-				frames.forEach( ( frame, index ) => {
-					const isActive = index === newFrameIndex;
-					const wasActive = index === currentFrameIndex;
-
-					if ( isActive || wasActive ) {
-						applyTransition( frame, isActive, isActive && isScrollingDown );
+					// Check if we're in the transition zone
+					if (!frame.isLastFrame && scrollIntoBlock >= frame.transitionStart) {
+						transitioningToIndex = i + 1;
+						const progressIntoTransition = scrollIntoBlock - frame.transitionStart;
+						transitionProgress = Math.min(1, Math.max(0, progressIntoTransition / frame.transitionDistance));
 					}
-				} );
 
-				currentFrameIndex = newFrameIndex;
+					break;
+				}
 			}
+
+			// If we've scrolled past all frames, show the last one
+			if (scrollIntoBlock >= frameData[frameData.length - 1]?.sectionEnd) {
+				activeIndex = frameData.length - 1;
+			}
+
+			return { activeIndex, transitioningToIndex, transitionProgress };
+		}
+
+		/**
+ * Apply transition effects to backgrounds
+ */
+		function applyBackgroundTransitions(activeIndex, transitioningToIndex, transitionProgress) {
+			backgrounds.forEach((bg, index) => {
+				const transitionType = bg.getAttribute('data-transition') || 'fade';
+
+				// Reset transforms
+				bg.style.transform = '';
+				bg.style.opacity = '';
+				bg.style.clipPath = '';
+
+				if (index === activeIndex && transitioningToIndex === -1) {
+					// Active frame, no transition happening
+					bg.classList.add('is-active');
+					bg.classList.remove('is-transitioning-in', 'is-transitioning-out');
+					bg.style.opacity = '1';
+					bg.style.zIndex = '10';
+				} else if (index === activeIndex && transitioningToIndex !== -1) {
+					// Active frame, but transitioning out
+					bg.classList.remove('is-active', 'is-transitioning-in');
+					bg.classList.add('is-transitioning-out');
+					bg.style.opacity = '1';
+					bg.style.zIndex = '9';
+				} else if (index === transitioningToIndex) {
+					// Frame transitioning in
+					bg.classList.remove('is-active', 'is-transitioning-out');
+					bg.classList.add('is-transitioning-in');
+					bg.style.zIndex = '10';
+
+					// Apply transition based on type
+					switch (transitionType) {
+						case 'fade':
+							bg.style.opacity = transitionProgress;
+							break;
+						case 'left':
+							// Wipe from left edge toward right
+							bg.style.opacity = '1';
+							bg.style.clipPath = `inset(0 ${(1 - transitionProgress) * 100}% 0 0)`;
+							break;
+						case 'right':
+							// Wipe from right edge toward left
+							bg.style.opacity = '1';
+							bg.style.clipPath = `inset(0 0 0 ${(1 - transitionProgress) * 100}%)`;
+							break;
+						case 'up':
+							// Wipe from top edge downward
+							bg.style.opacity = '1';
+							bg.style.clipPath = `inset(0 0 ${(1 - transitionProgress) * 100}% 0)`;
+							break;
+						case 'down':
+							// Wipe from bottom edge upward
+							bg.style.opacity = '1';
+							bg.style.clipPath = `inset(${(1 - transitionProgress) * 100}% 0 0 0)`;
+							break;
+						case 'zoom':
+							bg.style.opacity = transitionProgress;
+							bg.style.transform = `scale(${0.8 + (0.2 * transitionProgress)})`;
+							break;
+						default:
+							bg.style.opacity = transitionProgress;
+					}
+				} else {
+					// Hidden frame
+					bg.classList.remove('is-active', 'is-transitioning-in', 'is-transitioning-out');
+					bg.style.opacity = '0';
+					bg.style.zIndex = '5';
+				}
+			});
+		}
+
+		/**
+		 * Position content within viewport during scroll
+		 */
+		function updateContentPositions(scrollIntoBlock) {
+			const viewportHeight = window.innerHeight;
+
+			frameData.forEach((frame) => {
+				if (!frame.content) return;
+
+				// Calculate where content should be positioned
+				// Content starts at bottom of viewport, scrolls to top, then off top
+				const localScroll = scrollIntoBlock - frame.sectionStart;
+
+				// Content enters when localScroll = 0 (at bottom)
+				// Content is centered when localScroll = viewportHeight * 0.15
+				// Content exits when localScroll = viewportHeight + contentHeight
+
+				// The content div uses CSS to position itself, we just need to ensure
+				// the section is tall enough (which we do in calculateLayout)
+			});
+		}
+
+		/**
+		 * Main scroll handler
+		 */
+		function updateOnScroll() {
+			const { scrollIntoBlock, isActive, hasStarted, isFinished } = getBlockScrollProgress();
+
+			// Update block state classes
+			block.classList.toggle('has-started', hasStarted);
+			block.classList.toggle('is-active', isActive);
+			block.classList.toggle('is-finished', isFinished);
+
+			// Get current frame state
+			const { activeIndex, transitioningToIndex, transitionProgress } = getCurrentFrameState(scrollIntoBlock);
+
+			// Apply background transitions
+			applyBackgroundTransitions(activeIndex, transitioningToIndex, transitionProgress);
+
+			// Update content positions if needed
+			updateContentPositions(scrollIntoBlock);
+
+			// Store current frame for potential use by other scripts
+			block.dataset.currentFrame = activeIndex;
 
 			ticking = false;
 		}
 
 		/**
-		 * Handle scroll events with requestAnimationFrame throttling
+		 * Throttled scroll handler
 		 */
 		function onScroll() {
-			if ( ! isInView ) {
-				return;
-			}
-
-			if ( ! ticking ) {
-				window.requestAnimationFrame( updateActiveFrame );
+			if (!ticking) {
+				window.requestAnimationFrame(updateOnScroll);
 				ticking = true;
 			}
 		}
 
 		/**
-		 * Handle block entering/leaving viewport
-		 *
-		 * @param {IntersectionObserverEntry[]} entries Observer entries
+		 * Handle resize
 		 */
-		function onIntersection( entries ) {
-			entries.forEach( ( entry ) => {
-				isInView = entry.isIntersecting;
-
-				if ( isInView ) {
-					// Block is in viewport - fix background
-					background.classList.add( 'is-fixed' );
-					// Trigger initial frame update
-					updateActiveFrame();
-				} else {
-					// Block left viewport - unfix background
-					background.classList.remove( 'is-fixed' );
-
-					// Reset to first or last frame based on scroll direction
-					const blockRect = block.getBoundingClientRect();
-					const resetToFirst = blockRect.top > window.innerHeight;
-
-					frames.forEach( ( frame, index ) => {
-						const shouldBeActive = resetToFirst ? index === 0 : index === frameCount - 1;
-						frame.classList.toggle( 'is-active', shouldBeActive );
-						frame.style.opacity = shouldBeActive ? '1' : '0';
-						frame.style.transform = '';
-					} );
-
-					currentFrameIndex = resetToFirst ? 0 : frameCount - 1;
-				}
-			} );
+		function onResize() {
+			calculateLayout();
+			updateOnScroll();
 		}
 
-		// Set up Intersection Observer
-		const observer = new IntersectionObserver( onIntersection, {
-			threshold: 0,
-			rootMargin: '0px',
-		} );
+		/**
+		 * Initialize
+		 */
+		function init() {
+			calculateLayout();
 
-		observer.observe( block );
+			// Set up event listeners
+			window.addEventListener('scroll', onScroll, { passive: true });
+			window.addEventListener('resize', onResize, { passive: true });
 
-		// Add scroll listener
-		window.addEventListener( 'scroll', onScroll, { passive: true } );
+			// Recalculate after images load, debounced to batch rapid successive loads
+			const debouncedRecalculate = debounce(() => {
+				calculateLayout();
+				updateOnScroll();
+			}, 100);
 
-		// Initial state - ensure first frame is visible
-		frames.forEach( ( frame, index ) => {
-			if ( index === 0 ) {
-				frame.classList.add( 'is-active' );
-				frame.style.opacity = '1';
-			} else {
-				frame.classList.remove( 'is-active' );
-				frame.style.opacity = '0';
-			}
-		} );
+			block.querySelectorAll('img').forEach((img) => {
+				if (!img.complete) {
+					img.addEventListener('load', debouncedRecalculate);
+					img.addEventListener('error', debouncedRecalculate);
+				}
+			});
 
-		// Store cleanup function on element for potential future use
+			// Initial update
+			updateOnScroll();
+
+			// Mark as initialized
+			block.dataset.initialized = 'true';
+		}
+
+		// Store cleanup function
 		block._revealCleanup = function () {
-			observer.disconnect();
-			window.removeEventListener( 'scroll', onScroll );
+			window.removeEventListener('scroll', onScroll);
+			window.removeEventListener('resize', onResize);
+			activeBlocks.delete(block);
+			if (activeBlocks.size === 0 && domObserver) {
+				domObserver.disconnect();
+				domObserver = null;
+			}
 		};
+
+		// Initialize
+		init();
+		activeBlocks.add(block);
 	}
+
+	const activeBlocks = new Set();
+	let domObserver = null;
 
 	/**
-	 * Initialize all Reveal blocks on the page
+	 * Initialize all reveal blocks on the page
 	 */
 	function initAllBlocks() {
-		const blocks = document.querySelectorAll( '.caes-reveal' );
-		blocks.forEach( initRevealBlock );
+		document.querySelectorAll('.caes-reveal').forEach((block) => {
+			if (!block.dataset.initialized) {
+				initRevealBlock(block);
+			}
+		});
 	}
 
-	// Initialize on DOM ready
-	if ( document.readyState === 'loading' ) {
-		document.addEventListener( 'DOMContentLoaded', initAllBlocks );
+	// Initialize when DOM is ready
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initAllBlocks);
 	} else {
 		initAllBlocks();
 	}
-} )();
+
+	// Re-initialize if new blocks are added (for block editor compatibility)
+	if (typeof MutationObserver !== 'undefined') {
+		domObserver = new MutationObserver((mutations) => {
+			mutations.forEach((mutation) => {
+				mutation.addedNodes.forEach((node) => {
+					if (node.nodeType === 1) {
+						if (node.classList?.contains('caes-reveal')) {
+							initRevealBlock(node);
+						}
+						node.querySelectorAll('.caes-reveal').forEach(initRevealBlock);
+					}
+				});
+			});
+		});
+
+		domObserver.observe(document.body, { childList: true, subtree: true });
+	}
+})();

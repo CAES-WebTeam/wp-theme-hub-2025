@@ -1,0 +1,38 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/motion-scroll-frame",
+	"version": "0.1.0",
+	"title": "Motion Scroll Frame",
+	"category": "media",
+	"icon": "format-image",
+	"description": "A content frame within a Motion Scroll block.",
+	"keywords": ["motion", "scroll", "frame", "content"],
+	"textdomain": "caes-motion-scroll",
+	"parent": ["caes-hub/motion-scroll"],
+	"attributes": {
+		"frameIndex": {
+			"type": "number",
+			"default": 0
+		},
+		"frameId": {
+			"type": "string",
+			"default": ""
+		},
+		"frameLabel": {
+			"type": "string",
+			"default": "Frame"
+		}
+	},
+	"usesContext": [
+		"caes-hub/motion-scroll-frames",
+		"caes-hub/motion-scroll-overlayColor",
+		"caes-hub/motion-scroll-overlayOpacity",
+		"caes-hub/motion-scroll-contentPosition"
+	],
+	"supports": {
+		"html": false,
+		"reusable": false
+	},
+	"editorScript": "file:./index.js"
+}

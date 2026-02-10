@@ -1,0 +1,60 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/motion-scroll",
+	"version": "0.1.0",
+	"title": "Motion Scroll",
+	"category": "media",
+	"icon": "columns",
+	"description": "Split-layout scroll experience with content on one side and transitioning images on the other.",
+	"keywords": ["motion", "scroll", "parallax", "split", "storytelling", "animation"],
+	"textdomain": "caes-motion-scroll",
+	"attributes": {
+		"frames": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"contentPosition": {
+			"type": "string",
+			"default": "left",
+			"enum": ["left", "right"]
+		},
+		"mediaWidth": {
+			"type": "number",
+			"default": 50
+		},
+		"overlayColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"overlayOpacity": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"supports": {
+		"align": ["full", "wide"],
+		"html": false,
+		"color": {
+			"text": true,
+			"background": false
+		},
+		"spacing": {
+			"padding": true
+		}
+	},
+	"providesContext": {
+		"caes-hub/motion-scroll-frames": "frames",
+		"caes-hub/motion-scroll-overlayColor": "overlayColor",
+		"caes-hub/motion-scroll-overlayOpacity": "overlayOpacity",
+		"caes-hub/motion-scroll-contentPosition": "contentPosition"
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js"
+}

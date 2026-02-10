@@ -13,6 +13,7 @@ import Edit from './edit';
 import Save from './save';
 import metadata from './block.json';
 
+// Register the main Reveal block
 registerBlockType( metadata.name, {
 	edit: Edit,
 	save: Save
