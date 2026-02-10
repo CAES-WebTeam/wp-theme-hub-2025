@@ -814,6 +814,16 @@ function extract_activity_fields($activity_xml) {
                         }
                     }
                 }
+            } elseif ($field_type === 'address-list') {
+                // Handle address-list fields (e.g., institution for memberships)
+                $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                // For memberships, the organization name is in institution field as address-list
+                // Look for <api:line type="organisation">
+                $org_lines = $field->xpath('.//api:addresses/api:address/api:line[@type="organisation"]');
+                if (!empty($org_lines)) {
+                    $field_value = (string)$org_lines[0];
+                }
             }
 
             // Store activity fields
@@ -821,11 +831,17 @@ function extract_activity_fields($activity_xml) {
                 if ($field_name === 'title') {
                     $fields_data['title'] = $field_value;
                 } elseif ($field_name === 'name') {
-                    // Use 'name' as title if we don't have a title yet (e.g., for memberships)
+                    // Use 'name' as title if we don't have a title yet
                     if (!isset($fields_data['title'])) {
                         $fields_data['title'] = $field_value;
                     }
                     $fields_data['name'] = $field_value;
+                } elseif ($field_name === 'institution') {
+                    // For memberships, institution contains the organization name (already extracted from address-list)
+                    if (!isset($fields_data['title'])) {
+                        $fields_data['title'] = $field_value;
+                    }
+                    $fields_data['institution'] = $field_value;
                 } elseif ($field_name === 'start-date') {
                     $fields_data['date'] = $field_value;
                 } elseif ($field_name === 'awarded-date') {
@@ -835,7 +851,7 @@ function extract_activity_fields($activity_xml) {
                 } elseif ($field_name === 'location') {
                     $fields_data['location'] = $field_value;
                 } elseif ($field_name === 'associated-institution') {
-                    $fields_data['institution'] = $field_value;
+                    $fields_data['associated_institution'] = $field_value;
                 }
             }
         }
@@ -1145,7 +1161,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.9</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v2.1</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
