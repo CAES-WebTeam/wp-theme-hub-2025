@@ -507,6 +507,33 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     html += "</div>";
                 }
 
+                // Show debug info about what was found
+                if (diagnosticInfo.category_counts || diagnosticInfo.publications_found !== undefined) {
+                    html += "<div style=\"margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 3px;\">";
+                    html += "<h4 style=\"margin: 0 0 8px 0; font-size: 13px;\">Debug: Objects Found in Relationships</h4>";
+
+                    if (diagnosticInfo.publications_found !== undefined) {
+                        html += "<div style=\"font-size: 12px; margin-bottom: 5px;\">";
+                        html += "<strong>Publications:</strong> " + diagnosticInfo.publications_found + " ";
+                        html += "<strong>Activities:</strong> " + diagnosticInfo.activities_found + " ";
+                        html += "<strong>Teaching:</strong> " + diagnosticInfo.teaching_activities_found;
+                        html += "</div>";
+                    }
+
+                    if (diagnosticInfo.category_counts && Object.keys(diagnosticInfo.category_counts).length > 0) {
+                        html += "<div style=\"font-size: 12px;\">";
+                        html += "<strong>All Categories Found:</strong> ";
+                        var cats = [];
+                        for (var cat in diagnosticInfo.category_counts) {
+                            cats.push(cat + " (" + diagnosticInfo.category_counts[cat] + ")");
+                        }
+                        html += cats.join(", ");
+                        html += "</div>";
+                    }
+
+                    html += "</div>";
+                }
+
                 if (diagnosticInfo.timestamp) {
                     html += "<div style=\"font-size: 11px; color: #666; margin-top: 10px;\">Query executed at: " + escapeHtml(diagnosticInfo.timestamp) + "</div>";
                 }
@@ -771,6 +798,9 @@ function symplectic_query_api_handler() {
                 // Get all related objects
                 $related_objects = $rel_xml->xpath('//api:object');
 
+                // Track categories for debugging
+                $category_counts = array();
+
                 if (!empty($related_objects)) {
                     foreach ($related_objects as $rel_object) {
                         $obj_data = array();
@@ -782,6 +812,14 @@ function symplectic_query_api_handler() {
 
                         // Sort by category
                         $category = isset($obj_data['category']) ? $obj_data['category'] : null;
+
+                        // Track category counts for debugging
+                        if ($category) {
+                            if (!isset($category_counts[$category])) {
+                                $category_counts[$category] = 0;
+                            }
+                            $category_counts[$category]++;
+                        }
 
                         if ($category === 'publication') {
                             $publications[] = $obj_data;
@@ -1026,6 +1064,10 @@ function symplectic_query_api_handler() {
             'publication_request_urls' => $publication_urls,
             'activity_request_urls' => $activity_urls,
             'relationships_error' => $relationships_error,
+            'category_counts' => isset($category_counts) ? $category_counts : array(),
+            'publications_found' => count($publications),
+            'activities_found' => count($activities),
+            'teaching_activities_found' => count($teaching_activities),
             'timestamp' => current_time('mysql'),
         ),
     );
@@ -1039,7 +1081,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.3</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.4</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
