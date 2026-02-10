@@ -1,3 +1,6 @@
+/**
+ * Reveal Block Editor
+ */
 import { __ } from '@wordpress/i18n';
 import {
 	useBlockProps,
@@ -919,7 +922,7 @@ const ImagePanel = ({
 
 						{/* Alt Text */}
 						<TextControl
-							label={__('Alt Text', 'caes-reveal') + ' (' + __('recommended', 'caes-reveal') + ')'}
+							label={__('Alt Text', 'caes-reveal') + ' (' + __('required', 'caes-reveal') + ')'}
 							value={image?.alt || ''}
 							onChange={(value) => {
 								const updatedImage = { ...image, alt: value };
