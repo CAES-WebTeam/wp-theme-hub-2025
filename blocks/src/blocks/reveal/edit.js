@@ -637,8 +637,8 @@ const FrameManagerPanel = ({
 						</div>
 					</div>
 
-					{/* Transition Settings */}
-					<div
+					{/* Transition Settings (not shown for the first frame) */}
+					{index > 0 && <div
 						style={{
 							paddingTop: '20px',
 							borderTop: '1px solid #ddd',
@@ -673,7 +673,7 @@ const FrameManagerPanel = ({
 								}
 							/>
 						</div>
-					</div>
+					</div>}
 				</div>
 			)}
 
