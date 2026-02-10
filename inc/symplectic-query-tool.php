@@ -809,26 +809,75 @@ function symplectic_query_api_handler() {
                                             // Extract fields
                                             $fields = $record->xpath('.//api:field');
                                             foreach ($fields as $field) {
+                                                $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
                                                 $field_name = (string)$field['name'];
-                                                $field_value = (string)$field;
+                                                $field_type = (string)$field['type'];
+
+                                                // Extract value based on field type
+                                                $field_value = null;
+
+                                                if ($field_type === 'text') {
+                                                    // Text fields have <api:text> child
+                                                    $text_nodes = $field->xpath('./api:text');
+                                                    if (!empty($text_nodes)) {
+                                                        $field_value = (string)$text_nodes[0];
+                                                    }
+                                                } elseif ($field_type === 'date') {
+                                                    // Date fields have <api:date> with year/month/day children
+                                                    $date_nodes = $field->xpath('./api:date');
+                                                    if (!empty($date_nodes)) {
+                                                        $date_node = $date_nodes[0];
+                                                        $year = (string)$date_node->year;
+                                                        $month = (string)$date_node->month;
+                                                        $day = (string)$date_node->day;
+
+                                                        if ($year) {
+                                                            $field_value = $year;
+                                                            if ($month) {
+                                                                $field_value = $month . '/' . $field_value;
+                                                                if ($day) {
+                                                                    $field_value = $day . '/' . $field_value;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                } elseif ($field_type === 'person-list') {
+                                                    // Person lists have <api:people> with <api:person> children
+                                                    $people_nodes = $field->xpath('./api:people/api:person');
+                                                    if (!empty($people_nodes)) {
+                                                        $authors = array();
+                                                        foreach ($people_nodes as $person) {
+                                                            $first_name = (string)$person->{'first-names'};
+                                                            $last_name = (string)$person->{'last-name'};
+                                                            if ($first_name && $last_name) {
+                                                                $authors[] = $first_name . ' ' . $last_name;
+                                                            } elseif ($last_name) {
+                                                                $authors[] = $last_name;
+                                                            }
+                                                        }
+                                                        $field_value = implode(', ', $authors);
+                                                    }
+                                                }
 
                                                 // Store common publication fields
-                                                if ($field_name === 'title') {
+                                                if ($field_value && $field_name === 'title') {
                                                     $pub['title'] = $field_value;
-                                                } elseif ($field_name === 'journal') {
+                                                } elseif ($field_value && $field_name === 'journal') {
                                                     $pub['journal'] = $field_value;
-                                                } elseif ($field_name === 'authors') {
+                                                } elseif ($field_value && $field_name === 'authors') {
                                                     $pub['authors'] = $field_value;
-                                                } elseif ($field_name === 'publication-date') {
+                                                } elseif ($field_value && $field_name === 'publication-date') {
                                                     $pub['publication_date'] = $field_value;
-                                                } elseif ($field_name === 'volume') {
+                                                } elseif ($field_value && $field_name === 'volume') {
                                                     $pub['volume'] = $field_value;
-                                                } elseif ($field_name === 'issue') {
+                                                } elseif ($field_value && $field_name === 'issue') {
                                                     $pub['issue'] = $field_value;
-                                                } elseif ($field_name === 'doi') {
+                                                } elseif ($field_value && $field_name === 'doi') {
                                                     $pub['doi'] = $field_value;
-                                                } elseif ($field_name === 'abstract') {
+                                                } elseif ($field_value && $field_name === 'abstract') {
                                                     $pub['abstract'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'publisher') {
+                                                    $pub['publisher'] = $field_value;
                                                 }
                                             }
                                         }
@@ -883,7 +932,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.1</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.2</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
