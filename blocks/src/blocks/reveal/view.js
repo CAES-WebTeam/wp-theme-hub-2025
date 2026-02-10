@@ -14,6 +14,14 @@
 (function () {
 	'use strict';
 
+	function debounce(fn, ms) {
+		let timer;
+		return function () {
+			clearTimeout(timer);
+			timer = setTimeout(fn, ms);
+		};
+	}
+
 	/**
 	 * Initialize a single reveal block
 	 */
@@ -37,6 +45,7 @@
 
 		let ticking = false;
 		let frameData = [];
+		let cachedTotalHeight = 0;
 
 		/**
 		 * Calculate layout metrics for each frame
@@ -127,6 +136,7 @@
 
 			// Set total height for sections container
 			sectionsContainer.style.height = cumulativeHeight + 'px';
+			cachedTotalHeight = cumulativeHeight;
 
 			return cumulativeHeight;
 		}
@@ -142,8 +152,8 @@
 			// How far we've scrolled into the block
 			const scrollIntoBlock = scrollTop - blockTop;
 
-			// Total scrollable distance within the block
-			const totalHeight = sectionsContainer.offsetHeight;
+			// Total scrollable distance within the block (cached to avoid forced reflow)
+			const totalHeight = cachedTotalHeight;
 
 			return {
 				scrollIntoBlock,
@@ -341,25 +351,16 @@
 			window.addEventListener('scroll', onScroll, { passive: true });
 			window.addEventListener('resize', onResize, { passive: true });
 
-			// Recalculate after images load
-			const images = block.querySelectorAll('img');
-			let imagesLoaded = 0;
-			const totalImages = images.length;
+			// Recalculate after images load, debounced to batch rapid successive loads
+			const debouncedRecalculate = debounce(() => {
+				calculateLayout();
+				updateOnScroll();
+			}, 100);
 
-			images.forEach((img) => {
-				if (img.complete) {
-					imagesLoaded++;
-				} else {
-					img.addEventListener('load', () => {
-						imagesLoaded++;
-						if (imagesLoaded === totalImages) {
-							calculateLayout();
-							updateOnScroll();
-						}
-					});
-					img.addEventListener('error', () => {
-						imagesLoaded++;
-					});
+			block.querySelectorAll('img').forEach((img) => {
+				if (!img.complete) {
+					img.addEventListener('load', debouncedRecalculate);
+					img.addEventListener('error', debouncedRecalculate);
 				}
 			});
 
@@ -374,11 +375,20 @@
 		block._revealCleanup = function () {
 			window.removeEventListener('scroll', onScroll);
 			window.removeEventListener('resize', onResize);
+			activeBlocks.delete(block);
+			if (activeBlocks.size === 0 && domObserver) {
+				domObserver.disconnect();
+				domObserver = null;
+			}
 		};
 
 		// Initialize
 		init();
+		activeBlocks.add(block);
 	}
+
+	const activeBlocks = new Set();
+	let domObserver = null;
 
 	/**
 	 * Initialize all reveal blocks on the page
@@ -400,19 +410,19 @@
 
 	// Re-initialize if new blocks are added (for block editor compatibility)
 	if (typeof MutationObserver !== 'undefined') {
-		const observer = new MutationObserver((mutations) => {
+		domObserver = new MutationObserver((mutations) => {
 			mutations.forEach((mutation) => {
 				mutation.addedNodes.forEach((node) => {
 					if (node.nodeType === 1) {
 						if (node.classList?.contains('caes-reveal')) {
 							initRevealBlock(node);
 						}
-						node.querySelectorAll?.('.caes-reveal')?.forEach(initRevealBlock);
+						node.querySelectorAll('.caes-reveal').forEach(initRevealBlock);
 					}
 				});
 			});
 		});
 
-		observer.observe(document.body, { childList: true, subtree: true });
+		domObserver.observe(document.body, { childList: true, subtree: true });
 	}
 })();
