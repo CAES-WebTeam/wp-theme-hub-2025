@@ -762,6 +762,59 @@ function symplectic_query_api_handler() {
                             $teaching_activities[] = $obj_data;
                         }
                     }
+
+                    // Fetch full details for publications
+                    if (!empty($publications)) {
+                        foreach ($publications as &$pub) {
+                            if (isset($pub['href'])) {
+                                $pub_response = wp_remote_get($pub['href'], $args);
+
+                                if (!is_wp_error($pub_response) && wp_remote_retrieve_response_code($pub_response) === 200) {
+                                    $pub_body = wp_remote_retrieve_body($pub_response);
+                                    $pub_xml = simplexml_load_string($pub_body);
+
+                                    if ($pub_xml !== false) {
+                                        $pub_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                        // Find the native or preferred record fields
+                                        $records = $pub_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+
+                                        if (!empty($records)) {
+                                            $record = $records[0];
+                                            $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                            // Extract fields
+                                            $fields = $record->xpath('.//api:field');
+                                            foreach ($fields as $field) {
+                                                $field_name = (string)$field['name'];
+                                                $field_value = (string)$field;
+
+                                                // Store common publication fields
+                                                if ($field_name === 'title') {
+                                                    $pub['title'] = $field_value;
+                                                } elseif ($field_name === 'journal') {
+                                                    $pub['journal'] = $field_value;
+                                                } elseif ($field_name === 'authors') {
+                                                    $pub['authors'] = $field_value;
+                                                } elseif ($field_name === 'publication-date') {
+                                                    $pub['publication_date'] = $field_value;
+                                                } elseif ($field_name === 'volume') {
+                                                    $pub['volume'] = $field_value;
+                                                } elseif ($field_name === 'issue') {
+                                                    $pub['issue'] = $field_value;
+                                                } elseif ($field_name === 'doi') {
+                                                    $pub['doi'] = $field_value;
+                                                } elseif ($field_name === 'abstract') {
+                                                    $pub['abstract'] = $field_value;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        unset($pub); // Break the reference
+                    }
                 }
             } else {
                 $relationships_error = 'Failed to parse relationships XML response';
