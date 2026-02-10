@@ -78,13 +78,28 @@
 				}
 
 				// Calculate section height:
-				// - 1vh for content to enter from bottom
-				// - contentHeight for scrolling through content
-				// - transitionDistance for the background transition (except last frame)
+				// For frame 0: content starts centered, padding-top = (vh - contentHeight) / 2
+				// For other frames: content enters from bottom, padding-top = 100vh (CSS default)
+				// transitionDistance for the background transition (except last frame)
+				const isFirstFrame = index === 0;
 				const isLastFrame = index === sections.length - 1;
+
+				// How far content is pushed down within its section before scrolling begins
+				const initialPaddingTop = isFirstFrame
+					? Math.max(0, (viewportHeight - contentHeight) / 2)
+					: viewportHeight;
+
+				// Override CSS padding-top for the first frame so content starts centered
+				if (isFirstFrame) {
+					section.style.paddingTop = initialPaddingTop + 'px';
+				}
+
+				// How far user must scroll before content exits the top of the viewport
+				const scrollToExit = initialPaddingTop + contentHeight;
+
 				const sectionHeight = isLastFrame
-					? viewportHeight + contentHeight + (viewportHeight * config.exitScrollDistance)
-					: viewportHeight + contentHeight + transitionDistance;
+					? scrollToExit + (viewportHeight * config.exitScrollDistance)
+					: scrollToExit + transitionDistance;
 
 				frameData.push({
 					index,
@@ -96,12 +111,11 @@
 					sectionHeight,
 					sectionStart: cumulativeHeight,
 					sectionEnd: cumulativeHeight + sectionHeight,
-					// Content is visible from sectionStart to sectionStart + vh + contentHeight
 					contentStart: cumulativeHeight,
-					contentEnd: cumulativeHeight + viewportHeight + contentHeight,
-					// Transition zone starts after content
-					transitionStart: cumulativeHeight + viewportHeight + contentHeight,
-					transitionEnd: cumulativeHeight + viewportHeight + contentHeight + transitionDistance,
+					contentEnd: cumulativeHeight + scrollToExit,
+					// Transition zone starts after content exits the top
+					transitionStart: cumulativeHeight + scrollToExit,
+					transitionEnd: cumulativeHeight + scrollToExit + transitionDistance,
 					isLastFrame,
 				});
 

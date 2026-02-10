@@ -1,1 +1,752 @@
-(()=>{"use strict";var e,t={5166:(e,t,n)=>{const a=window.wp.blocks,l=window.wp.i18n,s=window.wp.blockEditor,o=window.wp.components,i=window.wp.element,r=window.wp.apiFetch;var p=n.n(r);const d=window.ReactJSXRuntime,c=["","--wp--preset--spacing--20","--wp--preset--spacing--30","--wp--preset--spacing--40","--wp--preset--spacing--50","--wp--preset--spacing--60","--wp--preset--spacing--70","--wp--preset--spacing--80"],u=["None (no gap)","2X-Small","X-Small","Small","Medium","Large","X-Large","2X-Large"],h=JSON.parse('{"UU":"caes-hub/hand-picked-post"}');(0,a.registerBlockType)(h.UU,{edit:function({attributes:e,setAttributes:t}){const{postIds:n=[],postType:a=["post"],feedType:r="related-topics",numberOfItems:h=5,customGapStep:m=0,displayLayout:g="list",columns:b=3,gridItemPosition:f="manual",gridAutoColumnWidth:_=12,gridAutoColumnUnit:v="rem"}=e,k=Array.isArray(a)?a:[a],x=[{value:"post",label:"Posts",restBase:"posts"},{value:"page",label:"Pages",restBase:"pages"},{value:"shorthand_story",label:"Shorthand Stories",restBase:"shorthand_story"},{value:"publications",label:"Publications",restBase:"publications"}],[w,C]=(0,i.useState)([]),[y,j]=(0,i.useState)([]),[T,B]=(0,i.useState)(!1),[P,S]=(0,i.useState)(""),[I,O]=(0,i.useState)(!1);(0,i.useEffect)((()=>{k.length&&(B(!0),Promise.all(k.map((e=>{const t=x.find((t=>t.value===e))?.restBase||e;return p()({path:`/wp/v2/${t}?per_page=20&_fields=id,title,slug`}).then((t=>t.map((t=>({id:t.id,label:t.title.rendered||`(${e} #${t.id})`,postType:e}))))).catch((()=>[]))}))).then((e=>{C(e.flat()),B(!1)})).catch((()=>{C([]),B(!1)})))}),[k.sort().join(",")]),(0,i.useEffect)((()=>{if(!n.length)return void j([]);const e=n.filter((e=>!y.find((t=>t.id===e))&&!w.find((t=>t.id===e))));if(0!==e.length)(async()=>{const t=(await Promise.all(k.map((async t=>{const n=x.find((e=>e.value===t))?.restBase||t,a=e;if(0===a.length)return[];try{return(await p()({path:`/wp/v2/${n}?include=${a.join(",")}&_fields=id,title,slug`})).map((e=>({id:e.id,label:e.title.rendered||`(${t} #${e.id})`,postType:t})))}catch(e){return[]}})))).flat(),a=n.map((e=>y.find((t=>t.id===e))||w.find((t=>t.id===e))||t.find((t=>t.id===e)))).filter(Boolean);j(a)})();else{const e=n.map((e=>y.find((t=>t.id===e))||w.find((t=>t.id===e)))).filter(Boolean);j(e)}}),[n,k]);const $=function(e){const t=(0,i.useRef)(null);return(0,i.useMemo)((()=>(...n)=>{t.current&&clearTimeout(t.current),t.current=setTimeout((()=>{e(...n)}),300)}),[e,300])}((async e=>{if(e&&!(e.length<3)){O(!0);try{const t=await Promise.all(k.map((t=>{const n=x.find((e=>e.value===t))?.restBase||t;return p()({path:`/wp/v2/${n}?search=${encodeURIComponent(e)}&per_page=50&orderby=relevance&_fields=id,title,slug`}).then((e=>e.map((e=>({id:e.id,label:e.title.rendered||`(${t} #${e.id})`,postType:t}))))).catch((()=>[]))})));C(t.flat())}catch(e){console.error("Search error:",e),C([])}finally{O(!1)}}}));(0,i.useEffect)((()=>()=>{$.cancel&&$.cancel()}),[$]);const A=(0,i.useMemo)((()=>{const e=[...y];return w.forEach((t=>{e.find((e=>e.id===t.id))||e.push(t)})),e}),[y,w]),F=n.map((e=>{const t=A.find((t=>t.id===e));return t?t.label:`Post #${e}`})),G=A.map((e=>e.label)),N=`${"grid"===g?`hand-picked-post-grid columns-${b}`:"hand-picked-post-list"} ${m>0?`gap-${c[m].replace(/^--/,"").replace(/--/g,"-")}`:""}`.trim(),L=(0,s.useBlockProps)();return(0,d.jsxs)(d.Fragment,{children:[(0,d.jsx)(s.InspectorControls,{children:(0,d.jsxs)(o.PanelBody,{title:(0,l.__)("Featured Content Settings","hand-picked-post"),children:[(0,d.jsx)(o.RadioControl,{label:(0,l.__)("Feed Type","hand-picked-post"),selected:r,options:[{label:(0,l.__)("Related Topics","hand-picked-post"),value:"related-topics"},{label:(0,l.__)("Hand Pick Posts","hand-picked-post"),value:"hand-picked"}],onChange:e=>t({feedType:e,postIds:[]})}),(0,d.jsx)(o.PanelBody,{title:(0,l.__)("Select Post Types","hand-picked-post"),initialOpen:!0,children:x.map((({value:e,label:n})=>(0,d.jsx)(o.CheckboxControl,{label:n,checked:k.includes(e),onChange:()=>(e=>{const n=k.includes(e)?k.filter((t=>t!==e)):[...k,e];t({postType:n,postIds:[]})})(e)},e)))}),"hand-picked"===r&&k.length>0&&(0,d.jsxs)(d.Fragment,{children:[(T||I)&&(0,d.jsx)(o.Spinner,{}),!T&&(0,d.jsx)(o.FormTokenField,{label:(0,l.__)("Select Posts","hand-picked-post"),value:F,suggestions:G,onInputChange:e=>{S(e),$(e)},onChange:e=>{const n=e.map((e=>{const t=A.find((t=>t.label===e));return t?t.id:null})).filter((e=>null!==e));t({postIds:n})},placeholder:(0,l.__)("Type at least 3 characters to search all posts...","hand-picked-post"),disabled:T})]}),"related-topics"===r&&(0,d.jsx)(o.__experimentalNumberControl,{label:(0,l.__)("Number of Items","hand-picked-post"),value:h,min:1,onChange:e=>t({numberOfItems:parseInt(e,10)})}),"grid"===g&&(0,d.jsx)(d.Fragment,{children:(0,d.jsxs)(o.__experimentalToggleGroupControl,{label:(0,l.__)("Grid Item Position","hand-picked-post"),value:f,onChange:e=>t({gridItemPosition:e}),isBlock:!0,children:[(0,d.jsx)(o.__experimentalToggleGroupControlOption,{value:"auto",label:"Automatic"}),(0,d.jsx)(o.__experimentalToggleGroupControlOption,{value:"manual",label:"Manual"})]})}),"grid"===g&&"auto"===f&&(0,d.jsxs)(d.Fragment,{children:[(0,d.jsx)(o.__experimentalNumberControl,{label:(0,l.__)("Auto Column Width","hand-picked-post"),value:_,onChange:e=>t({gridAutoColumnWidth:parseFloat(e)}),min:1,step:1}),(0,d.jsx)(o.SelectControl,{label:(0,l.__)("Auto Column Unit","hand-picked-post"),value:v,onChange:e=>t({gridAutoColumnUnit:e}),options:[{value:"rem",label:"rem"},{value:"px",label:"px"},{value:"%",label:"%"}]})]}),"grid"===g&&"manual"===f&&(0,d.jsxs)(d.Fragment,{children:[(0,d.jsx)(o.RangeControl,{label:(0,l.__)("Number of Columns","hand-picked-post"),value:b,onChange:e=>t({columns:e}),min:1,max:16}),(0,d.jsx)(o.RangeControl,{label:(0,l.__)("Gap between items","hand-picked-post"),value:m,onChange:e=>t({customGapStep:e}),min:0,max:c.length-1,step:1,help:u[m]?u[m]:"No gap"})]})]})}),(0,d.jsx)(s.BlockControls,{children:(0,d.jsxs)(o.ToolbarGroup,{children:[(0,d.jsx)(o.ToolbarButton,{icon:"list-view",label:(0,l.__)("List View","hand-picked-post"),isPressed:"list"===g,onClick:()=>t({displayLayout:"list"})}),(0,d.jsx)(o.ToolbarButton,{icon:"grid-view",label:(0,l.__)("Grid View","hand-picked-post"),isPressed:"grid"===g,onClick:()=>t({displayLayout:"grid"})})]})}),(0,d.jsx)("div",{...L,children:(0,d.jsxs)("div",{className:N,children:["hand-picked"===r&&(!n||0===n.length)&&(0,d.jsx)("p",{className:"hand-picked-post-empty",children:(0,l.__)("Please select one or more posts from the sidebar.","hand-picked-post")}),("hand-picked"===r&&n&&n.length>0||"related-topics"===r)&&(0,d.jsx)(s.InnerBlocks,{template:[["core/post-title",{}],["core/post-excerpt",{}]],templateLock:!1,renderAppender:s.InnerBlocks.ButtonBlockAppender})]})})]})},save:function(){return(0,d.jsx)(s.InnerBlocks.Content,{})}})}},n={};function a(e){var l=n[e];if(void 0!==l)return l.exports;var s=n[e]={exports:{}};return t[e](s,s.exports,a),s.exports}a.m=t,e=[],a.O=(t,n,l,s)=>{if(!n){var o=1/0;for(d=0;d<e.length;d++){for(var[n,l,s]=e[d],i=!0,r=0;r<n.length;r++)(!1&s||o>=s)&&Object.keys(a.O).every((e=>a.O[e](n[r])))?n.splice(r--,1):(i=!1,s<o&&(o=s));if(i){e.splice(d--,1);var p=l();void 0!==p&&(t=p)}}return t}s=s||0;for(var d=e.length;d>0&&e[d-1][2]>s;d--)e[d]=e[d-1];e[d]=[n,l,s]},a.n=e=>{var t=e&&e.__esModule?()=>e.default:()=>e;return a.d(t,{a:t}),t},a.d=(e,t)=>{for(var n in t)a.o(t,n)&&!a.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:t[n]})},a.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),(()=>{var e={3786:0,5214:0};a.O.j=t=>0===e[t];var t=(t,n)=>{var l,s,[o,i,r]=n,p=0;if(o.some((t=>0!==e[t]))){for(l in i)a.o(i,l)&&(a.m[l]=i[l]);if(r)var d=r(a)}for(t&&t(n);p<o.length;p++)s=o[p],a.o(e,s)&&e[s]&&e[s][0](),e[s]=0;return a.O(d)},n=globalThis.webpackChunktheme_blocks=globalThis.webpackChunktheme_blocks||[];n.forEach(t.bind(null,0)),n.push=t.bind(null,n.push.bind(n))})();var l=a.O(void 0,[5214],(()=>a(5166)));l=a.O(l)})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/blocks/hand-picked-post/edit.js":
+/*!*********************************************!*\
+  !*** ./src/blocks/hand-picked-post/edit.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Edit)
+/* harmony export */ });
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/hand-picked-post/editor.scss");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__);
+// Components
+
+
+
+
+
+
+// Import editor CSS
+
+
+// Preset spacing classes and labels
+
+const SPACING_CLASSES = ['',
+// None (no gap)
+'--wp--preset--spacing--20', '--wp--preset--spacing--30', '--wp--preset--spacing--40', '--wp--preset--spacing--50', '--wp--preset--spacing--60', '--wp--preset--spacing--70', '--wp--preset--spacing--80'];
+const SPACING_LABELS = ['None (no gap)', '2X-Small', 'X-Small', 'Small', 'Medium', 'Large', 'X-Large', '2X-Large'];
+
+// Custom debounce hook - no external dependencies needed
+function useDebounceCallback(callback, delay) {
+  const timeoutRef = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useRef)(null);
+  return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useMemo)(() => {
+    return (...args) => {
+      // Clear the previous timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set a new timeout
+      timeoutRef.current = setTimeout(() => {
+        callback(...args);
+      }, delay);
+    };
+  }, [callback, delay]);
+}
+function Edit({
+  attributes,
+  setAttributes
+}) {
+  const {
+    postIds = [],
+    postType = ['post'],
+    feedType = 'related-topics',
+    numberOfItems = 5,
+    customGapStep = 0,
+    displayLayout = 'list',
+    columns = 3,
+    gridItemPosition = 'manual',
+    gridAutoColumnWidth = 12,
+    gridAutoColumnUnit = 'rem'
+  } = attributes;
+
+  // Normalize postType to array
+  const selectedPostTypes = Array.isArray(postType) ? postType : [postType];
+  const handlePostTypeToggle = type => {
+    const updated = selectedPostTypes.includes(type) ? selectedPostTypes.filter(t => t !== type) : [...selectedPostTypes, type];
+    setAttributes({
+      postType: updated,
+      postIds: []
+    });
+  };
+  const postTypeOptions = [{
+    value: 'post',
+    label: 'Posts',
+    restBase: 'posts'
+  }, {
+    value: 'page',
+    label: 'Pages',
+    restBase: 'pages'
+  }, {
+    value: 'shorthand_story',
+    label: 'Shorthand Stories',
+    restBase: 'shorthand_story'
+  }, {
+    value: 'publications',
+    label: 'Publications',
+    restBase: 'publications'
+  }];
+  const [availablePosts, setAvailablePosts] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)([]);
+  const [selectedPosts, setSelectedPosts] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)([]); // Store selected posts separately
+  const [isLoading, setIsLoading] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+  const [searchTerm, setSearchTerm] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)('');
+  const [isSearching, setIsSearching] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+
+  // Initial load of recent posts (your existing functionality)
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (!selectedPostTypes.length) return;
+    setIsLoading(true);
+    Promise.all(selectedPostTypes.map(type => {
+      const restBase = postTypeOptions.find(opt => opt.value === type)?.restBase || type;
+      return _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default()({
+        path: `/wp/v2/${restBase}?per_page=20&_fields=id,title,slug`
+      }).then(posts => posts.map(post => ({
+        id: post.id,
+        label: post.title.rendered || `(${type} #${post.id})`,
+        postType: type
+      }))).catch(() => []); // Return empty array on error
+    })).then(results => {
+      setAvailablePosts(results.flat());
+      setIsLoading(false);
+    }).catch(() => {
+      setAvailablePosts([]);
+      setIsLoading(false);
+    });
+  }, [selectedPostTypes.sort().join(',')]); // Watch for exact changes
+
+  // Load selected posts data when postIds change
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (!postIds.length) {
+      setSelectedPosts([]);
+      return;
+    }
+
+    // Find selected posts that we don't already have data for
+    const missingIds = postIds.filter(id => !selectedPosts.find(post => post.id === id) && !availablePosts.find(post => post.id === id));
+    if (missingIds.length === 0) {
+      // We already have all the data we need
+      const currentSelectedPosts = postIds.map(id => {
+        return selectedPosts.find(post => post.id === id) || availablePosts.find(post => post.id === id);
+      }).filter(Boolean);
+      setSelectedPosts(currentSelectedPosts);
+      return;
+    }
+
+    // Load data for missing posts
+    const loadMissingPosts = async () => {
+      const results = await Promise.all(selectedPostTypes.map(async type => {
+        const restBase = postTypeOptions.find(opt => opt.value === type)?.restBase || type;
+        const typeSpecificIds = missingIds; // You could filter by type if you stored postType with each ID
+
+        if (typeSpecificIds.length === 0) return [];
+        try {
+          const posts = await _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default()({
+            path: `/wp/v2/${restBase}?include=${typeSpecificIds.join(',')}&_fields=id,title,slug`
+          });
+          return posts.map(post => ({
+            id: post.id,
+            label: post.title.rendered || `(${type} #${post.id})`,
+            postType: type
+          }));
+        } catch (error) {
+          return [];
+        }
+      }));
+      const newSelectedPosts = results.flat();
+
+      // Combine with existing selectedPosts and update
+      const allSelectedPosts = postIds.map(id => {
+        return selectedPosts.find(post => post.id === id) || availablePosts.find(post => post.id === id) || newSelectedPosts.find(post => post.id === id);
+      }).filter(Boolean);
+      setSelectedPosts(allSelectedPosts);
+    };
+    loadMissingPosts();
+  }, [postIds, selectedPostTypes]);
+
+  // Search functionality - simplified, no fallback reloading
+  const searchPosts = async term => {
+    if (!term || term.length < 3) {
+      // Don't do anything - just let them keep typing
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await Promise.all(selectedPostTypes.map(type => {
+        const restBase = postTypeOptions.find(opt => opt.value === type)?.restBase || type;
+        return _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default()({
+          path: `/wp/v2/${restBase}?search=${encodeURIComponent(term)}&per_page=50&orderby=relevance&_fields=id,title,slug`
+        }).then(posts => posts.map(post => ({
+          id: post.id,
+          label: post.title.rendered || `(${type} #${post.id})`,
+          postType: type
+        }))).catch(() => []); // Return empty array on error
+      }));
+      setAvailablePosts(results.flat());
+    } catch (error) {
+      console.error('Search error:', error);
+      setAvailablePosts([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Create debounced search function
+  const debouncedSearch = useDebounceCallback(searchPosts, 300);
+
+  // Clean up on unmount
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    return () => {
+      if (debouncedSearch.cancel) {
+        debouncedSearch.cancel();
+      }
+    };
+  }, [debouncedSearch]);
+
+  // Handle search input changes
+  const handleSearchInputChange = value => {
+    setSearchTerm(value);
+    debouncedSearch(value);
+  };
+
+  // Combine selected posts with available posts for suggestions, avoiding duplicates
+  const allPosts = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useMemo)(() => {
+    const combined = [...selectedPosts];
+    availablePosts.forEach(post => {
+      if (!combined.find(p => p.id === post.id)) {
+        combined.push(post);
+      }
+    });
+    return combined;
+  }, [selectedPosts, availablePosts]);
+
+  // Get labels for selected post IDs
+  const selectedPostLabels = postIds.map(id => {
+    const post = allPosts.find(p => p.id === id);
+    return post ? post.label : `Post #${id}`;
+  });
+  const postSuggestions = allPosts.map(p => p.label);
+  const DEFAULT_TEMPLATE = [['core/post-title', {}], ['core/post-excerpt', {}]];
+
+  // Generate class names based on attributes
+  const baseClass = displayLayout === 'grid' ? `hand-picked-post-grid columns-${columns}` : 'hand-picked-post-list';
+  const spacingClass = customGapStep > 0 ? `gap-${SPACING_CLASSES[customGapStep].replace(/^--/, '').replace(/--/g, '-')}` : '';
+  const combinedClassName = `${baseClass} ${spacingClass}`.trim();
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Featured Content Settings', 'hand-picked-post'),
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RadioControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Feed Type', 'hand-picked-post'),
+          selected: feedType,
+          options: [{
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Related Topics', 'hand-picked-post'),
+            value: 'related-topics'
+          }, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Hand Pick Posts', 'hand-picked-post'),
+            value: 'hand-picked'
+          }],
+          onChange: value => setAttributes({
+            feedType: value,
+            postIds: []
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+          title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Post Types', 'hand-picked-post'),
+          initialOpen: true,
+          children: postTypeOptions.map(({
+            value,
+            label
+          }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.CheckboxControl, {
+            label: label,
+            checked: selectedPostTypes.includes(value),
+            onChange: () => handlePostTypeToggle(value)
+          }, value))
+        }), feedType === 'hand-picked' && selectedPostTypes.length > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [(isLoading || isSearching) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Spinner, {}), !isLoading && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FormTokenField, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Posts', 'hand-picked-post'),
+            value: selectedPostLabels,
+            suggestions: postSuggestions,
+            onInputChange: handleSearchInputChange,
+            onChange: selectedLabels => {
+              const selectedIds = selectedLabels.map(label => {
+                const match = allPosts.find(p => p.label === label);
+                return match ? match.id : null;
+              }).filter(id => id !== null);
+              setAttributes({
+                postIds: selectedIds
+              });
+            },
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Type at least 3 characters to search all posts...', 'hand-picked-post'),
+            disabled: isLoading
+          })]
+        }), feedType === 'related-topics' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number of Items', 'hand-picked-post'),
+          value: numberOfItems,
+          min: 1,
+          onChange: value => setAttributes({
+            numberOfItems: parseInt(value, 10)
+          })
+        }), displayLayout === 'grid' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalToggleGroupControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Grid Item Position', 'hand-picked-post'),
+            value: gridItemPosition,
+            onChange: value => setAttributes({
+              gridItemPosition: value
+            }),
+            isBlock: true,
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalToggleGroupControlOption, {
+              value: "auto",
+              label: "Automatic"
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalToggleGroupControlOption, {
+              value: "manual",
+              label: "Manual"
+            })]
+          })
+        }), displayLayout === 'grid' && gridItemPosition === 'auto' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.__experimentalNumberControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Auto Column Width', 'hand-picked-post'),
+            value: gridAutoColumnWidth,
+            onChange: value => setAttributes({
+              gridAutoColumnWidth: parseFloat(value)
+            }),
+            min: 1,
+            step: 1
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Auto Column Unit', 'hand-picked-post'),
+            value: gridAutoColumnUnit,
+            onChange: value => setAttributes({
+              gridAutoColumnUnit: value
+            }),
+            options: [{
+              value: 'rem',
+              label: 'rem'
+            }, {
+              value: 'px',
+              label: 'px'
+            }, {
+              value: '%',
+              label: '%'
+            }]
+          })]
+        }), displayLayout === 'grid' && gridItemPosition === 'manual' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Number of Columns', 'hand-picked-post'),
+            value: columns,
+            onChange: value => setAttributes({
+              columns: value
+            }),
+            min: 1,
+            max: 16
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Gap between items', 'hand-picked-post'),
+            value: customGapStep,
+            onChange: value => setAttributes({
+              customGapStep: value
+            }),
+            min: 0,
+            max: SPACING_CLASSES.length - 1,
+            step: 1,
+            help: SPACING_LABELS[customGapStep] ? SPACING_LABELS[customGapStep] : 'No gap'
+          })]
+        })]
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarButton, {
+          icon: "list-view",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('List View', 'hand-picked-post'),
+          isPressed: displayLayout === 'list',
+          onClick: () => setAttributes({
+            displayLayout: 'list'
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarButton, {
+          icon: "grid-view",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Grid View', 'hand-picked-post'),
+          isPressed: displayLayout === 'grid',
+          onClick: () => setAttributes({
+            displayLayout: 'grid'
+          })
+        })]
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+      ...blockProps,
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        className: combinedClassName,
+        children: [feedType === 'hand-picked' && (!postIds || postIds.length === 0) && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+          className: "hand-picked-post-empty",
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Please select one or more posts from the sidebar.', 'hand-picked-post')
+        }), (feedType === 'hand-picked' && postIds && postIds.length > 0 || feedType === 'related-topics') && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+          template: DEFAULT_TEMPLATE,
+          templateLock: false,
+          renderAppender: _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks.ButtonBlockAppender
+        })]
+      })
+    })]
+  });
+}
+
+/***/ }),
+
+/***/ "./src/blocks/hand-picked-post/index.js":
+/*!**********************************************!*\
+  !*** ./src/blocks/hand-picked-post/index.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/hand-picked-post/style.scss");
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./edit */ "./src/blocks/hand-picked-post/edit.js");
+/* harmony import */ var _save__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./save */ "./src/blocks/hand-picked-post/save.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./block.json */ "./src/blocks/hand-picked-post/block.json");
+/**
+ * Registers a new block provided a unique name and an object defining its behavior.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
+ */
+
+
+/**
+ * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
+ * All files containing `style` keyword are bundled together. The code used
+ * gets applied both to the front of your site and to the editor.
+ *
+ * @see https://www.npmjs.com/package/@wordpress/scripts#using-css
+ */
+
+
+/**
+ * Internal dependencies
+ */
+
+
+
+
+/**
+ * Every block starts by registering a new block type definition.
+ *
+ * @see https://developer.wordpress.org/block-editor/reference-guides/block-api/block-registration/
+ */
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_4__.name, {
+  /**
+   * @see ./edit.js
+   */
+  edit: _edit__WEBPACK_IMPORTED_MODULE_2__["default"],
+  save: _save__WEBPACK_IMPORTED_MODULE_3__["default"]
+});
+
+/***/ }),
+
+/***/ "./src/blocks/hand-picked-post/save.js":
+/*!*********************************************!*\
+  !*** ./src/blocks/hand-picked-post/save.js ***!
+  \*********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Save)
+/* harmony export */ });
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__);
+/**
+ * WordPress dependencies
+ */
+
+
+function Save() {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.InnerBlocks.Content, {});
+}
+
+/***/ }),
+
+/***/ "./src/blocks/hand-picked-post/editor.scss":
+/*!*************************************************!*\
+  !*** ./src/blocks/hand-picked-post/editor.scss ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "./src/blocks/hand-picked-post/style.scss":
+/*!************************************************!*\
+  !*** ./src/blocks/hand-picked-post/style.scss ***!
+  \************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "react/jsx-runtime":
+/*!**********************************!*\
+  !*** external "ReactJSXRuntime" ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["ReactJSXRuntime"];
+
+/***/ }),
+
+/***/ "@wordpress/api-fetch":
+/*!**********************************!*\
+  !*** external ["wp","apiFetch"] ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["apiFetch"];
+
+/***/ }),
+
+/***/ "@wordpress/block-editor":
+/*!*************************************!*\
+  !*** external ["wp","blockEditor"] ***!
+  \*************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blockEditor"];
+
+/***/ }),
+
+/***/ "@wordpress/blocks":
+/*!********************************!*\
+  !*** external ["wp","blocks"] ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blocks"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./src/blocks/hand-picked-post/block.json":
+/*!************************************************!*\
+  !*** ./src/blocks/hand-picked-post/block.json ***!
+  \************************************************/
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/hand-picked-post","version":"0.1.0","title":"Related and Hand Picked Posts","category":"widgets","icon":"block-default","description":"Displays either related (based on topic or other taxonomy) or hand selected posts.","example":{},"supports":{"align":true,"html":false,"color":{"background":true,"text":true,"link":true},"spacing":{"margin":true,"padding":true},"shadow":true,"layout":{"allowOrientation":true}},"attributes":{"postIds":{"type":"array","default":[]},"postType":{"type":"array","default":["post"]},"feedType":{"type":"string","default":"related-topics"},"queryId":{"type":"number","default":100},"tagName":{"type":"string","default":"div"},"namespace":{"type":"string"},"layout":{"type":"object","default":{"allowOrientation":true}},"numberOfItems":{"type":"number","default":3},"displayLayout":{"type":"string","default":"list"},"columns":{"type":"number","default":3},"customGapStep":{"type":"number","default":3},"gridItemPosition":{"type":"string","default":"manual"},"gridAutoColumnWidth":{"type":"number","default":12},"gridAutoColumnUnit":{"type":"string","default":"rem"}},"providesContext":{"caes-hub/hand-picked-post/postIds":"postIds","caes-hub/hand-picked-post/postType":"postType","caes-hub/hand-picked-post/queryId":"queryId"},"textdomain":"hand-picked-post","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/hand-picked-post/index": 0,
+/******/ 			"blocks/hand-picked-post/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunktheme_blocks"] = globalThis["webpackChunktheme_blocks"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/hand-picked-post/style-index"], () => (__webpack_require__("./src/blocks/hand-picked-post/index.js")))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=index.js.map
