@@ -491,10 +491,15 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                 if (diagnosticInfo.publication_request_urls && diagnosticInfo.publication_request_urls.length > 0) {
                     html += "<div class=\"symplectic-url-item\">";
                     html += "<label>" + urlCounter + ". Publication Detail URLs (" + diagnosticInfo.publication_request_urls.length + " total):</label>";
+                    html += "<details style=\"margin-top: 10px;\">";
+                    html += "<summary style=\"cursor: pointer; font-weight: 600; padding: 5px; background: #f9f9f9; border-radius: 3px;\">Click to expand and view all " + diagnosticInfo.publication_request_urls.length + " URLs</summary>";
+                    html += "<div style=\"margin-top: 10px;\">";
                     diagnosticInfo.publication_request_urls.forEach(function(url, index) {
                         html += "<code style=\"margin-bottom: 5px;\">" + escapeHtml(url) + "</code>";
                     });
-                    html += "<div class=\"copy-hint\">Click any URL above to select it, then Ctrl+C to copy</div>";
+                    html += "</div>";
+                    html += "</details>";
+                    html += "<div class=\"copy-hint\">Expand to see URLs, then click any URL to select it and Ctrl+C to copy</div>";
                     html += "</div>";
                     urlCounter++;
                 }
@@ -502,10 +507,15 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                 if (diagnosticInfo.activity_request_urls && diagnosticInfo.activity_request_urls.length > 0) {
                     html += "<div class=\"symplectic-url-item\">";
                     html += "<label>" + urlCounter + ". Activity Detail URLs (" + diagnosticInfo.activity_request_urls.length + " total):</label>";
+                    html += "<details style=\"margin-top: 10px;\">";
+                    html += "<summary style=\"cursor: pointer; font-weight: 600; padding: 5px; background: #f9f9f9; border-radius: 3px;\">Click to expand and view all " + diagnosticInfo.activity_request_urls.length + " URLs</summary>";
+                    html += "<div style=\"margin-top: 10px;\">";
                     diagnosticInfo.activity_request_urls.forEach(function(url, index) {
                         html += "<code style=\"margin-bottom: 5px;\">" + escapeHtml(url) + "</code>";
                     });
-                    html += "<div class=\"copy-hint\">Click any URL above to select it, then Ctrl+C to copy</div>";
+                    html += "</div>";
+                    html += "</details>";
+                    html += "<div class=\"copy-hint\">Expand to see URLs, then click any URL to select it and Ctrl+C to copy</div>";
                     html += "</div>";
                 }
 
@@ -807,20 +817,26 @@ function extract_activity_fields($activity_xml) {
             }
 
             // Store activity fields
-            if ($field_value && $field_name === 'title') {
-                $fields_data['title'] = $field_value;
-            } elseif ($field_value && $field_name === 'name') {
-                $fields_data['name'] = $field_value;
-            } elseif ($field_value && $field_name === 'start-date') {
-                $fields_data['date'] = $field_value;
-            } elseif ($field_value && $field_name === 'awarded-date') {
-                $fields_data['date'] = $field_value;
-            } elseif ($field_value && $field_name === 'description') {
-                $fields_data['description'] = $field_value;
-            } elseif ($field_value && $field_name === 'location') {
-                $fields_data['location'] = $field_value;
-            } elseif ($field_value && $field_name === 'associated-institution') {
-                $fields_data['institution'] = $field_value;
+            if ($field_value) {
+                if ($field_name === 'title') {
+                    $fields_data['title'] = $field_value;
+                } elseif ($field_name === 'name') {
+                    // Use 'name' as title if we don't have a title yet (e.g., for memberships)
+                    if (!isset($fields_data['title'])) {
+                        $fields_data['title'] = $field_value;
+                    }
+                    $fields_data['name'] = $field_value;
+                } elseif ($field_name === 'start-date') {
+                    $fields_data['date'] = $field_value;
+                } elseif ($field_name === 'awarded-date') {
+                    $fields_data['date'] = $field_value;
+                } elseif ($field_name === 'description') {
+                    $fields_data['description'] = $field_value;
+                } elseif ($field_name === 'location') {
+                    $fields_data['location'] = $field_value;
+                } elseif ($field_name === 'associated-institution') {
+                    $fields_data['institution'] = $field_value;
+                }
             }
         }
     }
@@ -1129,7 +1145,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.8</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.9</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
