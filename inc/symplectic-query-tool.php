@@ -517,6 +517,22 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     html += "</details>";
                     html += "<div class=\"copy-hint\">Expand to see URLs, then click any URL to select it and Ctrl+C to copy</div>";
                     html += "</div>";
+                    urlCounter++;
+                }
+
+                if (diagnosticInfo.teaching_activity_request_urls && diagnosticInfo.teaching_activity_request_urls.length > 0) {
+                    html += "<div class=\"symplectic-url-item\">";
+                    html += "<label>" + urlCounter + ". Teaching Activity Detail URLs (" + diagnosticInfo.teaching_activity_request_urls.length + " total):</label>";
+                    html += "<details style=\"margin-top: 10px;\">";
+                    html += "<summary style=\"cursor: pointer; font-weight: 600; padding: 5px; background: #f9f9f9; border-radius: 3px;\">Click to expand and view all " + diagnosticInfo.teaching_activity_request_urls.length + " URLs</summary>";
+                    html += "<div style=\"margin-top: 10px;\">";
+                    diagnosticInfo.teaching_activity_request_urls.forEach(function(url, index) {
+                        html += "<code style=\"margin-bottom: 5px;\">" + escapeHtml(url) + "</code>";
+                    });
+                    html += "</div>";
+                    html += "</details>";
+                    html += "<div class=\"copy-hint\">Expand to see URLs, then click any URL to select it and Ctrl+C to copy</div>";
+                    html += "</div>";
                 }
 
                 // Show debug info about what was found
@@ -767,6 +783,80 @@ function extract_publication_fields($pub_xml) {
 }
 
 /**
+ * Helper function to extract teaching-activity fields from XML
+ */
+function extract_teaching_activity_fields($teaching_xml) {
+    $fields_data = array();
+
+    $teaching_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+    // Find the native or preferred record fields
+    $records = $teaching_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+
+    if (!empty($records)) {
+        $record = $records[0];
+        $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+        // Extract fields
+        $fields = $record->xpath('.//api:field');
+        foreach ($fields as $field) {
+            $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+            $field_name = (string)$field['name'];
+            $field_type = (string)$field['type'];
+
+            // Extract value based on field type
+            $field_value = null;
+
+            if ($field_type === 'text') {
+                $text_nodes = $field->xpath('./api:text');
+                if (!empty($text_nodes)) {
+                    $field_value = (string)$text_nodes[0];
+                }
+            } elseif ($field_type === 'date') {
+                $date_nodes = $field->xpath('./api:date');
+                if (!empty($date_nodes)) {
+                    $date_node = $date_nodes[0];
+                    $year = (string)$date_node->year;
+                    $month = (string)$date_node->month;
+                    $day = (string)$date_node->day;
+
+                    if ($year) {
+                        $field_value = $year;
+                        if ($month) {
+                            $field_value = $month . '/' . $field_value;
+                            if ($day) {
+                                $field_value = $day . '/' . $field_value;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Store teaching-activity fields
+            if ($field_value) {
+                if ($field_name === 'title') {
+                    $fields_data['title'] = $field_value;
+                } elseif ($field_name === 'c-term-year') {
+                    $fields_data['term'] = $field_value;
+                } elseif ($field_name === 'course-code') {
+                    $fields_data['course_code'] = $field_value;
+                } elseif ($field_name === 'start-date') {
+                    $fields_data['start_date'] = $field_value;
+                } elseif ($field_name === 'end-date') {
+                    $fields_data['end_date'] = $field_value;
+                } elseif ($field_name === 'section') {
+                    $fields_data['section'] = $field_value;
+                } elseif ($field_name === 'number-of-students') {
+                    $fields_data['student_count'] = $field_value;
+                }
+            }
+        }
+    }
+
+    return $fields_data;
+}
+
+/**
  * Helper function to extract activity fields from XML
  */
 function extract_activity_fields($activity_xml) {
@@ -976,6 +1066,7 @@ function symplectic_query_api_handler() {
     $publication_raw_responses = array();
     $activity_urls = array();
     $activity_raw_responses = array();
+    $teaching_activity_urls = array();
 
     // Step 2: Try to get relationships (but don't fail if this errors)
     if ($user_id) {
@@ -1079,7 +1170,22 @@ function symplectic_query_api_handler() {
 
                                 $activities[] = $obj_data;
 
-                            } elseif ($category === 'teaching-activity') {
+                            } elseif ($category === 'teaching-activity' && isset($obj_data['href'])) {
+                                // Track URL
+                                $teaching_activity_urls[] = $obj_data['href'];
+
+                                // Fetch teaching-activity details immediately
+                                $teaching_response = wp_remote_get($obj_data['href'], $args);
+
+                                if (!is_wp_error($teaching_response) && wp_remote_retrieve_response_code($teaching_response) === 200) {
+                                    $teaching_body = wp_remote_retrieve_body($teaching_response);
+                                    $teaching_xml = simplexml_load_string($teaching_body);
+
+                                    if ($teaching_xml !== false) {
+                                        $obj_data = array_merge($obj_data, extract_teaching_activity_fields($teaching_xml));
+                                    }
+                                }
+
                                 $teaching_activities[] = $obj_data;
                             }
 
@@ -1143,6 +1249,7 @@ function symplectic_query_api_handler() {
             'relationships_total_objects' => isset($total_objects_processed) ? $total_objects_processed : 0,
             'publication_request_urls' => $publication_urls,
             'activity_request_urls' => $activity_urls,
+            'teaching_activity_request_urls' => $teaching_activity_urls,
             'relationships_error' => $relationships_error,
             'category_counts' => isset($category_counts) ? $category_counts : array(),
             'publications_found' => count($publications),
@@ -1161,7 +1268,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v2.1</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v2.2</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
