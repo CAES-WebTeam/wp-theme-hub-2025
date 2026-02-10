@@ -466,19 +466,33 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                 var html = "<div class=\"symplectic-debug-urls\">";
                 html += "<h4>API URLs Queried (click to select, then copy)</h4>";
 
+                var urlCounter = 1;
+
                 if (diagnosticInfo.user_request_url) {
                     html += "<div class=\"symplectic-url-item\">";
-                    html += "<label>1. User Query URL:</label>";
+                    html += "<label>" + urlCounter + ". User Query URL:</label>";
                     html += "<code>" + escapeHtml(diagnosticInfo.user_request_url) + "</code>";
                     html += "<div class=\"copy-hint\">Click the URL above to select it, then Ctrl+C to copy</div>";
                     html += "</div>";
+                    urlCounter++;
                 }
 
                 if (diagnosticInfo.relationships_request_url) {
                     html += "<div class=\"symplectic-url-item\">";
-                    html += "<label>2. Relationships Query URL:</label>";
+                    html += "<label>" + urlCounter + ". Relationships Query URL:</label>";
                     html += "<code>" + escapeHtml(diagnosticInfo.relationships_request_url) + "</code>";
                     html += "<div class=\"copy-hint\">Click the URL above to select it, then Ctrl+C to copy</div>";
+                    html += "</div>";
+                    urlCounter++;
+                }
+
+                if (diagnosticInfo.publication_request_urls && diagnosticInfo.publication_request_urls.length > 0) {
+                    html += "<div class=\"symplectic-url-item\">";
+                    html += "<label>" + urlCounter + ". Publication Detail URLs (" + diagnosticInfo.publication_request_urls.length + " total):</label>";
+                    diagnosticInfo.publication_request_urls.forEach(function(url, index) {
+                        html += "<code style=\"margin-bottom: 5px;\">" + escapeHtml(url) + "</code>";
+                    });
+                    html += "<div class=\"copy-hint\">Click any URL above to select it, then Ctrl+C to copy</div>";
                     html += "</div>";
                 }
 
@@ -723,6 +737,8 @@ function symplectic_query_api_handler() {
     $activities = array();
     $teaching_activities = array();
     $relationships_error = null;
+    $publication_urls = array();
+    $publication_raw_responses = array();
 
     // Step 2: Try to get relationships (but don't fail if this errors)
     if ($user_id) {
@@ -767,10 +783,17 @@ function symplectic_query_api_handler() {
                     if (!empty($publications)) {
                         foreach ($publications as &$pub) {
                             if (isset($pub['href'])) {
+                                // Track the URL for debugging
+                                $publication_urls[] = $pub['href'];
+
                                 $pub_response = wp_remote_get($pub['href'], $args);
 
                                 if (!is_wp_error($pub_response) && wp_remote_retrieve_response_code($pub_response) === 200) {
                                     $pub_body = wp_remote_retrieve_body($pub_response);
+
+                                    // Store raw response for debugging
+                                    $publication_raw_responses[$pub['id']] = substr($pub_body, 0, 2000); // Truncate to 2000 chars
+
                                     $pub_xml = simplexml_load_string($pub_body);
 
                                     if ($pub_xml !== false) {
@@ -810,6 +833,11 @@ function symplectic_query_api_handler() {
                                             }
                                         }
                                     }
+                                } else {
+                                    // Track failed requests too
+                                    $pub['fetch_error'] = is_wp_error($pub_response)
+                                        ? $pub_response->get_error_message()
+                                        : 'HTTP ' . wp_remote_retrieve_response_code($pub_response);
                                 }
                             }
                         }
@@ -836,9 +864,11 @@ function symplectic_query_api_handler() {
         'activities' => $activities,
         'teaching_activities' => $teaching_activities,
         'raw_user_data' => $user_info,
+        'publication_raw_responses' => $publication_raw_responses,
         'diagnostic_info' => array(
             'user_request_url' => $api_url,
             'relationships_request_url' => isset($relationships_url) ? $relationships_url : null,
+            'publication_request_urls' => $publication_urls,
             'relationships_error' => $relationships_error,
             'timestamp' => current_time('mysql'),
         ),
@@ -853,7 +883,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool</h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.1</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
