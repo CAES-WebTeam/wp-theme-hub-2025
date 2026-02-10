@@ -494,6 +494,17 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     });
                     html += "<div class=\"copy-hint\">Click any URL above to select it, then Ctrl+C to copy</div>";
                     html += "</div>";
+                    urlCounter++;
+                }
+
+                if (diagnosticInfo.activity_request_urls && diagnosticInfo.activity_request_urls.length > 0) {
+                    html += "<div class=\"symplectic-url-item\">";
+                    html += "<label>" + urlCounter + ". Activity Detail URLs (" + diagnosticInfo.activity_request_urls.length + " total):</label>";
+                    diagnosticInfo.activity_request_urls.forEach(function(url, index) {
+                        html += "<code style=\"margin-bottom: 5px;\">" + escapeHtml(url) + "</code>";
+                    });
+                    html += "<div class=\"copy-hint\">Click any URL above to select it, then Ctrl+C to copy</div>";
+                    html += "</div>";
                 }
 
                 if (diagnosticInfo.timestamp) {
@@ -739,6 +750,8 @@ function symplectic_query_api_handler() {
     $relationships_error = null;
     $publication_urls = array();
     $publication_raw_responses = array();
+    $activity_urls = array();
+    $activity_raw_responses = array();
 
     // Step 2: Try to get relationships (but don't fail if this errors)
     if ($user_id) {
@@ -892,6 +905,98 @@ function symplectic_query_api_handler() {
                         }
                         unset($pub); // Break the reference
                     }
+
+                    // Fetch full details for activities (distinctions/awards)
+                    if (!empty($activities)) {
+                        foreach ($activities as &$activity) {
+                            if (isset($activity['href'])) {
+                                // Track the URL for debugging
+                                $activity_urls[] = $activity['href'];
+
+                                $activity_response = wp_remote_get($activity['href'], $args);
+
+                                if (!is_wp_error($activity_response) && wp_remote_retrieve_response_code($activity_response) === 200) {
+                                    $activity_body = wp_remote_retrieve_body($activity_response);
+
+                                    // Store raw response for debugging
+                                    $activity_raw_responses[$activity['id']] = substr($activity_body, 0, 2000);
+
+                                    $activity_xml = simplexml_load_string($activity_body);
+
+                                    if ($activity_xml !== false) {
+                                        $activity_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                        // Find the native or preferred record fields
+                                        $records = $activity_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+
+                                        if (!empty($records)) {
+                                            $record = $records[0];
+                                            $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                            // Extract fields
+                                            $fields = $record->xpath('.//api:field');
+                                            foreach ($fields as $field) {
+                                                $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                                                $field_name = (string)$field['name'];
+                                                $field_type = (string)$field['type'];
+
+                                                // Extract value based on field type
+                                                $field_value = null;
+
+                                                if ($field_type === 'text') {
+                                                    $text_nodes = $field->xpath('./api:text');
+                                                    if (!empty($text_nodes)) {
+                                                        $field_value = (string)$text_nodes[0];
+                                                    }
+                                                } elseif ($field_type === 'date') {
+                                                    $date_nodes = $field->xpath('./api:date');
+                                                    if (!empty($date_nodes)) {
+                                                        $date_node = $date_nodes[0];
+                                                        $year = (string)$date_node->year;
+                                                        $month = (string)$date_node->month;
+                                                        $day = (string)$date_node->day;
+
+                                                        if ($year) {
+                                                            $field_value = $year;
+                                                            if ($month) {
+                                                                $field_value = $month . '/' . $field_value;
+                                                                if ($day) {
+                                                                    $field_value = $day . '/' . $field_value;
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // Store activity fields
+                                                if ($field_value && $field_name === 'title') {
+                                                    $activity['title'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'name') {
+                                                    $activity['name'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'start-date') {
+                                                    $activity['date'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'awarded-date') {
+                                                    $activity['date'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'description') {
+                                                    $activity['description'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'location') {
+                                                    $activity['location'] = $field_value;
+                                                } elseif ($field_value && $field_name === 'associated-institution') {
+                                                    $activity['institution'] = $field_value;
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Track failed requests
+                                    $activity['fetch_error'] = is_wp_error($activity_response)
+                                        ? $activity_response->get_error_message()
+                                        : 'HTTP ' . wp_remote_retrieve_response_code($activity_response);
+                                }
+                            }
+                        }
+                        unset($activity); // Break the reference
+                    }
                 }
             } else {
                 $relationships_error = 'Failed to parse relationships XML response';
@@ -914,10 +1019,12 @@ function symplectic_query_api_handler() {
         'teaching_activities' => $teaching_activities,
         'raw_user_data' => $user_info,
         'publication_raw_responses' => $publication_raw_responses,
+        'activity_raw_responses' => $activity_raw_responses,
         'diagnostic_info' => array(
             'user_request_url' => $api_url,
             'relationships_request_url' => isset($relationships_url) ? $relationships_url : null,
             'publication_request_urls' => $publication_urls,
+            'activity_request_urls' => $activity_urls,
             'relationships_error' => $relationships_error,
             'timestamp' => current_time('mysql'),
         ),
@@ -932,7 +1039,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.2</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.3</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
