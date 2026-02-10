@@ -477,11 +477,13 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     urlCounter++;
                 }
 
-                if (diagnosticInfo.relationships_request_url) {
+                if (diagnosticInfo.relationships_request_urls && diagnosticInfo.relationships_request_urls.length > 0) {
                     html += "<div class=\"symplectic-url-item\">";
-                    html += "<label>" + urlCounter + ". Relationships Query URL:</label>";
-                    html += "<code>" + escapeHtml(diagnosticInfo.relationships_request_url) + "</code>";
-                    html += "<div class=\"copy-hint\">Click the URL above to select it, then Ctrl+C to copy</div>";
+                    html += "<label>" + urlCounter + ". Relationships Query URLs (" + diagnosticInfo.relationships_pages_fetched + " pages, " + diagnosticInfo.relationships_total_objects + " total objects):</label>";
+                    diagnosticInfo.relationships_request_urls.forEach(function(url, index) {
+                        html += "<code style=\"margin-bottom: 5px;\">" + escapeHtml(url) + "</code>";
+                    });
+                    html += "<div class=\"copy-hint\">Click any URL above to select it, then Ctrl+C to copy</div>";
                     html += "</div>";
                     urlCounter++;
                 }
@@ -782,269 +784,309 @@ function symplectic_query_api_handler() {
 
     // Step 2: Try to get relationships (but don't fail if this errors)
     if ($user_id) {
-        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?detail=full&per-page=5000';
+        // Initialize pagination
+        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?per-page=1000';
+        $all_related_objects = array();
+        $all_relationships_urls = array();
+        $page_count = 0;
 
-        $relationships_response = wp_remote_get($relationships_url, $args);
+        // Pagination loop - fetch all pages
+        do {
+            $has_next_page = false;
+            $next_page_url = null;
+            $page_count++;
 
-        if (!is_wp_error($relationships_response) && wp_remote_retrieve_response_code($relationships_response) === 200) {
-            $rel_body = wp_remote_retrieve_body($relationships_response);
+            // Track this URL for debugging
+            $all_relationships_urls[] = $relationships_url;
 
-            libxml_use_internal_errors(true);
-            $rel_xml = simplexml_load_string($rel_body);
+            $relationships_response = wp_remote_get($relationships_url, $args);
 
-            if ($rel_xml !== false) {
-                $rel_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+            if (!is_wp_error($relationships_response) && wp_remote_retrieve_response_code($relationships_response) === 200) {
+                $rel_body = wp_remote_retrieve_body($relationships_response);
 
-                // Get all related objects
-                $related_objects = $rel_xml->xpath('//api:object');
+                libxml_use_internal_errors(true);
+                $rel_xml = simplexml_load_string($rel_body);
 
-                // Track categories for debugging
-                $category_counts = array();
+                if ($rel_xml !== false) {
+                    $rel_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
-                if (!empty($related_objects)) {
-                    foreach ($related_objects as $rel_object) {
-                        $obj_data = array();
+                    // Get all related objects from this page
+                    $related_objects = $rel_xml->xpath('//api:object');
 
-                        // Get all attributes
-                        foreach ($rel_object->attributes() as $attr_name => $attr_value) {
-                            $obj_data[$attr_name] = (string)$attr_value;
-                        }
-
-                        // Sort by category
-                        $category = isset($obj_data['category']) ? $obj_data['category'] : null;
-
-                        // Track category counts for debugging
-                        if ($category) {
-                            if (!isset($category_counts[$category])) {
-                                $category_counts[$category] = 0;
-                            }
-                            $category_counts[$category]++;
-                        }
-
-                        if ($category === 'publication') {
-                            $publications[] = $obj_data;
-                        } elseif ($category === 'activity') {
-                            $activities[] = $obj_data;
-                        } elseif ($category === 'teaching-activity') {
-                            $teaching_activities[] = $obj_data;
-                        }
+                    if (!empty($related_objects)) {
+                        // Add them to our accumulated array
+                        $all_related_objects = array_merge($all_related_objects, $related_objects);
                     }
 
-                    // Fetch full details for publications
-                    if (!empty($publications)) {
-                        foreach ($publications as &$pub) {
-                            if (isset($pub['href'])) {
-                                // Track the URL for debugging
-                                $publication_urls[] = $pub['href'];
+                    // Check for pagination info to see if there's a next page
+                    $pagination_nodes = $rel_xml->xpath('//api:pagination');
+                    if (!empty($pagination_nodes)) {
+                        $pagination = $pagination_nodes[0];
+                        $pagination->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
-                                $pub_response = wp_remote_get($pub['href'], $args);
-
-                                if (!is_wp_error($pub_response) && wp_remote_retrieve_response_code($pub_response) === 200) {
-                                    $pub_body = wp_remote_retrieve_body($pub_response);
-
-                                    // Store raw response for debugging
-                                    $publication_raw_responses[$pub['id']] = substr($pub_body, 0, 2000); // Truncate to 2000 chars
-
-                                    $pub_xml = simplexml_load_string($pub_body);
-
-                                    if ($pub_xml !== false) {
-                                        $pub_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-
-                                        // Find the native or preferred record fields
-                                        $records = $pub_xml->xpath('//api:record[@format="native" or @format="preferred"]');
-
-                                        if (!empty($records)) {
-                                            $record = $records[0];
-                                            $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-
-                                            // Extract fields
-                                            $fields = $record->xpath('.//api:field');
-                                            foreach ($fields as $field) {
-                                                $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-                                                $field_name = (string)$field['name'];
-                                                $field_type = (string)$field['type'];
-
-                                                // Extract value based on field type
-                                                $field_value = null;
-
-                                                if ($field_type === 'text') {
-                                                    // Text fields have <api:text> child
-                                                    $text_nodes = $field->xpath('./api:text');
-                                                    if (!empty($text_nodes)) {
-                                                        $field_value = (string)$text_nodes[0];
-                                                    }
-                                                } elseif ($field_type === 'date') {
-                                                    // Date fields have <api:date> with year/month/day children
-                                                    $date_nodes = $field->xpath('./api:date');
-                                                    if (!empty($date_nodes)) {
-                                                        $date_node = $date_nodes[0];
-                                                        $year = (string)$date_node->year;
-                                                        $month = (string)$date_node->month;
-                                                        $day = (string)$date_node->day;
-
-                                                        if ($year) {
-                                                            $field_value = $year;
-                                                            if ($month) {
-                                                                $field_value = $month . '/' . $field_value;
-                                                                if ($day) {
-                                                                    $field_value = $day . '/' . $field_value;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } elseif ($field_type === 'person-list') {
-                                                    // Person lists have <api:people> with <api:person> children
-                                                    $people_nodes = $field->xpath('./api:people/api:person');
-                                                    if (!empty($people_nodes)) {
-                                                        $authors = array();
-                                                        foreach ($people_nodes as $person) {
-                                                            $first_name = (string)$person->{'first-names'};
-                                                            $last_name = (string)$person->{'last-name'};
-                                                            if ($first_name && $last_name) {
-                                                                $authors[] = $first_name . ' ' . $last_name;
-                                                            } elseif ($last_name) {
-                                                                $authors[] = $last_name;
-                                                            }
-                                                        }
-                                                        $field_value = implode(', ', $authors);
-                                                    }
-                                                }
-
-                                                // Store common publication fields
-                                                if ($field_value && $field_name === 'title') {
-                                                    $pub['title'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'journal') {
-                                                    $pub['journal'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'authors') {
-                                                    $pub['authors'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'publication-date') {
-                                                    $pub['publication_date'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'volume') {
-                                                    $pub['volume'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'issue') {
-                                                    $pub['issue'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'doi') {
-                                                    $pub['doi'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'abstract') {
-                                                    $pub['abstract'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'publisher') {
-                                                    $pub['publisher'] = $field_value;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Track failed requests too
-                                    $pub['fetch_error'] = is_wp_error($pub_response)
-                                        ? $pub_response->get_error_message()
-                                        : 'HTTP ' . wp_remote_retrieve_response_code($pub_response);
-                                }
+                        // Look for the next page link
+                        $next_links = $pagination->xpath('./api:page[@position="next"]');
+                        if (!empty($next_links)) {
+                            $next_page_url = (string)$next_links[0]['href'];
+                            if ($next_page_url) {
+                                $has_next_page = true;
+                                $relationships_url = $next_page_url;
                             }
                         }
-                        unset($pub); // Break the reference
                     }
-
-                    // Fetch full details for activities (distinctions/awards)
-                    if (!empty($activities)) {
-                        foreach ($activities as &$activity) {
-                            if (isset($activity['href'])) {
-                                // Track the URL for debugging
-                                $activity_urls[] = $activity['href'];
-
-                                $activity_response = wp_remote_get($activity['href'], $args);
-
-                                if (!is_wp_error($activity_response) && wp_remote_retrieve_response_code($activity_response) === 200) {
-                                    $activity_body = wp_remote_retrieve_body($activity_response);
-
-                                    // Store raw response for debugging
-                                    $activity_raw_responses[$activity['id']] = substr($activity_body, 0, 2000);
-
-                                    $activity_xml = simplexml_load_string($activity_body);
-
-                                    if ($activity_xml !== false) {
-                                        $activity_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-
-                                        // Find the native or preferred record fields
-                                        $records = $activity_xml->xpath('//api:record[@format="native" or @format="preferred"]');
-
-                                        if (!empty($records)) {
-                                            $record = $records[0];
-                                            $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-
-                                            // Extract fields
-                                            $fields = $record->xpath('.//api:field');
-                                            foreach ($fields as $field) {
-                                                $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-                                                $field_name = (string)$field['name'];
-                                                $field_type = (string)$field['type'];
-
-                                                // Extract value based on field type
-                                                $field_value = null;
-
-                                                if ($field_type === 'text') {
-                                                    $text_nodes = $field->xpath('./api:text');
-                                                    if (!empty($text_nodes)) {
-                                                        $field_value = (string)$text_nodes[0];
-                                                    }
-                                                } elseif ($field_type === 'date') {
-                                                    $date_nodes = $field->xpath('./api:date');
-                                                    if (!empty($date_nodes)) {
-                                                        $date_node = $date_nodes[0];
-                                                        $year = (string)$date_node->year;
-                                                        $month = (string)$date_node->month;
-                                                        $day = (string)$date_node->day;
-
-                                                        if ($year) {
-                                                            $field_value = $year;
-                                                            if ($month) {
-                                                                $field_value = $month . '/' . $field_value;
-                                                                if ($day) {
-                                                                    $field_value = $day . '/' . $field_value;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-                                                // Store activity fields
-                                                if ($field_value && $field_name === 'title') {
-                                                    $activity['title'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'name') {
-                                                    $activity['name'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'start-date') {
-                                                    $activity['date'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'awarded-date') {
-                                                    $activity['date'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'description') {
-                                                    $activity['description'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'location') {
-                                                    $activity['location'] = $field_value;
-                                                } elseif ($field_value && $field_name === 'associated-institution') {
-                                                    $activity['institution'] = $field_value;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Track failed requests
-                                    $activity['fetch_error'] = is_wp_error($activity_response)
-                                        ? $activity_response->get_error_message()
-                                        : 'HTTP ' . wp_remote_retrieve_response_code($activity_response);
-                                }
-                            }
-                        }
-                        unset($activity); // Break the reference
-                    }
+                } else {
+                    // Failed to parse XML, stop pagination
+                    $relationships_error = 'Failed to parse relationships XML response on page ' . $page_count;
+                    break;
                 }
             } else {
-                $relationships_error = 'Failed to parse relationships XML response';
+                // API error, stop pagination
+                if (is_wp_error($relationships_response)) {
+                    $relationships_error = $relationships_response->get_error_message();
+                } else {
+                    $relationships_error = 'Relationships API returned HTTP ' . wp_remote_retrieve_response_code($relationships_response) . ' on page ' . $page_count;
+                }
+                break;
             }
-        } else {
-            // Capture error but don't fail the whole request
-            if (is_wp_error($relationships_response)) {
-                $relationships_error = $relationships_response->get_error_message();
-            } else {
-                $relationships_error = 'Relationships API returned HTTP ' . wp_remote_retrieve_response_code($relationships_response);
+        } while ($has_next_page);
+
+        // Now process all accumulated objects from all pages
+        if (!empty($all_related_objects)) {
+            // Track categories for debugging
+            $category_counts = array();
+
+            foreach ($all_related_objects as $rel_object) {
+                $obj_data = array();
+
+                // Get all attributes
+                foreach ($rel_object->attributes() as $attr_name => $attr_value) {
+                    $obj_data[$attr_name] = (string)$attr_value;
+                }
+
+                // Sort by category
+                $category = isset($obj_data['category']) ? $obj_data['category'] : null;
+
+                // Track category counts for debugging
+                if ($category) {
+                    if (!isset($category_counts[$category])) {
+                        $category_counts[$category] = 0;
+                    }
+                    $category_counts[$category]++;
+                }
+
+                if ($category === 'publication') {
+                    $publications[] = $obj_data;
+                } elseif ($category === 'activity') {
+                    $activities[] = $obj_data;
+                } elseif ($category === 'teaching-activity') {
+                    $teaching_activities[] = $obj_data;
+                }
+            }
+
+            // Fetch full details for publications
+            if (!empty($publications)) {
+                foreach ($publications as &$pub) {
+                    if (isset($pub['href'])) {
+                        // Track the URL for debugging
+                        $publication_urls[] = $pub['href'];
+
+                        $pub_response = wp_remote_get($pub['href'], $args);
+
+                        if (!is_wp_error($pub_response) && wp_remote_retrieve_response_code($pub_response) === 200) {
+                            $pub_body = wp_remote_retrieve_body($pub_response);
+
+                            // Store raw response for debugging
+                            $publication_raw_responses[$pub['id']] = substr($pub_body, 0, 2000); // Truncate to 2000 chars
+
+                            $pub_xml = simplexml_load_string($pub_body);
+
+                            if ($pub_xml !== false) {
+                                $pub_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                // Find the native or preferred record fields
+                                $records = $pub_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+
+                                if (!empty($records)) {
+                                    $record = $records[0];
+                                    $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                    // Extract fields
+                                    $fields = $record->xpath('.//api:field');
+                                    foreach ($fields as $field) {
+                                        $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                                        $field_name = (string)$field['name'];
+                                        $field_type = (string)$field['type'];
+
+                                        // Extract value based on field type
+                                        $field_value = null;
+
+                                        if ($field_type === 'text') {
+                                            // Text fields have <api:text> child
+                                            $text_nodes = $field->xpath('./api:text');
+                                            if (!empty($text_nodes)) {
+                                                $field_value = (string)$text_nodes[0];
+                                            }
+                                        } elseif ($field_type === 'date') {
+                                            // Date fields have <api:date> with year/month/day children
+                                            $date_nodes = $field->xpath('./api:date');
+                                            if (!empty($date_nodes)) {
+                                                $date_node = $date_nodes[0];
+                                                $year = (string)$date_node->year;
+                                                $month = (string)$date_node->month;
+                                                $day = (string)$date_node->day;
+
+                                                if ($year) {
+                                                    $field_value = $year;
+                                                    if ($month) {
+                                                        $field_value = $month . '/' . $field_value;
+                                                        if ($day) {
+                                                            $field_value = $day . '/' . $field_value;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } elseif ($field_type === 'person-list') {
+                                            // Person lists have <api:people> with <api:person> children
+                                            $people_nodes = $field->xpath('./api:people/api:person');
+                                            if (!empty($people_nodes)) {
+                                                $authors = array();
+                                                foreach ($people_nodes as $person) {
+                                                    $first_name = (string)$person->{'first-names'};
+                                                    $last_name = (string)$person->{'last-name'};
+                                                    if ($first_name && $last_name) {
+                                                        $authors[] = $first_name . ' ' . $last_name;
+                                                    } elseif ($last_name) {
+                                                        $authors[] = $last_name;
+                                                    }
+                                                }
+                                                $field_value = implode(', ', $authors);
+                                            }
+                                        }
+
+                                        // Store common publication fields
+                                        if ($field_value && $field_name === 'title') {
+                                            $pub['title'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'journal') {
+                                            $pub['journal'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'authors') {
+                                            $pub['authors'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'publication-date') {
+                                            $pub['publication_date'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'volume') {
+                                            $pub['volume'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'issue') {
+                                            $pub['issue'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'doi') {
+                                            $pub['doi'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'abstract') {
+                                            $pub['abstract'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'publisher') {
+                                            $pub['publisher'] = $field_value;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Track failed requests too
+                            $pub['fetch_error'] = is_wp_error($pub_response)
+                                ? $pub_response->get_error_message()
+                                : 'HTTP ' . wp_remote_retrieve_response_code($pub_response);
+                        }
+                    }
+                }
+                unset($pub); // Break the reference
+            }
+
+            // Fetch full details for activities (distinctions/awards)
+            if (!empty($activities)) {
+                foreach ($activities as &$activity) {
+                    if (isset($activity['href'])) {
+                        // Track the URL for debugging
+                        $activity_urls[] = $activity['href'];
+
+                        $activity_response = wp_remote_get($activity['href'], $args);
+
+                        if (!is_wp_error($activity_response) && wp_remote_retrieve_response_code($activity_response) === 200) {
+                            $activity_body = wp_remote_retrieve_body($activity_response);
+
+                            // Store raw response for debugging
+                            $activity_raw_responses[$activity['id']] = substr($activity_body, 0, 2000);
+
+                            $activity_xml = simplexml_load_string($activity_body);
+
+                            if ($activity_xml !== false) {
+                                $activity_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                // Find the native or preferred record fields
+                                $records = $activity_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+
+                                if (!empty($records)) {
+                                    $record = $records[0];
+                                    $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                                    // Extract fields
+                                    $fields = $record->xpath('.//api:field');
+                                    foreach ($fields as $field) {
+                                        $field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                                        $field_name = (string)$field['name'];
+                                        $field_type = (string)$field['type'];
+
+                                        // Extract value based on field type
+                                        $field_value = null;
+
+                                        if ($field_type === 'text') {
+                                            $text_nodes = $field->xpath('./api:text');
+                                            if (!empty($text_nodes)) {
+                                                $field_value = (string)$text_nodes[0];
+                                            }
+                                        } elseif ($field_type === 'date') {
+                                            $date_nodes = $field->xpath('./api:date');
+                                            if (!empty($date_nodes)) {
+                                                $date_node = $date_nodes[0];
+                                                $year = (string)$date_node->year;
+                                                $month = (string)$date_node->month;
+                                                $day = (string)$date_node->day;
+
+                                                if ($year) {
+                                                    $field_value = $year;
+                                                    if ($month) {
+                                                        $field_value = $month . '/' . $field_value;
+                                                        if ($day) {
+                                                            $field_value = $day . '/' . $field_value;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Store activity fields
+                                        if ($field_value && $field_name === 'title') {
+                                            $activity['title'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'name') {
+                                            $activity['name'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'start-date') {
+                                            $activity['date'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'awarded-date') {
+                                            $activity['date'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'description') {
+                                            $activity['description'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'location') {
+                                            $activity['location'] = $field_value;
+                                        } elseif ($field_value && $field_name === 'associated-institution') {
+                                            $activity['institution'] = $field_value;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Track failed requests
+                            $activity['fetch_error'] = is_wp_error($activity_response)
+                                ? $activity_response->get_error_message()
+                                : 'HTTP ' . wp_remote_retrieve_response_code($activity_response);
+                        }
+                    }
+                }
+                unset($activity); // Break the reference
             }
         }
     }
@@ -1060,7 +1102,9 @@ function symplectic_query_api_handler() {
         'activity_raw_responses' => $activity_raw_responses,
         'diagnostic_info' => array(
             'user_request_url' => $api_url,
-            'relationships_request_url' => isset($relationships_url) ? $relationships_url : null,
+            'relationships_request_urls' => isset($all_relationships_urls) ? $all_relationships_urls : array(),
+            'relationships_pages_fetched' => isset($page_count) ? $page_count : 0,
+            'relationships_total_objects' => isset($all_related_objects) ? count($all_related_objects) : 0,
             'publication_request_urls' => $publication_urls,
             'activity_request_urls' => $activity_urls,
             'relationships_error' => $relationships_error,
@@ -1081,7 +1125,7 @@ function symplectic_query_tool_render_page() {
     $credentials_configured = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
     ?>
     <div class="wrap">
-        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.6</span></h1>
+        <h1>Symplectic Elements User Query Tool <span style="font-size: 0.6em; color: #666;">v1.7</span></h1>
         
         <div class="symplectic-query-tool-wrapper">
             <?php if (!$credentials_configured): ?>
