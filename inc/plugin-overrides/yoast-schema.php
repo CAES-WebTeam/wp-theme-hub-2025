@@ -16,6 +16,20 @@ if (!defined('ABSPATH')) {
 
 add_filter( 'yoast_seo_development_mode', '__return_true' );
 
+/**
+ * Exclude shorthand_story from XML sitemaps.
+ * These posts contain ~1GB of embedded content which causes memory exhaustion
+ * when Yoast attempts to build the sitemap.
+ *
+ * @param boolean $excluded  Whether the post type is excluded by default.
+ * @param string  $post_type The post type to exclude.
+ * @return bool Whether a given post type should be excluded.
+ */
+function caes_sitemap_exclude_shorthand_story( $excluded, $post_type ) {
+    return $post_type === 'shorthand_story';
+}
+add_filter( 'wpseo_sitemap_exclude_post_type', 'caes_sitemap_exclude_shorthand_story', 10, 2 );
+
 
 /**
  * Enable Article schema for the shorthand_story post type.
