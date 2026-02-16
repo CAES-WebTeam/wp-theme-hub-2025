@@ -6,6 +6,7 @@
  * Categories: featured, media
  * Keywords: reveal, scroll, story, immersive
  * Block Types: caes-hub/reveal
+ * Viewport Width: 1400
  */
 
 $placeholder_image_1 = get_theme_file_uri( 'assets/images/example-slide.jpg' );
