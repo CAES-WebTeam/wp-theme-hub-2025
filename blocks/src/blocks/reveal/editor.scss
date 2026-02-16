@@ -125,13 +125,9 @@
 		button {
 			background: rgba(255, 255, 255, 0.95) !important;
 			border: 2px dashed var(--wp-admin-theme-color) !important;
-			border-radius: 8px !important;
-			padding: 24px 32px !important;
-			font-size: 16px !important;
-			font-weight: 600 !important;
 			min-height: 60px !important;
 			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-			transition: all 0.2s ease !important;
+			min-width: 200px !important;
 
 			&:hover {
 				background: rgba(255, 255, 255, 1) !important;
