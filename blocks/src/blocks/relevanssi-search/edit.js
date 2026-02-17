@@ -34,6 +34,7 @@ export default function Edit({ attributes, setAttributes }) {
 		showLanguageFilter, 
 		showHeading,
 		hideSubmitButton,
+		placeholderText,
 		showButton,
 		buttonText,
 		buttonUrl,
@@ -108,6 +109,13 @@ export default function Edit({ attributes, setAttributes }) {
 								? __('Submit button is hidden. Users press Return to search.', 'caes-hub')
 								: __('Submit button is visible next to the search input.', 'caes-hub')
 						}
+					/>
+					<TextControl
+						label={__('Placeholder Text', 'caes-hub')}
+						value={placeholderText}
+						onChange={(value) => setAttributes({ placeholderText: value })}
+						help={__('Leave blank to use default ("Search...").', 'caes-hub')}
+						placeholder={__('Search...', 'caes-hub')}
 					/>
 				</PanelBody>
 				<PanelBody title={__('Heading Settings', 'caes-hub')}>

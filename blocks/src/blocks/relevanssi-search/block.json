@@ -81,6 +81,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"placeholderText": {
+			"type": "string",
+			"default": ""
+		},
 		"resultsPageUrl": {
 			"type": "string",
 			"default": ""
