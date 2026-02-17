@@ -37,6 +37,11 @@
             font-family: var(--wp--preset--font-family--georgia);
         }
 
+        &.no-submit-button .search-field {
+            border-radius: 50px;
+            border-right: 1px solid var(--wp--preset--color--contrast-two);
+        }
+
         .search-submit {
             background-color: var(--wp--preset--color--bulldog-red);
             color: var(--wp--preset--color--base);

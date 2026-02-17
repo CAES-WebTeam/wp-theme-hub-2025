@@ -77,6 +77,10 @@
       "type": "string",
       "default": ""
     },
+    "hideSubmitButton": {
+      "type": "boolean",
+      "default": false
+    },
     "resultsPageUrl": {
       "type": "string",
       "default": ""

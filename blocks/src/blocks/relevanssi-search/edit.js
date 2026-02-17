@@ -33,6 +33,7 @@ export default function Edit({ attributes, setAttributes }) {
 		showAuthorFilter, 
 		showLanguageFilter, 
 		showHeading,
+		hideSubmitButton,
 		showButton,
 		buttonText,
 		buttonUrl,
@@ -96,6 +97,18 @@ export default function Edit({ attributes, setAttributes }) {
 							{__('When specified, this block becomes a "search-only" form that redirects to the results page. The target page should also have this block configured with all desired filters enabled.', 'caes-hub')}
 						</p>
 					)}
+				</PanelBody>
+				<PanelBody title={__('Search Input Settings', 'caes-hub')}>
+					<ToggleControl
+						label={__('Hide Submit Button', 'caes-hub')}
+						checked={hideSubmitButton}
+						onChange={(value) => setAttributes({ hideSubmitButton: value })}
+						help={
+							hideSubmitButton
+								? __('Submit button is hidden. Users press Return to search.', 'caes-hub')
+								: __('Submit button is visible next to the search input.', 'caes-hub')
+						}
+					/>
 				</PanelBody>
 				<PanelBody title={__('Heading Settings', 'caes-hub')}>
 					<ToggleControl
