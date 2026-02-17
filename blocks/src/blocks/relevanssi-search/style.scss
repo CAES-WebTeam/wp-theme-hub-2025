@@ -40,6 +40,10 @@
         &.no-submit-button .search-field {
             border-radius: 50px;
             border-right: 1px solid var(--wp--preset--color--contrast-two);
+            background-image: url(data:image/svg+xml;base64,PHN2ZyBpZD0iR3JvdXBfMjAwMzYiIGRhdGEtbmFtZT0iR3JvdXAgMjAwMzYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjE1LjAzOSIgaGVpZ2h0PSIxNC40MzIiIHZpZXdCb3g9IjAgMCAxNS4wMzkgMTQuNDMyIj4KICA8ZyBpZD0iRWxsaXBzZV8xMTUiIGRhdGEtbmFtZT0iRWxsaXBzZSAxMTUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzc1NzU3NSIgc3Ryb2tlLXdpZHRoPSIyIj4KICAgIDxjaXJjbGUgY3g9IjYuMTQ0IiBjeT0iNi4xNDQiIHI9IjYuMTQ0IiBzdHJva2U9Im5vbmUiLz4KICAgIDxjaXJjbGUgY3g9IjYuMTQ0IiBjeT0iNi4xNDQiIHI9IjUuMTQ0IiBmaWxsPSJub25lIi8+CiAgPC9nPgogIDxwYXRoIGlkPSJQYXRoXzEzNCIgZGF0YS1uYW1lPSJQYXRoIDEzNCIgZD0iTTEwMTEuMjgzLDEyMTMuNDIybDQuMTYxLDMuNiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTEwMDEuMDU5IC0xMjAzLjM0OSkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzc1NzU3NSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGcgaWQ9IkVsbGlwc2VfMTIzIiBkYXRhLW5hbWU9IkVsbGlwc2UgMTIzIiBmaWxsPSJub25lIiBzdHJva2U9IiM3NTc1NzUiIHN0cm9rZS13aWR0aD0iMiI+CiAgICA8Y2lyY2xlIGN4PSI2LjE0NCIgY3k9IjYuMTQ0IiByPSI2LjE0NCIgc3Ryb2tlPSJub25lIi8+CiAgICA8Y2lyY2xlIGN4PSI2LjE0NCIgY3k9IjYuMTQ0IiByPSI1LjE0NCIgZmlsbD0ibm9uZSIvPgogIDwvZz4KPC9zdmc+);
+            background-position: var(--wp--preset--spacing--20) calc(50% + .5px);
+            background-repeat: no-repeat;
+            padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40) var(--wp--preset--spacing--20) calc(var(--wp--preset--spacing--40) + 12px);
         }
 
         .search-submit {
@@ -732,6 +736,7 @@
                 padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
                 font-size: 1rem;
                 line-height: 1.2;
+                box-shadow: none;
             }
 
             .search-submit {
