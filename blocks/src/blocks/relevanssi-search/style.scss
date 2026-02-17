@@ -718,4 +718,19 @@
         }
     }
 
+    &.is-style-caes-hub-relevanssi-menu-search {
+        .search-input-group {
+            .search-field {
+                padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+                font-size: 1rem;
+                line-height: 1.2;
+            }
+
+            .search-submit {
+                background-color: var(--wp--preset--color--olympic);
+                border-color: var(--wp--preset--color--olympic);
+            }
+        }
+    }
+
 }
