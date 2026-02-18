@@ -44,7 +44,7 @@ $target_num   = get_field('publication_number', $target_id);
 
 $link_text = esc_html($target_title);
 if ($show_num && $target_num) {
-    $link_text = esc_html($target_num) . ' &mdash; ' . $link_text;
+    $link_text = esc_html($target_num) . '&colon; ' . $link_text;
 }
 
 if ($direction === 'previous') {

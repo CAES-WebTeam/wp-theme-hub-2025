@@ -1,0 +1,1 @@
+{"version":3,"file":"blocks/pub-series-container/style-index.css","mappings":";;;AAAA,aACI,wCACI,YACN,CACF,C","sources":["webpack://theme-blocks/./src/blocks/pub-series-container/style.scss"],"sourcesContent":["@media print {\n    .wp-block-caes-hub-pub-series-container {\n        display: none;\n    }\n}\n"],"names":[],"sourceRoot":""}

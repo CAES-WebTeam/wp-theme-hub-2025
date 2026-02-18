@@ -1,1 +1,1573 @@
-(()=>{"use strict";var e,a={1354:()=>{const e=window.wp.blocks,a=window.wp.i18n,l=window.wp.blockEditor,o=window.wp.components,t=window.wp.element,r=window.wp.data,n=window.ReactJSXRuntime,s=(e,a)=>{if(!e||e.length<2)return null;const l=e=>{let a=e.replace("#","");return 3===a.length&&(a=a[0]+a[0]+a[1]+a[1]+a[2]+a[2]),{r:parseInt(a.slice(0,2),16)/255,g:parseInt(a.slice(2,4),16)/255,b:parseInt(a.slice(4,6),16)/255}},o=l(e[0]),t=l(e[1]);return(0,n.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 0 0",width:"0",height:"0",focusable:"false",role:"none",style:{visibility:"hidden",position:"absolute",left:"-9999px",overflow:"hidden"},"aria-hidden":"true",children:(0,n.jsx)("defs",{children:(0,n.jsxs)("filter",{id:a,children:[(0,n.jsx)("feColorMatrix",{colorInterpolationFilters:"sRGB",type:"matrix",values:".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"}),(0,n.jsxs)("feComponentTransfer",{colorInterpolationFilters:"sRGB",children:[(0,n.jsx)("feFuncR",{type:"table",tableValues:`${o.r} ${t.r}`}),(0,n.jsx)("feFuncG",{type:"table",tableValues:`${o.g} ${t.g}`}),(0,n.jsx)("feFuncB",{type:"table",tableValues:`${o.b} ${t.b}`}),(0,n.jsx)("feFuncA",{type:"table",tableValues:"0 1"})]})]})})})},i=[{label:(0,a.__)("None","caes-reveal"),value:"none"},{label:(0,a.__)("Fade","caes-reveal"),value:"fade"},{label:(0,a.__)("Up","caes-reveal"),value:"up"},{label:(0,a.__)("Down","caes-reveal"),value:"down"},{label:(0,a.__)("Left","caes-reveal"),value:"left"},{label:(0,a.__)("Right","caes-reveal"),value:"right"}],c=[{colors:["#000000","#ffffff"],name:"Grayscale",slug:"grayscale"},{colors:["#000000","#7f7f7f"],name:"Dark grayscale",slug:"dark-grayscale"},{colors:["#12128c","#ffcc00"],name:"Blue and yellow",slug:"blue-yellow"},{colors:["#8c00b7","#fcff41"],name:"Purple and yellow",slug:"purple-yellow"},{colors:["#000097","#ff4747"],name:"Blue and red",slug:"blue-red"},{colors:["#004b23","#99e2b4"],name:"Green tones",slug:"green-tones"},{colors:["#99154e","#f7b2d9"],name:"Magenta tones",slug:"magenta-tones"},{colors:["#0d3b66","#faf0ca"],name:"Navy and cream",slug:"navy-cream"}],d=[{color:"#000000",name:"Black",slug:"black"},{color:"#ffffff",name:"White",slug:"white"},{color:"#7f7f7f",name:"Gray",slug:"gray"},{color:"#ff4747",name:"Red",slug:"red"},{color:"#fcff41",name:"Yellow",slug:"yellow"},{color:"#ffcc00",name:"Gold",slug:"gold"},{color:"#000097",name:"Blue",slug:"blue"},{color:"#12128c",name:"Navy",slug:"navy"},{color:"#8c00b7",name:"Purple",slug:"purple"},{color:"#004b23",name:"Dark Green",slug:"dark-green"},{color:"#99e2b4",name:"Light Green",slug:"light-green"},{color:"#99154e",name:"Magenta",slug:"magenta"},{color:"#f7b2d9",name:"Pink",slug:"pink"},{color:"#0d3b66",name:"Dark Blue",slug:"dark-blue"},{color:"#faf0ca",name:"Cream",slug:"cream"}],p={id:"",desktopImage:null,mobileImage:null,desktopFocalPoint:{x:.5,y:.5},mobileFocalPoint:{x:.5,y:.5},desktopDuotone:null,mobileDuotone:null,transition:{type:"fade",speed:"normal"}},m=()=>"frame-"+Math.random().toString(36).substr(2,9),u=({frame:e,index:l,totalFrames:r,onUpdate:c,onRemove:d,onMoveUp:p,onMoveDown:m,onDuplicate:u,onSelectImage:h,onRemoveImage:f,clientId:b})=>{const[y,_]=(0,t.useState)(!1),[j,k]=(0,t.useState)(null),[w,C]=(0,t.useState)(null);return(0,n.jsxs)("div",{style:{border:"1px solid #ddd",borderRadius:"4px",marginBottom:"20px",background:"#fff"},children:[(0,n.jsxs)("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px",borderBottom:y?"1px solid #ddd":"none",background:"#f9f9f9",cursor:"pointer"},onClick:()=>_(!y),children:[(0,n.jsxs)("div",{style:{display:"flex",alignItems:"center",gap:"12px"},children:[e.desktopImage?(0,n.jsx)("div",{style:{width:"60px",height:"40px",borderRadius:"4px",overflow:"hidden",border:"1px solid #ddd",flexShrink:0},children:(()=>{const a=`thumbnail-${b}-${l}`,o=e.desktopDuotone||e.duotone;return(0,n.jsxs)(n.Fragment,{children:[o&&s(o,a),(0,n.jsx)("img",{src:e.desktopImage.url,alt:"",style:{width:"100%",height:"100%",objectFit:"cover",filter:o?`url(#${a})`:void 0}})]})})()}):(0,n.jsx)("div",{style:{width:"60px",height:"40px",borderRadius:"4px",border:"1px solid #ddd",background:"#e0e0e0",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",color:"#666",flexShrink:0},children:"No image"}),(0,n.jsxs)("strong",{style:{fontSize:"16px"},children:[(0,a.__)("Frame","caes-reveal")," ",l+1]})]}),(0,n.jsxs)("div",{style:{display:"flex",gap:"8px",alignItems:"center"},onClick:e=>e.stopPropagation(),children:[l>0&&(0,n.jsx)(o.Button,{size:"small",icon:"arrow-up-alt2",onClick:p,label:(0,a.__)("Move up","caes-reveal")}),l<r-1&&(0,n.jsx)(o.Button,{size:"small",icon:"arrow-down-alt2",onClick:m,label:(0,a.__)("Move down","caes-reveal")}),(0,n.jsx)(o.Button,{size:"small",icon:"admin-page",onClick:u,label:(0,a.__)("Duplicate","caes-reveal")}),r>1&&(0,n.jsx)(o.Button,{size:"small",icon:"trash",onClick:d,label:(0,a.__)("Remove","caes-reveal"),isDestructive:!0}),(0,n.jsx)(o.Button,{size:"small",icon:y?"arrow-up-alt2":"arrow-down-alt2",onClick:e=>{e.stopPropagation(),_(!y)},label:y?(0,a.__)("Collapse","caes-reveal"):(0,a.__)("Expand","caes-reveal")})]})]}),y&&(0,n.jsxs)("div",{style:{padding:"20px"},children:[(0,n.jsxs)("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"20px"},children:[(0,n.jsx)("div",{children:(0,n.jsx)(x,{frame:e,imageType:"desktop",onSelectImage:h,onRemoveImage:f,onUpdate:c,setFocalPointModal:k,setDuotoneModal:C,clientId:b,frameIndex:l,isRequired:!0})}),(0,n.jsx)("div",{children:(0,n.jsx)(x,{frame:e,imageType:"mobile",onSelectImage:h,onRemoveImage:f,onUpdate:c,setFocalPointModal:k,setDuotoneModal:C,clientId:b,frameIndex:l,isRequired:!1})})]}),l>0&&(0,n.jsxs)("div",{style:{paddingTop:"20px",borderTop:"1px solid #ddd"},children:[(0,n.jsx)("label",{style:{display:"block",marginBottom:"12px",fontWeight:500,fontSize:"14px"},children:(0,a.__)("Transition","caes-reveal")}),(0,n.jsxs)("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px"},children:[(0,n.jsx)(o.SelectControl,{label:(0,a.__)("Type","caes-reveal"),value:e.transition.type,options:i,onChange:a=>c({transition:{...e.transition,type:a}})}),(0,n.jsx)(o.SelectControl,{label:(0,a.__)("Speed","caes-reveal"),value:e.transition.speed||"normal",options:[{label:(0,a.__)("Slow","caes-reveal"),value:"slow"},{label:(0,a.__)("Normal","caes-reveal"),value:"normal"},{label:(0,a.__)("Fast","caes-reveal"),value:"fast"}],onChange:a=>c({transition:{...e.transition,speed:a}})})]})]})]}),j&&(0,n.jsx)(g,{frame:e,imageType:j,onUpdate:c,onClose:()=>k(null)}),w&&(0,n.jsx)(v,{frame:e,imageType:w,onUpdate:c,onClose:()=>C(null)})]})},x=({frame:e,imageType:t,onSelectImage:r,onRemoveImage:i,onUpdate:c,setFocalPointModal:d,setDuotoneModal:p,clientId:m,frameIndex:u,isRequired:x})=>{const g="desktop"===t?"desktopImage":"mobileImage",v=e[g],h="desktop"===t?e.desktopDuotone||e.duotone:e.mobileDuotone;return(0,n.jsxs)("div",{children:[(0,n.jsxs)("div",{style:{marginBottom:"16px"},children:[(0,n.jsxs)("div",{style:{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"},children:[(0,n.jsx)("span",{style:{fontSize:"20px"},children:"desktop"===t?"🖥️":"📱"}),(0,n.jsx)("h3",{style:{margin:0,fontSize:"16px",fontWeight:600},children:"desktop"===t?(0,a.__)("Wide Screens","caes-reveal"):(0,a.__)("Tall Screens","caes-reveal")})]}),(0,n.jsx)("p",{style:{margin:0,fontSize:"13px",color:"#757575"},children:"desktop"===t?(0,a.__)("Computers, Large Tablets Etc.","caes-reveal"):(0,a.__)("Devices In Portrait Orientation","caes-reveal")})]}),(0,n.jsx)("label",{style:{display:"block",marginBottom:"8px",fontWeight:500,fontSize:"13px",color:"#1e1e1e"},children:(0,a.__)("Background image (will be cropped to screen)","caes-reveal")}),(0,n.jsx)("p",{style:{margin:"0 0 12px",fontSize:"12px",color:"#757575"},children:"desktop"===t?(0,a.__)("Recommended: JPEG @ 2560 x 1440px","caes-reveal"):(0,a.__)("Recommended: JPEG @ 1080 x 1920px","caes-reveal")}),(0,n.jsx)(l.MediaUploadCheck,{children:v?(0,n.jsxs)("div",{children:[(0,n.jsx)("div",{style:{marginBottom:"16px"},children:(()=>{const l=`manager-${m}-${u}-${t}`;if("mobile"===t){const o=35,t=100-o,r=(e?.mobileFocalPoint||{x:.5,y:.5}).x*t;return(0,n.jsxs)("div",{style:{position:"relative"},children:[h&&s(h,l),(0,n.jsx)("img",{src:v.url,alt:v.alt,style:{width:"100%",height:"auto",maxHeight:"250px",aspectRatio:"16 / 9",objectFit:"cover",borderRadius:"4px",filter:h?`url(#${l})`:void 0}}),(0,n.jsxs)("div",{style:{position:"absolute",inset:0,borderRadius:"4px",overflow:"hidden"},children:[(0,n.jsx)("div",{style:{position:"absolute",top:0,bottom:0,left:0,width:`${r}%`,background:"rgba(0, 0, 0, 0.6)"}}),(0,n.jsx)("div",{style:{position:"absolute",top:0,bottom:0,left:`${r}%`,width:`${o}%`,borderLeft:"2px solid rgba(255, 255, 255, 0.8)",borderRight:"2px solid rgba(255, 255, 255, 0.8)",boxSizing:"border-box"}}),(0,n.jsx)("div",{style:{position:"absolute",top:0,bottom:0,right:0,width:100-r-o+"%",background:"rgba(0, 0, 0, 0.6)"}})]}),(0,n.jsx)("div",{style:{position:"absolute",bottom:"8px",left:`${r+o/2}%`,transform:"translateX(-50%)",background:"rgba(0, 0, 0, 0.75)",color:"#fff",padding:"4px 8px",borderRadius:"3px",fontSize:"11px",fontWeight:500,whiteSpace:"nowrap"},children:(0,a.__)("Portrait crop area","caes-reveal")})]})}return(0,n.jsxs)(n.Fragment,{children:[h&&s(h,l),(0,n.jsx)("img",{src:v.url,alt:v.alt,style:{width:"100%",height:"auto",maxHeight:"250px",aspectRatio:"16 / 9",objectFit:"cover",borderRadius:"4px",filter:h?`url(#${l})`:void 0}})]})})()}),(0,n.jsxs)("div",{style:{display:"flex",gap:"8px",marginBottom:"16px"},children:[(0,n.jsx)(l.MediaUpload,{onSelect:e=>r(t+"Image",e),allowedTypes:["image"],value:v?.id,render:({open:e})=>(0,n.jsx)(o.Button,{variant:"secondary",onClick:e,children:(0,a.__)("Replace","caes-reveal")})}),(0,n.jsx)(o.Button,{variant:"secondary",isDestructive:!0,onClick:()=>i(t+"Image"),children:(0,a.__)("Remove","caes-reveal")})]}),(0,n.jsx)(o.TextControl,{label:(0,a.__)("Caption","caes-reveal")+" ("+(0,a.__)("optional","caes-reveal")+")",value:v?.captionText||v?.caption||"",onChange:e=>{const a={...v,captionText:e};c({[g]:a})},placeholder:(0,a.__)("Add a caption","caes-reveal")}),(0,n.jsxs)("div",{style:{marginBottom:"16px"},children:[(0,n.jsx)(o.TextControl,{label:(0,a.__)("Caption Link URL","caes-reveal")+" ("+(0,a.__)("optional","caes-reveal")+")",value:v?.captionLink||"",onChange:e=>{const a={...v,captionLink:e};c({[g]:a})},placeholder:(0,a.__)("https://example.com","caes-reveal"),type:"url"}),v?.captionLink&&(0,n.jsx)("p",{style:{margin:"4px 0 0",fontSize:"12px",color:"#757575"},children:(0,a.__)("The entire caption will be linked.","caes-reveal")})]}),(0,n.jsx)(o.TextControl,{label:(0,a.__)("Alt Text","caes-reveal")+" ("+(0,a.__)("required","caes-reveal")+")",value:v?.alt||"",onChange:e=>{const a={...v,alt:e};c({[g]:a})},placeholder:(0,a.__)("Describe media for screenreaders","caes-reveal")}),(0,n.jsxs)("div",{style:{display:"flex",gap:"8px",marginTop:"16px",flexWrap:"wrap",alignItems:"center"},children:[(0,n.jsx)(o.Button,{variant:"secondary",onClick:()=>d(t),icon:"image-crop",children:(0,a.__)("Set Focus Point","caes-reveal")}),(0,n.jsx)(o.Button,{variant:"secondary",onClick:()=>p(t),icon:"admin-appearance",children:h?(0,a.__)("Edit Filter","caes-reveal"):(0,a.__)("Add Filter","caes-reveal")}),h&&(0,n.jsx)(o.DuotoneSwatch,{values:h})]})]}):(0,n.jsx)("div",{children:(0,n.jsx)(l.MediaUpload,{onSelect:e=>r(t+"Image",e),allowedTypes:["image"],render:({open:e})=>(0,n.jsx)(o.Button,{variant:"secondary",onClick:e,style:{width:"100%",height:"200px"},children:(0,a.__)("Select Image","caes-reveal")})})})})]})},g=({frame:e,imageType:l,onUpdate:t,onClose:r})=>{const s="desktop"===l?"desktopFocalPoint":"mobileFocalPoint",i=e["desktop"===l?"desktopImage":"mobileImage"];return i?(0,n.jsx)(o.Modal,{title:"desktop"===l?(0,a.__)("Set Focus Point — Wide Screens","caes-reveal"):(0,a.__)("Set Focus Point — Tall Screens","caes-reveal"),onRequestClose:r,style:{maxWidth:"600px",width:"100%"},children:(0,n.jsxs)("div",{style:{padding:"8px 0"},children:[(0,n.jsx)("p",{style:{margin:"0 0 16px 0",color:"#757575",fontSize:"13px"},children:(0,a.__)("Click on the image to set the focal point. This determines which part of the image stays visible when cropped to fit the screen.","caes-reveal")}),(0,n.jsx)(o.FocalPointPicker,{url:i.url,value:e[s]||{x:.5,y:.5},onChange:e=>t({[s]:e})}),(0,n.jsx)("div",{style:{marginTop:"20px",display:"flex",justifyContent:"flex-end"},children:(0,n.jsx)(o.Button,{variant:"primary",onClick:r,children:(0,a.__)("Done","caes-reveal")})})]})}):null},v=({frame:e,imageType:l,onUpdate:t,onClose:r})=>{const s="desktop"===l?e.desktopDuotone||e.duotone:e.mobileDuotone;return(0,n.jsx)(o.Modal,{title:"desktop"===l?(0,a.__)("Duotone Filter — Wide Screens","caes-reveal"):(0,a.__)("Duotone Filter — Tall Screens","caes-reveal"),onRequestClose:r,style:{maxWidth:"400px",width:"100%"},children:(0,n.jsxs)("div",{style:{padding:"8px 0"},children:[(0,n.jsx)("p",{style:{margin:"0 0 16px 0",color:"#757575",fontSize:"13px"},children:(0,a.__)("Apply a duotone color filter to this image. The first color replaces shadows, the second replaces highlights.","caes-reveal")}),(0,n.jsx)(o.DuotonePicker,{duotonePalette:c,colorPalette:d,value:s||void 0,onChange:e=>{t("desktop"===l?{desktopDuotone:e,duotone:null}:{mobileDuotone:e})}}),(0,n.jsxs)("div",{style:{marginTop:"20px",display:"flex",justifyContent:"space-between"},children:[s&&(0,n.jsx)(o.Button,{variant:"tertiary",isDestructive:!0,onClick:()=>{t("desktop"===l?{desktopDuotone:null,duotone:null}:{mobileDuotone:null}),r()},children:(0,a.__)("Remove Filter","caes-reveal")}),(0,n.jsx)("div",{style:{marginLeft:"auto"},children:(0,n.jsx)(o.Button,{variant:"primary",onClick:r,children:(0,a.__)("Done","caes-reveal")})})]})]})})},h=JSON.parse('{"UU":"caes-hub/reveal"}');(0,e.registerBlockType)(h.UU,{edit:({attributes:s,setAttributes:i,clientId:c})=>{const{frames:d,overlayColor:x,overlayOpacity:g}=s,[v,h]=(0,t.useState)(!1),[f,b]=(0,t.useState)(!1),y=(0,t.useRef)(!1),{replaceInnerBlocks:_,updateBlockAttributes:j}=(0,r.useDispatch)(l.store),{innerBlocks:k}=(0,r.useSelect)((e=>({innerBlocks:e(l.store).getBlocks(c)})),[c]);(0,t.useEffect)((()=>{0===d.length&&i({frames:[{...p,id:m()}]})}),[]),(0,t.useEffect)((()=>{if(0===d.length||y.current)return;const a=k.filter((e=>"caes-hub/reveal-frames"===e.name)).map((e=>e.attributes.frameId)),l=d.map((e=>e.id));if(a.length===l.length&&a.every((e=>l.includes(e)))&&a.some(((e,a)=>e!==l[a]))){y.current=!0;const e=a.map((e=>d.find((a=>a.id===e)))).filter(Boolean);return i({frames:e}),k.forEach(((e,a)=>{"caes-hub/reveal-frames"===e.name&&j(e.clientId,{frameIndex:a,frameLabel:`Frame ${a+1} Content`})})),void setTimeout((()=>{y.current=!1}),100)}if(k.length!==d.length||k.some(((e,a)=>"caes-hub/reveal-frames"!==e.name||e.attributes.frameIndex!==a||e.attributes.frameId!==d[a]?.id))){y.current=!0;const a=d.map(((a,l)=>{const o=k.find((e=>"caes-hub/reveal-frames"===e.name&&e.attributes.frameId===a.id))||k.find((e=>"caes-hub/reveal-frames"===e.name&&e.attributes.frameIndex===l));return o?(0,e.createBlock)("caes-hub/reveal-frames",{...o.attributes,frameIndex:l,frameId:a.id,frameLabel:`Frame ${l+1} Content`},o.innerBlocks):(0,e.createBlock)("caes-hub/reveal-frames",{frameIndex:l,frameId:a.id,frameLabel:`Frame ${l+1} Content`})}));_(c,a,!1),setTimeout((()=>{y.current=!1}),100)}}),[d,k,c]);const w=(e,a)=>{const l=[...d];l[e]={...l[e],...a},i({frames:l})},C=(0,l.useBlockProps)({className:"caes-reveal-editor"});return(0,n.jsxs)(n.Fragment,{children:[(0,n.jsx)(l.BlockControls,{children:(0,n.jsx)(o.ToolbarGroup,{children:(0,n.jsx)(o.ToolbarButton,{icon:"admin-generic",label:(0,a.__)("Manage Frames","caes-reveal"),onClick:()=>h(!0)})})}),(0,n.jsxs)(l.InspectorControls,{children:[(0,n.jsxs)(o.PanelBody,{title:(0,a.__)("Frames","caes-reveal"),initialOpen:!0,children:[(0,n.jsxs)("p",{style:{marginBottom:"12px",color:"#757575",fontSize:"13px"},children:[(0,a.__)("This block has","caes-reveal")," ",d.length," ",1===d.length?(0,a.__)("frame","caes-reveal"):(0,a.__)("frames","caes-reveal"),"."]}),(0,n.jsx)(o.Button,{variant:"secondary",onClick:()=>h(!0),style:{width:"100%"},children:(0,a.__)("Manage Frames","caes-reveal")})]}),(0,n.jsxs)(o.PanelBody,{title:(0,a.__)("Overlay","caes-reveal"),initialOpen:!1,children:[(0,n.jsxs)("div",{style:{marginBottom:"16px"},children:[(0,n.jsx)("label",{style:{display:"block",marginBottom:"8px",fontWeight:500},children:(0,a.__)("Overlay Color","caes-reveal")}),(0,n.jsx)(o.Button,{onClick:()=>b(!f),style:{width:"100%",height:"36px",background:x,border:"1px solid #ddd",cursor:"pointer"}}),f&&(0,n.jsx)(o.Popover,{onClose:()=>b(!1),children:(0,n.jsx)(o.ColorPicker,{color:x,onChange:e=>i({overlayColor:e}),enableAlpha:!1})})]}),(0,n.jsx)(o.RangeControl,{label:(0,a.__)("Overlay Opacity","caes-reveal"),value:g,onChange:e=>i({overlayOpacity:e}),min:0,max:100,step:5}),(0,n.jsxs)("div",{style:{marginTop:"12px",padding:"12px",background:"#f0f0f0",borderRadius:"4px",fontSize:"13px"},children:[(0,n.jsx)("strong",{children:(0,a.__)("Preview:","caes-reveal")}),(0,n.jsx)("div",{style:{marginTop:"8px",height:"40px",background:(()=>{const e=g/100,a=x.replace("#","");return`rgba(${parseInt(a.substring(0,2),16)}, ${parseInt(a.substring(2,4),16)}, ${parseInt(a.substring(4,6),16)}, ${e})`})(),borderRadius:"2px",border:"1px solid #ddd"}})]})]})]}),(0,n.jsx)("div",{...C,children:(0,n.jsx)("div",{className:"reveal-editor-content",children:(0,n.jsx)(l.InnerBlocks,{allowedBlocks:["caes-hub/reveal-frames"]})})}),v&&(0,n.jsx)(o.Modal,{title:(0,a.__)("Manage Frames","caes-reveal"),onRequestClose:()=>h(!1),className:"reveal-frame-manager-modal",style:{maxWidth:"900px",width:"90vw"},children:(0,n.jsxs)("div",{style:{padding:"20px 0"},children:[(0,n.jsx)("p",{style:{marginBottom:"20px",color:"#757575"},children:(0,a.__)("Configure background images and transitions for each frame. Add content to frames in the editor.","caes-reveal")}),d.map(((e,a)=>(0,n.jsx)(u,{frame:e,index:a,totalFrames:d.length,onUpdate:e=>w(a,e),onRemove:()=>(e=>{if(1===d.length)return;const a=[...d];a.splice(e,1),i({frames:a})})(a),onMoveUp:()=>(e=>{if(0===e)return;const a=[...d];[a[e-1],a[e]]=[a[e],a[e-1]],i({frames:a})})(a),onMoveDown:()=>(e=>{if(e===d.length-1)return;const a=[...d];[a[e],a[e+1]]=[a[e+1],a[e]],i({frames:a})})(a),onDuplicate:()=>(e=>{const a=d[e],l={...JSON.parse(JSON.stringify(a)),id:m()},o=[...d];o.splice(e+1,0,l),i({frames:o})})(a),onSelectImage:(e,l)=>((e,a,l)=>{const o={id:l.id,url:l.url,alt:l.alt||"",caption:l.caption||"",sizes:l.sizes||{}};w(e,{[a]:o})})(a,e,l),onRemoveImage:e=>((e,a)=>{w(e,{[a]:null})})(a,e),clientId:c},e.id||a))),(0,n.jsx)(o.Button,{variant:"primary",onClick:()=>{const e={...p,id:m()};i({frames:[...d,e]})},style:{width:"100%",marginTop:"20px"},children:(0,a.__)("Add Frame","caes-reveal")}),(0,n.jsx)("div",{style:{marginTop:"20px",textAlign:"right"},children:(0,n.jsx)(o.Button,{variant:"secondary",onClick:()=>h(!1),children:(0,a.__)("Done","caes-reveal")})})]})})]})},save:()=>(0,n.jsx)("div",{...l.useBlockProps.save(),children:(0,n.jsx)(l.InnerBlocks.Content,{})})})}},l={};function o(e){var t=l[e];if(void 0!==t)return t.exports;var r=l[e]={exports:{}};return a[e](r,r.exports,o),r.exports}o.m=a,e=[],o.O=(a,l,t,r)=>{if(!l){var n=1/0;for(d=0;d<e.length;d++){for(var[l,t,r]=e[d],s=!0,i=0;i<l.length;i++)(!1&r||n>=r)&&Object.keys(o.O).every((e=>o.O[e](l[i])))?l.splice(i--,1):(s=!1,r<n&&(n=r));if(s){e.splice(d--,1);var c=t();void 0!==c&&(a=c)}}return a}r=r||0;for(var d=e.length;d>0&&e[d-1][2]>r;d--)e[d]=e[d-1];e[d]=[l,t,r]},o.o=(e,a)=>Object.prototype.hasOwnProperty.call(e,a),(()=>{var e={9954:0,3334:0};o.O.j=a=>0===e[a];var a=(a,l)=>{var t,r,[n,s,i]=l,c=0;if(n.some((a=>0!==e[a]))){for(t in s)o.o(s,t)&&(o.m[t]=s[t]);if(i)var d=i(o)}for(a&&a(l);c<n.length;c++)r=n[c],o.o(e,r)&&e[r]&&e[r][0](),e[r]=0;return o.O(d)},l=globalThis.webpackChunktheme_blocks=globalThis.webpackChunktheme_blocks||[];l.forEach(a.bind(null,0)),l.push=a.bind(null,l.push.bind(l))})();var t=o.O(void 0,[3334],(()=>o(1354)));t=o.O(t)})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/blocks/reveal/edit.js":
+/*!***********************************!*\
+  !*** ./src/blocks/reveal/edit.js ***!
+  \***********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/data */ "@wordpress/data");
+/* harmony import */ var _wordpress_data__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_data__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__);
+/**
+ * Reveal Block Editor
+ */
+
+
+
+
+
+
+
+/**
+ * Generate duotone SVG filter markup - matches WordPress core implementation.
+ */
+
+const getDuotoneFilter = (duotone, filterId) => {
+  if (!duotone || duotone.length < 2) {
+    return null;
+  }
+  const parseColor = hex => {
+    let color = hex.replace('#', '');
+    if (color.length === 3) {
+      color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2];
+    }
+    return {
+      r: parseInt(color.slice(0, 2), 16) / 255,
+      g: parseInt(color.slice(2, 4), 16) / 255,
+      b: parseInt(color.slice(4, 6), 16) / 255
+    };
+  };
+  const shadow = parseColor(duotone[0]);
+  const highlight = parseColor(duotone[1]);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 0 0",
+    width: "0",
+    height: "0",
+    focusable: "false",
+    role: "none",
+    style: {
+      visibility: 'hidden',
+      position: 'absolute',
+      left: '-9999px',
+      overflow: 'hidden'
+    },
+    "aria-hidden": "true",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("defs", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("filter", {
+        id: filterId,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("feColorMatrix", {
+          colorInterpolationFilters: "sRGB",
+          type: "matrix",
+          values: ".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("feComponentTransfer", {
+          colorInterpolationFilters: "sRGB",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("feFuncR", {
+            type: "table",
+            tableValues: `${shadow.r} ${highlight.r}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("feFuncG", {
+            type: "table",
+            tableValues: `${shadow.g} ${highlight.g}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("feFuncB", {
+            type: "table",
+            tableValues: `${shadow.b} ${highlight.b}`
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("feFuncA", {
+            type: "table",
+            tableValues: "0 1"
+          })]
+        })]
+      })
+    })
+  });
+};
+const TRANSITION_OPTIONS = [{
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('None', 'caes-reveal'),
+  value: 'none'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Fade', 'caes-reveal'),
+  value: 'fade'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Up', 'caes-reveal'),
+  value: 'up'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Down', 'caes-reveal'),
+  value: 'down'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Left', 'caes-reveal'),
+  value: 'left'
+}, {
+  label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Right', 'caes-reveal'),
+  value: 'right'
+}];
+const DUOTONE_PALETTE = [{
+  colors: ['#000000', '#ffffff'],
+  name: 'Grayscale',
+  slug: 'grayscale'
+}, {
+  colors: ['#000000', '#7f7f7f'],
+  name: 'Dark grayscale',
+  slug: 'dark-grayscale'
+}, {
+  colors: ['#12128c', '#ffcc00'],
+  name: 'Blue and yellow',
+  slug: 'blue-yellow'
+}, {
+  colors: ['#8c00b7', '#fcff41'],
+  name: 'Purple and yellow',
+  slug: 'purple-yellow'
+}, {
+  colors: ['#000097', '#ff4747'],
+  name: 'Blue and red',
+  slug: 'blue-red'
+}, {
+  colors: ['#004b23', '#99e2b4'],
+  name: 'Green tones',
+  slug: 'green-tones'
+}, {
+  colors: ['#99154e', '#f7b2d9'],
+  name: 'Magenta tones',
+  slug: 'magenta-tones'
+}, {
+  colors: ['#0d3b66', '#faf0ca'],
+  name: 'Navy and cream',
+  slug: 'navy-cream'
+}];
+const COLOR_PALETTE = [{
+  color: '#000000',
+  name: 'Black',
+  slug: 'black'
+}, {
+  color: '#ffffff',
+  name: 'White',
+  slug: 'white'
+}, {
+  color: '#7f7f7f',
+  name: 'Gray',
+  slug: 'gray'
+}, {
+  color: '#ff4747',
+  name: 'Red',
+  slug: 'red'
+}, {
+  color: '#fcff41',
+  name: 'Yellow',
+  slug: 'yellow'
+}, {
+  color: '#ffcc00',
+  name: 'Gold',
+  slug: 'gold'
+}, {
+  color: '#000097',
+  name: 'Blue',
+  slug: 'blue'
+}, {
+  color: '#12128c',
+  name: 'Navy',
+  slug: 'navy'
+}, {
+  color: '#8c00b7',
+  name: 'Purple',
+  slug: 'purple'
+}, {
+  color: '#004b23',
+  name: 'Dark Green',
+  slug: 'dark-green'
+}, {
+  color: '#99e2b4',
+  name: 'Light Green',
+  slug: 'light-green'
+}, {
+  color: '#99154e',
+  name: 'Magenta',
+  slug: 'magenta'
+}, {
+  color: '#f7b2d9',
+  name: 'Pink',
+  slug: 'pink'
+}, {
+  color: '#0d3b66',
+  name: 'Dark Blue',
+  slug: 'dark-blue'
+}, {
+  color: '#faf0ca',
+  name: 'Cream',
+  slug: 'cream'
+}];
+const DEFAULT_FRAME = {
+  id: '',
+  desktopImage: null,
+  mobileImage: null,
+  desktopFocalPoint: {
+    x: 0.5,
+    y: 0.5
+  },
+  mobileFocalPoint: {
+    x: 0.5,
+    y: 0.5
+  },
+  desktopDuotone: null,
+  mobileDuotone: null,
+  transition: {
+    type: 'fade',
+    speed: 'normal'
+  }
+};
+const generateFrameId = () => {
+  return 'frame-' + Math.random().toString(36).substr(2, 9);
+};
+const Edit = ({
+  attributes,
+  setAttributes,
+  clientId
+}) => {
+  const {
+    frames,
+    overlayColor,
+    overlayOpacity
+  } = attributes;
+  const [showFrameManager, setShowFrameManager] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+  const [showOverlayColorPicker, setShowOverlayColorPicker] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+
+  // Track if we're currently syncing to prevent loops
+  const isSyncingRef = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useRef)(false);
+  const {
+    replaceInnerBlocks,
+    updateBlockAttributes
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useDispatch)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.store);
+  const {
+    innerBlocks
+  } = (0,_wordpress_data__WEBPACK_IMPORTED_MODULE_4__.useSelect)(select => ({
+    innerBlocks: select(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.store).getBlocks(clientId)
+  }), [clientId]);
+
+  // Auto-add first frame when block is inserted
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (frames.length === 0) {
+      setAttributes({
+        frames: [{
+          ...DEFAULT_FRAME,
+          id: generateFrameId()
+        }]
+      });
+    }
+  }, []);
+
+  // Sync frames array with inner blocks order
+  // This handles when users reorder blocks via list view or drag/drop
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    if (frames.length === 0 || isSyncingRef.current) {
+      return;
+    }
+
+    // Get the frame IDs from inner blocks (based on their frameId attribute)
+    const innerBlockFrameIds = innerBlocks.filter(block => block.name === 'caes-hub/reveal-frames').map(block => block.attributes.frameId);
+
+    // Get the frame IDs from our frames array
+    const frameIds = frames.map(frame => frame.id);
+
+    // Check if inner blocks have been reordered
+    const hasBeenReordered = innerBlockFrameIds.length === frameIds.length && innerBlockFrameIds.every(id => frameIds.includes(id)) && innerBlockFrameIds.some((id, index) => id !== frameIds[index]);
+    if (hasBeenReordered) {
+      // Reorder frames array to match inner blocks order
+      isSyncingRef.current = true;
+      const reorderedFrames = innerBlockFrameIds.map(id => frames.find(frame => frame.id === id)).filter(Boolean);
+      setAttributes({
+        frames: reorderedFrames
+      });
+
+      // Update frameIndex on each inner block to match new order
+      innerBlocks.forEach((block, index) => {
+        if (block.name === 'caes-hub/reveal-frames') {
+          updateBlockAttributes(block.clientId, {
+            frameIndex: index,
+            frameLabel: `Frame ${index + 1} Content`
+          });
+        }
+      });
+
+      // Reset sync flag after a short delay
+      setTimeout(() => {
+        isSyncingRef.current = false;
+      }, 100);
+      return;
+    }
+
+    // Check if we need to create/update inner blocks
+    const needsUpdate = innerBlocks.length !== frames.length || innerBlocks.some((block, index) => block.name !== 'caes-hub/reveal-frames' || block.attributes.frameIndex !== index || block.attributes.frameId !== frames[index]?.id);
+    if (needsUpdate) {
+      isSyncingRef.current = true;
+      const newInnerBlocks = frames.map((frame, index) => {
+        // Try to find existing block by frameId first, then by frameIndex
+        const existingBlock = innerBlocks.find(b => b.name === 'caes-hub/reveal-frames' && b.attributes.frameId === frame.id) || innerBlocks.find(b => b.name === 'caes-hub/reveal-frames' && b.attributes.frameIndex === index);
+        if (existingBlock) {
+          return (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_5__.createBlock)('caes-hub/reveal-frames', {
+            ...existingBlock.attributes,
+            frameIndex: index,
+            frameId: frame.id,
+            frameLabel: `Frame ${index + 1} Content`
+          }, existingBlock.innerBlocks);
+        }
+        return (0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_5__.createBlock)('caes-hub/reveal-frames', {
+          frameIndex: index,
+          frameId: frame.id,
+          frameLabel: `Frame ${index + 1} Content`
+        });
+      });
+      replaceInnerBlocks(clientId, newInnerBlocks, false);
+      setTimeout(() => {
+        isSyncingRef.current = false;
+      }, 100);
+    }
+  }, [frames, innerBlocks, clientId]);
+  const addFrame = () => {
+    const newFrame = {
+      ...DEFAULT_FRAME,
+      id: generateFrameId()
+    };
+    setAttributes({
+      frames: [...frames, newFrame]
+    });
+  };
+  const removeFrame = frameIndex => {
+    if (frames.length === 1) {
+      return;
+    }
+    const newFrames = [...frames];
+    newFrames.splice(frameIndex, 1);
+    setAttributes({
+      frames: newFrames
+    });
+  };
+  const updateFrame = (frameIndex, updates) => {
+    const newFrames = [...frames];
+    newFrames[frameIndex] = {
+      ...newFrames[frameIndex],
+      ...updates
+    };
+    setAttributes({
+      frames: newFrames
+    });
+  };
+  const moveFrameUp = frameIndex => {
+    if (frameIndex === 0) return;
+    const newFrames = [...frames];
+    [newFrames[frameIndex - 1], newFrames[frameIndex]] = [newFrames[frameIndex], newFrames[frameIndex - 1]];
+    setAttributes({
+      frames: newFrames
+    });
+  };
+  const moveFrameDown = frameIndex => {
+    if (frameIndex === frames.length - 1) return;
+    const newFrames = [...frames];
+    [newFrames[frameIndex], newFrames[frameIndex + 1]] = [newFrames[frameIndex + 1], newFrames[frameIndex]];
+    setAttributes({
+      frames: newFrames
+    });
+  };
+  const duplicateFrame = frameIndex => {
+    const frameToDuplicate = frames[frameIndex];
+    const duplicatedFrame = {
+      ...JSON.parse(JSON.stringify(frameToDuplicate)),
+      id: generateFrameId()
+    };
+    const newFrames = [...frames];
+    newFrames.splice(frameIndex + 1, 0, duplicatedFrame);
+    setAttributes({
+      frames: newFrames
+    });
+  };
+  const onSelectImage = (frameIndex, imageType, media) => {
+    const imageData = {
+      id: media.id,
+      url: media.url,
+      alt: media.alt || '',
+      caption: media.caption || '',
+      sizes: media.sizes || {}
+    };
+    updateFrame(frameIndex, {
+      [imageType]: imageData
+    });
+  };
+  const onRemoveImage = (frameIndex, imageType) => {
+    updateFrame(frameIndex, {
+      [imageType]: null
+    });
+  };
+  const getOverlayRgba = () => {
+    const opacity = overlayOpacity / 100;
+    const hex = overlayColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  };
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
+    className: 'caes-reveal-editor'
+  });
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.BlockControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarGroup, {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ToolbarButton, {
+          icon: "admin-generic",
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Manage Frames', 'caes-reveal'),
+          onClick: () => setShowFrameManager(true)
+        })
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frames', 'caes-reveal'),
+        initialOpen: true,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("p", {
+          style: {
+            marginBottom: '12px',
+            color: '#757575',
+            fontSize: '13px'
+          },
+          children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('This block has', 'caes-reveal'), " ", frames.length, " ", frames.length === 1 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('frame', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('frames', 'caes-reveal'), "."]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          variant: "secondary",
+          onClick: () => setShowFrameManager(true),
+          style: {
+            width: '100%'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Manage Frames', 'caes-reveal')
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay', 'caes-reveal'),
+        initialOpen: false,
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            marginBottom: '16px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("label", {
+            style: {
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: 500
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Color', 'caes-reveal')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            onClick: () => setShowOverlayColorPicker(!showOverlayColorPicker),
+            style: {
+              width: '100%',
+              height: '36px',
+              background: overlayColor,
+              border: '1px solid #ddd',
+              cursor: 'pointer'
+            }
+          }), showOverlayColorPicker && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Popover, {
+            onClose: () => setShowOverlayColorPicker(false),
+            children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.ColorPicker, {
+              color: overlayColor,
+              onChange: value => setAttributes({
+                overlayColor: value
+              }),
+              enableAlpha: false
+            })
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.RangeControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Overlay Opacity', 'caes-reveal'),
+          value: overlayOpacity,
+          onChange: value => setAttributes({
+            overlayOpacity: value
+          }),
+          min: 0,
+          max: 100,
+          step: 5
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            marginTop: '12px',
+            padding: '12px',
+            background: '#f0f0f0',
+            borderRadius: '4px',
+            fontSize: '13px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("strong", {
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Preview:', 'caes-reveal')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+            style: {
+              marginTop: '8px',
+              height: '40px',
+              background: getOverlayRgba(),
+              borderRadius: '2px',
+              border: '1px solid #ddd'
+            }
+          })]
+        })]
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+      ...blockProps,
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+        className: "reveal-editor-content",
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InnerBlocks, {
+          allowedBlocks: ['caes-hub/reveal-frames']
+        })
+      })
+    }), showFrameManager && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
+      title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Manage Frames', 'caes-reveal'),
+      onRequestClose: () => setShowFrameManager(false),
+      className: "reveal-frame-manager-modal",
+      style: {
+        maxWidth: '900px',
+        width: '90vw'
+      },
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          padding: '20px 0'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+          style: {
+            marginBottom: '20px',
+            color: '#757575'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Configure background images and transitions for each frame. Add content to frames in the editor.', 'caes-reveal')
+        }), frames.map((frame, index) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(FrameManagerPanel, {
+          frame: frame,
+          index: index,
+          totalFrames: frames.length,
+          onUpdate: updates => updateFrame(index, updates),
+          onRemove: () => removeFrame(index),
+          onMoveUp: () => moveFrameUp(index),
+          onMoveDown: () => moveFrameDown(index),
+          onDuplicate: () => duplicateFrame(index),
+          onSelectImage: (imageType, media) => onSelectImage(index, imageType, media),
+          onRemoveImage: imageType => onRemoveImage(index, imageType),
+          clientId: clientId
+        }, frame.id || index)), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          variant: "primary",
+          onClick: addFrame,
+          style: {
+            width: '100%',
+            marginTop: '20px'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Frame', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            marginTop: '20px',
+            textAlign: 'right'
+          },
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "secondary",
+            onClick: () => setShowFrameManager(false),
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Done', 'caes-reveal')
+          })
+        })]
+      })
+    })]
+  });
+};
+
+// Frame Manager Panel Component (used in modal)
+const FrameManagerPanel = ({
+  frame,
+  index,
+  totalFrames,
+  onUpdate,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  onDuplicate,
+  onSelectImage,
+  onRemoveImage,
+  clientId
+}) => {
+  const [isOpen, setIsOpen] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(false);
+  const [focalPointModal, setFocalPointModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
+  const [duotoneModal, setDuotoneModal] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useState)(null);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+    style: {
+      border: '1px solid #ddd',
+      borderRadius: '4px',
+      marginBottom: '20px',
+      background: '#fff'
+    },
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px',
+        borderBottom: isOpen ? '1px solid #ddd' : 'none',
+        background: '#f9f9f9',
+        cursor: 'pointer'
+      },
+      onClick: () => setIsOpen(!isOpen),
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        },
+        children: [frame.desktopImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            width: '60px',
+            height: '40px',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            border: '1px solid #ddd',
+            flexShrink: 0
+          },
+          children: (() => {
+            const filterId = `thumbnail-${clientId}-${index}`;
+            const duotone = frame.desktopDuotone || frame.duotone;
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+              children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
+                src: frame.desktopImage.url,
+                alt: "",
+                style: {
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  filter: duotone ? `url(#${filterId})` : undefined
+                }
+              })]
+            });
+          })()
+        }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            width: '60px',
+            height: '40px',
+            borderRadius: '4px',
+            border: '1px solid #ddd',
+            background: '#e0e0e0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '10px',
+            color: '#666',
+            flexShrink: 0
+          },
+          children: "No image"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("strong", {
+          style: {
+            fontSize: '16px'
+          },
+          children: [(0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Frame', 'caes-reveal'), " ", index + 1]
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center'
+        },
+        onClick: e => e.stopPropagation(),
+        children: [index > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          size: "small",
+          icon: "arrow-up-alt2",
+          onClick: onMoveUp,
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move up', 'caes-reveal')
+        }), index < totalFrames - 1 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          size: "small",
+          icon: "arrow-down-alt2",
+          onClick: onMoveDown,
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Move down', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          size: "small",
+          icon: "admin-page",
+          onClick: onDuplicate,
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duplicate', 'caes-reveal')
+        }), totalFrames > 1 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          size: "small",
+          icon: "trash",
+          onClick: onRemove,
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal'),
+          isDestructive: true
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          size: "small",
+          icon: isOpen ? 'arrow-up-alt2' : 'arrow-down-alt2',
+          onClick: e => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          },
+          label: isOpen ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Collapse', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Expand', 'caes-reveal')
+        })]
+      })]
+    }), isOpen && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+      style: {
+        padding: '20px'
+      },
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px',
+          marginBottom: '20px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(ImagePanel, {
+            frame: frame,
+            imageType: "desktop",
+            onSelectImage: onSelectImage,
+            onRemoveImage: onRemoveImage,
+            onUpdate: onUpdate,
+            setFocalPointModal: setFocalPointModal,
+            setDuotoneModal: setDuotoneModal,
+            clientId: clientId,
+            frameIndex: index,
+            isRequired: true
+          })
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(ImagePanel, {
+            frame: frame,
+            imageType: "mobile",
+            onSelectImage: onSelectImage,
+            onRemoveImage: onRemoveImage,
+            onUpdate: onUpdate,
+            setFocalPointModal: setFocalPointModal,
+            setDuotoneModal: setDuotoneModal,
+            clientId: clientId,
+            frameIndex: index,
+            isRequired: false
+          })
+        })]
+      }), index > 0 && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          paddingTop: '20px',
+          borderTop: '1px solid #ddd'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("label", {
+          style: {
+            display: 'block',
+            marginBottom: '12px',
+            fontWeight: 500,
+            fontSize: '14px'
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Transition', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '16px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Type', 'caes-reveal'),
+            value: frame.transition.type,
+            options: TRANSITION_OPTIONS,
+            onChange: value => onUpdate({
+              transition: {
+                ...frame.transition,
+                type: value
+              }
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Speed', 'caes-reveal'),
+            value: frame.transition.speed || 'normal',
+            options: [{
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Slow', 'caes-reveal'),
+              value: 'slow'
+            }, {
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Normal', 'caes-reveal'),
+              value: 'normal'
+            }, {
+              label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Fast', 'caes-reveal'),
+              value: 'fast'
+            }],
+            onChange: value => onUpdate({
+              transition: {
+                ...frame.transition,
+                speed: value
+              }
+            })
+          })]
+        })]
+      })]
+    }), focalPointModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(FocalPointModal, {
+      frame: frame,
+      imageType: focalPointModal,
+      onUpdate: onUpdate,
+      onClose: () => setFocalPointModal(null)
+    }), duotoneModal && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(DuotoneModal, {
+      frame: frame,
+      imageType: duotoneModal,
+      onUpdate: onUpdate,
+      onClose: () => setDuotoneModal(null)
+    })]
+  });
+};
+
+// Image Panel Component
+const ImagePanel = ({
+  frame,
+  imageType,
+  onSelectImage,
+  onRemoveImage,
+  onUpdate,
+  setFocalPointModal,
+  setDuotoneModal,
+  clientId,
+  frameIndex,
+  isRequired
+}) => {
+  const imageKey = imageType === 'desktop' ? 'desktopImage' : 'mobileImage';
+  const focalKey = imageType === 'desktop' ? 'desktopFocalPoint' : 'mobileFocalPoint';
+  const duotoneKey = imageType === 'desktop' ? 'desktopDuotone' : 'mobileDuotone';
+  const image = frame[imageKey];
+  const duotone = imageType === 'desktop' ? frame.desktopDuotone || frame.duotone : frame.mobileDuotone;
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+      style: {
+        marginBottom: '16px'
+      },
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '4px'
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("span", {
+          style: {
+            fontSize: '20px'
+          },
+          children: imageType === 'desktop' ? '🖥️' : '📱'
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("h3", {
+          style: {
+            margin: 0,
+            fontSize: '16px',
+            fontWeight: 600
+          },
+          children: imageType === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Wide Screens', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Tall Screens', 'caes-reveal')
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+        style: {
+          margin: 0,
+          fontSize: '13px',
+          color: '#757575'
+        },
+        children: imageType === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Computers, Large Tablets Etc.', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Devices In Portrait Orientation', 'caes-reveal')
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("label", {
+      style: {
+        display: 'block',
+        marginBottom: '8px',
+        fontWeight: 500,
+        fontSize: '13px',
+        color: '#1e1e1e'
+      },
+      children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Background image (will be cropped to screen)', 'caes-reveal')
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+      style: {
+        margin: '0 0 12px',
+        fontSize: '12px',
+        color: '#757575'
+      },
+      children: imageType === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Recommended: JPEG @ 2560 x 1440px', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Recommended: JPEG @ 1080 x 1920px', 'caes-reveal')
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUploadCheck, {
+      children: !image ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUpload, {
+          onSelect: media => onSelectImage(imageType + 'Image', media),
+          allowedTypes: ['image'],
+          render: ({
+            open
+          }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "secondary",
+            onClick: open,
+            style: {
+              width: '100%',
+              height: '200px'
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Image', 'caes-reveal')
+          })
+        })
+      }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            marginBottom: '16px'
+          },
+          children: (() => {
+            const filterId = `manager-${clientId}-${frameIndex}-${imageType}`;
+            if (imageType === 'mobile') {
+              // Mobile: Show full image with portrait frame overlay
+              const mobileFocalPoint = frame?.mobileFocalPoint || {
+                x: 0.5,
+                y: 0.5
+              };
+              const windowWidth = 35; // percent
+              const maxLeft = 100 - windowWidth; // 65%
+              const windowLeft = mobileFocalPoint.x * maxLeft;
+              return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+                style: {
+                  position: 'relative'
+                },
+                children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
+                  src: image.url,
+                  alt: image.alt,
+                  style: {
+                    width: '100%',
+                    height: 'auto',
+                    maxHeight: '250px',
+                    aspectRatio: '16 / 9',
+                    objectFit: 'cover',
+                    borderRadius: '4px',
+                    filter: duotone ? `url(#${filterId})` : undefined
+                  }
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+                  style: {
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '4px',
+                    overflow: 'hidden'
+                  },
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                    style: {
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: `${windowLeft}%`,
+                      background: 'rgba(0, 0, 0, 0.6)'
+                    }
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                    style: {
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: `${windowLeft}%`,
+                      width: `${windowWidth}%`,
+                      borderLeft: '2px solid rgba(255, 255, 255, 0.8)',
+                      borderRight: '2px solid rgba(255, 255, 255, 0.8)',
+                      boxSizing: 'border-box'
+                    }
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                    style: {
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: `${100 - windowLeft - windowWidth}%`,
+                      background: 'rgba(0, 0, 0, 0.6)'
+                    }
+                  })]
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+                  style: {
+                    position: 'absolute',
+                    bottom: '8px',
+                    left: `${windowLeft + windowWidth / 2}%`,
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(0, 0, 0, 0.75)',
+                    color: '#fff',
+                    padding: '4px 8px',
+                    borderRadius: '3px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap'
+                  },
+                  children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Portrait crop area', 'caes-reveal')
+                })]
+              });
+            }
+
+            // Desktop: Normal preview
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.Fragment, {
+              children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("img", {
+                src: image.url,
+                alt: image.alt,
+                style: {
+                  width: '100%',
+                  height: 'auto',
+                  maxHeight: '250px',
+                  aspectRatio: '16 / 9',
+                  objectFit: 'cover',
+                  borderRadius: '4px',
+                  filter: duotone ? `url(#${filterId})` : undefined
+                }
+              })]
+            });
+          })()
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '16px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.MediaUpload, {
+            onSelect: media => onSelectImage(imageType + 'Image', media),
+            allowedTypes: ['image'],
+            value: image?.id,
+            render: ({
+              open
+            }) => /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+              variant: "secondary",
+              onClick: open,
+              children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Replace', 'caes-reveal')
+            })
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "secondary",
+            isDestructive: true,
+            onClick: () => onRemoveImage(imageType + 'Image'),
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove', 'caes-reveal')
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal') + ')',
+          value: image?.captionText || image?.caption || '',
+          onChange: value => {
+            const updatedImage = {
+              ...image,
+              captionText: value
+            };
+            onUpdate({
+              [imageKey]: updatedImage
+            });
+          },
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add a caption', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            marginBottom: '16px'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+            label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Caption Link URL', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('optional', 'caes-reveal') + ')',
+            value: image?.captionLink || '',
+            onChange: value => {
+              const updatedImage = {
+                ...image,
+                captionLink: value
+              };
+              onUpdate({
+                [imageKey]: updatedImage
+              });
+            },
+            placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('https://example.com', 'caes-reveal'),
+            type: "url"
+          }), image?.captionLink && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+            style: {
+              margin: '4px 0 0',
+              fontSize: '12px',
+              color: '#757575'
+            },
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('The entire caption will be linked.', 'caes-reveal')
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.TextControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Alt Text', 'caes-reveal') + ' (' + (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('required', 'caes-reveal') + ')',
+          value: image?.alt || '',
+          onChange: value => {
+            const updatedImage = {
+              ...image,
+              alt: value
+            };
+            onUpdate({
+              [imageKey]: updatedImage
+            });
+          },
+          placeholder: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Describe media for screenreaders', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+          style: {
+            display: 'flex',
+            gap: '8px',
+            marginTop: '16px',
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "secondary",
+            onClick: () => setFocalPointModal(imageType),
+            icon: "image-crop",
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point', 'caes-reveal')
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "secondary",
+            onClick: () => setDuotoneModal(imageType),
+            icon: "admin-appearance",
+            children: duotone ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Edit Filter', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add Filter', 'caes-reveal')
+          }), duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotoneSwatch, {
+            values: duotone
+          })]
+        })]
+      })
+    })]
+  });
+};
+
+// Focal Point Modal
+const FocalPointModal = ({
+  frame,
+  imageType,
+  onUpdate,
+  onClose
+}) => {
+  const imageKey = imageType === 'desktop' ? 'desktopImage' : 'mobileImage';
+  const focalKey = imageType === 'desktop' ? 'desktopFocalPoint' : 'mobileFocalPoint';
+  const image = frame[imageKey];
+  if (!image) {
+    return null;
+  }
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
+    title: imageType === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point — Wide Screens', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Set Focus Point — Tall Screens', 'caes-reveal'),
+    onRequestClose: onClose,
+    style: {
+      maxWidth: '600px',
+      width: '100%'
+    },
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+      style: {
+        padding: '8px 0'
+      },
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+        style: {
+          margin: '0 0 16px 0',
+          color: '#757575',
+          fontSize: '13px'
+        },
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Click on the image to set the focal point. This determines which part of the image stays visible when cropped to fit the screen.', 'caes-reveal')
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.FocalPointPicker, {
+        url: image.url,
+        value: frame[focalKey] || {
+          x: 0.5,
+          y: 0.5
+        },
+        onChange: value => onUpdate({
+          [focalKey]: value
+        })
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+        style: {
+          marginTop: '20px',
+          display: 'flex',
+          justifyContent: 'flex-end'
+        },
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          variant: "primary",
+          onClick: onClose,
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Done', 'caes-reveal')
+        })
+      })]
+    })
+  });
+};
+
+// Duotone Modal
+const DuotoneModal = ({
+  frame,
+  imageType,
+  onUpdate,
+  onClose
+}) => {
+  const duotoneKey = imageType === 'desktop' ? 'desktopDuotone' : 'mobileDuotone';
+  const duotone = imageType === 'desktop' ? frame.desktopDuotone || frame.duotone : frame.mobileDuotone;
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Modal, {
+    title: imageType === 'desktop' ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter — Wide Screens', 'caes-reveal') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Duotone Filter — Tall Screens', 'caes-reveal'),
+    onRequestClose: onClose,
+    style: {
+      maxWidth: '400px',
+      width: '100%'
+    },
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+      style: {
+        padding: '8px 0'
+      },
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("p", {
+        style: {
+          margin: '0 0 16px 0',
+          color: '#757575',
+          fontSize: '13px'
+        },
+        children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Apply a duotone color filter to this image. The first color replaces shadows, the second replaces highlights.', 'caes-reveal')
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.DuotonePicker, {
+        duotonePalette: DUOTONE_PALETTE,
+        colorPalette: COLOR_PALETTE,
+        value: duotone || undefined,
+        onChange: value => {
+          if (imageType === 'desktop') {
+            onUpdate({
+              desktopDuotone: value,
+              duotone: null
+            });
+          } else {
+            onUpdate({
+              mobileDuotone: value
+            });
+          }
+        }
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsxs)("div", {
+        style: {
+          marginTop: '20px',
+          display: 'flex',
+          justifyContent: 'space-between'
+        },
+        children: [duotone && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+          variant: "tertiary",
+          isDestructive: true,
+          onClick: () => {
+            if (imageType === 'desktop') {
+              onUpdate({
+                desktopDuotone: null,
+                duotone: null
+              });
+            } else {
+              onUpdate({
+                mobileDuotone: null
+              });
+            }
+            onClose();
+          },
+          children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Remove Filter', 'caes-reveal')
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)("div", {
+          style: {
+            marginLeft: 'auto'
+          },
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_6__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.Button, {
+            variant: "primary",
+            onClick: onClose,
+            children: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Done', 'caes-reveal')
+          })
+        })]
+      })]
+    })
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Edit);
+
+/***/ }),
+
+/***/ "./src/blocks/reveal/index.js":
+/*!************************************!*\
+  !*** ./src/blocks/reveal/index.js ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/reveal/style.scss");
+/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/reveal/editor.scss");
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./edit */ "./src/blocks/reveal/edit.js");
+/* harmony import */ var _save__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./save */ "./src/blocks/reveal/save.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./block.json */ "./src/blocks/reveal/block.json");
+/**
+ * Registers a new block provided a unique name and an object defining its behavior.
+ */
+
+
+
+
+/**
+ * Internal dependencies
+ */
+
+
+
+
+// Register the main Reveal block
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_5__.name, {
+  edit: _edit__WEBPACK_IMPORTED_MODULE_3__["default"],
+  save: _save__WEBPACK_IMPORTED_MODULE_4__["default"]
+});
+
+/***/ }),
+
+/***/ "./src/blocks/reveal/save.js":
+/*!***********************************!*\
+  !*** ./src/blocks/reveal/save.js ***!
+  \***********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__);
+/**
+ * Save function for the Reveal block.
+ * Outputs InnerBlocks content; PHP render wraps with background container.
+ */
+
+
+const Save = () => {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)("div", {
+    ..._wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.useBlockProps.save(),
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_1__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_0__.InnerBlocks.Content, {})
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Save);
+
+/***/ }),
+
+/***/ "./src/blocks/reveal/editor.scss":
+/*!***************************************!*\
+  !*** ./src/blocks/reveal/editor.scss ***!
+  \***************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "./src/blocks/reveal/style.scss":
+/*!**************************************!*\
+  !*** ./src/blocks/reveal/style.scss ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "react/jsx-runtime":
+/*!**********************************!*\
+  !*** external "ReactJSXRuntime" ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["ReactJSXRuntime"];
+
+/***/ }),
+
+/***/ "@wordpress/block-editor":
+/*!*************************************!*\
+  !*** external ["wp","blockEditor"] ***!
+  \*************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blockEditor"];
+
+/***/ }),
+
+/***/ "@wordpress/blocks":
+/*!********************************!*\
+  !*** external ["wp","blocks"] ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blocks"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/data":
+/*!******************************!*\
+  !*** external ["wp","data"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["data"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./src/blocks/reveal/block.json":
+/*!**************************************!*\
+  !*** ./src/blocks/reveal/block.json ***!
+  \**************************************/
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/reveal","version":"0.2.0","title":"Reveal","category":"media","icon":"cover-image","description":"Full-window fixed background that transitions between frames as the user scrolls through content.","keywords":["reveal","scroll","parallax","immersive","background","storytelling"],"textdomain":"caes-reveal","attributes":{"align":{"type":"string","default":"full"},"frames":{"type":"array","default":[],"items":{"type":"object"}},"overlayColor":{"type":"string","default":"#000000"},"overlayOpacity":{"type":"number","default":30},"minHeight":{"type":"string","default":"100vh"},"scrollSpeed":{"type":"string","default":"normal","enum":["slow","normal","fast"]}},"supports":{"align":["full","wide"],"html":false,"color":{"text":true,"background":false},"spacing":{"padding":true}},"providesContext":{"caes-hub/reveal-frames":"frames","caes-hub/reveal-overlayColor":"overlayColor","caes-hub/reveal-overlayOpacity":"overlayOpacity"},"render":"file:./render.php","editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","viewScript":"file:./view.js"}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/reveal/index": 0,
+/******/ 			"blocks/reveal/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunktheme_blocks"] = globalThis["webpackChunktheme_blocks"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/reveal/style-index"], () => (__webpack_require__("./src/blocks/reveal/index.js")))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=index.js.map
