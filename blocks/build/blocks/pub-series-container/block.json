@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "caes-hub/pub-series-container",
+  "version": "0.1.0",
+  "title": "Publication Series Container",
+  "category": "theme",
+  "icon": "category",
+  "description": "A conditional container that only renders its content when the current publication belongs to a series.",
+  "supports": {
+    "html": false,
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true,
+      "blockGap": true
+    },
+    "layout": {
+      "default": {
+        "type": "constrained"
+      },
+      "allowSizingOnChildren": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "fontFamily": true
+    }
+  },
+  "textdomain": "pub-series-container",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

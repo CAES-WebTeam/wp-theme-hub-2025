@@ -1088,6 +1088,34 @@ function update_latest_publish_date_on_save($post_id)
 add_action('acf/save_post', 'update_latest_publish_date_on_save', 20);
 
 /**
+ * Returns an array of published publication post IDs for a given series term,
+ * sorted by publication_number using the standard alphanumeric logic.
+ *
+ * @param int $term_id The publication_series term ID.
+ * @return int[] Sorted array of post IDs.
+ */
+function get_sorted_series_publication_ids($term_id)
+{
+    add_filter('posts_orderby', 'custom_series_alphanumeric_orderby', 10, 2);
+
+    $query = new WP_Query(array(
+        'post_type'      => 'publications',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'meta_key'       => 'publication_number',
+        'tax_query'      => array(
+            array(
+                'taxonomy' => 'publication_series',
+                'field'    => 'term_id',
+                'terms'    => $term_id,
+            ),
+        ),
+    ));
+
+    return wp_list_pluck($query->posts, 'ID');
+}
+
+/**
  * Automatically sorts publication series archives by their publication number.
  *
  * This function hooks into the main WordPress query and applies custom sorting

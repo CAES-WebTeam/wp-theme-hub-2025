@@ -85,6 +85,8 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-summary');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-translation-link');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-details-type');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-series-nav');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/pub-series-container');
 
 	// Register User Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-bio');
