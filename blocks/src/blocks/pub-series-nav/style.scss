@@ -3,6 +3,10 @@
     align-items: center;
     gap: 0.75rem;
 
+    @media screen and (min-width: 782px) {
+        max-width: 300px;
+    }
+
     .pub-series-nav__link {
         text-decoration: underline;
     }
