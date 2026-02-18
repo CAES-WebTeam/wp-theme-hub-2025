@@ -102,7 +102,7 @@ ul.is-style-caes-hub-list-checkbox {
     &::after {
         content: "";
         border-top: 1px solid var(--wp--preset--color--contrast-two);
-        margin: 0 0 0 10px;
+        margin: 0.5rem 0 0 0;
         flex: 1 0 20px;
     }
 
@@ -110,15 +110,6 @@ ul.is-style-caes-hub-list-checkbox {
     // flex-wrap lets the text flow naturally while ::after fills the remainder.
     &.wp-block-post-terms {
         flex-wrap: wrap;
-    }
-}
-
-@container (max-width: 440px) {
-    .is-style-caes-hub-section-heading {
-        flex-direction: column;
-        &::after {
-            margin: 1rem 0 0 0;
-        }
     }
 }
 
