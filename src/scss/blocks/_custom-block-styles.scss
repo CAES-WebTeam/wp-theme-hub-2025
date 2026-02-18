@@ -106,6 +106,12 @@ ul.is-style-caes-hub-list-checkbox {
     }
 }
 
+.has-hedges-background-color .is-style-caes-hub-section-heading {
+    &::after {
+        border-top-color: var(--wp--preset--color--contrast);
+    }
+}
+
 .has-olympic-background-color,
 .has-bulldog-red-background-color,
 .has-contrast-background-color {
