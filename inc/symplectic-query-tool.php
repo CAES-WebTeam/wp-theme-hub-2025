@@ -617,6 +617,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     if (pub.publication_date) html += "<span><strong>Date:</strong> " + escapeHtml(pub.publication_date) + "</span>";
                     if (pub.journal) html += "<span><strong>Journal:</strong> " + escapeHtml(pub.journal) + "</span>";
                     if (pub.doi) html += "<span><strong>DOI:</strong> " + escapeHtml(pub.doi) + "</span>";
+                    if (pub.citation_count !== undefined) html += "<span><strong>Citations:</strong> " + escapeHtml(String(pub.citation_count)) + "</span>";
                     html += "</div>";
                     html += "</div>";
                 });
@@ -703,6 +704,29 @@ function extract_publication_fields($pub_xml) {
     $records = $pub_xml->xpath('//api:record[@format="native" or @format="preferred"]');
 
     if (!empty($records)) {
+        // Scan all records for citation count, preferring WoS then Dimensions
+        $citation_priority_order = array('wos', 'dimensions', 'dimensions-for-universities', 'scopus', 'epmc');
+        $citation_count = null;
+        $citation_best_priority = PHP_INT_MAX;
+
+        foreach ($records as $rec) {
+            $rec->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+            $citation_nodes = $rec->xpath('./api:citation-count');
+            if (!empty($citation_nodes)) {
+                $source_name = (string)$rec['source-name'];
+                $priority = array_search($source_name, $citation_priority_order);
+                $priority = ($priority === false) ? PHP_INT_MAX : $priority;
+                if ($citation_count === null || $priority < $citation_best_priority) {
+                    $citation_count = (int)(string)$citation_nodes[0];
+                    $citation_best_priority = $priority;
+                }
+            }
+        }
+
+        if ($citation_count !== null) {
+            $fields_data['citation_count'] = $citation_count;
+        }
+
         $record = $records[0];
         $record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
