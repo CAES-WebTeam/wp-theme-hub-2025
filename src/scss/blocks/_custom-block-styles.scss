@@ -116,6 +116,9 @@ ul.is-style-caes-hub-list-checkbox {
 @container (max-width: 440px) {
     .is-style-caes-hub-section-heading {
         flex-direction: column;
+        &::after {
+            margin: 1rem 0 0 0;
+        }
     }
 }
 
