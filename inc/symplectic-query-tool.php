@@ -857,6 +857,41 @@ function extract_teaching_activity_fields($teaching_xml) {
 }
 
 /**
+ * Check if a teaching term (e.g. "Fall 2025") is within one year of the current date.
+ * Semester start dates: Spring = Jan 1, Summer = May 15, Fall = Aug 1.
+ */
+function is_teaching_term_recent($term_string) {
+    if (!preg_match('/^(Spring|Summer|Fall)\s+(\d{4})$/i', trim($term_string), $matches)) {
+        return false;
+    }
+
+    $season = ucfirst(strtolower($matches[1]));
+    $year = (int)$matches[2];
+
+    // Semester end dates (when the next semester begins):
+    // Spring ends May 15, Summer ends Aug 1, Fall ends Jan 1 of next year
+    switch ($season) {
+        case 'Spring':
+            $semester_end = new DateTime("$year-05-15");
+            break;
+        case 'Summer':
+            $semester_end = new DateTime("$year-08-01");
+            break;
+        case 'Fall':
+            $next_year = $year + 1;
+            $semester_end = new DateTime("$next_year-01-01");
+            break;
+        default:
+            return false;
+    }
+
+    $cutoff = new DateTime();
+    $cutoff->modify('-1 year');
+
+    return $semester_end >= $cutoff;
+}
+
+/**
  * Helper function to extract activity fields from XML
  */
 function extract_activity_fields($activity_xml) {
@@ -1186,7 +1221,10 @@ function symplectic_query_api_handler() {
                                     }
                                 }
 
-                                $teaching_activities[] = $obj_data;
+                                // Only include courses from terms within the last year
+                                if (isset($obj_data['term']) && is_teaching_term_recent($obj_data['term'])) {
+                                    $teaching_activities[] = $obj_data;
+                                }
                             }
 
                             $total_objects_processed++;
