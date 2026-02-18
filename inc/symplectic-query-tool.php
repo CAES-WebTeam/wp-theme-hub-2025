@@ -1170,7 +1170,7 @@ function symplectic_query_api_handler() {
 
                                 $activities[] = $obj_data;
 
-                            } elseif ($category === 'teaching-activity' && isset($obj_data['href'])) {
+                            } elseif ($category === 'teaching-activity' && isset($obj_data['href']) && isset($obj_data['type']) && $obj_data['type'] === 'course-taught') {
                                 // Track URL
                                 $teaching_activity_urls[] = $obj_data['href'];
 
