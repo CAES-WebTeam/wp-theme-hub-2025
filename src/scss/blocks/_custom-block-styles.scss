@@ -113,11 +113,9 @@ ul.is-style-caes-hub-list-checkbox {
     }
 }
 
-@media screen and (max-width: 600px) {
+@container (max-width: 440px) {
     .is-style-caes-hub-section-heading {
-        &::after {
-            display: none;
-        }
+        flex-direction: column;
     }
 }
 
