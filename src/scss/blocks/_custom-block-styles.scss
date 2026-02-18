@@ -97,6 +97,7 @@ ul.is-style-caes-hub-list-checkbox {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    line-height: 1;
 
     &::after {
         content: "";
@@ -109,6 +110,14 @@ ul.is-style-caes-hub-list-checkbox {
     // flex-wrap lets the text flow naturally while ::after fills the remainder.
     &.wp-block-post-terms {
         flex-wrap: wrap;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .is-style-caes-hub-section-heading {
+        &::after {
+            display: none;
+        }
     }
 }
 
