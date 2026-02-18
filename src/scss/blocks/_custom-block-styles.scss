@@ -104,6 +104,12 @@ ul.is-style-caes-hub-list-checkbox {
         margin: 0 0 0 10px;
         flex: 1 0 20px;
     }
+
+    // Post terms blocks use inline flex for prefix + links.
+    // flex-wrap lets the text flow naturally while ::after fills the remainder.
+    &.wp-block-post-terms {
+        flex-wrap: wrap;
+    }
 }
 
 .has-hedges-background-color .is-style-caes-hub-section-heading {
