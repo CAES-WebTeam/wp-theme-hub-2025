@@ -35,7 +35,7 @@ function Edit({
     showPublicationNumber
   } = attributes;
   const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)();
-  const linkText = showPublicationNumber ? 'SB 123 — Example Publication Title' : 'Example Publication Title';
+  const linkText = showPublicationNumber ? 'SB 123: Example Publication Title' : 'Example Publication Title';
   const renderPreview = () => {
     if (direction === 'previous') {
       return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {

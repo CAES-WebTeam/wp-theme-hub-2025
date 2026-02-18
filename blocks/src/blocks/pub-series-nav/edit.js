@@ -10,7 +10,7 @@ export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 
 	const linkText = showPublicationNumber
-		? 'SB 123 — Example Publication Title'
+		? 'SB 123: Example Publication Title'
 		: 'Example Publication Title';
 
 	const renderPreview = () => {
