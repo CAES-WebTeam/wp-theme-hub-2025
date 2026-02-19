@@ -1293,6 +1293,14 @@ function symplectic_query_api_handler() {
             }
         } while ($has_next_page);
 
+        // Sort publications by citation count descending, keep top 5
+        usort($publications, function($a, $b) {
+            $a_count = isset($a['citation_count']) ? $a['citation_count'] : -1;
+            $b_count = isset($b['citation_count']) ? $b['citation_count'] : -1;
+            return $b_count - $a_count;
+        });
+        $publications = array_slice($publications, 0, 5);
+
     }
 
     // Return success with user data (and relationships if available)
