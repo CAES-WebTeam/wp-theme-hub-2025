@@ -29,7 +29,7 @@ add_filter('acf/settings/show_admin', 'caes_hub_acf_show_admin');
 function caes_hub_acf_show_admin($show) {
 	// This is a list of usernames who can view ACF menu item
 	$admins = array( 
-		'master', 'ccampbell', 'caeswp', 'aaw97657'
+		'master', 'caeswp', 'aaw97657', 'ashley'
 	);
 
 	// get the current user

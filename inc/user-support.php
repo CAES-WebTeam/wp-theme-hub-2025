@@ -17,6 +17,400 @@ include_once(get_template_directory() . '/inc/acf-fields/user-field-group.php');
 
 /**
  * ---------------------------------------------------------------------------------
+ * 1b. User Profile Cleanup
+ * ---------------------------------------------------------------------------------
+ * Organizes user profile pages by:
+ * - Wrapping ACF and Yoast sections in collapsible accordions
+ * - Adding informational notices to imported data sections
+ * - Making programmatically-synced fields readonly
+ * - Adding notices to irrelevant WP core sections
+ * - Removing social contact method fields from Contact Info
+ */
+add_action('admin_enqueue_scripts', 'user_profile_accordions');
+
+function user_profile_accordions($hook)
+{
+    if (!in_array($hook, ['profile.php', 'user-edit.php'])) {
+        return;
+    }
+
+    $css = '
+        /* Shared accordion styles */
+        .profile-accordion {
+            border: 1px solid #c3c4c7;
+            border-radius: 4px;
+            background: #fff;
+            margin-top: 1.5em;
+        }
+        .profile-accordion .profile-accordion-toggle {
+            cursor: pointer;
+            user-select: none;
+            margin: 0;
+            padding: 10px 15px;
+        }
+        .profile-accordion .profile-accordion-toggle:hover,
+        .profile-accordion .profile-accordion-toggle:focus-visible {
+            background: #f6f7f7;
+            border-radius: 4px;
+        }
+        .profile-accordion .profile-accordion-toggle:focus-visible {
+            outline: 2px solid #2271b1;
+            outline-offset: -2px;
+        }
+        .profile-accordion .profile-accordion-toggle::before {
+            content: "\f140";
+            font-family: dashicons;
+            font-size: 20px;
+            line-height: 1;
+            vertical-align: middle;
+            margin-right: 5px;
+            display: inline-block;
+        }
+        .profile-accordion.is-open .profile-accordion-toggle::before {
+            content: "\f142";
+        }
+        .profile-accordion.is-open .profile-accordion-toggle:hover,
+        .profile-accordion.is-open .profile-accordion-toggle:focus-visible {
+            border-radius: 4px 4px 0 0;
+        }
+        .profile-accordion .profile-accordion-content {
+            display: none;
+            border-top: 1px solid #c3c4c7;
+            padding: 15px;
+        }
+        .profile-accordion.is-open .profile-accordion-content {
+            display: block;
+        }
+
+        /* Yoast-specific: override label negative margin */
+        .yoast.yoast-settings .profile-accordion-content {
+            padding-left: 235px;
+        }
+
+        /* Remove default margin on wrapped tables */
+        .profile-accordion .profile-accordion-content > table.form-table {
+            margin-top: 0;
+        }
+
+        /* Yoast wrapper reset (already has its own div) */
+        .yoast.yoast-settings.profile-accordion {
+            padding: 0;
+        }
+
+        /* Section notices */
+        .profile-section-notice {
+            background: #f0f6fc;
+            border-left: 4px solid #2271b1;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #2c3338;
+        }
+        .profile-section-notice .dashicons {
+            margin-right: 8px;
+            vertical-align: text-bottom;
+        }
+        .profile-section-notice.notice-muted {
+            background: #f0f0f1;
+            border-left-color: #c3c4c7;
+            color: #50575e;
+        }
+
+        /* Readonly field styling */
+        .profile-accordion .acf-field input[readonly],
+        .profile-accordion .acf-field textarea[readonly] {
+            background: #f0f0f1;
+            color: #646970;
+            cursor: not-allowed;
+        }
+
+        /* Hide Profile Picture row */
+        tr.user-profile-picture {
+            display: none;
+        }
+
+        /* Section group headers */
+        .profile-section-group-header {
+            margin: 2.5em 0 0;
+            padding: 0 0 8px;
+            border-bottom: 2px solid #c3c4c7;
+        }
+        .profile-section-group-header h3 {
+            margin: 0;
+            font-size: 1.3em;
+            color: #1d2327;
+        }
+    ';
+    wp_add_inline_style('wp-admin', $css);
+
+    $js = "
+        jQuery(document).ready(function(\$) {
+
+            // --- Helper: create a notice element ---
+            function makeNotice(text, muted) {
+                var cls = 'profile-section-notice' + (muted ? ' notice-muted' : '');
+                var icon = muted ? 'dashicons-info-outline' : 'dashicons-info';
+                return \$('<div>', { class: cls, role: 'note' })
+                    .append(\$('<span>', { class: 'dashicons ' + icon, 'aria-hidden': 'true' }))
+                    .append(document.createTextNode(text));
+            }
+
+            // --- Helper: wrap an h2 + content in an accordion ---
+            var accordionCount = 0;
+            function wrapInAccordion(\$heading, \$body, options) {
+                options = options || {};
+                accordionCount++;
+                var contentId = 'profile-accordion-panel-' + accordionCount;
+                var headingId = \$heading.attr('id') || 'profile-accordion-heading-' + accordionCount;
+                \$heading.attr('id', headingId);
+
+                var startOpen = options.startOpen || false;
+                var \$accordion = \$('<div>', { class: 'profile-accordion' + (startOpen ? ' is-open' : '') });
+                var \$content = \$('<div>', {
+                    class: 'profile-accordion-content',
+                    id: contentId,
+                    role: 'region',
+                    'aria-labelledby': headingId
+                });
+
+                \$heading.before(\$accordion);
+                \$heading.addClass('profile-accordion-toggle');
+                \$heading.attr({
+                    'role': 'button',
+                    'tabindex': '0',
+                    'aria-expanded': String(startOpen),
+                    'aria-controls': contentId
+                });
+
+                if (options.notice) {
+                    \$content.append(makeNotice(options.notice, options.noticeMuted || false));
+                }
+                \$body.each(function() { \$content.append(this); });
+                \$accordion.append(\$heading).append(\$content);
+
+                function toggle() {
+                    var isOpen = \$accordion.hasClass('is-open');
+                    \$accordion.toggleClass('is-open');
+                    \$heading.attr('aria-expanded', String(!isOpen));
+                }
+                \$heading.on('click', toggle);
+                \$heading.on('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggle();
+                    }
+                });
+
+                return \$accordion;
+            }
+
+            // --- ACF field group accordions ---
+            var acfNotices = {
+                'Users': 'This data is synced automatically from the CAES personnel database. Manual changes have been disabled. Make updates in the personnel database to have them reflected here.',
+                'Expert/Source': 'This data was imported from the news database.',
+                'Writer': 'This data was imported from the news database.'
+            };
+
+            \$('table.form-table').each(function() {
+                var \$table = \$(this);
+                if (!\$table.find('tr.acf-field').length) return;
+
+                var \$heading = \$table.prev('h2');
+                if (!\$heading.length) return;
+
+                var title = \$heading.text().trim();
+
+                wrapInAccordion(\$heading, \$table, {
+                    notice: acfNotices[title] || null,
+                    noticeMuted: false,
+                    startOpen: false
+                });
+
+                if (title === 'Users') {
+                    \$table.find('input, textarea').prop('readonly', true);
+                }
+            });
+
+            // --- WP core section accordions ---
+            var coreNotice = 'These settings are part of WordPress core and do not affect front-end profiles.';
+            var coreAccordions = ['Personal Options', 'Contact Info', 'Account Management', 'Application Passwords', 'About Yourself'];
+
+            \$('#your-profile > h2').each(function() {
+                var \$h2 = \$(this);
+                var text = \$h2.text().trim();
+
+                if (coreAccordions.indexOf(text) !== -1) {
+                    var \$content = \$h2.nextUntil('h2, .profile-accordion, div.yoast');
+                    if (!\$content.length) return;
+
+                    wrapInAccordion(\$h2, \$content, {
+                        notice: coreNotice,
+                        noticeMuted: true
+                    });
+                }
+            });
+
+            // --- Yoast SEO accordion ---
+            var \$yoast = \$('div.yoast.yoast-settings');
+            if (\$yoast.length) {
+                var \$yoastHeading = \$yoast.find('#wordpress-seo');
+                if (\$yoastHeading.length) {
+                    var yoastContentId = 'profile-accordion-panel-yoast';
+                    \$yoast.addClass('profile-accordion');
+                    \$yoastHeading.addClass('profile-accordion-toggle');
+                    \$yoastHeading.attr({
+                        'role': 'button',
+                        'tabindex': '0',
+                        'aria-expanded': 'false',
+                        'aria-controls': yoastContentId
+                    });
+                    \$yoastHeading.siblings().wrapAll(
+                        \$('<div>', {
+                            class: 'profile-accordion-content',
+                            id: yoastContentId,
+                            role: 'region',
+                            'aria-labelledby': 'wordpress-seo'
+                        })
+                    );
+
+                    function toggleYoast() {
+                        var isOpen = \$yoast.hasClass('is-open');
+                        \$yoast.toggleClass('is-open');
+                        \$yoastHeading.attr('aria-expanded', String(!isOpen));
+                    }
+                    \$yoastHeading.on('click', toggleYoast);
+                    \$yoastHeading.on('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleYoast();
+                        }
+                    });
+                }
+            }
+
+            // --- Helper: create section group header ---
+            function makeSectionGroupHeader(title) {
+                var \$header = \$('<div>', { class: 'profile-section-group-header' });
+                \$header.append(\$('<h3>', { text: title }));
+                return \$header;
+            }
+
+            // --- Helper: find section element by heading text ---
+            function findSectionEl(text) {
+                var \$found = null;
+                // Check accordion wrappers
+                \$('#your-profile').find('.profile-accordion .profile-accordion-toggle').each(function() {
+                    if (\$(this).text().trim() === text) {
+                        \$found = \$(this).closest('.profile-accordion');
+                        return false;
+                    }
+                });
+                if (\$found) return \$found;
+                // Check Yoast wrapper
+                if (text === 'Yoast SEO settings') {
+                    return \$('div.yoast.yoast-settings');
+                }
+                // Bare h2 + following content (e.g. Name)
+                var \$result = \$();
+                \$('#your-profile').children('h2').each(function() {
+                    if (\$(this).text().trim() === text) {
+                        var \$h2 = \$(this);
+                        var \$next = \$h2.nextUntil('h2, .profile-accordion, .profile-section-group-header, div.yoast, p.submit');
+                        \$result = \$h2.add(\$next);
+                        return false;
+                    }
+                });
+                return \$result;
+            }
+
+            // --- Reorder profile sections ---
+            var \$form = \$('#your-profile');
+            var \$submitBtn = \$form.find('p.submit');
+            if (\$submitBtn.length) {
+                var sectionNames = [
+                    'Name', 'Editorial', 'Users', 'Expert/Source', 'Writer', 'Yoast SEO settings',
+                    'Personal Options', 'Contact Info', 'About Yourself',
+                    'Account Management', 'Application Passwords'
+                ];
+                var sections = {};
+                sectionNames.forEach(function(name) {
+                    sections[name] = findSectionEl(name);
+                });
+
+                // Detach all sections
+                sectionNames.forEach(function(name) {
+                    if (sections[name] && sections[name].length) {
+                        sections[name].detach();
+                    }
+                });
+
+                // Insert in desired order
+                var order = [
+                    { type: 'section', name: 'Name' },
+                    { type: 'section', name: 'Editorial' },
+                    { type: 'header', title: 'Imports on Schedule', notice: 'Imports daily from CAES Personnel and Elements databases.' },
+                    { type: 'section', name: 'Users' },
+                    { type: 'header', title: 'Imported from News database' },
+                    { type: 'section', name: 'Expert/Source' },
+                    { type: 'section', name: 'Writer' },
+                    { type: 'header', title: 'Plugin Settings' },
+                    { type: 'section', name: 'Yoast SEO settings' },
+                    { type: 'header', title: 'Other WordPress Settings' },
+                    { type: 'section', name: 'Personal Options' },
+                    { type: 'section', name: 'Contact Info' },
+                    { type: 'section', name: 'About Yourself' },
+                    { type: 'section', name: 'Account Management' },
+                    { type: 'section', name: 'Application Passwords' }
+                ];
+
+                order.forEach(function(item) {
+                    if (item.type === 'header') {
+                        makeSectionGroupHeader(item.title).insertBefore(\$submitBtn);
+                        if (item.notice) {
+                            makeNotice(item.notice, false).insertBefore(\$submitBtn);
+                        }
+                    } else if (sections[item.name] && sections[item.name].length) {
+                        sections[item.name].insertBefore(\$submitBtn);
+                    }
+                });
+            }
+        });
+    ";
+    wp_add_inline_script('jquery', $js);
+}
+
+/**
+ * Remove social contact method fields from user profiles.
+ * These are added by Yoast SEO and are not used for front-end profiles.
+ */
+add_filter('user_contactmethods', 'remove_social_contact_methods', 999);
+
+function remove_social_contact_methods($methods)
+{
+    $remove = [
+        'facebook',
+        'instagram',
+        'linkedin',
+        'myspace',
+        'pinterest',
+        'soundcloud',
+        'tumblr',
+        'twitter',
+        'youtube_url',
+        'wikipedia',
+        'github',
+    ];
+
+    foreach ($remove as $key) {
+        unset($methods[$key]);
+    }
+
+    return $methods;
+}
+
+/**
+ * ---------------------------------------------------------------------------------
  * 2. Custom User Role Definitions
  * ---------------------------------------------------------------------------------
  * Defines custom user roles used within the application. These roles provide
