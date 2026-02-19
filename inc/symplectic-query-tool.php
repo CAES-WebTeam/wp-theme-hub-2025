@@ -597,6 +597,13 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     }
                 });
 
+                if (user.keywords && user.keywords.length > 0) {
+                    html += "<div class=\"symplectic-user-field\">";
+                    html += "<label>Areas of Expertise</label>";
+                    html += "<value>" + escapeHtml(user.keywords.join(", ")) + "</value>";
+                    html += "</div>";
+                }
+
                 html += "</div></div>";
                 return html;
             }
@@ -1111,6 +1118,17 @@ function symplectic_query_api_handler() {
     // Get all attributes
     foreach ($object->attributes() as $attr_name => $attr_value) {
         $user_info[$attr_name] = (string)$attr_value;
+    }
+
+    // Extract FOR keywords from <api:all-labels>
+    $object->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+    $keyword_nodes = $object->xpath('./api:all-labels/api:keywords/api:keyword');
+    if (!empty($keyword_nodes)) {
+        $keywords = array();
+        foreach ($keyword_nodes as $kw) {
+            $keywords[] = (string)$kw;
+        }
+        $user_info['keywords'] = $keywords;
     }
 
     // Get user ID for relationships call
