@@ -9,68 +9,6 @@ require_once get_template_directory() . '/vendor/autoload.php';
 use Mpdf\Mpdf;
 use Mpdf\HTMLParserMode;
 
-// Reuse your existing helper functions (these don't need TCPDF)
-// Keep: normalize_hyphens_for_pdf, format_publication_number_for_display, get_latest_published_date
-
-function normalize_hyphens_for_pdf($content)
-{
-    $replacements = [
-        "\u{2010}" => '-', // Hyphen
-        "\u{2013}" => '-', // En Dash (replaces 'ÃƒÂ¢Ã¢â€šÂ¬')
-        "\u{2014}" => '-', // Em Dash (replaces 'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬')
-    ];
-    $content = str_replace(array_keys($replacements), array_values($replacements), $content);
-    return $content;
-}
-
-function format_publication_number_for_display($publication_number)
-{
-    $originalPubNumber = $publication_number;
-    $displayPubNumber = $originalPubNumber;
-    $pubType = '';
-
-    if ($originalPubNumber) {
-        $prefix = strtoupper(substr($originalPubNumber, 0, 2));
-        $firstChar = strtoupper(substr($originalPubNumber, 0, 1));
-
-        switch ($prefix) {
-            case 'AP':
-                $pubType = 'Annual Publication';
-                $displayPubNumber = substr($originalPubNumber, 2);
-                break;
-            case 'TP':
-                $pubType = 'Temporary Publication';
-                $displayPubNumber = substr($originalPubNumber, 2);
-                break;
-            default:
-                switch ($firstChar) {
-                    case 'B':
-                        $pubType = 'Bulletin';
-                        $displayPubNumber = substr($originalPubNumber, 1);
-                        break;
-                    case 'C':
-                        $pubType = 'Circular';
-                        $displayPubNumber = substr($originalPubNumber, 1);
-                        break;
-                    default:
-                        $pubType = 'Publication';
-                        break;
-                }
-                break;
-        }
-    }
-
-    $displayPubNumber = trim($displayPubNumber);
-    $formatted_pub_number_string = '';
-    if (!empty($pubType) && !empty($displayPubNumber)) {
-        $formatted_pub_number_string = $pubType . ' ' . $displayPubNumber;
-    } elseif (!empty($displayPubNumber)) {
-        $formatted_pub_number_string = $displayPubNumber;
-    }
-
-    return $formatted_pub_number_string;
-}
-
 function get_latest_published_date($post_id)
 {
     $history = get_field('history', $post_id);
@@ -102,10 +40,250 @@ function get_latest_published_date($post_id)
     ];
 }
 
+// Process images to ensure they have proper dimensions for mPDF
+function ensure_image_dimensions($content)
+{
+    // Match all img tags
+    return preg_replace_callback(
+        '/<img([^>]*)>/i',
+        function ($matches) {
+            $attributes = $matches[1];
+
+            // Check if width is already set (either as attribute or in style)
+            $has_width_attr = preg_match('/\bwidth\s*=\s*["\']?\d+/i', $attributes);
+            $has_width_style = preg_match('/style\s*=\s*["\'][^"\']*width\s*:/i', $attributes);
+
+            // If width is already defined, return unchanged
+            if ($has_width_attr || $has_width_style) {
+                return $matches[0];
+            }
+
+            // Extract src to get actual dimensions
+            if (preg_match('/src\s*=\s*["\']([^"\']+)["\']/i', $attributes, $src_match)) {
+                $src = $src_match[1];
+
+                // Try to get actual image dimensions
+                $dimensions = @getimagesize($src);
+
+                if ($dimensions && isset($dimensions[0]) && isset($dimensions[1])) {
+                    $actual_width = $dimensions[0];
+                    $actual_height = $dimensions[1];
+
+                    // Calculate max width based on page width (letter = 8.5", margins = 30mm total ≈ 1.18")
+                    // Usable width ≈ 7.32" ≈ 555px at 72dpi, but let's use a safe max
+                    $max_width = 550;
+
+                    if ($actual_width > $max_width) {
+                        // Scale down proportionally
+                        $scale = $max_width / $actual_width;
+                        $new_width = $max_width;
+                        $new_height = round($actual_height * $scale);
+                    } else {
+                        // Use actual dimensions
+                        $new_width = $actual_width;
+                        $new_height = $actual_height;
+                    }
+
+                    // Add width and height attributes
+                    return '<img' . $attributes . ' width="' . $new_width . '" height="' . $new_height . '">';
+                } else {
+                    // Fallback: set a reasonable max-width style if we can't get dimensions
+                    // Check if there's an existing style attribute
+                    if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $attributes, $style_match)) {
+                        $existing_style = rtrim($style_match[1], ';');
+                        $new_style = $existing_style . '; max-width: 100%; height: auto;';
+                        $attributes = preg_replace('/style\s*=\s*["\'][^"\']*["\']/', 'style="' . $new_style . '"', $attributes);
+                    } else {
+                        $attributes .= ' style="max-width: 100%; height: auto;"';
+                    }
+                    return '<img' . $attributes . '>';
+                }
+            }
+
+            // If no src found, return unchanged
+            return $matches[0];
+        },
+        $content
+    );
+}
+
+// Convert before/after image sliders to PDF-friendly static images
+function convert_beforeafter_sliders_for_pdf($content)
+{
+    // 1. Remove the standalone <style> block containing beforeafter/slider styles
+    $content = preg_replace(
+        '/<style>[^<]*\.beforeafter[^<]*<\/style>/is',
+        '',
+        $content
+    );
+
+    // 2. Remove the <script> block for slider functionality
+    $content = preg_replace(
+        '/<script>[^<]*container\.style\.setProperty[^<]*<\/script>/is',
+        '',
+        $content
+    );
+
+    // 3. Convert each beforeafter div to simple stacked figures
+    // Use recursive regex pattern to handle nested divs properly
+    $content = preg_replace_callback(
+        '/<div class="beforeafter">((?:[^<]++|<(?!div\b|\/div>)[^>]*+>|<div[^>]*+>(?1)<\/div>)*+)<\/div>/is',
+        function ($matches) {
+            $block = $matches[1];
+
+            // Extract image sources - look for both image-before and image-after
+            $images = [];
+            if (preg_match('/<img[^>]*class="image-before[^"]*"[^>]*src="([^"]+)"[^>]*>/i', $block, $m)) {
+                // Convert http to https to avoid redirect issues
+                $images[] = preg_replace('/^http:\/\//', 'https://', $m[1]);
+            }
+            if (preg_match('/<img[^>]*class="image-after[^"]*"[^>]*src="([^"]+)"[^>]*>/i', $block, $m)) {
+                // Convert http to https to avoid redirect issues
+                $images[] = preg_replace('/^http:\/\//', 'https://', $m[1]);
+            }
+
+            // Extract captions from the <p><strong>Figure X.</strong>...</p> elements
+            $captions = [];
+            if (preg_match_all('/<p><strong>(Figure \d+\.)<\/strong>\s*(.*?)<\/p>/i', $block, $cap_matches, PREG_SET_ORDER)) {
+                foreach ($cap_matches as $cap) {
+                    $captions[] = '<strong>' . $cap[1] . '</strong> ' . trim($cap[2]);
+                }
+            }
+
+            if (count($images) < 2) {
+                return $matches[0]; // Return unchanged if we can't find both images
+            }
+
+            // Build simple PDF-friendly output
+            $output = '<div style="margin: 20px 0;">';
+
+            // First image with caption
+            $output .= '<figure style="margin: 0 0 15px 0; text-align: center;">';
+            $output .= '<img src="' . $images[0] . '" style="max-width: 100%; height: auto;" />';
+            if (isset($captions[0])) {
+                $output .= '<figcaption style="font-size: 12px; margin-top: 5px; text-align: left;">' . $captions[0] . '</figcaption>';
+            }
+            $output .= '</figure>';
+
+            // Second image with caption
+            $output .= '<figure style="margin: 0 0 15px 0; text-align: center;">';
+            $output .= '<img src="' . $images[1] . '" style="max-width: 100%; height: auto;" />';
+            if (isset($captions[1])) {
+                $output .= '<figcaption style="font-size: 12px; margin-top: 5px; text-align: left;">' . $captions[1] . '</figcaption>';
+            }
+            $output .= '</figure>';
+
+            $output .= '</div>';
+
+            return $output;
+        },
+        $content
+    );
+
+    return $content;
+}
+
+// Convert wp-block-cover blocks to simple images for PDF
+function convert_cover_blocks_for_pdf($content)
+{
+    // Match wp-block-cover divs and extract the background image
+    $content = preg_replace_callback(
+        '/<div[^>]*class="[^"]*wp-block-cover[^"]*"[^>]*>((?:[^<]++|<(?!div\b|\/div>)[^>]*+>|<div[^>]*+>(?1)<\/div>)*+)<\/div>/is',
+        function ($matches) {
+            $block = $matches[1];
+
+            // Extract the cover image
+            if (preg_match('/<img[^>]*class="[^"]*wp-block-cover__image-background[^"]*"[^>]*>/i', $block, $img_match)) {
+                $img_tag = $img_match[0];
+
+                // Extract src and alt
+                $src = '';
+                $alt = '';
+                if (preg_match('/src="([^"]+)"/i', $img_tag, $src_match)) {
+                    $src = preg_replace('/^http:\/\//', 'https://', $src_match[1]);
+                }
+                if (preg_match('/alt="([^"]*)"/i', $img_tag, $alt_match)) {
+                    $alt = $alt_match[1];
+                }
+
+                if (!empty($src)) {
+                    // Return a simple image tag
+                    return '<img src="' . $src . '" alt="' . $alt . '" style="max-width: 100%; height: auto;" />';
+                }
+            }
+
+            // If no image found, return empty (remove the cover block)
+            return '';
+        },
+        $content
+    );
+
+    return $content;
+}
+
+// Calculate appropriate title font size based on length
+function calculate_title_font_size($title, $has_subtitle = false)
+{
+    $length = mb_strlen($title);
+
+    // Base sizes and thresholds
+    $base_size = 32;
+    $min_size = 18;
+
+    // Adjust thresholds if there's a subtitle (titles with subtitles need smaller fonts sooner)
+    if ($has_subtitle) {
+        // With subtitle, start reducing earlier
+        if ($length <= 40) {
+            return $base_size;
+        } elseif ($length <= 60) {
+            return 28;
+        } elseif ($length <= 80) {
+            return 24;
+        } elseif ($length <= 100) {
+            return 22;
+        } elseif ($length <= 130) {
+            return 20;
+        } else {
+            return $min_size;
+        }
+    } else {
+        // Without subtitle, we have more room
+        if ($length <= 50) {
+            return $base_size;
+        } elseif ($length <= 70) {
+            return 28;
+        } elseif ($length <= 90) {
+            return 24;
+        } elseif ($length <= 120) {
+            return 22;
+        } elseif ($length <= 150) {
+            return 20;
+        } else {
+            return $min_size;
+        }
+    }
+}
+
 // Enhanced table and content processing for mPDF
 function process_content_for_mpdf($content)
 {
-    // 1. IMAGE HANDLING
+    // 0. CONVERT BEFORE/AFTER SLIDERS TO STATIC IMAGES (must be first)
+    $content = convert_beforeafter_sliders_for_pdf($content);
+
+    // 0.25. CONVERT WP-BLOCK-COVER TO SIMPLE IMAGES
+    $content = convert_cover_blocks_for_pdf($content);
+
+    // 0.5. CONVERT HTTP TO HTTPS FOR ALL IMAGES (mPDF doesn't follow redirects)
+    $content = preg_replace(
+        '/<img([^>]*?)src=["\']http:\/\//i',
+        '<img$1src="https://',
+        $content
+    );
+
+    // 1. ENSURE ALL IMAGES HAVE DIMENSIONS
+    $content = ensure_image_dimensions($content);
+
+    // 2. IMAGE HANDLING
     // This logic intelligently identifies legacy image containers
     $content = preg_replace_callback(
         '/<div class="(left|right|center|alignleft|alignright|aligncenter)" style="width: (\d+)px;">.*?(<img[^>]+>)(.*?)<\/div>/is',
@@ -152,6 +330,40 @@ function process_content_for_mpdf($content)
         }
     }, $content);
 
+    // 2.5 CONVERT TABLE FIGCAPTIONS TO PROPER CAPTIONS
+    // WordPress/Gutenberg outputs figcaption for table captions - convert for accessibility
+    $content = preg_replace_callback(
+        '/<figure[^>]*class="[^"]*wp-block-table[^"]*"[^>]*>(.*?)<\/figure>/is',
+        function ($matches) {
+            $figure_content = $matches[1];
+
+            // Extract figcaption content if present
+            if (preg_match('/<figcaption[^>]*>(.*?)<\/figcaption>/is', $figure_content, $caption_match)) {
+                $caption_text = $caption_match[1];
+
+                // Remove figcaption from content
+                $figure_content = preg_replace('/<figcaption[^>]*>.*?<\/figcaption>/is', '', $figure_content);
+
+                // Insert caption inside the table, right after opening tag
+                $figure_content = preg_replace(
+                    '/(<table[^>]*>)/i',
+                    '$1<caption>' . $caption_text . '</caption>',
+                    $figure_content
+                );
+            }
+
+            return $figure_content; // Return without the figure wrapper
+        },
+        $content
+    );
+
+    // Force tradegothic on captions via inline style (debug test)
+    $content = preg_replace(
+        '/<caption>/i',
+        '<caption style="font-family: tradegothic, sans-serif;">',
+        $content
+    );
+
     // 3. MATHML → Styled span (mPDF ignores MathML tags but renders text)
     $content = preg_replace_callback(
         '/<math[^>]*>(.*?)<\/math>/is',
@@ -165,6 +377,16 @@ function process_content_for_mpdf($content)
         $content
     );
 
+    // Remove the beforeafter slider styles that conflict with PDF rendering
+    $content = preg_replace(
+        '/<style>\s*img\s*\{\s*display:\s*block;[^<]*\.beforeafter[^<]*<\/style>/is',
+        '',
+        $content
+    );
+
+    // Remove range slider inputs (image comparison blocks, etc.)
+    $content = preg_replace('/<input[^>]*type=["\']range["\'][^>]*\/?>/i', '', $content);
+
     return $content;
 }
 
@@ -173,7 +395,7 @@ function get_mpdf_styles()
 {
     // Increased font sizes for cover page elements and added image alignment styles.
     $styles = '
-        body { font-family: "georgia", serif; font-size: 16px; line-height: 1.6; color: #000; }
+        body { font-family: "georgia", serif; font-size: 16px; line-height: 1.4; color: #000; }
         
         h1, h2, h3, h4, h5, h6 { font-family: "georgia", serif; color: #000; }
         h1 { font-size: 24px; font-weight: bold; margin: 24px 0 12px 0; }
@@ -187,6 +409,7 @@ function get_mpdf_styles()
         table.content-table, table.content-table th, table.content-table td { font-family: "tradegothic", sans-serif; line-height: 1.1; padding: 8px; }
         table th, table td { border: 1px solid #ddd; padding:8px; text-align: left; font-size: 12px; }
         table th { background-color: #f2f2f2; font-weight: bold; font-size: 16px; }
+        table caption, table figcaption { font-family: "tradegothic", sans-serif; text-align: center; font-size: 16px; margin-bottom: 8px; font-weight: 300; }
 
         /* UPDATED MATH STYLES */
         /* Target the parent container, the class, and specific MathML children */
@@ -315,7 +538,8 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Gather all the data (same as TCPDF version)
         $publication_title = $post->post_title;
         $subtitle = get_post_meta($post_id, 'subtitle', true);
-        if (!empty($subtitle)) {
+        $has_subtitle = !empty($subtitle);
+        if ($has_subtitle) {
             $publication_title .= ': ' . $subtitle;
         }
         $publication_number = get_field('publication_number', $post_id);
@@ -420,16 +644,6 @@ function generate_publication_pdf_file_mpdf($post_id)
             $formatted_keywords = 'Expert Resource';
         }
 
-        // Get featured image
-        $featured_image_url = '';
-        if (has_post_thumbnail($post_id)) {
-            $featured_image_id = get_post_thumbnail_id($post_id);
-            $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
-            if ($featured_image_array) {
-                $featured_image_url = $featured_image_array[0];
-            }
-        }
-
         $latest_published_info = get_latest_published_date($post_id);
         $latest_published_date = $latest_published_info['date'];
 
@@ -505,13 +719,36 @@ function generate_publication_pdf_file_mpdf($post_id)
         $mpdf->SetHTMLHeader('');
         $mpdf->SetHTMLFooter('');
 
-        // Simple HTML approach that works with mPDF
+        // Get featured image
+        $featured_image_url = '';
+        $featured_image_dimensions = null;
+        if (has_post_thumbnail($post_id)) {
+            $featured_image_id = get_post_thumbnail_id($post_id);
+            $featured_image_array = wp_get_attachment_image_src($featured_image_id, 'large');
+            if ($featured_image_array) {
+                $featured_image_url = $featured_image_array[0];
+                // Store width and height from WordPress
+                $featured_image_dimensions = [
+                    'width' => $featured_image_array[1],
+                    'height' => $featured_image_array[2]
+                ];
+            }
+        }
+
+        // Build featured image on cover page, if it exists
         if (!empty($featured_image_url)) {
+            // 1. Define Page Width (Letter is 8.5 inches)
+            // We use the full width because the CSS (left: -15mm, right: -15mm) pulls it to the edges.
+            $page_width_mm = 215.9; // 8.5 * 25.4
+
+            // 2. Calculate Height based on Aspect Ratio
+            $container_height_mm = $page_width_mm * (2 / 3);
+
             $cover_html = '
-            <div style="text-align: center; margin: 0 -15mm;">
-                <img src="' . $featured_image_url . '" style="width: 100%; height: auto; max-width: none; margin-top: -15mm;">
-            </div>
-            <div style="margin-top: 15mm;">';
+    <div style="position: absolute; top: 0; left: -15mm; right: -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
+        <img src="' . $featured_image_url . '" style="width: 100%; height: auto;">
+    </div>
+    <div style="margin-top: 0mm;">';
         } else {
             $cover_html = '<div style="margin-top: 30px;">';
         }
@@ -519,11 +756,12 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Extension logo
         $extension_logo_path = get_template_directory() . '/assets/images/Extension_logo_Formal_FC.png';
         if (file_exists($extension_logo_path)) {
-            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px;">';
+            $cover_html .= '<img src="' . $extension_logo_path . '" style="width: 30%; height: auto; margin-bottom: 10px; margin-top:' . $container_height_mm . 'mm">';
         }
 
-        // Title
-        $cover_html .= '<h1 style="font-size: 32px; font-weight: bold; margin: 20px 0 20px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
+        // Title with dynamic font size
+        $title_font_size = calculate_title_font_size($publication_title, $has_subtitle);
+        $cover_html .= '<h1 style="font-size: ' . $title_font_size . 'px; font-weight: bold; margin: 20px 0 20px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
 
         // Authors
         if (!empty($author_lines)) {
@@ -543,11 +781,6 @@ function generate_publication_pdf_file_mpdf($post_id)
         }
 
         $cover_html .= '</div>';
-
-        // Close the additional div for the featured image case
-        if (!empty($featured_image_url)) {
-            $cover_html .= '</div>';
-        }
 
         // error_log("mPDF DEBUG: Cover HTML built, writing to PDF");
         $mpdf->WriteHTML($cover_html);
@@ -576,9 +809,7 @@ function generate_publication_pdf_file_mpdf($post_id)
         // Add spacing at the end of content to prevent footer overlap
         $processed_content .= '<div class="footer-spacer"></div>';
 
-        // error_log("mPDF DEBUG: Content processed, writing to PDF");
         $mpdf->WriteHTML($processed_content);
-        // error_log("mPDF DEBUG: Main content written successfully");
 
         // LAST PAGE - Add special footer
         // Force a new page for the special footer

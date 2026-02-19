@@ -37,10 +37,16 @@ a.caes-hub-to-top {
         visibility: visible;
         transform: translateY(-50px);
     }
-    
+
     &.caes-hub-to-top-hide {
         opacity: 0;
         transform: translateY(0);
+    }
+
+    &.caes-hub-to-top-caption-hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
     }
 }
 

@@ -137,3 +137,7 @@ wp.blocks.registerBlockStyle('caes-hub/primary-topic', {
   name: 'caes-hub-merriweather-sans-uppercase',
   label: 'Merriweather Sans Uppercase'
 });
+wp.blocks.registerBlockStyle('caes-hub/relevanssi-search', {
+  name: 'caes-hub-relevanssi-menu-search',
+  label: 'Menu Search'
+});

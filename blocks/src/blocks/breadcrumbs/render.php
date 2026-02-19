@@ -100,7 +100,7 @@ function caes_hub_get_singular_breadcrumbs($start_position) {
             $news_topics_page = get_page_by_path('news/topics');
             if ($news_topics_page) {
                 $breadcrumbs[] = array(
-                    'title' => get_the_title($news_topics_page->ID),
+                    'title' => 'Topics',
                     'url' => get_permalink($news_topics_page->ID),
                     'position' => $position++
                 );
@@ -115,7 +115,7 @@ function caes_hub_get_singular_breadcrumbs($start_position) {
             $primary_topic = $primary_topics[0]; // Use first topic for breadcrumb
             $breadcrumbs[] = array(
                 'title' => $primary_topic->name,
-                'url' => get_term_link($primary_topic),
+                'url' => home_url('/news/topic/' . $primary_topic->slug . '/'),
                 'position' => $position++
             );
         }
@@ -144,7 +144,7 @@ function caes_hub_get_singular_breadcrumbs($start_position) {
             $publications_topics_page = get_page_by_path('publications/topics');
             if ($publications_topics_page) {
                 $breadcrumbs[] = array(
-                    'title' => get_the_title($publications_topics_page->ID),
+                    'title' => 'Topics',
                     'url' => get_permalink($publications_topics_page->ID),
                     'position' => $position++
                 );
@@ -159,7 +159,7 @@ function caes_hub_get_singular_breadcrumbs($start_position) {
             $primary_topic = $primary_topics[0]; // Use first topic for breadcrumb
             $breadcrumbs[] = array(
                 'title' => $primary_topic->name,
-                'url' => get_term_link($primary_topic),
+                'url' => home_url('/publications/topic/' . $primary_topic->slug . '/'),
                 'position' => $position++
             );
         }
@@ -289,7 +289,7 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
         $topics_page = get_page_by_path('publications/topics');
         if ($topics_page) {
             $breadcrumbs[] = array(
-                'title' => get_the_title($topics_page->ID),
+                'title' => 'Topics',
                 'url' => get_permalink($topics_page->ID),
                 'position' => $position++
             );
@@ -326,37 +326,80 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
         return $breadcrumbs;
     }
 
-    // Special handling for topics taxonomy (for posts/news)
+    // Special handling for topics taxonomy (shared between posts and publications)
     if ($term->taxonomy === 'topics') {
-        // Add News page
-        $news_page = get_page_by_path('news');
-        if ($news_page) {
-            $breadcrumbs[] = array(
-                'title' => get_the_title($news_page->ID),
-                'url' => get_permalink($news_page->ID),
-                'position' => $position++
-            );
-        } else {
-            $breadcrumbs[] = array(
-                'title' => 'News',
-                'url' => home_url('/news/'),
-                'position' => $position++
-            );
-        }
+        // Determine context from post_type query var
+        $post_type = get_query_var('post_type');
+        
+        if ($post_type === 'publications') {
+            // Publications context
+            $publications_page = get_page_by_path('publications');
+            if ($publications_page) {
+                $breadcrumbs[] = array(
+                    'title' => get_the_title($publications_page->ID),
+                    'url' => get_permalink($publications_page->ID),
+                    'position' => $position++
+                );
+            } else {
+                $breadcrumbs[] = array(
+                    'title' => 'Expert Resources',
+                    'url' => home_url('/publications/'),
+                    'position' => $position++
+                );
+            }
 
-        $topics_page = get_page_by_path('news/topics');
-        if ($topics_page) {
-            $breadcrumbs[] = array(
-                'title' => get_the_title($topics_page->ID),
-                'url' => get_permalink($topics_page->ID),
-                'position' => $position++
-            );
+            $topics_page = get_page_by_path('publications/topics');
+            if ($topics_page) {
+                $breadcrumbs[] = array(
+                    'title' => 'Topics',
+                    'url' => get_permalink($topics_page->ID),
+                    'position' => $position++
+                );
+            } else {
+                $breadcrumbs[] = array(
+                    'title' => 'Topics',
+                    'url' => home_url('/publications/topics/'),
+                    'position' => $position++
+                );
+            }
+            
+            // Base URL for topic links in publications context
+            $topic_base_url = '/publications/topic/';
+            
         } else {
-            $breadcrumbs[] = array(
-                'title' => 'Topics',
-                'url' => home_url('/news/topics/'),
-                'position' => $position++
-            );
+            // Default to News/Stories context (post type 'post' or unspecified)
+            $news_page = get_page_by_path('news');
+            if ($news_page) {
+                $breadcrumbs[] = array(
+                    'title' => get_the_title($news_page->ID),
+                    'url' => get_permalink($news_page->ID),
+                    'position' => $position++
+                );
+            } else {
+                $breadcrumbs[] = array(
+                    'title' => 'News',
+                    'url' => home_url('/news/'),
+                    'position' => $position++
+                );
+            }
+
+            $topics_page = get_page_by_path('news/topics');
+            if ($topics_page) {
+                $breadcrumbs[] = array(
+                    'title' => 'Topics',
+                    'url' => get_permalink($topics_page->ID),
+                    'position' => $position++
+                );
+            } else {
+                $breadcrumbs[] = array(
+                    'title' => 'Topics',
+                    'url' => home_url('/news/topics/'),
+                    'position' => $position++
+                );
+            }
+            
+            // Base URL for topic links in news context
+            $topic_base_url = '/news/topic/';
         }
         
         // Handle term hierarchy for topics
@@ -368,7 +411,7 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
                 $ancestor = get_term($ancestor_id, $term->taxonomy);
                 $breadcrumbs[] = array(
                     'title' => $ancestor->name,
-                    'url' => get_term_link($ancestor),
+                    'url' => home_url($topic_base_url . $ancestor->slug . '/'),
                     'position' => $position++
                 );
             }
@@ -500,7 +543,7 @@ function caes_hub_get_date_breadcrumbs($start_position) {
 }
 
 // Generate breadcrumb items
-$cache_key = 'caes_hub_breadcrumbs_' . get_queried_object_id() . '_' . serialize($attributes);
+$cache_key = 'caes_hub_breadcrumbs_' . get_queried_object_id() . '_' . get_query_var('post_type', 'default') . '_' . serialize($attributes);
 $breadcrumb_items = wp_cache_get($cache_key);
 
 if (false === $breadcrumb_items) {

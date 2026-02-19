@@ -1,6 +1,17 @@
 // Table styling fixes
 .wp-block-table {
 
+    table caption {
+        background-color: var(--wp--preset--color--base-two);
+        font-size: 1.2rem;
+        font-weight: 300;
+        padding: 1rem var(--wp--preset--spacing--40) .6rem;
+
+        &.caption-bottom {
+            caption-side: bottom;
+        }
+    }
+
     // .responsitable-wrapper {
     td {
         vertical-align: baseline;
@@ -11,6 +22,7 @@
 .wp-block-table {
     // .responsitable-wrapper {
     max-width: 100%;
+    min-width: 300px;
     overflow-y: auto;
 
     table {

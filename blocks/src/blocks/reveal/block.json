@@ -1,0 +1,77 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/reveal",
+	"version": "0.2.0",
+	"title": "Reveal",
+	"category": "media",
+	"icon": "cover-image",
+	"description": "Full-window fixed background that transitions between frames as the user scrolls through content.",
+	"keywords": [
+		"reveal",
+		"scroll",
+		"parallax",
+		"immersive",
+		"background",
+		"storytelling"
+	],
+	"textdomain": "caes-reveal",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "full"
+		},
+		"frames": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"overlayColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"overlayOpacity": {
+			"type": "number",
+			"default": 30
+		},
+		"minHeight": {
+			"type": "string",
+			"default": "100vh"
+		},
+		"scrollSpeed": {
+			"type": "string",
+			"default": "normal",
+			"enum": [
+				"slow",
+				"normal",
+				"fast"
+			]
+		}
+	},
+	"supports": {
+		"align": [
+			"full",
+			"wide"
+		],
+		"html": false,
+		"color": {
+			"text": true,
+			"background": false
+		},
+		"spacing": {
+			"padding": true
+		}
+	},
+	"providesContext": {
+		"caes-hub/reveal-frames": "frames",
+		"caes-hub/reveal-overlayColor": "overlayColor",
+		"caes-hub/reveal-overlayOpacity": "overlayOpacity"
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js"
+}

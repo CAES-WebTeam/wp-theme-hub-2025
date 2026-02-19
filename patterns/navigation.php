@@ -139,7 +139,7 @@
 
 <!-- wp:caes-hub/field-report-nav-item {"linkText":"Expert Resources","linkUrl":"/publications","hasFlyout":true,"flyoutId":"field-report-nav-1f42c7d7-51ef-4dfe-bd9f-08e07a810db4-flyout-5fa4ede8-35a6-45e1-a326-d59ace785b0f"} -->
 <!-- wp:caes-hub/field-report-nav-flyout {"style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|50","right":"var:preset|spacing|50"}},"color":{"background":"#f4f1ef"}}} -->
-<!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|70"}},"layout":{"type":"constrained"}} -->
+<!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|50"}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:group {"layout":{"type":"constrained"}} -->
 <div class="wp-block-group"><!-- wp:heading {"level":3,"className":"is-style-default","style":{"typography":{"textTransform":"uppercase","fontStyle":"normal","fontWeight":"500"},"spacing":{"margin":{"top":"var:preset|spacing|30","bottom":"var:preset|spacing|40"}}},"fontSize":"medium","fontFamily":"oswald"} -->
 <h3 class="wp-block-heading is-style-default has-oswald-font-family has-medium-font-size" style="margin-top:var(--wp--preset--spacing--30);margin-bottom:var(--wp--preset--spacing--40);font-style:normal;font-weight:500;text-transform:uppercase">Expert Resources</h3>
@@ -148,6 +148,14 @@
 <!-- wp:separator {"className":"is-style-caes-hub-contrast-underline-thick","style":{"spacing":{"margin":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|50"}}},"backgroundColor":"contrast"} -->
 <hr class="wp-block-separator has-text-color has-contrast-color has-alpha-channel-opacity has-contrast-background-color has-background is-style-caes-hub-contrast-underline-thick" style="margin-top:var(--wp--preset--spacing--20);margin-bottom:var(--wp--preset--spacing--50)"/>
 <!-- /wp:separator -->
+
+<!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|50"}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group"><!-- wp:caes-hub/relevanssi-search {"showHeading":false,"hideSubmitButton":true,"placeholderText":"Find trusted advice from our experts...","resultsPageUrl":"/publications/search/","className":"is-style-caes-hub-relevanssi-menu-search"} /-->
+
+<!-- wp:group {"style":{"spacing":{"blockGap":"var:preset|spacing|30"}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group"><!-- wp:paragraph {"style":{"typography":{"fontSize":"1rem"}}} -->
+<p style="font-size:1rem">From farms and gardens to families and finances, our expert resources empower Georgians with trustworthy, practical science. </p>
+<!-- /wp:paragraph -->
 
 <!-- wp:buttons {"style":{"spacing":{"blockGap":{"left":"var:preset|spacing|20"}}}} -->
 <div class="wp-block-buttons"><!-- wp:button {"backgroundColor":"base","style":{"spacing":{"padding":{"left":"var:preset|spacing|30","right":"var:preset|spacing|30","top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"typography":{"fontSize":"1rem"}}} -->
@@ -183,15 +191,15 @@
 <!-- /wp:button -->
 
 <!-- wp:button {"backgroundColor":"base","style":{"spacing":{"padding":{"left":"var:preset|spacing|30","right":"var:preset|spacing|30","top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"typography":{"fontSize":"1rem"}}} -->
-<div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/health-and-family/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Health, family and finances</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/nutrition-health-and-family/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Health, family and finances</a></div>
 <!-- /wp:button -->
 
 <!-- wp:button {"backgroundColor":"base","style":{"spacing":{"padding":{"left":"var:preset|spacing|30","right":"var:preset|spacing|30","top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"typography":{"fontSize":"1rem"}}} -->
-<div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/nutrition/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Nutrition</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/nutrition-health-and-family/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Nutrition</a></div>
 <!-- /wp:button -->
 
 <!-- wp:button {"backgroundColor":"base","style":{"spacing":{"padding":{"left":"var:preset|spacing|30","right":"var:preset|spacing|30","top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"typography":{"fontSize":"1rem"}}} -->
-<div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/water-quality/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Water quality</a></div>
+<div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/water/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Water quality</a></div>
 <!-- /wp:button -->
 
 <!-- wp:button {"backgroundColor":"base","style":{"spacing":{"padding":{"left":"var:preset|spacing|30","right":"var:preset|spacing|30","top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"typography":{"fontSize":"1rem"}}} -->
@@ -201,13 +209,15 @@
 <!-- wp:button {"backgroundColor":"base","style":{"spacing":{"padding":{"left":"var:preset|spacing|30","right":"var:preset|spacing|30","top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"}},"typography":{"fontSize":"1rem"}}} -->
 <div class="wp-block-button"><a class="wp-block-button__link has-base-background-color has-background has-custom-font-size wp-element-button" href="/publications/topic/turfgrass/" style="padding-top:var(--wp--preset--spacing--20);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--20);padding-left:var(--wp--preset--spacing--30);font-size:1rem">Turfgrass</a></div>
 <!-- /wp:button --></div>
-<!-- /wp:buttons -->
+<!-- /wp:buttons --></div>
+<!-- /wp:group -->
 
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button {"className":"is-style-caes-hub-arrow","style":{"spacing":{"padding":{"left":"0","right":"0"}}}} -->
 <div class="wp-block-button is-style-caes-hub-arrow"><a class="wp-block-button__link wp-element-button" href="/publications/topics/" style="padding-right:0;padding-left:0">View all topics</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons --></div>
+<!-- /wp:group --></div>
 <!-- /wp:group -->
 
 <!-- wp:group {"layout":{"type":"constrained"}} -->

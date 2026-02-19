@@ -103,13 +103,13 @@
         max-width: 500px;
         z-index: 9998;
         background-color: var(--wp--preset--color--base);
-        height: 100vh;
-        overflow: hidden;
+        height: 100%;
 
         .flyout-content {
-            height: calc(100vh - (var(--wp--preset--spacing--60) * 2));
-            overflow-y: auto;
+            height: calc(100% - (var(--wp--preset--spacing--60) * 2));
+            overflow-y: scroll;
             box-sizing: border-box;
+            padding-right: 1rem;
         }
     }
 
@@ -153,11 +153,6 @@
             box-shadow: none;
             border: none;
             background: rgba(0, 0, 0, 0.02);
-            overflow: auto;
-            .flyout-content {
-                height: auto;
-                overflow-y: auto;
-            }
         }
     }
 }
@@ -174,5 +169,15 @@
 @media screen and (min-width: 782px) {
     body.logged-in .wp-block-caes-hub-field-report-navigation .nav-flyout {
         top: var(--wp-admin--admin-bar--height);
+    }
+}
+
+// Print view
+
+@media print {
+
+    .wp-block-caes-hub-field-report-navigation,
+    .wp-block-caes-hub-field-report-nav-flyout {
+        display: none;
     }
 }

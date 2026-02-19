@@ -284,7 +284,6 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
                 }
             }
         }
-
     }
 
     $pub_id = get_field('publication_id', $post_id);
@@ -977,7 +976,8 @@ function update_flat_author_ids_meta($post_id)
  * This version reads directly from the $_POST data to get the incoming values
  * before they are saved to the database, making it reliable and portable.
  */
-function update_latest_revision_date_on_save($post_id) {
+function update_latest_revision_date_on_save($post_id)
+{
     // Only run for our post type and not on autosaves
     if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
         return;
@@ -1036,7 +1036,8 @@ add_action('acf/save_post', 'update_latest_revision_date_on_save', 20);
 /**
  * When a publication is saved, calculate and store the latest "Published" date.
  */
-function update_latest_publish_date_on_save($post_id) {
+function update_latest_publish_date_on_save($post_id)
+{
     // Only run for publications and not on autosaves
     if (get_post_type($post_id) !== 'publications' || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
         return;
@@ -1094,18 +1095,19 @@ add_action('acf/save_post', 'update_latest_publish_date_on_save', 20);
  *
  * @param WP_Query $query The main WP_Query object.
  */
-function custom_sort_publication_series_archives( $query ) {
+function custom_sort_publication_series_archives($query)
+{
     // Run only on the front-end, for the main query, on a publication series archive.
-    if ( ! is_admin() && $query->is_main_query() && $query->is_tax('publication_series') ) {
+    if (! is_admin() && $query->is_main_query() && $query->is_tax('publication_series')) {
 
         // Set the meta key to ensure the postmeta table is joined correctly.
         $query->set('meta_key', 'publication_number');
 
         // Add our temporary filter to modify the SQL's ORDER BY clause.
-        add_filter( 'posts_orderby', 'custom_series_alphanumeric_orderby', 10, 2 );
+        add_filter('posts_orderby', 'custom_series_alphanumeric_orderby', 10, 2);
     }
 }
-add_action( 'pre_get_posts', 'custom_sort_publication_series_archives' );
+add_action('pre_get_posts', 'custom_sort_publication_series_archives');
 
 /**
  * Helper function to apply the custom alphanumeric SQL sorting logic.
@@ -1120,11 +1122,12 @@ add_action( 'pre_get_posts', 'custom_sort_publication_series_archives' );
  * @param WP_Query $query   The WP_Query object (unused, but required by the filter).
  * @return string The modified ORDER BY clause.
  */
-function custom_series_alphanumeric_orderby( $orderby, $query ) {
+function custom_series_alphanumeric_orderby($orderby, $query)
+{
     global $wpdb;
 
     // Remove this filter immediately so it doesn't affect other queries.
-    remove_filter( current_filter(), __FUNCTION__, 10 );
+    remove_filter(current_filter(), __FUNCTION__, 10);
 
     // 1. Sort by the alphabetical prefix (e.g., 'C', 'SB').
     $prefix_sort = "SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, ' ', 1)";
@@ -1153,7 +1156,8 @@ function custom_series_alphanumeric_orderby( $orderby, $query ) {
  * @return array|WP_Error The filtered list of terms.
  */
 
-function caes_hub_exclude_department_topics_from_publications($terms, $post_id, $taxonomy) {
+function caes_hub_exclude_department_topics_from_publications($terms, $post_id, $taxonomy)
+{
     // Bail out early if it's not the right context.
     if (!is_singular('publications') || $taxonomy !== 'topics' || is_admin()) {
         return $terms;
@@ -1164,30 +1168,30 @@ function caes_hub_exclude_department_topics_from_publications($terms, $post_id, 
 
     // Only run the database queries if our static variable hasn't been populated yet.
     if ($exclude_ids === null) {
-        $exclude_ids = []; 
-        
+        $exclude_ids = [];
+
         // Terms to exclude (parent terms)
         $terms_to_exclude = ['Departments', 'Departments and Units'];
-        
+
         foreach ($terms_to_exclude as $term_name) {
             $department_term = get_term_by('name', $term_name, 'topics');
-            
+
             if ($department_term) {
                 $exclude_ids[] = $department_term->term_id;
                 $child_term_ids = get_term_children($department_term->term_id, 'topics');
-                
+
                 if (!is_wp_error($child_term_ids) && !empty($child_term_ids)) {
                     $exclude_ids = array_merge($exclude_ids, $child_term_ids);
                 }
             }
         }
     }
-    
+
     // If there are no IDs to exclude or no terms to filter, return early.
     if (empty($exclude_ids) || is_wp_error($terms) || empty($terms)) {
         return $terms;
     }
-    
+
     // Filter the terms using our cached list of IDs.
     return array_filter($terms, function ($term) use ($exclude_ids) {
         return !in_array($term->term_id, $exclude_ids);
@@ -1199,28 +1203,29 @@ add_filter('get_the_terms', 'caes_hub_exclude_department_topics_from_publication
  * Add page number to the Title block for paginated publications
  * Adds the page number inside the subtitle if one exists
  */
-function caes_add_page_number_to_title_block($block_content, $block) {
+function caes_add_page_number_to_title_block($block_content, $block)
+{
     // Only process core/post-title blocks
     if ($block['blockName'] !== 'core/post-title') {
         return $block_content;
     }
-    
+
     // Only run on publications
     if (!is_singular('publications')) {
         return $block_content;
     }
-    
+
     // Get the current page number and ensure it's a positive integer
     $page = absint(get_query_var('page'));
-    
+
     // Only modify if we're on page 2 or higher
     if ($page < 2) {
         return $block_content;
     }
-    
+
     // Page number text to insert
     $page_number = ' - Page ' . absint($page);
-    
+
     // Check if there's a subtitle element inside the heading
     if (preg_match('/<h[1-6][^>]*>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is', $block_content, $matches)) {
         // Title has a subtitle element - add page number inside the subtitle
@@ -1229,10 +1234,10 @@ function caes_add_page_number_to_title_block($block_content, $block) {
         $subtitle_text = $matches[3];
         $subtitle_close = $matches[4];
         $after_subtitle = $matches[5];
-        
+
         // Insert page number at the end of the subtitle text
         $new_subtitle_text = $subtitle_text . $page_number;
-        
+
         $block_content = preg_replace(
             '/<h([1-6][^>]*)>(.*?)(<[^>]+>)(.*?)(<\/[^>]+>)(.*?)<\/h[1-6]>/is',
             '<h$1>' . $before_subtitle . $subtitle_open . $new_subtitle_text . $subtitle_close . $after_subtitle . '</h$1>',
@@ -1248,7 +1253,311 @@ function caes_add_page_number_to_title_block($block_content, $block) {
             1
         );
     }
-    
+
     return $block_content;
 }
 add_filter('render_block', 'caes_add_page_number_to_title_block', 10, 2);
+
+/**
+ * Add print CSS with dynamic footer for publications
+ */
+
+function normalize_hyphens_for_pdf($content)
+{
+    $replacements = [
+        "\u{2010}" => '-', // Hyphen
+        "\u{2013}" => '-', // En Dash (replaces 'ÃƒÂ¢Ã¢â€šÂ¬')
+        "\u{2014}" => '-', // Em Dash (replaces 'ÃƒÆ'Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬')
+    ];
+    $content = str_replace(array_keys($replacements), array_values($replacements), $content);
+    return $content;
+}
+
+function format_publication_number_for_display($publication_number)
+{
+    $originalPubNumber = $publication_number;
+    $displayPubNumber = $originalPubNumber;
+    $pubType = '';
+
+    if ($originalPubNumber) {
+        $prefix = strtoupper(substr($originalPubNumber, 0, 2));
+        $firstChar = strtoupper(substr($originalPubNumber, 0, 1));
+
+        switch ($prefix) {
+            case 'AP':
+                $pubType = 'Annual Publication';
+                $displayPubNumber = substr($originalPubNumber, 2);
+                break;
+            case 'TP':
+                $pubType = 'Temporary Publication';
+                $displayPubNumber = substr($originalPubNumber, 2);
+                break;
+            default:
+                switch ($firstChar) {
+                    case 'B':
+                        $pubType = 'Bulletin';
+                        $displayPubNumber = substr($originalPubNumber, 1);
+                        break;
+                    case 'C':
+                        $pubType = 'Circular';
+                        $displayPubNumber = substr($originalPubNumber, 1);
+                        break;
+                    default:
+                        $pubType = 'Publication';
+                        break;
+                }
+                break;
+        }
+    }
+
+    $displayPubNumber = trim($displayPubNumber);
+    $formatted_pub_number_string = '';
+    if (!empty($pubType) && !empty($displayPubNumber)) {
+        $formatted_pub_number_string = $pubType . ' ' . $displayPubNumber;
+    } elseif (!empty($displayPubNumber)) {
+        $formatted_pub_number_string = $displayPubNumber;
+    }
+
+    return $formatted_pub_number_string;
+}
+
+
+/**
+ * Add print support for publications
+ */
+/**
+ * Add print CSS for publications
+ */
+add_action('wp_head', function() {
+    if (!is_singular('publications')) {
+        return;
+    }
+
+    $post_id = get_the_ID();
+    $publication_number = get_field('publication_number', $post_id);
+    $publication_title = wp_strip_all_tags(get_the_title());
+    $subtitle = get_post_meta($post_id, 'subtitle', true);
+    
+    // Only append subtitle if it's not already in the title
+    if (!empty($subtitle) && strpos($publication_title, $subtitle) === false) {
+        $publication_title .= ': ' . $subtitle;
+    }
+
+    $formatted_pub_number = format_publication_number_for_display($publication_number);
+    $footer_text = 'UGA Cooperative Extension ' . esc_attr($formatted_pub_number) . ' | ' . esc_attr($publication_title);
+    ?>
+    <style>
+    /* @media print { */
+        @page {
+            size: 8.5in 11in;
+            margin: 0.5in 0.5in 0.75in 0.5in;
+
+            @bottom-left {
+                content: "<?php echo $footer_text; ?>";
+                font-size: 10px;
+                font-family: Georgia, serif;
+            }
+
+            @bottom-right {
+                content: counter(page);
+                font-size: 10px;
+                font-family: Georgia, serif;
+            }
+        }
+
+        @page :first {
+            @bottom-right { content: none; }
+            @bottom-left { content: none; }
+        }
+
+        .caes-hub-content-meta-wrap {
+            counter-reset: page;
+        }
+    /* } */
+    </style>
+    <?php
+});
+
+/**
+ * Add print-only LAST PAGE footer to publications
+ */
+
+add_filter('the_content', function ($content) {
+    if (!is_singular('publications') || is_admin()) {
+        return $content;
+    }
+
+    $post_id = get_the_ID();
+    $publication_number = get_field('publication_number', $post_id);
+    $formatted_pub_number = format_publication_number_for_display($publication_number);
+    $latest_published_info = get_latest_published_date($post_id);
+    $permalink = get_permalink($post_id);
+
+    $status_labels = [
+        2 => 'Published',
+        4 => 'Published with Minor Revisions',
+        5 => 'Published with Major Revisions',
+        6 => 'Published with Full Review',
+    ];
+
+    $publish_date_text = '';
+    if (!empty($latest_published_info['date']) && !empty($latest_published_info['status'])) {
+        $status_label = $status_labels[$latest_published_info['status']] ?? 'Published';
+        $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
+    }
+
+    $footer_html = '
+    <div class="print-last-page-footer" style="margin-block-start: 4rem !important">
+        <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($permalink) . '">' . esc_html($permalink) . '</a></p>
+        <div class="print-pub-meta">
+            <span class="print-pub-number">' . esc_html($formatted_pub_number) . '</span>
+            <span class="print-pub-date">' . esc_html($publish_date_text) . '</span>
+        </div>
+        <p class="print-disclaimer">Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia
+College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the
+counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information,
+national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em></p>
+    </div>';
+
+    return $content . $footer_html;
+}, 20);
+
+// ===================
+// PRINT VIEW: LOGO ABOVE & INFO BELOW TITLE
+// ===================
+add_filter('render_block', function ($block_content, $block) {
+    // 1. Target only the Core Post Title block
+    if ($block['blockName'] !== 'core/post-title') {
+        return $block_content;
+    }
+
+    // 2. Check context: Single Publication, Not Admin
+    if (is_admin() || !is_singular('publications')) {
+        return $block_content;
+    }
+
+    // 3. Prevent Duplication (run only once per page load)
+    static $print_mod_added = false;
+    if ($print_mod_added) {
+        return $block_content;
+    }
+    $print_mod_added = true;
+
+    $id = get_the_ID();
+
+    // --- A. PREPARE LOGO (ABOVE TITLE) ---
+    // Using the specific path you provided
+    $logo_url = '/wp-content/themes/wp-theme-hub-2025/assets/images/Extension_logo_Formal_FC.png';
+    
+    $logo_html = '<div class="print-header-logo print-only">';
+    $logo_html .= '<img src="' . esc_url($logo_url) . '" alt="University of Georgia Extension">';
+    $logo_html .= '</div>';
+
+
+    // --- B. PREPARE AUTHORS & INFO (BELOW TITLE) ---
+    $info_html = '';
+    $authors_html = '';
+    
+    // 1. Get Authors
+    if (have_rows('authors', $id)) {
+        while (have_rows('authors', $id)) {
+            the_row();
+            
+            // FIX: Initialize variables for each person to prevent data persistence
+            $name = '';
+            $author_title = '';
+            
+            // Check the type field to determine if this is a user or custom entry
+            $entry_type = get_sub_field('type');
+            
+            if ($entry_type === 'Custom') {
+                // Handle custom user entry
+                $custom_user = get_sub_field('custom_user');
+                if (empty($custom_user)) {
+                    $custom_user = get_sub_field('custom');
+                }
+                
+                if ($custom_user) {
+                    $first_name = sanitize_text_field($custom_user['first_name'] ?? '');
+                    $last_name = sanitize_text_field($custom_user['last_name'] ?? '');
+                    $author_title = sanitize_text_field($custom_user['title'] ?? $custom_user['titile'] ?? '');
+                    $name = trim($first_name . ' ' . $last_name);
+                }
+            } else {
+                // Handle WordPress user selection
+                $user = get_sub_field('user');
+                
+                if ($user) {
+                    if (is_numeric($user)) $user = get_userdata($user);
+                    
+                    if ($user) {
+                        // Name
+                        $name = trim($user->first_name . ' ' . $user->last_name);
+                        if (empty($name)) $name = $user->display_name;
+
+                        // Title
+                        $author_title = get_field('title', 'user_' . $user->ID); 
+                        if (empty($author_title)) {
+                            $author_title = get_user_meta($user->ID, 'job_title', true); 
+                        }
+                    }
+                }
+            }
+            
+            // Only output if we have a name
+            if (!empty($name)) {
+                $name_html = '<strong>' . esc_html($name) . '</strong>';
+                
+                // Construct Line
+                $line_html = $name_html;
+                if (!empty($author_title)) {
+                    $line_html .= ', ' . esc_html($author_title);
+                }
+
+                $authors_html .= '<div class="print-author-line">' . $line_html . '</div>';
+            }
+        }
+    }
+
+    // 2. Get Pub Number & Date
+    $pub_meta_html = '';
+    $pub_number = get_field('publication_number', $id);
+    
+    $formatted_pub_number = function_exists('format_publication_number_for_display') 
+        ? format_publication_number_for_display($pub_number) 
+        : $pub_number;
+
+    if (function_exists('get_latest_published_date')) {
+        $latest_info = get_latest_published_date($id);
+        
+        if (!empty($latest_info['date'])) {
+            $status_map = [
+                1 => 'unpublished', 2 => 'published', 4 => 'published with minor revisions',
+                5 => 'published with major revisions', 6 => 'published with full review',
+                7 => 'archived', 8 => 'in review', 10 => 'in review'
+            ];
+            
+            $status_code = $latest_info['status'];
+            $status_text = isset($status_map[$status_code]) ? $status_map[$status_code] : 'published';
+            $date_text = date('F j, Y', strtotime($latest_info['date']));
+
+            $meta_line = $formatted_pub_number . ' ' . $status_text . ' on ' . $date_text;
+            $pub_meta_html = '<div class="print-meta-line">' . esc_html($meta_line) . '</div>';
+        }
+    }
+
+    // Combine Info Section
+    if (!empty($authors_html) || !empty($pub_meta_html)) {
+        $info_html = '<div class="print-title-info" style="margin-bottom: 20px; font-family: inherit;">';
+        $info_html .= $authors_html;
+        $info_html .= $pub_meta_html;
+        $info_html .= '</div>';
+    }
+
+    // --- C. RETURN COMBINED OUTPUT ---
+    // Structure: [LOGO] + [TITLE BLOCK] + [INFO]
+    return $logo_html . $block_content . $info_html;
+
+}, 10, 2);
+
+/* End print-only LAST PAGE footer to publications */

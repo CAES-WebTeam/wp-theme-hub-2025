@@ -1,5 +1,11 @@
 // List styles
 
+.wp-block-list {
+    ul, ol {
+        margin-top: var(--wp--preset--spacing--30);
+    }
+}
+
 .wp-block-list img {
     max-width: 100%;
 }

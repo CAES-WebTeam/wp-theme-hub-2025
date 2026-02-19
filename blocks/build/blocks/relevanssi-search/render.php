@@ -13,6 +13,8 @@ $show_topic_filter     = $attributes['showTopicFilter'] ?? true;
 $show_author_filter    = $attributes['showAuthorFilter'] ?? true;
 $show_language_filter  = $attributes['showLanguageFilter'] ?? false;
 $show_heading          = $attributes['showHeading'] ?? true;
+$hide_submit_button    = $attributes['hideSubmitButton'] ?? false;
+$placeholder_text      = ! empty( $attributes['placeholderText'] ) ? $attributes['placeholderText'] : __( 'Search...', 'caes-hub' );
 $show_button           = $attributes['showButton'] ?? false;
 $button_text           = $attributes['buttonText'] ?? '';
 $button_url            = $attributes['buttonUrl'] ?? '';
@@ -155,16 +157,18 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 	$form_action = $is_search_only_block ? esc_url($results_page_url) : '';
 	?>
 	<form role="search" method="get" class="relevanssi-search-form" action="<?php echo $form_action; ?>">
-		<div class="search-input-group">
+		<div class="search-input-group<?php echo $hide_submit_button ? ' no-submit-button' : ''; ?>">
 			<label for="relevanssi-search-input" class="sr-only"><?php esc_html_e('Search', 'caes-hub'); ?></label>
-			<input type="search" id="relevanssi-search-input" class="search-field" placeholder="<?php esc_attr_e('Search...', 'caes-hub'); ?>" value="<?php echo esc_attr($current_search_query); ?>" name="s" />
-			<button type="submit" class="search-submit">
-				<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-					<circle cx="11" cy="11" r="8" />
-					<path d="m21 21-4.35-4.35" />
-				</svg>
-				<span class="sr-only"><?php esc_html_e('Search', 'caes-hub'); ?></span>
-			</button>
+			<input type="search" id="relevanssi-search-input" class="search-field" placeholder="<?php echo esc_attr( $placeholder_text ); ?>" value="<?php echo esc_attr($current_search_query); ?>" name="s" />
+			<?php if ( ! $hide_submit_button ) : ?>
+				<button type="submit" class="search-submit">
+					<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+						<circle cx="11" cy="11" r="8" />
+						<path d="m21 21-4.35-4.35" />
+					</svg>
+					<span class="sr-only"><?php esc_html_e('Search', 'caes-hub'); ?></span>
+				</button>
+			<?php endif; ?>
 		</div>
 
 		<?php if (!$is_search_only_block) : ?>

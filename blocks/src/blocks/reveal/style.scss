@@ -1,0 +1,338 @@
+/**
+ * Reveal Block Styles - Single Sticky Container Approach
+ * 
+ * Key architecture:
+ * - .reveal-backgrounds is the ONLY sticky element
+ * - All .reveal-frame-background are position: absolute within it
+ * - Content scrolls naturally within sections
+ * - Transitions are opacity/transform only - never position changes
+ */
+
+// ============================================================================
+// Variables
+// ============================================================================
+
+$reveal-content-max-width: --wp--style--global--wide-size;
+$reveal-content-padding: 2rem;
+$reveal-caption-padding: 1rem 1.5rem;
+$reveal-caption-bg: rgba(0, 0, 0, 0.6);
+$reveal-mobile-breakpoint: 782px;
+
+// ============================================================================
+// Main Container
+// ============================================================================
+
+.caes-reveal {
+	position: relative;
+	width: calc(100% + (var(--wp--preset--spacing--50) * 2));
+}
+
+// ============================================================================
+// Backgrounds Container - The Single Sticky Element
+// ============================================================================
+
+.reveal-backgrounds {
+	position: sticky;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100vh;
+	// This element sticks at the top of the viewport
+	// It contains all background images as absolutely positioned children
+	z-index: 1;
+	overflow: hidden;
+	// Ensure backgrounds don't overflow during slide transitions
+}
+
+// ============================================================================
+// Individual Background Frames
+// ============================================================================
+
+.reveal-frame-background {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	// Start hidden, JS will manage visibility
+	opacity: 0;
+	z-index: 5;
+	// GPU acceleration for smooth transitions
+	will-change: opacity, transform;
+	// Smooth transitions for opacity changes
+	// Note: We don't transition transform because scroll-driven transforms
+	// should be immediate for responsiveness
+	
+	&.is-active {
+		opacity: 1;
+		z-index: 10;
+	}
+	
+	&.is-transitioning-in {
+		// Opacity/transform controlled by JS
+		z-index: 10;
+	}
+	
+	&.is-transitioning-out {
+		opacity: 1;
+		z-index: 9;
+	}
+}
+
+// ============================================================================
+// Frame Figure (contains image, overlay, caption)
+// ============================================================================
+
+.reveal-frame {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	
+	// Images fill the frame
+	img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		// Use CSS custom properties for focal point
+		object-position: var(--desktop-focal-x, 50%) var(--desktop-focal-y, 50%);
+		// Prevent image dragging
+		user-select: none;
+		-webkit-user-drag: none;
+	}
+	
+	// Mobile focal point
+	@media (max-width: $reveal-mobile-breakpoint) {
+		img {
+			object-position: var(--mobile-focal-x, 50%) var(--mobile-focal-y, 50%);
+		}
+	}
+}
+
+// Desktop/Mobile image switching
+.reveal-frame-desktop {
+	display: block;
+	
+	@media (max-width: $reveal-mobile-breakpoint) {
+		display: none;
+	}
+}
+
+.reveal-frame-mobile {
+	display: none;
+	
+	@media (max-width: $reveal-mobile-breakpoint) {
+		display: block;
+	}
+}
+
+// ============================================================================
+// Overlay
+// ============================================================================
+
+.reveal-overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	// Background color set inline via PHP
+	pointer-events: none;
+}
+
+// ============================================================================
+// Caption
+// ============================================================================
+
+.reveal-frame-caption {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	padding: $reveal-caption-padding;
+	background: $reveal-caption-bg;
+	color: #fff;
+	line-height: 1.4;
+	// Ensure caption is above overlay
+	z-index: 2;
+	
+	a {
+		color: #fff;
+		text-decoration: underline;
+		text-decoration-color: rgba(255, 255, 255, 0.6);
+		transition: text-decoration-color 0.2s ease;
+		
+		&:hover,
+		&:focus {
+			text-decoration-color: #fff;
+		}
+	}
+}
+
+.reveal-caption-wrap {
+	max-width: var(--wp--style--global--wide-size);
+	margin: 0 auto;
+}
+
+.reveal-caption-desktop {
+	display: block;
+	
+	@media (max-width: $reveal-mobile-breakpoint) {
+		display: none;
+	}
+}
+
+.reveal-caption-mobile {
+	display: none;
+	
+	@media (max-width: $reveal-mobile-breakpoint) {
+		display: block;
+	}
+}
+
+// ============================================================================
+// Sections Container - Provides Scroll Height
+// ============================================================================
+
+.reveal-sections {
+	position: relative;
+	width: 100%;
+	// Height is set by JS based on content
+	// This creates the scrollable area
+	z-index: 2;
+	// Pull sections up to overlap the sticky backgrounds
+	margin-top: -100vh;
+	// Ensure content is clickable
+	pointer-events: none;
+}
+
+// ============================================================================
+// Individual Sections
+// ============================================================================
+
+.reveal-frame-section {
+	position: relative;
+	width: 100%;
+	// Height is set by JS based on content + transition distance
+	// Content sits at the bottom of the viewport area initially
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	// Add padding-top equal to viewport height so content starts at bottom
+	padding-top: 100vh;
+	box-sizing: border-box;
+}
+
+// ============================================================================
+// Content Area
+// ============================================================================
+
+.reveal-frame-content {
+	position: relative;
+	width: 100%;
+	max-width: $reveal-content-max-width;
+	margin: 0 auto;
+	padding: $reveal-content-padding;
+	box-sizing: border-box;
+	// Re-enable pointer events for content
+	pointer-events: auto;
+	
+	// Ensure inner blocks work properly
+	> * {
+		position: relative;
+	}
+}
+
+// ============================================================================
+// Reduced Motion
+// ============================================================================
+
+@media (prefers-reduced-motion: reduce) {
+	.reveal-frame-background {
+		// Disable transform transitions for users who prefer reduced motion
+		transition: opacity 0.1s ease !important;
+		transform: none !important;
+	}
+}
+
+// ============================================================================
+// Print Styles
+// ============================================================================
+
+@media print {
+	.caes-reveal {
+		position: relative;
+		height: auto !important;
+	}
+	
+	.reveal-backgrounds {
+		position: relative;
+		height: auto;
+	}
+	
+	.reveal-frame-background {
+		position: relative;
+		opacity: 1 !important;
+		page-break-inside: avoid;
+		
+		&:not(:first-child) {
+			margin-top: 2rem;
+		}
+	}
+	
+	.reveal-sections {
+		margin-top: 0;
+	}
+	
+	.reveal-frame-section {
+		padding-top: 1rem;
+		height: auto !important;
+	}
+	
+	.reveal-frame-content {
+		color: #000;
+		text-shadow: none;
+		
+		h1, h2, h3, h4, h5, h6,
+		a {
+			color: #000;
+		}
+	}
+}
+
+// ============================================================================
+// Editor Styles (when in block editor context)
+// ============================================================================
+
+.block-editor-block-list__block .caes-reveal {
+	// In the editor, show all frames
+	.reveal-frame-background {
+		position: relative;
+		opacity: 1;
+		height: 50vh;
+		margin-bottom: 1rem;
+	}
+	
+	.reveal-backgrounds {
+		position: relative;
+		height: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	
+	.reveal-sections {
+		margin-top: 1rem;
+	}
+	
+	.reveal-frame-section {
+		padding-top: 1rem;
+		height: auto !important;
+		border: 1px dashed rgba(255, 255, 255, 0.3);
+		border-radius: 4px;
+		margin-bottom: 1rem;
+	}
+}

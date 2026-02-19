@@ -833,3 +833,167 @@ function custom_external_event_url($url, $post = null)
 }
 // Apply this filter to custom post type links
 add_filter('post_type_link', 'custom_external_event_url', 100, 2);
+
+/**
+ * Custom Topic Archive Titles
+ * 
+ * Modifies page titles and H1 headings for topic taxonomy archives
+ * based on the associated post type context.
+ * 
+ * For block themes: The get_the_archive_title filter works because
+ * the Query Title block (<!-- wp:query-title -->) uses it internally.
+ * 
+ * Add this code to custom-rewrites.php (after the rewrite rules section)
+ */
+
+// ===================================
+// TOPIC ARCHIVE TITLE CUSTOMIZATION
+// ===================================
+
+/**
+ * Modify Yoast SEO document title for topic archives.
+ * 
+ * Examples (assuming separator is |):
+ * - Page 1: "Agriculture Stories | CAES News"
+ * - Page 2: "Agriculture Stories | Page 2 | CAES News"
+ * - Publications Page 3: "Agriculture Resources | Page 3 | CAES News"
+ * 
+ * Supports both standard /page/X/ URLs and Query Loop block 
+ * pagination (?query-X-page=Y).
+ * 
+ * @param string $title The original Yoast title.
+ * @return string Modified title.
+ */
+function caes_custom_topic_archive_title($title)
+{
+    // Only run on topic taxonomy archives
+    if (!is_tax('topics')) {
+        return $title;
+    }
+
+    $term = get_queried_object();
+    if (!$term || !is_a($term, 'WP_Term')) {
+        return $title;
+    }
+
+    // Get the post_type from the query
+    $post_type = get_query_var('post_type');
+
+    // Determine the suffix based on post type
+    $suffix = '';
+    switch ($post_type) {
+        case 'post':
+            $suffix = 'Stories';
+            break;
+        case 'publications':
+            $suffix = 'Resources';
+            break;
+        case 'shorthand_story':
+            $suffix = 'Features'; // Add this if needed for shorthand stories
+            break;
+        default:
+            // No suffix for unknown post types
+            return $title;
+    }
+
+    // Build the title components
+    $term_title = $term->name;
+    $site_name = get_bloginfo('name');
+    
+    // Get separator from Yoast settings
+    $sep = '-';
+    if (class_exists('WPSEO_Replace_Vars')) {
+        $sep = YoastSEO()->helpers->options->get_title_separator();
+    }
+
+    // Handle pagination (supports both standard /page/X/ and Query Loop ?query-X-page=Y)
+    $paged = 1;
+    
+    // Check for Query Loop block pagination (query-{id}-page parameter)
+    foreach ($_GET as $key => $value) {
+        if (preg_match('/^query-\d+-page$/', $key)) {
+            $paged = absint($value);
+            break;
+        }
+    }
+    
+    // Fall back to standard pagination if no Query Loop param found
+    if ($paged === 1) {
+        $paged = get_query_var('paged', 1);
+        $paged = $paged < 1 ? 1 : $paged;
+    }
+
+    if ($paged > 1) {
+        // "Agriculture Stories | Page 2 | Site Name"
+        $new_title = sprintf(
+            '%s %s %s Page %d %s %s',
+            $term_title,
+            $suffix,
+            $sep,
+            $paged,
+            $sep,
+            $site_name
+        );
+    } else {
+        // "Agriculture Stories | Site Name"
+        $new_title = sprintf(
+            '%s %s %s %s',
+            $term_title,
+            $suffix,
+            $sep,
+            $site_name
+        );
+    }
+
+    return $new_title;
+}
+add_filter('wpseo_title', 'caes_custom_topic_archive_title');
+
+
+/**
+ * Modify the archive title (H1) for topic archives.
+ * 
+ * In block themes, this is used by the Query Title block.
+ * 
+ * - News (post): "Agriculture Stories"
+ * - Publications: "Agriculture Resources"
+ * 
+ * @param string $title The original archive title.
+ * @return string Modified title.
+ */
+function caes_custom_topic_archive_heading($title)
+{
+    // Only run on topic taxonomy archives
+    if (!is_tax('topics')) {
+        return $title;
+    }
+
+    $term = get_queried_object();
+    if (!$term || !is_a($term, 'WP_Term')) {
+        return $title;
+    }
+
+    // Get the post_type from the query
+    $post_type = get_query_var('post_type');
+
+    // Determine the suffix based on post type
+    $suffix = '';
+    switch ($post_type) {
+        case 'post':
+            $suffix = 'Stories';
+            break;
+        case 'publications':
+            $suffix = 'Resources';
+            break;
+        case 'shorthand_story':
+            $suffix = 'Features';
+            break;
+        default:
+            // Return just the term name if post type is unknown
+            return $term->name;
+    }
+
+    return sprintf('%s %s', $term->name, $suffix);
+}
+add_filter('get_the_archive_title', 'caes_custom_topic_archive_heading');
+

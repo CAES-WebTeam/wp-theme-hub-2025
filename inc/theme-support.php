@@ -35,24 +35,22 @@ add_action('enqueue_block_editor_assets', 'theme_editor_assets');
 
 // Enqueue publication print styles
 function caes_hub_enqueue_publication_print_assets() {
-    // Only load on single publications post type
+    // This check ensures it ONLY loads on publication posts
     if (!is_singular('publications')) {
         return;
     }
     
-    // Get theme directory for file path checks
     $theme_dir = get_template_directory();
     $theme_uri = get_template_directory_uri();
-    
-    // Enqueue publications print styles
     $publications_print_path = $theme_dir . '/assets/css/pub-print.css';
+
     if (file_exists($publications_print_path)) {
         wp_enqueue_style(
             'caes-hub-publications-print',
             $theme_uri . '/assets/css/pub-print.css',
             array(),
             filemtime($publications_print_path),
-            'print'
+            'all' // <--- CHANGE THIS from 'print' to 'all'
         );
     }
 }
@@ -972,3 +970,65 @@ add_filter('wp_check_filetype_and_ext', function($data, $file, $filename, $mimes
     }
     return $data;
 }, 10, 4);
+
+/**
+ * Convert table block figcaption to proper table caption element.
+ * Improves accessibility by using native table caption semantics.
+ * Bandaid solution until Gutenberg table block is updated.
+ */
+add_filter( 'render_block_core/table', 'convert_table_figcaption_to_caption', 10, 2 );
+
+function convert_table_figcaption_to_caption( $block_content, $block ) {
+    // Bail early if no content or no figcaption present
+    if ( empty( $block_content ) || stripos( $block_content, '<figcaption' ) === false ) {
+        return $block_content;
+    }
+
+    // Suppress libxml errors (HTML5 tags can trigger warnings)
+    libxml_use_internal_errors( true );
+
+    $doc = new DOMDocument();
+    // Wrap in container to preserve encoding and prevent doctype injection
+    $doc->loadHTML( 
+        '<html><head><meta charset="UTF-8"></head><body>' . $block_content . '</body></html>',
+        LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD 
+    );
+
+    libxml_clear_errors();
+
+    $figcaption = $doc->getElementsByTagName( 'figcaption' )->item( 0 );
+    $table = $doc->getElementsByTagName( 'table' )->item( 0 );
+
+    // Both elements must exist to proceed
+    if ( ! $figcaption || ! $table ) {
+        return $block_content;
+    }
+
+    // Create caption element and transfer figcaption content
+    $caption = $doc->createElement( 'caption' );
+    
+    // Move all child nodes from figcaption to caption (preserves nested HTML)
+    while ( $figcaption->firstChild ) {
+        $caption->appendChild( $figcaption->firstChild );
+    }
+
+    // Insert caption as first child of table
+    if ( $table->firstChild ) {
+        $table->insertBefore( $caption, $table->firstChild );
+    } else {
+        $table->appendChild( $caption );
+    }
+
+    // Remove the now-empty figcaption
+    $figcaption->parentNode->removeChild( $figcaption );
+
+    // Extract just the body content
+    $body = $doc->getElementsByTagName( 'body' )->item( 0 );
+    $output = '';
+    
+    foreach ( $body->childNodes as $child ) {
+        $output .= $doc->saveHTML( $child );
+    }
+
+    return $output;
+}

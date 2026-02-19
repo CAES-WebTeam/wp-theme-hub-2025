@@ -225,6 +225,8 @@ do_action('rss_tag_pre', 'rss2');
 						$imgsize_param = sanitize_text_field($_GET['imgsize']);
 						if ($imgsize_param === 'lg') {
 							$imgsize = 'large';
+						} elseif ($imgsize_param === 'md') {
+							$imgsize = 'medium';
 						}
 					}
 

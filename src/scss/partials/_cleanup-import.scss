@@ -49,6 +49,7 @@
         font-size: var(--wp--preset--font-size--small);
         margin-top: 0;
         padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+        line-height: 1.4;
     }
 }
 
@@ -205,12 +206,10 @@
     table caption {
         background-color: var(--wp--preset--color--base-two);
         color: var(--wp--preset--color--contrast);
-        font-size: var(--wp--preset--font-size--small);
         margin-top: 0px;
-        padding-top: var(--wp--preset--spacing--30);
-        padding-right: var(--wp--preset--spacing--40);
-        padding-bottom: var(--wp--preset--spacing--30);
-        padding-left: var(--wp--preset--spacing--40);
+        font-size: 1.2rem;
+        font-weight: 300;
+        padding: 1rem var(--wp--preset--spacing--40) .6rem;
 
         &.caption-bottom {
             caption-side: bottom;

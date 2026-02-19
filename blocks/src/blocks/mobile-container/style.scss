@@ -93,7 +93,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    // height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     cursor: pointer;
 }
@@ -101,12 +101,17 @@
 /* Overlay content container */
 .mobile-overlay-content {
     position: relative;
-    height: 100%;
     background-color: var(--overlay-bg-color, #ffffff);
     display: flex;
     flex-direction: column;
     width: 100%;
     transition: transform 0.3s ease;
+
+    @media (max-width: 768px) {
+        overflow-y: scroll;
+        height: 100vh;
+        height: 100dvh;
+    }
 }
 
 /* Default full screen - fade in instead of slide */
@@ -202,8 +207,9 @@
 /* Inner content area */
 .mobile-overlay-inner {
     flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    // overflow-y: auto;
+    // min-height: 0;
+    // -webkit-overflow-scrolling: touch;
 }
 
 /* Responsive adjustments */
