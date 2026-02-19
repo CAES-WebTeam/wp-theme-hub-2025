@@ -1211,7 +1211,7 @@ function symplectic_query_api_handler() {
 
                                 $publications[] = $obj_data;
 
-                            } elseif ($category === 'activity' && isset($obj_data['href'])) {
+                            } elseif ($category === 'activity' && isset($obj_data['href']) && isset($obj_data['type']) && $obj_data['type'] === 'distinction') {
                                 // Track URL
                                 $activity_urls[] = $obj_data['href'];
 
