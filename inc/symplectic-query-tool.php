@@ -617,7 +617,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                     if (pub.publication_date) html += "<span><strong>Date:</strong> " + escapeHtml(pub.publication_date) + "</span>";
                     if (pub.journal) html += "<span><strong>Journal:</strong> " + escapeHtml(pub.journal) + "</span>";
                     if (pub.doi) html += "<span><strong>DOI:</strong> " + escapeHtml(pub.doi) + "</span>";
-                    if (pub.citation_count !== undefined) html += "<span><strong>Citations:</strong> " + escapeHtml(String(pub.citation_count)) + "</span>";
+                    if (pub["citation-count"] !== undefined) html += "<span><strong>Citations:</strong> " + escapeHtml(String(pub["citation-count"])) + "</span>";
                     html += "</div>";
                     html += "</div>";
                 });
@@ -724,7 +724,7 @@ function extract_publication_fields($pub_xml) {
         }
 
         if ($citation_count !== null) {
-            $fields_data['citation_count'] = $citation_count;
+            $fields_data['citation-count'] = $citation_count;
         }
 
         $record = $records[0];
@@ -1295,8 +1295,8 @@ function symplectic_query_api_handler() {
 
         // Sort publications by citation count descending, keep top 5
         usort($publications, function($a, $b) {
-            $a_count = isset($a['citation_count']) ? $a['citation_count'] : -1;
-            $b_count = isset($b['citation_count']) ? $b['citation_count'] : -1;
+            $a_count = isset($a['citation-count']) ? $a['citation-count'] : -1;
+            $b_count = isset($b['citation-count']) ? $b['citation-count'] : -1;
             return $b_count - $a_count;
         });
         $publications = array_slice($publications, 0, 5);
