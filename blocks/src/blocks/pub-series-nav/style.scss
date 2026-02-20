@@ -28,7 +28,8 @@
 
     .pub-series-nav__link {
         text-decoration: none;
-        font-weight: 600;
+        line-height: 1.2;
+        margin-top: var(--wp--preset--spacing--20);
     }
 }
 
