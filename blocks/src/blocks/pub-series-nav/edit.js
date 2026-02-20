@@ -10,8 +10,8 @@ export default function Edit({ attributes, setAttributes }) {
 	const blockProps = useBlockProps();
 
 	const linkText = showPublicationNumber
-		? 'SB 123: Example Publication Title'
-		: 'Example Publication Title';
+		? 'SB 123: "Example Publication Title"'
+		: '"Example Publication Title"';
 
 	const arrowStyle = {
 		color: arrowColor ? `var(--wp--preset--color--${arrowColor})` : undefined,
@@ -24,7 +24,11 @@ export default function Edit({ attributes, setAttributes }) {
 		if (direction === 'previous') {
 			return (
 				<>
-					<span className="pub-series-nav__arrow" style={arrowStyle}>
+					<span
+						className="pub-series-nav__arrow"
+						style={arrowStyle}
+						aria-hidden="true"
+					>
 						{arrow}
 					</span>
 					<div className="pub-series-nav__content">
@@ -53,7 +57,11 @@ export default function Edit({ attributes, setAttributes }) {
 						{linkText}
 					</a>
 				</div>
-				<span className="pub-series-nav__arrow" style={arrowStyle}>
+				<span
+					className="pub-series-nav__arrow"
+					style={arrowStyle}
+					aria-hidden="true"
+				>
 					{arrow}
 				</span>
 			</>

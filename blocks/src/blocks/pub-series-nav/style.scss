@@ -1,7 +1,7 @@
 .wp-block-caes-hub-pub-series-nav {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: var(--wp--preset--spacing--40);
 
     .pub-series-nav__arrow {
         font-size: 4rem;

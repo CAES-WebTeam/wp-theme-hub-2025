@@ -43,7 +43,7 @@ $target_title = get_the_title($target_id);
 $target_url   = get_permalink($target_id);
 $target_num   = get_field('publication_number', $target_id);
 
-$link_text = esc_html($target_title);
+$link_text = '&ldquo;' . esc_html($target_title) . '&rdquo;';
 if ($show_num && $target_num) {
     $link_text = esc_html($target_num) . '&colon; ' . $link_text;
 }
@@ -54,7 +54,7 @@ $arrow_style = sprintf('color: var(--wp--preset--color--%s);', esc_attr($arrow_c
 
 if ($direction === 'previous') {
     printf(
-        '<div %s><span class="pub-series-nav__arrow" style="%s">%s</span><div class="pub-series-nav__content"><span class="pub-series-nav__label">%s</span><a href="%s" class="pub-series-nav__link">%s</a></div></div>',
+        '<div %s><span class="pub-series-nav__arrow" style="%s" aria-hidden="true">%s</span><div class="pub-series-nav__content"><span class="pub-series-nav__label">%s</span><a href="%s" class="pub-series-nav__link">%s</a></div></div>',
         $attrs,
         $arrow_style,
         $arrow,
@@ -64,7 +64,7 @@ if ($direction === 'previous') {
     );
 } else {
     printf(
-        '<div %s><div class="pub-series-nav__content"><span class="pub-series-nav__label">%s</span><a href="%s" class="pub-series-nav__link">%s</a></div><span class="pub-series-nav__arrow" style="%s">%s</span></div>',
+        '<div %s><div class="pub-series-nav__content"><span class="pub-series-nav__label">%s</span><a href="%s" class="pub-series-nav__link">%s</a></div><span class="pub-series-nav__arrow" style="%s" aria-hidden="true">%s</span></div>',
         $attrs,
         esc_html($label),
         esc_url($target_url),
