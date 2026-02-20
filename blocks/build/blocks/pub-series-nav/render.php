@@ -19,7 +19,9 @@ if (empty($sorted_ids)) {
     return;
 }
 
-$attrs = get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes([
+    'class' => 'direction-' . esc_attr($direction),
+]);
 
 // Find the adjacent publication.
 $current_index = array_search($post_id, $sorted_ids);

@@ -7,7 +7,9 @@ import './editor.scss';
 export default function Edit({ attributes, setAttributes }) {
 	const { direction, showPublicationNumber, arrowColor } = attributes;
 
-	const blockProps = useBlockProps();
+	const blockProps = useBlockProps({
+		className: `direction-${direction}`,
+	});
 
 	const linkText = showPublicationNumber
 		? 'SB 123: "Example Publication Title"'

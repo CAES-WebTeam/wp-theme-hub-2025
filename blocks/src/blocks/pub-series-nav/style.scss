@@ -4,6 +4,10 @@
     gap: var(--wp--preset--spacing--50);
     align-self: flex-start;
 
+    &.direction-next {
+        text-align: right;
+    }
+
     .pub-series-nav__arrow {
         font-size: 4rem;
         font-style: normal;
