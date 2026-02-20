@@ -1,8 +1,9 @@
 <?php
 
-$post_id   = get_the_ID();
-$direction = $attributes['direction'] ?? 'previous';
-$show_num  = $attributes['showPublicationNumber'] ?? true;
+$post_id     = get_the_ID();
+$direction   = $attributes['direction'] ?? 'previous';
+$show_num    = $attributes['showPublicationNumber'] ?? true;
+$arrow_color = $attributes['arrowColor'] ?? 'hedges';
 
 // Get the publication's series terms.
 $series_terms = wp_get_post_terms($post_id, 'publication_series');
@@ -47,18 +48,28 @@ if ($show_num && $target_num) {
     $link_text = esc_html($target_num) . '&colon; ' . $link_text;
 }
 
+$label       = $direction === 'previous' ? 'Previous' : 'Next';
+$arrow       = $direction === 'previous' ? '&larr;' : '&rarr;';
+$arrow_style = sprintf('color: var(--wp--preset--color--%s);', esc_attr($arrow_color));
+
 if ($direction === 'previous') {
     printf(
-        '<div %s><span class="pub-series-nav__arrow">&larr;</span><a href="%s" class="pub-series-nav__link">%s</a></div>',
+        '<div %s><span class="pub-series-nav__arrow" style="%s">%s</span><div class="pub-series-nav__content"><span class="pub-series-nav__label">%s</span><a href="%s" class="pub-series-nav__link">%s</a></div></div>',
         $attrs,
+        $arrow_style,
+        $arrow,
+        esc_html($label),
         esc_url($target_url),
         $link_text
     );
 } else {
     printf(
-        '<div %s><a href="%s" class="pub-series-nav__link">%s</a><span class="pub-series-nav__arrow">&rarr;</span></div>',
+        '<div %s><div class="pub-series-nav__content"><span class="pub-series-nav__label">%s</span><a href="%s" class="pub-series-nav__link">%s</a></div><span class="pub-series-nav__arrow" style="%s">%s</span></div>',
         $attrs,
+        esc_html($label),
         esc_url($target_url),
-        $link_text
+        $link_text,
+        $arrow_style,
+        $arrow
     );
 }

@@ -36,6 +36,10 @@
 		"showPublicationNumber": {
 			"type": "boolean",
 			"default": true
+		},
+		"arrowColor": {
+			"type": "string",
+			"default": "hedges"
 		}
 	},
 	"textdomain": "pub-series-nav",
