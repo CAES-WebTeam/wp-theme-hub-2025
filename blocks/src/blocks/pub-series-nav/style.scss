@@ -39,9 +39,9 @@
     }
 }
 
-@media screen and (max-width: 1226px) {
-    .pub-series-nav__arrow {
-        font-size: 2rem;
+@media screen and (max-width: 768px) {
+    .wp-block-caes-hub-pub-series-nav .pub-series-nav__arrow {
+        font-size: 2.5rem;
     }
 }
 
