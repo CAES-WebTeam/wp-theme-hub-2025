@@ -17,10 +17,13 @@
     }
 
     .pub-series-nav__label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
+        font-size: 1rem;
         font-weight: 600;
-        letter-spacing: 0.05em;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        font-family: var(--wp--preset--font-family--oswald);
+        color: var(--wp--preset--color--olympic);
+        font-style: normal;
     }
 
     .pub-series-nav__link {
