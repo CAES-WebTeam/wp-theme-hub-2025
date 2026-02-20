@@ -25,9 +25,6 @@
 			"textDecoration": true,
 			"textTransform": true,
 			"letterSpacing": true
-		},
-		"layout": {
-			"allowSizingOnChildren": true
 		}
 	},
 	"attributes": {
