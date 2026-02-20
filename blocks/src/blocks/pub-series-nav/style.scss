@@ -27,7 +27,6 @@
     }
 
     .pub-series-nav__link {
-        text-decoration: none;
         line-height: 1.2;
         margin-top: var(--wp--preset--spacing--20);
     }
@@ -41,7 +40,7 @@
 
 @media screen and (max-width: 768px) {
     .wp-block-caes-hub-pub-series-nav .pub-series-nav__arrow {
-        font-size: 2.5rem;
+        display: none;
     }
 }
 
