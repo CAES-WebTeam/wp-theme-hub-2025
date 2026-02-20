@@ -495,30 +495,58 @@ function register_publication_categories_taxonomy()
 }
 add_action('init', 'register_publication_categories_taxonomy');
 
-// Register 'Fields of Research' taxonomy (FOR/ANZSRC) for Symplectic Elements user data.
+// Register 'Areas of Expertise' taxonomy (FOR/ANZSRC) for Symplectic Elements user data.
 // Not attached to any post type — used via ACF on user profiles.
 add_action('init', function () {
     register_taxonomy('areas_of_expertise', array(), array(
         'labels' => array(
-            'name'              => 'Fields of Research',
-            'singular_name'     => 'Field of Research',
-            'menu_name'         => 'Fields of Research',
-            'all_items'         => 'All Fields of Research',
-            'edit_item'         => 'Edit Field of Research',
-            'update_item'       => 'Update Field of Research',
-            'add_new_item'      => 'Add New Field of Research',
-            'new_item_name'     => 'New Field of Research Name',
-            'search_items'      => 'Search Fields of Research',
-            'not_found'         => 'No fields of research found',
-            'no_terms'          => 'No fields of research',
-            'back_to_items'     => '← Go to fields of research',
+            'name'              => 'Areas of Expertise',
+            'singular_name'     => 'Area of Expertise',
+            'menu_name'         => 'Areas of Expertise',
+            'all_items'         => 'All Areas of Expertise',
+            'edit_item'         => 'Edit Area of Expertise',
+            'update_item'       => 'Update Area of Expertise',
+            'add_new_item'      => 'Add New Area of Expertise',
+            'new_item_name'     => 'New Area of Expertise Name',
+            'search_items'      => 'Search Areas of Expertise',
+            'not_found'         => 'No areas of expertise found',
+            'no_terms'          => 'No areas of expertise',
+            'back_to_items'     => '← Go to areas of expertise',
         ),
         'hierarchical'      => false,
         'public'            => false,
         'show_ui'           => true,
-        'show_in_menu'      => true,
+        'show_in_menu'      => false,
         'show_in_rest'      => true,
         'query_var'         => false,
         'rewrite'           => false,
     ));
+});
+
+// Add 'Areas of Expertise' taxonomy management page under the Users menu.
+add_action('admin_menu', function () {
+    add_submenu_page(
+        'users.php',
+        'Areas of Expertise',
+        'Areas of Expertise',
+        'manage_categories',
+        'edit-tags.php?taxonomy=areas_of_expertise'
+    );
+});
+
+// Highlight the Users menu and the Areas of Expertise submenu item when on that taxonomy page.
+add_filter('parent_file', function ($parent_file) {
+    global $pagenow;
+    if ($pagenow === 'edit-tags.php' && isset($_GET['taxonomy']) && $_GET['taxonomy'] === 'areas_of_expertise') {
+        $parent_file = 'users.php';
+    }
+    return $parent_file;
+});
+
+add_filter('submenu_file', function ($submenu_file) {
+    global $pagenow;
+    if ($pagenow === 'edit-tags.php' && isset($_GET['taxonomy']) && $_GET['taxonomy'] === 'areas_of_expertise') {
+        $submenu_file = 'edit-tags.php?taxonomy=areas_of_expertise';
+    }
+    return $submenu_file;
 });
