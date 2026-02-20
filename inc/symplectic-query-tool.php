@@ -1144,6 +1144,7 @@ function symplectic_query_api_handler() {
     $activity_urls = array();
     $activity_raw_responses = array();
     $teaching_activity_urls = array();
+    $teaching_activity_raw_responses = array();
 
     // Step 2: Try to get relationships (but don't fail if this errors)
     if ($user_id) {
@@ -1220,6 +1221,7 @@ function symplectic_query_api_handler() {
 
                                 if (!is_wp_error($pub_response) && wp_remote_retrieve_response_code($pub_response) === 200) {
                                     $pub_body = wp_remote_retrieve_body($pub_response);
+                                    $publication_raw_responses[$obj_data['id']] = $pub_body;
                                     $pub_xml = simplexml_load_string($pub_body);
 
                                     if ($pub_xml !== false) {
@@ -1238,6 +1240,7 @@ function symplectic_query_api_handler() {
 
                                 if (!is_wp_error($activity_response) && wp_remote_retrieve_response_code($activity_response) === 200) {
                                     $activity_body = wp_remote_retrieve_body($activity_response);
+                                    $activity_raw_responses[$obj_data['id']] = $activity_body;
                                     $activity_xml = simplexml_load_string($activity_body);
 
                                     if ($activity_xml !== false) {
@@ -1256,6 +1259,7 @@ function symplectic_query_api_handler() {
 
                                 if (!is_wp_error($teaching_response) && wp_remote_retrieve_response_code($teaching_response) === 200) {
                                     $teaching_body = wp_remote_retrieve_body($teaching_response);
+                                    $teaching_activity_raw_responses[$obj_data['id']] = $teaching_body;
                                     $teaching_xml = simplexml_load_string($teaching_body);
 
                                     if ($teaching_xml !== false) {
@@ -1328,8 +1332,10 @@ function symplectic_query_api_handler() {
         'activities' => $activities,
         'teaching_activities' => $teaching_activities,
         'raw_user_data' => $user_info,
+        'user_raw_xml' => $response_body,
         'publication_raw_responses' => $publication_raw_responses,
         'activity_raw_responses' => $activity_raw_responses,
+        'teaching_activity_raw_responses' => $teaching_activity_raw_responses,
         'diagnostic_info' => array(
             'user_request_url' => $api_url,
             'relationships_request_urls' => isset($all_relationships_urls) ? $all_relationships_urls : array(),
