@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.2.6 | 2026-02-20 | Add series nav for expert resources | Ashley |
 | 1.2.5 | 2026-02-19 | Reorganized user edit page | Ashley |
 | 1.2.4 | 2026-02-18 | Add pub search to menu flyout | Ashley | 
 | 1.2.3 | 2026-02-10 | Reveal block release | Ashley |
