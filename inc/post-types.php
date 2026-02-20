@@ -494,3 +494,31 @@ function register_publication_categories_taxonomy()
     register_taxonomy('publication_category', array('publications'), $args);
 }
 add_action('init', 'register_publication_categories_taxonomy');
+
+// Register 'Fields of Research' taxonomy (FOR/ANZSRC) for Symplectic Elements user data.
+// Not attached to any post type — used via ACF on user profiles.
+add_action('init', function () {
+    register_taxonomy('areas_of_expertise', array(), array(
+        'labels' => array(
+            'name'              => 'Fields of Research',
+            'singular_name'     => 'Field of Research',
+            'menu_name'         => 'Fields of Research',
+            'all_items'         => 'All Fields of Research',
+            'edit_item'         => 'Edit Field of Research',
+            'update_item'       => 'Update Field of Research',
+            'add_new_item'      => 'Add New Field of Research',
+            'new_item_name'     => 'New Field of Research Name',
+            'search_items'      => 'Search Fields of Research',
+            'not_found'         => 'No fields of research found',
+            'no_terms'          => 'No fields of research',
+            'back_to_items'     => '← Go to fields of research',
+        ),
+        'hierarchical'      => false,
+        'public'            => false,
+        'show_ui'           => true,
+        'show_in_menu'      => true,
+        'show_in_rest'      => true,
+        'query_var'         => false,
+        'rewrite'           => false,
+    ));
+});

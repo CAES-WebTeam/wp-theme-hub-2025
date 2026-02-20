@@ -1131,6 +1131,12 @@ function symplectic_query_api_handler() {
         $user_info['keywords'] = $keywords;
     }
 
+    // Extract overview from user record
+    $overview_nodes = $object->xpath('.//api:record/api:native/api:field[@name="overview"]/api:text');
+    if (!empty($overview_nodes)) {
+        $user_info['overview'] = (string)$overview_nodes[0];
+    }
+
     // Get user ID for relationships call
     $user_id = $user_info['id'];
 
