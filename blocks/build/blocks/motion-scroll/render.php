@@ -15,11 +15,12 @@
 // Get block attributes
 $slides = $attributes['slides'] ?? [];
 $content_position = $attributes['contentPosition'] ?? 'left';
+$image_display_mode = $attributes['imageDisplayMode'] ?? 'cover';
 
 // Early return if no slides
 if (empty($slides)) {
 	$wrapper_attributes = get_block_wrapper_attributes([
-		'class' => 'caes-motion-scroll content-' . esc_attr($content_position),
+		'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode),
 	]);
 	printf(
 		'<div %s><div class="motion-scroll-content">%s</div></div>',
@@ -36,7 +37,7 @@ $block_id = 'motion-scroll-' . wp_unique_id();
 $wrapper_attributes = get_block_wrapper_attributes(
 	[
 		'id'    => $block_id,
-		'class' => 'caes-motion-scroll content-' . esc_attr($content_position),
+		'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode),
 		'data-slide-count' => count($slides),
 	]
 );

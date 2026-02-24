@@ -119,7 +119,7 @@ const getDuotoneFilter = (duotone, filterId) => {
 };
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { slides, contentPosition } = attributes;
+	const { slides, contentPosition, imageDisplayMode } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
 
 	// Auto-add first slide when block is inserted
@@ -201,7 +201,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	};
 
 	const blockProps = useBlockProps({
-		className: `caes-motion-scroll-editor content-${contentPosition}`,
+		className: `caes-motion-scroll-editor content-${contentPosition} image-mode-${imageDisplayMode}`,
 	});
 
 	return (
@@ -219,6 +219,20 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						label={__('Show content on right', 'caes-motion-scroll')}
 						isActive={contentPosition === 'right'}
 						onClick={() => setAttributes({ contentPosition: 'right' })}
+					/>
+				</ToolbarGroup>
+				<ToolbarGroup>
+					<ToolbarButton
+						icon="cover-image"
+						label={__('Fill background (cover)', 'caes-motion-scroll')}
+						isActive={imageDisplayMode === 'cover'}
+						onClick={() => setAttributes({ imageDisplayMode: 'cover' })}
+					/>
+					<ToolbarButton
+						icon="image-flip-horizontal"
+						label={__('Fit to width (contain)', 'caes-motion-scroll')}
+						isActive={imageDisplayMode === 'contain'}
+						onClick={() => setAttributes({ imageDisplayMode: 'contain' })}
 					/>
 				</ToolbarGroup>
 				<ToolbarGroup>
