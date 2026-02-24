@@ -26,6 +26,10 @@ import {
 	ColorPalette,
 	Dropdown,
 	ColorIndicator,
+	__experimentalHStack as HStack,
+	__experimentalZStack as ZStack,
+	Flex,
+	FlexItem,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -284,11 +288,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								<Button
 									onClick={onToggle}
 									aria-expanded={isOpen}
-									variant="secondary"
-									style={{ width: '100%', justifyContent: 'flex-start' }}
+									className="block-editor-panel-color-gradient-settings__dropdown"
 								>
-									<ColorIndicator colorValue={contentBackgroundColor || 'transparent'} />
-									{contentBackgroundColor ? contentBackgroundColor : __('Default', 'caes-motion-scroll')}
+									<HStack justify="flex-start">
+										<ZStack isLayered={false}>
+											<Flex>
+												<ColorIndicator colorValue={contentBackgroundColor || 'transparent'} />
+											</Flex>
+										</ZStack>
+										<FlexItem className="block-editor-panel-color-gradient-settings__color-name">
+											{contentBackgroundColor ? contentBackgroundColor : __('Default', 'caes-motion-scroll')}
+										</FlexItem>
+									</HStack>
 								</Button>
 							)}
 							renderContent={() => (
@@ -322,11 +333,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								<Button
 									onClick={onToggle}
 									aria-expanded={isOpen}
-									variant="secondary"
-									style={{ width: '100%', justifyContent: 'flex-start' }}
+									className="block-editor-panel-color-gradient-settings__dropdown"
 								>
-									<ColorIndicator colorValue={contentTextColor || 'inherit'} />
-									{contentTextColor ? contentTextColor : __('Default', 'caes-motion-scroll')}
+									<HStack justify="flex-start">
+										<ZStack isLayered={false}>
+											<Flex>
+												<ColorIndicator colorValue={contentTextColor || 'inherit'} />
+											</Flex>
+										</ZStack>
+										<FlexItem className="block-editor-panel-color-gradient-settings__color-name">
+											{contentTextColor ? contentTextColor : __('Default', 'caes-motion-scroll')}
+										</FlexItem>
+									</HStack>
 								</Button>
 							)}
 							renderContent={() => (
@@ -362,11 +380,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								<Button
 									onClick={onToggle}
 									aria-expanded={isOpen}
-									variant="secondary"
-									style={{ width: '100%', justifyContent: 'flex-start' }}
+									className="block-editor-panel-color-gradient-settings__dropdown"
 								>
-									<ColorIndicator colorValue={imagesBackgroundColor || '#000000'} />
-									{imagesBackgroundColor || '#000000'}
+									<HStack justify="flex-start">
+										<ZStack isLayered={false}>
+											<Flex>
+												<ColorIndicator colorValue={imagesBackgroundColor || '#000000'} />
+											</Flex>
+										</ZStack>
+										<FlexItem className="block-editor-panel-color-gradient-settings__color-name">
+											{imagesBackgroundColor || '#000000'}
+										</FlexItem>
+									</HStack>
 								</Button>
 							)}
 							renderContent={() => (
@@ -400,11 +425,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 								<Button
 									onClick={onToggle}
 									aria-expanded={isOpen}
-									variant="secondary"
-									style={{ width: '100%', justifyContent: 'flex-start' }}
+									className="block-editor-panel-color-gradient-settings__dropdown"
 								>
-									<ColorIndicator colorValue={captionTextColor || '#ffffff'} />
-									{captionTextColor || '#ffffff'}
+									<HStack justify="flex-start">
+										<ZStack isLayered={false}>
+											<Flex>
+												<ColorIndicator colorValue={captionTextColor || '#ffffff'} />
+											</Flex>
+										</ZStack>
+										<FlexItem className="block-editor-panel-color-gradient-settings__color-name">
+											{captionTextColor || '#ffffff'}
+										</FlexItem>
+									</HStack>
 								</Button>
 							)}
 							renderContent={() => (
