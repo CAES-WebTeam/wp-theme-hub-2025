@@ -30,6 +30,7 @@ import {
 	__experimentalZStack as ZStack,
 	Flex,
 	FlexItem,
+	__experimentalBoxControl as BoxControl,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -127,7 +128,7 @@ const getDuotoneFilter = (duotone, filterId) => {
 };
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor } = attributes;
+	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor, contentPadding } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
 
 	// Get theme colors from theme.json
@@ -266,8 +267,19 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						help={__('Choose how images are displayed in the sticky column.', 'caes-motion-scroll')}
 					/>
 				</PanelBody>
-				<PanelBody title={__('Content Area Colors', 'caes-motion-scroll')} initialOpen={false}>
-					<div style={{ marginBottom: '16px' }}>
+				<PanelBody title={__('Content Area', 'caes-motion-scroll')} initialOpen={false}>
+					<BoxControl
+						label={__('Padding', 'caes-motion-scroll')}
+						values={contentPadding}
+						onChange={(value) => setAttributes({ contentPadding: value })}
+						units={[
+							{ value: 'px', label: 'px' },
+							{ value: 'em', label: 'em' },
+							{ value: 'rem', label: 'rem' },
+							{ value: '%', label: '%' },
+						]}
+					/>
+					<div style={{ marginBottom: '16px', marginTop: '16px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
 								{__('Background Color', 'caes-motion-scroll')}
@@ -358,7 +370,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						/>
 					</div>
 				</PanelBody>
-				<PanelBody title={__('Images Area Colors', 'caes-motion-scroll')} initialOpen={false}>
+				<PanelBody title={__('Images Area', 'caes-motion-scroll')} initialOpen={false}>
 					<div style={{ marginBottom: '16px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
@@ -453,11 +465,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			</InspectorControls>
 
 			<div {...blockProps}>
+				{/* Duotone filter for editor preview */}
+				{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
+
 				<div className="motion-scroll-editor-layout">
 					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.image ? (
-								<img src={slides[0].image.url} alt={slides[0].image.alt || ''} />
+								<img
+									src={slides[0].image.url}
+									alt={slides[0].image.alt || ''}
+									style={slides[0]?.duotone ? { filter: `url(#editor-duotone-${clientId})` } : {}}
+								/>
 							) : (
 								<div className="motion-scroll-placeholder">
 									<p>{__('Add images using the toolbar button', 'caes-motion-scroll')}</p>
@@ -472,7 +491,11 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					</div>
 					<div className="motion-scroll-editor-content" style={{
 						backgroundColor: contentBackgroundColor || 'transparent',
-						color: contentTextColor || 'inherit'
+						color: contentTextColor || 'inherit',
+						paddingTop: contentPadding?.top,
+						paddingRight: contentPadding?.right,
+						paddingBottom: contentPadding?.bottom,
+						paddingLeft: contentPadding?.left,
 					}}>
 						<InnerBlocks
 							allowedBlocks={true}

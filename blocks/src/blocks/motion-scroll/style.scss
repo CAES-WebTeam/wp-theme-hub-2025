@@ -158,7 +158,6 @@
 
 	// Content container (scrollable)
 	.motion-scroll-content {
-		padding: 4rem 2rem;
 		min-height: 100vh;
 		overflow-x: hidden; // Prevent horizontal overflow only
 
@@ -191,8 +190,6 @@
 			}
 		}
 
-		.motion-scroll-content {
-			padding: 2rem 1rem;
-		}
+		// Padding is now controlled via block attributes
 	}
 }

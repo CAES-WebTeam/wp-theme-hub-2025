@@ -59,6 +59,15 @@
 		"captionTextColor": {
 			"type": "string",
 			"default": "#ffffff"
+		},
+		"contentPadding": {
+			"type": "object",
+			"default": {
+				"top": "4rem",
+				"right": "2rem",
+				"bottom": "4rem",
+				"left": "2rem"
+			}
 		}
 	},
 	"supports": {
