@@ -68,6 +68,7 @@ const DEFAULT_SLIDE = {
 	image: null,
 	focalPoint: { x: 0.5, y: 0.5 },
 	duotone: null,
+	caption: '',
 };
 
 const generateSlideId = () => {
@@ -816,6 +817,15 @@ const ImagePanel = ({
 								onUpdate({ image: updatedImage });
 							}}
 							placeholder={__('Describe image for screenreaders', 'caes-motion-scroll')}
+						/>
+
+						{/* Caption */}
+						<TextControl
+							label={__('Caption', 'caes-motion-scroll')}
+							value={slide.caption || ''}
+							onChange={(value) => onUpdate({ caption: value })}
+							placeholder={__('Optional caption text', 'caes-motion-scroll')}
+							help={__('Leave empty to hide caption', 'caes-motion-scroll')}
 						/>
 
 						{/* Focus & Filter Buttons */}
