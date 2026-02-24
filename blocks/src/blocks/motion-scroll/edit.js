@@ -9,7 +9,6 @@ import {
 	BlockControls,
 	MediaUpload,
 	MediaUploadCheck,
-	ColorIndicator,
 	useSetting,
 } from '@wordpress/block-editor';
 import {
@@ -26,6 +25,7 @@ import {
 	DuotoneSwatch,
 	ColorPalette,
 	Dropdown,
+	ColorIndicator,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
