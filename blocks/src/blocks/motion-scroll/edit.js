@@ -131,8 +131,10 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor, contentPadding } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
 
-	// Get theme colors from theme.json
+	// Get theme colors and spacing from theme.json
 	const themeColors = useSetting('color.palette');
+	const spacingSizes = useSetting('spacing.spacingSizes') || [];
+	const customSpacingEnabled = useSetting('spacing.customSpacingSize');
 
 	// Auto-add first slide when block is inserted
 	useEffect(() => {
@@ -272,12 +274,26 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						label={__('Padding', 'caes-motion-scroll')}
 						values={contentPadding}
 						onChange={(value) => setAttributes({ contentPadding: value })}
-						units={[
-							{ value: 'px', label: 'px' },
-							{ value: 'em', label: 'em' },
-							{ value: 'rem', label: 'rem' },
-							{ value: '%', label: '%' },
-						]}
+						units={
+							customSpacingEnabled !== false
+								? [
+										{ value: 'px', label: 'px' },
+										{ value: 'em', label: 'em' },
+										{ value: 'rem', label: 'rem' },
+										{ value: '%', label: '%' },
+								  ]
+								: []
+						}
+						sides={['top', 'right', 'bottom', 'left']}
+						splitOnAxis={false}
+						allowReset={true}
+						{...(spacingSizes.length > 0 && {
+							spacingSizes: spacingSizes.map((size) => ({
+								name: size.name,
+								slug: size.slug,
+								size: size.size,
+							})),
+						})}
 					/>
 					<div style={{ marginBottom: '16px', marginTop: '16px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
