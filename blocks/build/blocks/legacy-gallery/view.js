@@ -1,1 +1,190 @@
-(()=>{function e(e){const t=e.querySelector("[data-gallery-main]"),a=e.querySelector("[data-gallery-caption]"),n=e.querySelectorAll("[data-gallery-thumb]"),r=e.querySelector("[data-gallery-sr-current]");if(!t||!n.length)return;let s=0;const c=n.length;function o(e){if(e<0||e>=c||e===s)return;const o=n[e],l=o.dataset.imageUrl,i=o.dataset.imageAlt,d=o.dataset.imageWidth,u=o.dataset.imageHeight,h=o.dataset.imageCaption;var g;t.src=l,t.alt=i,t.width=d,t.height=u,a&&(h?(a.innerHTML=h,a.classList.remove("sr-only")):(a.innerHTML=`Image ${e+1} of ${c}`,a.classList.add("sr-only"))),g=e,n.forEach(((e,t)=>{const a=t===g;e.classList.toggle("active",a),e.setAttribute("aria-selected",a.toString()),e.tabIndex=a?0:-1})),r&&(r.textContent=`Showing image ${e+1} of ${c}`),s=e}n.forEach(((e,t)=>{e.addEventListener("click",(()=>{o(t)})),e.addEventListener("keydown",(e=>{!function(e,t){let a=t,r=!1;switch(e.key){case"ArrowLeft":a=t>0?t-1:c-1,r=!0;break;case"ArrowRight":a=t<c-1?t+1:0,r=!0;break;case"Home":a=0,r=!0;break;case"End":a=c-1,r=!0;break;case"Enter":case" ":o(t),r=!0}r&&(e.preventDefault(),["ArrowLeft","ArrowRight","Home","End"].includes(e.key)&&(n[a].focus(),o(a)))}(e,t)}))})),function(){let e=null,a=null;t.addEventListener("touchstart",(t=>{e=t.touches[0].clientX,a=t.touches[0].clientY}),{passive:!0}),t.addEventListener("touchend",(t=>{if(!e||!a)return;const n=t.changedTouches[0].clientX,r=t.changedTouches[0].clientY,l=n-e,i=r-a;Math.abs(l)>Math.abs(i)&&Math.abs(l)>50&&o(l>0?s>0?s-1:c-1:s<c-1?s+1:0),e=null,a=null}),{passive:!0})}();const l=new IntersectionObserver((e=>{e.forEach((e=>{e.isIntersecting&&l.unobserve(e.target)}))}),{threshold:.5});l.observe(e)}document.addEventListener("DOMContentLoaded",(function(){document.querySelectorAll(".legacy-gallery-block").forEach(e)}))})();
+/******/ (() => { // webpackBootstrap
+/*!*******************************************!*\
+  !*** ./src/blocks/legacy-gallery/view.js ***!
+  \*******************************************/
+/**
+ * Legacy Gallery Block JavaScript
+ * Handles filmstrip navigation and accessibility
+ */
+
+document.addEventListener('DOMContentLoaded', function () {
+  // Initialize all gallery blocks on the page
+  const galleries = document.querySelectorAll('.legacy-gallery-block');
+  galleries.forEach(initGallery);
+});
+function initGallery(gallery) {
+  const mainImage = gallery.querySelector('[data-gallery-main]');
+  const caption = gallery.querySelector('[data-gallery-caption]');
+  const thumbButtons = gallery.querySelectorAll('[data-gallery-thumb]');
+  const srCurrent = gallery.querySelector('[data-gallery-sr-current]');
+  if (!mainImage || !thumbButtons.length) return;
+  let currentIndex = 0;
+  const totalImages = thumbButtons.length;
+
+  // Add click handlers to thumbnail buttons
+  thumbButtons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      showImage(index);
+    });
+
+    // Add keyboard navigation
+    button.addEventListener('keydown', e => {
+      handleKeyboardNavigation(e, index);
+    });
+  });
+
+  /**
+   * Display the image at the specified index
+   */
+  function showImage(index) {
+    if (index < 0 || index >= totalImages || index === currentIndex) return;
+    const button = thumbButtons[index];
+    const imageUrl = button.dataset.imageUrl;
+    const imageAlt = button.dataset.imageAlt;
+    const imageWidth = button.dataset.imageWidth;
+    const imageHeight = button.dataset.imageHeight;
+    const imageCaption = button.dataset.imageCaption;
+
+    // Update main image
+    mainImage.src = imageUrl;
+    mainImage.alt = imageAlt;
+    mainImage.width = imageWidth;
+    mainImage.height = imageHeight;
+
+    // Update caption
+    if (caption) {
+      if (imageCaption) {
+        caption.innerHTML = imageCaption;
+        caption.classList.remove('sr-only');
+      } else {
+        caption.innerHTML = `Image ${index + 1} of ${totalImages}`;
+        caption.classList.add('sr-only');
+      }
+    }
+
+    // Update active states
+    updateActiveStates(index);
+
+    // Update screen reader info
+    if (srCurrent) {
+      srCurrent.textContent = `Showing image ${index + 1} of ${totalImages}`;
+    }
+    currentIndex = index;
+  }
+
+  /**
+   * Update active states and ARIA attributes
+   */
+  function updateActiveStates(activeIndex) {
+    thumbButtons.forEach((button, index) => {
+      const isActive = index === activeIndex;
+
+      // Update visual active state
+      button.classList.toggle('active', isActive);
+
+      // Update ARIA attributes
+      button.setAttribute('aria-selected', isActive.toString());
+      button.tabIndex = isActive ? 0 : -1;
+    });
+  }
+
+  /**
+   * Handle keyboard navigation within the filmstrip
+   */
+  function handleKeyboardNavigation(e, currentButtonIndex) {
+    let newIndex = currentButtonIndex;
+    let handled = false;
+    switch (e.key) {
+      case 'ArrowLeft':
+        newIndex = currentButtonIndex > 0 ? currentButtonIndex - 1 : totalImages - 1;
+        handled = true;
+        break;
+      case 'ArrowRight':
+        newIndex = currentButtonIndex < totalImages - 1 ? currentButtonIndex + 1 : 0;
+        handled = true;
+        break;
+      case 'Home':
+        newIndex = 0;
+        handled = true;
+        break;
+      case 'End':
+        newIndex = totalImages - 1;
+        handled = true;
+        break;
+      case 'Enter':
+      case ' ':
+        // Space or Enter - show this image
+        showImage(currentButtonIndex);
+        handled = true;
+        break;
+    }
+    if (handled) {
+      e.preventDefault();
+
+      // For arrow keys and Home/End, move focus and show image
+      if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+        thumbButtons[newIndex].focus();
+        showImage(newIndex);
+      }
+    }
+  }
+
+  /**
+   * Optional: Add swipe support for touch devices
+   */
+  function addSwipeSupport() {
+    let startX = null;
+    let startY = null;
+    const minSwipeDistance = 50;
+    mainImage.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, {
+      passive: true
+    });
+    mainImage.addEventListener('touchend', e => {
+      if (!startX || !startY) return;
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+
+      // Only trigger if horizontal swipe is longer than vertical
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+        if (deltaX > 0) {
+          // Swipe right - previous image
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : totalImages - 1;
+          showImage(prevIndex);
+        } else {
+          // Swipe left - next image
+          const nextIndex = currentIndex < totalImages - 1 ? currentIndex + 1 : 0;
+          showImage(nextIndex);
+        }
+      }
+      startX = null;
+      startY = null;
+    }, {
+      passive: true
+    });
+  }
+
+  // Initialize swipe support
+  addSwipeSupport();
+
+  // Optional: Auto-focus first thumbnail when gallery comes into view
+  // (Useful for keyboard users)
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // Gallery is visible, but don't auto-focus unless user is keyboard navigating
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.5
+  });
+  observer.observe(gallery);
+}
+/******/ })()
+;
+//# sourceMappingURL=view.js.map

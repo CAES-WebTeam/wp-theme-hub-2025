@@ -1,1 +1,70 @@
-document.addEventListener("DOMContentLoaded",(function(){document.querySelectorAll(".flip-card-container[data-card-id]").forEach((function(t){const e=t.getAttribute("data-card-id"),n=document.getElementById(e+"-front"),i=document.getElementById(e+"-back");function a(e){t.setAttribute("aria-pressed",String(e)),n&&n.setAttribute("aria-hidden",String(e)),i&&i.setAttribute("aria-hidden",String(!e)),d(e)}function r(){a(!("true"===t.getAttribute("aria-pressed")))}function d(t){const e=n?n.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])'):[],a=i?i.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])'):[];e.forEach((e=>{e.setAttribute("tabindex",t?"-1":"0")})),a.forEach((e=>{e.setAttribute("tabindex",t?"0":"-1")}))}d(!1),t.addEventListener("mouseenter",(function(){a(!0)})),t.addEventListener("mouseleave",(function(){a(!1)})),t.addEventListener("click",(function(){r()})),t.addEventListener("keydown",(function(t){"Enter"!==t.code&&"Space"!==t.code||t.repeat||(t.preventDefault(),r())}))}))}));
+/******/ (() => { // webpackBootstrap
+/*!**************************************!*\
+  !*** ./src/blocks/flip-card/view.js ***!
+  \**************************************/
+document.addEventListener('DOMContentLoaded', function () {
+  const flipCards = document.querySelectorAll('.flip-card-container[data-card-id]');
+  flipCards.forEach(function (card) {
+    const cardId = card.getAttribute('data-card-id');
+    const frontSide = document.getElementById(cardId + '-front');
+    const backSide = document.getElementById(cardId + '-back');
+    function setFlipState(isFlipped) {
+      card.setAttribute('aria-pressed', String(isFlipped));
+
+      // Update aria-hidden states
+      if (frontSide) {
+        frontSide.setAttribute('aria-hidden', String(isFlipped));
+      }
+      if (backSide) {
+        backSide.setAttribute('aria-hidden', String(!isFlipped));
+      }
+
+      // Manage tabindex for focusable elements
+      updateTabIndex(isFlipped);
+    }
+    function toggleFlip() {
+      const isPressed = card.getAttribute('aria-pressed') === 'true';
+      setFlipState(!isPressed);
+    }
+    function updateTabIndex(showBack) {
+      // Get all focusable elements in both sides
+      const frontFocusables = frontSide ? frontSide.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])') : [];
+      const backFocusables = backSide ? backSide.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])') : [];
+
+      // Set tabindex based on which side is visible
+      frontFocusables.forEach(el => {
+        el.setAttribute('tabindex', showBack ? '-1' : '0');
+      });
+      backFocusables.forEach(el => {
+        el.setAttribute('tabindex', showBack ? '0' : '-1');
+      });
+    }
+
+    // Initialize tabindex
+    updateTabIndex(false);
+
+    // Mouse hover handlers
+    card.addEventListener('mouseenter', function () {
+      setFlipState(true);
+    });
+    card.addEventListener('mouseleave', function () {
+      setFlipState(false);
+    });
+
+    // Click handler (for mobile/touch devices)
+    card.addEventListener('click', function () {
+      toggleFlip();
+    });
+
+    // Keyboard handler
+    card.addEventListener('keydown', function (event) {
+      if ((event.code === 'Enter' || event.code === 'Space') && !event.repeat) {
+        event.preventDefault();
+        toggleFlip();
+      }
+    });
+  });
+});
+/******/ })()
+;
+//# sourceMappingURL=view.js.map
