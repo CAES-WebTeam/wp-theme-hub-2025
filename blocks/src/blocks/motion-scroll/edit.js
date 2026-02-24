@@ -223,20 +223,6 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</ToolbarGroup>
 				<ToolbarGroup>
 					<ToolbarButton
-						icon="cover-image"
-						label={__('Fill background (cover)', 'caes-motion-scroll')}
-						isActive={imageDisplayMode === 'cover'}
-						onClick={() => setAttributes({ imageDisplayMode: 'cover' })}
-					/>
-					<ToolbarButton
-						icon="image-flip-horizontal"
-						label={__('Fit to width (contain)', 'caes-motion-scroll')}
-						isActive={imageDisplayMode === 'contain'}
-						onClick={() => setAttributes({ imageDisplayMode: 'contain' })}
-					/>
-				</ToolbarGroup>
-				<ToolbarGroup>
-					<ToolbarButton
 						icon="admin-generic"
 						label={__('Manage Images', 'caes-motion-scroll')}
 						onClick={() => setShowSlideManager(true)}
@@ -256,6 +242,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					>
 						{__('Manage Images', 'caes-motion-scroll')}
 					</Button>
+				</PanelBody>
+				<PanelBody title={__('Display Settings', 'caes-motion-scroll')} initialOpen={false}>
+					<SelectControl
+						label={__('Image Display Mode', 'caes-motion-scroll')}
+						value={imageDisplayMode}
+						options={[
+							{ label: __('Fill background (cover)', 'caes-motion-scroll'), value: 'cover' },
+							{ label: __('Fit to width (contain)', 'caes-motion-scroll'), value: 'contain' },
+						]}
+						onChange={(value) => setAttributes({ imageDisplayMode: value })}
+						help={__('Choose how images are displayed in the sticky column.', 'caes-motion-scroll')}
+					/>
 				</PanelBody>
 			</InspectorControls>
 
