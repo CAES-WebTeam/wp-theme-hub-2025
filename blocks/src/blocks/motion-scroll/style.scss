@@ -13,7 +13,7 @@
 	&.alignfull {
 		// Let theme handle the full-width breakout
 		// Just ensure grid uses full width properly
-		width: 100%;
+		width: calc(100% + var(--wp--preset--spacing--50)*2);
 		max-width: none;
 	}
 
