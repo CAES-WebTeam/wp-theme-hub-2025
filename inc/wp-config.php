@@ -82,6 +82,9 @@ $table_prefix = 'wp_';
 define( 'SYMPLECTIC_API_USERNAME', 'caes' );
 define( 'SYMPLECTIC_API_PASSWORD', '8Ky4w5GLt!vtpb%z' );
 
+// API key for call to ColdFusion API to fetch 810 numbers
+define('CF_810_API_ENDPOINT_KEY', 'X6dSHykr3$ji9vNj');
+
 /**
  * For developers: WordPress debugging mode.
  *

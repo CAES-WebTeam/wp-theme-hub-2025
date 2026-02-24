@@ -90,7 +90,7 @@ function symplectic_import_enqueue_scripts($hook) {
 					data: {
 						action: "symplectic_import_user",
 						nonce: nonce,
-						proprietary_id: pid,
+						personnel_id: pid,
 						dry_run: dryRun ? 1 : 0
 					},
 					success: function(response) {
@@ -131,14 +131,14 @@ function symplectic_import_enqueue_scripts($hook) {
 			$("#symplectic-import-form").on("submit", function(e) {
 				e.preventDefault();
 				var pid = $("#proprietary-id").val().trim();
-				if (!pid) { alert("Please enter a Proprietary ID."); return; }
+				if (!pid) { alert("Please enter a Personnel ID."); return; }
 				runRequest(pid, false);
 			});
 
 			// "Dry Run" — fetch and preview, no writes.
 			$("#symplectic-dry-run-btn").on("click", function() {
 				var pid = $("#proprietary-id").val().trim();
-				if (!pid) { alert("Please enter a Proprietary ID."); return; }
+				if (!pid) { alert("Please enter a Personnel ID."); return; }
 				runRequest(pid, true);
 			});
 
@@ -269,7 +269,7 @@ function symplectic_import_enqueue_scripts($hook) {
 // --- Admin page render ---
 
 function symplectic_import_render_page() {
-	$credentials_ok = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD');
+	$credentials_ok = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD') && defined('CF_810_API_ENDPOINT_KEY');
 	?>
 	<div class="wrap">
 		<h1>Symplectic Elements User Import Tool</h1>
@@ -277,16 +277,16 @@ function symplectic_import_render_page() {
 
 		<?php if (!$credentials_ok): ?>
 			<div class="notice notice-error">
-				<p><strong>Configuration Required:</strong> <code>SYMPLECTIC_API_USERNAME</code> and <code>SYMPLECTIC_API_PASSWORD</code> are not defined in wp-config.php.</p>
+				<p><strong>Configuration Required:</strong> <code>SYMPLECTIC_API_USERNAME</code>, <code>SYMPLECTIC_API_PASSWORD</code>, and/or <code>CF_810_API_ENDPOINT_KEY</code> are not defined in wp-config.php.</p>
 			</div>
 		<?php endif; ?>
 
 		<div class="symplectic-import-wrapper">
 			<form id="symplectic-import-form">
 				<div class="symplectic-form-group">
-					<label for="proprietary-id">Proprietary ID</label>
-					<input type="text" id="proprietary-id" placeholder="e.g. 810769090">
-					<p class="description">The Symplectic Elements proprietary ID. Must match the <code>personnel_id</code> stored on the WordPress user profile.</p>
+					<label for="proprietary-id">Personnel ID</label>
+					<input type="text" id="proprietary-id" placeholder="e.g. 3885">
+					<p class="description">The CAES personnel ID stored on the WordPress user profile. Used to look up the UGA ID (810 number) from the internal personnel API, which is then used to query the Symplectic Elements API.</p>
 				</div>
 				<input type="submit" id="symplectic-import-btn" class="button button-primary" value="Run Import"
 					<?php echo $credentials_ok ? '' : 'disabled'; ?>>
@@ -320,14 +320,14 @@ function symplectic_import_user_handler() {
 		return;
 	}
 
-	if (!defined('SYMPLECTIC_API_USERNAME') || !defined('SYMPLECTIC_API_PASSWORD')) {
-		wp_send_json_error(array('error_message' => 'API credentials not configured in wp-config.php.'));
+	if (!defined('SYMPLECTIC_API_USERNAME') || !defined('SYMPLECTIC_API_PASSWORD') || !defined('CF_810_API_ENDPOINT_KEY')) {
+		wp_send_json_error(array('error_message' => 'SYMPLECTIC_API_USERNAME, SYMPLECTIC_API_PASSWORD, or CF_810_API_ENDPOINT_KEY not configured in wp-config.php.'));
 		return;
 	}
 
-	$proprietary_id = sanitize_text_field($_POST['proprietary_id']);
-	if (empty($proprietary_id)) {
-		wp_send_json_error(array('error_message' => 'Proprietary ID is required.'));
+	$personnel_id = sanitize_text_field($_POST['personnel_id']);
+	if (empty($personnel_id)) {
+		wp_send_json_error(array('error_message' => 'Personnel ID is required.'));
 		return;
 	}
 
@@ -339,14 +339,14 @@ function symplectic_import_user_handler() {
 
 	$wp_users = get_users(array(
 		'meta_key'   => 'personnel_id',
-		'meta_value' => $proprietary_id,
+		'meta_value' => $personnel_id,
 		'number'     => 1,
 	));
 
 	if (empty($wp_users)) {
 		wp_send_json_error(array(
 			'error_message' =>
-				'No WordPress user found with personnel_id = ' . $proprietary_id . '. ' .
+				'No WordPress user found with personnel_id = ' . $personnel_id . '. ' .
 				'The user must have been synced from the CAES personnel database with a matching personnel_id before importing Elements data.',
 		));
 		return;
@@ -357,7 +357,46 @@ function symplectic_import_user_handler() {
 	$user_acf   = 'user_' . $wp_user_id;
 
 	// -------------------------------------------------------------------------
-	// Step 2: Fetch user object from the Elements API
+	// Step 2: Fetch UGA ID (810 number) from CAES internal personnel API
+	// -------------------------------------------------------------------------
+
+	$caes_api_url = 'https://secure.caes.uga.edu/rest/personnel/getUGAids'
+		. '?PersonnelID=' . urlencode($personnel_id)
+		. '&APIkey=' . urlencode(CF_810_API_ENDPOINT_KEY);
+
+	$caes_response = wp_remote_get($caes_api_url, array(
+		'timeout'   => 15,
+		'sslverify' => true,
+	));
+
+	if (is_wp_error($caes_response)) {
+		wp_send_json_error(array('error_message' => 'CAES personnel API request failed: ' . $caes_response->get_error_message()));
+		return;
+	}
+
+	$caes_response_code = wp_remote_retrieve_response_code($caes_response);
+	$caes_response_body = wp_remote_retrieve_body($caes_response);
+
+	if ($caes_response_code !== 200) {
+		wp_send_json_error(array(
+			'error_message' => 'CAES personnel API returned HTTP ' . $caes_response_code . ': ' . substr($caes_response_body, 0, 500),
+		));
+		return;
+	}
+
+	$caes_data = json_decode($caes_response_body, true);
+
+	if (empty($caes_data) || !isset($caes_data[0]['UGA_ID']) || empty($caes_data[0]['UGA_ID'])) {
+		wp_send_json_error(array(
+			'error_message' => 'No UGA ID (810 number) found for personnel_id ' . $personnel_id . ' in the CAES personnel API.',
+		));
+		return;
+	}
+
+	$uga_id = $caes_data[0]['UGA_ID'];
+
+	// -------------------------------------------------------------------------
+	// Step 3: Fetch user object from the Elements API
 	// -------------------------------------------------------------------------
 
 	@set_time_limit(300);
@@ -371,7 +410,7 @@ function symplectic_import_user_handler() {
 	);
 
 	$user_api_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users'
-		. '?query=proprietary-id%3D%22' . urlencode($proprietary_id) . '%22&detail=full';
+		. '?query=proprietary-id%3D%22' . urlencode($uga_id) . '%22&detail=full';
 
 	$user_response = wp_remote_get($user_api_url, $api_args);
 
@@ -404,7 +443,7 @@ function symplectic_import_user_handler() {
 
 	if (empty($user_objects)) {
 		wp_send_json_error(array(
-			'error_message' => 'No user object found in Elements API response for proprietary_id ' . $proprietary_id . '.',
+			'error_message' => 'No user object found in Elements API response for UGA ID ' . $uga_id . ' (personnel_id ' . $personnel_id . ').',
 		));
 		return;
 	}
@@ -436,7 +475,7 @@ function symplectic_import_user_handler() {
 	$elements_user_id = isset($user_info['id']) ? (int)$user_info['id'] : null;
 
 	// -------------------------------------------------------------------------
-	// Step 3: Fetch relationships (publications, distinctions, courses)
+	// Step 4: Fetch relationships (publications, distinctions, courses)
 	// -------------------------------------------------------------------------
 
 	$publications        = array();
@@ -541,7 +580,7 @@ function symplectic_import_user_handler() {
 	$publications = array_slice($publications, 0, 5);
 
 	// -------------------------------------------------------------------------
-	// Step 4: Write to ACF fields
+	// Step 5: Write to ACF fields
 	// -------------------------------------------------------------------------
 
 	$writes       = array();
@@ -695,7 +734,7 @@ function symplectic_import_user_handler() {
 	);
 
 	// -------------------------------------------------------------------------
-	// Step 5: Build summary and return
+	// Step 6: Build summary and return
 	// -------------------------------------------------------------------------
 
 	$ok      = count(array_filter($writes, fn($w) => $w['result'] === true));
