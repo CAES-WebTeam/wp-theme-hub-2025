@@ -3,10 +3,13 @@
  */
 
 .caes-motion-scroll {
+	position: relative;
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	min-height: 100vh;
 	gap: 0;
+	width: calc(100% + (var(--wp--preset--spacing--50) * 2));
+	max-width: none;
 
 	// Content on left, images on right (default)
 	&.content-left {
