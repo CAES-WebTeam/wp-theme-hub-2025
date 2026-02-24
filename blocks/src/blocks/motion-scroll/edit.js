@@ -9,6 +9,8 @@ import {
 	BlockControls,
 	MediaUpload,
 	MediaUploadCheck,
+	ColorIndicator,
+	useSetting,
 } from '@wordpress/block-editor';
 import {
 	Button,
@@ -22,7 +24,9 @@ import {
 	Modal,
 	DuotonePicker,
 	DuotoneSwatch,
-	ColorPicker,
+	ColorPalette,
+	Dropdown,
+	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -122,6 +126,9 @@ const getDuotoneFilter = (duotone, filterId) => {
 const Edit = ({ attributes, setAttributes, clientId }) => {
 	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
+
+	// Get theme colors from theme.json
+	const themeColors = useSetting('color.palette');
 
 	// Auto-add first slide when block is inserted
 	useEffect(() => {
@@ -258,86 +265,158 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</PanelBody>
 				<PanelBody title={__('Content Area Colors', 'caes-motion-scroll')} initialOpen={false}>
 					<div style={{ marginBottom: '16px' }}>
-						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
-							{__('Background Color', 'caes-motion-scroll')}
-						</label>
-						<ColorPicker
-							color={contentBackgroundColor}
-							onChange={(value) => setAttributes({ contentBackgroundColor: value })}
-							enableAlpha
+						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
+								{__('Background Color', 'caes-motion-scroll')}
+							</label>
+							{contentBackgroundColor && (
+								<Button
+									size="small"
+									variant="tertiary"
+									onClick={() => setAttributes({ contentBackgroundColor: '' })}
+								>
+									{__('Clear', 'caes-motion-scroll')}
+								</Button>
+							)}
+						</HStack>
+						<Dropdown
+							popoverProps={{ placement: 'left-start' }}
+							renderToggle={({ isOpen, onToggle }) => (
+								<Button
+									onClick={onToggle}
+									aria-expanded={isOpen}
+									variant="secondary"
+									style={{ width: '100%', justifyContent: 'flex-start' }}
+								>
+									<ColorIndicator colorValue={contentBackgroundColor || 'transparent'} />
+									{contentBackgroundColor ? contentBackgroundColor : __('Default', 'caes-motion-scroll')}
+								</Button>
+							)}
+							renderContent={() => (
+								<ColorPalette
+									value={contentBackgroundColor}
+									onChange={(value) => setAttributes({ contentBackgroundColor: value })}
+									colors={themeColors}
+									enableAlpha
+								/>
+							)}
 						/>
-						{contentBackgroundColor && (
-							<Button
-								variant="secondary"
-								isSmall
-								onClick={() => setAttributes({ contentBackgroundColor: '' })}
-								style={{ marginTop: '8px' }}
-							>
-								{__('Clear', 'caes-motion-scroll')}
-							</Button>
-						)}
 					</div>
 					<div style={{ marginBottom: '16px' }}>
-						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
-							{__('Text Color', 'caes-motion-scroll')}
-						</label>
-						<ColorPicker
-							color={contentTextColor}
-							onChange={(value) => setAttributes({ contentTextColor: value })}
-							enableAlpha
+						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
+								{__('Text Color', 'caes-motion-scroll')}
+							</label>
+							{contentTextColor && (
+								<Button
+									size="small"
+									variant="tertiary"
+									onClick={() => setAttributes({ contentTextColor: '' })}
+								>
+									{__('Clear', 'caes-motion-scroll')}
+								</Button>
+							)}
+						</HStack>
+						<Dropdown
+							popoverProps={{ placement: 'left-start' }}
+							renderToggle={({ isOpen, onToggle }) => (
+								<Button
+									onClick={onToggle}
+									aria-expanded={isOpen}
+									variant="secondary"
+									style={{ width: '100%', justifyContent: 'flex-start' }}
+								>
+									<ColorIndicator colorValue={contentTextColor || 'inherit'} />
+									{contentTextColor ? contentTextColor : __('Default', 'caes-motion-scroll')}
+								</Button>
+							)}
+							renderContent={() => (
+								<ColorPalette
+									value={contentTextColor}
+									onChange={(value) => setAttributes({ contentTextColor: value })}
+									colors={themeColors}
+									enableAlpha
+								/>
+							)}
 						/>
-						{contentTextColor && (
-							<Button
-								variant="secondary"
-								isSmall
-								onClick={() => setAttributes({ contentTextColor: '' })}
-								style={{ marginTop: '8px' }}
-							>
-								{__('Clear', 'caes-motion-scroll')}
-							</Button>
-						)}
 					</div>
 				</PanelBody>
 				<PanelBody title={__('Images Area Colors', 'caes-motion-scroll')} initialOpen={false}>
 					<div style={{ marginBottom: '16px' }}>
-						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
-							{__('Background Color', 'caes-motion-scroll')}
-						</label>
-						<ColorPicker
-							color={imagesBackgroundColor}
-							onChange={(value) => setAttributes({ imagesBackgroundColor: value })}
-							enableAlpha
+						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
+								{__('Background Color', 'caes-motion-scroll')}
+							</label>
+							{imagesBackgroundColor && imagesBackgroundColor !== '#000000' && (
+								<Button
+									size="small"
+									variant="tertiary"
+									onClick={() => setAttributes({ imagesBackgroundColor: '#000000' })}
+								>
+									{__('Reset', 'caes-motion-scroll')}
+								</Button>
+							)}
+						</HStack>
+						<Dropdown
+							popoverProps={{ placement: 'left-start' }}
+							renderToggle={({ isOpen, onToggle }) => (
+								<Button
+									onClick={onToggle}
+									aria-expanded={isOpen}
+									variant="secondary"
+									style={{ width: '100%', justifyContent: 'flex-start' }}
+								>
+									<ColorIndicator colorValue={imagesBackgroundColor || '#000000'} />
+									{imagesBackgroundColor || '#000000'}
+								</Button>
+							)}
+							renderContent={() => (
+								<ColorPalette
+									value={imagesBackgroundColor}
+									onChange={(value) => setAttributes({ imagesBackgroundColor: value })}
+									colors={themeColors}
+									enableAlpha
+								/>
+							)}
 						/>
-						{imagesBackgroundColor && imagesBackgroundColor !== '#000000' && (
-							<Button
-								variant="secondary"
-								isSmall
-								onClick={() => setAttributes({ imagesBackgroundColor: '#000000' })}
-								style={{ marginTop: '8px' }}
-							>
-								{__('Reset to Black', 'caes-motion-scroll')}
-							</Button>
-						)}
 					</div>
 					<div style={{ marginBottom: '16px' }}>
-						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
-							{__('Caption Text Color', 'caes-motion-scroll')}
-						</label>
-						<ColorPicker
-							color={captionTextColor}
-							onChange={(value) => setAttributes({ captionTextColor: value })}
-							enableAlpha
+						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
+								{__('Caption Text Color', 'caes-motion-scroll')}
+							</label>
+							{captionTextColor && captionTextColor !== '#ffffff' && (
+								<Button
+									size="small"
+									variant="tertiary"
+									onClick={() => setAttributes({ captionTextColor: '#ffffff' })}
+								>
+									{__('Reset', 'caes-motion-scroll')}
+								</Button>
+							)}
+						</HStack>
+						<Dropdown
+							popoverProps={{ placement: 'left-start' }}
+							renderToggle={({ isOpen, onToggle }) => (
+								<Button
+									onClick={onToggle}
+									aria-expanded={isOpen}
+									variant="secondary"
+									style={{ width: '100%', justifyContent: 'flex-start' }}
+								>
+									<ColorIndicator colorValue={captionTextColor || '#ffffff'} />
+									{captionTextColor || '#ffffff'}
+								</Button>
+							)}
+							renderContent={() => (
+								<ColorPalette
+									value={captionTextColor}
+									onChange={(value) => setAttributes({ captionTextColor: value })}
+									colors={themeColors}
+									enableAlpha
+								/>
+							)}
 						/>
-						{captionTextColor && captionTextColor !== '#ffffff' && (
-							<Button
-								variant="secondary"
-								isSmall
-								onClick={() => setAttributes({ captionTextColor: '#ffffff' })}
-								style={{ marginTop: '8px' }}
-							>
-								{__('Reset to White', 'caes-motion-scroll')}
-							</Button>
-						)}
 					</div>
 				</PanelBody>
 			</InspectorControls>
