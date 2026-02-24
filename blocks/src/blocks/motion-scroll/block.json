@@ -43,6 +43,22 @@
 				"cover",
 				"contain"
 			]
+		},
+		"contentBackgroundColor": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"imagesBackgroundColor": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"captionTextColor": {
+			"type": "string",
+			"default": "#ffffff"
 		}
 	},
 	"supports": {

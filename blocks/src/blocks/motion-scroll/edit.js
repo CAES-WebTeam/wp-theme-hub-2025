@@ -22,6 +22,7 @@ import {
 	Modal,
 	DuotonePicker,
 	DuotoneSwatch,
+	ColorPicker,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -119,7 +120,7 @@ const getDuotoneFilter = (duotone, filterId) => {
 };
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { slides, contentPosition, imageDisplayMode } = attributes;
+	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
 
 	// Auto-add first slide when block is inserted
@@ -255,11 +256,95 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						help={__('Choose how images are displayed in the sticky column.', 'caes-motion-scroll')}
 					/>
 				</PanelBody>
+				<PanelBody title={__('Content Area Colors', 'caes-motion-scroll')} initialOpen={false}>
+					<div style={{ marginBottom: '16px' }}>
+						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
+							{__('Background Color', 'caes-motion-scroll')}
+						</label>
+						<ColorPicker
+							color={contentBackgroundColor}
+							onChange={(value) => setAttributes({ contentBackgroundColor: value })}
+							enableAlpha
+						/>
+						{contentBackgroundColor && (
+							<Button
+								variant="secondary"
+								isSmall
+								onClick={() => setAttributes({ contentBackgroundColor: '' })}
+								style={{ marginTop: '8px' }}
+							>
+								{__('Clear', 'caes-motion-scroll')}
+							</Button>
+						)}
+					</div>
+					<div style={{ marginBottom: '16px' }}>
+						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
+							{__('Text Color', 'caes-motion-scroll')}
+						</label>
+						<ColorPicker
+							color={contentTextColor}
+							onChange={(value) => setAttributes({ contentTextColor: value })}
+							enableAlpha
+						/>
+						{contentTextColor && (
+							<Button
+								variant="secondary"
+								isSmall
+								onClick={() => setAttributes({ contentTextColor: '' })}
+								style={{ marginTop: '8px' }}
+							>
+								{__('Clear', 'caes-motion-scroll')}
+							</Button>
+						)}
+					</div>
+				</PanelBody>
+				<PanelBody title={__('Images Area Colors', 'caes-motion-scroll')} initialOpen={false}>
+					<div style={{ marginBottom: '16px' }}>
+						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
+							{__('Background Color', 'caes-motion-scroll')}
+						</label>
+						<ColorPicker
+							color={imagesBackgroundColor}
+							onChange={(value) => setAttributes({ imagesBackgroundColor: value })}
+							enableAlpha
+						/>
+						{imagesBackgroundColor && imagesBackgroundColor !== '#000000' && (
+							<Button
+								variant="secondary"
+								isSmall
+								onClick={() => setAttributes({ imagesBackgroundColor: '#000000' })}
+								style={{ marginTop: '8px' }}
+							>
+								{__('Reset to Black', 'caes-motion-scroll')}
+							</Button>
+						)}
+					</div>
+					<div style={{ marginBottom: '16px' }}>
+						<label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, fontSize: '13px' }}>
+							{__('Caption Text Color', 'caes-motion-scroll')}
+						</label>
+						<ColorPicker
+							color={captionTextColor}
+							onChange={(value) => setAttributes({ captionTextColor: value })}
+							enableAlpha
+						/>
+						{captionTextColor && captionTextColor !== '#ffffff' && (
+							<Button
+								variant="secondary"
+								isSmall
+								onClick={() => setAttributes({ captionTextColor: '#ffffff' })}
+								style={{ marginTop: '8px' }}
+							>
+								{__('Reset to White', 'caes-motion-scroll')}
+							</Button>
+						)}
+					</div>
+				</PanelBody>
 			</InspectorControls>
 
 			<div {...blockProps}>
 				<div className="motion-scroll-editor-layout">
-					<div className="motion-scroll-editor-images">
+					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.image ? (
 								<img src={slides[0].image.url} alt={slides[0].image.alt || ''} />
@@ -275,7 +360,10 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 							)}
 						</div>
 					</div>
-					<div className="motion-scroll-editor-content">
+					<div className="motion-scroll-editor-content" style={{
+						backgroundColor: contentBackgroundColor || 'transparent',
+						color: contentTextColor || 'inherit'
+					}}>
 						<InnerBlocks
 							allowedBlocks={true}
 							placeholder={__('Add content blocks here...', 'caes-motion-scroll')}

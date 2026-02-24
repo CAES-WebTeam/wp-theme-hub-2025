@@ -77,6 +77,24 @@
 		}
 	}
 
+	// Caption styles
+	.motion-scroll-caption {
+		margin: 0;
+		line-height: 1.4;
+
+		a {
+			color: inherit;
+			text-decoration: underline;
+			text-decoration-color: rgba(255, 255, 255, 0.6);
+			transition: text-decoration-color 0.2s ease;
+
+			&:hover,
+			&:focus {
+				text-decoration-color: currentColor;
+			}
+		}
+	}
+
 	// Image display mode: cover (default - background fill)
 	&.image-mode-cover {
 		.motion-scroll-slide {
@@ -93,6 +111,17 @@
 				object-fit: cover;
 				object-position: var(--focal-x, 50%) var(--focal-y, 50%);
 			}
+		}
+
+		// Caption overlay style (like Reveal block)
+		.motion-scroll-caption {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 1rem 1.5rem;
+			background: rgba(0, 0, 0, 0.6);
+			z-index: 2;
 		}
 	}
 
@@ -116,6 +145,14 @@
 				object-fit: contain;
 				object-position: center;
 			}
+		}
+
+		// Caption below image style
+		.motion-scroll-caption {
+			display: block;
+			padding: 0.75rem 0 0;
+			text-align: center;
+			font-size: 0.9em;
 		}
 	}
 

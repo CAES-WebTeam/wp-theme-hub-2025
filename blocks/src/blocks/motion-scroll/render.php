@@ -16,6 +16,10 @@
 $slides = $attributes['slides'] ?? [];
 $content_position = $attributes['contentPosition'] ?? 'left';
 $image_display_mode = $attributes['imageDisplayMode'] ?? 'cover';
+$content_bg_color = $attributes['contentBackgroundColor'] ?? '';
+$content_text_color = $attributes['contentTextColor'] ?? '';
+$images_bg_color = $attributes['imagesBackgroundColor'] ?? '#000000';
+$caption_text_color = $attributes['captionTextColor'] ?? '#ffffff';
 
 // Early return if no slides
 if (empty($slides)) {
@@ -140,7 +144,7 @@ endif;
 	?>
 
 	<!-- Images container (sticky) -->
-	<div class="motion-scroll-images">
+	<div class="motion-scroll-images" style="background-color: <?php echo esc_attr($images_bg_color); ?>;">
 		<?php foreach ($slides as $index => $slide) :
 			$image = $slide['image'] ?? null;
 			$focal_point = $slide['focalPoint'] ?? ['x' => 0.5, 'y' => 0.5];
@@ -175,13 +179,27 @@ endif;
 						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
 						decoding="async"
 						<?php if ($img_style_attr) : ?>style="<?php echo esc_attr($img_style_attr); ?>" <?php endif; ?>>
+					<?php if (! empty($image['caption'])) : ?>
+						<figcaption class="motion-scroll-caption" style="color: <?php echo esc_attr($caption_text_color); ?>;">
+							<?php echo wp_kses_post($image['caption']); ?>
+						</figcaption>
+					<?php endif; ?>
 				</figure>
 			</div>
 		<?php endforeach; ?>
 	</div>
 
 	<!-- Content container (scrollable) -->
-	<div class="motion-scroll-content">
+	<div class="motion-scroll-content" style="<?php
+		$content_styles = [];
+		if ($content_bg_color) {
+			$content_styles[] = 'background-color: ' . esc_attr($content_bg_color);
+		}
+		if ($content_text_color) {
+			$content_styles[] = 'color: ' . esc_attr($content_text_color);
+		}
+		echo implode('; ', $content_styles);
+	?>">
 		<?php echo $content; ?>
 	</div>
 </div>
