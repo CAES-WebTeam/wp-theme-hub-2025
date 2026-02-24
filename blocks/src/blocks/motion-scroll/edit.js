@@ -226,7 +226,18 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			caption: media.caption || '',
 			sizes: media.sizes || {},
 		};
-		updateSlide(slideIndex, { image: imageData });
+
+		// Pre-fill slide caption with image caption from media library
+		// Only set if the slide doesn't already have a custom caption
+		const currentSlide = slides[slideIndex];
+		const updates = { image: imageData };
+
+		// If this is a new image or the slide has no custom caption, use the media caption
+		if (!currentSlide.caption || currentSlide.image?.id !== media.id) {
+			updates.caption = media.caption || '';
+		}
+
+		updateSlide(slideIndex, updates);
 	};
 
 	const onRemoveImage = (slideIndex) => {
