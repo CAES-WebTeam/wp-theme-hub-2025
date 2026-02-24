@@ -80,16 +80,8 @@
 	// Content container (scrollable)
 	.motion-scroll-content {
 		padding: 4rem 2rem;
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
 		min-height: 100vh;
-		overflow: hidden; // Prevent content from breaking out
-
-		// Constrain all child elements to stay within column
-		> * {
-			max-width: 100%;
-		}
+		overflow-x: hidden; // Prevent horizontal overflow only
 
 		// Ensure images don't break out
 		img {
