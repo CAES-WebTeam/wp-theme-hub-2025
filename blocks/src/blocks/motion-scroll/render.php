@@ -26,23 +26,25 @@ $content_padding = $attributes['contentPadding'] ?? [];
  * Convert spacing preset value to CSS custom property
  * Converts "var:preset|spacing|50" to "var(--wp--preset--spacing--50)"
  */
-function caes_motion_scroll_get_spacing_preset_css_var($value) {
-	if (empty($value)) {
-		return null;
-	}
-
-	// Check if it's a preset value
-	if (is_string($value) && strpos($value, 'var:preset|') === 0) {
-		$parts = explode('|', $value);
-		if (count($parts) === 3) {
-			list(, $type, $slug) = $parts;
-			return sprintf('var(--wp--preset--%s--%s)', $type, $slug);
+if (!function_exists('caes_motion_scroll_get_spacing_preset_css_var')) :
+	function caes_motion_scroll_get_spacing_preset_css_var($value) {
+		if (empty($value)) {
+			return null;
 		}
-	}
 
-	// Return as-is if it's a regular CSS value
-	return $value;
-}
+		// Check if it's a preset value
+		if (is_string($value) && strpos($value, 'var:preset|') === 0) {
+			$parts = explode('|', $value);
+			if (count($parts) === 3) {
+				list(, $type, $slug) = $parts;
+				return sprintf('var(--wp--preset--%s--%s)', $type, $slug);
+			}
+		}
+
+		// Return as-is if it's a regular CSS value
+		return $value;
+	}
+endif;
 
 // Early return if no slides
 if (empty($slides)) {
