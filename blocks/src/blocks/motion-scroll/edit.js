@@ -26,7 +26,6 @@ import {
 	DuotoneSwatch,
 	ColorPalette,
 	Dropdown,
-	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { useState, useEffect } from '@wordpress/element';
 
@@ -265,7 +264,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</PanelBody>
 				<PanelBody title={__('Content Area Colors', 'caes-motion-scroll')} initialOpen={false}>
 					<div style={{ marginBottom: '16px' }}>
-						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
 								{__('Background Color', 'caes-motion-scroll')}
 							</label>
@@ -278,7 +277,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 									{__('Clear', 'caes-motion-scroll')}
 								</Button>
 							)}
-						</HStack>
+						</div>
 						<Dropdown
 							popoverProps={{ placement: 'left-start' }}
 							renderToggle={({ isOpen, onToggle }) => (
@@ -303,7 +302,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						/>
 					</div>
 					<div style={{ marginBottom: '16px' }}>
-						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
 								{__('Text Color', 'caes-motion-scroll')}
 							</label>
@@ -316,7 +315,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 									{__('Clear', 'caes-motion-scroll')}
 								</Button>
 							)}
-						</HStack>
+						</div>
 						<Dropdown
 							popoverProps={{ placement: 'left-start' }}
 							renderToggle={({ isOpen, onToggle }) => (
@@ -343,7 +342,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</PanelBody>
 				<PanelBody title={__('Images Area Colors', 'caes-motion-scroll')} initialOpen={false}>
 					<div style={{ marginBottom: '16px' }}>
-						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
 								{__('Background Color', 'caes-motion-scroll')}
 							</label>
@@ -356,7 +355,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 									{__('Reset', 'caes-motion-scroll')}
 								</Button>
 							)}
-						</HStack>
+						</div>
 						<Dropdown
 							popoverProps={{ placement: 'left-start' }}
 							renderToggle={({ isOpen, onToggle }) => (
@@ -381,7 +380,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						/>
 					</div>
 					<div style={{ marginBottom: '16px' }}>
-						<HStack justify="space-between" style={{ marginBottom: '8px' }}>
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 							<label style={{ fontWeight: 500, fontSize: '13px', margin: 0 }}>
 								{__('Caption Text Color', 'caes-motion-scroll')}
 							</label>
@@ -394,7 +393,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 									{__('Reset', 'caes-motion-scroll')}
 								</Button>
 							)}
-						</HStack>
+						</div>
 						<Dropdown
 							popoverProps={{ placement: 'left-start' }}
 							renderToggle={({ isOpen, onToggle }) => (
