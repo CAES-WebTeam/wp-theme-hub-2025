@@ -17,6 +17,10 @@
 	],
 	"textdomain": "caes-motion-scroll",
 	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "full"
+		},
 		"slides": {
 			"type": "array",
 			"default": [],
