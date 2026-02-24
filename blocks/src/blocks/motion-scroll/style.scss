@@ -81,6 +81,18 @@
 		flex-direction: column;
 		gap: 2rem;
 		min-height: 100vh;
+		overflow: hidden; // Prevent content from breaking out
+
+		// Constrain all child elements to stay within column
+		> * {
+			max-width: 100%;
+		}
+
+		// Ensure images don't break out
+		img {
+			max-width: 100%;
+			height: auto;
+		}
 
 		// Add extra space at bottom to allow last content to trigger last image
 		&::after {
