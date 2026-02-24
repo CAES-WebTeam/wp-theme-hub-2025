@@ -209,7 +209,21 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			<BlockControls>
 				<ToolbarGroup>
 					<ToolbarButton
-						icon="images-alt2"
+						icon="align-pull-left"
+						label={__('Show content on left', 'caes-motion-scroll')}
+						isActive={contentPosition === 'left'}
+						onClick={() => setAttributes({ contentPosition: 'left' })}
+					/>
+					<ToolbarButton
+						icon="align-pull-right"
+						label={__('Show content on right', 'caes-motion-scroll')}
+						isActive={contentPosition === 'right'}
+						onClick={() => setAttributes({ contentPosition: 'right' })}
+					/>
+				</ToolbarGroup>
+				<ToolbarGroup>
+					<ToolbarButton
+						icon="admin-generic"
 						label={__('Manage Images', 'caes-motion-scroll')}
 						onClick={() => setShowSlideManager(true)}
 					/>
@@ -217,19 +231,6 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			</BlockControls>
 
 			<InspectorControls>
-				<PanelBody title={__('Layout', 'caes-motion-scroll')} initialOpen={true}>
-					<SelectControl
-						label={__('Content Position', 'caes-motion-scroll')}
-						value={contentPosition}
-						options={[
-							{ label: __('Left', 'caes-motion-scroll'), value: 'left' },
-							{ label: __('Right', 'caes-motion-scroll'), value: 'right' },
-						]}
-						onChange={(value) => setAttributes({ contentPosition: value })}
-						help={__('Choose which side the scrollable content appears on.', 'caes-motion-scroll')}
-					/>
-				</PanelBody>
-
 				<PanelBody title={__('Images', 'caes-motion-scroll')} initialOpen={true}>
 					<p style={{ marginBottom: '12px', color: '#757575', fontSize: '13px' }}>
 						{__('This block has', 'caes-motion-scroll')} {slides.length} {slides.length === 1 ? __('image', 'caes-motion-scroll') : __('images', 'caes-motion-scroll')}.
