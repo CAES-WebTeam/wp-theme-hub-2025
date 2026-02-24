@@ -1,0 +1,28 @@
+/**
+ * Motion Scroll Image Block Styles (Frontend)
+ * This block only displays on mobile devices
+ */
+
+.caes-motion-scroll-image {
+	display: none; // Hidden on desktop by default
+	margin: 2rem 0;
+
+	// Only show on mobile
+	@media (max-width: 768px) {
+		display: block;
+	}
+
+	.motion-scroll-image-figure {
+		margin: 0;
+		width: 100%;
+		position: relative;
+
+		img {
+			width: 100%;
+			height: auto;
+			display: block;
+			object-fit: cover;
+			object-position: var(--focal-x, 50%) var(--focal-y, 50%);
+		}
+	}
+}

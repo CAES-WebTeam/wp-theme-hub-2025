@@ -1,0 +1,92 @@
+/**
+ * Motion Scroll Block Styles (Editor)
+ */
+
+.caes-motion-scroll-editor {
+	border: 2px dashed #ddd;
+	border-radius: 4px;
+	padding: 20px;
+
+	.motion-scroll-editor-layout {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 20px;
+		min-height: 400px;
+	}
+
+	&.content-left {
+		.motion-scroll-editor-images {
+			order: 2;
+		}
+		.motion-scroll-editor-content {
+			order: 1;
+		}
+	}
+
+	&.content-right {
+		.motion-scroll-editor-images {
+			order: 1;
+		}
+		.motion-scroll-editor-content {
+			order: 2;
+		}
+	}
+
+	.motion-scroll-editor-images {
+		background: #f0f0f0;
+		border-radius: 4px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		overflow: hidden;
+
+		.motion-scroll-images-preview {
+			position: relative;
+			width: 100%;
+			height: 100%;
+
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+
+			.motion-scroll-placeholder {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				height: 100%;
+				text-align: center;
+				color: #666;
+				padding: 20px;
+			}
+		}
+
+		.motion-scroll-image-count {
+			position: absolute;
+			bottom: 10px;
+			right: 10px;
+			background: rgba(0, 0, 0, 0.75);
+			color: #fff;
+			padding: 6px 12px;
+			border-radius: 4px;
+			font-size: 12px;
+			font-weight: 600;
+		}
+	}
+
+	.motion-scroll-editor-content {
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		padding: 20px;
+		background: #fff;
+	}
+}
+
+// Slide Manager Modal styles
+.motion-scroll-slide-manager-modal {
+	.components-modal__content {
+		padding: 0 20px 20px;
+	}
+}

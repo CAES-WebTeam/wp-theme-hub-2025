@@ -116,7 +116,7 @@ function caes_hub_block_init()
 
 	// Motion Scroll
 	register_block_type(get_template_directory() . '/blocks/build/blocks/motion-scroll');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/motion-scroll-frame');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/motion-scroll-image');
 
 }
 add_action('init', 'caes_hub_block_init');

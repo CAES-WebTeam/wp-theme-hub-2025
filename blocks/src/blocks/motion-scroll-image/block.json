@@ -1,0 +1,35 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/motion-scroll-image",
+	"version": "0.1.0",
+	"title": "Motion Scroll Image",
+	"parent": [
+		"caes-hub/motion-scroll"
+	],
+	"category": "media",
+	"icon": "format-image",
+	"description": "Mobile-only image placeholder that displays a selected image from the parent Motion Scroll block.",
+	"textdomain": "caes-motion-scroll",
+	"usesContext": [
+		"caes-hub/motion-scroll-slides"
+	],
+	"attributes": {
+		"slideIndex": {
+			"type": "number",
+			"default": 0
+		}
+	},
+	"supports": {
+		"html": false,
+		"reusable": false,
+		"lock": false,
+		"spacing": {
+			"margin": true,
+			"padding": true
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"render": "file:./render.php"
+}

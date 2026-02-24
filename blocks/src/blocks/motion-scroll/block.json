@@ -1,0 +1,59 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "caes-hub/motion-scroll",
+	"version": "0.1.0",
+	"title": "Motion Scroll",
+	"category": "media",
+	"icon": "images-alt2",
+	"description": "Split layout with scrollable content on one side and sticky transitioning images on the other.",
+	"keywords": [
+		"motion",
+		"scroll",
+		"scrollmation",
+		"sticky",
+		"images",
+		"storytelling"
+	],
+	"textdomain": "caes-motion-scroll",
+	"attributes": {
+		"slides": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"contentPosition": {
+			"type": "string",
+			"default": "left",
+			"enum": [
+				"left",
+				"right"
+			]
+		}
+	},
+	"supports": {
+		"align": [
+			"full",
+			"wide"
+		],
+		"html": false,
+		"color": {
+			"text": true,
+			"background": true
+		},
+		"spacing": {
+			"padding": true,
+			"margin": true
+		}
+	},
+	"providesContext": {
+		"caes-hub/motion-scroll-slides": "slides"
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js"
+}

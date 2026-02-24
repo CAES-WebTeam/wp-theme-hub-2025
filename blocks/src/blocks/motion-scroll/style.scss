@@ -1,0 +1,106 @@
+/**
+ * Motion Scroll Block Styles (Frontend)
+ */
+
+.caes-motion-scroll {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	min-height: 100vh;
+	gap: 0;
+
+	// Content on left, images on right (default)
+	&.content-left {
+		.motion-scroll-images {
+			order: 2;
+		}
+		.motion-scroll-content {
+			order: 1;
+		}
+	}
+
+	// Content on right, images on left
+	&.content-right {
+		.motion-scroll-images {
+			order: 1;
+		}
+		.motion-scroll-content {
+			order: 2;
+		}
+	}
+
+	// Images container (sticky)
+	.motion-scroll-images {
+		position: sticky;
+		top: 0;
+		height: 100vh;
+		overflow: hidden;
+		background-color: #000;
+	}
+
+	// Individual slide
+	.motion-scroll-slide {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		transition: opacity 0.6s ease-in-out;
+		will-change: opacity;
+
+		&.is-active {
+			opacity: 1;
+		}
+	}
+
+	// Figure element
+	.motion-scroll-figure {
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		position: relative;
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			object-position: var(--focal-x, 50%) var(--focal-y, 50%);
+		}
+	}
+
+	// Content container (scrollable)
+	.motion-scroll-content {
+		padding: 4rem 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		min-height: 100vh;
+
+		// Add extra space at bottom to allow last content to trigger last image
+		&::after {
+			content: '';
+			display: block;
+			height: 50vh;
+		}
+	}
+
+	// Mobile layout
+	@media (max-width: 768px) {
+		grid-template-columns: 1fr;
+
+		.motion-scroll-images {
+			display: none;
+		}
+
+		&.content-left,
+		&.content-right {
+			.motion-scroll-content {
+				order: 1;
+			}
+		}
+
+		.motion-scroll-content {
+			padding: 2rem 1rem;
+		}
+	}
+}

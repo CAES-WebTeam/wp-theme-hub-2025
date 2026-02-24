@@ -1,0 +1,46 @@
+/**
+ * Motion Scroll Image Block Styles (Editor)
+ */
+
+.caes-motion-scroll-image-editor {
+	.motion-scroll-image-preview {
+		position: relative;
+		border: 2px dashed #ddd;
+		border-radius: 4px;
+		overflow: hidden;
+		min-height: 200px;
+		background: #f0f0f0;
+
+		img {
+			width: 100%;
+			height: auto;
+			display: block;
+		}
+
+		.motion-scroll-image-label {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			background: rgba(0, 0, 0, 0.75);
+			color: #fff;
+			padding: 6px 12px;
+			border-radius: 4px;
+			font-size: 12px;
+			font-weight: 600;
+		}
+
+		.motion-scroll-image-placeholder {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 200px;
+			text-align: center;
+			color: #666;
+			padding: 20px;
+
+			p {
+				margin: 0;
+			}
+		}
+	}
+}
