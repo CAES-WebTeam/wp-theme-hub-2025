@@ -1,16 +1,16 @@
 /**
  * Motion Scroll Block Styles (Editor)
+ * Match the frontend appearance as closely as possible
  */
 
 .caes-motion-scroll-editor {
-	border: 2px dashed #ddd;
-	border-radius: 4px;
-	padding: 20px;
+	// Remove outer border for cleaner preview
+	position: relative;
 
 	.motion-scroll-editor-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 20px;
+		gap: 0;
 		min-height: 400px;
 	}
 
@@ -33,13 +33,13 @@
 	}
 
 	.motion-scroll-editor-images {
-		background: #f0f0f0;
-		border-radius: 4px;
+		background: #000; // Match frontend black background
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		position: relative;
 		overflow: hidden;
+		min-height: 400px;
 
 		.motion-scroll-images-preview {
 			position: relative;
@@ -58,9 +58,26 @@
 				justify-content: center;
 				height: 100%;
 				text-align: center;
-				color: #666;
+				color: #999; // Lighter color for black background
 				padding: 20px;
 			}
+		}
+
+		// Add label for images area
+		&::before {
+			content: 'Images (Sticky)';
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			font-size: 11px;
+			padding: 4px 8px;
+			background: rgba(255, 255, 255, 0.15);
+			border-radius: 3px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 600;
+			color: #fff;
+			z-index: 10;
 		}
 
 		.motion-scroll-image-count {
@@ -77,10 +94,28 @@
 	}
 
 	.motion-scroll-editor-content {
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		padding: 20px;
-		background: #fff;
+		padding: 4rem 2rem; // Match frontend padding
+		background: inherit; // Inherit background from block
+		color: inherit; // Inherit text color from block
+		min-height: 400px;
+
+		// Add subtle indicator this is the content area
+		position: relative;
+
+		&::before {
+			content: 'Content';
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			font-size: 11px;
+			padding: 4px 8px;
+			background: rgba(0, 0, 0, 0.05);
+			border-radius: 3px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 600;
+			color: #666;
+		}
 	}
 }
 
