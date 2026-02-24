@@ -20,12 +20,29 @@ $content_bg_color = $attributes['contentBackgroundColor'] ?? '';
 $content_text_color = $attributes['contentTextColor'] ?? '';
 $images_bg_color = $attributes['imagesBackgroundColor'] ?? '#000000';
 $caption_text_color = $attributes['captionTextColor'] ?? '#ffffff';
-$content_padding = $attributes['contentPadding'] ?? [
-	'top' => '4rem',
-	'right' => '2rem',
-	'bottom' => '4rem',
-	'left' => '2rem'
-];
+$content_padding = $attributes['contentPadding'] ?? [];
+
+/**
+ * Convert spacing preset value to CSS custom property
+ * Converts "var:preset|spacing|50" to "var(--wp--preset--spacing--50)"
+ */
+function caes_motion_scroll_get_spacing_preset_css_var($value) {
+	if (empty($value)) {
+		return null;
+	}
+
+	// Check if it's a preset value
+	if (is_string($value) && strpos($value, 'var:preset|') === 0) {
+		$parts = explode('|', $value);
+		if (count($parts) === 3) {
+			list(, $type, $slug) = $parts;
+			return sprintf('var(--wp--preset--%s--%s)', $type, $slug);
+		}
+	}
+
+	// Return as-is if it's a regular CSS value
+	return $value;
+}
 
 // Early return if no slides
 if (empty($slides)) {
@@ -204,17 +221,21 @@ endif;
 		if ($content_text_color) {
 			$content_styles[] = 'color: ' . esc_attr($content_text_color);
 		}
-		if (!empty($content_padding['top'])) {
-			$content_styles[] = 'padding-top: ' . esc_attr($content_padding['top']);
+		$padding_top = caes_motion_scroll_get_spacing_preset_css_var($content_padding['top'] ?? null);
+		if ($padding_top) {
+			$content_styles[] = 'padding-top: ' . esc_attr($padding_top);
 		}
-		if (!empty($content_padding['right'])) {
-			$content_styles[] = 'padding-right: ' . esc_attr($content_padding['right']);
+		$padding_right = caes_motion_scroll_get_spacing_preset_css_var($content_padding['right'] ?? null);
+		if ($padding_right) {
+			$content_styles[] = 'padding-right: ' . esc_attr($padding_right);
 		}
-		if (!empty($content_padding['bottom'])) {
-			$content_styles[] = 'padding-bottom: ' . esc_attr($content_padding['bottom']);
+		$padding_bottom = caes_motion_scroll_get_spacing_preset_css_var($content_padding['bottom'] ?? null);
+		if ($padding_bottom) {
+			$content_styles[] = 'padding-bottom: ' . esc_attr($padding_bottom);
 		}
-		if (!empty($content_padding['left'])) {
-			$content_styles[] = 'padding-left: ' . esc_attr($content_padding['left']);
+		$padding_left = caes_motion_scroll_get_spacing_preset_css_var($content_padding['left'] ?? null);
+		if ($padding_left) {
+			$content_styles[] = 'padding-left: ' . esc_attr($padding_left);
 		}
 		echo implode('; ', $content_styles);
 	?>">

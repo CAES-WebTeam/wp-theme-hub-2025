@@ -127,6 +127,26 @@ const getDuotoneFilter = (duotone, filterId) => {
 	);
 };
 
+/**
+ * Convert spacing preset value to CSS custom property
+ * Converts "var:preset|spacing|50" to "var(--wp--preset--spacing--50)"
+ */
+const getSpacingPresetCssVar = (value) => {
+	if (!value) return undefined;
+
+	// Check if it's a preset value
+	if (typeof value === 'string' && value.startsWith('var:preset|')) {
+		const parts = value.split('|');
+		if (parts.length === 3) {
+			const [, type, slug] = parts;
+			return `var(--wp--preset--${type}--${slug})`;
+		}
+	}
+
+	// Return as-is if it's a regular CSS value
+	return value;
+};
+
 const Edit = ({ attributes, setAttributes, clientId }) => {
 	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor, contentPadding } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
@@ -487,10 +507,10 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					<div className="motion-scroll-editor-content" style={{
 						backgroundColor: contentBackgroundColor || 'transparent',
 						color: contentTextColor || 'inherit',
-						paddingTop: contentPadding?.top,
-						paddingRight: contentPadding?.right,
-						paddingBottom: contentPadding?.bottom,
-						paddingLeft: contentPadding?.left,
+						paddingTop: getSpacingPresetCssVar(contentPadding?.top),
+						paddingRight: getSpacingPresetCssVar(contentPadding?.right),
+						paddingBottom: getSpacingPresetCssVar(contentPadding?.bottom),
+						paddingLeft: getSpacingPresetCssVar(contentPadding?.left),
 					}}>
 						<InnerBlocks
 							allowedBlocks={true}
