@@ -48,16 +48,19 @@ function symplectic_import_enqueue_scripts($hook) {
 		.import-row { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; font-family: monospace; font-size: 13px; align-items: flex-start; }
 		.import-row:last-child { border-bottom: none; }
 		.import-status { flex-shrink: 0; font-weight: bold; min-width: 20px; }
-		.import-status.ok  { color: #46b450; }
-		.import-status.err { color: #dc3232; }
-		.import-status.skip { color: #999; }
+		.import-status.ok      { color: #46b450; }
+		.import-status.err     { color: #dc3232; }
+		.import-status.skip    { color: #999; }
+		.import-status.pending { color: #0073aa; }
 		.import-field { flex-shrink: 0; min-width: 240px; color: #555; }
 		.import-value { color: #23282d; word-break: break-word; }
 		.import-error { color: #dc3232; }
 		.import-summary { padding: 12px 16px; border-radius: 4px; margin-bottom: 16px; }
-		.import-summary.all-ok  { background: #ecf7ed; border-left: 4px solid #46b450; }
-		.import-summary.partial { background: #fff8e5; border-left: 4px solid #ffb900; }
-		.import-summary.all-err { background: #fbeaea; border-left: 4px solid #dc3232; }
+		.import-summary.all-ok   { background: #ecf7ed; border-left: 4px solid #46b450; }
+		.import-summary.partial  { background: #fff8e5; border-left: 4px solid #ffb900; }
+		.import-summary.all-err  { background: #fbeaea; border-left: 4px solid #dc3232; }
+		.import-summary.dry-run  { background: #e5f0fa; border-left: 4px solid #0073aa; }
+		#symplectic-post-changes-btn { margin-top: 16px; }
 		.repeater-row { padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; font-family: monospace; }
 		.repeater-row:last-child { border-bottom: none; }
 		@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -67,17 +70,18 @@ function symplectic_import_enqueue_scripts($hook) {
 	wp_add_inline_script('jquery', '
 		jQuery(function($) {
 
-			$("#symplectic-import-form").on("submit", function(e) {
-				e.preventDefault();
+			var nonce = ' . json_encode(wp_create_nonce('symplectic_import_nonce')) . ';
 
-				var pid = $("#proprietary-id").val().trim();
-				if (!pid) { alert("Please enter a Proprietary ID."); return; }
+			// Shared request function — dryRun: true previews without writing.
+			function runRequest(pid, dryRun) {
+				var $importBtn  = $("#symplectic-import-btn");
+				var $dryRunBtn  = $("#symplectic-dry-run-btn");
+				var $results    = $("#symplectic-import-results");
+				var label       = dryRun ? "Running dry run\u2026" : "Importing\u2026";
 
-				var $btn     = $("#symplectic-import-btn");
-				var $results = $("#symplectic-import-results");
-
-				$btn.prop("disabled", true).val("Importing\u2026");
-				$results.html("<p><span class=\"dashicons dashicons-update spin\"></span> Fetching data from the Elements API and writing to user profile\u2026</p>");
+				$importBtn.prop("disabled", true);
+				$dryRunBtn.prop("disabled", true);
+				$results.html("<p><span class=\"dashicons dashicons-update spin\"></span> " + label + "</p>");
 
 				$.ajax({
 					url: ajaxurl,
@@ -85,23 +89,57 @@ function symplectic_import_enqueue_scripts($hook) {
 					timeout: 300000,
 					data: {
 						action: "symplectic_import_user",
-						nonce: ' . json_encode(wp_create_nonce('symplectic_import_nonce')) . ',
-						proprietary_id: pid
+						nonce: nonce,
+						proprietary_id: pid,
+						dry_run: dryRun ? 1 : 0
 					},
 					success: function(response) {
-						$btn.prop("disabled", false).val("Run Import");
+						$importBtn.prop("disabled", false);
+						$dryRunBtn.prop("disabled", false);
 						if (response.success) {
-							$results.html(renderReport(response.data));
+							var html = renderReport(response.data);
+							// After a dry run, append the "Post Changes" button.
+							if (dryRun) {
+								html += "<p id=\"symplectic-post-changes-btn\">"
+									+ "<button type=\"button\" class=\"button button-primary\" id=\"symplectic-confirm-btn\">"
+									+ "Post Changes"
+									+ "</button>"
+									+ "&ensp;<span style=\"color:#555;font-style:italic\">No data has been written yet. Click to commit the changes shown above.</span>"
+									+ "</p>";
+							}
+							$results.html(html);
+							// Bind the "Post Changes" button if present.
+							if (dryRun) {
+								$("#symplectic-confirm-btn").on("click", function() {
+									runRequest(pid, false);
+								});
+							}
 						} else {
 							var msg = (response.data && response.data.error_message) ? response.data.error_message : JSON.stringify(response.data);
-							$results.html("<div class=\"notice notice-error\"><p><strong>Import failed:</strong> " + esc(msg) + "</p></div>");
+							$results.html("<div class=\"notice notice-error\"><p><strong>" + (dryRun ? "Dry run" : "Import") + " failed:</strong> " + esc(msg) + "</p></div>");
 						}
 					},
 					error: function(xhr, status, error) {
-						$btn.prop("disabled", false).val("Run Import");
+						$importBtn.prop("disabled", false);
+						$dryRunBtn.prop("disabled", false);
 						$results.html("<div class=\"notice notice-error\"><p><strong>AJAX error (" + esc(status) + "):</strong> " + esc(error) + "</p><pre>" + esc(xhr.responseText.substring(0, 2000)) + "</pre></div>");
 					}
 				});
+			}
+
+			// "Run Import" — write immediately.
+			$("#symplectic-import-form").on("submit", function(e) {
+				e.preventDefault();
+				var pid = $("#proprietary-id").val().trim();
+				if (!pid) { alert("Please enter a Proprietary ID."); return; }
+				runRequest(pid, false);
+			});
+
+			// "Dry Run" — fetch and preview, no writes.
+			$("#symplectic-dry-run-btn").on("click", function() {
+				var pid = $("#proprietary-id").val().trim();
+				if (!pid) { alert("Please enter a Proprietary ID."); return; }
+				runRequest(pid, true);
 			});
 
 			function esc(s) {
@@ -115,27 +153,45 @@ function symplectic_import_enqueue_scripts($hook) {
 				return str.length > n ? esc(str.substring(0, n)) + "\u2026" : esc(str);
 			}
 
+			function statusAttrs(result) {
+				// Returns { sc: css-class, si: symbol } for a write result value.
+				if (result === true)       return { sc: "ok",      si: "\u2713" };  // ✓
+				if (result === "skipped")  return { sc: "skip",    si: "\u2014" };  // —
+				if (result === "dry_run")  return { sc: "pending", si: "\u25cb" };  // ○
+				return                            { sc: "err",     si: "\u2717" };  // ✗
+			}
+
 			function renderReport(d) {
-				var html = "";
-				var s    = d.summary;
-				var cls  = s.failed > 0 ? "all-err" : (s.skipped > 0 ? "partial" : "all-ok");
+				var html    = "";
+				var s       = d.summary;
+				var isDry   = d.dry_run === true;
+				var cls;
+
+				if (isDry) {
+					cls = "dry-run";
+				} else {
+					cls = s.failed > 0 ? "all-err" : (s.skipped > 0 ? "partial" : "all-ok");
+				}
 
 				// Summary bar
 				html += "<div class=\"import-summary " + cls + "\">";
+				if (isDry) html += "<strong>DRY RUN \u2014 no data written.</strong>&ensp;";
 				html += "<strong>" + esc(d.wp_user.display_name) + "</strong> ";
 				html += "(WP user ID&nbsp;" + esc(d.wp_user.id) + ", login:&nbsp;" + esc(d.wp_user.login) + ")&ensp;&mdash;&ensp;";
-				html += s.ok + "&nbsp;write" + (s.ok !== 1 ? "s" : "") + " succeeded, ";
-				html += s.failed + " failed, " + s.skipped + " skipped.";
+				if (isDry) {
+					html += s.pending + "&nbsp;field" + (s.pending !== 1 ? "s" : "") + " would be written, " + s.skipped + " skipped.";
+				} else {
+					html += s.ok + "&nbsp;write" + (s.ok !== 1 ? "s" : "") + " succeeded, " + s.failed + " failed, " + s.skipped + " skipped.";
+				}
 				html += "</div>";
 
 				// Scalar field writes
 				if (d.writes && d.writes.length) {
 					html += "<div class=\"import-section\"><h3>Scalar Field Writes</h3>";
 					d.writes.forEach(function(w) {
-						var sc = w.result === true ? "ok" : (w.result === "skipped" ? "skip" : "err");
-						var si = w.result === true ? "\u2713" : (w.result === "skipped" ? "\u2014" : "\u2717");
+						var a = statusAttrs(w.result);
 						html += "<div class=\"import-row\">";
-						html += "<span class=\"import-status " + sc + "\">" + si + "</span>";
+						html += "<span class=\"import-status " + a.sc + "\">" + a.si + "</span>";
 						html += "<span class=\"import-field\">" + esc(w.field) + "</span>";
 						if (w.error) {
 							html += "<span class=\"import-error\">" + esc(w.error) + "</span>";
@@ -151,15 +207,23 @@ function symplectic_import_enqueue_scripts($hook) {
 
 				// Taxonomy operations
 				if (d.taxonomy_ops && d.taxonomy_ops.length) {
-					html += "<div class=\"import-section\"><h3>Areas of Expertise &mdash; Taxonomy Operations</h3>";
+					html += "<div class=\"import-section\"><h3>Areas of Expertise \u2014 Taxonomy Operations</h3>";
 					d.taxonomy_ops.forEach(function(t) {
-						var sc = t.error ? "err" : "ok";
-						var si = t.error ? "\u2717" : "\u2713";
-						var badge = t.action === "created" ? "[new]&nbsp;" : "[exists]&nbsp;";
+						var sc, si, badge;
+						if (t.error) {
+							sc = "err"; si = "\u2717";
+						} else if (t.action === "would_create") {
+							sc = "pending"; si = "\u25cb"; // ○ — would create
+						} else {
+							sc = "ok"; si = "\u2713";
+						}
+						badge = (t.action === "created" || t.action === "would_create") ? "[new]&nbsp;" : "[exists]&nbsp;";
 						html += "<div class=\"import-row\">";
 						html += "<span class=\"import-status " + sc + "\">" + si + "</span>";
 						html += "<span class=\"import-field\">" + badge + "</span>";
-						html += "<span class=\"import-value\">" + esc(t.term) + " &nbsp;<span style=\"color:#999\">(term_id:&nbsp;" + esc(t.term_id) + ")</span></span>";
+						html += "<span class=\"import-value\">" + esc(t.term);
+						if (t.term_id) html += " &nbsp;<span style=\"color:#999\">(term_id:&nbsp;" + esc(t.term_id) + ")</span>";
+						html += "</span>";
 						if (t.error) html += "&nbsp;<span class=\"import-error\">" + esc(t.error) + "</span>";
 						html += "</div>";
 					});
@@ -171,11 +235,11 @@ function symplectic_import_enqueue_scripts($hook) {
 				["scholarly_works", "distinctions", "courses_taught"].forEach(function(key) {
 					if (!d.repeaters || !d.repeaters[key]) return;
 					var r   = d.repeaters[key];
-					var sc  = r.write_result === true ? "ok" : (r.write_result === "skipped" ? "skip" : "err");
-					var si  = r.write_result === true ? "\u2713" : (r.write_result === "skipped" ? "\u2014" : "\u2717");
+					var a   = statusAttrs(r.write_result);
 					var lbl = repeaterLabels[key] || key;
+					var writtenLabel = isDry ? "rows pending" : "rows written";
 					html += "<div class=\"import-section\">";
-					html += "<h3>" + lbl + " &mdash; <span class=\"import-status " + sc + "\">" + si + "</span> " + r.row_count + " row" + (r.row_count !== 1 ? "s" : "") + " written</h3>";
+					html += "<h3>" + lbl + " &mdash; <span class=\"import-status " + a.sc + "\">" + a.si + "</span> " + r.row_count + " " + writtenLabel + "</h3>";
 					if (r.error) {
 						html += "<p class=\"import-error\">" + esc(r.error) + "</p>";
 					} else if (r.write_result === "skipped") {
@@ -226,6 +290,12 @@ function symplectic_import_render_page() {
 				</div>
 				<input type="submit" id="symplectic-import-btn" class="button button-primary" value="Run Import"
 					<?php echo $credentials_ok ? '' : 'disabled'; ?>>
+			<button type="button" id="symplectic-dry-run-btn" class="button button-secondary"
+				<?php echo $credentials_ok ? '' : 'disabled'; ?>>Dry Run</button>
+			<p class="description" style="margin-top:8px">
+				<strong>Dry Run</strong> fetches the data and previews what would be written without touching the database.
+				<strong>Run Import</strong> writes immediately.
+			</p>
 			</form>
 
 			<div id="symplectic-import-results"></div>
@@ -260,6 +330,8 @@ function symplectic_import_user_handler() {
 		wp_send_json_error(array('error_message' => 'Proprietary ID is required.'));
 		return;
 	}
+
+	$dry_run = !empty($_POST['dry_run']) && $_POST['dry_run'] === '1';
 
 	// -------------------------------------------------------------------------
 	// Step 1: Find the WordPress user by personnel_id
@@ -477,10 +549,15 @@ function symplectic_import_user_handler() {
 	$repeaters    = array();
 
 	// Helper: attempt a scalar field write and record the result.
-	$do_write = function($label, $field_key, $value, $display) use (&$writes, $user_acf) {
+	// In dry-run mode, skips the actual update_field() call and records 'dry_run'.
+	$do_write = function($label, $field_key, $value, $display) use (&$writes, $user_acf, $dry_run) {
 		if ($value === null || $value === '' || $value === array()) {
 			$writes[] = array('field' => $label, 'field_key' => $field_key, 'result' => 'skipped', 'display_value' => '', 'error' => null);
 			return 'skipped';
+		}
+		if ($dry_run) {
+			$writes[] = array('field' => $label, 'field_key' => $field_key, 'result' => 'dry_run', 'display_value' => $display, 'error' => null);
+			return 'dry_run';
 		}
 		$result = update_field($field_key, $value, $user_acf);
 		$writes[] = array(
@@ -511,6 +588,14 @@ function symplectic_import_user_handler() {
 					'term'    => $keyword,
 					'action'  => 'existing',
 					'term_id' => $existing->term_id,
+					'error'   => null,
+				);
+			} elseif ($dry_run) {
+				// In dry-run mode, note that this term would be created without actually creating it.
+				$taxonomy_ops[] = array(
+					'term'    => $keyword,
+					'action'  => 'would_create',
+					'term_id' => null,
 					'error'   => null,
 				);
 			} else {
@@ -556,7 +641,7 @@ function symplectic_import_user_handler() {
 		);
 	}
 	if (!empty($pub_rows)) {
-		$pub_result = update_field('field_elements_scholarly_works', $pub_rows, $user_acf);
+		$pub_result = $dry_run ? 'dry_run' : update_field('field_elements_scholarly_works', $pub_rows, $user_acf);
 	} else {
 		$pub_result = 'skipped';
 	}
@@ -577,7 +662,7 @@ function symplectic_import_user_handler() {
 		);
 	}
 	if (!empty($dist_rows)) {
-		$dist_result = update_field('field_elements_distinctions', $dist_rows, $user_acf);
+		$dist_result = $dry_run ? 'dry_run' : update_field('field_elements_distinctions', $dist_rows, $user_acf);
 	} else {
 		$dist_result = 'skipped';
 	}
@@ -598,7 +683,7 @@ function symplectic_import_user_handler() {
 		);
 	}
 	if (!empty($course_rows)) {
-		$course_result = update_field('field_elements_courses_taught', $course_rows, $user_acf);
+		$course_result = $dry_run ? 'dry_run' : update_field('field_elements_courses_taught', $course_rows, $user_acf);
 	} else {
 		$course_result = 'skipped';
 	}
@@ -616,14 +701,17 @@ function symplectic_import_user_handler() {
 	$ok      = count(array_filter($writes, fn($w) => $w['result'] === true));
 	$failed  = count(array_filter($writes, fn($w) => $w['result'] === false));
 	$skipped = count(array_filter($writes, fn($w) => $w['result'] === 'skipped'));
+	$pending = count(array_filter($writes, fn($w) => $w['result'] === 'dry_run'));
 
 	foreach ($repeaters as $r) {
-		if ($r['write_result'] === true)     $ok++;
-		elseif ($r['write_result'] === false) $failed++;
-		else                                  $skipped++;
+		if ($r['write_result'] === true)          $ok++;
+		elseif ($r['write_result'] === false)      $failed++;
+		elseif ($r['write_result'] === 'dry_run')  $pending++;
+		else                                        $skipped++;
 	}
 
 	wp_send_json_success(array(
+		'dry_run' => $dry_run,
 		'wp_user' => array(
 			'id'           => $wp_user_id,
 			'login'        => $wp_user->user_login,
@@ -637,6 +725,7 @@ function symplectic_import_user_handler() {
 			'ok'      => $ok,
 			'failed'  => $failed,
 			'skipped' => $skipped,
+			'pending' => $pending,
 		),
 	));
 }
