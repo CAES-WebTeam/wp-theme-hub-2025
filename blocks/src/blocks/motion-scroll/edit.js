@@ -759,7 +759,7 @@ const ImagePanel = ({
 				{__('Image', 'caes-motion-scroll')}
 			</label>
 			<p style={{ margin: '0 0 12px', fontSize: '12px', color: '#757575' }}>
-				{__('Recommended: JPEG @ 1920 x 1080px', 'caes-motion-scroll')}
+				{__('Recommended: JPEG @ 1920 x 1080px. Set focus point for optimal display on desktop.', 'caes-motion-scroll')}
 			</p>
 
 			<MediaUploadCheck>
@@ -777,26 +777,101 @@ const ImagePanel = ({
 					</div>
 				) : (
 					<div>
-						{/* Image Preview */}
+						{/* Desktop Preview - shows how the image will be cropped with focal point */}
 						<div style={{ marginBottom: '16px' }}>
 							{(() => {
 								const filterId = `manager-${clientId}-${slideIndex}`;
+								const focalX = (slide.focalPoint?.x ?? 0.5) * 100;
+								const focalY = (slide.focalPoint?.y ?? 0.5) * 100;
 								return (
 									<>
 										{duotone && getDuotoneFilter(duotone, filterId)}
-										<img
-											src={image.url}
-											alt={image.alt}
-											style={{
+										<div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden' }}>
+											<div style={{
 												width: '100%',
-												height: 'auto',
-												maxHeight: '300px',
-												maxWidth: '100%',
-												objectFit: 'contain',
-												borderRadius: '4px',
-												filter: duotone ? `url(#${filterId})` : undefined,
-											}}
-										/>
+												aspectRatio: '16 / 9',
+												position: 'relative',
+												overflow: 'hidden',
+												background: '#000',
+											}}>
+												<img
+													src={image.url}
+													alt={image.alt}
+													style={{
+														width: '100%',
+														height: '100%',
+														objectFit: 'cover',
+														objectPosition: `${focalX}% ${focalY}%`,
+														filter: duotone ? `url(#${filterId})` : undefined,
+													}}
+												/>
+												{/* Focal point crosshair */}
+												<div style={{
+													position: 'absolute',
+													left: `${focalX}%`,
+													top: `${focalY}%`,
+													transform: 'translate(-50%, -50%)',
+													pointerEvents: 'none',
+												}}>
+													<div style={{
+														width: '24px',
+														height: '24px',
+														borderRadius: '50%',
+														border: '2px solid #fff',
+														boxShadow: '0 0 0 1px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.4)',
+													}} />
+													<div style={{
+														position: 'absolute',
+														left: '50%',
+														top: '-6px',
+														width: '1px',
+														height: '8px',
+														background: '#fff',
+														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
+														transform: 'translateX(-50%)',
+													}} />
+													<div style={{
+														position: 'absolute',
+														left: '50%',
+														bottom: '-6px',
+														width: '1px',
+														height: '8px',
+														background: '#fff',
+														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
+														transform: 'translateX(-50%)',
+													}} />
+													<div style={{
+														position: 'absolute',
+														top: '50%',
+														left: '-6px',
+														width: '8px',
+														height: '1px',
+														background: '#fff',
+														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
+														transform: 'translateY(-50%)',
+													}} />
+													<div style={{
+														position: 'absolute',
+														top: '50%',
+														right: '-6px',
+														width: '8px',
+														height: '1px',
+														background: '#fff',
+														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
+														transform: 'translateY(-50%)',
+													}} />
+												</div>
+											</div>
+											<div style={{
+												padding: '6px 8px',
+												background: '#1e1e1e',
+												color: '#bbb',
+												fontSize: '11px',
+												textAlign: 'center',
+											}}>
+												{__('Desktop preview — focus point applies in background mode', 'caes-motion-scroll')}
+											</div>
+										</div>
 									</>
 								);
 							})()}
