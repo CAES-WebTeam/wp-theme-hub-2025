@@ -187,7 +187,15 @@ function symplectic_import_enqueue_scripts($hook) {
 
 				// Scalar field writes
 				if (d.writes && d.writes.length) {
-					html += "<div class=\"import-section\"><h3>Scalar Field Writes</h3>";
+					if (d.fetch_errors && d.fetch_errors.length) {
+					html += "<div class=\"import-section\" style=\"border-color:#dc3232\"><h3 style=\"color:#dc3232\">Fetch Errors (" + d.fetch_errors.length + ")</h3>";
+					d.fetch_errors.forEach(function(msg) {
+						html += "<div class=\"import-row\"><span class=\"import-status err\">\u2717</span><span class=\"import-value import-error\">" + esc(msg) + "</span></div>";
+					});
+					html += "</div>";
+				}
+
+				html += "<div class=\"import-section\"><h3>Scalar Field Writes</h3>";
 					d.writes.forEach(function(w) {
 						var a = statusAttrs(w.result);
 						html += "<div class=\"import-row\">";
@@ -481,6 +489,7 @@ function symplectic_import_user_handler() {
 	$publications        = array();
 	$activities          = array();
 	$teaching_activities = array();
+	$fetch_errors        = array();
 
 	if ($elements_user_id) {
 		$rel_url       = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $elements_user_id . '/relationships?per-page=100';
@@ -494,10 +503,22 @@ function symplectic_import_user_handler() {
 			if ($page_count > $max_pages) break;
 
 			$rel_response = wp_remote_get($rel_url, $api_args);
-			if (is_wp_error($rel_response) || wp_remote_retrieve_response_code($rel_response) !== 200) break;
+			if (is_wp_error($rel_response)) {
+				$fetch_errors[] = 'Relationships page ' . $page_count . ': ' . $rel_response->get_error_message();
+				break;
+			}
+			if (wp_remote_retrieve_response_code($rel_response) !== 200) {
+				$fetch_errors[] = 'Relationships page ' . $page_count . ': HTTP ' . wp_remote_retrieve_response_code($rel_response) . ' — ' . substr(wp_remote_retrieve_body($rel_response), 0, 200);
+				break;
+			}
 
 			$rel_xml = simplexml_load_string(wp_remote_retrieve_body($rel_response));
-			if ($rel_xml === false) break;
+			if ($rel_xml === false) {
+				$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
+				libxml_clear_errors();
+				$fetch_errors[] = 'Relationships page ' . $page_count . ' XML parse: ' . implode('; ', $xml_errs);
+				break;
+			}
 
 			$rel_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 			$page_objects = $rel_xml->xpath('//api:object');
@@ -514,9 +535,17 @@ function symplectic_import_user_handler() {
 					if ($category === 'publication' && isset($obj_data['href'])) {
 
 						$pub_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (!is_wp_error($pub_resp) && wp_remote_retrieve_response_code($pub_resp) === 200) {
+						if (is_wp_error($pub_resp)) {
+							$fetch_errors[] = 'Publication ' . $obj_data['id'] . ': ' . $pub_resp->get_error_message();
+						} elseif (wp_remote_retrieve_response_code($pub_resp) !== 200) {
+							$fetch_errors[] = 'Publication ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($pub_resp);
+						} else {
 							$pub_xml = simplexml_load_string(wp_remote_retrieve_body($pub_resp));
-							if ($pub_xml !== false) {
+							if ($pub_xml === false) {
+								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
+								libxml_clear_errors();
+								$fetch_errors[] = 'Publication ' . $obj_data['id'] . ' XML parse: ' . implode('; ', $xml_errs);
+							} else {
 								$obj_data = array_merge($obj_data, symplectic_import_extract_publication_fields($pub_xml));
 							}
 						}
@@ -528,9 +557,17 @@ function symplectic_import_user_handler() {
 						&& $obj_data['type'] === 'distinction'
 					) {
 						$act_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (!is_wp_error($act_resp) && wp_remote_retrieve_response_code($act_resp) === 200) {
+						if (is_wp_error($act_resp)) {
+							$fetch_errors[] = 'Activity ' . $obj_data['id'] . ': ' . $act_resp->get_error_message();
+						} elseif (wp_remote_retrieve_response_code($act_resp) !== 200) {
+							$fetch_errors[] = 'Activity ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($act_resp);
+						} else {
 							$act_xml = simplexml_load_string(wp_remote_retrieve_body($act_resp));
-							if ($act_xml !== false) {
+							if ($act_xml === false) {
+								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
+								libxml_clear_errors();
+								$fetch_errors[] = 'Activity ' . $obj_data['id'] . ' XML parse: ' . implode('; ', $xml_errs);
+							} else {
 								$obj_data = array_merge($obj_data, symplectic_import_extract_activity_fields($act_xml));
 							}
 						}
@@ -542,9 +579,17 @@ function symplectic_import_user_handler() {
 						&& $obj_data['type'] === 'course-taught'
 					) {
 						$ta_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (!is_wp_error($ta_resp) && wp_remote_retrieve_response_code($ta_resp) === 200) {
+						if (is_wp_error($ta_resp)) {
+							$fetch_errors[] = 'Teaching activity ' . $obj_data['id'] . ': ' . $ta_resp->get_error_message();
+						} elseif (wp_remote_retrieve_response_code($ta_resp) !== 200) {
+							$fetch_errors[] = 'Teaching activity ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($ta_resp);
+						} else {
 							$ta_xml = simplexml_load_string(wp_remote_retrieve_body($ta_resp));
-							if ($ta_xml !== false) {
+							if ($ta_xml === false) {
+								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
+								libxml_clear_errors();
+								$fetch_errors[] = 'Teaching activity ' . $obj_data['id'] . ' XML parse: ' . implode('; ', $xml_errs);
+							} else {
 								$obj_data = array_merge($obj_data, symplectic_import_extract_teaching_activity_fields($ta_xml));
 							}
 						}
@@ -756,6 +801,7 @@ function symplectic_import_user_handler() {
 			'login'        => $wp_user->user_login,
 			'display_name' => $wp_user->display_name,
 		),
+		'fetch_errors' => $fetch_errors,
 		'writes'       => $writes,
 		'taxonomy_ops' => $taxonomy_ops,
 		'repeaters'    => $repeaters,
