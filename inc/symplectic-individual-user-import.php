@@ -155,10 +155,11 @@ function symplectic_import_enqueue_scripts($hook) {
 
 			function statusAttrs(result) {
 				// Returns { sc: css-class, si: symbol } for a write result value.
-				if (result === true)       return { sc: "ok",      si: "\u2713" };  // ✓
-				if (result === "skipped")  return { sc: "skip",    si: "\u2014" };  // —
-				if (result === "dry_run")  return { sc: "pending", si: "\u25cb" };  // ○
-				return                            { sc: "err",     si: "\u2717" };  // ✗
+				if (result === true)         return { sc: "ok",      si: "\u2713" };  // ✓
+				if (result === "verified")   return { sc: "ok",      si: "\u2713" };  // ✓ (written, false return)
+				if (result === "skipped")    return { sc: "skip",    si: "\u2014" };  // —
+				if (result === "dry_run")    return { sc: "pending", si: "\u25cb" };  // ○
+				return                              { sc: "err",     si: "\u2717" };  // ✗
 			}
 
 			function renderReport(d) {
@@ -207,6 +208,7 @@ function symplectic_import_enqueue_scripts($hook) {
 							html += "<span class=\"import-value\" style=\"color:#999\">No value available \u2014 field not written.</span>";
 						} else {
 							html += "<span class=\"import-value\">" + trunc(w.display_value, 140) + "</span>";
+						if (w.note) html += "<span style=\"color:#999;font-style:italic;margin-left:8px\">" + esc(w.note) + "</span>";
 						}
 						html += "</div>";
 					});
@@ -250,10 +252,11 @@ function symplectic_import_enqueue_scripts($hook) {
 					html += "<h3>" + lbl + " &mdash; <span class=\"import-status " + a.sc + "\">" + a.si + "</span> " + r.row_count + " " + writtenLabel + "</h3>";
 					if (r.error) {
 						html += "<p class=\"import-error\">" + esc(r.error) + "</p>";
-					} else if (r.write_result === "skipped") {
-						html += "<p style=\"color:#999\">No rows available \u2014 field not written.</p>";
-					} else {
-						r.rows.forEach(function(row, i) {
+				} else if (r.write_result === "skipped") {
+					html += "<p style=\"color:#999\">No rows available \u2014 field not written.</p>";
+				} else {
+					if (r.note) html += "<p style=\"color:#999;font-style:italic\">" + esc(r.note) + "</p>";
+					r.rows.forEach(function(row, i) {
 							html += "<div class=\"repeater-row\"><strong>Row&nbsp;" + (i+1) + ":</strong>&nbsp;";
 							var parts = [];
 							for (var k in row) {
@@ -644,12 +647,39 @@ function symplectic_import_user_handler() {
 			return 'dry_run';
 		}
 		$result = update_field($field_key, $value, $user_acf);
+		if ($result === false) {
+			// update_field() returns false both on genuine failure and when WordPress's
+			// update_metadata() considers the value unchanged (no-op), or on first-insert
+			// in some ACF versions. Read back to distinguish the two cases.
+			$stored = get_field($field_key, $user_acf);
+			if ($stored !== false && $stored !== null && $stored !== '') {
+				$writes[] = array(
+					'field'         => $label,
+					'field_key'     => $field_key,
+					'result'        => 'verified',
+					'display_value' => $display,
+					'error'         => null,
+					'note'          => 'update_field() returned false; value confirmed present via get_field() — ACF/WP no-op or first-insert return ambiguity.',
+				);
+				return 'verified';
+			}
+			$writes[] = array(
+				'field'         => $label,
+				'field_key'     => $field_key,
+				'result'        => false,
+				'display_value' => $display,
+				'error'         => 'update_field() returned false; subsequent get_field() also found no value — likely a genuine write failure.',
+				'note'          => null,
+			);
+			return false;
+		}
 		$writes[] = array(
 			'field'         => $label,
 			'field_key'     => $field_key,
 			'result'        => $result,
 			'display_value' => $display,
-			'error'         => ($result === false) ? 'update_field() returned false' : null,
+			'error'         => null,
+			'note'          => null,
 		);
 		return $result;
 	};
@@ -724,8 +754,16 @@ function symplectic_import_user_handler() {
 			'pub_citation_count' => isset($pub['citation-count'])  ? (int)$pub['citation-count'] : '',
 		);
 	}
+	$pub_note = null;
 	if (!empty($pub_rows)) {
 		$pub_result = $dry_run ? 'dry_run' : update_field('field_elements_scholarly_works', $pub_rows, $user_acf);
+		if ($pub_result === false) {
+			$stored_pubs = get_field('field_elements_scholarly_works', $user_acf);
+			if (!empty($stored_pubs)) {
+				$pub_result = 'verified';
+				$pub_note   = 'update_field() returned false; ' . count($stored_pubs) . ' row(s) confirmed present via get_field() — ACF/WP no-op or first-insert return ambiguity.';
+			}
+		}
 	} else {
 		$pub_result = 'skipped';
 	}
@@ -733,7 +771,8 @@ function symplectic_import_user_handler() {
 		'row_count'    => count($pub_rows),
 		'rows'         => $pub_rows,
 		'write_result' => $pub_result,
-		'error'        => ($pub_result === false) ? 'update_field() returned false' : null,
+		'error'        => ($pub_result === false) ? 'update_field() returned false; subsequent get_field() found no rows — likely a genuine write failure.' : null,
+		'note'         => $pub_note,
 	);
 
 	// elements_distinctions (repeater)
@@ -745,8 +784,16 @@ function symplectic_import_user_handler() {
 			'distinction_description' => isset($act['description']) ? $act['description'] : '',
 		);
 	}
+	$dist_note = null;
 	if (!empty($dist_rows)) {
 		$dist_result = $dry_run ? 'dry_run' : update_field('field_elements_distinctions', $dist_rows, $user_acf);
+		if ($dist_result === false) {
+			$stored_dist = get_field('field_elements_distinctions', $user_acf);
+			if (!empty($stored_dist)) {
+				$dist_result = 'verified';
+				$dist_note   = 'update_field() returned false; ' . count($stored_dist) . ' row(s) confirmed present via get_field() — ACF/WP no-op or first-insert return ambiguity.';
+			}
+		}
 	} else {
 		$dist_result = 'skipped';
 	}
@@ -754,7 +801,8 @@ function symplectic_import_user_handler() {
 		'row_count'    => count($dist_rows),
 		'rows'         => $dist_rows,
 		'write_result' => $dist_result,
-		'error'        => ($dist_result === false) ? 'update_field() returned false' : null,
+		'error'        => ($dist_result === false) ? 'update_field() returned false; subsequent get_field() found no rows — likely a genuine write failure.' : null,
+		'note'         => $dist_note,
 	);
 
 	// elements_courses_taught (repeater)
@@ -766,8 +814,16 @@ function symplectic_import_user_handler() {
 			'course_term'  => isset($ta['term'])        ? $ta['term']        : '',
 		);
 	}
+	$course_note = null;
 	if (!empty($course_rows)) {
 		$course_result = $dry_run ? 'dry_run' : update_field('field_elements_courses_taught', $course_rows, $user_acf);
+		if ($course_result === false) {
+			$stored_courses = get_field('field_elements_courses_taught', $user_acf);
+			if (!empty($stored_courses)) {
+				$course_result = 'verified';
+				$course_note   = 'update_field() returned false; ' . count($stored_courses) . ' row(s) confirmed present via get_field() — ACF/WP no-op or first-insert return ambiguity.';
+			}
+		}
 	} else {
 		$course_result = 'skipped';
 	}
@@ -775,23 +831,24 @@ function symplectic_import_user_handler() {
 		'row_count'    => count($course_rows),
 		'rows'         => $course_rows,
 		'write_result' => $course_result,
-		'error'        => ($course_result === false) ? 'update_field() returned false' : null,
+		'error'        => ($course_result === false) ? 'update_field() returned false; subsequent get_field() found no rows — likely a genuine write failure.' : null,
+		'note'         => $course_note,
 	);
 
 	// -------------------------------------------------------------------------
 	// Step 6: Build summary and return
 	// -------------------------------------------------------------------------
 
-	$ok      = count(array_filter($writes, fn($w) => $w['result'] === true));
+	$ok      = count(array_filter($writes, fn($w) => $w['result'] === true || $w['result'] === 'verified'));
 	$failed  = count(array_filter($writes, fn($w) => $w['result'] === false));
 	$skipped = count(array_filter($writes, fn($w) => $w['result'] === 'skipped'));
 	$pending = count(array_filter($writes, fn($w) => $w['result'] === 'dry_run'));
 
 	foreach ($repeaters as $r) {
-		if ($r['write_result'] === true)          $ok++;
-		elseif ($r['write_result'] === false)      $failed++;
-		elseif ($r['write_result'] === 'dry_run')  $pending++;
-		else                                        $skipped++;
+		if ($r['write_result'] === true || $r['write_result'] === 'verified') $ok++;
+		elseif ($r['write_result'] === false)                                  $failed++;
+		elseif ($r['write_result'] === 'dry_run')                              $pending++;
+		else                                                                    $skipped++;
 	}
 
 	wp_send_json_success(array(
