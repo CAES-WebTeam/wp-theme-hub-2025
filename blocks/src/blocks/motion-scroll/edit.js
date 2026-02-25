@@ -19,6 +19,7 @@ import {
 	FocalPointPicker,
 	Popover,
 	TextControl,
+	ToggleControl,
 	ToolbarGroup,
 	ToolbarButton,
 	Modal,
@@ -69,6 +70,7 @@ const DEFAULT_SLIDE = {
 	focalPoint: { x: 0.5, y: 0.5 },
 	duotone: null,
 	caption: '',
+	showCaption: true,
 };
 
 const generateSlideId = () => {
@@ -253,13 +255,13 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			<BlockControls>
 				<ToolbarGroup>
 					<ToolbarButton
-						icon="align-pull-left"
+						icon="align-pull-right"
 						label={__('Show content on left', 'caes-motion-scroll')}
 						isActive={contentPosition === 'left'}
 						onClick={() => setAttributes({ contentPosition: 'left' })}
 					/>
 					<ToolbarButton
-						icon="align-pull-right"
+						icon="align-pull-left"
 						label={__('Show content on right', 'caes-motion-scroll')}
 						isActive={contentPosition === 'right'}
 						onClick={() => setAttributes({ contentPosition: 'right' })}
@@ -790,9 +792,9 @@ const ImagePanel = ({
 											style={{
 												width: '100%',
 												height: 'auto',
-												maxHeight: '250px',
-												aspectRatio: '16 / 9',
-												objectFit: 'cover',
+												maxHeight: '300px',
+												maxWidth: '100%',
+												objectFit: 'contain',
 												borderRadius: '4px',
 												filter: duotone ? `url(#${filterId})` : undefined,
 											}}
@@ -836,7 +838,14 @@ const ImagePanel = ({
 							value={slide.caption || ''}
 							onChange={(value) => onUpdate({ caption: value })}
 							placeholder={__('Optional caption text', 'caes-motion-scroll')}
-							help={__('Leave empty to hide caption', 'caes-motion-scroll')}
+						/>
+
+						{/* Show Caption Toggle */}
+						<ToggleControl
+							label={__('Show Caption', 'caes-motion-scroll')}
+							checked={slide.showCaption !== false}
+							onChange={(value) => onUpdate({ showCaption: value })}
+							help={__('Display caption text on this image', 'caes-motion-scroll')}
 						/>
 
 						{/* Focus & Filter Buttons */}
