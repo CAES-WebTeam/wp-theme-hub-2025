@@ -10,9 +10,60 @@ document.addEventListener('DOMContentLoaded', function () {
 		const content = block.querySelector('.motion-scroll-content');
 		const slides = block.querySelectorAll('.motion-scroll-slide');
 		const slideCount = parseInt(block.getAttribute('data-slide-count') || slides.length, 10);
+		const isContainMode = block.classList.contains('image-mode-contain');
 
 		if (slideCount === 0 || !content) {
 			return;
+		}
+
+		// Handle contain mode image sizing to prevent caption cutoff
+		if (isContainMode) {
+			function adjustContainModeImages() {
+				const imagesContainer = block.querySelector('.motion-scroll-images');
+				if (!imagesContainer) return;
+
+				const containerHeight = imagesContainer.offsetHeight;
+				const containerPadding = 64; // 2rem top + 2rem bottom (32px each)
+
+				slides.forEach((slide) => {
+					const figure = slide.querySelector('.motion-scroll-figure');
+					const img = slide.querySelector('img');
+					const caption = slide.querySelector('.motion-scroll-caption');
+
+					if (!figure || !img) return;
+
+					// Calculate caption height (including padding)
+					const captionHeight = caption ? caption.offsetHeight + 16 : 0; // 1rem padding
+
+					// Calculate maximum image height
+					const maxImageHeight = containerHeight - containerPadding - captionHeight - 20; // 20px buffer
+
+					// Set max-height on the image
+					img.style.maxHeight = `${maxImageHeight}px`;
+				});
+			}
+
+			// Run on load
+			adjustContainModeImages();
+
+			// Run on window resize
+			let resizeTimeout;
+			window.addEventListener('resize', () => {
+				clearTimeout(resizeTimeout);
+				resizeTimeout = setTimeout(adjustContainModeImages, 100);
+			});
+
+			// Run after images load
+			slides.forEach((slide) => {
+				const img = slide.querySelector('img');
+				if (img) {
+					if (img.complete) {
+						adjustContainModeImages();
+					} else {
+						img.addEventListener('load', adjustContainModeImages);
+					}
+				}
+			});
 		}
 
 		let currentSlideIndex = 0;
