@@ -4,14 +4,20 @@
  */
 
 .caes-motion-scroll-editor {
-	// Remove outer border for cleaner preview
 	position: relative;
+	box-sizing: border-box;
+	max-width: 100%;
+
+	*, *::before, *::after {
+		box-sizing: border-box;
+	}
 
 	.motion-scroll-editor-layout {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 0;
 		min-height: 400px;
+		width: 100%;
 	}
 
 	&.content-left {
@@ -39,6 +45,7 @@
 		justify-content: center;
 		position: relative;
 		overflow: hidden;
+		min-width: 0; // Prevent grid blowout
 		min-height: 400px;
 
 		.motion-scroll-images-preview {
@@ -138,6 +145,7 @@
 	.motion-scroll-editor-content {
 		background: inherit; // Inherit background from block
 		color: inherit; // Inherit text color from block
+		min-width: 0; // Prevent grid blowout
 		min-height: 400px;
 
 		// Add subtle indicator this is the content area
