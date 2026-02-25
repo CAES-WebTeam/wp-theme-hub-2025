@@ -893,7 +893,7 @@ const ImagePanel = ({
 						{/* Caption */}
 						<TextControl
 							label={__('Caption', 'caes-reveal') + ' (' + __('optional', 'caes-reveal') + ')'}
-							value={image?.captionText || image?.caption || ''}
+							value={image?.captionText ?? image?.caption ?? ''}
 							onChange={(value) => {
 								const updatedImage = { ...image, captionText: value };
 								onUpdate({ [imageKey]: updatedImage });
