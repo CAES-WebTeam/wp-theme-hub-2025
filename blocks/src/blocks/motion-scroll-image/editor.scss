@@ -5,11 +5,8 @@
 .caes-motion-scroll-image-editor {
 	.motion-scroll-image-preview {
 		position: relative;
-		border: 2px dashed #ddd;
-		border-radius: 4px;
 		overflow: hidden;
 		min-height: 200px;
-		background: #f0f0f0;
 
 		img {
 			width: 100%;
