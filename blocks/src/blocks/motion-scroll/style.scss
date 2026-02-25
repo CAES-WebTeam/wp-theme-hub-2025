@@ -97,6 +97,10 @@
 
 	// Image display mode: cover (default - background fill)
 	&.image-mode-cover {
+		.motion-scroll-images {
+			background-color: #000 !important;
+		}
+
 		.motion-scroll-slide {
 			display: block;
 		}
