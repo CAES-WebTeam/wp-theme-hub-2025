@@ -120,9 +120,9 @@
 			left: 0;
 			right: 0;
 			padding: 1rem 1.5rem;
-			background: rgba(0, 0, 0, 0.6);
+			background: rgba(0, 0, 0, 0.7);
 			z-index: 2;
-			color: var(--wp--preset--color--base);
+			color: var(--wp--preset--color--base) !important;
 			font-size: var(--wp--preset--font-size--small);
 		}
 	}
