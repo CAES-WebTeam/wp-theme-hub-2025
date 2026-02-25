@@ -25,4 +25,12 @@
 			object-position: var(--focal-x, 50%) var(--focal-y, 50%);
 		}
 	}
+
+	.motion-scroll-image-caption {
+		margin-top: 0.5rem;
+		font-size: 0.875rem;
+		color: inherit;
+		text-align: center;
+		padding: 0 1rem;
+	}
 }

@@ -19,7 +19,6 @@ import {
 	FocalPointPicker,
 	Popover,
 	TextControl,
-	ToggleControl,
 	ToolbarGroup,
 	ToolbarButton,
 	Modal,
@@ -70,7 +69,6 @@ const DEFAULT_SLIDE = {
 	focalPoint: { x: 0.5, y: 0.5 },
 	duotone: null,
 	caption: '',
-	showCaption: true,
 };
 
 const generateSlideId = () => {
@@ -838,14 +836,7 @@ const ImagePanel = ({
 							value={slide.caption || ''}
 							onChange={(value) => onUpdate({ caption: value })}
 							placeholder={__('Optional caption text', 'caes-motion-scroll')}
-						/>
-
-						{/* Show Caption Toggle */}
-						<ToggleControl
-							label={__('Show Caption', 'caes-motion-scroll')}
-							checked={slide.showCaption !== false}
-							onChange={(value) => onUpdate({ showCaption: value })}
-							help={__('Display caption text on this image', 'caes-motion-scroll')}
+							help={__('Leave empty to hide caption', 'caes-motion-scroll')}
 						/>
 
 						{/* Focus & Filter Buttons */}

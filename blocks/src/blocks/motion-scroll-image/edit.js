@@ -53,6 +53,11 @@ const Edit = ({ attributes, setAttributes, context }) => {
 					{selectedImage ? (
 						<>
 							<img src={selectedImage.url} alt={selectedImage.alt || ''} />
+							{selectedSlide?.caption && (
+								<div className="motion-scroll-image-caption-preview">
+									{selectedSlide.caption}
+								</div>
+							)}
 							<div className="motion-scroll-image-label">
 								📱 {__('Mobile Only', 'caes-motion-scroll')}
 							</div>

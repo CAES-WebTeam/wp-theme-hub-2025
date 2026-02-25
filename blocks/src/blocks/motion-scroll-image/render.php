@@ -67,5 +67,13 @@ if (function_exists('caes_motion_scroll_build_srcset')) {
 			loading="lazy"
 			decoding="async"
 			<?php if ($img_style_attr) : ?>style="<?php echo esc_attr($img_style_attr); ?>" <?php endif; ?>>
+		<?php
+		// Use custom caption if provided, otherwise fall back to image caption
+		$caption = $selected_slide['caption'] ?? $image['caption'] ?? '';
+		if (! empty($caption)) : ?>
+			<figcaption class="motion-scroll-image-caption">
+				<?php echo wp_kses_post($caption); ?>
+			</figcaption>
+		<?php endif; ?>
 	</figure>
 </div>
