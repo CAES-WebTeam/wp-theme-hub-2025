@@ -191,8 +191,9 @@
 		}
 	}
 
-	// Mobile layout
-	@media (max-width: 768px) {
+	// Mobile/Tablet layout
+	// Breakpoint accounts for 222px sidebar, ensuring adequate space for two-column layout
+	@media (max-width: 1024px) {
 		grid-template-columns: 1fr;
 
 		.motion-scroll-images {

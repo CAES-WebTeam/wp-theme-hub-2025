@@ -7,8 +7,8 @@
 	display: none !important; // Hidden on desktop by default
 	margin: 2rem 0;
 
-	// Only show on mobile
-	@media (max-width: 768px) {
+	// Only show on mobile/tablet (matches Motion Scroll breakpoint, accounts for 222px sidebar)
+	@media (max-width: 1024px) {
 		display: block !important;
 	}
 
