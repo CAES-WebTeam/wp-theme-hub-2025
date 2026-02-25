@@ -253,16 +253,16 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			<BlockControls>
 				<ToolbarGroup>
 					<ToolbarButton
-						icon="align-pull-right"
-						label={__('Show content on left', 'caes-motion-scroll')}
-						isActive={contentPosition === 'left'}
-						onClick={() => setAttributes({ contentPosition: 'left' })}
-					/>
-					<ToolbarButton
 						icon="align-pull-left"
 						label={__('Show content on right', 'caes-motion-scroll')}
 						isActive={contentPosition === 'right'}
 						onClick={() => setAttributes({ contentPosition: 'right' })}
+					/>
+					<ToolbarButton
+						icon="align-pull-right"
+						label={__('Show content on left', 'caes-motion-scroll')}
+						isActive={contentPosition === 'left'}
+						onClick={() => setAttributes({ contentPosition: 'left' })}
 					/>
 				</ToolbarGroup>
 				<ToolbarGroup>
