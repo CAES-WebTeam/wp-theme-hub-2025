@@ -182,9 +182,11 @@
 			max-width: 100%;
 			height: auto;
 		}
+	}
 
-		// Add extra space at bottom to allow last content to trigger last image
-		&::after {
+	// Desktop only - extra space at bottom to allow last content to trigger last image
+	@media (min-width: 1025px) {
+		.motion-scroll-content::after {
 			content: '';
 			display: block;
 			height: 50vh;
@@ -200,9 +202,11 @@
 			display: none;
 		}
 
-		&.content-left,
-		&.content-right {
-			.motion-scroll-content {
+		.motion-scroll-content {
+			min-height: auto; // Remove min-height on mobile
+
+			&.content-left,
+			&.content-right {
 				order: 1;
 			}
 		}
