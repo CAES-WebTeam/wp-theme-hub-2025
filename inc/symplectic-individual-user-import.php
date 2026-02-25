@@ -648,6 +648,9 @@ function symplectic_import_user_handler() {
 			return 'dry_run';
 		}
 		$result = update_field($field_key, $value, $user_acf);
+		// update_user_meta() returns a numeric meta_id on first insert rather than true.
+		// Normalize so the rest of the logic only deals with true / false.
+		$result = ($result !== false) ? true : false;
 		if ($result === false) {
 			// update_field() returns false both on genuine failure and when WordPress's
 			// update_metadata() considers the value unchanged (no-op), or on first-insert
@@ -777,6 +780,7 @@ function symplectic_import_user_handler() {
 	$pub_note = null;
 	if (!empty($pub_rows)) {
 		$pub_result = $dry_run ? 'dry_run' : update_field('field_elements_scholarly_works', $pub_rows, $user_acf);
+		if (!$dry_run) $pub_result = ($pub_result !== false) ? true : false;
 		if ($pub_result === false) {
 			$stored_pubs = get_field('field_elements_scholarly_works', $user_acf);
 			if (!empty($stored_pubs)) {
@@ -807,6 +811,7 @@ function symplectic_import_user_handler() {
 	$dist_note = null;
 	if (!empty($dist_rows)) {
 		$dist_result = $dry_run ? 'dry_run' : update_field('field_elements_distinctions', $dist_rows, $user_acf);
+		if (!$dry_run) $dist_result = ($dist_result !== false) ? true : false;
 		if ($dist_result === false) {
 			$stored_dist = get_field('field_elements_distinctions', $user_acf);
 			if (!empty($stored_dist)) {
@@ -843,6 +848,7 @@ function symplectic_import_user_handler() {
 	$course_note = null;
 	if (!empty($course_rows)) {
 		$course_result = $dry_run ? 'dry_run' : update_field('field_elements_courses_taught', $course_rows, $user_acf);
+		if (!$dry_run) $course_result = ($course_result !== false) ? true : false;
 		if ($course_result === false) {
 			$stored_courses = get_field('field_elements_courses_taught', $user_acf);
 			if (!empty($stored_courses)) {
