@@ -80,13 +80,23 @@ document.addEventListener('DOMContentLoaded', function () {
   const main = document.querySelector('main');
   main.appendChild(toTopButton);
 
-  // Check if Shorthand caption is currently visible
-  function isShorthandCaptionVisible() {
-    const captions = document.querySelectorAll('.MediaRenderer__fixedCaption');
-    for (const caption of captions) {
-      const style = window.getComputedStyle(caption);
-      if (style.display !== 'none' && parseFloat(style.opacity) > 0) {
-        return true;
+  // Check if Shorthand, Motion Scroll, or Reveal caption is currently visible
+  function isCaptionVisible() {
+    // Check for Shorthand captions, Motion Scroll captions, and Reveal captions
+    const captionSelectors = [
+      '.MediaRenderer__fixedCaption', // Shorthand
+      '.motion-scroll-caption', // Motion Scroll
+      '.motion-scroll-image-caption', // Motion Scroll Image
+      '.reveal-frame-caption' // Reveal
+    ];
+
+    for (const selector of captionSelectors) {
+      const captions = document.querySelectorAll(selector);
+      for (const caption of captions) {
+        const style = window.getComputedStyle(caption);
+        if (style.display !== 'none' && parseFloat(style.opacity) > 0) {
+          return true;
+        }
       }
     }
     return false;
@@ -94,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Update button visibility based on scroll AND caption state
   function updateToTopVisibility() {
-    const captionVisible = isShorthandCaptionVisible();
+    const captionVisible = isCaptionVisible();
 
     if (captionVisible) {
       toTopButton.classList.add('caes-hub-to-top-caption-hidden');
@@ -103,35 +113,45 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Watch for Shorthand caption changes
+  // Watch for caption changes (Shorthand, Motion Scroll, Reveal)
   const captionObserver = new MutationObserver(updateToTopVisibility);
+  const captionSelectors = [
+    '.MediaRenderer__fixedCaption',
+    '.motion-scroll-caption',
+    '.motion-scroll-image-caption',
+    '.reveal-frame-caption'
+  ];
 
   // Observe existing captions
-  document.querySelectorAll('.MediaRenderer__fixedCaption').forEach(caption => {
-    captionObserver.observe(caption, {
-      attributes: true,
-      attributeFilter: ['style', 'class']
+  captionSelectors.forEach(selector => {
+    document.querySelectorAll(selector).forEach(caption => {
+      captionObserver.observe(caption, {
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      });
     });
   });
 
-  // Also watch for dynamically added captions (Shorthand loads content dynamically)
+  // Also watch for dynamically added captions
   const bodyObserver = new MutationObserver((mutations) => {
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === 1) {
-          const captions = node.querySelectorAll?.('.MediaRenderer__fixedCaption') || [];
-          captions.forEach(caption => {
-            captionObserver.observe(caption, {
-              attributes: true,
-              attributeFilter: ['style', 'class']
+          captionSelectors.forEach(selector => {
+            const captions = node.querySelectorAll?.(selector) || [];
+            captions.forEach(caption => {
+              captionObserver.observe(caption, {
+                attributes: true,
+                attributeFilter: ['style', 'class']
+              });
             });
+            if (node.classList?.contains(selector.replace('.', ''))) {
+              captionObserver.observe(node, {
+                attributes: true,
+                attributeFilter: ['style', 'class']
+              });
+            }
           });
-          if (node.classList?.contains('MediaRenderer__fixedCaption')) {
-            captionObserver.observe(node, {
-              attributes: true,
-              attributeFilter: ['style', 'class']
-            });
-          }
         }
       });
     });
