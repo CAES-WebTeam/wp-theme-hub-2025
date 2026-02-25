@@ -777,93 +777,89 @@ const ImagePanel = ({
 					</div>
 				) : (
 					<div>
-						{/* Desktop Preview - shows how the image will be cropped with focal point */}
+						{/* Desktop Preview - simulates how the two-column layout looks */}
 						<div style={{ marginBottom: '16px' }}>
 							{(() => {
 								const filterId = `manager-${clientId}-${slideIndex}`;
 								const focalX = (slide.focalPoint?.x ?? 0.5) * 100;
 								const focalY = (slide.focalPoint?.y ?? 0.5) * 100;
+
+								const contentSide = (
+									<div style={{
+										flex: 1,
+										background: '#f0f0f0',
+										display: 'flex',
+										flexDirection: 'column',
+										justifyContent: 'center',
+										padding: '12px',
+										gap: '8px',
+									}}>
+										<div style={{ width: '60%', height: '6px', background: '#ccc', borderRadius: '3px' }} />
+										<div style={{ width: '90%', height: '4px', background: '#ddd', borderRadius: '2px' }} />
+										<div style={{ width: '80%', height: '4px', background: '#ddd', borderRadius: '2px' }} />
+										<div style={{ width: '85%', height: '4px', background: '#ddd', borderRadius: '2px' }} />
+										<div style={{ width: '40%', height: '4px', background: '#ddd', borderRadius: '2px', marginBottom: '6px' }} />
+										<div style={{ width: '50%', height: '6px', background: '#ccc', borderRadius: '3px' }} />
+										<div style={{ width: '95%', height: '4px', background: '#ddd', borderRadius: '2px' }} />
+										<div style={{ width: '75%', height: '4px', background: '#ddd', borderRadius: '2px' }} />
+										<div style={{ width: '88%', height: '4px', background: '#ddd', borderRadius: '2px' }} />
+									</div>
+								);
+
+								const imageSide = (
+									<div style={{
+										flex: 1,
+										position: 'relative',
+										overflow: 'hidden',
+										background: '#000',
+									}}>
+										<img
+											src={image.url}
+											alt={image.alt}
+											style={{
+												width: '100%',
+												height: '100%',
+												objectFit: 'cover',
+												objectPosition: `${focalX}% ${focalY}%`,
+												filter: duotone ? `url(#${filterId})` : undefined,
+											}}
+										/>
+										{/* Focal point crosshair */}
+										<div style={{
+											position: 'absolute',
+											left: `${focalX}%`,
+											top: `${focalY}%`,
+											transform: 'translate(-50%, -50%)',
+											pointerEvents: 'none',
+										}}>
+											<div style={{
+												width: '20px',
+												height: '20px',
+												borderRadius: '50%',
+												border: '2px solid #fff',
+												boxShadow: '0 0 0 1px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.4)',
+											}} />
+											<div style={{ position: 'absolute', left: '50%', top: '-5px', width: '1px', height: '6px', background: '#fff', boxShadow: '0 0 1px rgba(0,0,0,0.5)', transform: 'translateX(-50%)' }} />
+											<div style={{ position: 'absolute', left: '50%', bottom: '-5px', width: '1px', height: '6px', background: '#fff', boxShadow: '0 0 1px rgba(0,0,0,0.5)', transform: 'translateX(-50%)' }} />
+											<div style={{ position: 'absolute', top: '50%', left: '-5px', width: '6px', height: '1px', background: '#fff', boxShadow: '0 0 1px rgba(0,0,0,0.5)', transform: 'translateY(-50%)' }} />
+											<div style={{ position: 'absolute', top: '50%', right: '-5px', width: '6px', height: '1px', background: '#fff', boxShadow: '0 0 1px rgba(0,0,0,0.5)', transform: 'translateY(-50%)' }} />
+										</div>
+									</div>
+								);
+
 								return (
 									<>
 										{duotone && getDuotoneFilter(duotone, filterId)}
-										<div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden' }}>
+										<div style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
 											<div style={{
-												width: '100%',
+												display: 'flex',
 												aspectRatio: '16 / 9',
-												position: 'relative',
-												overflow: 'hidden',
-												background: '#000',
 											}}>
-												<img
-													src={image.url}
-													alt={image.alt}
-													style={{
-														width: '100%',
-														height: '100%',
-														objectFit: 'cover',
-														objectPosition: `${focalX}% ${focalY}%`,
-														filter: duotone ? `url(#${filterId})` : undefined,
-													}}
-												/>
-												{/* Focal point crosshair */}
-												<div style={{
-													position: 'absolute',
-													left: `${focalX}%`,
-													top: `${focalY}%`,
-													transform: 'translate(-50%, -50%)',
-													pointerEvents: 'none',
-												}}>
-													<div style={{
-														width: '24px',
-														height: '24px',
-														borderRadius: '50%',
-														border: '2px solid #fff',
-														boxShadow: '0 0 0 1px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.4)',
-													}} />
-													<div style={{
-														position: 'absolute',
-														left: '50%',
-														top: '-6px',
-														width: '1px',
-														height: '8px',
-														background: '#fff',
-														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
-														transform: 'translateX(-50%)',
-													}} />
-													<div style={{
-														position: 'absolute',
-														left: '50%',
-														bottom: '-6px',
-														width: '1px',
-														height: '8px',
-														background: '#fff',
-														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
-														transform: 'translateX(-50%)',
-													}} />
-													<div style={{
-														position: 'absolute',
-														top: '50%',
-														left: '-6px',
-														width: '8px',
-														height: '1px',
-														background: '#fff',
-														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
-														transform: 'translateY(-50%)',
-													}} />
-													<div style={{
-														position: 'absolute',
-														top: '50%',
-														right: '-6px',
-														width: '8px',
-														height: '1px',
-														background: '#fff',
-														boxShadow: '0 0 1px rgba(0,0,0,0.5)',
-														transform: 'translateY(-50%)',
-													}} />
-												</div>
+												{contentSide}
+												{imageSide}
 											</div>
 											<div style={{
-												padding: '6px 8px',
+												padding: '5px 8px',
 												background: '#1e1e1e',
 												color: '#bbb',
 												fontSize: '11px',
