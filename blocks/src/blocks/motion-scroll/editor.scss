@@ -83,6 +83,7 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
+			padding: 2rem; // Match frontend padding
 		}
 
 		.motion-scroll-images-preview {
@@ -91,13 +92,16 @@
 			align-items: center;
 			justify-content: center;
 			height: 100%;
-			gap: 0.75rem;
+			max-height: 100%;
+			gap: 1rem; // Space between image and caption preview
 
 			img {
 				width: 100%;
 				height: auto;
 				max-width: 100%;
+				max-height: calc(100% - 4rem); // Leave room for caption
 				object-fit: contain;
+				flex-shrink: 1;
 			}
 		}
 
