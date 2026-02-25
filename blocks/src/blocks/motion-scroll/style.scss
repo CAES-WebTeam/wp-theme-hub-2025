@@ -185,13 +185,13 @@
 	}
 
 	// Desktop only - extra space at bottom to allow last content to trigger last image
-	@media (min-width: 1025px) {
-		.motion-scroll-content::after {
-			content: '';
-			display: block;
-			height: 20vh;
-		}
-	}
+	// @media (min-width: 1025px) {
+	// 	.motion-scroll-content::after {
+	// 		content: '';
+	// 		display: block;
+	// 		height: 20vh;
+	// 	}
+	// }
 
 	// Mobile/Tablet layout
 	// Breakpoint accounts for 222px sidebar, ensuring adequate space for two-column layout
