@@ -80,22 +80,38 @@ document.addEventListener('DOMContentLoaded', function () {
   const main = document.querySelector('main');
   main.appendChild(toTopButton);
 
-  // Check if Shorthand, Motion Scroll, or Reveal caption is currently visible
+  // Check if Shorthand, Motion Scroll, or Reveal caption is currently visible and in viewport
   function isCaptionVisible() {
-    // Check for Shorthand captions, Motion Scroll captions, and Reveal captions
-    const captionSelectors = [
-      '.MediaRenderer__fixedCaption', // Shorthand
-      '.motion-scroll-caption', // Motion Scroll
-      '.motion-scroll-image-caption', // Motion Scroll Image
-      '.reveal-frame-caption' // Reveal
+    // Check for Shorthand captions (these are fixed/floating)
+    const shorthandCaptions = document.querySelectorAll('.MediaRenderer__fixedCaption');
+    for (const caption of shorthandCaptions) {
+      const style = window.getComputedStyle(caption);
+      if (style.display !== 'none' && parseFloat(style.opacity) > 0) {
+        return true;
+      }
+    }
+
+    // Check for Motion Scroll and Reveal captions (these scroll with content)
+    // Only hide button if caption is in the lower portion of viewport where button appears
+    const scrollCaptionSelectors = [
+      '.motion-scroll-caption',
+      '.motion-scroll-image-caption',
+      '.reveal-frame-caption'
     ];
 
-    for (const selector of captionSelectors) {
+    const viewportHeight = window.innerHeight;
+    const buttonZone = viewportHeight * 0.3; // Bottom 30% of viewport where button appears
+
+    for (const selector of scrollCaptionSelectors) {
       const captions = document.querySelectorAll(selector);
       for (const caption of captions) {
         const style = window.getComputedStyle(caption);
         if (style.display !== 'none' && parseFloat(style.opacity) > 0) {
-          return true;
+          const rect = caption.getBoundingClientRect();
+          // Check if caption is in viewport and in the bottom zone where button appears
+          if (rect.top < viewportHeight && rect.bottom > (viewportHeight - buttonZone)) {
+            return true;
+          }
         }
       }
     }
