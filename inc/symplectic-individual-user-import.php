@@ -183,6 +183,7 @@ function symplectic_import_enqueue_scripts($hook) {
 					html += s.pending + "&nbsp;field" + (s.pending !== 1 ? "s" : "") + " would be written, " + s.skipped + " skipped.";
 				} else {
 					html += s.ok + "&nbsp;write" + (s.ok !== 1 ? "s" : "") + " succeeded, " + s.failed + " failed, " + s.skipped + " skipped.";
+			if (d.pre_cleared) html += "&ensp;<span style=\"color:#999;font-size:0.9em\">(previous Elements data cleared before write)</span>";
 				}
 				html += "</div>";
 
@@ -684,6 +685,25 @@ function symplectic_import_user_handler() {
 		return $result;
 	};
 
+	// Clear all existing Elements fields before writing fresh data. This prevents
+	// stale values from previous imports persisting when the new data omits a field.
+	// The areas_of_expertise taxonomy terms are disassociated from the user but not
+	// deleted from the taxonomy itself. Skipped entirely in dry-run mode.
+	$pre_cleared = false;
+	if (!$dry_run) {
+		foreach (array(
+			'field_elements_user_id',
+			'field_elements_overview',
+			'field_elements_areas_of_expertise',
+			'field_elements_scholarly_works',
+			'field_elements_distinctions',
+			'field_elements_courses_taught',
+		) as $fk) {
+			delete_field($fk, $user_acf);
+		}
+		$pre_cleared = true;
+	}
+
 	// elements_user_id
 	$do_write('elements_user_id', 'field_elements_user_id', $elements_user_id, (string)$elements_user_id);
 
@@ -806,12 +826,18 @@ function symplectic_import_user_handler() {
 	);
 
 	// elements_courses_taught (repeater)
-	$course_rows = array();
+	$course_rows     = array();
+	$seen_course_keys = array();
 	foreach ($teaching_activities as $ta) {
+		$code      = isset($ta['course_code']) ? $ta['course_code'] : '';
+		$term      = isset($ta['term'])        ? $ta['term']        : '';
+		$dedup_key = $code . '|' . $term;
+		if (isset($seen_course_keys[$dedup_key])) continue;
+		$seen_course_keys[$dedup_key] = true;
 		$course_rows[] = array(
-			'course_title' => isset($ta['title'])       ? $ta['title']       : '',
-			'course_code'  => isset($ta['course_code']) ? $ta['course_code'] : '',
-			'course_term'  => isset($ta['term'])        ? $ta['term']        : '',
+			'course_title' => isset($ta['title']) ? $ta['title'] : '',
+			'course_code'  => $code,
+			'course_term'  => $term,
 		);
 	}
 	$course_note = null;
@@ -858,6 +884,7 @@ function symplectic_import_user_handler() {
 			'login'        => $wp_user->user_login,
 			'display_name' => $wp_user->display_name,
 		),
+		'pre_cleared'  => $pre_cleared,
 		'fetch_errors' => $fetch_errors,
 		'writes'       => $writes,
 		'taxonomy_ops' => $taxonomy_ops,
