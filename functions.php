@@ -25,6 +25,7 @@ require get_template_directory() . '/inc/rss-support.php';
 // require get_template_directory() . '/inc/multisite-script-protect.php';
 require get_template_directory() . '/inc/symplectic-query-tool.php';
 require get_template_directory() . '/inc/symplectic-individual-user-import.php';
+require get_template_directory() . '/inc/symplectic-scheduled-import.php';
 
 // Publications PDF generation
 require get_template_directory() . '/inc/publications-pdf/publications-pdf-mpdf.php';
