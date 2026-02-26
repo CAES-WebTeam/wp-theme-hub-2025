@@ -58,6 +58,7 @@ function symplectic_sched_default_state() {
 			'fetch_errors'   => 0,
 		),
 		'errors'          => array(),
+		'stop_requested'  => false,
 		'last_completed'  => null,
 	);
 }
@@ -104,6 +105,21 @@ function symplectic_sched_start_job($triggered_by = 'manual') {
 	return true;
 }
 
+function symplectic_sched_resume_job() {
+	$state = symplectic_sched_get_state();
+	if ($state['status'] !== 'stopped') {
+		return false;
+	}
+	if ($state['processed_users'] >= $state['total_users']) {
+		return false; // Nothing left to process
+	}
+	$state['status']         = 'running';
+	$state['stop_requested'] = false;
+	update_option(SYMPLECTIC_SCHED_STATE_KEY, $state, false);
+	wp_schedule_single_event(time(), SYMPLECTIC_SCHED_BATCH_HOOK);
+	return true;
+}
+
 function symplectic_sched_run_batch() {
 	$state = symplectic_sched_get_state();
 
@@ -128,14 +144,22 @@ function symplectic_sched_run_batch() {
 	));
 
 	foreach ($users as $user) {
+		// Re-read state before each user to detect an external stop.
+		$check = symplectic_sched_get_state();
+		if ($check['status'] !== 'running') {
+			return; // Stopped externally; leave the DB state as-is.
+		}
+
 		$personnel_id = get_user_meta($user->ID, 'personnel_id', true);
 		if (empty($personnel_id)) {
 			$state['stats']['users_skipped']++;
 			$state['processed_users']++;
+			update_option(SYMPLECTIC_SCHED_STATE_KEY, $state, false);
 			continue;
 		}
 
-		$result = symplectic_sched_import_single_user($user->ID, $personnel_id);
+		$deadline = time() + 180; // 3-minute per-user hard timeout
+		$result   = symplectic_sched_import_single_user($user->ID, $personnel_id, $deadline);
 		$state['processed_users']++;
 
 		if ($result['status'] === 'ok') {
@@ -157,10 +181,11 @@ function symplectic_sched_run_batch() {
 				$state['errors'][] = 'User ' . $user->ID . ' fetch: ' . $fe;
 			}
 		}
+
+		update_option(SYMPLECTIC_SCHED_STATE_KEY, $state, false); // Save progress after each user
 	}
 
 	if ($state['processed_users'] < $state['total_users'] && !empty($users)) {
-		update_option(SYMPLECTIC_SCHED_STATE_KEY, $state, false);
 		wp_schedule_single_event(time() + 2, SYMPLECTIC_SCHED_BATCH_HOOK);
 	} else {
 		$state['status']       = 'complete';
@@ -182,7 +207,8 @@ function symplectic_sched_run_batch() {
 // Core per-user import
 // ============================================================
 
-function symplectic_sched_import_single_user($wp_user_id, $personnel_id) {
+function symplectic_sched_import_single_user($wp_user_id, $personnel_id, $deadline = 0) {
+	if (!$deadline) $deadline = time() + 180;
 	$result = array(
 		'status'         => 'failed',
 		'fields_written' => 0,
@@ -194,6 +220,10 @@ function symplectic_sched_import_single_user($wp_user_id, $personnel_id) {
 	$user_acf = 'user_' . $wp_user_id;
 
 	// Step 2: Fetch UGA ID from CAES internal personnel API
+	if (time() >= $deadline) {
+		$result['error_message'] = 'Timed out (3 min) before CAES API call.';
+		return $result;
+	}
 	$caes_url  = 'https://secure.caes.uga.edu/rest/personnel/getUGAids'
 		. '?PersonnelID=' . urlencode($personnel_id)
 		. '&APIkey=' . urlencode(CF_810_API_ENDPOINT_KEY);
@@ -217,6 +247,10 @@ function symplectic_sched_import_single_user($wp_user_id, $personnel_id) {
 	$uga_id = $caes_data[0]['UGA_ID'];
 
 	// Step 3: Fetch Elements user object
+	if (time() >= $deadline) {
+		$result['error_message'] = 'Timed out (3 min) before Elements API call.';
+		return $result;
+	}
 	$api_args = array(
 		'headers'   => array('Authorization' => 'Basic ' . base64_encode(SYMPLECTIC_API_USERNAME . ':' . SYMPLECTIC_API_PASSWORD)),
 		'timeout'   => 60,
@@ -290,6 +324,11 @@ function symplectic_sched_import_single_user($wp_user_id, $personnel_id) {
 			$has_next = false;
 			if (++$page_count > $max_pages) break;
 
+			if (time() >= $deadline) {
+				$fetch_errors[] = 'Timed out (3 min) before relationship page ' . $page_count . '.';
+				break;
+			}
+
 			$rel_resp = wp_remote_get($rel_url, $api_args);
 			if (is_wp_error($rel_resp)) {
 				$fetch_errors[] = 'Relationships p' . $page_count . ': ' . $rel_resp->get_error_message();
@@ -313,6 +352,10 @@ function symplectic_sched_import_single_user($wp_user_id, $personnel_id) {
 
 			if (!empty($page_objects)) {
 				foreach ($page_objects as $rel_obj) {
+					if (time() >= $deadline) {
+						$fetch_errors[] = 'Timed out (3 min) while processing relationships.';
+						break 2; // exit foreach and do-while
+					}
 					$obj_data = array();
 					foreach ($rel_obj->attributes() as $k => $v) {
 						$obj_data[$k] = (string)$v;
@@ -586,6 +629,7 @@ function symplectic_sched_enqueue_scripts($hook) {
 		.sched-status-badge.running  { background: #e5f0fa; color: #0073aa; }
 		.sched-status-badge.complete { background: #ecf7ed; color: #46b450; }
 		.sched-status-badge.error    { background: #fbeaea; color: #dc3232; }
+		.sched-status-badge.stopped  { background: #fff8e5; color: #9a5e00; }
 		@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 		.dashicons.spin { animation: spin 1s linear infinite; display: inline-block; }
 		#sched-single-result { margin-top: 16px; }
@@ -637,13 +681,15 @@ function symplectic_sched_enqueue_scripts($hook) {
 				var badge = sc.charAt(0).toUpperCase() + sc.slice(1);
 				if (sc === "running") {
 					badge = "<span class=\"dashicons dashicons-update spin\" style=\"font-size:14px;vertical-align:middle\"></span> Running";
+				} else if (sc === "stopped") {
+					badge = "Stopped";
 				}
 				var html = "<div style=\"margin-bottom:12px\">";
 				html += "<span class=\"sched-status-badge " + esc(sc) + "\">" + badge + "</span>";
 				if (state.triggered_by) html += "&ensp;<span class=\"sched-meta\" style=\"display:inline\">Triggered by: " + esc(state.triggered_by) + "</span>";
 				html += "</div>";
 
-				if (sc === "running" || sc === "complete" || sc === "error") {
+				if (sc === "running" || sc === "complete" || sc === "error" || sc === "stopped") {
 					var pct = state.total_users > 0 ? Math.round(state.processed_users / state.total_users * 100) : 0;
 					html += "<div class=\"sched-progress-wrap\">";
 					html += "<div class=\"sched-progress-bar\"><div class=\"sched-progress-fill\" style=\"width:" + pct + "%\"></div></div>";
@@ -690,12 +736,24 @@ function symplectic_sched_enqueue_scripts($hook) {
 						renderCurrentPanel(state);
 						renderLastCompletedPanel(state.last_completed);
 						if (state.status === "running") {
-							$("#sched-trigger-btn").prop("disabled", true).val("Import Running\u2026");
+							$("#sched-trigger-btn").prop("disabled", true).hide();
+							$("#sched-stop-btn").show().prop("disabled", false).val("Stop Import");
+							$("#sched-resume-btn").hide();
 							pollTimer = setTimeout(pollStatus, 3000);
 						} else {
 							clearTimeout(pollTimer);
 							pollTimer = null;
-							$("#sched-trigger-btn").prop("disabled", false).val("Trigger Import for All Users");
+							$("#sched-trigger-btn").prop("disabled", false).show().val("Trigger Import for All Users");
+							$("#sched-stop-btn").hide();
+							var canResume = state.status === "stopped"
+								&& state.processed_users > 0
+								&& state.processed_users < state.total_users;
+							if (canResume) {
+								$("#sched-resume-btn").show().prop("disabled", false)
+									.val("Resume Import (" + esc(state.processed_users) + " / " + esc(state.total_users) + " done)");
+							} else {
+								$("#sched-resume-btn").hide();
+							}
 						}
 					}
 				});
@@ -721,6 +779,47 @@ function symplectic_sched_enqueue_scripts($hook) {
 					error: function() {
 						alert("AJAX error starting import.");
 						$("#sched-trigger-btn").prop("disabled", false).val("Trigger Import for All Users");
+					}
+				});
+			});
+
+			// Stop import
+			$("#sched-stop-btn").on("click", function() {
+				if (!confirm("Stop the import? Progress will be saved and you can resume later.")) return;
+				$(this).prop("disabled", true).val("Stopping\u2026");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "symplectic_sched_stop", nonce: nonce },
+					success: function(response) {
+						pollStatus();
+					},
+					error: function() {
+						alert("AJAX error stopping import.");
+						$("#sched-stop-btn").prop("disabled", false).val("Stop Import");
+					}
+				});
+			});
+
+			// Resume import
+			$("#sched-resume-btn").on("click", function() {
+				$(this).prop("disabled", true).val("Resuming\u2026");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "symplectic_sched_resume", nonce: nonce },
+					success: function(response) {
+						if (response.success) {
+							setTimeout(pollStatus, 1000);
+						} else {
+							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
+							alert("Failed to resume: " + msg);
+							$("#sched-resume-btn").prop("disabled", false);
+						}
+					},
+					error: function() {
+						alert("AJAX error resuming import.");
+						$("#sched-resume-btn").prop("disabled", false);
 					}
 				});
 			});
@@ -811,6 +910,10 @@ function symplectic_sched_render_page() {
 					<input type="button" id="sched-trigger-btn" class="button button-primary"
 						value="Trigger Import for All Users"
 						<?php echo ($credentials_ok) ? '' : 'disabled'; ?>>
+					<input type="button" id="sched-stop-btn" class="button" value="Stop Import"
+						style="display:none;margin-left:6px">
+					<input type="button" id="sched-resume-btn" class="button button-secondary" value="Resume Import"
+						style="display:none;margin-left:6px">
 				</p>
 				<p class="description">
 					Starts a fresh import for all WordPress users. Runs in the background via WP-Cron batching
@@ -846,6 +949,8 @@ function symplectic_sched_render_page() {
 
 add_action('wp_ajax_symplectic_sched_status',        'symplectic_sched_ajax_status');
 add_action('wp_ajax_symplectic_sched_trigger',       'symplectic_sched_ajax_trigger');
+add_action('wp_ajax_symplectic_sched_stop',          'symplectic_sched_ajax_stop');
+add_action('wp_ajax_symplectic_sched_resume',        'symplectic_sched_ajax_resume');
 add_action('wp_ajax_symplectic_sched_import_single', 'symplectic_sched_ajax_import_single');
 
 function symplectic_sched_ajax_status() {
@@ -879,6 +984,46 @@ function symplectic_sched_ajax_trigger() {
 		}
 	}
 	wp_send_json_success(array('message' => 'Import queued.'));
+}
+
+function symplectic_sched_ajax_stop() {
+	if (!wp_verify_nonce($_POST['nonce'], 'symplectic_sched_nonce')) {
+		wp_send_json_error(array('error_message' => 'Security check failed.'));
+	}
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(array('error_message' => 'Insufficient permissions.'));
+	}
+	$state = symplectic_sched_get_state();
+	if ($state['status'] !== 'running') {
+		wp_send_json_error(array('error_message' => 'No import is currently running.'));
+	}
+	$state['status']         = 'stopped';
+	$state['stop_requested'] = false;
+	update_option(SYMPLECTIC_SCHED_STATE_KEY, $state, false);
+	wp_clear_scheduled_hook(SYMPLECTIC_SCHED_BATCH_HOOK); // Cancel any pending batches
+	wp_send_json_success(array('message' => 'Import stopped.'));
+}
+
+function symplectic_sched_ajax_resume() {
+	if (!wp_verify_nonce($_POST['nonce'], 'symplectic_sched_nonce')) {
+		wp_send_json_error(array('error_message' => 'Security check failed.'));
+	}
+	if (!current_user_can('manage_options')) {
+		wp_send_json_error(array('error_message' => 'Insufficient permissions.'));
+	}
+	if (!defined('SYMPLECTIC_API_USERNAME') || !defined('SYMPLECTIC_API_PASSWORD') || !defined('CF_810_API_ENDPOINT_KEY')) {
+		wp_send_json_error(array('error_message' => 'API credentials not configured in wp-config.php.'));
+	}
+	$resumed = symplectic_sched_resume_job();
+	if (!$resumed) {
+		$state = symplectic_sched_get_state();
+		if ($state['status'] !== 'stopped') {
+			wp_send_json_error(array('error_message' => 'Import is not in a stopped state (status: ' . $state['status'] . ').'));
+		} else {
+			wp_send_json_error(array('error_message' => 'No users remaining to import.'));
+		}
+	}
+	wp_send_json_success(array('message' => 'Import resumed.'));
 }
 
 function symplectic_sched_ajax_import_single() {
