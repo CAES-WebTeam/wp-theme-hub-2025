@@ -1159,7 +1159,7 @@ function symplectic_query_api_handler() {
         @set_time_limit(300); // 5 minutes max
 
         // Initialize pagination with smaller batch size to avoid timeouts
-        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?per-page=100&detail=full';
+        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?per-page=25&detail=full';
         $all_relationships_urls = array();
         $page_count = 0;
         $total_objects_processed = 0;
