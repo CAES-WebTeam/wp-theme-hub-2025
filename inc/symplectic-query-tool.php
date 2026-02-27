@@ -1151,6 +1151,7 @@ function symplectic_query_api_handler() {
     $activity_raw_responses = array();
     $teaching_activity_urls = array();
     $teaching_activity_raw_responses = array();
+    $relationship_raw_responses = array();
 
     // Step 2: Try to get relationships (but don't fail if this errors)
     if ($user_id) {
@@ -1158,7 +1159,7 @@ function symplectic_query_api_handler() {
         @set_time_limit(300); // 5 minutes max
 
         // Initialize pagination with smaller batch size to avoid timeouts
-        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?per-page=100';
+        $relationships_url = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $user_id . '/relationships?per-page=100&detail=full';
         $all_relationships_urls = array();
         $page_count = 0;
         $total_objects_processed = 0;
@@ -1186,6 +1187,7 @@ function symplectic_query_api_handler() {
 
             if (!is_wp_error($relationships_response) && wp_remote_retrieve_response_code($relationships_response) === 200) {
                 $rel_body = wp_remote_retrieve_body($relationships_response);
+                $relationship_raw_responses['page_' . $page_count] = $rel_body;
 
                 libxml_use_internal_errors(true);
                 $rel_xml = simplexml_load_string($rel_body);
@@ -1342,6 +1344,7 @@ function symplectic_query_api_handler() {
         'publication_raw_responses' => $publication_raw_responses,
         'activity_raw_responses' => $activity_raw_responses,
         'teaching_activity_raw_responses' => $teaching_activity_raw_responses,
+        'relationship_raw_responses' => $relationship_raw_responses,
         'diagnostic_info' => array(
             'user_request_url' => $api_url,
             'relationships_request_urls' => isset($all_relationships_urls) ? $all_relationships_urls : array(),
