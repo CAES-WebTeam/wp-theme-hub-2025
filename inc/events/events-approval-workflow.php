@@ -363,7 +363,7 @@ function send_approval_notification_email($post_id, $approver_ids) {
 
     foreach ($approver_ids as $approver_id) {
         $user_info = get_userdata($approver_id);
-        if ($user_info) {
+        if ($user_info && ! str_contains($user_info->user_email, '.spoofed')) {
             $to_emails[] = $user_info->user_email;
         }
     }
