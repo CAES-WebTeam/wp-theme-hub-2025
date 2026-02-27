@@ -1220,62 +1220,19 @@ function symplectic_query_api_handler() {
                             }
 
                             // Categorize and immediately fetch details for this object
-                            if ($category === 'publication' && isset($obj_data['href'])) {
-                                // Track URL
-                                $publication_urls[] = $obj_data['href'];
-
-                                // Fetch publication details immediately
-                                $pub_response = wp_remote_get($obj_data['href'], $args);
-
-                                if (!is_wp_error($pub_response) && wp_remote_retrieve_response_code($pub_response) === 200) {
-                                    $pub_body = wp_remote_retrieve_body($pub_response);
-                                    $publication_raw_responses[$obj_data['id']] = $pub_body;
-                                    $pub_xml = simplexml_load_string($pub_body);
-
-                                    if ($pub_xml !== false) {
-                                        $obj_data = array_merge($obj_data, extract_publication_fields($pub_xml));
-                                    }
-                                }
-
+                            if ($category === 'publication') {
+                                $rel_object->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                                $obj_data = array_merge($obj_data, extract_publication_fields($rel_object));
                                 $publications[] = $obj_data;
 
-                            } elseif ($category === 'activity' && isset($obj_data['href']) && isset($obj_data['type']) && $obj_data['type'] === 'distinction') {
-                                // Track URL
-                                $activity_urls[] = $obj_data['href'];
-
-                                // Fetch activity details immediately
-                                $activity_response = wp_remote_get($obj_data['href'], $args);
-
-                                if (!is_wp_error($activity_response) && wp_remote_retrieve_response_code($activity_response) === 200) {
-                                    $activity_body = wp_remote_retrieve_body($activity_response);
-                                    $activity_raw_responses[$obj_data['id']] = $activity_body;
-                                    $activity_xml = simplexml_load_string($activity_body);
-
-                                    if ($activity_xml !== false) {
-                                        $obj_data = array_merge($obj_data, extract_activity_fields($activity_xml));
-                                    }
-                                }
-
+                            } elseif ($category === 'activity' && isset($obj_data['type']) && $obj_data['type'] === 'distinction') {
+                                $rel_object->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                                $obj_data = array_merge($obj_data, extract_activity_fields($rel_object));
                                 $activities[] = $obj_data;
 
-                            } elseif ($category === 'teaching-activity' && isset($obj_data['href']) && isset($obj_data['type']) && $obj_data['type'] === 'course-taught') {
-                                // Track URL
-                                $teaching_activity_urls[] = $obj_data['href'];
-
-                                // Fetch teaching-activity details immediately
-                                $teaching_response = wp_remote_get($obj_data['href'], $args);
-
-                                if (!is_wp_error($teaching_response) && wp_remote_retrieve_response_code($teaching_response) === 200) {
-                                    $teaching_body = wp_remote_retrieve_body($teaching_response);
-                                    $teaching_activity_raw_responses[$obj_data['id']] = $teaching_body;
-                                    $teaching_xml = simplexml_load_string($teaching_body);
-
-                                    if ($teaching_xml !== false) {
-                                        $obj_data = array_merge($obj_data, extract_teaching_activity_fields($teaching_xml));
-                                    }
-                                }
-
-                                // Only include courses from terms within the last year
+                            } elseif ($category === 'teaching-activity' && isset($obj_data['type']) && $obj_data['type'] === 'course-taught') {
+                                $rel_object->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+                                $obj_data = array_merge($obj_data, extract_teaching_activity_fields($rel_object));
                                 if (isset($obj_data['term']) && is_teaching_term_recent($obj_data['term'])) {
                                     $teaching_activities[] = $obj_data;
                                 }
