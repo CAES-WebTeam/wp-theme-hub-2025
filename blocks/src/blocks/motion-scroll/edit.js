@@ -78,25 +78,43 @@ const generateSlideId = () => {
 /**
  * Generate duotone SVG filter markup
  */
+const parseColor = (hex) => {
+	let color = hex.replace('#', '');
+	if (color.length === 3) {
+		color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2];
+	}
+	return {
+		r: parseInt(color.slice(0, 2), 16) / 255,
+		g: parseInt(color.slice(2, 4), 16) / 255,
+		b: parseInt(color.slice(4, 6), 16) / 255,
+	};
+};
+
+const getDuotoneFilterPrimitives = (duotone, filterId) => {
+	const shadow = parseColor(duotone[0]);
+	const highlight = parseColor(duotone[1]);
+
+	return (
+		<filter id={filterId}>
+			<feColorMatrix
+				colorInterpolationFilters="sRGB"
+				type="matrix"
+				values=".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"
+			/>
+			<feComponentTransfer colorInterpolationFilters="sRGB">
+				<feFuncR type="table" tableValues={`${shadow.r} ${highlight.r}`} />
+				<feFuncG type="table" tableValues={`${shadow.g} ${highlight.g}`} />
+				<feFuncB type="table" tableValues={`${shadow.b} ${highlight.b}`} />
+				<feFuncA type="table" tableValues="0 1" />
+			</feComponentTransfer>
+		</filter>
+	);
+};
+
 const getDuotoneFilter = (duotone, filterId) => {
 	if (!duotone || duotone.length < 2) {
 		return null;
 	}
-
-	const parseColor = (hex) => {
-		let color = hex.replace('#', '');
-		if (color.length === 3) {
-			color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2];
-		}
-		return {
-			r: parseInt(color.slice(0, 2), 16) / 255,
-			g: parseInt(color.slice(2, 4), 16) / 255,
-			b: parseInt(color.slice(4, 6), 16) / 255,
-		};
-	};
-
-	const shadow = parseColor(duotone[0]);
-	const highlight = parseColor(duotone[1]);
 
 	return (
 		<svg
@@ -110,20 +128,41 @@ const getDuotoneFilter = (duotone, filterId) => {
 			aria-hidden="true"
 		>
 			<defs>
-				<filter id={filterId}>
-					<feColorMatrix
-						colorInterpolationFilters="sRGB"
-						type="matrix"
-						values=".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"
-					/>
-					<feComponentTransfer colorInterpolationFilters="sRGB">
-						<feFuncR type="table" tableValues={`${shadow.r} ${highlight.r}`} />
-						<feFuncG type="table" tableValues={`${shadow.g} ${highlight.g}`} />
-						<feFuncB type="table" tableValues={`${shadow.b} ${highlight.b}`} />
-						<feFuncA type="table" tableValues="0 1" />
-					</feComponentTransfer>
-				</filter>
+				{getDuotoneFilterPrimitives(duotone, filterId)}
 			</defs>
+		</svg>
+	);
+};
+
+/**
+ * Render an image with duotone filter applied inline via SVG <image>.
+ * This avoids url(#id) resolution issues in WordPress's iframed block editor
+ * where a <base> tag can break fragment-only filter references.
+ */
+const getDuotoneImage = (duotone, filterId, imageUrl, imageAlt) => {
+	if (!duotone || duotone.length < 2) {
+		return null;
+	}
+
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			style={{ width: '100%', height: '100%' }}
+			role="img"
+			aria-label={imageAlt || ''}
+		>
+			<defs>
+				{getDuotoneFilterPrimitives(duotone, filterId)}
+			</defs>
+			<image
+				href={imageUrl}
+				x="0"
+				y="0"
+				width="100%"
+				height="100%"
+				preserveAspectRatio="xMidYMid slice"
+				filter={`url(#${filterId})`}
+			/>
 		</svg>
 	);
 };
@@ -492,18 +531,23 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			</InspectorControls>
 
 			<div {...blockProps}>
-				{/* Duotone filter for editor preview */}
-				{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
-
 				<div className="motion-scroll-editor-layout">
 					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.image ? (
-								<img
-									src={slides[0].image.url}
-									alt={slides[0].image.alt || ''}
-									style={slides[0]?.duotone ? { filter: `url(#editor-duotone-${clientId})` } : {}}
-								/>
+								slides[0]?.duotone && slides[0].duotone.length >= 2 ? (
+									getDuotoneImage(
+										slides[0].duotone,
+										`editor-duotone-${clientId}`,
+										slides[0].image.url,
+										slides[0].image.alt || ''
+									)
+								) : (
+									<img
+										src={slides[0].image.url}
+										alt={slides[0].image.alt || ''}
+									/>
+								)
 							) : (
 								<div className="motion-scroll-placeholder">
 									<p>{__('Add images using the toolbar button', 'caes-motion-scroll')}</p>
@@ -930,6 +974,8 @@ const ImagePanel = ({
 // Focal Point Modal
 const FocalPointModal = ({ slide, onUpdate, onClose }) => {
 	const image = slide.image;
+	const duotone = slide.duotone;
+	const filterId = `focal-duotone-${slide.id || 'temp'}`;
 
 	if (!image) {
 		return null;
@@ -946,11 +992,17 @@ const FocalPointModal = ({ slide, onUpdate, onClose }) => {
 					{__('Click on the image to set the focal point. This determines which part of the image stays visible when cropped.', 'caes-motion-scroll')}
 				</p>
 
-				<FocalPointPicker
-					url={image.url}
-					value={slide.focalPoint || { x: 0.5, y: 0.5 }}
-					onChange={(value) => onUpdate({ focalPoint: value })}
-				/>
+				{duotone && getDuotoneFilter(duotone, filterId)}
+				{duotone && (
+					<style>{`.motion-scroll-focal-duotone .components-focal-point-picker img { filter: url(#${filterId}); }`}</style>
+				)}
+				<div className={duotone ? 'motion-scroll-focal-duotone' : undefined}>
+					<FocalPointPicker
+						url={image.url}
+						value={slide.focalPoint || { x: 0.5, y: 0.5 }}
+						onChange={(value) => onUpdate({ focalPoint: value })}
+					/>
+				</div>
 
 				<div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
 					<Button variant="primary" onClick={onClose}>
