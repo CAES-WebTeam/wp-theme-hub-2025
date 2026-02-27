@@ -32,7 +32,7 @@ import {
 	Flex,
 	FlexItem,
 } from '@wordpress/components';
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 
 const DUOTONE_PALETTE = [
 	{ colors: ['#000000', '#ffffff'], name: 'Grayscale', slug: 'grayscale' },
@@ -202,6 +202,22 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			});
 		}
 	}, []);
+
+	// Apply duotone filter using the iframe document's actual URL to avoid
+	// the <base> tag breaking fragment-only url(#id) CSS filter references.
+	const duotoneImgRef = useRef();
+	useEffect(() => {
+		const el = duotoneImgRef.current;
+		if (!el) return;
+
+		const firstSlide = slides[0];
+		if (firstSlide?.duotone && firstSlide.duotone.length >= 2) {
+			const docUrl = el.ownerDocument.URL.split('#')[0];
+			el.style.filter = `url('${docUrl}#editor-duotone-${clientId}')`;
+		} else {
+			el.style.filter = '';
+		}
+	}, [slides, clientId]);
 
 	const addSlide = () => {
 		const newSlide = {
@@ -534,20 +550,13 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				<div className="motion-scroll-editor-layout">
 					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
 						<div className="motion-scroll-images-preview">
+							{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
 							{slides.length > 0 && slides[0]?.image ? (
-								slides[0]?.duotone && slides[0].duotone.length >= 2 ? (
-									getDuotoneImage(
-										slides[0].duotone,
-										`editor-duotone-${clientId}`,
-										slides[0].image.url,
-										slides[0].image.alt || ''
-									)
-								) : (
-									<img
-										src={slides[0].image.url}
-										alt={slides[0].image.alt || ''}
-									/>
-								)
+								<img
+									ref={duotoneImgRef}
+									src={slides[0].image.url}
+									alt={slides[0].image.alt || ''}
+								/>
 							) : (
 								<div className="motion-scroll-placeholder">
 									<p>{__('Add images using the toolbar button', 'caes-motion-scroll')}</p>
