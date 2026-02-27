@@ -708,7 +708,7 @@ function extract_publication_fields($pub_xml) {
     $pub_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
     // Find the native or preferred record fields
-    $records = $pub_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+    $records = $pub_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
 
     if (!empty($records)) {
         // Scan all records for citation count, preferring WoS then Dimensions
@@ -822,7 +822,7 @@ function extract_teaching_activity_fields($teaching_xml) {
     $teaching_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
     // Find the native or preferred record fields
-    $records = $teaching_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+    $records = $teaching_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
 
     if (!empty($records)) {
         $record = $records[0];
@@ -931,7 +931,7 @@ function extract_activity_fields($activity_xml) {
     $activity_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
     // Find the native or preferred record fields
-    $records = $activity_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+    $records = $activity_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
 
     if (!empty($records)) {
         $record = $records[0];
