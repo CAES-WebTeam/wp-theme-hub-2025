@@ -2,25 +2,6 @@
 <html <?php language_attributes(); ?>>
 
 <head>
-	<script>
-		// Mutation observer to catch whatever is rewriting src → data-src
-		const observer = new MutationObserver((mutations) => {
-			mutations.forEach((m) => {
-				if (m.type === 'attributes' &&
-					(m.attributeName === 'src' || m.attributeName === 'data-src') &&
-					m.target.tagName === 'IMG') {
-					console.warn('Image attribute changed:', m.attributeName, m.target);
-					console.trace('Stack trace for src modification');
-				}
-			});
-		});
-		observer.observe(document.documentElement, {
-			attributes: true,
-			subtree: true,
-			attributeOldValue: true,
-			attributeFilter: ['src', 'data-src']
-		});
-	</script>
 	<meta charset="<?php bloginfo('charset'); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title><?php wp_title('|', true, 'right'); ?></title>
