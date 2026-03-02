@@ -134,7 +134,7 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 								</div>
 							)}
 							<div className="motion-scroll-image-label">
-								📱 {__('Mobile Only', 'caes-motion-scroll')}
+								<span aria-hidden="true">📱</span> {__('Mobile Only', 'caes-motion-scroll')}
 							</div>
 						</>
 					) : (

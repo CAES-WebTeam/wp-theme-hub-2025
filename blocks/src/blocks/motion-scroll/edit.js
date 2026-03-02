@@ -279,6 +279,8 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 			alt: media.alt || '',
 			caption: media.caption || '',
 			sizes: media.sizes || {},
+			width: media.width || null,
+			height: media.height || null,
 		};
 
 		// Pre-fill slide caption with image caption from media library

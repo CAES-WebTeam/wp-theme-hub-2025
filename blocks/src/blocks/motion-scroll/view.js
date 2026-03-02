@@ -67,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		let currentSlideIndex = 0;
+		const liveRegion = block.querySelector('.motion-scroll-live-region');
 
 		// Function to update active slide based on scroll position
 		function updateActiveSlide() {
@@ -89,7 +90,23 @@ document.addEventListener('DOMContentLoaded', function () {
 			// Only update if the slide has changed
 			if (targetSlideIndex !== currentSlideIndex) {
 				slides[currentSlideIndex]?.classList.remove('is-active');
+				slides[currentSlideIndex]?.setAttribute('aria-hidden', 'true');
 				slides[targetSlideIndex]?.classList.add('is-active');
+				slides[targetSlideIndex]?.removeAttribute('aria-hidden');
+
+				// Announce the new slide to screen readers
+				if (liveRegion) {
+					const newSlide = slides[targetSlideIndex];
+					const img = newSlide?.querySelector('img');
+					const caption = newSlide?.querySelector('.motion-scroll-caption');
+					const parts = [];
+					const altText = img?.getAttribute('alt');
+					if (altText) parts.push(altText);
+					const captionText = caption?.textContent?.trim();
+					if (captionText) parts.push(captionText);
+					liveRegion.textContent = parts.join('. ');
+				}
+
 				currentSlideIndex = targetSlideIndex;
 			}
 		}

@@ -170,6 +170,7 @@ endif;
 
 	<!-- Images container (sticky) -->
 	<div class="motion-scroll-images" style="background-color: <?php echo esc_attr($images_bg_color); ?>;">
+		<div class="motion-scroll-live-region" aria-live="polite" aria-atomic="true"></div>
 		<?php foreach ($slides as $index => $slide) :
 			$image = $slide['image'] ?? null;
 			$focal_point = $slide['focalPoint'] ?? ['x' => 0.5, 'y' => 0.5];
@@ -194,6 +195,7 @@ endif;
 		?>
 			<div class="motion-scroll-slide<?php echo $index === 0 ? ' is-active' : ''; ?>"
 				data-slide-index="<?php echo esc_attr($index); ?>"
+				<?php echo $index !== 0 ? 'aria-hidden="true"' : ''; ?>
 				style="<?php echo esc_attr($slide_style_attr); ?>">
 				<figure class="motion-scroll-figure">
 					<img
@@ -203,6 +205,8 @@ endif;
 						alt="<?php echo esc_attr($image['alt'] ?? ''); ?>"
 						loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
 						decoding="async"
+						<?php if (!empty($image['width'])) : ?>width="<?php echo esc_attr(intval($image['width'])); ?>" <?php endif; ?>
+						<?php if (!empty($image['height'])) : ?>height="<?php echo esc_attr(intval($image['height'])); ?>" <?php endif; ?>
 						<?php if ($img_style_attr) : ?>style="<?php echo esc_attr($img_style_attr); ?>" <?php endif; ?>>
 					<?php
 					// Use custom caption if provided, otherwise fall back to image caption
