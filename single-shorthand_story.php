@@ -2,6 +2,25 @@
 <html <?php language_attributes(); ?>>
 
 <head>
+	<script>
+		// Mutation observer to catch whatever is rewriting src → data-src
+		const observer = new MutationObserver((mutations) => {
+			mutations.forEach((m) => {
+				if (m.type === 'attributes' &&
+					(m.attributeName === 'src' || m.attributeName === 'data-src') &&
+					m.target.tagName === 'IMG') {
+					console.warn('Image attribute changed:', m.attributeName, m.target);
+					console.trace('Stack trace for src modification');
+				}
+			});
+		});
+		observer.observe(document.documentElement, {
+			attributes: true,
+			subtree: true,
+			attributeOldValue: true,
+			attributeFilter: ['src', 'data-src']
+		});
+	</script>
 	<meta charset="<?php bloginfo('charset'); ?>">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title><?php wp_title('|', true, 'right'); ?></title>
@@ -20,11 +39,11 @@
 	$content .= get_shorthandinfo($meta, 'extra_html');
 	$content .= '</div>';
 	$content .= '</main><!-- /wp:group -->';
-	
+
 	// Wrap Related Content and Footer in a group with no gap
 	$content .= '<!-- wp:group {"style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
 <div class="wp-block-group">';
-	
+
 	// Add Related Content section
 	$content .= '<!-- wp:group {"metadata":{"name":"caes-hub-content-footer"},"className":"caes-hub-content-footer","style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|70","left":"var:preset|spacing|50","right":"var:preset|spacing|50"},"margin":{"bottom":"calc(var(--wp--style--block-gap) * -1)"}},"elements":{"link":{"color":{"text":"var:preset|color|base"}}}},"backgroundColor":"olympic","textColor":"base","layout":{"type":"constrained","contentSize":"1400px"}} -->
 <div class="wp-block-group caes-hub-content-footer has-base-color has-olympic-background-color has-text-color has-background has-link-color" style="padding-top:var(--wp--preset--spacing--60);padding-right:var(--wp--preset--spacing--50);padding-bottom:var(--wp--preset--spacing--70);padding-left:var(--wp--preset--spacing--50)"><!-- wp:heading {"className":"is-style-caes-hub-section-heading"} -->
@@ -55,13 +74,13 @@
 <!-- /wp:group -->
 <!-- /wp:caes-hub/hand-picked-post --></div>
 <!-- /wp:group -->';
-	
+
 	// Add footer template part
 	$content .= '<!-- wp:template-part {"slug":"footer","theme":"wp-theme-hub-2025"} /-->';
-	
+
 	// Close wrapper group
 	$content .= '</div><!-- /wp:group -->';
-	
+
 	// Close column and columns
 	$content .= '</div><!-- /wp:column --></div><!-- /wp:columns -->';
 
