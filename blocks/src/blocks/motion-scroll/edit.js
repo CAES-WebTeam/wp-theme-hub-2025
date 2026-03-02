@@ -17,7 +17,6 @@ import {
 	PanelBody,
 	SelectControl,
 	FocalPointPicker,
-	Popover,
 	TextControl,
 	ToolbarGroup,
 	ToolbarButton,
@@ -552,11 +551,21 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
 							{slides.length > 0 && slides[0]?.image ? (
-								<img
-									ref={duotoneImgRef}
-									src={slides[0].image.url}
-									alt={slides[0].image.alt || ''}
-								/>
+								<>
+									<img
+										ref={duotoneImgRef}
+										src={slides[0].image.url}
+										alt={slides[0].image.alt || ''}
+									/>
+									{slides[0].caption && (
+										<figcaption
+											className="motion-scroll-caption-preview"
+											style={{ color: captionTextColor || '#ffffff' }}
+										>
+											{slides[0].caption}
+										</figcaption>
+									)}
+								</>
 							) : (
 								<div className="motion-scroll-placeholder">
 									<p>{__('Add images using the toolbar button', 'caes-motion-scroll')}</p>
