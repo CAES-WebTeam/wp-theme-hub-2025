@@ -48,7 +48,7 @@ function caes_hub_block_init()
 	// Lightbox Gallery
 	register_block_type(get_template_directory() . '/blocks/build/blocks/lightbox-gallery' );
 
-	// Legacy Gallery
+	// Legacy Gallery; specifically for galleries we imported from old Newswire site
 	register_block_type(get_template_directory() . '/blocks/build/blocks/legacy-gallery' );
 
 	// CAES Gallery (THIS WILL HOPEFULLY BE THE LAST ITERATION ;-;)
