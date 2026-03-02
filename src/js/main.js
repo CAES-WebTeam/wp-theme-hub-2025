@@ -5,7 +5,7 @@ import Parvus from 'parvus';
 (function () {
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-  if (isSafari) {
+  if (isSafari && !document.body.classList.contains('single-shorthand_story')) {
     // Inject CSS immediately
     const style = document.createElement('style');
     style.id = 'safari-parvus-fix';
