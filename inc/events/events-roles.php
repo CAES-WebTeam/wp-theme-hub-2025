@@ -411,6 +411,11 @@ add_action('edit_user_profile', 'add_calendar_permissions_fields');
 
 function add_calendar_permissions_fields($user)
 {
+    // Never show on spoofed/duplicate accounts — they are front-end profile proxies only
+    if (str_contains($user->user_email, '.spoofed')) {
+        return;
+    }
+
     // Only show for users with event-related roles
     $user_roles = (array) $user->roles;
     $event_roles = array('event_submitter', 'event_approver', 'administrator', 'editor');
