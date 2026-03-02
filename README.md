@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.2.8 | 2026-03-02 | Add content_tags to shorthand_story data layer push | Ashley |
 | 1.2.7 | 2026-02-27 | Exclude spoofed accounts from event calendar approver lookups and email notifications | Ashley |
 | 1.2.6 | 2026-02-20 | Add series nav for expert resources | Ashley |
 | 1.2.5 | 2026-02-19 | Reorganized user edit page | Ashley |
