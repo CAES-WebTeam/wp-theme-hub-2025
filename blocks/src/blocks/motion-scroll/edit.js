@@ -16,6 +16,7 @@ import {
 	Button,
 	PanelBody,
 	SelectControl,
+	ToggleControl,
 	FocalPointPicker,
 	TextControl,
 	ToolbarGroup,
@@ -187,7 +188,7 @@ const getSpacingPresetCssVar = (value) => {
 };
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor, contentPadding } = attributes;
+	const { slides, contentPosition, imageDisplayMode, contentBackgroundColor, contentTextColor, imagesBackgroundColor, captionTextColor, contentPadding, featherEdge } = attributes;
 	const [showSlideManager, setShowSlideManager] = useState(false);
 
 	// Get theme colors from theme.json
@@ -354,6 +355,14 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						onChange={(value) => setAttributes({ imageDisplayMode: value })}
 						help={__('Choose how images are displayed in the sticky column.', 'caes-motion-scroll')}
 					/>
+					{imageDisplayMode === 'cover' && (
+						<ToggleControl
+							label={__('Feather Edge', 'caes-motion-scroll')}
+							help={__('Softly blend the image column into the content background at the shared edge.', 'caes-motion-scroll')}
+							checked={!!featherEdge}
+							onChange={(value) => setAttributes({ featherEdge: value })}
+						/>
+					)}
 				</PanelBody>
 				<PanelBody title={__('Content Area', 'caes-motion-scroll')} initialOpen={false}>
 					<SpacingSizesControl
@@ -549,7 +558,19 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 			<div {...blockProps}>
 				<div className="motion-scroll-editor-layout">
-					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
+					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000', position: 'relative' }}>
+						{featherEdge && imageDisplayMode === 'cover' && (
+							<div style={{
+								position: 'absolute',
+								top: 0,
+								...(contentPosition === 'left' ? { left: 0 } : { right: 0 }),
+								height: '100%',
+								width: '20%',
+								background: `linear-gradient(to ${contentPosition === 'left' ? 'right' : 'left'}, ${contentBackgroundColor || 'var(--wp--preset--color--base, #ffffff)'}, transparent)`,
+								pointerEvents: 'none',
+								zIndex: 3,
+							}} />
+						)}
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
 							{slides.length > 0 && slides[0]?.image ? (

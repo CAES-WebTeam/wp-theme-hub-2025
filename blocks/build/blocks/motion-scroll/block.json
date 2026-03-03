@@ -62,6 +62,10 @@
     },
     "contentPadding": {
       "type": "object"
+    },
+    "featherEdge": {
+      "type": "boolean",
+      "default": false
     }
   },
   "supports": {

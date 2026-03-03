@@ -25,6 +25,11 @@
 		.motion-scroll-content {
 			order: 1;
 		}
+		// Feather on left edge of image column — fades toward content on left
+		.motion-scroll-feather {
+			left: 0;
+			background: linear-gradient(to right, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)), transparent);
+		}
 	}
 
 	// Content on right, images on left
@@ -35,6 +40,11 @@
 		.motion-scroll-content {
 			order: 2;
 		}
+		// Feather on right edge of image column — fades toward content on right
+		.motion-scroll-feather {
+			right: 0;
+			background: linear-gradient(to left, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)), transparent);
+		}
 	}
 
 	// Images container (sticky)
@@ -44,6 +54,20 @@
 		height: 100vh;
 		overflow: hidden;
 		background-color: #000;
+
+		// Feather edge overlay — gradient blending image into content column
+		.motion-scroll-feather {
+			position: absolute;
+			top: 0;
+			height: 100%;
+			width: 20%;
+			pointer-events: none;
+			z-index: 3;
+
+			@media (max-width: 1024px) {
+				display: none;
+			}
+		}
 	}
 
 	// Individual slide

@@ -21,6 +21,7 @@ $content_text_color = $attributes['contentTextColor'] ?? '';
 $images_bg_color = $attributes['imagesBackgroundColor'] ?? '#000000';
 $caption_text_color = $attributes['captionTextColor'] ?? '#ffffff';
 $content_padding = $attributes['contentPadding'] ?? [];
+$feather_edge = $attributes['featherEdge'] ?? false;
 
 /**
  * Convert spacing preset value to CSS custom property
@@ -63,13 +64,15 @@ if (empty($slides)) {
 $block_id = 'motion-scroll-' . wp_unique_id();
 
 // Get wrapper attributes
-$wrapper_attributes = get_block_wrapper_attributes(
-	[
-		'id'    => $block_id,
-		'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode),
-		'data-slide-count' => count($slides),
-	]
-);
+$wrapper_attrs = [
+	'id'    => $block_id,
+	'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode),
+	'data-slide-count' => count($slides),
+];
+if ($content_bg_color) {
+	$wrapper_attrs['style'] = '--motion-scroll-feather-color: ' . esc_attr($content_bg_color) . ';';
+}
+$wrapper_attributes = get_block_wrapper_attributes($wrapper_attrs);
 
 /**
  * Helper function to build srcset for an image
@@ -220,6 +223,9 @@ endif;
 				</figure>
 			</div>
 		<?php endforeach; ?>
+		<?php if ($feather_edge && $image_display_mode === 'cover') : ?>
+			<div class="motion-scroll-feather" aria-hidden="true"></div>
+		<?php endif; ?>
 	</div>
 
 	<!-- Content container (scrollable) -->
