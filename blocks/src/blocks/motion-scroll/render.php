@@ -66,11 +66,11 @@ $block_id = 'motion-scroll-' . wp_unique_id();
 // Get wrapper attributes
 $wrapper_attrs = [
 	'id'    => $block_id,
-	'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode),
+	'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode) . ($feather_edge && $image_display_mode === 'cover' ? ' has-feather-edge' : ''),
 	'data-slide-count' => count($slides),
 ];
 if ($content_bg_color) {
-	$wrapper_attrs['style'] = '--motion-scroll-feather-color: ' . esc_attr($content_bg_color) . ';';
+	$wrapper_attrs['style'] = '--motion-scroll-feather-color: ' . esc_attr($content_bg_color) . '; --motion-scroll-content-bg: ' . esc_attr($content_bg_color) . ';';
 }
 $wrapper_attributes = get_block_wrapper_attributes($wrapper_attrs);
 
@@ -223,15 +223,12 @@ endif;
 				</figure>
 			</div>
 		<?php endforeach; ?>
-		<?php if ($feather_edge && $image_display_mode === 'cover') : ?>
-			<div class="motion-scroll-feather" aria-hidden="true"></div>
-		<?php endif; ?>
 	</div>
 
 	<!-- Content container (scrollable) -->
 	<div class="motion-scroll-content" style="<?php
 		$content_styles = [];
-		if ($content_bg_color) {
+		if ($content_bg_color && !($feather_edge && $image_display_mode === 'cover')) {
 			$content_styles[] = 'background-color: ' . esc_attr($content_bg_color);
 		}
 		if ($content_text_color) {

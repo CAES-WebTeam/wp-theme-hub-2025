@@ -558,19 +558,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 			<div {...blockProps}>
 				<div className="motion-scroll-editor-layout">
-					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000', position: 'relative' }}>
-						{featherEdge && imageDisplayMode === 'cover' && (
-							<div style={{
-								position: 'absolute',
-								top: 0,
-								...(contentPosition === 'left' ? { left: 0 } : { right: 0 }),
-								height: '100%',
-								width: '20%',
-								background: `linear-gradient(to ${contentPosition === 'left' ? 'right' : 'left'}, ${contentBackgroundColor || 'var(--wp--preset--color--base, #ffffff)'}, transparent)`,
-								pointerEvents: 'none',
-								zIndex: 3,
-							}} />
-						)}
+					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
 							{slides.length > 0 && slides[0]?.image ? (
@@ -602,7 +590,12 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						</div>
 					</div>
 					<div className="motion-scroll-editor-content" style={{
-						backgroundColor: contentBackgroundColor || 'transparent',
+						...(featherEdge && imageDisplayMode === 'cover'
+							? { background: contentPosition === 'left'
+									? `linear-gradient(to right, ${contentBackgroundColor || 'var(--wp--preset--color--base, #ffffff)'} 65%, transparent 100%)`
+									: `linear-gradient(to right, transparent 0%, ${contentBackgroundColor || 'var(--wp--preset--color--base, #ffffff)'} 35%)` }
+							: { backgroundColor: contentBackgroundColor || 'transparent' }
+						),
 						color: contentTextColor || 'inherit',
 						paddingTop: getSpacingPresetCssVar(contentPadding?.top),
 						paddingRight: getSpacingPresetCssVar(contentPadding?.right),

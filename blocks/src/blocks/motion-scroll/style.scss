@@ -25,21 +25,6 @@
 		.motion-scroll-content {
 			order: 1;
 		}
-		// Feather on left edge of image column — fades toward content on left
-		.motion-scroll-feather {
-			left: 0;
-			background: linear-gradient(
-				to right,
-				var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 0%,
-				var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 10%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 95%, transparent) 20%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 80%, transparent) 35%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 50%, transparent) 55%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 18%, transparent) 73%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 4%, transparent) 88%,
-				transparent 100%
-			);
-		}
 	}
 
 	// Content on right, images on left
@@ -50,20 +35,64 @@
 		.motion-scroll-content {
 			order: 2;
 		}
-		// Feather on right edge of image column — fades toward content on right
-		.motion-scroll-feather {
-			right: 0;
-			background: linear-gradient(
-				to left,
-				var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 0%,
-				var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 10%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 95%, transparent) 20%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 80%, transparent) 35%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 50%, transparent) 55%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 18%, transparent) 73%,
-				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 4%, transparent) 88%,
-				transparent 100%
-			);
+	}
+
+	// Feather edge: image bleeds ~1/3 of content column width into the content area.
+	// The content column sits above (z-index: 2) with a gradient background that
+	// fades from solid on its far side to transparent where the image shows through.
+	&.has-feather-edge {
+		// Shared feather colour resolved once for all descendants
+		--fc: var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff));
+
+		&.content-left {
+			// Images extend left by ~1/3 of the content column width
+			// (margin resolves against the grid area = 50% of total, so -33.333% = ~16.67% of total)
+			.motion-scroll-images {
+				margin-left: -33.333%;
+				width: calc(100% + 33.333%);
+			}
+			// Content fades from solid (left) to transparent (right, where image underlaps)
+			.motion-scroll-content {
+				z-index: 2;
+				background: linear-gradient(
+					to right,
+					var(--fc) 65%,
+					color-mix(in srgb, var(--fc) 88%, transparent) 72%,
+					color-mix(in srgb, var(--fc) 65%, transparent) 80%,
+					color-mix(in srgb, var(--fc) 35%, transparent) 88%,
+					color-mix(in srgb, var(--fc) 10%, transparent) 95%,
+					transparent 100%
+				);
+			}
+		}
+
+		&.content-right {
+			// Images extend right by ~1/3 of the content column width
+			.motion-scroll-images {
+				margin-right: -33.333%;
+				width: calc(100% + 33.333%);
+			}
+			// Content fades from transparent (left, where image underlaps) to solid (right)
+			.motion-scroll-content {
+				z-index: 2;
+				background: linear-gradient(
+					to right,
+					transparent 0%,
+					color-mix(in srgb, var(--fc) 10%, transparent) 5%,
+					color-mix(in srgb, var(--fc) 35%, transparent) 12%,
+					color-mix(in srgb, var(--fc) 65%, transparent) 20%,
+					color-mix(in srgb, var(--fc) 88%, transparent) 28%,
+					var(--fc) 35%
+				);
+			}
+		}
+
+		// Mobile: images are hidden; restore solid content background
+		@media (max-width: 1024px) {
+			.motion-scroll-content {
+				z-index: auto;
+				background: var(--motion-scroll-content-bg, transparent);
+			}
 		}
 	}
 
@@ -74,23 +103,6 @@
 		height: 100vh;
 		overflow: hidden;
 		background-color: #000;
-
-		// Feather edge overlay — gradient blending image into content column
-		.motion-scroll-feather {
-			position: absolute;
-			top: 0;
-			height: 100%;
-			width: 15%;
-			pointer-events: none;
-			z-index: 3;
-			// Vertical mask: full opacity top → fade out before caption at the bottom
-			mask-image: linear-gradient(to bottom, black 55%, transparent 90%);
-			-webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 90%);
-
-			@media (max-width: 1024px) {
-				display: none;
-			}
-		}
 	}
 
 	// Individual slide
