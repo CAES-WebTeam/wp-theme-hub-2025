@@ -45,44 +45,44 @@
 		--fc: var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff));
 
 		&.content-left {
-			// Images extend left by ~1/3 of the content column width
-			// (margin resolves against the grid area = 50% of total, so -33.333% = ~16.67% of total)
+			// Images extend left by ~1/2 of the content column width for deeper bleed-through
+			// (margin resolves against the grid area = 50% of total, so -50% = 25% of total)
 			.motion-scroll-images {
-				margin-left: -33.333%;
-				width: calc(100% + 33.333%);
+				margin-left: -50%;
+				width: calc(100% + 50%);
 			}
-			// Content fades from solid (left) to transparent (right, where image underlaps)
+			// Content fades from solid (left) to transparent (right, where image underlaps).
+			// Fade starts at ~40% so image bleeds through more of the content area.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					var(--fc) 65%,
-					color-mix(in srgb, var(--fc) 88%, transparent) 72%,
-					color-mix(in srgb, var(--fc) 65%, transparent) 80%,
-					color-mix(in srgb, var(--fc) 35%, transparent) 88%,
-					color-mix(in srgb, var(--fc) 10%, transparent) 95%,
-					transparent 100%
+					var(--fc) 40%,
+					color-mix(in srgb, var(--fc) 78%, transparent) 52%,
+					color-mix(in srgb, var(--fc) 52%, transparent) 64%,
+					color-mix(in srgb, var(--fc) 22%, transparent) 76%,
+					transparent 90%
 				);
 			}
 		}
 
 		&.content-right {
-			// Images extend right by ~1/3 of the content column width
+			// Images extend right by ~1/2 of the content column width for deeper bleed-through
 			.motion-scroll-images {
-				margin-right: -33.333%;
-				width: calc(100% + 33.333%);
+				margin-right: -50%;
+				width: calc(100% + 50%);
 			}
-			// Content fades from transparent (left, where image underlaps) to solid (right)
+			// Content fades from transparent (left, where image underlaps) to solid (right).
+			// Fade ends at ~60% so image bleeds through more of the content area.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					transparent 0%,
-					color-mix(in srgb, var(--fc) 10%, transparent) 5%,
-					color-mix(in srgb, var(--fc) 35%, transparent) 12%,
-					color-mix(in srgb, var(--fc) 65%, transparent) 20%,
-					color-mix(in srgb, var(--fc) 88%, transparent) 28%,
-					var(--fc) 35%
+					transparent 10%,
+					color-mix(in srgb, var(--fc) 22%, transparent) 24%,
+					color-mix(in srgb, var(--fc) 52%, transparent) 36%,
+					color-mix(in srgb, var(--fc) 78%, transparent) 48%,
+					var(--fc) 60%
 				);
 			}
 		}
