@@ -250,18 +250,21 @@ endif;
 		echo implode('; ', $content_styles);
 	?>">
 		<?php
-		// Accessible image descriptions: JS will distribute these proportionally through the content.
-		// Visually hidden; hidden entirely on mobile where the images column doesn't appear.
+		// Accessible image descriptions (visually hidden, for screen readers).
+		// Placed before content when images are on the left, after when on the right,
+		// matching left-to-right visual reading order.
+		$desc_html = '';
 		foreach ($slides as $slide) :
 			$img  = $slide['image'] ?? null;
 			if (empty($img)) continue;
 			$alt  = $img['alt'] ?? '';
 			$cap  = $slide['caption'] ?? ($img['caption'] ?? '');
 			$desc = trim(esc_html($alt) . ($cap ? '. ' . esc_html(wp_strip_all_tags($cap)) : ''));
-			if (empty($desc)) continue;
+			if ($desc) $desc_html .= '<span class="motion-scroll-image-description">' . $desc . '</span>';
+		endforeach;
 		?>
-			<span class="motion-scroll-image-description"><?php echo $desc; ?></span>
-		<?php endforeach; ?>
+		<?php if ($content_position === 'right') echo $desc_html; // images on left — descriptions first ?>
 		<?php echo $content; ?>
+		<?php if ($content_position !== 'right') echo $desc_html; // images on right — descriptions last ?>
 	</div>
 </div>

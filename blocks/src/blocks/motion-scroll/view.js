@@ -66,23 +66,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		}
 
-		// Distribute image descriptions proportionally through the content.
-		// Each description is placed before the content child at the same relative
-		// position as its slide — matching the equal-division scroll logic below.
-		(function distributeImageDescriptions() {
-			const descSpans = Array.from(content.querySelectorAll('.motion-scroll-image-description'));
-			if (descSpans.length === 0) return;
-			const contentChildren = Array.from(content.children).filter(
-				(el) => !el.classList.contains('motion-scroll-image-description')
-			);
-			if (contentChildren.length === 0) return;
-			const count = descSpans.length;
-			descSpans.forEach((span, i) => {
-				const targetIndex = Math.floor((i / count) * contentChildren.length);
-				content.insertBefore(span, contentChildren[targetIndex]);
-			});
-		}());
-
 		let currentSlideIndex = 0;
 		const liveRegion = block.querySelector('.motion-scroll-live-region');
 
