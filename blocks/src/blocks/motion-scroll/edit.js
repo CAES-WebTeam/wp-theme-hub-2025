@@ -301,8 +301,11 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		updateSlide(slideIndex, { image: null });
 	};
 
+	const isFeatherActive = featherEdge && imageDisplayMode === 'cover' && !!contentBackgroundColor;
+
 	const blockProps = useBlockProps({
-		className: `caes-motion-scroll-editor content-${contentPosition} image-mode-${imageDisplayMode}`,
+		className: `caes-motion-scroll-editor content-${contentPosition} image-mode-${imageDisplayMode}${isFeatherActive ? ' has-feather-edge' : ''}`,
+		style: isFeatherActive ? { backgroundColor: contentBackgroundColor } : {},
 	});
 
 	return (
@@ -558,7 +561,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 
 			<div {...blockProps}>
 				<div className="motion-scroll-editor-layout">
-					<div className="motion-scroll-editor-images" style={{ backgroundColor: imagesBackgroundColor || '#000' }}>
+					<div className="motion-scroll-editor-images" style={{ backgroundColor: isFeatherActive ? contentBackgroundColor : (imagesBackgroundColor || '#000') }}>
 						<div className="motion-scroll-images-preview">
 							{slides.length > 0 && slides[0]?.duotone && getDuotoneFilter(slides[0].duotone, `editor-duotone-${clientId}`)}
 							{slides.length > 0 && slides[0]?.image ? (
@@ -590,10 +593,10 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 						</div>
 					</div>
 					<div className="motion-scroll-editor-content" style={{
-						...(featherEdge && imageDisplayMode === 'cover'
+						...(isFeatherActive
 							? { background: contentPosition === 'left'
-									? `linear-gradient(to right, ${contentBackgroundColor || 'var(--wp--preset--color--base, #ffffff)'} 65%, transparent 100%)`
-									: `linear-gradient(to right, transparent 0%, ${contentBackgroundColor || 'var(--wp--preset--color--base, #ffffff)'} 35%)` }
+									? `linear-gradient(to right, ${contentBackgroundColor} 65%, oklch(from ${contentBackgroundColor} l c h / 0) 100%)`
+									: `linear-gradient(to right, oklch(from ${contentBackgroundColor} l c h / 0) 0%, ${contentBackgroundColor} 35%)` }
 							: { backgroundColor: contentBackgroundColor || 'transparent' }
 						),
 						color: contentTextColor || 'inherit',

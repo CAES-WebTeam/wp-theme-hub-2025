@@ -45,6 +45,10 @@
 		// (has-feather-edge is only added when a content background colour is chosen).
 		--fc: var(--motion-scroll-feather-color);
 
+		// Ensures the transparent tail of the content gradient always reveals --fc,
+		// regardless of image overlap amount or any block-level background color.
+		background-color: var(--fc);
+
 		// Container background must match --fc so that where the image fades in
 		// (via the figure mask below), the revealed background is the same color
 		// as the content side — not the dark images background-color.
