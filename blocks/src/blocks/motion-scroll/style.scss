@@ -45,47 +45,42 @@
 		--fc: var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff));
 
 		&.content-left {
-			// Images extend left by ~40% of content column width.
-			// A mask on the image container fades its left edge, eliminating any visible hard cut.
+			// Image extends left by ~20% to cross the column seam.
+			// Mask fades the image's own left edge so no hard cut is visible.
 			.motion-scroll-images {
-				margin-left: -40%;
-				width: calc(100% + 40%);
-				mask-image: linear-gradient(to right, transparent 0%, black 28%);
-				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 28%);
+				margin-left: -20%;
+				width: calc(100% + 20%);
+				mask-image: linear-gradient(to right, transparent 0%, black 45%);
+				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 45%);
 			}
-			// Content is solid for first 70% (text always readable), then fades to transparent.
+			// Clean 2-stop gradient: solid → transparent.
+			// No color-mix intermediates = no tinted overlay on the image.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					var(--fc) 70%,
-					color-mix(in srgb, var(--fc) 68%, transparent) 78%,
-					color-mix(in srgb, var(--fc) 35%, transparent) 87%,
-					color-mix(in srgb, var(--fc) 10%, transparent) 95%,
+					var(--fc) 65%,
 					transparent 100%
 				);
 			}
 		}
 
 		&.content-right {
-			// Images extend right by ~40% of content column width.
-			// A mask on the image container fades its right edge, eliminating any visible hard cut.
+			// Image extends right by ~20% to cross the column seam.
+			// Mask fades the image's own right edge so no hard cut is visible.
 			.motion-scroll-images {
-				margin-right: -40%;
-				width: calc(100% + 40%);
-				mask-image: linear-gradient(to left, transparent 0%, black 28%);
-				-webkit-mask-image: linear-gradient(to left, transparent 0%, black 28%);
+				margin-right: -20%;
+				width: calc(100% + 20%);
+				mask-image: linear-gradient(to left, transparent 0%, black 45%);
+				-webkit-mask-image: linear-gradient(to left, transparent 0%, black 45%);
 			}
-			// Content fades from transparent (left) to solid (right, where text sits).
+			// Clean 2-stop gradient: transparent → solid.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
 					transparent 0%,
-					color-mix(in srgb, var(--fc) 10%, transparent) 5%,
-					color-mix(in srgb, var(--fc) 35%, transparent) 13%,
-					color-mix(in srgb, var(--fc) 68%, transparent) 22%,
-					var(--fc) 30%
+					var(--fc) 35%
 				);
 			}
 		}
