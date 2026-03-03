@@ -53,14 +53,15 @@
 				mask-image: linear-gradient(to right, transparent 0%, black 45%);
 				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 45%);
 			}
-			// Clean 2-stop gradient: solid → transparent.
-			// No color-mix intermediates = no tinted overlay on the image.
+			// Gradient fades --fc to a transparent version of the same color.
+			// Using oklch relative color avoids the gray zone caused by
+			// interpolating toward CSS `transparent` (which is rgba(0,0,0,0)).
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
 					var(--fc) 65%,
-					transparent 100%
+					oklch(from var(--fc) l c h / 0) 100%
 				);
 			}
 		}
@@ -74,12 +75,12 @@
 				mask-image: linear-gradient(to left, transparent 0%, black 45%);
 				-webkit-mask-image: linear-gradient(to left, transparent 0%, black 45%);
 			}
-			// Clean 2-stop gradient: transparent → solid.
+			// Gradient fades from transparent version of --fc to solid --fc.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					transparent 0%,
+					oklch(from var(--fc) l c h / 0) 0%,
 					var(--fc) 35%
 				);
 			}
