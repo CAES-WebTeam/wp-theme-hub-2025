@@ -90,9 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			// Only update if the slide has changed
 			if (targetSlideIndex !== currentSlideIndex) {
 				slides[currentSlideIndex]?.classList.remove('is-active');
-				slides[currentSlideIndex]?.setAttribute('aria-hidden', 'true');
 				slides[targetSlideIndex]?.classList.add('is-active');
-				slides[targetSlideIndex]?.removeAttribute('aria-hidden');
 
 				// Announce the new slide to screen readers
 				if (liveRegion) {

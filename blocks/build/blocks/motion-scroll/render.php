@@ -168,9 +168,29 @@ endif;
 	endforeach;
 	?>
 
-	<!-- Images container (sticky) -->
-	<div class="motion-scroll-images" style="background-color: <?php echo esc_attr($images_bg_color); ?>;">
-		<div class="motion-scroll-live-region" aria-live="polite" aria-atomic="true"></div>
+	<?php
+	// Build visually-hidden descriptions for all slides (accessible, outside aria-hidden container)
+	$image_description_parts = [];
+	foreach ($slides as $slide) {
+		$img     = $slide['image'] ?? null;
+		$cap     = $slide['caption'] ?? ($img['caption'] ?? '');
+		$alt     = $img['alt'] ?? '';
+		$desc    = trim(esc_html($alt) . ($cap ? '. ' . esc_html(wp_strip_all_tags($cap)) : ''));
+		if ($desc) $image_description_parts[] = $desc;
+	}
+	if (! empty($image_description_parts)) : ?>
+		<div class="motion-scroll-image-descriptions">
+			<?php foreach ($image_description_parts as $desc) : ?>
+				<span><?php echo $desc; ?></span>
+			<?php endforeach; ?>
+		</div>
+	<?php endif; ?>
+
+	<!-- Live region: outside aria-hidden so announcements still reach screen readers -->
+	<div class="motion-scroll-live-region" aria-live="polite" aria-atomic="true"></div>
+
+	<!-- Images container (sticky, aria-hidden: descriptions provided above) -->
+	<div class="motion-scroll-images" aria-hidden="true" style="background-color: <?php echo esc_attr($images_bg_color); ?>;">
 		<?php foreach ($slides as $index => $slide) :
 			$image = $slide['image'] ?? null;
 			$focal_point = $slide['focalPoint'] ?? ['x' => 0.5, 'y' => 0.5];
@@ -195,7 +215,6 @@ endif;
 		?>
 			<div class="motion-scroll-slide<?php echo $index === 0 ? ' is-active' : ''; ?>"
 				data-slide-index="<?php echo esc_attr($index); ?>"
-				<?php echo $index !== 0 ? 'aria-hidden="true"' : ''; ?>
 				style="<?php echo esc_attr($slide_style_attr); ?>">
 				<figure class="motion-scroll-figure">
 					<img
