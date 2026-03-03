@@ -28,7 +28,15 @@
 		// Feather on left edge of image column — fades toward content on left
 		.motion-scroll-feather {
 			left: 0;
-			background: linear-gradient(to right, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)), transparent);
+			background: linear-gradient(
+				to right,
+				var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 0%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 88%, transparent) 15%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 65%, transparent) 35%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 35%, transparent) 65%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 12%, transparent) 85%,
+				transparent 100%
+			);
 		}
 	}
 
@@ -43,7 +51,15 @@
 		// Feather on right edge of image column — fades toward content on right
 		.motion-scroll-feather {
 			right: 0;
-			background: linear-gradient(to left, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)), transparent);
+			background: linear-gradient(
+				to left,
+				var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 0%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 88%, transparent) 15%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 65%, transparent) 35%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 35%, transparent) 65%,
+				color-mix(in srgb, var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff)) 12%, transparent) 85%,
+				transparent 100%
+			);
 		}
 	}
 
@@ -60,7 +76,7 @@
 			position: absolute;
 			top: 0;
 			height: 100%;
-			width: 20%;
+			width: 25%;
 			pointer-events: none;
 			z-index: 3;
 
