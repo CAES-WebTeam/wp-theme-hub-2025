@@ -291,8 +291,9 @@ $reveal-mobile-breakpoint: 782px;
 
 @media (prefers-reduced-motion: reduce) {
 	.reveal-frame-background {
-		// Disable transform transitions for users who prefer reduced motion
-		transition: opacity 0.1s ease !important;
+		// All transitions are JS-driven; this prevents any residual CSS transitions
+		transition: none !important;
+		// Belt-and-suspenders: block transform in case JS is slow to apply the binary switch
 		transform: none !important;
 	}
 }

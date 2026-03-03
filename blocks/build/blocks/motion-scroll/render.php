@@ -260,7 +260,7 @@ endif;
 			$alt  = $img['alt'] ?? '';
 			$cap  = $slide['caption'] ?? ($img['caption'] ?? '');
 			$desc = trim(esc_html($alt) . ($cap ? '. ' . esc_html(wp_strip_all_tags($cap)) : ''));
-			if ($desc) $desc_html .= '<span class="motion-scroll-image-description">' . $desc . '</span>';
+			if ($desc) $desc_html .= '<span class="motion-scroll-image-description">' . $desc . '</span> ';
 		endforeach;
 		?>
 		<?php if ($content_position === 'right') echo $desc_html; // images on left — descriptions first ?>

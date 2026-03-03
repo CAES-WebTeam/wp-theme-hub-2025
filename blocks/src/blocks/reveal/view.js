@@ -46,6 +46,7 @@
 		let ticking = false;
 		let frameData = [];
 		let cachedTotalHeight = 0;
+		let prefersReducedMotion = false;
 
 		/**
 		 * Calculate layout metrics for each frame
@@ -208,6 +209,14 @@
  * Apply transition effects to backgrounds
  */
 		function applyBackgroundTransitions(activeIndex, transitioningToIndex, transitionProgress) {
+			// In reduced motion mode, skip gradual transitions — switch instantly at the 50% point
+			if (prefersReducedMotion && transitioningToIndex !== -1) {
+				if (transitionProgress >= 0.5) {
+					activeIndex = transitioningToIndex;
+				}
+				transitioningToIndex = -1;
+			}
+
 			backgrounds.forEach((bg, index) => {
 				const transitionType = bg.getAttribute('data-transition') || 'fade';
 
@@ -350,6 +359,14 @@
 			// Set up event listeners
 			window.addEventListener('scroll', onScroll, { passive: true });
 			window.addEventListener('resize', onResize, { passive: true });
+
+			// Track reduced motion preference; update immediately if the user changes it mid-session
+			const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+			prefersReducedMotion = motionQuery.matches;
+			motionQuery.addEventListener('change', (e) => {
+				prefersReducedMotion = e.matches;
+				updateOnScroll();
+			});
 
 			// Recalculate after images load, debounced to batch rapid successive loads
 			const debouncedRecalculate = debounce(() => {
