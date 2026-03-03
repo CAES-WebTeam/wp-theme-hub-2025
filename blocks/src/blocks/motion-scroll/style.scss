@@ -53,15 +53,15 @@
 				mask-image: linear-gradient(to right, transparent 0%, black 28%);
 				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 28%);
 			}
-			// Content is solid for first 55% (text always readable), then fades to transparent.
+			// Content is solid for first 70% (text always readable), then fades to transparent.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					var(--fc) 55%,
-					color-mix(in srgb, var(--fc) 72%, transparent) 66%,
-					color-mix(in srgb, var(--fc) 40%, transparent) 78%,
-					color-mix(in srgb, var(--fc) 12%, transparent) 90%,
+					var(--fc) 70%,
+					color-mix(in srgb, var(--fc) 68%, transparent) 78%,
+					color-mix(in srgb, var(--fc) 35%, transparent) 87%,
+					color-mix(in srgb, var(--fc) 10%, transparent) 95%,
 					transparent 100%
 				);
 			}
@@ -82,10 +82,10 @@
 				background: linear-gradient(
 					to right,
 					transparent 0%,
-					color-mix(in srgb, var(--fc) 12%, transparent) 10%,
-					color-mix(in srgb, var(--fc) 40%, transparent) 22%,
-					color-mix(in srgb, var(--fc) 72%, transparent) 34%,
-					var(--fc) 45%
+					color-mix(in srgb, var(--fc) 10%, transparent) 5%,
+					color-mix(in srgb, var(--fc) 35%, transparent) 13%,
+					color-mix(in srgb, var(--fc) 68%, transparent) 22%,
+					var(--fc) 30%
 				);
 			}
 		}
