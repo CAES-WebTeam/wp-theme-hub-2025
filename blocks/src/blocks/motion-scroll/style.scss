@@ -45,44 +45,47 @@
 		--fc: var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff));
 
 		&.content-left {
-			// Images extend left by ~1/2 of the content column width for deeper bleed-through
-			// (margin resolves against the grid area = 50% of total, so -50% = 25% of total)
+			// Images extend left by ~40% of content column width.
+			// A mask on the image container fades its left edge, eliminating any visible hard cut.
 			.motion-scroll-images {
-				margin-left: -50%;
-				width: calc(100% + 50%);
+				margin-left: -40%;
+				width: calc(100% + 40%);
+				mask-image: linear-gradient(to right, transparent 0%, black 28%);
+				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 28%);
 			}
-			// Content fades from solid (left) to transparent (right, where image underlaps).
-			// Fade starts at ~40% so image bleeds through more of the content area.
+			// Content is solid for first 55% (text always readable), then fades to transparent.
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					var(--fc) 40%,
-					color-mix(in srgb, var(--fc) 78%, transparent) 52%,
-					color-mix(in srgb, var(--fc) 52%, transparent) 64%,
-					color-mix(in srgb, var(--fc) 22%, transparent) 76%,
-					transparent 90%
+					var(--fc) 55%,
+					color-mix(in srgb, var(--fc) 72%, transparent) 66%,
+					color-mix(in srgb, var(--fc) 40%, transparent) 78%,
+					color-mix(in srgb, var(--fc) 12%, transparent) 90%,
+					transparent 100%
 				);
 			}
 		}
 
 		&.content-right {
-			// Images extend right by ~1/2 of the content column width for deeper bleed-through
+			// Images extend right by ~40% of content column width.
+			// A mask on the image container fades its right edge, eliminating any visible hard cut.
 			.motion-scroll-images {
-				margin-right: -50%;
-				width: calc(100% + 50%);
+				margin-right: -40%;
+				width: calc(100% + 40%);
+				mask-image: linear-gradient(to left, transparent 0%, black 28%);
+				-webkit-mask-image: linear-gradient(to left, transparent 0%, black 28%);
 			}
-			// Content fades from transparent (left, where image underlaps) to solid (right).
-			// Fade ends at ~60% so image bleeds through more of the content area.
+			// Content fades from transparent (left) to solid (right, where text sits).
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					transparent 10%,
-					color-mix(in srgb, var(--fc) 22%, transparent) 24%,
-					color-mix(in srgb, var(--fc) 52%, transparent) 36%,
-					color-mix(in srgb, var(--fc) 78%, transparent) 48%,
-					var(--fc) 60%
+					transparent 0%,
+					color-mix(in srgb, var(--fc) 12%, transparent) 10%,
+					color-mix(in srgb, var(--fc) 40%, transparent) 22%,
+					color-mix(in srgb, var(--fc) 72%, transparent) 34%,
+					var(--fc) 45%
 				);
 			}
 		}
