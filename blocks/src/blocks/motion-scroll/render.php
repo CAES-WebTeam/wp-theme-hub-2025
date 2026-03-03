@@ -66,7 +66,7 @@ $block_id = 'motion-scroll-' . wp_unique_id();
 // Get wrapper attributes
 $wrapper_attrs = [
 	'id'    => $block_id,
-	'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode) . ($feather_edge && $image_display_mode === 'cover' ? ' has-feather-edge' : ''),
+	'class' => 'caes-motion-scroll content-' . esc_attr($content_position) . ' image-mode-' . esc_attr($image_display_mode) . ($feather_edge && $image_display_mode === 'cover' && $content_bg_color ? ' has-feather-edge' : ''),
 	'data-slide-count' => count($slides),
 ];
 if ($content_bg_color) {

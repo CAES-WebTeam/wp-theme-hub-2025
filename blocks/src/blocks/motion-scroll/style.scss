@@ -41,8 +41,9 @@
 	// The content column sits above (z-index: 2) with a gradient background that
 	// fades from solid on its far side to transparent where the image shows through.
 	&.has-feather-edge {
-		// Shared feather colour resolved once for all descendants
-		--fc: var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff));
+		// Feather colour — always set via --motion-scroll-feather-color from PHP
+		// (has-feather-edge is only added when a content background colour is chosen).
+		--fc: var(--motion-scroll-feather-color);
 
 		// Container background must match --fc so that where the image fades in
 		// (via the figure mask below), the revealed background is the same color
