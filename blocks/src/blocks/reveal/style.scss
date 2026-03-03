@@ -194,6 +194,45 @@ $reveal-mobile-breakpoint: 782px;
 }
 
 // ============================================================================
+// Accessible Image Descriptions (visually hidden, placed per-section)
+// Backgrounds are aria-hidden, so these carry alt text + captions to screen readers
+// ============================================================================
+
+.reveal-frame-image-description {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+// When desktop and mobile images have different descriptions, show only the relevant one
+.reveal-image-desc-desktop {
+	@media (max-width: $reveal-mobile-breakpoint) {
+		display: none;
+	}
+}
+
+.reveal-image-desc-mobile {
+	display: none;
+
+	@media (max-width: $reveal-mobile-breakpoint) {
+		display: block;
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+}
+
+// ============================================================================
 // Sections Container - Provides Scroll Height
 // ============================================================================
 

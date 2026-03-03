@@ -197,8 +197,8 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 	endforeach;
 	?>
 
-	<!-- Single sticky container for ALL backgrounds -->
-	<div class="reveal-backgrounds">
+	<!-- Single sticky container for ALL backgrounds (aria-hidden: content is mirrored per-section below) -->
+	<div class="reveal-backgrounds" aria-hidden="true">
 		<?php foreach ($frames as $index => $frame) :
 			$desktop_image       = $frame['desktopImage'] ?? null;
 			$mobile_image        = $frame['mobileImage'] ?? null;
@@ -323,15 +323,35 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 	<div class="reveal-sections">
 		<?php foreach ($frames as $index => $frame) :
 			$desktop_image = $frame['desktopImage'] ?? null;
+			$mobile_image  = $frame['mobileImage'] ?? null;
 			$transition_speed = $frame['transition']['speed'] ?? 'normal';
 
 			if (empty($desktop_image)) {
 				continue;
 			}
+
+			// Build accessible image descriptions to compensate for aria-hidden backgrounds.
+			// On desktop, screen readers see the desktop description; on mobile, the mobile one.
+			$has_section_mobile = ! empty($mobile_image) && ! empty($mobile_image['url']);
+			$desktop_alt = $desktop_image['alt'] ?? '';
+			$desktop_cap = $desktop_image['captionText'] ?? $desktop_image['caption'] ?? '';
+			$mobile_alt  = $has_section_mobile ? ($mobile_image['alt'] ?? '') : $desktop_alt;
+			$mobile_cap  = $has_section_mobile ? ($mobile_image['captionText'] ?? $mobile_image['caption'] ?? '') : $desktop_cap;
+			$desktop_desc = trim(esc_html($desktop_alt) . ($desktop_cap ? '. ' . esc_html($desktop_cap) : ''));
+			$mobile_desc  = trim(esc_html($mobile_alt) . ($mobile_cap ? '. ' . esc_html($mobile_cap) : ''));
+			$descs_differ = $has_section_mobile && $desktop_desc !== $mobile_desc;
 		?>
-			<section class="reveal-frame-section" 
+			<section class="reveal-frame-section"
 				data-frame-index="<?php echo esc_attr($index); ?>"
 				data-speed="<?php echo esc_attr($transition_speed); ?>">
+				<?php if ($desktop_desc || $mobile_desc) : ?>
+					<?php if ($descs_differ) : ?>
+						<span class="reveal-frame-image-description reveal-image-desc-desktop"><?php echo $desktop_desc; ?></span>
+						<span class="reveal-frame-image-description reveal-image-desc-mobile"><?php echo $mobile_desc; ?></span>
+					<?php else : ?>
+						<span class="reveal-frame-image-description"><?php echo $desktop_desc; ?></span>
+					<?php endif; ?>
+				<?php endif; ?>
 				<div class="reveal-frame-content">
 					<?php if (isset($frame_contents[$index])) : ?>
 						<?php echo $frame_contents[$index]; ?>
