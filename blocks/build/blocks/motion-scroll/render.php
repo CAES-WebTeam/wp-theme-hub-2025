@@ -168,24 +168,6 @@ endif;
 	endforeach;
 	?>
 
-	<?php
-	// Build visually-hidden descriptions for all slides (accessible, outside aria-hidden container)
-	$image_description_parts = [];
-	foreach ($slides as $slide) {
-		$img     = $slide['image'] ?? null;
-		$cap     = $slide['caption'] ?? ($img['caption'] ?? '');
-		$alt     = $img['alt'] ?? '';
-		$desc    = trim(esc_html($alt) . ($cap ? '. ' . esc_html(wp_strip_all_tags($cap)) : ''));
-		if ($desc) $image_description_parts[] = $desc;
-	}
-	if (! empty($image_description_parts)) : ?>
-		<div class="motion-scroll-image-descriptions">
-			<?php foreach ($image_description_parts as $desc) : ?>
-				<span><?php echo $desc; ?></span>
-			<?php endforeach; ?>
-		</div>
-	<?php endif; ?>
-
 	<!-- Live region: outside aria-hidden so announcements still reach screen readers -->
 	<div class="motion-scroll-live-region" aria-live="polite" aria-atomic="true"></div>
 
@@ -267,6 +249,19 @@ endif;
 		}
 		echo implode('; ', $content_styles);
 	?>">
+		<?php
+		// Accessible image descriptions: JS will distribute these proportionally through the content.
+		// Visually hidden; hidden entirely on mobile where the images column doesn't appear.
+		foreach ($slides as $slide) :
+			$img  = $slide['image'] ?? null;
+			if (empty($img)) continue;
+			$alt  = $img['alt'] ?? '';
+			$cap  = $slide['caption'] ?? ($img['caption'] ?? '');
+			$desc = trim(esc_html($alt) . ($cap ? '. ' . esc_html(wp_strip_all_tags($cap)) : ''));
+			if (empty($desc)) continue;
+		?>
+			<span class="motion-scroll-image-description"><?php echo $desc; ?></span>
+		<?php endforeach; ?>
 		<?php echo $content; ?>
 	</div>
 </div>

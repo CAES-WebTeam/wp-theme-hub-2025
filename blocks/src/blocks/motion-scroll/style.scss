@@ -66,26 +66,6 @@
 		}
 	}
 
-	// Visually-hidden image descriptions for screen readers (desktop only)
-	.motion-scroll-image-descriptions {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-
-		@media (max-width: 1024px) {
-			display: none; // Images don't appear on mobile, so descriptions shouldn't either
-		}
-
-		span {
-			display: block;
-		}
-	}
-
 	// Visually hidden live region for screen reader announcements
 	.motion-scroll-live-region {
 		position: absolute;
@@ -217,8 +197,27 @@
 
 	// Content container (scrollable)
 	.motion-scroll-content {
+		position: relative; // Needed for absolutely-positioned description spans
 		min-height: 100vh;
 		overflow-x: hidden; // Prevent horizontal overflow only
+
+		// Visually-hidden image descriptions, distributed proportionally by JS.
+		// Hidden on mobile where the images column doesn't appear.
+		.motion-scroll-image-description {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+
+			@media (max-width: 1024px) {
+				display: none;
+			}
+		}
 
 		// Ensure images don't break out
 		img {
