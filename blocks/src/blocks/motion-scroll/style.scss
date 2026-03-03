@@ -44,18 +44,28 @@
 		// Shared feather colour resolved once for all descendants
 		--fc: var(--motion-scroll-feather-color, var(--wp--preset--color--base, #ffffff));
 
+		// Container background must match --fc so that where the image fades in
+		// (via the figure mask below), the revealed background is the same color
+		// as the content side — not the dark images background-color.
+		.motion-scroll-images {
+			background-color: var(--fc) !important;
+		}
+
 		&.content-left {
 			// Image extends left by ~20% to cross the column seam.
-			// Mask fades the image's own left edge so no hard cut is visible.
 			.motion-scroll-images {
 				margin-left: -20%;
 				width: calc(100% + 20%);
+			}
+			// Mask on the figure (not the container) so the container's --fc
+			// background stays solid and visible through the fade zone.
+			.motion-scroll-figure {
 				mask-image: linear-gradient(to right, transparent 0%, black 45%);
 				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 45%);
 			}
 			// Gradient fades --fc to a transparent version of the same color.
-			// Using oklch relative color avoids the gray zone caused by
-			// interpolating toward CSS `transparent` (which is rgba(0,0,0,0)).
+			// Using oklch relative color avoids gray caused by interpolating
+			// toward CSS `transparent` (which is rgba(0,0,0,0)).
 			.motion-scroll-content {
 				z-index: 2;
 				background: linear-gradient(
@@ -68,10 +78,12 @@
 
 		&.content-right {
 			// Image extends right by ~20% to cross the column seam.
-			// Mask fades the image's own right edge so no hard cut is visible.
 			.motion-scroll-images {
 				margin-right: -20%;
 				width: calc(100% + 20%);
+			}
+			// Mask on the figure, not the container.
+			.motion-scroll-figure {
 				mask-image: linear-gradient(to left, transparent 0%, black 45%);
 				-webkit-mask-image: linear-gradient(to left, transparent 0%, black 45%);
 			}
