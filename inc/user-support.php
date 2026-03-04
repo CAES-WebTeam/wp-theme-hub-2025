@@ -599,13 +599,14 @@ function content_manager_enable_edit_any_user($enable)
 add_filter('enable_edit_any_user_configuration', 'content_manager_enable_edit_any_user');
 
 /**
- * Restrict the Settings menu for Content Managers.
+ * Restrict certain admin menus for Content Managers.
  *
  * Content Managers have manage_options (needed for Kinsta Cache and other
- * plugin settings pages), but they should not access the core WP Settings
- * pages (General, Writing, Reading, Discussion, Media, Permalinks, Privacy).
+ * plugin settings pages), but they should not access:
+ *  - Core WP Settings pages (General, Writing, Reading, Discussion, Media, Permalinks, Privacy)
+ *  - CAES Tools (theme developer/admin tools)
  *
- * This removes the Settings menu items and blocks direct URL access.
+ * This removes the menu items and blocks direct URL access.
  */
 function content_manager_restrict_settings()
 {
@@ -614,10 +615,11 @@ function content_manager_restrict_settings()
         return;
     }
 
-    // Remove the entire Settings top-level menu.
+    // Remove menus from the sidebar.
     remove_menu_page('options-general.php');
+    remove_menu_page('caes-tools');
 
-    // Block direct access to Settings pages.
+    // Block direct access to restricted pages.
     $blocked_pages = [
         'options-general.php',
         'options-writing.php',
@@ -630,6 +632,14 @@ function content_manager_restrict_settings()
 
     $current_page = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
     if (in_array($current_page, $blocked_pages, true)) {
+        wp_die(
+            __('Sorry, you are not allowed to access this page.'),
+            403
+        );
+    }
+
+    // Block direct access to CAES Tools pages (registered as admin.php?page=caes-tools*).
+    if (isset($_GET['page']) && strpos($_GET['page'], 'caes-tools') === 0) {
         wp_die(
             __('Sorry, you are not allowed to access this page.'),
             403
