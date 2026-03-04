@@ -467,11 +467,11 @@ add_action('init', 'add_expert_user_role');
  *  - wpseo_edit_advanced_metadata : edit advanced Yoast meta on posts
  *  - wpseo_bulk_edit            : use Yoast bulk editor
  *
- * Kinsta Cache access is handled separately via menu capability remapping
- * (see content_manager_remap_kinsta_cache below) to avoid granting the
- * overly broad manage_options capability.
+ * manage_options is required for Kinsta Cache (and some other plugin settings
+ * pages). Because it also unlocks the Settings menu, a separate function
+ * (content_manager_restrict_settings) hides and blocks those pages.
  *
- * Explicitly excluded (handled by map_meta_cap filter below):
+ * Explicitly excluded (handled by map_meta_cap filter and menu restrictions):
  *  - create_users / delete_users / remove_users  : no user creation or removal
  *  - promote_users                                : no role changes
  *  - install_plugins / install_themes             : inherited exclusion from Editor base
@@ -481,7 +481,7 @@ add_action('init', 'add_expert_user_role');
  */
 function add_content_manager_role()
 {
-    $role_version = 2;
+    $role_version = 3;
 
     if (get_option('content_manager_role_version') == $role_version) {
         return;
@@ -502,6 +502,10 @@ function add_content_manager_role()
 
     // Unfiltered HTML (requires map_meta_cap filter below to work in multisite)
     $caps['unfiltered_html']    = true;
+
+    // Plugin settings access (Kinsta Cache, Yoast SEO, and others that check manage_options).
+    // Settings menu pages are restricted separately -- see content_manager_restrict_settings().
+    $caps['manage_options']              = true;
 
     // Yoast SEO settings access
     $caps['wpseo_manage_options']        = true;
@@ -595,80 +599,44 @@ function content_manager_enable_edit_any_user($enable)
 add_filter('enable_edit_any_user_configuration', 'content_manager_enable_edit_any_user');
 
 /**
- * Allow Content Managers to access the Kinsta Cache admin page.
+ * Restrict the Settings menu for Content Managers.
  *
- * The Kinsta MU plugin registers its cache page requiring manage_options,
- * which is too broad for content managers (it unlocks the entire Settings menu).
- * Instead, we remap the Kinsta menu item's required capability to edit_theme_options,
- * which content managers already have.
+ * Content Managers have manage_options (needed for Kinsta Cache and other
+ * plugin settings pages), but they should not access the core WP Settings
+ * pages (General, Writing, Reading, Discussion, Media, Permalinks, Privacy).
  *
- * If Kinsta also performs an internal manage_options check within its page callback,
- * the content_manager_grant_kinsta_access filter below handles that case.
+ * This removes the Settings menu items and blocks direct URL access.
  */
-function content_manager_remap_kinsta_cache()
+function content_manager_restrict_settings()
 {
-    global $menu, $submenu;
-
-    // Remap top-level Kinsta menu items.
-    if (!empty($menu)) {
-        foreach ($menu as $key => $item) {
-            if (isset($item[2]) && stripos($item[2], 'kinsta') !== false) {
-                $menu[$key][1] = 'edit_theme_options';
-            }
-        }
-    }
-
-    // Remap Kinsta submenu items.
-    if (!empty($submenu)) {
-        foreach ($submenu as $parent_slug => $items) {
-            if (stripos($parent_slug, 'kinsta') !== false) {
-                foreach ($items as $sub_key => $sub_item) {
-                    $submenu[$parent_slug][$sub_key][1] = 'edit_theme_options';
-                }
-            }
-        }
-    }
-}
-add_action('admin_menu', 'content_manager_remap_kinsta_cache', 999);
-
-/**
- * Grant Content Managers manage_options only in the context of Kinsta Cache pages.
- *
- * Some plugins check manage_options inside their page callback, not just at
- * menu registration. This filter temporarily grants the capability when a
- * Content Manager is viewing a Kinsta admin page.
- */
-function content_manager_grant_kinsta_access($allcaps, $caps, $args)
-{
-    if (!is_admin() || !isset($args[0]) || $args[0] !== 'manage_options') {
-        return $allcaps;
-    }
-
     $user = wp_get_current_user();
     if (!in_array('content_manager', (array) $user->roles)) {
-        return $allcaps;
+        return;
     }
 
-    // Only grant on Kinsta admin pages.
-    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
-    $is_kinsta_page = false;
+    // Remove the entire Settings top-level menu.
+    remove_menu_page('options-general.php');
 
-    if ($screen && isset($screen->id) && stripos($screen->id, 'kinsta') !== false) {
-        $is_kinsta_page = true;
+    // Block direct access to Settings pages.
+    $blocked_pages = [
+        'options-general.php',
+        'options-writing.php',
+        'options-reading.php',
+        'options-discussion.php',
+        'options-media.php',
+        'options-permalink.php',
+        'options-privacy.php',
+    ];
+
+    $current_page = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    if (in_array($current_page, $blocked_pages, true)) {
+        wp_die(
+            __('Sorry, you are not allowed to access this page.'),
+            403
+        );
     }
-
-    // Fallback: check the page query parameter.
-    if (!$is_kinsta_page && isset($_GET['page']) && stripos($_GET['page'], 'kinsta') !== false) {
-        $is_kinsta_page = true;
-    }
-
-    if ($is_kinsta_page) {
-        $allcaps['manage_options'] = true;
-    }
-
-    return $allcaps;
 }
-add_filter('user_has_cap', 'content_manager_grant_kinsta_access', 10, 3);
+add_action('admin_menu', 'content_manager_restrict_settings', 999);
 
 
 /**
