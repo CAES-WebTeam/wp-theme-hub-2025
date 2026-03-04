@@ -34,7 +34,7 @@ import { createBlock } from '@wordpress/blocks';
  * Generate duotone SVG filter markup - matches WordPress core implementation.
  */
 const getDuotoneFilter = (duotone, filterId) => {
-	if (!duotone || duotone.length < 2) {
+	if (!Array.isArray(duotone) || duotone.length < 2) {
 		return null;
 	}
 
@@ -535,7 +535,7 @@ const FrameManagerPanel = ({
 								const duotone = frame.desktopDuotone || frame.duotone;
 								return (
 									<>
-										{duotone && getDuotoneFilter(duotone, filterId)}
+										{Array.isArray(duotone) && duotone.length >= 2 && getDuotoneFilter(duotone, filterId)}
 										<img
 											src={frame.desktopImage.url}
 											alt=""
@@ -780,7 +780,7 @@ const ImagePanel = ({
 
 									return (
 										<div style={{ position: 'relative' }}>
-											{duotone && getDuotoneFilter(duotone, filterId)}
+											{Array.isArray(duotone) && duotone.length >= 2 && getDuotoneFilter(duotone, filterId)}
 											<img
 												src={image.url}
 												alt={image.alt}
@@ -854,7 +854,7 @@ const ImagePanel = ({
 								// Desktop: Normal preview
 								return (
 									<>
-										{duotone && getDuotoneFilter(duotone, filterId)}
+										{Array.isArray(duotone) && duotone.length >= 2 && getDuotoneFilter(duotone, filterId)}
 										<img
 											src={image.url}
 											alt={image.alt}
@@ -939,7 +939,7 @@ const ImagePanel = ({
 							<Button variant="secondary" onClick={() => setDuotoneModal(imageType)} icon="admin-appearance">
 								{duotone ? __('Edit Filter', 'caes-reveal') : __('Add Filter', 'caes-reveal')}
 							</Button>
-							{duotone && <DuotoneSwatch values={duotone} />}
+							{Array.isArray(duotone) && duotone.length >= 2 && <DuotoneSwatch values={duotone} />}
 						</div>
 					</div>
 				)}
@@ -1012,18 +1012,20 @@ const DuotoneModal = ({ frame, imageType, onUpdate, onClose }) => {
 				<DuotonePicker
 					duotonePalette={DUOTONE_PALETTE}
 					colorPalette={COLOR_PALETTE}
-					value={duotone || undefined}
+					value={Array.isArray(duotone) ? duotone : undefined}
 					onChange={(value) => {
+						// DuotonePicker may fire onChange with undefined/null when user clicks "Unset"
+						const normalized = (Array.isArray(value) && value.length >= 2) ? value : null;
 						if (imageType === 'desktop') {
-							onUpdate({ desktopDuotone: value, duotone: null });
+							onUpdate({ desktopDuotone: normalized, duotone: null });
 						} else {
-							onUpdate({ mobileDuotone: value });
+							onUpdate({ mobileDuotone: normalized });
 						}
 					}}
 				/>
 
 				<div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-					{duotone && (
+					{Array.isArray(duotone) && duotone.length >= 2 && (
 						<Button
 							variant="tertiary"
 							isDestructive
