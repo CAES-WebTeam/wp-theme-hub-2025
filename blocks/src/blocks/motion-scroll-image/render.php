@@ -12,7 +12,20 @@ $slides = $block->context['caes-hub/motion-scroll-slides'] ?? [];
 
 // Get the selected slide
 $selected_slide = $slides[$slide_index] ?? null;
-$image = $selected_slide['image'] ?? null;
+
+// Prefer mobile-specific fields; fall back to desktop fields
+$has_mobile_image = !empty($selected_slide['mobileImage']);
+$image   = $has_mobile_image
+	? $selected_slide['mobileImage']
+	: ($selected_slide['image'] ?? null);
+$duotone = !empty($selected_slide['mobileDuotone'])
+	? $selected_slide['mobileDuotone']
+	: ($selected_slide['duotone'] ?? null);
+
+// Mobile always uses center crop; desktop image respects focalPoint
+$focal_point = $has_mobile_image
+	? ['x' => 0.5, 'y' => 0.5]
+	: ($selected_slide['focalPoint'] ?? ['x' => 0.5, 'y' => 0.5]);
 
 // Early return if no image
 if (empty($image)) {
@@ -23,9 +36,6 @@ if (empty($image)) {
 $wrapper_attributes = get_block_wrapper_attributes([
 	'class' => 'caes-motion-scroll-image',
 ]);
-
-$focal_point = $selected_slide['focalPoint'] ?? ['x' => 0.5, 'y' => 0.5];
-$duotone = $selected_slide['duotone'] ?? null;
 
 // Build CSS custom properties for focal point
 $figure_styles = [];
@@ -68,8 +78,10 @@ if (function_exists('caes_motion_scroll_build_srcset')) {
 			decoding="async"
 			<?php if ($img_style_attr) : ?>style="<?php echo esc_attr($img_style_attr); ?>" <?php endif; ?>>
 		<?php
-		// Use custom caption if provided, otherwise fall back to image caption
-		$caption = $selected_slide['caption'] ?? $image['caption'] ?? '';
+		// If a mobile image is set, use mobileCaption; otherwise use desktop caption.
+		$caption = $has_mobile_image
+			? ($selected_slide['mobileCaption'] ?? '')
+			: ($selected_slide['caption'] ?? ($image['caption'] ?? ''));
 		if (! empty($caption)) : ?>
 			<figcaption class="motion-scroll-image-caption">
 				<?php echo wp_kses_post($caption); ?>

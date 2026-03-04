@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "caes-hub/motion-scroll-image",
 	"version": "0.1.0",
-	"title": "Motion Scroll Image",
+	"title": "Motion Scroll Mobile Image",
 	"parent": [
 		"caes-hub/motion-scroll"
 	],

@@ -69,6 +69,9 @@ const DEFAULT_SLIDE = {
 	focalPoint: { x: 0.5, y: 0.5 },
 	duotone: null,
 	caption: '',
+	mobileImage: null,
+	mobileCaption: '',
+	mobileDuotone: null,
 };
 
 const generateSlideId = () => {
@@ -676,6 +679,7 @@ const SlideManagerPanel = ({
 	const [isOpen, setIsOpen] = useState(false);
 	const [showFocalPointModal, setShowFocalPointModal] = useState(false);
 	const [showDuotoneModal, setShowDuotoneModal] = useState(false);
+	const [showMobileDuotoneModal, setShowMobileDuotoneModal] = useState(false);
 
 	return (
 		<div
@@ -794,6 +798,7 @@ const SlideManagerPanel = ({
 						onUpdate={onUpdate}
 						setShowFocalPointModal={setShowFocalPointModal}
 						setShowDuotoneModal={setShowDuotoneModal}
+						setShowMobileDuotoneModal={setShowMobileDuotoneModal}
 						clientId={clientId}
 						slideIndex={index}
 					/>
@@ -816,6 +821,15 @@ const SlideManagerPanel = ({
 					onClose={() => setShowDuotoneModal(false)}
 				/>
 			)}
+
+			{showMobileDuotoneModal && (
+				<DuotoneModal
+					slide={slide}
+					onUpdate={onUpdate}
+					onClose={() => setShowMobileDuotoneModal(false)}
+					duotoneField="mobileDuotone"
+				/>
+			)}
 		</div>
 	);
 };
@@ -828,6 +842,7 @@ const ImagePanel = ({
 	onUpdate,
 	setShowFocalPointModal,
 	setShowDuotoneModal,
+	setShowMobileDuotoneModal,
 	clientId,
 	slideIndex,
 }) => {
@@ -1004,6 +1019,135 @@ const ImagePanel = ({
 					</div>
 				)}
 			</MediaUploadCheck>
+
+			{/* Mobile Display Section */}
+			<div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e0e0e0' }}>
+				<label style={{ display: 'block', marginBottom: '4px', fontWeight: 600, fontSize: '13px', color: '#1e1e1e' }}>
+					{__('Mobile Display', 'caes-motion-scroll')}
+				</label>
+				<p style={{ margin: '0 0 12px', fontSize: '12px', color: '#757575' }}>
+					{__('On mobile the full image is shown above content. If not set, the desktop image is used.', 'caes-motion-scroll')}
+				</p>
+
+				<MediaUploadCheck>
+					{!slide.mobileImage ? (
+						<div>
+							<div style={{ padding: '10px 12px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', fontSize: '12px', color: '#555', fontStyle: 'italic' }}>
+								{__('Using desktop image', 'caes-motion-scroll')}
+							</div>
+							<MediaUpload
+								onSelect={(media) => onUpdate({
+									mobileImage: {
+										id: media.id,
+										url: media.url,
+										alt: media.alt || '',
+										caption: media.caption || '',
+										sizes: media.sizes || {},
+										width: media.width || null,
+										height: media.height || null,
+									},
+									mobileCaption: media.caption || '',
+								})}
+								allowedTypes={['image']}
+								render={({ open }) => (
+									<Button variant="secondary" onClick={open}>
+										{__('Set Mobile Image', 'caes-motion-scroll')}
+									</Button>
+								)}
+							/>
+						</div>
+					) : (
+						<div>
+							{/* Mobile image preview */}
+							<div style={{ marginBottom: '16px' }}>
+								{(() => {
+									const mobileFilterId = `manager-mobile-${clientId}-${slideIndex}`;
+									const mobileDuotone = slide.mobileDuotone;
+									return (
+										<>
+											{mobileDuotone && getDuotoneFilter(mobileDuotone, mobileFilterId)}
+											<div style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
+												<div style={{ position: 'relative', background: '#000', aspectRatio: '4 / 3', overflow: 'hidden' }}>
+													<img
+														src={slide.mobileImage.url}
+														alt={slide.mobileImage.alt || ''}
+														style={{
+															width: '100%',
+															height: '100%',
+															objectFit: 'cover',
+															objectPosition: 'center',
+															filter: mobileDuotone ? `url(#${mobileFilterId})` : undefined,
+														}}
+													/>
+												</div>
+												<div style={{ padding: '5px 8px', background: '#1e1e1e', color: '#bbb', fontSize: '11px', textAlign: 'center' }}>
+													{__('Mobile preview — full image, center-cropped', 'caes-motion-scroll')}
+												</div>
+											</div>
+										</>
+									);
+								})()}
+							</div>
+
+							{/* Mobile Image Actions */}
+							<div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+								<MediaUpload
+									onSelect={(media) => onUpdate({
+										mobileImage: {
+											id: media.id,
+											url: media.url,
+											alt: media.alt || '',
+											caption: media.caption || '',
+											sizes: media.sizes || {},
+											width: media.width || null,
+											height: media.height || null,
+										},
+									})}
+									allowedTypes={['image']}
+									value={slide.mobileImage?.id}
+									render={({ open }) => (
+										<Button variant="secondary" onClick={open}>
+											{__('Replace', 'caes-motion-scroll')}
+										</Button>
+									)}
+								/>
+								<Button
+									variant="secondary"
+									isDestructive
+									onClick={() => onUpdate({ mobileImage: null, mobileCaption: '', mobileDuotone: null })}
+								>
+									{__('Remove', 'caes-motion-scroll')}
+								</Button>
+							</div>
+
+							{/* Mobile Alt Text */}
+							<TextControl
+								label={__('Mobile Alt Text', 'caes-motion-scroll')}
+								value={slide.mobileImage?.alt || ''}
+								onChange={(value) => onUpdate({ mobileImage: { ...slide.mobileImage, alt: value } })}
+								placeholder={__('Describe image for screenreaders', 'caes-motion-scroll')}
+							/>
+
+							{/* Mobile Caption */}
+							<TextControl
+								label={__('Mobile Caption', 'caes-motion-scroll')}
+								value={slide.mobileCaption || ''}
+								onChange={(value) => onUpdate({ mobileCaption: value })}
+								placeholder={__('Optional mobile caption text', 'caes-motion-scroll')}
+								help={__('Leave empty to hide caption', 'caes-motion-scroll')}
+							/>
+
+							{/* Mobile Filter Button */}
+							<div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+								<Button variant="secondary" onClick={() => setShowMobileDuotoneModal(true)} icon="admin-appearance">
+									{slide.mobileDuotone ? __('Edit Mobile Filter', 'caes-motion-scroll') : __('Add Mobile Filter', 'caes-motion-scroll')}
+								</Button>
+								{slide.mobileDuotone && <DuotoneSwatch values={slide.mobileDuotone} />}
+							</div>
+						</div>
+					)}
+				</MediaUploadCheck>
+			</div>
 		</div>
 	);
 };
@@ -1052,12 +1196,12 @@ const FocalPointModal = ({ slide, onUpdate, onClose }) => {
 };
 
 // Duotone Modal
-const DuotoneModal = ({ slide, onUpdate, onClose }) => {
-	const duotone = slide.duotone;
+const DuotoneModal = ({ slide, onUpdate, onClose, duotoneField = 'duotone' }) => {
+	const duotone = slide[duotoneField];
 
 	return (
 		<Modal
-			title={__('Duotone Filter', 'caes-motion-scroll')}
+			title={duotoneField === 'mobileDuotone' ? __('Mobile Duotone Filter', 'caes-motion-scroll') : __('Duotone Filter', 'caes-motion-scroll')}
 			onRequestClose={onClose}
 			style={{ maxWidth: '400px', width: '100%' }}
 		>
@@ -1070,7 +1214,7 @@ const DuotoneModal = ({ slide, onUpdate, onClose }) => {
 					duotonePalette={DUOTONE_PALETTE}
 					colorPalette={COLOR_PALETTE}
 					value={duotone || undefined}
-					onChange={(value) => onUpdate({ duotone: value })}
+					onChange={(value) => onUpdate({ [duotoneField]: value })}
 				/>
 
 				<div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -1079,7 +1223,7 @@ const DuotoneModal = ({ slide, onUpdate, onClose }) => {
 							variant="tertiary"
 							isDestructive
 							onClick={() => {
-								onUpdate({ duotone: null });
+								onUpdate({ [duotoneField]: null });
 								onClose();
 							}}
 						>

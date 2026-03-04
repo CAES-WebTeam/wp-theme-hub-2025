@@ -70,10 +70,15 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 		className: 'caes-motion-scroll-image-editor',
 	});
 
-	// Get the selected slide
+	// Get the selected slide, preferring mobile-specific fields with desktop fallback
 	const selectedSlide = slides[slideIndex] || null;
-	const selectedImage = selectedSlide?.image || null;
-	const duotone = selectedSlide?.duotone || null;
+	const selectedImage = selectedSlide?.mobileImage || selectedSlide?.image || null;
+	const duotone = selectedSlide?.mobileDuotone || selectedSlide?.duotone || null;
+	// If a mobile image is set, use mobileCaption (even if empty — user may have cleared it intentionally).
+	// Otherwise fall back to the desktop caption.
+	const displayCaption = selectedSlide?.mobileImage
+		? (selectedSlide?.mobileCaption || '')
+		: (selectedSlide?.caption || '');
 	const filterId = `motion-scroll-image-duotone-${clientId}`;
 
 	// Apply duotone filter using the iframe document's actual URL to avoid
@@ -128,9 +133,9 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 						<>
 							{duotone && getDuotoneFilter(duotone, filterId)}
 							<img ref={imgRef} src={selectedImage.url} alt={selectedImage.alt || ''} />
-							{selectedSlide?.caption && (
+							{displayCaption && (
 								<div className="motion-scroll-image-caption-preview">
-									{selectedSlide.caption}
+									{displayCaption}
 								</div>
 							)}
 							<div className="motion-scroll-image-label">
