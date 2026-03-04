@@ -52,7 +52,9 @@
 		// Container background must match --fc so that where the image fades in
 		// (via the figure mask below), the revealed background is the same color
 		// as the content side — not the dark images background-color.
-		.motion-scroll-images {
+		// Uses &.image-mode-cover to beat the !important rule of the same name
+		// in the image-mode-cover block further down (feather is cover-only anyway).
+		&.image-mode-cover .motion-scroll-images {
 			background-color: var(--fc) !important;
 		}
 
