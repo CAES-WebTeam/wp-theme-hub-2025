@@ -452,6 +452,202 @@ function add_expert_user_role()
 }
 add_action('init', 'add_expert_user_role');
 
+/**
+ * Adds the 'Content Manager' custom user role.
+ *
+ * Designed for Creative Team staff who need full content management plus the
+ * ability to edit user profiles (e.g. ACF fields like "public-friendly title")
+ * without requiring Super Admin access on the multisite network.
+ *
+ * Based on Editor capabilities with additions:
+ *  - edit_users / list_users    : edit user profiles on this site
+ *  - edit_theme_options         : manage menus and widgets
+ *  - unfiltered_html            : paste/write raw HTML in the editor
+ *  - wpseo_manage_options       : access Yoast SEO settings pages
+ *  - wpseo_edit_advanced_metadata : edit advanced Yoast meta on posts
+ *  - wpseo_bulk_edit            : use Yoast bulk editor
+ *
+ * manage_options is required for Kinsta Cache (and some other plugin settings
+ * pages). Because it also unlocks the Settings menu, a separate function
+ * (content_manager_restrict_settings) hides and blocks those pages.
+ *
+ * Explicitly excluded (handled by map_meta_cap filter and menu restrictions):
+ *  - create_users / delete_users / remove_users  : no user creation or removal
+ *  - promote_users                                : no role changes
+ *  - install_plugins / install_themes             : inherited exclusion from Editor base
+ *  - manage_network / manage_sites                : inherited exclusion from Editor base
+ *
+ * Uses a version option so capabilities can be updated by bumping $role_version.
+ */
+function add_content_manager_role()
+{
+    $role_version = 3;
+
+    if (get_option('content_manager_role_version') == $role_version) {
+        return;
+    }
+
+    // Remove stale version so capabilities are rebuilt cleanly.
+    remove_role('content_manager');
+
+    $editor_role = get_role('editor');
+    $caps = $editor_role ? $editor_role->capabilities : [];
+
+    // User management (requires map_meta_cap filter below to work in multisite)
+    $caps['edit_users']         = true;
+    $caps['list_users']         = true;
+
+    // Theme options (menus, widgets)
+    $caps['edit_theme_options'] = true;
+
+    // Unfiltered HTML (requires map_meta_cap filter below to work in multisite)
+    $caps['unfiltered_html']    = true;
+
+    // Plugin settings access (Kinsta Cache, Yoast SEO, and others that check manage_options).
+    // Settings menu pages are restricted separately -- see content_manager_restrict_settings().
+    $caps['manage_options']              = true;
+
+    // Yoast SEO settings access
+    $caps['wpseo_manage_options']        = true;
+    $caps['wpseo_edit_advanced_metadata'] = true;
+    $caps['wpseo_bulk_edit']             = true;
+
+    add_role('content_manager', 'Content Manager', $caps);
+    update_option('content_manager_role_version', $role_version);
+}
+add_action('init', 'add_content_manager_role');
+
+/**
+ * Override multisite capability restrictions for Content Managers.
+ *
+ * WordPress multisite blocks edit_users and unfiltered_html for all
+ * non-super-admins via map_meta_cap. This filter re-enables those
+ * capabilities for content_manager users with the following safety rails:
+ *
+ *  - Cannot edit Super Admin profiles
+ *  - Cannot edit users who are not members of the current site
+ *  - Cannot promote, delete, remove, or create users
+ */
+function content_manager_map_meta_cap($caps, $cap, $user_id, $args)
+{
+    $user = get_userdata($user_id);
+    if (!$user || !in_array('content_manager', (array) $user->roles)) {
+        return $caps;
+    }
+
+    switch ($cap) {
+        case 'edit_user':
+        case 'edit_users':
+            if (!empty($args[0])) {
+                $target_user_id = (int) $args[0];
+
+                // Users can always edit their own profile.
+                if ($target_user_id === $user_id) {
+                    break;
+                }
+
+                // Never allow editing Super Admin profiles.
+                if (is_super_admin($target_user_id)) {
+                    return ['do_not_allow'];
+                }
+
+                // Only allow editing users who belong to this site.
+                if (is_multisite() && !is_user_member_of_blog($target_user_id, get_current_blog_id())) {
+                    return ['do_not_allow'];
+                }
+            }
+
+            // Map to the primitive cap the role already has.
+            return ['edit_users'];
+
+        case 'list_users':
+            return ['list_users'];
+
+        // Block all user lifecycle operations.
+        case 'promote_user':
+        case 'promote_users':
+        case 'delete_user':
+        case 'delete_users':
+        case 'remove_user':
+        case 'remove_users':
+        case 'create_users':
+            return ['do_not_allow'];
+
+        // Allow unfiltered HTML (multisite core maps this to do_not_allow).
+        case 'unfiltered_html':
+            return ['unfiltered_html'];
+    }
+
+    return $caps;
+}
+add_filter('map_meta_cap', 'content_manager_map_meta_cap', 10, 4);
+
+/**
+ * Allow Content Managers to access the user-edit.php screen in multisite.
+ *
+ * Multisite has a separate gate in wp-admin/user-edit.php that blocks
+ * non-super-admins unless this filter returns true.
+ */
+function content_manager_enable_edit_any_user($enable)
+{
+    $user = wp_get_current_user();
+    if (in_array('content_manager', (array) $user->roles)) {
+        return true;
+    }
+    return $enable;
+}
+add_filter('enable_edit_any_user_configuration', 'content_manager_enable_edit_any_user');
+
+/**
+ * Restrict certain admin menus for Content Managers.
+ *
+ * Content Managers have manage_options (needed for Kinsta Cache and other
+ * plugin settings pages), but they should not access:
+ *  - Core WP Settings pages (General, Writing, Reading, Discussion, Media, Permalinks, Privacy)
+ *  - CAES Tools (theme developer/admin tools)
+ *
+ * This removes the menu items and blocks direct URL access.
+ */
+function content_manager_restrict_settings()
+{
+    $user = wp_get_current_user();
+    if (!in_array('content_manager', (array) $user->roles)) {
+        return;
+    }
+
+    // Remove menus from the sidebar.
+    remove_menu_page('options-general.php');
+    remove_menu_page('caes-tools');
+
+    // Block direct access to restricted pages.
+    $blocked_pages = [
+        'options-general.php',
+        'options-writing.php',
+        'options-reading.php',
+        'options-discussion.php',
+        'options-media.php',
+        'options-permalink.php',
+        'options-privacy.php',
+    ];
+
+    $current_page = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+    if (in_array($current_page, $blocked_pages, true)) {
+        wp_die(
+            __('Sorry, you are not allowed to access this page.'),
+            403
+        );
+    }
+
+    // Block direct access to CAES Tools pages (registered as admin.php?page=caes-tools*).
+    if (isset($_GET['page']) && strpos($_GET['page'], 'caes-tools') === 0) {
+        wp_die(
+            __('Sorry, you are not allowed to access this page.'),
+            403
+        );
+    }
+}
+add_action('admin_menu', 'content_manager_restrict_settings', 999);
+
 
 /**
  * ---------------------------------------------------------------------------------
