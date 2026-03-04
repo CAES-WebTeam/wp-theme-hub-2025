@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.3.0 | 2026-03-04 | New Content Manager role for OMC | Ashley |
 | 1.2.9 | 2026-03-02 | Fix Safari lightbox on Shorthand stories by excluding body transform hack from shorthand_story pages | Ashley |
 | 1.2.8 | 2026-03-02 | Add content_tags to shorthand_story data layer push | Ashley |
 | 1.2.7 | 2026-02-27 | Exclude spoofed accounts from event calendar approver lookups and email notifications | Ashley |
