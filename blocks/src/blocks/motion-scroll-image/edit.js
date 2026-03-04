@@ -40,7 +40,7 @@ const getDuotoneFilterPrimitives = (duotone, filterId) => {
 };
 
 const getDuotoneFilter = (duotone, filterId) => {
-	if (!duotone || duotone.length < 2) {
+	if (!Array.isArray(duotone) || duotone.length < 2) {
 		return null;
 	}
 
@@ -88,7 +88,7 @@ const Edit = ({ attributes, setAttributes, context, clientId }) => {
 		const el = imgRef.current;
 		if (!el) return;
 
-		if (duotone && duotone.length >= 2) {
+		if (Array.isArray(duotone) && duotone.length >= 2) {
 			const docUrl = el.ownerDocument.URL.split('#')[0];
 			el.style.filter = `url('${docUrl}#${filterId}')`;
 		} else {

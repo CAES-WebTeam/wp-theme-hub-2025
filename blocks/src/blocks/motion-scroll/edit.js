@@ -115,7 +115,7 @@ const getDuotoneFilterPrimitives = (duotone, filterId) => {
 };
 
 const getDuotoneFilter = (duotone, filterId) => {
-	if (!duotone || duotone.length < 2) {
+	if (!Array.isArray(duotone) || duotone.length < 2) {
 		return null;
 	}
 
@@ -143,7 +143,7 @@ const getDuotoneFilter = (duotone, filterId) => {
  * where a <base> tag can break fragment-only filter references.
  */
 const getDuotoneImage = (duotone, filterId, imageUrl, imageAlt) => {
-	if (!duotone || duotone.length < 2) {
+	if (!Array.isArray(duotone) || duotone.length < 2) {
 		return null;
 	}
 
@@ -214,7 +214,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 		if (!el) return;
 
 		const firstSlide = slides[0];
-		if (firstSlide?.duotone && firstSlide.duotone.length >= 2) {
+		if (Array.isArray(firstSlide?.duotone) && firstSlide.duotone.length >= 2) {
 			const docUrl = el.ownerDocument.URL.split('#')[0];
 			el.style.filter = `url('${docUrl}#editor-duotone-${clientId}')`;
 		} else {
@@ -721,7 +721,7 @@ const SlideManagerPanel = ({
 								const duotone = slide.duotone;
 								return (
 									<>
-										{duotone && getDuotoneFilter(duotone, filterId)}
+										{Array.isArray(duotone) && duotone.length >= 2 && getDuotoneFilter(duotone, filterId)}
 										<img
 											src={slide.image.url}
 											alt=""
@@ -945,7 +945,7 @@ const ImagePanel = ({
 
 								return (
 									<>
-										{duotone && getDuotoneFilter(duotone, filterId)}
+										{Array.isArray(duotone) && duotone.length >= 2 && getDuotoneFilter(duotone, filterId)}
 										<div style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #ddd' }}>
 											<div style={{
 												display: 'flex',
@@ -1014,7 +1014,7 @@ const ImagePanel = ({
 							<Button variant="secondary" onClick={() => setShowDuotoneModal(true)} icon="admin-appearance">
 								{duotone ? __('Edit Filter', 'caes-motion-scroll') : __('Add Filter', 'caes-motion-scroll')}
 							</Button>
-							{duotone && <DuotoneSwatch values={duotone} />}
+							{Array.isArray(duotone) && duotone.length >= 2 && <DuotoneSwatch values={duotone} />}
 						</div>
 					</div>
 				)}
@@ -1142,7 +1142,7 @@ const ImagePanel = ({
 								<Button variant="secondary" onClick={() => setShowMobileDuotoneModal(true)} icon="admin-appearance">
 									{slide.mobileDuotone ? __('Edit Mobile Filter', 'caes-motion-scroll') : __('Add Mobile Filter', 'caes-motion-scroll')}
 								</Button>
-								{slide.mobileDuotone && <DuotoneSwatch values={slide.mobileDuotone} />}
+								{Array.isArray(slide.mobileDuotone) && slide.mobileDuotone.length >= 2 && <DuotoneSwatch values={slide.mobileDuotone} />}
 							</div>
 						</div>
 					)}
@@ -1173,11 +1173,11 @@ const FocalPointModal = ({ slide, onUpdate, onClose }) => {
 					{__('Click on the image to set the focal point. This determines which part of the image stays visible when cropped.', 'caes-motion-scroll')}
 				</p>
 
-				{duotone && getDuotoneFilter(duotone, filterId)}
-				{duotone && (
+				{Array.isArray(duotone) && duotone.length >= 2 && getDuotoneFilter(duotone, filterId)}
+				{Array.isArray(duotone) && duotone.length >= 2 && (
 					<style>{`.motion-scroll-focal-duotone .components-focal-point-picker img { filter: url(#${filterId}); }`}</style>
 				)}
-				<div className={duotone ? 'motion-scroll-focal-duotone' : undefined}>
+				<div className={Array.isArray(duotone) && duotone.length >= 2 ? 'motion-scroll-focal-duotone' : undefined}>
 					<FocalPointPicker
 						url={image.url}
 						value={slide.focalPoint || { x: 0.5, y: 0.5 }}
@@ -1213,12 +1213,16 @@ const DuotoneModal = ({ slide, onUpdate, onClose, duotoneField = 'duotone' }) =>
 				<DuotonePicker
 					duotonePalette={DUOTONE_PALETTE}
 					colorPalette={COLOR_PALETTE}
-					value={duotone || undefined}
-					onChange={(value) => onUpdate({ [duotoneField]: value })}
+					value={Array.isArray(duotone) ? duotone : undefined}
+					onChange={(value) => {
+						// DuotonePicker may fire onChange with undefined/null when user clicks "Unset"
+						const normalized = (Array.isArray(value) && value.length >= 2) ? value : null;
+						onUpdate({ [duotoneField]: normalized });
+					}}
 				/>
 
 				<div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-					{duotone && (
+					{Array.isArray(duotone) && duotone.length >= 2 && (
 						<Button
 							variant="tertiary"
 							isDestructive
