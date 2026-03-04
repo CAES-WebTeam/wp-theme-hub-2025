@@ -1,0 +1,200 @@
+/**
+ * Motion Scroll Block Styles (Editor)
+ * Match the frontend appearance as closely as possible
+ */
+
+.caes-motion-scroll-editor {
+	position: relative;
+	box-sizing: border-box;
+	max-width: 100%;
+
+	*, *::before, *::after {
+		box-sizing: border-box;
+	}
+
+	.motion-scroll-editor-layout {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0;
+		min-height: 400px;
+		width: 100%;
+	}
+
+	&.content-left {
+		.motion-scroll-editor-images {
+			order: 2;
+		}
+		.motion-scroll-editor-content {
+			order: 1;
+		}
+	}
+
+	&.content-right {
+		.motion-scroll-editor-images {
+			order: 1;
+		}
+		.motion-scroll-editor-content {
+			order: 2;
+		}
+	}
+
+	.motion-scroll-editor-images {
+		background: #000; // Match frontend black background
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		overflow: hidden;
+		min-width: 0; // Prevent grid blowout
+		min-height: 400px;
+
+		.motion-scroll-images-preview {
+			position: relative;
+			width: 100%;
+			height: 100%;
+
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+
+			.motion-scroll-placeholder {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				height: 100%;
+				text-align: center;
+				color: #999; // Lighter color for black background
+				padding: 20px;
+			}
+		}
+	}
+
+	// Image display mode: cover (default - background fill)
+	&.image-mode-cover {
+		.motion-scroll-images-preview {
+			position: relative;
+
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+
+			.motion-scroll-caption-preview {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				padding: 1rem 1.5rem;
+				background: rgba(0, 0, 0, 0.7);
+				z-index: 2;
+				font-size: var(--wp--preset--font-size--small, 0.875rem);
+				margin: 0;
+			}
+		}
+	}
+
+	// Image display mode: contain (maintain aspect ratio, centered)
+	&.image-mode-contain {
+		.motion-scroll-editor-images {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 2rem; // Match frontend padding
+		}
+
+		.motion-scroll-images-preview {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+			max-height: 100%;
+			gap: 1rem; // Space between image and caption preview
+
+			img {
+				width: 100%;
+				height: auto;
+				max-width: 100%;
+				max-height: calc(100% - 4rem); // Leave room for caption
+				object-fit: contain;
+				flex-shrink: 1;
+			}
+
+			.motion-scroll-caption-preview {
+				display: block;
+				padding: 0;
+				text-align: center;
+				font-size: var(--wp--preset--font-size--small, 0.875rem);
+				flex-shrink: 0;
+				width: 100%;
+				margin: 0;
+				word-wrap: break-word;
+			}
+		}
+
+		// Add label for images area
+		&::before {
+			content: 'Images (Sticky)';
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			font-size: 11px;
+			padding: 4px 8px;
+			background: rgba(255, 255, 255, 0.15);
+			border-radius: 3px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 600;
+			color: #fff;
+			z-index: 10;
+		}
+
+		.motion-scroll-image-count {
+			position: absolute;
+			bottom: 10px;
+			right: 10px;
+			background: rgba(0, 0, 0, 0.75);
+			color: #fff;
+			padding: 6px 12px;
+			border-radius: 4px;
+			font-size: 12px;
+			font-weight: 600;
+		}
+	}
+
+	.motion-scroll-editor-content {
+		background: inherit; // Inherit background from block
+		color: inherit; // Inherit text color from block
+		min-width: 0; // Prevent grid blowout
+		min-height: 400px;
+
+		// Add subtle indicator this is the content area
+		position: relative;
+
+		&::before {
+			content: 'Content';
+			position: absolute;
+			top: 8px;
+			left: 8px;
+			font-size: 11px;
+			padding: 4px 8px;
+			background: rgba(0, 0, 0, 0.75);
+			border-radius: 3px;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 600;
+			color: var(--wp--preset--color--base, #fff);
+			border: 1px solid #ddd;
+		}
+	}
+}
+
+// Slide Manager Modal styles
+.motion-scroll-slide-manager-modal {
+	.components-modal__content {
+		padding: 0 20px 20px;
+	}
+}

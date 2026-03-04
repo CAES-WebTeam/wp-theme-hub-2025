@@ -157,6 +157,9 @@ function push_custom_data_layer()
             } else {
                 $data_layer['content_primary_topics'] = '';
             }
+
+            // Tags
+            $data_layer['content_tags'] = $get_term_slugs('post_tag', $post->ID);
             break;
 
         case 'events':

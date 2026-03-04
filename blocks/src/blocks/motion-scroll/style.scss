@@ -1,0 +1,347 @@
+/**
+ * Motion Scroll Block Styles (Frontend)
+ */
+
+.caes-motion-scroll {
+	position: relative;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	min-height: 100vh;
+	gap: 0;
+
+	// Only break out to full viewport when alignfull
+	&.alignfull {
+		// Let theme handle the full-width breakout
+		// Just ensure grid uses full width properly
+		width: calc(100% + var(--wp--preset--spacing--50)*2);
+		max-width: none;
+	}
+
+	// Content on left, images on right (default)
+	&.content-left {
+		.motion-scroll-images {
+			order: 2;
+		}
+		.motion-scroll-content {
+			order: 1;
+		}
+	}
+
+	// Content on right, images on left
+	&.content-right {
+		.motion-scroll-images {
+			order: 1;
+		}
+		.motion-scroll-content {
+			order: 2;
+		}
+	}
+
+	// Feather edge: image bleeds ~1/3 of content column width into the content area.
+	// The content column sits above (z-index: 2) with a gradient background that
+	// fades from solid on its far side to transparent where the image shows through.
+	&.has-feather-edge {
+		// Feather colour — always set via --motion-scroll-feather-color from PHP
+		// (has-feather-edge is only added when a content background colour is chosen).
+		--fc: var(--motion-scroll-feather-color);
+
+		// Ensures the transparent tail of the content gradient always reveals --fc,
+		// regardless of image overlap amount or any block-level background color.
+		background-color: var(--fc);
+
+		// Container background must match --fc so that where the image fades in
+		// (via the figure mask below), the revealed background is the same color
+		// as the content side — not the dark images background-color.
+		// Uses &.image-mode-cover to beat the !important rule of the same name
+		// in the image-mode-cover block further down (feather is cover-only anyway).
+		&.image-mode-cover .motion-scroll-images {
+			background-color: var(--fc) !important;
+		}
+
+		&.content-left {
+			// Image extends left by ~20% to cross the column seam.
+			.motion-scroll-images {
+				margin-left: -20%;
+				width: calc(100% + 20%);
+			}
+			// Pin caption to the right (away from the feather zone) so it's never obscured.
+			.motion-scroll-caption {
+				left: auto;
+				right: 0;
+				width: 65%;
+			}
+			// Mask on the figure (not the container) so the container's --fc
+			// background stays solid and visible through the fade zone.
+			.motion-scroll-figure {
+				mask-image: linear-gradient(to right, transparent 0%, black 45%);
+				-webkit-mask-image: linear-gradient(to right, transparent 0%, black 45%);
+			}
+			// Gradient fades --fc to a transparent version of the same color.
+			// Using oklch relative color avoids gray caused by interpolating
+			// toward CSS `transparent` (which is rgba(0,0,0,0)).
+			.motion-scroll-content {
+				z-index: 2;
+				background: linear-gradient(
+					to right,
+					var(--fc) 65%,
+					oklch(from var(--fc) l c h / 0) 100%
+				);
+			}
+		}
+
+		&.content-right {
+			// Image extends right by ~20% to cross the column seam.
+			.motion-scroll-images {
+				margin-right: -20%;
+				width: calc(100% + 20%);
+			}
+			// Pin caption to the left (away from the feather zone).
+			.motion-scroll-caption {
+				right: auto;
+				left: 0;
+				width: 65%;
+			}
+			// Mask on the figure, not the container.
+			.motion-scroll-figure {
+				mask-image: linear-gradient(to left, transparent 0%, black 45%);
+				-webkit-mask-image: linear-gradient(to left, transparent 0%, black 45%);
+			}
+			// Gradient fades from transparent version of --fc to solid --fc.
+			.motion-scroll-content {
+				z-index: 2;
+				background: linear-gradient(
+					to right,
+					oklch(from var(--fc) l c h / 0) 0%,
+					var(--fc) 35%
+				);
+			}
+		}
+
+		// Mobile: images are hidden; restore solid content background
+		@media (max-width: 1024px) {
+			.motion-scroll-content {
+				z-index: auto;
+				background: var(--motion-scroll-content-bg, transparent);
+			}
+		}
+	}
+
+	// Images container (sticky)
+	.motion-scroll-images {
+		position: sticky;
+		top: 0;
+		height: 100vh;
+		overflow: hidden;
+		background-color: #000;
+	}
+
+	// Individual slide
+	.motion-scroll-slide {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+		transition: opacity 0.6s ease-in-out;
+		will-change: opacity;
+
+		@media (prefers-reduced-motion: reduce) {
+			transition: none;
+		}
+
+		&.is-active {
+			opacity: 1;
+		}
+	}
+
+	// Visually hidden live region for screen reader announcements
+	.motion-scroll-live-region {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	// Figure element
+	.motion-scroll-figure {
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		position: relative;
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			object-position: var(--focal-x, 50%) var(--focal-y, 50%);
+		}
+	}
+
+	// Caption styles
+	.motion-scroll-caption {
+		margin: 0;
+		line-height: 1.4;
+
+		a {
+			color: inherit;
+			text-decoration: underline;
+			text-decoration-color: rgba(255, 255, 255, 0.6);
+			transition: text-decoration-color 0.2s ease;
+
+			&:hover,
+			&:focus {
+				text-decoration-color: currentColor;
+			}
+		}
+	}
+
+	// Image display mode: cover (default - background fill)
+	&.image-mode-cover {
+		.motion-scroll-images {
+			background-color: #000 !important;
+		}
+
+		.motion-scroll-slide {
+			display: block;
+		}
+
+		.motion-scroll-figure {
+			width: 100%;
+			height: 100%;
+
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				object-position: var(--focal-x, 50%) var(--focal-y, 50%);
+			}
+		}
+
+		// Caption overlay style (like Reveal block)
+		.motion-scroll-caption {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 1rem 1.5rem;
+			background: rgba(0, 0, 0, 0.7);
+			z-index: 2;
+			color: var(--wp--preset--color--base) !important;
+			font-size: var(--wp--preset--font-size--small);
+		}
+	}
+
+	// Image display mode: contain (maintain aspect ratio, centered)
+	&.image-mode-contain {
+		.motion-scroll-slide {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 2rem; // Add padding to ensure caption has room
+			box-sizing: border-box;
+		}
+
+		.motion-scroll-figure {
+			width: 100%;
+			height: auto;
+			max-width: 100%;
+			max-height: calc(100vh - 4rem); // Leave room for padding
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			box-sizing: border-box;
+			overflow: hidden; // Prevent caption overflow
+
+			img {
+				width: 100%;
+				height: auto;
+				max-height: calc(100vh - 6rem); // Leave room for caption
+				max-width: 100%;
+				object-fit: contain;
+				object-position: center;
+				flex-shrink: 0;
+			}
+		}
+
+		// Caption below image style
+		.motion-scroll-caption {
+			display: block;
+			padding: 1rem 0 0;
+			text-align: center;
+			font-size: 0.9em;
+			flex-shrink: 0; // Prevent caption from being squeezed
+			width: 100%;
+			max-width: 100%;
+			word-wrap: break-word;
+			overflow-wrap: break-word;
+			hyphens: auto;
+			font-size: var(--wp--preset--font-size--small);
+		}
+	}
+
+	// Content container (scrollable)
+	.motion-scroll-content {
+		position: relative; // Needed for absolutely-positioned description spans
+		min-height: 100vh;
+		overflow-x: hidden; // Prevent horizontal overflow only
+
+		// Visually-hidden image descriptions, distributed proportionally by JS.
+		// Hidden on mobile where the images column doesn't appear.
+		.motion-scroll-image-description {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+
+			@media (max-width: 1024px) {
+				display: none;
+			}
+		}
+
+		// Ensure images don't break out
+		img {
+			max-width: 100%;
+			height: auto;
+		}
+	}
+
+	// Desktop only - extra space at bottom to allow last content to trigger last image
+	// @media (min-width: 1025px) {
+	// 	.motion-scroll-content::after {
+	// 		content: '';
+	// 		display: block;
+	// 		height: 20vh;
+	// 	}
+	// }
+
+	// Mobile/Tablet layout
+	// Breakpoint accounts for 222px sidebar, ensuring adequate space for two-column layout
+	@media (max-width: 1024px) {
+		grid-template-columns: 1fr;
+
+		.motion-scroll-images {
+			display: none;
+		}
+
+		.motion-scroll-content {
+			min-height: auto; // Remove min-height on mobile
+
+			&.content-left,
+			&.content-right {
+				order: 1;
+			}
+		}
+
+		// Padding is now controlled via block attributes
+	}
+}

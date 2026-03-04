@@ -5,19 +5,23 @@
   "version": "0.1.0",
   "title": "Motion Scroll",
   "category": "media",
-  "icon": "columns",
-  "description": "Split-layout scroll experience with content on one side and transitioning images on the other.",
+  "icon": "images-alt2",
+  "description": "Split layout with scrollable content on one side and sticky transitioning images on the other.",
   "keywords": [
     "motion",
     "scroll",
-    "parallax",
-    "split",
-    "storytelling",
-    "animation"
+    "scrollmation",
+    "sticky",
+    "images",
+    "storytelling"
   ],
   "textdomain": "caes-motion-scroll",
   "attributes": {
-    "frames": {
+    "align": {
+      "type": "string",
+      "default": "full"
+    },
+    "slides": {
       "type": "array",
       "default": [],
       "items": {
@@ -32,17 +36,36 @@
         "right"
       ]
     },
-    "mediaWidth": {
-      "type": "number",
-      "default": 50
+    "imageDisplayMode": {
+      "type": "string",
+      "default": "cover",
+      "enum": [
+        "cover",
+        "contain"
+      ]
     },
-    "overlayColor": {
+    "contentBackgroundColor": {
+      "type": "string",
+      "default": ""
+    },
+    "contentTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "imagesBackgroundColor": {
       "type": "string",
       "default": "#000000"
     },
-    "overlayOpacity": {
-      "type": "number",
-      "default": 0
+    "captionTextColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "contentPadding": {
+      "type": "object"
+    },
+    "featherEdge": {
+      "type": "boolean",
+      "default": false
     }
   },
   "supports": {
@@ -53,17 +76,15 @@
     "html": false,
     "color": {
       "text": true,
-      "background": false
+      "background": true
     },
     "spacing": {
-      "padding": true
+      "padding": true,
+      "margin": true
     }
   },
   "providesContext": {
-    "caes-hub/motion-scroll-frames": "frames",
-    "caes-hub/motion-scroll-overlayColor": "overlayColor",
-    "caes-hub/motion-scroll-overlayOpacity": "overlayOpacity",
-    "caes-hub/motion-scroll-contentPosition": "contentPosition"
+    "caes-hub/motion-scroll-slides": "slides"
   },
   "render": "file:./render.php",
   "editorScript": "file:./index.js",

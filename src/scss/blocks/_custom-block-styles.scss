@@ -96,12 +96,26 @@ ul.is-style-caes-hub-list-checkbox {
     text-transform: uppercase;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+    line-height: 1.2;
 
     &::after {
         content: "";
         border-top: 1px solid var(--wp--preset--color--contrast-two);
-        margin: 0 0 0 10px;
+        margin: 0.5rem 0 0 0;
         flex: 1 0 20px;
+    }
+
+    // Post terms blocks use inline flex for prefix + links.
+    // flex-wrap lets the text flow naturally while ::after fills the remainder.
+    &.wp-block-post-terms {
+        flex-wrap: wrap;
+    }
+}
+
+.has-hedges-background-color .is-style-caes-hub-section-heading {
+    &::after {
+        border-top-color: var(--wp--preset--color--contrast);
     }
 }
 

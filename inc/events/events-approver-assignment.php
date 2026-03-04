@@ -38,7 +38,13 @@ function get_event_approvers_for_post( $post_id ) {
             ),
             'fields' => 'ID'
         ));
-        
+
+        // Exclude spoofed/duplicate accounts — they are front-end profile proxies and should never receive email
+        $users_with_approve_permission = array_filter(
+            $users_with_approve_permission,
+            fn( $uid ) => ! str_contains( get_userdata( $uid )->user_email, '.spoofed' )
+        );
+
         if (!empty($users_with_approve_permission)) {
             $approvers = array_merge($approvers, $users_with_approve_permission);
         }

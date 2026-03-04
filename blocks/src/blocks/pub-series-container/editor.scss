@@ -1,0 +1,23 @@
+.wp-block-caes-hub-pub-series-container {
+    border: 1px dashed #b4b4b4;
+    padding: 0.5rem;
+
+    .pub-series-container__label {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5em;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #757575;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .pub-series-container__label-hint {
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: 0;
+        font-style: italic;
+    }
+}
