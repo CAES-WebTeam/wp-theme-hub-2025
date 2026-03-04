@@ -496,7 +496,7 @@ function symplectic_import_user_handler() {
 	$fetch_errors        = array();
 
 	if ($elements_user_id) {
-		$rel_url       = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $elements_user_id . '/relationships?per-page=100';
+		$rel_url       = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $elements_user_id . '/relationships?per-page=25&detail=full';
 		$page_count    = 0;
 		$max_pages     = 10;
 		$has_next_page = false;
@@ -536,67 +536,26 @@ function symplectic_import_user_handler() {
 
 					$category = isset($obj_data['category']) ? $obj_data['category'] : null;
 
-					if ($category === 'publication' && isset($obj_data['href'])) {
+					if ($category === 'publication') {
 
-						$pub_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (is_wp_error($pub_resp)) {
-							$fetch_errors[] = 'Publication ' . $obj_data['id'] . ': ' . $pub_resp->get_error_message();
-						} elseif (wp_remote_retrieve_response_code($pub_resp) !== 200) {
-							$fetch_errors[] = 'Publication ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($pub_resp);
-						} else {
-							$pub_xml = simplexml_load_string(wp_remote_retrieve_body($pub_resp));
-							if ($pub_xml === false) {
-								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
-								libxml_clear_errors();
-								$fetch_errors[] = 'Publication ' . $obj_data['id'] . ' XML parse: ' . implode('; ', $xml_errs);
-							} else {
-								$obj_data = array_merge($obj_data, symplectic_import_extract_publication_fields($pub_xml));
-							}
-						}
+						$rel_obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+						$obj_data = array_merge($obj_data, symplectic_import_extract_publication_fields($rel_obj));
 						$publications[] = $obj_data;
 
 					} elseif ($category === 'activity'
-						&& isset($obj_data['href'])
 						&& isset($obj_data['type'])
 						&& $obj_data['type'] === 'distinction'
 					) {
-						$act_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (is_wp_error($act_resp)) {
-							$fetch_errors[] = 'Activity ' . $obj_data['id'] . ': ' . $act_resp->get_error_message();
-						} elseif (wp_remote_retrieve_response_code($act_resp) !== 200) {
-							$fetch_errors[] = 'Activity ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($act_resp);
-						} else {
-							$act_xml = simplexml_load_string(wp_remote_retrieve_body($act_resp));
-							if ($act_xml === false) {
-								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
-								libxml_clear_errors();
-								$fetch_errors[] = 'Activity ' . $obj_data['id'] . ' XML parse: ' . implode('; ', $xml_errs);
-							} else {
-								$obj_data = array_merge($obj_data, symplectic_import_extract_activity_fields($act_xml));
-							}
-						}
+						$rel_obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+						$obj_data = array_merge($obj_data, symplectic_import_extract_activity_fields($rel_obj));
 						$activities[] = $obj_data;
 
 					} elseif ($category === 'teaching-activity'
-						&& isset($obj_data['href'])
 						&& isset($obj_data['type'])
 						&& $obj_data['type'] === 'course-taught'
 					) {
-						$ta_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (is_wp_error($ta_resp)) {
-							$fetch_errors[] = 'Teaching activity ' . $obj_data['id'] . ': ' . $ta_resp->get_error_message();
-						} elseif (wp_remote_retrieve_response_code($ta_resp) !== 200) {
-							$fetch_errors[] = 'Teaching activity ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($ta_resp);
-						} else {
-							$ta_xml = simplexml_load_string(wp_remote_retrieve_body($ta_resp));
-							if ($ta_xml === false) {
-								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
-								libxml_clear_errors();
-								$fetch_errors[] = 'Teaching activity ' . $obj_data['id'] . ' XML parse: ' . implode('; ', $xml_errs);
-							} else {
-								$obj_data = array_merge($obj_data, symplectic_import_extract_teaching_activity_fields($ta_xml));
-							}
-						}
+						$rel_obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+						$obj_data = array_merge($obj_data, symplectic_import_extract_teaching_activity_fields($rel_obj));
 						if (isset($obj_data['term']) && symplectic_import_is_teaching_term_recent($obj_data['term'])) {
 							$teaching_activities[] = $obj_data;
 						}
@@ -913,7 +872,7 @@ function symplectic_import_extract_publication_fields($pub_xml) {
 	$data = array();
 	$pub_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
-	$records = $pub_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+	$records = $pub_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
 	if (empty($records)) return $data;
 
 	// Citation count — prefer WoS, then Dimensions, then others
@@ -972,7 +931,7 @@ function symplectic_import_extract_activity_fields($activity_xml) {
 	$data = array();
 	$activity_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
-	$records = $activity_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+	$records = $activity_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
 	if (empty($records)) return $data;
 
 	$record = $records[0];
@@ -1013,7 +972,7 @@ function symplectic_import_extract_teaching_activity_fields($teaching_xml) {
 	$data = array();
 	$teaching_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
-	$records = $teaching_xml->xpath('//api:record[@format="native" or @format="preferred"]');
+	$records = $teaching_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
 	if (empty($records)) return $data;
 
 	$record = $records[0];
