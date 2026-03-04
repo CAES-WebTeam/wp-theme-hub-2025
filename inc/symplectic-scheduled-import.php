@@ -5,12 +5,6 @@
  * Daily cron job (midnight) that imports Symplectic Elements data for all
  * WordPress users who have a personnel_id meta field. Includes a control
  * panel page under CAES Tools.
- *
- * Depends on extraction helpers defined in symplectic-individual-user-import.php:
- *   symplectic_import_extract_publication_fields()
- *   symplectic_import_extract_activity_fields()
- *   symplectic_import_extract_teaching_activity_fields()
- *   symplectic_import_is_teaching_term_recent()
  */
 
 define('SYMPLECTIC_SCHED_BATCH_SIZE',  10);
@@ -315,7 +309,7 @@ function symplectic_sched_import_single_user($wp_user_id, $personnel_id, $deadli
 	$fetch_errors        = array();
 
 	if ($elements_user_id) {
-		$rel_url    = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $elements_user_id . '/relationships?per-page=100';
+		$rel_url    = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users/' . $elements_user_id . '/relationships?per-page=25&detail=full';
 		$page_count = 0;
 		$max_pages  = 10;
 		$has_next   = false;
@@ -362,67 +356,26 @@ function symplectic_sched_import_single_user($wp_user_id, $personnel_id, $deadli
 					}
 					$category = isset($obj_data['category']) ? $obj_data['category'] : null;
 
-					if ($category === 'publication' && isset($obj_data['href'])) {
-						$pub_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (is_wp_error($pub_resp)) {
-							$fetch_errors[] = 'Pub ' . $obj_data['id'] . ': ' . $pub_resp->get_error_message();
-						} elseif (wp_remote_retrieve_response_code($pub_resp) !== 200) {
-							$fetch_errors[] = 'Pub ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($pub_resp);
-						} else {
-							$pub_xml = simplexml_load_string(wp_remote_retrieve_body($pub_resp));
-							if ($pub_xml === false) {
-								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
-								libxml_clear_errors();
-								$fetch_errors[] = 'Pub ' . $obj_data['id'] . ' XML: ' . implode('; ', $xml_errs);
-							} else {
-								$obj_data = array_merge($obj_data, symplectic_import_extract_publication_fields($pub_xml));
-							}
-						}
+					if ($category === 'publication') {
+						$rel_obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+						$obj_data = array_merge($obj_data, symplectic_scheduled_import_extract_publication_fields($rel_obj));
 						$publications[] = $obj_data;
 
 					} elseif ($category === 'activity'
-						&& isset($obj_data['href'])
 						&& isset($obj_data['type'])
 						&& $obj_data['type'] === 'distinction'
 					) {
-						$act_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (is_wp_error($act_resp)) {
-							$fetch_errors[] = 'Activity ' . $obj_data['id'] . ': ' . $act_resp->get_error_message();
-						} elseif (wp_remote_retrieve_response_code($act_resp) !== 200) {
-							$fetch_errors[] = 'Activity ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($act_resp);
-						} else {
-							$act_xml = simplexml_load_string(wp_remote_retrieve_body($act_resp));
-							if ($act_xml === false) {
-								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
-								libxml_clear_errors();
-								$fetch_errors[] = 'Activity ' . $obj_data['id'] . ' XML: ' . implode('; ', $xml_errs);
-							} else {
-								$obj_data = array_merge($obj_data, symplectic_import_extract_activity_fields($act_xml));
-							}
-						}
+						$rel_obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+						$obj_data = array_merge($obj_data, symplectic_scheduled_import_extract_activity_fields($rel_obj));
 						$activities[] = $obj_data;
 
 					} elseif ($category === 'teaching-activity'
-						&& isset($obj_data['href'])
 						&& isset($obj_data['type'])
 						&& $obj_data['type'] === 'course-taught'
 					) {
-						$ta_resp = wp_remote_get($obj_data['href'], $api_args);
-						if (is_wp_error($ta_resp)) {
-							$fetch_errors[] = 'Teaching ' . $obj_data['id'] . ': ' . $ta_resp->get_error_message();
-						} elseif (wp_remote_retrieve_response_code($ta_resp) !== 200) {
-							$fetch_errors[] = 'Teaching ' . $obj_data['id'] . ': HTTP ' . wp_remote_retrieve_response_code($ta_resp);
-						} else {
-							$ta_xml = simplexml_load_string(wp_remote_retrieve_body($ta_resp));
-							if ($ta_xml === false) {
-								$xml_errs = array_map(fn($e) => trim($e->message), libxml_get_errors());
-								libxml_clear_errors();
-								$fetch_errors[] = 'Teaching ' . $obj_data['id'] . ' XML: ' . implode('; ', $xml_errs);
-							} else {
-								$obj_data = array_merge($obj_data, symplectic_import_extract_teaching_activity_fields($ta_xml));
-							}
-						}
-						if (isset($obj_data['term']) && symplectic_import_is_teaching_term_recent($obj_data['term'])) {
+						$rel_obj->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+						$obj_data = array_merge($obj_data, symplectic_scheduled_import_extract_teaching_activity_fields($rel_obj));
+						if (isset($obj_data['term']) && symplectic_scheduled_import_is_teaching_term_recent($obj_data['term'])) {
 							$teaching_activities[] = $obj_data;
 						}
 					}
@@ -1061,3 +1014,161 @@ function symplectic_sched_ajax_import_single() {
 		'error_message'  => $result['error_message'],
 	));
 }
+
+// ============================================================
+// Extraction helpers (self-contained, no external dependencies)
+// ============================================================
+
+function symplectic_scheduled_import_extract_publication_fields($pub_xml) {
+	$data = array();
+	$pub_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+	$records = $pub_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
+	if (empty($records)) return $data;
+
+	// Citation count — prefer WoS, then Dimensions, then others
+	$priority_order = array('wos', 'dimensions', 'dimensions-for-universities', 'scopus', 'epmc');
+	$citation       = null;
+	$best           = PHP_INT_MAX;
+
+	foreach ($records as $rec) {
+		$rec->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+		$cn = $rec->xpath('./api:citation-count');
+		if (!empty($cn)) {
+			$p = array_search((string)$rec['source-name'], $priority_order);
+			$p = ($p === false) ? PHP_INT_MAX : $p;
+			if ($citation === null || $p < $best) {
+				$citation = (int)(string)$cn[0];
+				$best     = $p;
+			}
+		}
+	}
+	if ($citation !== null) $data['citation-count'] = $citation;
+
+	$record = $records[0];
+	$record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+	foreach ($record->xpath('.//api:field') as $field) {
+		$field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+		$name = (string)$field['name'];
+		$type = (string)$field['type'];
+		$val  = null;
+
+		if ($type === 'text') {
+			$t = $field->xpath('./api:text');
+			if (!empty($t)) $val = (string)$t[0];
+		} elseif ($type === 'date') {
+			$d = $field->xpath('./api:date');
+			if (!empty($d)) {
+				$y = (string)$d[0]->year; $m = (string)$d[0]->month; $day = (string)$d[0]->day;
+				if ($y) { $val = $y; if ($m) { $val = $m . '/' . $val; if ($day) $val = $day . '/' . $val; } }
+			}
+		}
+
+		if ($val) {
+			switch ($name) {
+				case 'title':            $data['title']            = $val; break;
+				case 'journal':          $data['journal']          = $val; break;
+				case 'publication-date': $data['publication_date'] = $val; break;
+				case 'doi':              $data['doi']              = $val; break;
+			}
+		}
+	}
+
+	return $data;
+}
+
+function symplectic_scheduled_import_extract_activity_fields($activity_xml) {
+	$data = array();
+	$activity_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+	$records = $activity_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
+	if (empty($records)) return $data;
+
+	$record = $records[0];
+	$record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+	foreach ($record->xpath('.//api:field') as $field) {
+		$field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+		$name = (string)$field['name'];
+		$type = (string)$field['type'];
+		$val  = null;
+
+		if ($type === 'text') {
+			$t = $field->xpath('./api:text');
+			if (!empty($t)) $val = (string)$t[0];
+		} elseif ($type === 'date') {
+			$d = $field->xpath('./api:date');
+			if (!empty($d)) {
+				$y = (string)$d[0]->year; $m = (string)$d[0]->month; $day = (string)$d[0]->day;
+				if ($y) { $val = $y; if ($m) { $val = $m . '/' . $val; if ($day) $val = $day . '/' . $val; } }
+			}
+		}
+
+		if ($val) {
+			switch ($name) {
+				case 'title':        $data['title']       = $val; break;
+				case 'name':         if (!isset($data['title'])) $data['title'] = $val; break;
+				case 'start-date':
+				case 'awarded-date': $data['date']        = $val; break;
+				case 'description':  $data['description'] = $val; break;
+			}
+		}
+	}
+
+	return $data;
+}
+
+function symplectic_scheduled_import_extract_teaching_activity_fields($teaching_xml) {
+	$data = array();
+	$teaching_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+	$records = $teaching_xml->xpath('.//api:record[@format="native" or @format="preferred"]');
+	if (empty($records)) return $data;
+
+	$record = $records[0];
+	$record->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+	foreach ($record->xpath('.//api:field') as $field) {
+		$field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+		$name = (string)$field['name'];
+		$type = (string)$field['type'];
+		$val  = null;
+
+		if ($type === 'text') {
+			$t = $field->xpath('./api:text');
+			if (!empty($t)) $val = (string)$t[0];
+		}
+
+		if ($val) {
+			switch ($name) {
+				case 'title':       $data['title']       = $val; break;
+				case 'c-term-year': $data['term']        = $val; break;
+				case 'course-code': $data['course_code'] = $val; break;
+			}
+		}
+	}
+
+	return $data;
+}
+
+function symplectic_scheduled_import_is_teaching_term_recent($term_string) {
+	if (!preg_match('/^(Spring|Summer|Fall)\s+(\d{4})$/i', trim($term_string), $matches)) {
+		return false;
+	}
+
+	$season = ucfirst(strtolower($matches[1]));
+	$year   = (int)$matches[2];
+
+	switch ($season) {
+		case 'Spring': $end = new DateTime("$year-05-15"); break;
+		case 'Summer': $end = new DateTime("$year-08-01"); break;
+		case 'Fall':   $ny  = $year + 1; $end = new DateTime("$ny-01-01"); break;
+		default: return false;
+	}
+
+	$cutoff = new DateTime();
+	$cutoff->modify('-1 year');
+	return $end >= $cutoff;
+}
+
