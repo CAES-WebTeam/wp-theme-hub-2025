@@ -64,6 +64,12 @@
 				margin-left: -20%;
 				width: calc(100% + 20%);
 			}
+			// Pin caption to the right (away from the feather zone) so it's never obscured.
+			.motion-scroll-caption {
+				left: auto;
+				right: 0;
+				width: 65%;
+			}
 			// Mask on the figure (not the container) so the container's --fc
 			// background stays solid and visible through the fade zone.
 			.motion-scroll-figure {
@@ -88,6 +94,12 @@
 			.motion-scroll-images {
 				margin-right: -20%;
 				width: calc(100% + 20%);
+			}
+			// Pin caption to the left (away from the feather zone).
+			.motion-scroll-caption {
+				right: auto;
+				left: 0;
+				width: 65%;
 			}
 			// Mask on the figure, not the container.
 			.motion-scroll-figure {
