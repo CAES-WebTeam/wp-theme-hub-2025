@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.3.1 | 2026-03-06 | Fix to pub-series-nav styles | Ashley |
 | 1.3.05 | 2026-03-04 | Some minor updates for npm packages | Ashley |
 | 1.3.0 | 2026-03-04 | New Content Manager role for OMC | Ashley |
 | 1.2.9 | 2026-03-02 | Fix Safari lightbox on Shorthand stories by excluding body transform hack from shorthand_story pages | Ashley |
