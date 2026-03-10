@@ -15,7 +15,13 @@ Migrate all personnel and expert/writer records from WordPress users to a `caes_
 ## Phase 1: Set Up the CPT and Fields
 
 1. Register the `caes_hub_person` CPT with `'rewrite' => ['slug' => 'person']`
-2. Duplicate all three ACF field groups ("Users", "Symplectic Elements", "Editorial") targeting `post_type == caes_hub_person` -- keep the originals on users untouched
+2. Duplicate all five ACF field groups targeting `post_type == caes_hub_person` -- keep the originals on users untouched. The five groups are:
+   - **"Users"** (in theme code) -- personnel_id, college_id, uga_email, title, department, phone, addresses, image_name, etc.
+   - **"Symplectic Elements"** (in theme code) -- elements_user_id, elements_overview, areas_of_expertise taxonomy, scholarly_works/distinctions/courses repeaters
+   - **"Editorial"** (in theme code) -- public_friendly_title
+   - **"Expert/Source"** (registered in WP admin, not in theme code) -- source_expert_id, description, area_of_expertise, is_source, is_expert, is_active
+   - **"Writer"** (registered in WP admin, not in theme code) -- writer_id, tagline, coverage_area, is_proofer, is_media_contact
+   - Reference `acf-export-2026-03-10.json` for the full field definitions of the Expert/Source and Writer groups
 3. Add a `linked_wp_user` ACF field (user type) to the `caes_hub_person` CPT for linking editorial staff accounts to their person posts
 
 ## Phase 2: Data Migration
