@@ -6,6 +6,10 @@
 
     &.direction-next {
         text-align: right;
+
+        &.pub-series-nav--solo {
+            text-align: left;
+        }
     }
 
     .pub-series-nav__arrow {

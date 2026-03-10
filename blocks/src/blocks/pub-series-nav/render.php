@@ -19,16 +19,25 @@ if (empty($sorted_ids)) {
     return;
 }
 
-$attrs = get_block_wrapper_attributes([
-    'class' => 'direction-' . esc_attr($direction),
-]);
-
 // Find the adjacent publication.
 $current_index = array_search($post_id, $sorted_ids);
 
 if ($current_index === false) {
     return;
 }
+
+// Check if the opposite direction has a valid target (i.e., is this nav solo on the page?).
+$opposite_index = $direction === 'previous' ? $current_index + 1 : $current_index - 1;
+$is_solo        = $opposite_index < 0 || $opposite_index >= count($sorted_ids);
+
+$classes = 'direction-' . esc_attr($direction);
+if ($is_solo) {
+    $classes .= ' pub-series-nav--solo';
+}
+
+$attrs = get_block_wrapper_attributes([
+    'class' => $classes,
+]);
 
 if ($direction === 'previous') {
     $target_index = $current_index - 1;
