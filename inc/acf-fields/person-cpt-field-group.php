@@ -1059,3 +1059,135 @@ add_action('acf/include_fields', function () {
 		'show_in_rest' => 0,
 	));
 });
+
+// =============================================================================
+// Read-only fields for synced field groups (Personnel + Symplectic Elements)
+// =============================================================================
+
+/**
+ * Make all fields in the Personnel and Symplectic Elements groups read-only.
+ * These are populated by scheduled syncs and any manual changes would be overwritten.
+ */
+add_filter('acf/prepare_field', 'person_cpt_readonly_synced_fields');
+function person_cpt_readonly_synced_fields($field)
+{
+	if (!$field) {
+		return $field;
+	}
+
+	// Only apply on the caes_hub_person edit screen
+	$screen = get_current_screen();
+	if (!$screen || $screen->post_type !== 'caes_hub_person') {
+		return $field;
+	}
+
+	// Field keys belonging to the Personnel and Symplectic Elements groups
+	$readonly_groups = array(
+		'group_person_cpt_personnel',
+		'group_person_cpt_symplectic',
+	);
+
+	if (isset($field['parent']) && in_array($field['parent'], $readonly_groups, true)) {
+		$field['readonly'] = 1;
+		$field['disabled'] = 1;
+	}
+
+	// Also catch repeater sub-fields (their parent is the repeater field key, not the group)
+	$synced_repeater_keys = array(
+		'field_person_cpt_elements_scholarly_works',
+		'field_person_cpt_elements_distinctions',
+		'field_person_cpt_elements_courses_taught',
+	);
+
+	if (isset($field['parent']) && in_array($field['parent'], $synced_repeater_keys, true)) {
+		$field['readonly'] = 1;
+		$field['disabled'] = 1;
+	}
+
+	return $field;
+}
+
+// =============================================================================
+// Collapse Personnel and Symplectic Elements metaboxes by default
+// =============================================================================
+
+add_filter('postbox_classes_caes_hub_person_acf-group_person_cpt_personnel', 'person_cpt_collapse_synced_metabox');
+add_filter('postbox_classes_caes_hub_person_acf-group_person_cpt_symplectic', 'person_cpt_collapse_synced_metabox');
+function person_cpt_collapse_synced_metabox($classes)
+{
+	if (!in_array('closed', $classes)) {
+		$classes[] = 'closed';
+	}
+	return $classes;
+}
+
+// =============================================================================
+// Position all ACF field groups above Yoast SEO + hide repeater controls
+// =============================================================================
+
+add_action('admin_enqueue_scripts', 'person_cpt_admin_styles');
+function person_cpt_admin_styles($hook)
+{
+	if (!in_array($hook, ['post.php', 'post-new.php'])) {
+		return;
+	}
+
+	$screen = get_current_screen();
+	if (!$screen || $screen->post_type !== 'caes_hub_person') {
+		return;
+	}
+
+	wp_add_inline_style('acf-input', '
+		/* Move all ACF metaboxes above Yoast */
+		#wpseo_meta { order: 99 !important; }
+
+		/* Synced field groups: hide repeater add/remove buttons and row handles */
+		#acf-group_person_cpt_personnel .acf-actions,
+		#acf-group_person_cpt_symplectic .acf-actions,
+		#acf-group_person_cpt_personnel .acf-row-handle .acf-icon,
+		#acf-group_person_cpt_symplectic .acf-row-handle .acf-icon,
+		#acf-group_person_cpt_personnel a[data-event="add-row"],
+		#acf-group_person_cpt_symplectic a[data-event="add-row"],
+		#acf-group_person_cpt_personnel a[data-event="remove-row"],
+		#acf-group_person_cpt_symplectic a[data-event="remove-row"] {
+			display: none !important;
+		}
+
+		/* Synced field groups: visual indicator that fields are managed by sync */
+		#acf-group_person_cpt_personnel .acf-fields,
+		#acf-group_person_cpt_symplectic .acf-fields {
+			opacity: 0.85;
+		}
+
+		/* Synced group notice */
+		.person-cpt-sync-notice {
+			background: #f0f6fc;
+			border-left: 4px solid #72aee6;
+			padding: 8px 12px;
+			margin: 10px 0;
+			font-size: 13px;
+		}
+	');
+}
+
+/**
+ * Add a notice inside synced field group metaboxes on the post edit screen.
+ */
+add_action('edit_form_after_title', 'person_cpt_synced_group_notices');
+function person_cpt_synced_group_notices()
+{
+	$screen = get_current_screen();
+	if (!$screen || $screen->post_type !== 'caes_hub_person') {
+		return;
+	}
+
+	?>
+	<script>
+	jQuery(document).ready(function($) {
+		var notice = '<div class="person-cpt-sync-notice">These fields are populated by a scheduled import and cannot be edited manually. Any changes would be overwritten by the next sync.</div>';
+		$('#acf-group_person_cpt_personnel .inside').prepend(notice);
+		$('#acf-group_person_cpt_symplectic .inside').prepend(notice);
+	});
+	</script>
+	<?php
+}
