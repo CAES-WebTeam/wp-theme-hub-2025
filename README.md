@@ -28,7 +28,8 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
-| 1.3.2 | 2026-03-06 | Motion Scroll block and Grid pattern added | Ashley |
+| 1.3.25 | 2026-03-11 | Fix "headers already sent" warnings in events REST API CORS handler  | Ashley |
+| 1.3.2 | 2026-03-06 | Motion Scroll block and Grid pattern added  | Ashley |
 | 1.3.1 | 2026-03-06 | Fix to pub-series-nav styles | Ashley |
 | 1.3.05 | 2026-03-04 | Some minor updates for npm packages | Ashley |
 | 1.3.0 | 2026-03-04 | New Content Manager role for OMC | Ashley |
