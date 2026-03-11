@@ -1108,6 +1108,21 @@ function person_cpt_readonly_synced_fields($field)
 }
 
 // =============================================================================
+// Hide Expert/Source and Writer field groups from non-admin users
+// =============================================================================
+
+add_action('add_meta_boxes', 'person_cpt_hide_legacy_groups_from_non_admins', 99);
+function person_cpt_hide_legacy_groups_from_non_admins()
+{
+	if (current_user_can('manage_options')) {
+		return;
+	}
+
+	remove_meta_box('acf-group_person_cpt_expert_source', 'caes_hub_person', 'normal');
+	remove_meta_box('acf-group_person_cpt_writer', 'caes_hub_person', 'normal');
+}
+
+// =============================================================================
 // Collapse Personnel and Symplectic Elements metaboxes by default
 // =============================================================================
 
