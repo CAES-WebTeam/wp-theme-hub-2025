@@ -1113,6 +1113,8 @@ function person_cpt_readonly_synced_fields($field)
 
 add_filter('postbox_classes_caes_hub_person_acf-group_person_cpt_personnel', 'person_cpt_collapse_synced_metabox');
 add_filter('postbox_classes_caes_hub_person_acf-group_person_cpt_symplectic', 'person_cpt_collapse_synced_metabox');
+add_filter('postbox_classes_caes_hub_person_acf-group_person_cpt_expert_source', 'person_cpt_collapse_synced_metabox');
+add_filter('postbox_classes_caes_hub_person_acf-group_person_cpt_writer', 'person_cpt_collapse_synced_metabox');
 function person_cpt_collapse_synced_metabox($classes)
 {
 	if (!in_array('closed', $classes)) {
@@ -1184,9 +1186,13 @@ function person_cpt_synced_group_notices()
 	?>
 	<script>
 	jQuery(document).ready(function($) {
-		var notice = '<div class="person-cpt-sync-notice">These fields are populated by a scheduled import and cannot be edited manually. Any changes would be overwritten by the next sync.</div>';
-		$('#acf-group_person_cpt_personnel .inside').prepend(notice);
-		$('#acf-group_person_cpt_symplectic .inside').prepend(notice);
+		var syncNotice = '<div class="person-cpt-sync-notice">These fields are populated by a scheduled import and cannot be edited manually. Any changes would be overwritten by the next sync.</div>';
+		$('#acf-group_person_cpt_personnel .inside').prepend(syncNotice);
+		$('#acf-group_person_cpt_symplectic .inside').prepend(syncNotice);
+
+		var staticNotice = '<div class="person-cpt-sync-notice">These fields were imported from a legacy database and are no longer updated by a scheduled sync. They are preserved as-is for reference.</div>';
+		$('#acf-group_person_cpt_expert_source .inside').prepend(staticNotice);
+		$('#acf-group_person_cpt_writer .inside').prepend(staticNotice);
 	});
 	</script>
 	<?php
