@@ -495,10 +495,63 @@ function register_publication_categories_taxonomy()
 }
 add_action('init', 'register_publication_categories_taxonomy');
 
-// Register 'Areas of Expertise' taxonomy (FOR/ANZSRC) for Symplectic Elements user data.
-// Not attached to any post type — used via ACF on user profiles.
+// Register 'Person' Custom Post Type (caes_hub_person)
+// Replaces the personnel_user and expert_user WordPress user roles.
+// Personnel and expert records are stored as CPT posts instead of WP users.
 add_action('init', function () {
-    register_taxonomy('areas_of_expertise', array(), array(
+    register_post_type('caes_hub_person', array(
+        'labels' => array(
+            'name' => 'People',
+            'singular_name' => 'Person',
+            'menu_name' => 'People',
+            'all_items' => 'All People',
+            'edit_item' => 'Edit Person',
+            'view_item' => 'View Person',
+            'view_items' => 'View People',
+            'add_new_item' => 'Add New Person',
+            'add_new' => 'Add New Person',
+            'new_item' => 'New Person',
+            'parent_item_colon' => 'Parent Person:',
+            'search_items' => 'Search People',
+            'not_found' => 'No people found',
+            'not_found_in_trash' => 'No people found in Trash',
+            'archives' => 'People Archives',
+            'attributes' => 'Person Attributes',
+            'insert_into_item' => 'Insert into person',
+            'uploaded_to_this_item' => 'Uploaded to this person',
+            'filter_items_list' => 'Filter people list',
+            'filter_by_date' => 'Filter people by date',
+            'items_list_navigation' => 'People list navigation',
+            'items_list' => 'People list',
+            'item_published' => 'Person published.',
+            'item_published_privately' => 'Person published privately.',
+            'item_reverted_to_draft' => 'Person reverted to draft.',
+            'item_scheduled' => 'Person scheduled.',
+            'item_updated' => 'Person updated.',
+            'item_link' => 'Person Link',
+            'item_link_description' => 'A link to a person.',
+        ),
+        'public' => true,
+        'show_in_rest' => true,
+        'menu_icon' => 'dashicons-groups',
+        'rewrite' => array('slug' => 'person', 'with_front' => false),
+        'supports' => array(
+            'title',
+            'thumbnail',
+            'revisions',
+        ),
+        'delete_with_user' => false,
+        'has_archive' => false,
+    ));
+});
+
+// Include ACF field groups for the caes_hub_person CPT
+include_once(get_template_directory() . '/inc/acf-fields/person-cpt-field-group.php');
+
+// Register 'Areas of Expertise' taxonomy (FOR/ANZSRC) for Symplectic Elements user data.
+// Attached to caes_hub_person CPT. Also used via ACF on user profiles during migration.
+add_action('init', function () {
+    register_taxonomy('areas_of_expertise', array('caes_hub_person'), array(
         'labels' => array(
             'name'              => 'Areas of Expertise',
             'singular_name'     => 'Area of Expertise',
