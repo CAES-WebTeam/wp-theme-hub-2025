@@ -1140,9 +1140,6 @@ function person_cpt_admin_styles($hook)
 	}
 
 	wp_add_inline_style('acf-input', '
-		/* Move all ACF metaboxes above Yoast */
-		#wpseo_meta { order: 99 !important; }
-
 		/* Synced field groups: hide repeater add/remove buttons and row handles */
 		#acf-group_person_cpt_personnel .acf-actions,
 		#acf-group_person_cpt_symplectic .acf-actions,
@@ -1186,10 +1183,18 @@ function person_cpt_synced_group_notices()
 	?>
 	<script>
 	jQuery(document).ready(function($) {
+		// Move Yoast SEO metabox below all ACF field groups
+		var $yoast = $('#wpseo_meta');
+		if ($yoast.length) {
+			$yoast.parent().append($yoast);
+		}
+
+		// Sync notice for Personnel and Symplectic Elements
 		var syncNotice = '<div class="person-cpt-sync-notice">These fields are populated by a scheduled import and cannot be edited manually. Any changes would be overwritten by the next sync.</div>';
 		$('#acf-group_person_cpt_personnel .inside').prepend(syncNotice);
 		$('#acf-group_person_cpt_symplectic .inside').prepend(syncNotice);
 
+		// Static notice for Expert/Source and Writer
 		var staticNotice = '<div class="person-cpt-sync-notice">These fields were imported from a legacy database and are no longer updated by a scheduled sync. They are preserved as-is for reference.</div>';
 		$('#acf-group_person_cpt_expert_source .inside').prepend(staticNotice);
 		$('#acf-group_person_cpt_writer .inside').prepend(staticNotice);
