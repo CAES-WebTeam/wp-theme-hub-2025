@@ -1155,6 +1155,12 @@ function person_cpt_admin_styles($hook)
 	}
 
 	wp_add_inline_style('acf-input', '
+		/* Ensure metaboxes fully contain their ACF field content */
+		#acf-group_person_cpt_personnel .inside,
+		#acf-group_person_cpt_symplectic .inside {
+			overflow: hidden;
+		}
+
 		/* Synced field groups: hide repeater add/remove buttons and row handles */
 		#acf-group_person_cpt_personnel .acf-actions,
 		#acf-group_person_cpt_symplectic .acf-actions,
