@@ -721,7 +721,8 @@ function generate_publication_pdf_file_mpdf($post_id)
             'margin_top' => 15,
             'margin_bottom' => 35,    // Increased for better footer spacing
             'margin_header' => 0,
-            'margin_footer' => 15     // Increased for footer clearance
+            'margin_footer' => 15,    // Increased for footer clearance
+            'useSubstitutions' => true // Fall back to DejaVu for missing glyphs (degree signs, en dashes, etc.)
         ]);
         // error_log("mPDF DEBUG: mPDF instance created successfully");
 
