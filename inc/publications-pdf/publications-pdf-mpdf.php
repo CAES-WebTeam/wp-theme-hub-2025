@@ -264,9 +264,32 @@ function calculate_title_font_size($title, $has_subtitle = false)
     }
 }
 
+// Replace Unicode characters that may not render in the configured fonts
+function sanitize_unicode_for_pdf($content)
+{
+    $replacements = [
+        "\xE2\x80\x93" => '-',    // en dash (–)
+        "\xE2\x80\x94" => '-',    // em dash (—)
+        "\xE2\x80\x98" => "'",    // left single quote
+        "\xE2\x80\x99" => "'",    // right single quote / apostrophe
+        "\xE2\x80\x9C" => '"',    // left double quote
+        "\xE2\x80\x9D" => '"',    // right double quote
+        "\xE2\x80\xA6" => '...',  // ellipsis
+        "\xC2\xA0"     => ' ',    // non-breaking space
+        "\xC2\xBC"     => '1/4',  // ¼
+        "\xC2\xBD"     => '1/2',  // ½
+        "\xC2\xBE"     => '3/4',  // ¾
+    ];
+
+    return str_replace(array_keys($replacements), array_values($replacements), $content);
+}
+
 // Enhanced table and content processing for mPDF
 function process_content_for_mpdf($content)
 {
+    // 0. SANITIZE UNICODE CHARACTERS that cause rendering boxes
+    $content = sanitize_unicode_for_pdf($content);
+
     // 0. CONVERT BEFORE/AFTER SLIDERS TO STATIC IMAGES (must be first)
     $content = convert_beforeafter_sliders_for_pdf($content);
 
