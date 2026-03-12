@@ -1267,7 +1267,7 @@ function person_cpt_synced_group_notices()
 		$('#acf-group_person_cpt_symplectic .inside').prepend(syncNotice);
 
 		// Static notice for Expert/Source and Writer
-		var staticNotice = '<div class="person-cpt-sync-notice">These fields were imported from a legacy database and are no longer updated by a scheduled sync. They are preserved as-is for reference.</div>';
+		var staticNotice = '<div class="person-cpt-sync-notice">These fields were imported from a legacy database and are no longer updated by a scheduled sync. They are preserved as-is for reference. This section is only visible to administrators.</div>';
 		$('#acf-group_person_cpt_expert_source .inside').prepend(staticNotice);
 		$('#acf-group_person_cpt_writer .inside').prepend(staticNotice);
 	});
