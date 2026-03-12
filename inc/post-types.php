@@ -569,7 +569,7 @@ add_action('init', function () {
         'hierarchical'      => false,
         'public'            => false,
         'show_ui'           => true,
-        'show_in_menu'      => false,
+        'show_in_menu'      => true,
         'show_in_rest'      => true,
         'query_var'         => false,
         'rewrite'           => false,
