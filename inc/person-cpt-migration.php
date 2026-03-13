@@ -1073,9 +1073,9 @@ function person_migration_render_page() {
 					<label><input type="checkbox" id="pmig-dry-run" checked> Dry Run</label>
 				</div>
 				<div class="pmig-btn-group">
-					<input type="button" id="pmig-migrate-btn" class="button button-primary pmig-action-btn" value="Step 5: Migrate Users to CPT">
-					<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Step 7: Swap Repeater IDs">
-					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Step 8: Repopulate Flat Meta">
+					<input type="button" id="pmig-migrate-btn" class="button button-primary pmig-action-btn" value="Migrate Users to CPT">
+					<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Swap Repeater IDs">
+					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Repopulate Flat Meta">
 					<input type="button" id="pmig-revert-btn" class="button pmig-action-btn" value="Revert Flat Meta">
 					<input type="button" id="pmig-stop-btn" class="button" value="Stop" style="display:none">
 					<input type="button" id="pmig-resume-btn" class="button button-secondary" value="Resume" style="display:none">
