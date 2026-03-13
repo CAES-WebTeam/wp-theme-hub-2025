@@ -1885,12 +1885,62 @@ function person_migration_render_merge_page() {
 				<p>No duplicate groups found. Run "Scan for Duplicates" from the <a href="<?php echo esc_url(admin_url('admin.php?page=person-cpt-migration')); ?>">Person CPT Migration</a> page first.</p>
 			<?php else: ?>
 				<p><?php echo count($duplicate_groups); ?> duplicate group(s) found. Click a group to review and merge.</p>
+				<?php
+				// Pre-build a set of all person post IDs that have content references
+				// by scanning content once for the entire list page
+				$all_group_pids = array();
+				foreach ($duplicate_groups as $group) {
+					foreach ($group as $pid) {
+						$all_group_pids[$pid] = false;
+					}
+				}
+
+				$list_content_types  = array('post', 'caes_publication', 'shorthand_story');
+				$list_repeater_names = array('authors', 'experts', 'translator', 'artists');
+				$list_sub_fields     = array('user', 'author', 'expert');
+				$list_flat_fields    = array('all_author_ids', 'all_expert_ids');
+
+				$list_content_posts = get_posts(array(
+					'post_type'      => $list_content_types,
+					'post_status'    => array('publish', 'draft', 'private'),
+					'posts_per_page' => -1,
+					'fields'         => 'ids',
+				));
+
+				foreach ($list_content_posts as $lcp_id) {
+					foreach ($list_repeater_names as $lrn) {
+						$lcount = (int) get_post_meta($lcp_id, $lrn, true);
+						for ($li = 0; $li < $lcount; $li++) {
+							foreach ($list_sub_fields as $lsub) {
+								$lval = get_post_meta($lcp_id, $lrn . '_' . $li . '_' . $lsub, true);
+								if (!empty($lval) && isset($all_group_pids[(int)$lval])) {
+									$all_group_pids[(int)$lval] = true;
+								}
+							}
+						}
+					}
+					foreach ($list_flat_fields as $lff) {
+						$lraw = get_post_meta($lcp_id, $lff, true);
+						if (empty($lraw)) continue;
+						$lids = maybe_unserialize($lraw);
+						if (!is_array($lids)) {
+							$lids = array_filter(array_map('trim', explode(',', $lraw)));
+						}
+						foreach ($lids as $lid) {
+							if (isset($all_group_pids[(int)$lid])) {
+								$all_group_pids[(int)$lid] = true;
+							}
+						}
+					}
+				}
+				?>
 				<table class="widefat striped" style="margin-top:12px">
 					<thead>
 						<tr>
 							<th>Group</th>
 							<th>People</th>
 							<th>Matching On</th>
+							<th>Has Content</th>
 							<th>Action</th>
 						</tr>
 					</thead>
@@ -1899,10 +1949,12 @@ function person_migration_render_merge_page() {
 							<?php
 							$names = array();
 							$emails = array();
+							$group_has_content = false;
 							foreach ($group as $pid) {
 								$names[]  = get_the_title($pid) . ' (#' . $pid . ')';
 								$e = get_post_meta($pid, 'uga_email', true);
 								if ($e) $emails[] = $e;
+								if (!empty($all_group_pids[$pid])) $group_has_content = true;
 							}
 							$match_reasons = array();
 							$unique_emails = array_unique(array_map('strtolower', $emails));
@@ -1925,6 +1977,7 @@ function person_migration_render_merge_page() {
 								<td><?php echo esc_html($gi + 1); ?></td>
 								<td><?php echo esc_html(implode(' / ', $names)); ?></td>
 								<td><?php echo esc_html(implode('; ', $match_reasons)); ?></td>
+								<td><?php echo $group_has_content ? '<strong style="color:#d63638">Yes</strong>' : '<span style="color:#999">No</span>'; ?></td>
 								<td><a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates&group=' . $gi)); ?>" class="button button-small">Review</a></td>
 							</tr>
 						<?php endforeach; ?>
