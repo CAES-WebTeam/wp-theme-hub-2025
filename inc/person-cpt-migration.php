@@ -1067,32 +1067,45 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
-			// Delete all person posts
+			// Delete all person posts (batched)
 			$("#pmig-delete-all-btn").on("click", function() {
 				if (!confirm("This will permanently delete ALL caes_hub_person posts and clear the migration lookup map. This cannot be undone. Are you sure?")) return;
 				if (!confirm("Are you REALLY sure? This will delete every person CPT post.")) return;
 				var $btn = $(this);
-				$btn.prop("disabled", true).val("Deleting...");
-				$.ajax({
-					url: ajaxurl,
-					method: "POST",
-					timeout: 300000,
-					data: { action: "person_migration_delete_all", nonce: nonce },
-					success: function(response) {
-						$btn.prop("disabled", false).val("Delete All Person Posts");
-						if (response.success) {
-							var html = "<div class=\"notice notice-warning\" style=\"margin:12px 0\"><p>" + esc(response.data.deleted) + " person posts permanently deleted.</p></div>";
-							$("#pmig-current-panel").prepend(html);
-						} else {
-							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
-							alert("Error: " + msg);
+				var totalDeleted = 0;
+				$btn.prop("disabled", true);
+				$("#pmig-current-panel").prepend("<div id=\"pmig-delete-progress\" class=\"notice notice-warning\" style=\"margin:12px 0\"><p><span class=\"dashicons dashicons-update pmig-spin\"></span> Deleting... <span id=\"pmig-delete-count\">0</span> deleted so far...</p></div>");
+
+				function deleteBatch() {
+					$.ajax({
+						url: ajaxurl,
+						method: "POST",
+						timeout: 120000,
+						data: { action: "person_migration_delete_all", nonce: nonce },
+						success: function(response) {
+							if (response.success) {
+								totalDeleted += response.data.deleted_batch;
+								$("#pmig-delete-count").text(totalDeleted);
+								if (!response.data.done) {
+									$("#pmig-delete-progress p").html("<span class=\"dashicons dashicons-update pmig-spin\"></span> Deleting... " + esc(String(totalDeleted)) + " deleted, " + esc(String(response.data.remaining)) + " remaining...");
+									deleteBatch();
+								} else {
+									$btn.prop("disabled", false);
+									$("#pmig-delete-progress").html("<p>" + esc(String(totalDeleted)) + " person posts permanently deleted. Lookup map and migration state cleared.</p>");
+								}
+							} else {
+								$btn.prop("disabled", false);
+								var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
+								$("#pmig-delete-progress").html("<p>Error: " + esc(msg) + " (" + esc(String(totalDeleted)) + " deleted before error)</p>");
+							}
+						},
+						error: function() {
+							$btn.prop("disabled", false);
+							$("#pmig-delete-progress").html("<p>AJAX error. " + esc(String(totalDeleted)) + " deleted before error. You can click again to continue.</p>");
 						}
-					},
-					error: function() {
-						$btn.prop("disabled", false).val("Delete All Person Posts");
-						alert("AJAX error.");
-					}
-				});
+					});
+				}
+				deleteBatch();
 			});
 
 			pollStatus();
@@ -1387,28 +1400,46 @@ function person_migration_ajax_delete_all() {
 		wp_send_json_error(array('error_message' => 'Cannot delete while a job is running. Stop the job first.'));
 	}
 
-	@set_time_limit(300);
+	@set_time_limit(60);
 
+	$batch_size = 100;
+
+	// Get next batch of posts to delete
 	$posts = get_posts(array(
 		'post_type'      => 'caes_hub_person',
 		'post_status'    => 'any',
-		'posts_per_page' => -1,
+		'posts_per_page' => $batch_size,
 		'fields'         => 'ids',
 	));
 
-	$deleted = 0;
+	$deleted_this_batch = 0;
 	foreach ($posts as $post_id) {
-		$result = wp_delete_post($post_id, true); // true = bypass trash, permanently delete
+		$result = wp_delete_post($post_id, true);
 		if ($result) {
-			$deleted++;
+			$deleted_this_batch++;
 		}
 	}
 
-	// Clear the lookup map
-	delete_option(PERSON_MIGRATION_MAP_KEY);
+	// Count how many remain
+	$remaining = 0;
+	$counts = wp_count_posts('caes_hub_person');
+	if ($counts) {
+		foreach ($counts as $status_count) {
+			$remaining += (int) $status_count;
+		}
+	}
 
-	// Reset migration state so it can be re-run
-	delete_option(PERSON_MIGRATION_STATE_KEY);
+	$done = ($remaining === 0);
 
-	wp_send_json_success(array('deleted' => $deleted));
+	// Only clear state/map when fully done
+	if ($done) {
+		delete_option(PERSON_MIGRATION_MAP_KEY);
+		delete_option(PERSON_MIGRATION_STATE_KEY);
+	}
+
+	wp_send_json_success(array(
+		'deleted_batch' => $deleted_this_batch,
+		'remaining'     => $remaining,
+		'done'          => $done,
+	));
 }
