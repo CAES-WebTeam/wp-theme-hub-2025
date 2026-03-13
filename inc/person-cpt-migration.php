@@ -1602,6 +1602,22 @@ function person_migration_dupe_column_content($column, $post_id) {
 // Merge duplicates review page
 // ============================================================
 
+function person_migration_get_expert_fields() {
+	return array(
+		'source_expert_id',
+		'description',
+		'area_of_expertise',
+		'is_source',
+		'is_expert',
+		'is_active',
+		'writer_id',
+		'tagline',
+		'coverage_area',
+		'is_proofer',
+		'is_media_contact',
+	);
+}
+
 function person_migration_render_merge_page() {
 	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
 	$viewing_group    = isset($_GET['group']) ? intval($_GET['group']) : null;
@@ -1613,17 +1629,77 @@ function person_migration_render_merge_page() {
 
 		<?php if ($viewing_group !== null && isset($duplicate_groups[$viewing_group])): ?>
 			<?php
-			$group_post_ids = $duplicate_groups[$viewing_group];
-			$all_fields     = array_merge(
+			$group_post_ids  = $duplicate_groups[$viewing_group];
+			$map             = person_migration_get_map();
+			$expert_fields   = person_migration_get_expert_fields();
+			$all_fields      = array_merge(
 				array('first_name', 'last_name', 'display_name'),
 				person_migration_get_simple_fields()
 			);
 			$repeater_fields = person_migration_get_repeater_fields();
 			$taxonomy_fields = person_migration_get_taxonomy_fields();
+
+			// Determine which post is the personnel record (pre-select as keeper)
+			$default_keep = $group_post_ids[0];
+			foreach ($group_post_ids as $pid) {
+				$uid = array_search($pid, $map);
+				if ($uid) {
+					$u = get_userdata($uid);
+					if ($u && in_array('personnel_user', $u->roles)) {
+						$default_keep = $pid;
+						break;
+					}
+				}
+			}
+
+			// Count content references for each post in the group
+			$content_post_types = array('post', 'caes_publication', 'shorthand_story');
+			$repeater_names     = array('authors', 'experts', 'translator', 'artists');
+			$sub_field_names    = array('user', 'author', 'expert');
+			$flat_fields        = array('all_author_ids', 'all_expert_ids');
+
+			$ref_counts = array();
+			foreach ($group_post_ids as $pid) {
+				$ref_counts[$pid] = 0;
+			}
+
+			$content_posts = get_posts(array(
+				'post_type'      => $content_post_types,
+				'post_status'    => array('publish', 'draft', 'private'),
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+			));
+
+			foreach ($content_posts as $cp_id) {
+				foreach ($repeater_names as $rn) {
+					$count = (int) get_post_meta($cp_id, $rn, true);
+					for ($i = 0; $i < $count; $i++) {
+						foreach ($sub_field_names as $sub) {
+							$val = get_post_meta($cp_id, $rn . '_' . $i . '_' . $sub, true);
+							if (!empty($val) && isset($ref_counts[(int)$val])) {
+								$ref_counts[(int)$val]++;
+							}
+						}
+					}
+				}
+				foreach ($flat_fields as $ff) {
+					$raw = get_post_meta($cp_id, $ff, true);
+					if (empty($raw)) continue;
+					$ids = maybe_unserialize($raw);
+					if (!is_array($ids)) {
+						$ids = array_filter(array_map('trim', explode(',', $raw)));
+					}
+					foreach ($ids as $id) {
+						if (isset($ref_counts[(int)$id])) {
+							$ref_counts[(int)$id]++;
+						}
+					}
+				}
+			}
 			?>
 			<p><a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates')); ?>">&larr; Back to all groups</a></p>
 			<h2>Duplicate Group #<?php echo esc_html($viewing_group + 1); ?></h2>
-			<p class="description">Review the records below. Choose which post to keep, then click Merge. Data from the other post(s) will fill in any empty fields on the keeper, then the duplicates will be trashed.</p>
+			<p class="description">Review the records below. The personnel record is pre-selected as the keeper. On merge, all content (stories, pubs) referencing the duplicate(s) will be reassigned to the keeper, and the duplicate(s) will be trashed. Optionally check expert/writer fields below to copy them to the keeper.</p>
 
 			<form id="pmig-merge-form">
 				<table class="widefat striped" style="margin-top:12px">
@@ -1634,7 +1710,7 @@ function person_migration_render_merge_page() {
 								<th>
 									Post #<?php echo esc_html($pid); ?>
 									<br><small><?php echo esc_html(get_the_title($pid)); ?></small>
-									<br><label><input type="radio" name="keep_post" value="<?php echo esc_attr($pid); ?>" <?php checked($pid, $group_post_ids[0]); ?>> Keep this one</label>
+									<br><label><input type="radio" name="keep_post" value="<?php echo esc_attr($pid); ?>" <?php checked($pid, $default_keep); ?>> Keep this one</label>
 									<br><a href="<?php echo esc_url(get_edit_post_link($pid)); ?>" target="_blank">Edit</a>
 								</th>
 							<?php endforeach; ?>
@@ -1642,16 +1718,8 @@ function person_migration_render_merge_page() {
 					</thead>
 					<tbody>
 						<tr>
-							<td><strong>Post Status</strong></td>
-							<?php foreach ($group_post_ids as $pid): ?>
-								<td><?php echo esc_html(get_post_status($pid)); ?></td>
-							<?php endforeach; ?>
-						</tr>
-						<tr>
 							<td><strong>Source User Role</strong></td>
 							<?php foreach ($group_post_ids as $pid):
-								// Try to find the original user from the map
-								$map = person_migration_get_map();
 								$source_user_id = array_search($pid, $map);
 								$role = '';
 								if ($source_user_id) {
@@ -1662,21 +1730,32 @@ function person_migration_render_merge_page() {
 								<td><?php echo esc_html($role ?: 'Unknown'); ?> <?php echo $source_user_id ? '(User ' . esc_html($source_user_id) . ')' : ''; ?></td>
 							<?php endforeach; ?>
 						</tr>
-						<?php foreach ($all_fields as $field_name): ?>
-							<?php
+						<tr>
+							<td><strong>Content References</strong></td>
+							<?php foreach ($group_post_ids as $pid): ?>
+								<td><?php echo esc_html($ref_counts[$pid]); ?> reference(s) in stories/pubs</td>
+							<?php endforeach; ?>
+						</tr>
+						<tr><td colspan="<?php echo count($group_post_ids) + 1; ?>"><strong style="font-size:13px">All Fields</strong></td></tr>
+						<?php foreach ($all_fields as $field_name):
 							$values = array();
-							$has_diff = false;
 							foreach ($group_post_ids as $pid) {
-								$val = get_post_meta($pid, $field_name, true);
-								$values[$pid] = $val;
+								$values[$pid] = get_post_meta($pid, $field_name, true);
 							}
 							$non_empty = array_filter($values, function($v) { return $v !== '' && $v !== false && $v !== null; });
-							if (empty($non_empty)) continue; // skip entirely empty fields
+							if (empty($non_empty)) continue;
 							$unique_vals = array_unique($non_empty);
 							$has_diff = count($unique_vals) > 1;
-							?>
+							$is_expert_field = in_array($field_name, $expert_fields);
+						?>
 							<tr<?php echo $has_diff ? ' style="background:#fff8e5"' : ''; ?>>
-								<td><strong><?php echo esc_html($field_name); ?></strong><?php echo $has_diff ? ' <span style="color:#dba617">&#9679;</span>' : ''; ?></td>
+								<td>
+									<strong><?php echo esc_html($field_name); ?></strong>
+									<?php echo $has_diff ? ' <span style="color:#dba617">&#9679;</span>' : ''; ?>
+									<?php if ($is_expert_field): ?>
+										<br><label style="font-size:11px"><input type="checkbox" name="copy_fields[]" value="<?php echo esc_attr($field_name); ?>"> Copy to keeper</label>
+									<?php endif; ?>
+								</td>
 								<?php foreach ($group_post_ids as $pid): ?>
 									<td><?php
 										$v = $values[$pid];
@@ -1715,7 +1794,8 @@ function person_migration_render_merge_page() {
 
 				<input type="hidden" name="group_index" value="<?php echo esc_attr($viewing_group); ?>">
 				<p style="margin-top:16px">
-					<button type="submit" class="button button-primary" id="pmig-merge-btn">Merge into Selected Post</button>
+					<button type="submit" class="button button-primary" id="pmig-merge-btn">Reassign Content &amp; Trash Duplicate(s)</button>
+					<span class="description" style="margin-left:12px">Content references will be reassigned to the keeper. Checked expert fields will be copied. Duplicate(s) will be trashed.</span>
 				</p>
 			</form>
 
@@ -1730,24 +1810,31 @@ function person_migration_render_merge_page() {
 					var keepPost = $("input[name=keep_post]:checked").val();
 					var groupIndex = $("input[name=group_index]").val();
 					if (!keepPost) { alert("Select which post to keep."); return; }
-					if (!confirm("Merge duplicates into post #" + keepPost + "? The other post(s) will be trashed.")) return;
 
-					$("#pmig-merge-btn").prop("disabled", true).text("Merging...");
+					var copyFields = [];
+					$("input[name='copy_fields[]']:checked").each(function() {
+						copyFields.push($(this).val());
+					});
+
+					if (!confirm("Reassign all content references to post #" + keepPost + " and trash the duplicate(s)?")) return;
+
+					$("#pmig-merge-btn").prop("disabled", true).text("Processing...");
 					$.ajax({
 						url: ajaxurl,
 						method: "POST",
-						timeout: 60000,
+						timeout: 120000,
 						data: {
 							action: "person_migration_merge",
 							nonce: nonce,
 							keep_post: keepPost,
-							group_index: groupIndex
+							group_index: groupIndex,
+							copy_fields: copyFields
 						},
 						success: function(response) {
-							$("#pmig-merge-btn").prop("disabled", false).text("Merge into Selected Post");
+							$("#pmig-merge-btn").prop("disabled", false).text("Reassign Content & Trash Duplicate(s)");
 							if (response.success) {
 								var d = response.data;
-								var html = "<div class='notice notice-success' style='margin:12px 0'><p>Merged! Kept post #" + d.kept + ". Fields filled from donors: " + d.fields_filled + ". Content references updated: " + (d.refs_updated || 0) + ". Posts trashed: " + d.trashed.join(", ") + ".</p>";
+								var html = "<div class='notice notice-success' style='margin:12px 0'><p>Done! Kept post #" + d.kept + ". Content references reassigned: " + d.refs_updated + ". Posts trashed: " + d.trashed.join(", ") + ".</p>";
 								if (d.log && d.log.length) {
 									html += "<ul style='font-size:12px;margin-top:4px'>";
 									d.log.forEach(function(l) { html += "<li>" + $("<span>").text(l).html() + "</li>"; });
@@ -1761,7 +1848,7 @@ function person_migration_render_merge_page() {
 							}
 						},
 						error: function() {
-							$("#pmig-merge-btn").prop("disabled", false).text("Merge into Selected Post");
+							$("#pmig-merge-btn").prop("disabled", false).text("Reassign Content & Trash Duplicate(s)");
 							alert("AJAX error.");
 						}
 					});
@@ -1798,7 +1885,6 @@ function person_migration_render_merge_page() {
 							if (count($emails) > count($unique_emails) || (count($unique_emails) === 1 && count($emails) > 1)) {
 								$match_reasons[] = 'Email: ' . implode(', ', array_unique($emails));
 							}
-							// Check name match
 							$name_keys = array();
 							foreach ($group as $pid) {
 								$f = strtolower(trim(get_post_meta($pid, 'first_name', true)));
@@ -1835,6 +1921,9 @@ function person_migration_ajax_merge() {
 
 	$keep_post   = intval($_POST['keep_post']);
 	$group_index = intval($_POST['group_index']);
+	$copy_fields = isset($_POST['copy_fields']) && is_array($_POST['copy_fields'])
+		? array_map('sanitize_text_field', $_POST['copy_fields'])
+		: array();
 
 	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
 	if (!isset($duplicate_groups[$group_index])) {
@@ -1846,88 +1935,28 @@ function person_migration_ajax_merge() {
 		wp_send_json_error(array('error_message' => 'Selected post is not in this duplicate group.'));
 	}
 
-	$donor_ids    = array_diff($group, array($keep_post));
-	$log          = array();
-	$fields_filled = 0;
+	$donor_ids     = array_values(array_diff($group, array($keep_post)));
+	$log           = array();
+	$expert_fields = person_migration_get_expert_fields();
 
-	// Simple fields: fill empty fields on keeper from donors
-	$all_fields = array_merge(
-		array('first_name', 'last_name', 'display_name'),
-		person_migration_get_simple_fields()
-	);
+	// Only copy the expert/writer fields that were explicitly checked
+	$fields_copied = 0;
+	if (!empty($copy_fields)) {
+		foreach ($copy_fields as $field_name) {
+			if (!in_array($field_name, $expert_fields)) continue;
 
-	foreach ($all_fields as $field_name) {
-		$keeper_val = get_post_meta($keep_post, $field_name, true);
-		if (!empty($keeper_val)) continue;
-
-		foreach ($donor_ids as $donor_id) {
-			$donor_val = get_post_meta($donor_id, $field_name, true);
-			if (!empty($donor_val)) {
-				update_post_meta($keep_post, $field_name, $donor_val);
-				// Copy ACF reference key if it exists
-				$ref = get_post_meta($donor_id, '_' . $field_name, true);
-				if ($ref !== '' && $ref !== false) {
-					update_post_meta($keep_post, '_' . $field_name, $ref);
-				}
-				$display = is_array($donor_val) ? json_encode($donor_val) : mb_substr((string)$donor_val, 0, 80);
-				$log[] = $field_name . ': filled from post #' . $donor_id . ' = "' . $display . '"';
-				$fields_filled++;
-				break;
-			}
-		}
-	}
-
-	// Repeater fields: fill if keeper has 0 rows
-	$repeater_fields = person_migration_get_repeater_fields();
-	foreach ($repeater_fields as $rep_name => $sub_fields) {
-		$keeper_count = (int) get_post_meta($keep_post, $rep_name, true);
-		if ($keeper_count > 0) continue;
-
-		foreach ($donor_ids as $donor_id) {
-			$donor_count = (int) get_post_meta($donor_id, $rep_name, true);
-			if ($donor_count === 0) continue;
-
-			update_post_meta($keep_post, $rep_name, $donor_count);
-			$rep_ref = get_post_meta($donor_id, '_' . $rep_name, true);
-			if ($rep_ref !== '' && $rep_ref !== false) {
-				update_post_meta($keep_post, '_' . $rep_name, $rep_ref);
-			}
-			for ($i = 0; $i < $donor_count; $i++) {
-				foreach ($sub_fields as $sub) {
-					$meta_key = $rep_name . '_' . $i . '_' . $sub;
-					$val = get_post_meta($donor_id, $meta_key, true);
-					if ($val !== '' && $val !== false && $val !== null) {
-						update_post_meta($keep_post, $meta_key, $val);
+			foreach ($donor_ids as $donor_id) {
+				$donor_val = get_post_meta($donor_id, $field_name, true);
+				if (!empty($donor_val)) {
+					update_post_meta($keep_post, $field_name, $donor_val);
+					$ref = get_post_meta($donor_id, '_' . $field_name, true);
+					if ($ref !== '' && $ref !== false) {
+						update_post_meta($keep_post, '_' . $field_name, $ref);
 					}
-					$ref_key = '_' . $meta_key;
-					$ref_val = get_post_meta($donor_id, $ref_key, true);
-					if ($ref_val !== '' && $ref_val !== false) {
-						update_post_meta($keep_post, $ref_key, $ref_val);
-					}
-				}
-			}
-			$log[] = $rep_name . ': ' . $donor_count . ' rows copied from post #' . $donor_id;
-			$fields_filled++;
-			break;
-		}
-	}
-
-	// Taxonomy fields: merge terms from donors
-	$taxonomy_fields = person_migration_get_taxonomy_fields();
-	foreach ($taxonomy_fields as $field_name => $taxonomy) {
-		$keeper_terms = wp_get_object_terms($keep_post, $taxonomy, array('fields' => 'ids'));
-		foreach ($donor_ids as $donor_id) {
-			$donor_terms = wp_get_object_terms($donor_id, $taxonomy, array('fields' => 'ids'));
-			if (!empty($donor_terms) && !is_wp_error($donor_terms)) {
-				$merged = array_unique(array_merge(
-					is_array($keeper_terms) ? $keeper_terms : array(),
-					$donor_terms
-				));
-				wp_set_object_terms($keep_post, array_map('intval', $merged), $taxonomy);
-				$new_count = count($merged) - count($keeper_terms);
-				if ($new_count > 0) {
-					$log[] = $field_name . ': added ' . $new_count . ' terms from post #' . $donor_id;
-					$fields_filled++;
+					$display = is_array($donor_val) ? json_encode($donor_val) : mb_substr((string)$donor_val, 0, 80);
+					$log[] = $field_name . ': copied from post #' . $donor_id . ' = "' . $display . '"';
+					$fields_copied++;
+					break;
 				}
 			}
 		}
@@ -1939,19 +1968,19 @@ function person_migration_ajax_merge() {
 		$donor_user_id = array_search($donor_id, $map);
 		if ($donor_user_id !== false) {
 			$map[$donor_user_id] = $keep_post;
+			$log[] = 'Lookup map: user ' . $donor_user_id . ' now points to keeper post #' . $keep_post;
 		}
 	}
 	update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
 
 	// Sweep content references: update any posts/pubs/stories that reference
-	// donor post IDs in repeater sub-fields or flat meta to point to the keeper.
-	// This handles the case where the repeater swap has already run, or where
-	// flat meta has already been repopulated with CPT post IDs.
+	// donor post IDs in repeater sub-fields or flat meta to point to the keeper
 	$content_post_types = array('post', 'caes_publication', 'shorthand_story');
 	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
 	$sub_field_names    = array('user', 'author', 'expert');
 	$flat_fields        = array('all_author_ids', 'all_expert_ids');
 	$refs_updated       = 0;
+	$donor_int_ids      = array_map('intval', $donor_ids);
 
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
@@ -1961,7 +1990,6 @@ function person_migration_ajax_merge() {
 	));
 
 	foreach ($content_posts as $cp_id) {
-		// Check repeater sub-fields for donor post IDs
 		foreach ($repeater_names as $repeater_name) {
 			$count = (int) get_post_meta($cp_id, $repeater_name, true);
 			if ($count <= 0) continue;
@@ -1970,7 +1998,7 @@ function person_migration_ajax_merge() {
 				foreach ($sub_field_names as $sub) {
 					$meta_key = $repeater_name . '_' . $i . '_' . $sub;
 					$val = get_post_meta($cp_id, $meta_key, true);
-					if (!empty($val) && in_array((int)$val, array_map('intval', $donor_ids))) {
+					if (!empty($val) && in_array((int)$val, $donor_int_ids)) {
 						update_post_meta($cp_id, $meta_key, $keep_post);
 						$refs_updated++;
 					}
@@ -1978,7 +2006,6 @@ function person_migration_ajax_merge() {
 			}
 		}
 
-		// Check flat meta fields for donor post IDs
 		foreach ($flat_fields as $flat_field) {
 			$raw = get_post_meta($cp_id, $flat_field, true);
 			if (empty($raw)) continue;
@@ -1991,7 +2018,7 @@ function person_migration_ajax_merge() {
 			$changed = false;
 			$new_ids = array();
 			foreach ($ids as $id) {
-				if (in_array((int)$id, array_map('intval', $donor_ids))) {
+				if (in_array((int)$id, $donor_int_ids)) {
 					$new_ids[] = (string)$keep_post;
 					$changed = true;
 				} else {
@@ -2008,7 +2035,7 @@ function person_migration_ajax_merge() {
 	}
 
 	if ($refs_updated > 0) {
-		$log[] = 'Updated ' . $refs_updated . ' content references (repeaters/flat meta) from donor IDs to keeper';
+		$log[] = 'Reassigned ' . $refs_updated . ' content references from donor(s) to keeper';
 	}
 
 	// Trash donor posts
@@ -2030,7 +2057,7 @@ function person_migration_ajax_merge() {
 	wp_send_json_success(array(
 		'kept'          => $keep_post,
 		'trashed'       => $trashed,
-		'fields_filled' => $fields_filled,
+		'fields_copied' => $fields_copied,
 		'refs_updated'  => $refs_updated,
 		'log'           => $log,
 	));
