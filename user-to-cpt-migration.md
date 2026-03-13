@@ -27,7 +27,7 @@ Migrate all personnel and expert/writer records from WordPress users to a `caes_
 
 ## Phase 2: Data Migration
 
-4. Build an admin-page migration tool under the CAES Tools menu, following the async architecture of `symplectic-scheduled-import.php`:
+5. Build an admin-page migration tool under the CAES Tools menu, following the async architecture of `symplectic-scheduled-import.php`:
    - **Async batch processing via WP cron**: state persisted in a WP option (status, progress counters, stats, error log, stop_requested flag). Each batch processes N users then schedules the next batch via `wp_schedule_single_event`. Supports stop/resume so the job can be paused and picked up without losing progress
    - **Single-user mode**: select a user by ID or search, migrate just that one user, and display a detailed log of every field copied, any issues found, and the resulting CPT post ID. Runs synchronously (no cron needed for one user)
    - **Bulk mode**: migrate all `personnel_user`, `expert_user`, and `content_manager` users. Uses the cron-based batch runner with a configurable batch size (default 50). Admin page shows a live progress display (processed/total, success/fail/skip counts) with auto-refreshing status, similar to the Symplectic import control panel
@@ -41,39 +41,39 @@ Migrate all personnel and expert/writer records from WordPress users to a `caes_
    - Copies all user meta and ACF fields (including repeaters) to the new posts
    - Builds and stores a `user_id => post_id` lookup table (WP option) for use in subsequent phases
    - Logs counts and discrepancies for validation
-5. Run the migration tool on staging in dry-run mode first, review the log, then run live. Verify data integrity by comparing user counts to CPT post counts and spot-checking field values
-6. Update every ACF repeater row (`authors`, `experts`, `translator`, `artists`) across all posts, publications, and shorthand stories -- swapping user IDs for CPT post IDs using the lookup table. This step also runs through the same admin tool with its own batch runner, dry-run support, and logging
-7. Repopulate the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Also runs through the admin tool with the same controls. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool should include a "Revert flat meta" action that copies the backup fields back to the originals.
+6. Run the migration tool on staging in dry-run mode first, review the log, then run live. Verify data integrity by comparing user counts to CPT post counts and spot-checking field values
+7. Update every ACF repeater row (`authors`, `experts`, `translator`, `artists`) across all posts, publications, and shorthand stories -- swapping user IDs for CPT post IDs using the lookup table. This step also runs through the same admin tool with its own batch runner, dry-run support, and logging
+8. Repopulate the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Also runs through the admin tool with the same controls. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool should include a "Revert flat meta" action that copies the backup fields back to the originals.
 
 ## Phase 3: Update Sync Infrastructure
 
-8. Rewrite `sync_personnel_users()` and `sync_personnel_users2()` to create/update `caes_hub_person` posts instead of users; rename to `sync_active_personnel()` and `sync_inactive_personnel_authors()`
-9. Update the CAES Tools admin page to reflect the new sync targets
-10. Rewrite both Symplectic import files to query `caes_hub_person` posts by meta and write to CPT post IDs
-11. Retire `import_news_experts()` and `import_news_writers()`
+9. Rewrite `sync_personnel_users()` and `sync_personnel_users2()` to create/update `caes_hub_person` posts instead of users; rename to `sync_active_personnel()` and `sync_inactive_personnel_authors()`
+10. Update the CAES Tools admin page to reflect the new sync targets
+11. Rewrite both Symplectic import files to query `caes_hub_person` posts by meta and write to CPT post IDs
+12. Retire `import_news_experts()` and `import_news_writers()`
 
 ## Phase 4: Update Front-End Code
 
-12. Create a helper function `get_person_post_for_user($user_id)` that maps a content manager's WP user ID to their linked `caes_hub_person` post ID -- use this anywhere the theme needs to resolve `post_author` to a person profile
-13. Update the 8 user blocks (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
-14. Update `pub-details-authors` block to read from `caes_hub_person` posts instead of user data
-15. Update `update_flat_author_ids_meta()` in publications-support.php and `update_flat_expert_ids_meta()` in news-support.php to work with CPT post IDs
-16. Update block-variations/index.php -- replace `is_author()` checks with `is_singular('caes_hub_person')` and adjust meta query logic
+13. Create a helper function `get_person_post_for_user($user_id)` that maps a content manager's WP user ID to their linked `caes_hub_person` post ID -- use this anywhere the theme needs to resolve `post_author` to a person profile
+14. Update the 8 user blocks (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
+15. Update `pub-details-authors` block to read from `caes_hub_person` posts instead of user data
+16. Update `update_flat_author_ids_meta()` in publications-support.php and `update_flat_expert_ids_meta()` in news-support.php to work with CPT post IDs
+17. Update block-variations/index.php -- replace `is_author()` checks with `is_singular('caes_hub_person')` and adjust meta query logic
 
 ## Phase 5: URL Structure and Templates
 
-17. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug portion is cosmetic and name-change-safe since the post ID is the stable identifier.
-18. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`
-19. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
-20. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
+18. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug portion is cosmetic and name-change-safe since the post ID is the stable identifier.
+19. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`
+20. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
+21. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
 
 ## Phase 6: Cleanup
 
-21. Delete the old user-targeted ACF field groups (only after full verification)
-22. Remove `personnel_user` and `expert_user` role definitions
-23. Update `content_manager_map_meta_cap` filter -- remove the `edit_user`/`edit_users` case (no longer needed since personnel/expert data lives in the CPT) but keep the `unfiltered_html` case (still required for multisite)
-24. Remove user profile accordion JS
-25. Optionally bulk-delete the old personnel/expert user accounts
+22. Delete the old user-targeted ACF field groups (only after full verification)
+23. Remove `personnel_user` and `expert_user` role definitions
+24. Update `content_manager_map_meta_cap` filter -- remove the `edit_user`/`edit_users` case (no longer needed since personnel/expert data lives in the CPT) but keep the `unfiltered_html` case (still required for multisite)
+25. Remove user profile accordion JS
+26. Optionally bulk-delete the old personnel/expert user accounts
 
 ---
 

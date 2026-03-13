@@ -455,7 +455,7 @@ function person_migration_run_migrate_batch(&$state) {
 }
 
 // ============================================================
-// Step 6: Swap repeater IDs (user IDs -> CPT post IDs)
+// Step 7: Swap repeater IDs (user IDs -> CPT post IDs)
 // ============================================================
 
 function person_migration_start_swap_job($dry_run = false) {
@@ -574,7 +574,7 @@ function person_migration_run_swap_batch(&$state) {
 }
 
 // ============================================================
-// Step 7: Repopulate / revert flat meta fields
+// Step 8: Repopulate / revert flat meta fields
 // ============================================================
 
 function person_migration_start_flat_meta_job($dry_run = false, $revert = false) {
@@ -1073,9 +1073,9 @@ function person_migration_render_page() {
 					<label><input type="checkbox" id="pmig-dry-run" checked> Dry Run</label>
 				</div>
 				<div class="pmig-btn-group">
-					<input type="button" id="pmig-migrate-btn" class="button button-primary pmig-action-btn" value="Step 4: Migrate Users to CPT">
-					<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Step 6: Swap Repeater IDs">
-					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Step 7: Repopulate Flat Meta">
+					<input type="button" id="pmig-migrate-btn" class="button button-primary pmig-action-btn" value="Step 5: Migrate Users to CPT">
+					<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Step 7: Swap Repeater IDs">
+					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Step 8: Repopulate Flat Meta">
 					<input type="button" id="pmig-revert-btn" class="button pmig-action-btn" value="Revert Flat Meta">
 					<input type="button" id="pmig-stop-btn" class="button" value="Stop" style="display:none">
 					<input type="button" id="pmig-resume-btn" class="button button-secondary" value="Resume" style="display:none">
