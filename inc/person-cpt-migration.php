@@ -733,6 +733,14 @@ function person_migration_add_admin_page() {
 		'person-cpt-migration',
 		'person_migration_render_page'
 	);
+	add_submenu_page(
+		'caes-tools',
+		'Merge Duplicate People',
+		'Merge Duplicate People',
+		'manage_options',
+		'person-merge-duplicates',
+		'person_migration_render_merge_page'
+	);
 }
 
 // ============================================================
@@ -1067,6 +1075,37 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Scan for duplicates
+			$("#pmig-scan-dupes-btn").on("click", function() {
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Scanning...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 120000,
+					data: { action: "person_migration_scan_duplicates", nonce: nonce },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Scan for Duplicates");
+						if (response.success) {
+							var d = response.data;
+							var html = "<div class=\"notice notice-info\" style=\"margin:12px 0\"><p>Scan complete: <strong>" + esc(String(d.duplicate_groups)) + "</strong> duplicate groups found (" + esc(String(d.posts_flagged)) + " posts flagged).</p>";
+							if (d.duplicate_groups > 0) {
+								html += "<p><a href=\"" + esc(d.merge_url) + "\" class=\"button button-secondary\">Review &amp; Merge Duplicates</a></p>";
+							}
+							html += "</div>";
+							$("#pmig-current-panel").prepend(html);
+						} else {
+							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
+							alert("Error: " + msg);
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Scan for Duplicates");
+						alert("AJAX error.");
+					}
+				});
+			});
+
 			// Delete all person posts (batched)
 			$("#pmig-delete-all-btn").on("click", function() {
 				if (!confirm("This will permanently delete ALL caes_hub_person posts and clear the migration lookup map. This cannot be undone. Are you sure?")) return;
@@ -1154,6 +1193,7 @@ function person_migration_render_page() {
 					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Repopulate Flat Meta">
 					<input type="button" id="pmig-revert-btn" class="button pmig-action-btn" value="Revert Flat Meta">
 					<input type="button" id="pmig-link-cm-btn" class="button pmig-action-btn" value="Link Content Managers">
+					<input type="button" id="pmig-scan-dupes-btn" class="button" value="Scan for Duplicates">
 					<input type="button" id="pmig-delete-all-btn" class="button" style="color:#a00" value="Delete All Person Posts">
 					<input type="button" id="pmig-stop-btn" class="button" value="Stop" style="display:none">
 					<input type="button" id="pmig-resume-btn" class="button button-secondary" value="Resume" style="display:none">
@@ -1197,6 +1237,8 @@ add_action('wp_ajax_person_migration_flat_meta',         'person_migration_ajax_
 add_action('wp_ajax_person_migration_revert_flat_meta',  'person_migration_ajax_revert_flat_meta');
 add_action('wp_ajax_person_migration_link_content_managers', 'person_migration_ajax_link_content_managers');
 add_action('wp_ajax_person_migration_delete_all',            'person_migration_ajax_delete_all');
+add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');
+add_action('wp_ajax_person_migration_merge',                 'person_migration_ajax_merge');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
@@ -1441,5 +1483,572 @@ function person_migration_ajax_delete_all() {
 		'deleted_batch' => $deleted_this_batch,
 		'remaining'     => $remaining,
 		'done'          => $done,
+	));
+}
+
+// ============================================================
+// Duplicate detection
+// ============================================================
+
+define('PERSON_MIGRATION_DUPES_KEY', 'person_cpt_duplicate_groups');
+
+function person_migration_ajax_scan_duplicates() {
+	person_migration_check_ajax();
+	@set_time_limit(120);
+
+	$posts = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	// Build indexes by email and by name
+	$by_email = array();
+	$by_name  = array();
+
+	foreach ($posts as $post_id) {
+		$email = strtolower(trim(get_post_meta($post_id, 'uga_email', true)));
+		$first = strtolower(trim(get_post_meta($post_id, 'first_name', true)));
+		$last  = strtolower(trim(get_post_meta($post_id, 'last_name', true)));
+
+		if (!empty($email)) {
+			$by_email[$email][] = $post_id;
+		}
+		if (!empty($first) && !empty($last)) {
+			$name_key = $first . '|' . $last;
+			$by_name[$name_key][] = $post_id;
+		}
+	}
+
+	// Merge into duplicate groups (sets of post IDs)
+	// Use a union-find approach: group any posts that share email OR name
+	$post_to_group = array();
+	$groups        = array();
+	$group_counter = 0;
+
+	$indexes = array($by_email, $by_name);
+	foreach ($indexes as $index) {
+		foreach ($index as $key => $post_ids) {
+			if (count($post_ids) < 2) continue;
+
+			// Find if any of these posts already belong to a group
+			$existing_group = null;
+			foreach ($post_ids as $pid) {
+				if (isset($post_to_group[$pid])) {
+					$existing_group = $post_to_group[$pid];
+					break;
+				}
+			}
+
+			if ($existing_group === null) {
+				$existing_group = $group_counter++;
+				$groups[$existing_group] = array();
+			}
+
+			foreach ($post_ids as $pid) {
+				if (!in_array($pid, $groups[$existing_group])) {
+					$groups[$existing_group][] = $pid;
+				}
+				$post_to_group[$pid] = $existing_group;
+			}
+		}
+	}
+
+	// Filter to only groups with 2+ posts
+	$duplicate_groups = array();
+	foreach ($groups as $group) {
+		if (count($group) >= 2) {
+			sort($group);
+			$duplicate_groups[] = $group;
+		}
+	}
+
+	// Store the duplicate groups and set meta flags on posts
+	// First clear old flags
+	$old_flagged = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'meta_key'       => '_duplicate_group',
+	));
+	foreach ($old_flagged as $pid) {
+		delete_post_meta($pid, '_duplicate_group');
+	}
+
+	// Set new flags
+	$posts_flagged = 0;
+	foreach ($duplicate_groups as $gi => $group) {
+		foreach ($group as $pid) {
+			update_post_meta($pid, '_duplicate_group', $gi);
+			$posts_flagged++;
+		}
+	}
+
+	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
+
+	wp_send_json_success(array(
+		'duplicate_groups' => count($duplicate_groups),
+		'posts_flagged'    => $posts_flagged,
+		'merge_url'        => admin_url('admin.php?page=person-merge-duplicates'),
+	));
+}
+
+// ============================================================
+// Admin list column: duplicate flag
+// ============================================================
+
+add_filter('manage_caes_hub_person_posts_columns', 'person_migration_add_dupe_column');
+function person_migration_add_dupe_column($columns) {
+	$columns['duplicate'] = 'Duplicate';
+	return $columns;
+}
+
+add_action('manage_caes_hub_person_posts_custom_column', 'person_migration_dupe_column_content', 10, 2);
+function person_migration_dupe_column_content($column, $post_id) {
+	if ($column !== 'duplicate') return;
+	$group = get_post_meta($post_id, '_duplicate_group', true);
+	if ($group !== '' && $group !== false) {
+		$merge_url = admin_url('admin.php?page=person-merge-duplicates&group=' . intval($group));
+		echo '<a href="' . esc_url($merge_url) . '" style="color:#d63638;font-weight:600">Duplicate</a>';
+	}
+}
+
+// ============================================================
+// Merge duplicates review page
+// ============================================================
+
+function person_migration_render_merge_page() {
+	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
+	$viewing_group    = isset($_GET['group']) ? intval($_GET['group']) : null;
+	$nonce            = wp_create_nonce('person_migration_nonce');
+
+	?>
+	<div class="wrap">
+		<h1>Merge Duplicate People</h1>
+
+		<?php if ($viewing_group !== null && isset($duplicate_groups[$viewing_group])): ?>
+			<?php
+			$group_post_ids = $duplicate_groups[$viewing_group];
+			$all_fields     = array_merge(
+				array('first_name', 'last_name', 'display_name'),
+				person_migration_get_simple_fields()
+			);
+			$repeater_fields = person_migration_get_repeater_fields();
+			$taxonomy_fields = person_migration_get_taxonomy_fields();
+			?>
+			<p><a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates')); ?>">&larr; Back to all groups</a></p>
+			<h2>Duplicate Group #<?php echo esc_html($viewing_group + 1); ?></h2>
+			<p class="description">Review the records below. Choose which post to keep, then click Merge. Data from the other post(s) will fill in any empty fields on the keeper, then the duplicates will be trashed.</p>
+
+			<form id="pmig-merge-form">
+				<table class="widefat striped" style="margin-top:12px">
+					<thead>
+						<tr>
+							<th style="width:200px">Field</th>
+							<?php foreach ($group_post_ids as $pid): ?>
+								<th>
+									Post #<?php echo esc_html($pid); ?>
+									<br><small><?php echo esc_html(get_the_title($pid)); ?></small>
+									<br><label><input type="radio" name="keep_post" value="<?php echo esc_attr($pid); ?>" <?php checked($pid, $group_post_ids[0]); ?>> Keep this one</label>
+									<br><a href="<?php echo esc_url(get_edit_post_link($pid)); ?>" target="_blank">Edit</a>
+								</th>
+							<?php endforeach; ?>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><strong>Post Status</strong></td>
+							<?php foreach ($group_post_ids as $pid): ?>
+								<td><?php echo esc_html(get_post_status($pid)); ?></td>
+							<?php endforeach; ?>
+						</tr>
+						<tr>
+							<td><strong>Source User Role</strong></td>
+							<?php foreach ($group_post_ids as $pid):
+								// Try to find the original user from the map
+								$map = person_migration_get_map();
+								$source_user_id = array_search($pid, $map);
+								$role = '';
+								if ($source_user_id) {
+									$u = get_userdata($source_user_id);
+									if ($u) $role = implode(', ', $u->roles);
+								}
+							?>
+								<td><?php echo esc_html($role ?: 'Unknown'); ?> <?php echo $source_user_id ? '(User ' . esc_html($source_user_id) . ')' : ''; ?></td>
+							<?php endforeach; ?>
+						</tr>
+						<?php foreach ($all_fields as $field_name): ?>
+							<?php
+							$values = array();
+							$has_diff = false;
+							foreach ($group_post_ids as $pid) {
+								$val = get_post_meta($pid, $field_name, true);
+								$values[$pid] = $val;
+							}
+							$non_empty = array_filter($values, function($v) { return $v !== '' && $v !== false && $v !== null; });
+							if (empty($non_empty)) continue; // skip entirely empty fields
+							$unique_vals = array_unique($non_empty);
+							$has_diff = count($unique_vals) > 1;
+							?>
+							<tr<?php echo $has_diff ? ' style="background:#fff8e5"' : ''; ?>>
+								<td><strong><?php echo esc_html($field_name); ?></strong><?php echo $has_diff ? ' <span style="color:#dba617">&#9679;</span>' : ''; ?></td>
+								<?php foreach ($group_post_ids as $pid): ?>
+									<td><?php
+										$v = $values[$pid];
+										if (is_array($v)) {
+											echo esc_html(json_encode($v));
+										} else {
+											echo esc_html(mb_substr((string)$v, 0, 120));
+											if (mb_strlen((string)$v) > 120) echo '...';
+										}
+									?></td>
+								<?php endforeach; ?>
+							</tr>
+						<?php endforeach; ?>
+
+						<?php foreach ($repeater_fields as $rep_name => $sub_fields): ?>
+							<tr>
+								<td><strong><?php echo esc_html($rep_name); ?></strong> (repeater)</td>
+								<?php foreach ($group_post_ids as $pid): ?>
+									<td><?php echo esc_html((int)get_post_meta($pid, $rep_name, true)); ?> rows</td>
+								<?php endforeach; ?>
+							</tr>
+						<?php endforeach; ?>
+
+						<?php foreach ($taxonomy_fields as $field_name => $taxonomy): ?>
+							<tr>
+								<td><strong><?php echo esc_html($field_name); ?></strong> (taxonomy)</td>
+								<?php foreach ($group_post_ids as $pid):
+									$terms = wp_get_object_terms($pid, $taxonomy, array('fields' => 'names'));
+								?>
+									<td><?php echo esc_html(is_array($terms) ? implode(', ', $terms) : ''); ?></td>
+								<?php endforeach; ?>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<input type="hidden" name="group_index" value="<?php echo esc_attr($viewing_group); ?>">
+				<p style="margin-top:16px">
+					<button type="submit" class="button button-primary" id="pmig-merge-btn">Merge into Selected Post</button>
+				</p>
+			</form>
+
+			<div id="pmig-merge-result"></div>
+
+			<script>
+			jQuery(function($) {
+				var nonce = <?php echo wp_json_encode($nonce); ?>;
+
+				$("#pmig-merge-form").on("submit", function(e) {
+					e.preventDefault();
+					var keepPost = $("input[name=keep_post]:checked").val();
+					var groupIndex = $("input[name=group_index]").val();
+					if (!keepPost) { alert("Select which post to keep."); return; }
+					if (!confirm("Merge duplicates into post #" + keepPost + "? The other post(s) will be trashed.")) return;
+
+					$("#pmig-merge-btn").prop("disabled", true).text("Merging...");
+					$.ajax({
+						url: ajaxurl,
+						method: "POST",
+						timeout: 60000,
+						data: {
+							action: "person_migration_merge",
+							nonce: nonce,
+							keep_post: keepPost,
+							group_index: groupIndex
+						},
+						success: function(response) {
+							$("#pmig-merge-btn").prop("disabled", false).text("Merge into Selected Post");
+							if (response.success) {
+								var d = response.data;
+								var html = "<div class='notice notice-success' style='margin:12px 0'><p>Merged! Kept post #" + d.kept + ". Fields filled from donors: " + d.fields_filled + ". Content references updated: " + (d.refs_updated || 0) + ". Posts trashed: " + d.trashed.join(", ") + ".</p>";
+								if (d.log && d.log.length) {
+									html += "<ul style='font-size:12px;margin-top:4px'>";
+									d.log.forEach(function(l) { html += "<li>" + $("<span>").text(l).html() + "</li>"; });
+									html += "</ul>";
+								}
+								html += "</div>";
+								$("#pmig-merge-result").html(html);
+							} else {
+								var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
+								alert("Error: " + msg);
+							}
+						},
+						error: function() {
+							$("#pmig-merge-btn").prop("disabled", false).text("Merge into Selected Post");
+							alert("AJAX error.");
+						}
+					});
+				});
+			});
+			</script>
+
+		<?php else: ?>
+			<?php if (empty($duplicate_groups)): ?>
+				<p>No duplicate groups found. Run "Scan for Duplicates" from the <a href="<?php echo esc_url(admin_url('admin.php?page=person-cpt-migration')); ?>">Person CPT Migration</a> page first.</p>
+			<?php else: ?>
+				<p><?php echo count($duplicate_groups); ?> duplicate group(s) found. Click a group to review and merge.</p>
+				<table class="widefat striped" style="margin-top:12px">
+					<thead>
+						<tr>
+							<th>Group</th>
+							<th>People</th>
+							<th>Matching On</th>
+							<th>Action</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($duplicate_groups as $gi => $group): ?>
+							<?php
+							$names = array();
+							$emails = array();
+							foreach ($group as $pid) {
+								$names[]  = get_the_title($pid) . ' (#' . $pid . ')';
+								$e = get_post_meta($pid, 'uga_email', true);
+								if ($e) $emails[] = $e;
+							}
+							$match_reasons = array();
+							$unique_emails = array_unique(array_map('strtolower', $emails));
+							if (count($emails) > count($unique_emails) || (count($unique_emails) === 1 && count($emails) > 1)) {
+								$match_reasons[] = 'Email: ' . implode(', ', array_unique($emails));
+							}
+							// Check name match
+							$name_keys = array();
+							foreach ($group as $pid) {
+								$f = strtolower(trim(get_post_meta($pid, 'first_name', true)));
+								$l = strtolower(trim(get_post_meta($pid, 'last_name', true)));
+								if ($f && $l) $name_keys[] = $f . ' ' . $l;
+							}
+							$unique_names = array_unique($name_keys);
+							if (count($name_keys) > count($unique_names) || (count($unique_names) === 1 && count($name_keys) > 1)) {
+								$match_reasons[] = 'Name: ' . implode(', ', array_unique($name_keys));
+							}
+							if (empty($match_reasons)) $match_reasons[] = 'Name/email overlap';
+							?>
+							<tr>
+								<td><?php echo esc_html($gi + 1); ?></td>
+								<td><?php echo esc_html(implode(' / ', $names)); ?></td>
+								<td><?php echo esc_html(implode('; ', $match_reasons)); ?></td>
+								<td><a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates&group=' . $gi)); ?>" class="button button-small">Review</a></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php endif; ?>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+// ============================================================
+// AJAX: merge duplicate posts
+// ============================================================
+
+function person_migration_ajax_merge() {
+	person_migration_check_ajax();
+
+	$keep_post   = intval($_POST['keep_post']);
+	$group_index = intval($_POST['group_index']);
+
+	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
+	if (!isset($duplicate_groups[$group_index])) {
+		wp_send_json_error(array('error_message' => 'Invalid group index.'));
+	}
+
+	$group = $duplicate_groups[$group_index];
+	if (!in_array($keep_post, $group)) {
+		wp_send_json_error(array('error_message' => 'Selected post is not in this duplicate group.'));
+	}
+
+	$donor_ids    = array_diff($group, array($keep_post));
+	$log          = array();
+	$fields_filled = 0;
+
+	// Simple fields: fill empty fields on keeper from donors
+	$all_fields = array_merge(
+		array('first_name', 'last_name', 'display_name'),
+		person_migration_get_simple_fields()
+	);
+
+	foreach ($all_fields as $field_name) {
+		$keeper_val = get_post_meta($keep_post, $field_name, true);
+		if (!empty($keeper_val)) continue;
+
+		foreach ($donor_ids as $donor_id) {
+			$donor_val = get_post_meta($donor_id, $field_name, true);
+			if (!empty($donor_val)) {
+				update_post_meta($keep_post, $field_name, $donor_val);
+				// Copy ACF reference key if it exists
+				$ref = get_post_meta($donor_id, '_' . $field_name, true);
+				if ($ref !== '' && $ref !== false) {
+					update_post_meta($keep_post, '_' . $field_name, $ref);
+				}
+				$display = is_array($donor_val) ? json_encode($donor_val) : mb_substr((string)$donor_val, 0, 80);
+				$log[] = $field_name . ': filled from post #' . $donor_id . ' = "' . $display . '"';
+				$fields_filled++;
+				break;
+			}
+		}
+	}
+
+	// Repeater fields: fill if keeper has 0 rows
+	$repeater_fields = person_migration_get_repeater_fields();
+	foreach ($repeater_fields as $rep_name => $sub_fields) {
+		$keeper_count = (int) get_post_meta($keep_post, $rep_name, true);
+		if ($keeper_count > 0) continue;
+
+		foreach ($donor_ids as $donor_id) {
+			$donor_count = (int) get_post_meta($donor_id, $rep_name, true);
+			if ($donor_count === 0) continue;
+
+			update_post_meta($keep_post, $rep_name, $donor_count);
+			$rep_ref = get_post_meta($donor_id, '_' . $rep_name, true);
+			if ($rep_ref !== '' && $rep_ref !== false) {
+				update_post_meta($keep_post, '_' . $rep_name, $rep_ref);
+			}
+			for ($i = 0; $i < $donor_count; $i++) {
+				foreach ($sub_fields as $sub) {
+					$meta_key = $rep_name . '_' . $i . '_' . $sub;
+					$val = get_post_meta($donor_id, $meta_key, true);
+					if ($val !== '' && $val !== false && $val !== null) {
+						update_post_meta($keep_post, $meta_key, $val);
+					}
+					$ref_key = '_' . $meta_key;
+					$ref_val = get_post_meta($donor_id, $ref_key, true);
+					if ($ref_val !== '' && $ref_val !== false) {
+						update_post_meta($keep_post, $ref_key, $ref_val);
+					}
+				}
+			}
+			$log[] = $rep_name . ': ' . $donor_count . ' rows copied from post #' . $donor_id;
+			$fields_filled++;
+			break;
+		}
+	}
+
+	// Taxonomy fields: merge terms from donors
+	$taxonomy_fields = person_migration_get_taxonomy_fields();
+	foreach ($taxonomy_fields as $field_name => $taxonomy) {
+		$keeper_terms = wp_get_object_terms($keep_post, $taxonomy, array('fields' => 'ids'));
+		foreach ($donor_ids as $donor_id) {
+			$donor_terms = wp_get_object_terms($donor_id, $taxonomy, array('fields' => 'ids'));
+			if (!empty($donor_terms) && !is_wp_error($donor_terms)) {
+				$merged = array_unique(array_merge(
+					is_array($keeper_terms) ? $keeper_terms : array(),
+					$donor_terms
+				));
+				wp_set_object_terms($keep_post, array_map('intval', $merged), $taxonomy);
+				$new_count = count($merged) - count($keeper_terms);
+				if ($new_count > 0) {
+					$log[] = $field_name . ': added ' . $new_count . ' terms from post #' . $donor_id;
+					$fields_filled++;
+				}
+			}
+		}
+	}
+
+	// Update the lookup map: point all donor user IDs to the keeper post
+	$map = person_migration_get_map();
+	foreach ($donor_ids as $donor_id) {
+		$donor_user_id = array_search($donor_id, $map);
+		if ($donor_user_id !== false) {
+			$map[$donor_user_id] = $keep_post;
+		}
+	}
+	update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
+
+	// Sweep content references: update any posts/pubs/stories that reference
+	// donor post IDs in repeater sub-fields or flat meta to point to the keeper.
+	// This handles the case where the repeater swap has already run, or where
+	// flat meta has already been repopulated with CPT post IDs.
+	$content_post_types = array('post', 'caes_publication', 'shorthand_story');
+	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
+	$sub_field_names    = array('user', 'author', 'expert');
+	$flat_fields        = array('all_author_ids', 'all_expert_ids');
+	$refs_updated       = 0;
+
+	$content_posts = get_posts(array(
+		'post_type'      => $content_post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	foreach ($content_posts as $cp_id) {
+		// Check repeater sub-fields for donor post IDs
+		foreach ($repeater_names as $repeater_name) {
+			$count = (int) get_post_meta($cp_id, $repeater_name, true);
+			if ($count <= 0) continue;
+
+			for ($i = 0; $i < $count; $i++) {
+				foreach ($sub_field_names as $sub) {
+					$meta_key = $repeater_name . '_' . $i . '_' . $sub;
+					$val = get_post_meta($cp_id, $meta_key, true);
+					if (!empty($val) && in_array((int)$val, array_map('intval', $donor_ids))) {
+						update_post_meta($cp_id, $meta_key, $keep_post);
+						$refs_updated++;
+					}
+				}
+			}
+		}
+
+		// Check flat meta fields for donor post IDs
+		foreach ($flat_fields as $flat_field) {
+			$raw = get_post_meta($cp_id, $flat_field, true);
+			if (empty($raw)) continue;
+
+			$ids = maybe_unserialize($raw);
+			if (!is_array($ids)) {
+				$ids = array_filter(array_map('trim', explode(',', $raw)));
+			}
+
+			$changed = false;
+			$new_ids = array();
+			foreach ($ids as $id) {
+				if (in_array((int)$id, array_map('intval', $donor_ids))) {
+					$new_ids[] = (string)$keep_post;
+					$changed = true;
+				} else {
+					$new_ids[] = $id;
+				}
+			}
+
+			if ($changed) {
+				$new_ids = array_unique($new_ids);
+				update_post_meta($cp_id, $flat_field, implode(',', $new_ids));
+				$refs_updated++;
+			}
+		}
+	}
+
+	if ($refs_updated > 0) {
+		$log[] = 'Updated ' . $refs_updated . ' content references (repeaters/flat meta) from donor IDs to keeper';
+	}
+
+	// Trash donor posts
+	$trashed = array();
+	foreach ($donor_ids as $donor_id) {
+		wp_trash_post($donor_id);
+		delete_post_meta($donor_id, '_duplicate_group');
+		$trashed[] = $donor_id;
+	}
+
+	// Clean up the keeper's duplicate flag
+	delete_post_meta($keep_post, '_duplicate_group');
+
+	// Remove this group from stored duplicate groups
+	unset($duplicate_groups[$group_index]);
+	$duplicate_groups = array_values($duplicate_groups);
+	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
+
+	wp_send_json_success(array(
+		'kept'          => $keep_post,
+		'trashed'       => $trashed,
+		'fields_filled' => $fields_filled,
+		'refs_updated'  => $refs_updated,
+		'log'           => $log,
 	));
 }
