@@ -1658,9 +1658,10 @@ function person_migration_render_merge_page() {
 			$sub_field_names    = array('user', 'author', 'expert');
 			$flat_fields        = array('all_author_ids', 'all_expert_ids');
 
-			$ref_counts = array();
+			// Track which content posts reference each person post
+			$ref_posts = array(); // pid => array of cp_id
 			foreach ($group_post_ids as $pid) {
-				$ref_counts[$pid] = 0;
+				$ref_posts[$pid] = array();
 			}
 
 			$content_posts = get_posts(array(
@@ -1671,13 +1672,14 @@ function person_migration_render_merge_page() {
 			));
 
 			foreach ($content_posts as $cp_id) {
+				$matched_pids = array();
 				foreach ($repeater_names as $rn) {
 					$count = (int) get_post_meta($cp_id, $rn, true);
 					for ($i = 0; $i < $count; $i++) {
 						foreach ($sub_field_names as $sub) {
 							$val = get_post_meta($cp_id, $rn . '_' . $i . '_' . $sub, true);
-							if (!empty($val) && isset($ref_counts[(int)$val])) {
-								$ref_counts[(int)$val]++;
+							if (!empty($val) && isset($ref_posts[(int)$val])) {
+								$matched_pids[(int)$val] = true;
 							}
 						}
 					}
@@ -1690,10 +1692,13 @@ function person_migration_render_merge_page() {
 						$ids = array_filter(array_map('trim', explode(',', $raw)));
 					}
 					foreach ($ids as $id) {
-						if (isset($ref_counts[(int)$id])) {
-							$ref_counts[(int)$id]++;
+						if (isset($ref_posts[(int)$id])) {
+							$matched_pids[(int)$id] = true;
 						}
 					}
+				}
+				foreach ($matched_pids as $pid => $_) {
+					$ref_posts[$pid][] = $cp_id;
 				}
 			}
 			?>
@@ -1730,10 +1735,29 @@ function person_migration_render_merge_page() {
 								<td><?php echo esc_html($role ?: 'Unknown'); ?> <?php echo $source_user_id ? '(User ' . esc_html($source_user_id) . ')' : ''; ?></td>
 							<?php endforeach; ?>
 						</tr>
-						<tr>
+						<tr style="vertical-align:top">
 							<td><strong>Content References</strong></td>
 							<?php foreach ($group_post_ids as $pid): ?>
-								<td><?php echo esc_html($ref_counts[$pid]); ?> reference(s) in stories/pubs</td>
+								<td>
+									<?php if (empty($ref_posts[$pid])): ?>
+										<em style="color:#999">None</em>
+									<?php else: ?>
+										<?php echo count($ref_posts[$pid]); ?> item(s):
+										<ul style="margin:4px 0 0;font-size:12px">
+											<?php foreach ($ref_posts[$pid] as $cp_id):
+												$cp = get_post($cp_id);
+												$cp_type = $cp ? $cp->post_type : '';
+												$type_label = str_replace(array('caes_', '_'), array('', ' '), $cp_type);
+											?>
+												<li>
+													<a href="<?php echo esc_url(get_permalink($cp_id)); ?>" target="_blank"><?php echo esc_html(get_the_title($cp_id)); ?></a>
+													<span style="color:#888">(<?php echo esc_html($type_label); ?>)</span>
+													<a href="<?php echo esc_url(get_edit_post_link($cp_id)); ?>" target="_blank" style="color:#888;font-size:11px">edit</a>
+												</li>
+											<?php endforeach; ?>
+										</ul>
+									<?php endif; ?>
+								</td>
 							<?php endforeach; ?>
 						</tr>
 						<tr><td colspan="<?php echo count($group_post_ids) + 1; ?>"><strong style="font-size:13px">All Fields</strong></td></tr>
