@@ -30,14 +30,13 @@ Migrate all personnel and expert/writer records from WordPress users to a `caes_
 5. Build an admin-page migration tool under the CAES Tools menu, following the async architecture of `symplectic-scheduled-import.php`:
    - **Async batch processing via WP cron**: state persisted in a WP option (status, progress counters, stats, error log, stop_requested flag). Each batch processes N users then schedules the next batch via `wp_schedule_single_event`. Supports stop/resume so the job can be paused and picked up without losing progress
    - **Single-user mode**: select a user by ID or search, migrate just that one user, and display a detailed log of every field copied, any issues found, and the resulting CPT post ID. Runs synchronously (no cron needed for one user)
-   - **Bulk mode**: migrate all `personnel_user`, `expert_user`, and `content_manager` users. Uses the cron-based batch runner with a configurable batch size (default 50). Admin page shows a live progress display (processed/total, success/fail/skip counts) with auto-refreshing status, similar to the Symplectic import control panel
+   - **Bulk mode**: migrate all `personnel_user` and `expert_user` users. Uses the cron-based batch runner with a configurable batch size (default 50). Admin page shows a live progress display (processed/total, success/fail/skip counts) with auto-refreshing status, similar to the Symplectic import control panel
    - **Dry-run toggle**: when enabled, no data is written -- the tool only reports what it would do, including field counts, missing data, and potential issues. Dry-run results are stored in the state option for review
    - **Error logging**: warnings and errors are appended to the state array (capped at a max count to prevent bloat), viewable from the admin page after the run completes or while in progress
    - **Stop/Resume**: a stop button sets a flag in the state option; the batch runner checks this flag before each user and halts gracefully. Resume picks up from `processed_users` offset
    - The tool reads all data from existing WordPress user meta and ACF user fields -- does NOT pull from any external API (expert/writer data is static and no longer synced from the CAES news database)
-   - Creates a `caes_hub_person` CPT post for every `personnel_user` and `expert_user`
-   - Creates a `caes_hub_person` CPT post for every editorial staff user (content managers who have public profiles)
-   - For content manager posts, populates the `linked_wp_user` field with their WP user ID
+   - Creates a `caes_hub_person` CPT post for every `personnel_user` and `expert_user` (content managers are NOT migrated separately since they already exist as personnel users)
+   - After migration, links content manager WP accounts to their existing person posts by matching on personnel_id and setting the `linked_wp_user` field
    - Copies all user meta and ACF fields (including repeaters) to the new posts
    - Builds and stores a `user_id => post_id` lookup table (WP option) for use in subsequent phases
    - Logs counts and discrepancies for validation
@@ -49,7 +48,7 @@ Migrate all personnel and expert/writer records from WordPress users to a `caes_
 
 9. Rewrite `sync_personnel_users()` and `sync_personnel_users2()` to create/update `caes_hub_person` posts instead of users; rename to `sync_active_personnel()` and `sync_inactive_personnel_authors()`
 10. Update the CAES Tools admin page to reflect the new sync targets
-11. Rewrite both Symplectic import files to query `caes_hub_person` posts by meta and write to CPT post IDs
+11. Rewrite both Symplectic import files to query `caes_hub_person` posts by meta and write to CPT post IDs. While updating, ensure the `journal` field is being extracted and stored for scholarly works -- it is currently missing from the Symplectic import and not carrying over to the CPT
 12. Retire `import_news_experts()` and `import_news_writers()`
 
 ## Phase 4: Update Front-End Code
@@ -62,7 +61,7 @@ Migrate all personnel and expert/writer records from WordPress users to a `caes_
 
 ## Phase 5: URL Structure and Templates
 
-18. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug portion is cosmetic and name-change-safe since the post ID is the stable identifier.
+18. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug is derived from the person's display name (their preferred name) and is purely cosmetic -- the post ID is the stable identifier used for resolution. If WordPress appends `-2` etc. for duplicate names, it does not matter since the slug is never used for lookup.
 19. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`
 20. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
 21. Add 301 redirect from old `/author/username/` URLs to new CPT URLs

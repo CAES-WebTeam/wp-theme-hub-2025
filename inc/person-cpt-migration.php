@@ -3,7 +3,9 @@
  * Person CPT Migration Tool
  *
  * Admin tool under CAES Tools that migrates personnel_user, expert_user,
- * and content_manager WordPress users to caes_hub_person CPT posts.
+ * WordPress users to caes_hub_person CPT posts. Content managers are not
+ * migrated separately since they already exist as personnel users; instead,
+ * their WP accounts are linked to existing person posts after migration.
  *
  * Follows the async batch architecture of symplectic-scheduled-import.php:
  * - State persisted in a WP option
@@ -285,17 +287,6 @@ function person_migration_migrate_single_user($user_id, $dry_run = false) {
 		}
 	}
 
-	// Set linked_wp_user for content managers
-	$user_roles = (array) $user->roles;
-	if (in_array('content_manager', $user_roles, true)) {
-		if ($dry_run) {
-			$result['field_log'][] = '[DRY RUN] linked_wp_user = ' . $user_id . ' (content_manager)';
-		} else {
-			update_post_meta($post_id, 'linked_wp_user', $user_id);
-			$fields_written++;
-		}
-	}
-
 	// Update the lookup map
 	if (!$dry_run && $post_id) {
 		$map[$user_id] = $post_id;
@@ -317,7 +308,7 @@ function person_migration_migrate_single_user($user_id, $dry_run = false) {
 
 function person_migration_get_eligible_users($offset = 0, $number = -1) {
 	$args = array(
-		'role__in' => array('personnel_user', 'expert_user', 'content_manager'),
+		'role__in' => array('personnel_user', 'expert_user'),
 		'orderby'  => 'ID',
 		'order'    => 'ASC',
 		'fields'   => 'ID',
@@ -329,7 +320,7 @@ function person_migration_get_eligible_users($offset = 0, $number = -1) {
 
 function person_migration_count_eligible_users() {
 	$args = array(
-		'role__in' => array('personnel_user', 'expert_user', 'content_manager'),
+		'role__in' => array('personnel_user', 'expert_user'),
 		'fields'   => 'ID',
 		'number'   => -1,
 	);
@@ -430,6 +421,17 @@ function person_migration_run_migrate_batch(&$state) {
 
 		if (!empty($result['error_message']) && $result['status'] !== 'skipped' && count($state['errors']) < PERSON_MIGRATION_MAX_ERRORS) {
 			$state['errors'][] = 'User ' . $user_id . ': ' . $result['error_message'];
+		}
+
+		// In dry-run mode, capture per-user field logs so admins can review what would happen
+		if ($state['dry_run'] && !empty($result['field_log']) && count($state['errors']) < PERSON_MIGRATION_MAX_ERRORS) {
+			$user_info = get_userdata($user_id);
+			$label = $user_info ? $user_info->display_name . ' (ID ' . $user_id . ')' : 'User ' . $user_id;
+			$state['errors'][] = '--- ' . $label . ' ---';
+			foreach ($result['field_log'] as $log_line) {
+				if (count($state['errors']) >= PERSON_MIGRATION_MAX_ERRORS) break;
+				$state['errors'][] = $log_line;
+			}
 		}
 
 		update_option(PERSON_MIGRATION_STATE_KEY, $state, false);
@@ -978,6 +980,39 @@ function person_migration_enqueue_scripts($hook) {
 				doAction("person_migration_revert_flat_meta", {}, "Revert flat meta fields to their backed-up values?");
 			});
 
+			// Link content managers
+			$("#pmig-link-cm-btn").on("click", function() {
+				if (!confirm("Link content manager WP accounts to their existing person posts by matching on personnel_id?")) return;
+				$(this).prop("disabled", true).val("Linking...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 120000,
+					data: { action: "person_migration_link_content_managers", nonce: nonce },
+					success: function(response) {
+						$("#pmig-link-cm-btn").prop("disabled", false).val("Link Content Managers");
+						if (response.success) {
+							var d = response.data;
+							var html = "<div class=\"notice notice-success\" style=\"margin:12px 0\"><p>" + esc(d.linked) + " content managers linked, " + esc(d.skipped) + " skipped, " + esc(d.failed) + " failed.</p>";
+							if (d.errors && d.errors.length) {
+								html += "<ul style=\"font-size:12px;margin-top:4px\">";
+								d.errors.forEach(function(e) { html += "<li>" + esc(e) + "</li>"; });
+								html += "</ul>";
+							}
+							html += "</div>";
+							$("#pmig-current-panel").prepend(html);
+						} else {
+							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
+							alert("Error: " + msg);
+						}
+					},
+					error: function() {
+						$("#pmig-link-cm-btn").prop("disabled", false).val("Link Content Managers");
+						alert("AJAX error.");
+					}
+				});
+			});
+
 			// Stop
 			$("#pmig-stop-btn").on("click", function() {
 				doAction("person_migration_stop", {}, "Stop the current job? Progress will be saved.");
@@ -1032,6 +1067,34 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Delete all person posts
+			$("#pmig-delete-all-btn").on("click", function() {
+				if (!confirm("This will permanently delete ALL caes_hub_person posts and clear the migration lookup map. This cannot be undone. Are you sure?")) return;
+				if (!confirm("Are you REALLY sure? This will delete every person CPT post.")) return;
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Deleting...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 300000,
+					data: { action: "person_migration_delete_all", nonce: nonce },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Delete All Person Posts");
+						if (response.success) {
+							var html = "<div class=\"notice notice-warning\" style=\"margin:12px 0\"><p>" + esc(response.data.deleted) + " person posts permanently deleted.</p></div>";
+							$("#pmig-current-panel").prepend(html);
+						} else {
+							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
+							alert("Error: " + msg);
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Delete All Person Posts");
+						alert("AJAX error.");
+					}
+				});
+			});
+
 			pollStatus();
 		});
 	');
@@ -1048,7 +1111,7 @@ function person_migration_render_page() {
 	?>
 	<div class="wrap">
 		<h1>Person CPT Migration</h1>
-		<p>Migrates <code>personnel_user</code>, <code>expert_user</code>, and <code>content_manager</code> WordPress users to <code>caes_hub_person</code> CPT posts.</p>
+		<p>Migrates <code>personnel_user</code> and <code>expert_user</code> WordPress users to <code>caes_hub_person</code> CPT posts. Content managers are linked to their existing person posts after migration.</p>
 		<p class="description">
 			Eligible users: <strong><?php echo esc_html($eligible); ?></strong>
 			&ensp;|&ensp;
@@ -1077,6 +1140,8 @@ function person_migration_render_page() {
 					<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Swap Repeater IDs">
 					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Repopulate Flat Meta">
 					<input type="button" id="pmig-revert-btn" class="button pmig-action-btn" value="Revert Flat Meta">
+					<input type="button" id="pmig-link-cm-btn" class="button pmig-action-btn" value="Link Content Managers">
+					<input type="button" id="pmig-delete-all-btn" class="button" style="color:#a00" value="Delete All Person Posts">
 					<input type="button" id="pmig-stop-btn" class="button" value="Stop" style="display:none">
 					<input type="button" id="pmig-resume-btn" class="button button-secondary" value="Resume" style="display:none">
 				</div>
@@ -1117,6 +1182,8 @@ add_action('wp_ajax_person_migration_single',            'person_migration_ajax_
 add_action('wp_ajax_person_migration_swap',              'person_migration_ajax_swap');
 add_action('wp_ajax_person_migration_flat_meta',         'person_migration_ajax_flat_meta');
 add_action('wp_ajax_person_migration_revert_flat_meta',  'person_migration_ajax_revert_flat_meta');
+add_action('wp_ajax_person_migration_link_content_managers', 'person_migration_ajax_link_content_managers');
+add_action('wp_ajax_person_migration_delete_all',            'person_migration_ajax_delete_all');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
@@ -1244,4 +1311,104 @@ function person_migration_ajax_revert_flat_meta() {
 		}
 	}
 	wp_send_json_success(array('message' => 'Flat meta revert queued.'));
+}
+
+function person_migration_ajax_link_content_managers() {
+	person_migration_check_ajax();
+	@set_time_limit(120);
+
+	$content_managers = get_users(array(
+		'role'    => 'content_manager',
+		'fields'  => 'all',
+		'number'  => -1,
+	));
+
+	$linked  = 0;
+	$skipped = 0;
+	$failed  = 0;
+	$errors  = array();
+
+	foreach ($content_managers as $cm) {
+		$personnel_id = get_user_meta($cm->ID, 'personnel_id', true);
+		if (empty($personnel_id)) {
+			$errors[] = 'User ' . $cm->ID . ' (' . $cm->display_name . '): no personnel_id, skipped.';
+			$skipped++;
+			continue;
+		}
+
+		// Find the person post by personnel_id
+		$posts = get_posts(array(
+			'post_type'      => 'caes_hub_person',
+			'post_status'    => 'publish',
+			'meta_key'       => 'personnel_id',
+			'meta_value'     => $personnel_id,
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		));
+
+		if (empty($posts)) {
+			$errors[] = 'User ' . $cm->ID . ' (' . $cm->display_name . '): no person post found for personnel_id ' . $personnel_id . '.';
+			$failed++;
+			continue;
+		}
+
+		$post_id = $posts[0];
+
+		// Check if already linked
+		$existing = get_post_meta($post_id, 'linked_wp_user', true);
+		if (!empty($existing) && (int)$existing === $cm->ID) {
+			$skipped++;
+			continue;
+		}
+
+		update_post_meta($post_id, 'linked_wp_user', $cm->ID);
+
+		// Also add to the lookup map
+		$map = person_migration_get_map();
+		$map[$cm->ID] = $post_id;
+		update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
+
+		$linked++;
+	}
+
+	wp_send_json_success(array(
+		'linked'  => $linked,
+		'skipped' => $skipped,
+		'failed'  => $failed,
+		'errors'  => $errors,
+	));
+}
+
+function person_migration_ajax_delete_all() {
+	person_migration_check_ajax();
+
+	$state = person_migration_get_state();
+	if ($state['status'] === 'running') {
+		wp_send_json_error(array('error_message' => 'Cannot delete while a job is running. Stop the job first.'));
+	}
+
+	@set_time_limit(300);
+
+	$posts = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	$deleted = 0;
+	foreach ($posts as $post_id) {
+		$result = wp_delete_post($post_id, true); // true = bypass trash, permanently delete
+		if ($result) {
+			$deleted++;
+		}
+	}
+
+	// Clear the lookup map
+	delete_option(PERSON_MIGRATION_MAP_KEY);
+
+	// Reset migration state so it can be re-run
+	delete_option(PERSON_MIGRATION_STATE_KEY);
+
+	wp_send_json_success(array('deleted' => $deleted));
 }
