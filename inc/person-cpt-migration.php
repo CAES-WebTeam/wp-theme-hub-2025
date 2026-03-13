@@ -1239,6 +1239,7 @@ add_action('wp_ajax_person_migration_link_content_managers', 'person_migration_a
 add_action('wp_ajax_person_migration_delete_all',            'person_migration_ajax_delete_all');
 add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');
 add_action('wp_ajax_person_migration_merge',                 'person_migration_ajax_merge');
+add_action('wp_ajax_person_migration_dismiss_group',         'person_migration_ajax_dismiss_group');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
@@ -1819,6 +1820,7 @@ function person_migration_render_merge_page() {
 				<input type="hidden" name="group_index" value="<?php echo esc_attr($viewing_group); ?>">
 				<p style="margin-top:16px">
 					<button type="submit" class="button button-primary" id="pmig-merge-btn">Reassign Content &amp; Trash Duplicate(s)</button>
+					<button type="button" class="button" id="pmig-dismiss-review-btn" style="margin-left:8px;color:#888">Dismiss (No Action Needed)</button>
 					<span class="description" style="margin-left:12px">Content references will be reassigned to the keeper. Checked expert fields will be copied. Duplicate(s) will be trashed.</span>
 				</p>
 			</form>
@@ -1828,6 +1830,29 @@ function person_migration_render_merge_page() {
 			<script>
 			jQuery(function($) {
 				var nonce = <?php echo wp_json_encode($nonce); ?>;
+
+				$("#pmig-dismiss-review-btn").on("click", function() {
+					if (!confirm("Dismiss this group? It will not appear again unless you re-scan.")) return;
+					var $btn = $(this);
+					$btn.prop("disabled", true).text("Dismissing...");
+					$.ajax({
+						url: ajaxurl,
+						method: "POST",
+						data: { action: "person_migration_dismiss_group", nonce: nonce, group_index: $("input[name=group_index]").val() },
+						success: function(response) {
+							if (response.success) {
+								window.location.href = <?php echo wp_json_encode(admin_url('admin.php?page=person-merge-duplicates')); ?>;
+							} else {
+								alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+								$btn.prop("disabled", false).text("Dismiss (No Action Needed)");
+							}
+						},
+						error: function() {
+							alert("AJAX error.");
+							$btn.prop("disabled", false).text("Dismiss (No Action Needed)");
+						}
+					});
+				});
 
 				$("#pmig-merge-form").on("submit", function(e) {
 					e.preventDefault();
@@ -1978,11 +2003,43 @@ function person_migration_render_merge_page() {
 								<td><?php echo esc_html(implode(' / ', $names)); ?></td>
 								<td><?php echo esc_html(implode('; ', $match_reasons)); ?></td>
 								<td><?php echo $group_has_content ? '<strong style="color:#d63638">Yes</strong>' : '<span style="color:#999">No</span>'; ?></td>
-								<td><a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates&group=' . $gi)); ?>" class="button button-small">Review</a></td>
+								<td>
+									<a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates&group=' . $gi)); ?>" class="button button-small">Review</a>
+									<button type="button" class="button button-small pmig-dismiss-btn" data-group="<?php echo esc_attr($gi); ?>" style="color:#888">Dismiss</button>
+								</td>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+
+				<script>
+				jQuery(function($) {
+					var nonce = <?php echo wp_json_encode($nonce); ?>;
+					$(".pmig-dismiss-btn").on("click", function() {
+						var $btn = $(this);
+						var gi = $btn.data("group");
+						if (!confirm("Dismiss this group? It will not appear again unless you re-scan.")) return;
+						$btn.prop("disabled", true).text("Dismissing...");
+						$.ajax({
+							url: ajaxurl,
+							method: "POST",
+							data: { action: "person_migration_dismiss_group", nonce: nonce, group_index: gi },
+							success: function(response) {
+								if (response.success) {
+									$btn.closest("tr").fadeOut(300, function() { $(this).remove(); });
+								} else {
+									alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+									$btn.prop("disabled", false).text("Dismiss");
+								}
+							},
+							error: function() {
+								alert("AJAX error.");
+								$btn.prop("disabled", false).text("Dismiss");
+							}
+						});
+					});
+				});
+				</script>
 			<?php endif; ?>
 		<?php endif; ?>
 	</div>
@@ -2138,4 +2195,27 @@ function person_migration_ajax_merge() {
 		'refs_updated'  => $refs_updated,
 		'log'           => $log,
 	));
+}
+
+function person_migration_ajax_dismiss_group() {
+	person_migration_check_ajax();
+
+	$group_index = intval($_POST['group_index']);
+	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
+
+	if (!isset($duplicate_groups[$group_index])) {
+		wp_send_json_error(array('error_message' => 'Invalid group index.'));
+	}
+
+	// Clear duplicate meta flags on posts in this group
+	foreach ($duplicate_groups[$group_index] as $pid) {
+		delete_post_meta($pid, '_duplicate_group');
+	}
+
+	// Remove the group
+	unset($duplicate_groups[$group_index]);
+	$duplicate_groups = array_values($duplicate_groups);
+	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
+
+	wp_send_json_success();
 }
