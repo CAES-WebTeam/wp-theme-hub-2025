@@ -1521,46 +1521,29 @@ function person_migration_ajax_scan_duplicates() {
 		}
 	}
 
-	// Merge into duplicate groups (sets of post IDs)
-	// Use a union-find approach: group any posts that share email OR name
-	$post_to_group = array();
-	$groups        = array();
-	$group_counter = 0;
+	// Build duplicate groups: each email match and each name match is its
+	// own independent group. No transitive chaining -- sharing an email does
+	// NOT merge you with an unrelated name-match group.
+	$seen_groups     = array(); // track groups we've already added (as sorted key strings)
+	$duplicate_groups = array();
 
-	$indexes = array($by_email, $by_name);
-	foreach ($indexes as $index) {
-		foreach ($index as $key => $post_ids) {
-			if (count($post_ids) < 2) continue;
-
-			// Find if any of these posts already belong to a group
-			$existing_group = null;
-			foreach ($post_ids as $pid) {
-				if (isset($post_to_group[$pid])) {
-					$existing_group = $post_to_group[$pid];
-					break;
-				}
-			}
-
-			if ($existing_group === null) {
-				$existing_group = $group_counter++;
-				$groups[$existing_group] = array();
-			}
-
-			foreach ($post_ids as $pid) {
-				if (!in_array($pid, $groups[$existing_group])) {
-					$groups[$existing_group][] = $pid;
-				}
-				$post_to_group[$pid] = $existing_group;
-			}
+	foreach ($by_email as $email => $post_ids) {
+		if (count($post_ids) < 2) continue;
+		sort($post_ids);
+		$key = implode(',', $post_ids);
+		if (!isset($seen_groups[$key])) {
+			$duplicate_groups[] = $post_ids;
+			$seen_groups[$key] = true;
 		}
 	}
 
-	// Filter to only groups with 2+ posts
-	$duplicate_groups = array();
-	foreach ($groups as $group) {
-		if (count($group) >= 2) {
-			sort($group);
-			$duplicate_groups[] = $group;
+	foreach ($by_name as $name_key => $post_ids) {
+		if (count($post_ids) < 2) continue;
+		sort($post_ids);
+		$key = implode(',', $post_ids);
+		if (!isset($seen_groups[$key])) {
+			$duplicate_groups[] = $post_ids;
+			$seen_groups[$key] = true;
 		}
 	}
 
