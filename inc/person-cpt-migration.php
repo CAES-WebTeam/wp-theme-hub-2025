@@ -1281,7 +1281,7 @@ function person_migration_render_page() {
 
 	// Determine step statuses
 	$step5_done = $person_count > 0 && $map_count > 0;
-	$step6_done = $cm_linked > 0 && $cm_linked >= $cm_total;
+	$step6_done = !empty($checklist['step6']);
 	$step7_done = !empty($checklist['step7']);
 	$step8_done = !empty($checklist['step8']);
 	$step9_done = !empty($checklist['step9']);
@@ -1352,6 +1352,11 @@ function person_migration_render_page() {
 						</div>
 						<div>
 							<input type="button" id="pmig-link-cm-btn" class="button pmig-action-btn" value="Run" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+							<?php if ($step6_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step6" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step6"> Mark done</label>
+							<?php endif; ?>
 						</div>
 					</div>
 				</div>
