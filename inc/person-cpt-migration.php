@@ -618,6 +618,23 @@ function person_migration_ajax_verify_swap() {
 			$found_repeater = true;
 
 			for ($i = 0; $i < $count; $i++) {
+				$entry_type = get_post_meta($pid, $rname . '_' . $i . '_type', true);
+				if (strtolower($entry_type) === 'custom') {
+					$custom_first = get_post_meta($pid, $rname . '_' . $i . '_custom_user_first_name', true);
+					if (empty($custom_first)) {
+						$custom_first = get_post_meta($pid, $rname . '_' . $i . '_custom_first_name', true);
+					}
+					$custom_last = get_post_meta($pid, $rname . '_' . $i . '_custom_user_last_name', true);
+					if (empty($custom_last)) {
+						$custom_last = get_post_meta($pid, $rname . '_' . $i . '_custom_last_name', true);
+					}
+					$custom_name = trim($custom_first . ' ' . $custom_last);
+					if (count($details) < 100) {
+						$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = Custom entry (' . ($custom_name ?: '(no name)') . ')';
+					}
+					continue;
+				}
+
 				$meta_key = $rname . '_' . $i . '_user';
 				$val = get_post_meta($pid, $meta_key, true);
 				if (empty($val) || !is_numeric($val)) continue;
@@ -629,7 +646,7 @@ function person_migration_ajax_verify_swap() {
 				} elseif (get_userdata($val)) {
 					$user_ids_count++;
 					$user = get_userdata($val);
-					$label = 'WP user #' . $val . ' (' . $user->display_name . ')';
+					$label = 'WP user #' . $val . ' (' . $user->display_name . ' -- roles: ' . implode(', ', $user->roles) . ')';
 				} else {
 					$unknown_count++;
 					$label = 'Unknown ID ' . $val;
