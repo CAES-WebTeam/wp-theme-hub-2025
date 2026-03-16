@@ -999,7 +999,7 @@ function person_migration_enqueue_scripts($hook) {
 					timeout: 120000,
 					data: { action: "person_migration_link_content_managers", nonce: nonce },
 					success: function(response) {
-						$("#pmig-link-cm-btn").prop("disabled", false).val("Link Content Managers");
+						$("#pmig-link-cm-btn").prop("disabled", false).val("Run");
 						if (response.success) {
 							var d = response.data;
 							var html = "<div class=\"notice notice-success\" style=\"margin:12px 0\"><p>" + esc(d.linked) + " content managers linked, " + esc(d.skipped) + " skipped, " + esc(d.failed) + " failed.</p>";
@@ -1009,14 +1009,17 @@ function person_migration_enqueue_scripts($hook) {
 								html += "</ul>";
 							}
 							html += "</div>";
-							$("#pmig-current-panel").prepend(html);
+							// Show result right after the link CM step card
+							var $step = $("#pmig-link-cm-btn").closest(".pmig-step");
+							$step.find(".pmig-step-result").remove();
+							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
 						} else {
 							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
 							alert("Error: " + msg);
 						}
 					},
 					error: function() {
-						$("#pmig-link-cm-btn").prop("disabled", false).val("Link Content Managers");
+						$("#pmig-link-cm-btn").prop("disabled", false).val("Run");
 						alert("AJAX error.");
 					}
 				});
@@ -1086,7 +1089,7 @@ function person_migration_enqueue_scripts($hook) {
 					timeout: 120000,
 					data: { action: "person_migration_scan_duplicates", nonce: nonce },
 					success: function(response) {
-						$btn.prop("disabled", false).val("Scan for Duplicates");
+						$btn.prop("disabled", false).val("Scan");
 						if (response.success) {
 							var d = response.data;
 							var html = "<div class=\"notice notice-info\" style=\"margin:12px 0\"><p>Scan complete: <strong>" + esc(String(d.duplicate_groups)) + "</strong> duplicate groups found (" + esc(String(d.posts_flagged)) + " posts flagged).</p>";
@@ -1094,14 +1097,16 @@ function person_migration_enqueue_scripts($hook) {
 								html += "<p><a href=\"" + esc(d.merge_url) + "\" class=\"button button-secondary\">Review &amp; Merge Duplicates</a></p>";
 							}
 							html += "</div>";
-							$("#pmig-current-panel").prepend(html);
+							var $step = $btn.closest(".pmig-step");
+							$step.find(".pmig-step-result").remove();
+							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
 						} else {
 							var msg = (response.data && response.data.error_message) ? response.data.error_message : "Unknown error";
 							alert("Error: " + msg);
 						}
 					},
 					error: function() {
-						$btn.prop("disabled", false).val("Scan for Duplicates");
+						$btn.prop("disabled", false).val("Scan");
 						alert("AJAX error.");
 					}
 				});
