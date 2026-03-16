@@ -98,9 +98,9 @@ Phase 2 steps must be executed in the order listed.
     - Currently calls: `get_field('field_uga_email_custom', 'user_' . $user_id)`, `get_the_author_meta('user_email')`, `get_the_author_meta('display_name')`
     - Change to: use `resolve_person_data()`
 
-20. Update **flat meta save hooks** -- keep `all_author_ids` and `all_expert_ids` working during content edits
-    - Files: `inc/publications-support.php` (`update_flat_author_ids_meta()`, lines 918-970), `inc/news-support.php` (`update_flat_expert_ids_meta()`, lines 126-161)
-    - Must accept both user IDs and post IDs during transition, write post IDs after swap
+20. **Flat meta save hooks** -- no code changes needed
+    - Files: `inc/publications-support.php` (`update_flat_author_ids_meta()`), `inc/news-support.php` (`update_flat_expert_ids_meta()`)
+    - These hooks read raw `$_POST` data and pass through whatever ID is in the repeater's `user` subfield -- they naturally write user IDs before the swap and post IDs after. No dual-ID logic required
 
 21. Update **block variations / archive queries** -- content feeds on person profile pages
     - File: `block-variations/index.php` (lines 209-212, 277-285)
@@ -115,6 +115,8 @@ Phase 2 steps must be executed in the order listed.
     - Change to: look up `caes_hub_person` posts by `college_id` meta and store post IDs
 
 ## Phase 5: URL Structure and Templates
+
+**Critical deployment note:** Steps 24-27 must be deployed together as one unit. The redirect rules (steps 26-27) depend on the lookup map from Phase 2 step 5, which already exists by this point. Do NOT deploy the new rewrite rules (step 24) without the redirect code (steps 26-27) or old URLs will 404.
 
 24. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug is derived from the person's display name (their preferred name) and is purely cosmetic -- the post ID is the stable identifier used for resolution. If WordPress appends `-2` etc. for duplicate names, it does not matter since the slug is never used for lookup.
 25. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`

@@ -89,6 +89,7 @@ function person_migration_get_simple_fields() {
 		'shipping_city',
 		'shipping_state',
 		'shipping_zip',
+		'is_active',
 		// Symplectic group
 		'elements_user_id',
 		'elements_overview',
