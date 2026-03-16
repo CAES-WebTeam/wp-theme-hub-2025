@@ -473,7 +473,7 @@ function person_migration_start_swap_job($dry_run = false) {
 	}
 
 	// Count posts that have repeater fields to swap
-	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_meta_keys = array('authors', 'experts', 'translator', 'artists');
 
 	$total = 0;
@@ -506,7 +506,7 @@ function person_migration_start_swap_job($dry_run = false) {
 
 function person_migration_run_swap_batch(&$state) {
 	$map = person_migration_get_map();
-	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names = array('authors', 'experts', 'translator', 'artists');
 
 	$posts = get_posts(array(
@@ -589,7 +589,7 @@ function person_migration_run_swap_batch(&$state) {
 function person_migration_ajax_verify_swap() {
 	person_migration_check_ajax();
 
-	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names = array('authors', 'experts', 'translator', 'artists');
 	$max_sample = 50;
 
@@ -657,7 +657,7 @@ function person_migration_ajax_verify_swap() {
 function person_migration_ajax_revert_swap() {
 	person_migration_check_ajax();
 
-	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names = array('authors', 'experts', 'translator', 'artists');
 	$sub_field_candidates = array('user', 'author', 'expert');
 
@@ -879,7 +879,7 @@ function person_migration_start_flat_meta_job($dry_run = false, $revert = false)
 		return false;
 	}
 
-	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$post_types = array('post', 'publications', 'shorthand_story');
 	$total = 0;
 	$type_counts = array();
 	foreach ($post_types as $pt) {
@@ -910,7 +910,7 @@ function person_migration_start_flat_meta_job($dry_run = false, $revert = false)
 
 function person_migration_run_flat_meta_batch(&$state, $revert = false) {
 	$map = person_migration_get_map();
-	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$post_types = array('post', 'publications', 'shorthand_story');
 	$flat_fields = array('all_author_ids', 'all_expert_ids');
 
 	$posts = get_posts(array(
@@ -1161,7 +1161,7 @@ function person_migration_enqueue_scripts($hook) {
 					var breakdownStr = "";
 				if (state.type_counts && itemLabel === "posts") {
 					var parts = [];
-					var labels = {"post": "posts", "caes_publication": "pubs", "shorthand_story": "stories"};
+					var labels = {"post": "posts", "publications": "pubs", "shorthand_story": "stories"};
 					for (var pt in state.type_counts) {
 						if (state.type_counts.hasOwnProperty(pt)) {
 							parts.push(esc(state.type_counts[pt]) + " " + (labels[pt] || pt));
@@ -2475,7 +2475,7 @@ function person_migration_render_merge_page() {
 			}
 
 			// Count content references for each post in the group
-			$content_post_types = array('post', 'caes_publication', 'shorthand_story');
+			$content_post_types = array('post', 'publications', 'shorthand_story');
 			$repeater_names     = array('authors', 'experts', 'translator', 'artists');
 			$sub_field_names    = array('user', 'author', 'expert');
 			$flat_fields        = array('all_author_ids', 'all_expert_ids');
@@ -2776,7 +2776,7 @@ function person_migration_render_merge_page() {
 					}
 				}
 
-				$list_content_types  = array('post', 'caes_publication', 'shorthand_story');
+				$list_content_types  = array('post', 'publications', 'shorthand_story');
 				$list_repeater_names = array('authors', 'experts', 'translator', 'artists');
 				$list_sub_fields     = array('user', 'author', 'expert');
 				$list_flat_fields    = array('all_author_ids', 'all_expert_ids');
@@ -2966,7 +2966,7 @@ function person_migration_ajax_merge() {
 	// Sweep content references: update any posts/pubs/stories that reference
 	// donor post IDs OR donor source user IDs to point to the keeper.
 	// Content may still have user IDs if the repeater swap hasn't run yet.
-	$content_post_types = array('post', 'caes_publication', 'shorthand_story');
+	$content_post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
 	$sub_field_names    = array('user', 'author', 'expert');
 	$flat_fields        = array('all_author_ids', 'all_expert_ids');
