@@ -771,6 +771,28 @@ function person_migration_ajax_update_field_types() {
 					$log[] = $rname . ' > user (field ' . $sf->ID . '): changed from ' . $current_type . ' to post_object (caes_hub_person)';
 					$updated++;
 
+					// Also update the sibling 'type' button group label: "User" -> "Person" (display only, stored value stays "User")
+					$type_fields = get_posts(array(
+						'post_type'      => 'acf-field',
+						'post_status'    => 'publish',
+						'post_parent'    => $repeater_post->ID,
+						'name'           => 'type',
+						'posts_per_page' => 1,
+					));
+					if (!empty($type_fields)) {
+						$tf = $type_fields[0];
+						$tf_settings = maybe_unserialize($tf->post_content);
+						if (is_array($tf_settings) && isset($tf_settings['choices']['User'])) {
+							update_post_meta($tf->ID, '_acf_field_settings_backup', $tf->post_content);
+							$tf_settings['choices']['User'] = 'Person';
+							wp_update_post(array(
+								'ID'           => $tf->ID,
+								'post_content' => maybe_serialize($tf_settings),
+							));
+							$log[] = $rname . ' > type (field ' . $tf->ID . '): relabeled "User" to "Person"';
+						}
+					}
+
 				} elseif ($direction === 'to_user') {
 					if ($current_type === 'user') {
 						$log[] = $rname . ' > user (field ' . $sf->ID . '): already user type, skipped';
@@ -796,6 +818,27 @@ function person_migration_ajax_update_field_types() {
 						$log[] = $rname . ' > user (field ' . $sf->ID . '): reverted to user type (no backup found)';
 					}
 					$updated++;
+
+					// Also revert the sibling 'type' button group label
+					$type_fields = get_posts(array(
+						'post_type'      => 'acf-field',
+						'post_status'    => 'publish',
+						'post_parent'    => $repeater_post->ID,
+						'name'           => 'type',
+						'posts_per_page' => 1,
+					));
+					if (!empty($type_fields)) {
+						$tf = $type_fields[0];
+						$tf_backup = get_post_meta($tf->ID, '_acf_field_settings_backup', true);
+						if (!empty($tf_backup)) {
+							wp_update_post(array(
+								'ID'           => $tf->ID,
+								'post_content' => $tf_backup,
+							));
+							delete_post_meta($tf->ID, '_acf_field_settings_backup');
+							$log[] = $rname . ' > type (field ' . $tf->ID . '): restored label from backup';
+						}
+					}
 				}
 			}
 
