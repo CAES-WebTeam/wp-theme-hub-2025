@@ -605,8 +605,10 @@ function person_migration_ajax_verify_swap() {
 	$post_ids_count = 0;
 	$user_ids_count = 0;
 	$unknown_count  = 0;
+	$custom_count   = 0;
 	$sampled        = 0;
 	$details        = array();
+	$flagged        = array(); // user IDs and unknown IDs -- always captured
 
 	foreach ($posts as $pid) {
 		if ($sampled >= $max_sample) break;
@@ -620,18 +622,7 @@ function person_migration_ajax_verify_swap() {
 			for ($i = 0; $i < $count; $i++) {
 				$entry_type = get_post_meta($pid, $rname . '_' . $i . '_type', true);
 				if (strtolower($entry_type) === 'custom') {
-					$custom_first = get_post_meta($pid, $rname . '_' . $i . '_custom_user_first_name', true);
-					if (empty($custom_first)) {
-						$custom_first = get_post_meta($pid, $rname . '_' . $i . '_custom_first_name', true);
-					}
-					$custom_last = get_post_meta($pid, $rname . '_' . $i . '_custom_user_last_name', true);
-					if (empty($custom_last)) {
-						$custom_last = get_post_meta($pid, $rname . '_' . $i . '_custom_last_name', true);
-					}
-					$custom_name = trim($custom_first . ' ' . $custom_last);
-					if (count($details) < 100) {
-						$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = Custom entry (' . ($custom_name ?: '(no name)') . ')';
-					}
+					$custom_count++;
 					continue;
 				}
 
@@ -647,9 +638,11 @@ function person_migration_ajax_verify_swap() {
 					$user_ids_count++;
 					$user = get_userdata($val);
 					$label = 'WP user #' . $val . ' (' . $user->display_name . ' -- roles: ' . implode(', ', $user->roles) . ')';
+					$flagged[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label;
 				} else {
 					$unknown_count++;
 					$label = 'Unknown ID ' . $val;
+					$flagged[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label;
 				}
 
 				if (count($details) < 100) {
@@ -666,6 +659,8 @@ function person_migration_ajax_verify_swap() {
 		'post_ids'    => $post_ids_count,
 		'user_ids'    => $user_ids_count,
 		'unknown_ids' => $unknown_count,
+		'custom'      => $custom_count,
+		'flagged'     => $flagged,
 		'details'     => $details,
 	));
 }
@@ -1313,11 +1308,18 @@ function person_migration_enqueue_scripts($hook) {
 							var d = response.data;
 							var html = "<div class=\"notice notice-info\" style=\"margin:12px 0\">";
 							html += "<p><strong>Swap Verification</strong> (sampled " + esc(d.sampled) + " posts with repeater data)</p>";
-							html += "<p>IDs pointing to person CPT posts: <strong>" + esc(d.post_ids) + "</strong> | IDs pointing to WP users: <strong>" + esc(d.user_ids) + "</strong> | IDs not found: <strong>" + esc(d.unknown_ids) + "</strong></p>";
-							if (d.details && d.details.length) {
-								html += "<div style=\"font-size:12px;max-height:300px;overflow-y:auto;margin-top:8px;border:1px solid #ddd;padding:8px;background:#f9f9f9\">";
-								d.details.forEach(function(line) { html += "<div>" + esc(line) + "</div>"; });
+							html += "<p>CPT posts: <strong>" + esc(d.post_ids) + "</strong> | WP users: <strong style=\"" + (d.user_ids > 0 ? "color:#d63638" : "") + "\">" + esc(d.user_ids) + "</strong> | Not found: <strong style=\"" + (d.unknown_ids > 0 ? "color:#d63638" : "") + "\">" + esc(d.unknown_ids) + "</strong> | Custom entries: <strong>" + esc(d.custom || 0) + "</strong></p>";
+							if (d.flagged && d.flagged.length) {
+								html += "<div style=\"font-size:12px;margin-top:8px;border:2px solid #d63638;padding:8px;background:#fef1f1\">";
+								html += "<strong style=\"color:#d63638\">Flagged -- still pointing to WP users or unknown IDs:</strong>";
+								d.flagged.forEach(function(line) { html += "<div>" + esc(line) + "</div>"; });
 								html += "</div>";
+							}
+							if (d.details && d.details.length) {
+								html += "<details style=\"margin-top:8px\"><summary style=\"cursor:pointer;font-size:12px\">Sample details (" + d.details.length + " entries)</summary>";
+								html += "<div style=\"font-size:12px;max-height:300px;overflow-y:auto;margin-top:4px;border:1px solid #ddd;padding:8px;background:#f9f9f9\">";
+								d.details.forEach(function(line) { html += "<div>" + esc(line) + "</div>"; });
+								html += "</div></details>";
 							}
 							html += "</div>";
 							var $step = $("#pmig-swap-verify-btn").closest(".pmig-step");
