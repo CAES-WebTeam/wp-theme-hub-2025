@@ -1659,10 +1659,20 @@ function person_migration_render_merge_page() {
 			$sub_field_names    = array('user', 'author', 'expert');
 			$flat_fields        = array('all_author_ids', 'all_expert_ids');
 
-			// Track which content posts reference each person post
-			$ref_posts = array(); // pid => array of cp_id
+			// Build a lookup of all IDs (both CPT post IDs and source user IDs)
+			// that map back to each person post, so we can find content references
+			// regardless of whether the repeater swap has run yet
+			$ref_posts = array(); // person pid => array of content cp_ids
+			$id_to_person = array(); // id (user or post) => person pid
 			foreach ($group_post_ids as $pid) {
 				$ref_posts[$pid] = array();
+				$id_to_person[$pid] = $pid; // match on CPT post ID
+				// Also match on source user ID(s) from the lookup map
+				foreach ($map as $uid => $mapped_pid) {
+					if ((int)$mapped_pid === $pid) {
+						$id_to_person[(int)$uid] = $pid;
+					}
+				}
 			}
 
 			$content_posts = get_posts(array(
@@ -1679,8 +1689,8 @@ function person_migration_render_merge_page() {
 					for ($i = 0; $i < $count; $i++) {
 						foreach ($sub_field_names as $sub) {
 							$val = get_post_meta($cp_id, $rn . '_' . $i . '_' . $sub, true);
-							if (!empty($val) && isset($ref_posts[(int)$val])) {
-								$matched_pids[(int)$val] = true;
+							if (!empty($val) && isset($id_to_person[(int)$val])) {
+								$matched_pids[$id_to_person[(int)$val]] = true;
 							}
 						}
 					}
@@ -1693,8 +1703,8 @@ function person_migration_render_merge_page() {
 						$ids = array_filter(array_map('trim', explode(',', $raw)));
 					}
 					foreach ($ids as $id) {
-						if (isset($ref_posts[(int)$id])) {
-							$matched_pids[(int)$id] = true;
+						if (isset($id_to_person[(int)$id])) {
+							$matched_pids[$id_to_person[(int)$id]] = true;
 						}
 					}
 				}
@@ -1911,12 +1921,21 @@ function person_migration_render_merge_page() {
 			<?php else: ?>
 				<p><?php echo count($duplicate_groups); ?> duplicate group(s) found. Click a group to review and merge.</p>
 				<?php
-				// Pre-build a set of all person post IDs that have content references
-				// by scanning content once for the entire list page
-				$all_group_pids = array();
+				// Pre-build a set of all IDs (CPT post IDs + source user IDs) that
+				// map to each person post, so we detect content references regardless
+				// of whether the repeater swap has run
+				$list_map = person_migration_get_map();
+				$all_group_pids = array(); // person pid => has content (bool)
+				$list_id_to_person = array(); // any id (user or post) => person pid
 				foreach ($duplicate_groups as $group) {
 					foreach ($group as $pid) {
 						$all_group_pids[$pid] = false;
+						$list_id_to_person[$pid] = $pid;
+						foreach ($list_map as $uid => $mapped_pid) {
+							if ((int)$mapped_pid === $pid) {
+								$list_id_to_person[(int)$uid] = $pid;
+							}
+						}
 					}
 				}
 
@@ -1938,8 +1957,8 @@ function person_migration_render_merge_page() {
 						for ($li = 0; $li < $lcount; $li++) {
 							foreach ($list_sub_fields as $lsub) {
 								$lval = get_post_meta($lcp_id, $lrn . '_' . $li . '_' . $lsub, true);
-								if (!empty($lval) && isset($all_group_pids[(int)$lval])) {
-									$all_group_pids[(int)$lval] = true;
+								if (!empty($lval) && isset($list_id_to_person[(int)$lval])) {
+									$all_group_pids[$list_id_to_person[(int)$lval]] = true;
 								}
 							}
 						}
@@ -1952,8 +1971,8 @@ function person_migration_render_merge_page() {
 							$lids = array_filter(array_map('trim', explode(',', $lraw)));
 						}
 						foreach ($lids as $lid) {
-							if (isset($all_group_pids[(int)$lid])) {
-								$all_group_pids[(int)$lid] = true;
+							if (isset($list_id_to_person[(int)$lid])) {
+								$all_group_pids[$list_id_to_person[(int)$lid]] = true;
 							}
 						}
 					}
@@ -2108,13 +2127,28 @@ function person_migration_ajax_merge() {
 	update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
 
 	// Sweep content references: update any posts/pubs/stories that reference
-	// donor post IDs in repeater sub-fields or flat meta to point to the keeper
+	// donor post IDs OR donor source user IDs to point to the keeper.
+	// Content may still have user IDs if the repeater swap hasn't run yet.
 	$content_post_types = array('post', 'caes_publication', 'shorthand_story');
 	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
 	$sub_field_names    = array('user', 'author', 'expert');
 	$flat_fields        = array('all_author_ids', 'all_expert_ids');
 	$refs_updated       = 0;
-	$donor_int_ids      = array_map('intval', $donor_ids);
+
+	// Build a set of all IDs that belong to donors (both post IDs and user IDs)
+	$donor_all_ids = array_map('intval', $donor_ids); // donor CPT post IDs
+	foreach ($donor_ids as $donor_pid) {
+		foreach ($map as $uid => $mapped_pid) {
+			if ((int)$mapped_pid === (int)$donor_pid) {
+				$donor_all_ids[] = (int)$uid; // donor source user IDs
+			}
+		}
+	}
+	$donor_all_ids = array_unique($donor_all_ids);
+
+	// Also find the keeper's source user ID so we know what to write
+	// (use keeper post ID since that's the target going forward)
+	$keeper_target = $keep_post;
 
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
@@ -2132,8 +2166,8 @@ function person_migration_ajax_merge() {
 				foreach ($sub_field_names as $sub) {
 					$meta_key = $repeater_name . '_' . $i . '_' . $sub;
 					$val = get_post_meta($cp_id, $meta_key, true);
-					if (!empty($val) && in_array((int)$val, $donor_int_ids)) {
-						update_post_meta($cp_id, $meta_key, $keep_post);
+					if (!empty($val) && in_array((int)$val, $donor_all_ids)) {
+						update_post_meta($cp_id, $meta_key, $keeper_target);
 						$refs_updated++;
 					}
 				}
@@ -2152,8 +2186,8 @@ function person_migration_ajax_merge() {
 			$changed = false;
 			$new_ids = array();
 			foreach ($ids as $id) {
-				if (in_array((int)$id, $donor_int_ids)) {
-					$new_ids[] = (string)$keep_post;
+				if (in_array((int)$id, $donor_all_ids)) {
+					$new_ids[] = (string)$keeper_target;
 					$changed = true;
 				} else {
 					$new_ids[] = $id;
