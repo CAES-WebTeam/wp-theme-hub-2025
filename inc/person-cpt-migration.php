@@ -638,11 +638,18 @@ function person_migration_ajax_verify_swap() {
 					$user_ids_count++;
 					$user = get_userdata($val);
 					$label = 'WP user #' . $val . ' (' . $user->display_name . ' -- roles: ' . implode(', ', $user->roles) . ')';
-					$flagged[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label;
+					$flagged[] = array(
+						'text'     => 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label,
+						'post_id'  => $pid,
+						'user_id'  => $val,
+					);
 				} else {
 					$unknown_count++;
 					$label = 'Unknown ID ' . $val;
-					$flagged[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label;
+					$flagged[] = array(
+						'text'    => 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label,
+						'post_id' => $pid,
+					);
 				}
 
 				if (count($details) < 100) {
@@ -1312,7 +1319,14 @@ function person_migration_enqueue_scripts($hook) {
 							if (d.flagged && d.flagged.length) {
 								html += "<div style=\"font-size:12px;margin-top:8px;border:2px solid #d63638;padding:8px;background:#fef1f1\">";
 								html += "<strong style=\"color:#d63638\">Flagged -- still pointing to WP users or unknown IDs:</strong>";
-								d.flagged.forEach(function(line) { html += "<div>" + esc(line) + "</div>"; });
+								d.flagged.forEach(function(item) {
+									html += "<div>" + esc(item.text);
+									html += " &mdash; <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/post.php?post=" + item.post_id + "&action=edit") + "\" target=\"_blank\">Edit post</a>";
+									if (item.user_id) {
+										html += " | <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/user-edit.php?user_id=" + item.user_id) + "\" target=\"_blank\">Edit user</a>";
+									}
+									html += "</div>";
+								});
 								html += "</div>";
 							}
 							if (d.details && d.details.length) {
