@@ -2212,6 +2212,22 @@ function person_migration_render_merge_page() {
 								<td><?php echo esc_html($role ?: 'Unknown'); ?> <?php echo $source_user_id ? '(User ' . esc_html($source_user_id) . ')' : ''; ?></td>
 							<?php endforeach; ?>
 						</tr>
+						<tr>
+							<td><strong>Active Status</strong></td>
+							<?php foreach ($group_post_ids as $pid):
+								$is_active = get_post_meta($pid, 'is_active', true);
+							?>
+								<td>
+									<?php if ($is_active === '' || $is_active === false): ?>
+										<span style="color:#999">Not set</span>
+									<?php elseif ($is_active): ?>
+										<span style="color:#46b450;font-weight:600">Active</span>
+									<?php else: ?>
+										<span style="color:#dc3232;font-weight:600">Inactive</span>
+									<?php endif; ?>
+								</td>
+							<?php endforeach; ?>
+						</tr>
 						<tr style="vertical-align:top">
 							<td><strong>Content References</strong></td>
 							<?php foreach ($group_post_ids as $pid): ?>
