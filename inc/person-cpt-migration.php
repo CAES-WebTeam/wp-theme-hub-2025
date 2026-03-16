@@ -20,6 +20,7 @@ define('PERSON_MIGRATION_MAX_ERRORS', 500);
 define('PERSON_MIGRATION_STATE_KEY',  'person_cpt_migration_state');
 define('PERSON_MIGRATION_BATCH_HOOK', 'person_cpt_migration_batch');
 define('PERSON_MIGRATION_MAP_KEY',    'person_cpt_migration_user_post_map');
+define('PERSON_MIGRATION_CHECKLIST_KEY', 'person_cpt_migration_checklist');
 
 // ============================================================
 // State management
@@ -750,7 +751,7 @@ function person_migration_add_admin_page() {
 add_action('admin_enqueue_scripts', 'person_migration_enqueue_scripts');
 
 function person_migration_enqueue_scripts($hook) {
-	if ($hook !== 'caes-tools_page_person-cpt-migration') {
+	if ($hook !== 'caes-tools_page_person-cpt-migration' && $hook !== 'caes-tools_page_person-merge-duplicates') {
 		return;
 	}
 
@@ -1147,6 +1148,48 @@ function person_migration_enqueue_scripts($hook) {
 				deleteBatch();
 			});
 
+			// Checklist toggles
+			$(".pmig-checklist-toggle").on("change", function() {
+				var step = $(this).data("step");
+				var checked = $(this).is(":checked") ? 1 : 0;
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_checklist_toggle", nonce: nonce, step: step, checked: checked },
+					success: function(response) {
+						if (response.success) {
+							// Refresh to update prerequisite states
+							location.reload();
+						}
+					}
+				});
+			});
+
+			// Reset everything
+			$("#pmig-reset-all-btn").on("click", function() {
+				if (!confirm("This will clear ALL migration state: checklist progress, lookup map, duplicate groups, and job state. Are you sure?")) return;
+				if (!confirm("This does NOT delete person posts (use the other button for that). It resets the dashboard to a fresh state. Continue?")) return;
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Resetting...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_reset_all", nonce: nonce },
+					success: function(response) {
+						if (response.success) {
+							location.reload();
+						} else {
+							alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+							$btn.prop("disabled", false).val("Reset Everything");
+						}
+					},
+					error: function() {
+						alert("AJAX error.");
+						$btn.prop("disabled", false).val("Reset Everything");
+					}
+				});
+			});
+
 			pollStatus();
 		});
 	');
@@ -1156,25 +1199,88 @@ function person_migration_enqueue_scripts($hook) {
 // Admin page render
 // ============================================================
 
+function person_migration_get_checklist() {
+	$checklist = get_option(PERSON_MIGRATION_CHECKLIST_KEY, array());
+	return is_array($checklist) ? $checklist : array();
+}
+
+function person_migration_get_dashboard_status() {
+	$map       = person_migration_get_map();
+	$map_count = count($map);
+	$eligible  = person_migration_count_eligible_users();
+	$state     = person_migration_get_state();
+	$checklist = person_migration_get_checklist();
+	$dupes     = get_option(PERSON_MIGRATION_DUPES_KEY, array());
+
+	$person_count = 0;
+	$counts = wp_count_posts('caes_hub_person');
+	if ($counts && isset($counts->publish)) {
+		$person_count = (int)$counts->publish;
+	}
+
+	// Detect linked content managers
+	$cm_linked = 0;
+	$cm_total  = 0;
+	$cms = get_users(array('role' => 'content_manager', 'fields' => 'ID', 'number' => -1));
+	$cm_total = count($cms);
+	foreach ($cms as $cm_id) {
+		$personnel_id = get_user_meta($cm_id, 'personnel_id', true);
+		if (empty($personnel_id)) continue;
+		$posts = get_posts(array(
+			'post_type' => 'caes_hub_person', 'post_status' => 'publish',
+			'meta_key' => 'personnel_id', 'meta_value' => $personnel_id,
+			'posts_per_page' => 1, 'fields' => 'ids',
+		));
+		if (!empty($posts)) {
+			$linked = get_post_meta($posts[0], 'linked_wp_user', true);
+			if (!empty($linked) && (int)$linked === (int)$cm_id) $cm_linked++;
+		}
+	}
+
+	return array(
+		'eligible'      => $eligible,
+		'map_count'     => $map_count,
+		'person_count'  => $person_count,
+		'state'         => $state,
+		'checklist'     => $checklist,
+		'dupe_groups'   => count($dupes),
+		'cm_total'      => $cm_total,
+		'cm_linked'     => $cm_linked,
+	);
+}
+
 function person_migration_render_page() {
-	$map          = person_migration_get_map();
-	$map_count    = count($map);
-	$eligible     = person_migration_count_eligible_users();
+	$ds           = person_migration_get_dashboard_status();
+	$map_count    = $ds['map_count'];
+	$eligible     = $ds['eligible'];
+	$person_count = $ds['person_count'];
+	$checklist    = $ds['checklist'];
+	$dupe_groups  = $ds['dupe_groups'];
+	$cm_total     = $ds['cm_total'];
+	$cm_linked    = $ds['cm_linked'];
+
+	// Determine step statuses
+	$step5_done = $person_count > 0 && $map_count > 0;
+	$step6_done = $cm_linked > 0 && $cm_linked >= $cm_total;
+	$step7_done = !empty($checklist['step7']);
+	$step8_done = !empty($checklist['step8']);
+	$step9_done = !empty($checklist['step9']);
+
 	?>
 	<div class="wrap">
-		<h1>Person CPT Migration</h1>
-		<p>Migrates <code>personnel_user</code> and <code>expert_user</code> WordPress users to <code>caes_hub_person</code> CPT posts. Content managers are linked to their existing person posts after migration.</p>
-		<p class="description">
-			Eligible users: <strong><?php echo esc_html($eligible); ?></strong>
-			&ensp;|&ensp;
-			Users already migrated (in lookup map): <strong><?php echo esc_html($map_count); ?></strong>
-		</p>
+		<h1>Person CPT Migration Dashboard</h1>
+		<p>Tracks the full migration of <code>personnel_user</code> and <code>expert_user</code> WordPress users to <code>caes_hub_person</code> CPT posts.</p>
 
 		<div class="pmig-wrapper">
 
+			<!-- Job Status Panel (shared by all async operations) -->
 			<div class="pmig-panel">
 				<h2>Current Job Status</h2>
 				<div id="pmig-current-panel"><p style="color:#999">Loading...</p></div>
+				<div style="margin-top:8px">
+					<input type="button" id="pmig-stop-btn" class="button" value="Stop" style="display:none">
+					<input type="button" id="pmig-resume-btn" class="button button-secondary" value="Resume" style="display:none">
+				</div>
 			</div>
 
 			<div class="pmig-panel" id="pmig-last-completed-section" style="display:none">
@@ -1182,40 +1288,204 @@ function person_migration_render_page() {
 				<div id="pmig-last-completed-panel"></div>
 			</div>
 
+			<!-- ============ PHASE 2: DATA MIGRATION ============ -->
 			<div class="pmig-panel">
-				<h2>Bulk Operations</h2>
-				<div class="pmig-btn-group" style="margin-bottom: 12px;">
-					<label><input type="checkbox" id="pmig-dry-run" checked> Dry Run</label>
+				<h2>Phase 2: Data Migration</h2>
+				<p class="description" style="margin-bottom:16px">Execute these steps in order. Each step is only enabled when its prerequisites are met.</p>
+				<div class="pmig-btn-group" style="margin-bottom:16px">
+					<label><input type="checkbox" id="pmig-dry-run" checked> <strong>Dry Run</strong> (no data written)</label>
 				</div>
-				<div class="pmig-btn-group">
-					<input type="button" id="pmig-migrate-btn" class="button button-primary pmig-action-btn" value="Migrate Users to CPT">
-					<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Swap Repeater IDs">
-					<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Repopulate Flat Meta">
-					<input type="button" id="pmig-revert-btn" class="button pmig-action-btn" value="Revert Flat Meta">
-					<input type="button" id="pmig-link-cm-btn" class="button pmig-action-btn" value="Link Content Managers">
-					<input type="button" id="pmig-scan-dupes-btn" class="button" value="Scan for Duplicates">
-					<input type="button" id="pmig-delete-all-btn" class="button" style="color:#a00" value="Delete All Person Posts">
-					<input type="button" id="pmig-stop-btn" class="button" value="Stop" style="display:none">
-					<input type="button" id="pmig-resume-btn" class="button button-secondary" value="Resume" style="display:none">
+
+				<!-- Step 5: Migrate Users to CPT -->
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step5_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #0073aa;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Migrate Users to CPT</strong>
+							<span class="pmig-status-badge <?php echo $step5_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step5_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Create a <code>caes_hub_person</code> post for every personnel_user and expert_user. Eligible: <strong><?php echo esc_html($eligible); ?></strong> | Migrated: <strong><?php echo esc_html($map_count); ?></strong> | CPT posts: <strong><?php echo esc_html($person_count); ?></strong></p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" id="pmig-migrate-btn" class="button button-primary pmig-action-btn" value="Run">
+						</div>
+					</div>
+					<!-- Single-user testing -->
+					<details style="margin-top:10px">
+						<summary style="cursor:pointer;font-size:12px;color:#0073aa">Single-user test</summary>
+						<form id="pmig-single-form" style="margin-top:8px">
+							<div style="margin-bottom:8px">
+								<input type="number" id="pmig-single-user-id" placeholder="User ID" style="width:120px" min="1">
+								<label style="margin-left:8px"><input type="checkbox" id="pmig-single-dry-run" checked> Dry Run</label>
+								<input type="submit" class="button button-small" value="Migrate Single User">
+							</div>
+						</form>
+						<div id="pmig-single-result"></div>
+					</details>
 				</div>
-				<p class="description" style="margin-top:8px">
-					Runs in the background via WP-Cron batching (<?php echo PERSON_MIGRATION_BATCH_SIZE; ?> per batch).
-					Dry run is enabled by default -- uncheck to write data.
-				</p>
+
+				<!-- Step 6: Link Content Managers -->
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step6_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Link Content Managers</strong>
+							<span class="pmig-status-badge <?php echo $step6_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step6_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Match content manager WP accounts to person posts by personnel_id. CMs: <strong><?php echo esc_html($cm_total); ?></strong> | Linked: <strong><?php echo esc_html($cm_linked); ?></strong></p>
+						</div>
+						<div>
+							<input type="button" id="pmig-link-cm-btn" class="button pmig-action-btn" value="Run" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+						</div>
+					</div>
+				</div>
+
+				<!-- Step 7: Swap Repeater IDs -->
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step7_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Swap Repeater IDs</strong>
+							<span class="pmig-status-badge <?php echo $step7_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step7_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Replace user IDs with CPT post IDs in all repeater fields (authors, experts, translator, artists) across posts, pubs, and shorthand stories.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Run" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+							<?php if ($step7_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Step 8: Review & Merge Duplicates -->
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step8_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Review &amp; Merge Duplicates</strong>
+							<span class="pmig-status-badge <?php echo $step8_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step8_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Scan for duplicate person posts and merge them. Groups found: <strong><?php echo esc_html($dupe_groups); ?></strong></p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" id="pmig-scan-dupes-btn" class="button" value="Scan" <?php echo !$step7_done ? 'disabled' : ''; ?>>
+							<a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates')); ?>" class="button" <?php echo !$step7_done ? 'style="pointer-events:none;opacity:0.5"' : ''; ?>>Review</a>
+							<?php if ($step8_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step8" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step8"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Step 9: Repopulate Flat Meta -->
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step9_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Repopulate Flat Meta</strong>
+							<span class="pmig-status-badge <?php echo $step9_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step9_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Rebuild all_author_ids and all_expert_ids with CPT post IDs. Originals are backed up for revert.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Run" <?php echo !$step8_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-revert-btn" class="button" value="Revert" <?php echo !$step9_done ? 'disabled' : ''; ?>>
+							<?php if ($step9_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step9" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step9"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
 			</div>
 
+			<!-- ============ PHASE 3: UPDATE SYNC INFRASTRUCTURE ============ -->
 			<div class="pmig-panel">
-				<h2>Single-User Migration</h2>
-				<form id="pmig-single-form">
-					<div style="margin-bottom:12px">
-						<label for="pmig-single-user-id" style="font-weight:600;display:block;margin-bottom:4px">WordPress User ID</label>
-						<input type="number" id="pmig-single-user-id" placeholder="e.g. 42" style="width:200px" min="1">
-						<label style="margin-left:12px"><input type="checkbox" id="pmig-single-dry-run" checked> Dry Run</label>
+				<h2>Phase 3: Update Sync Infrastructure</h2>
+				<?php
+				$phase3_steps = array(
+					'step10' => 'Rewrite sync_personnel_users() / sync_personnel_users2() to target CPT posts',
+					'step11' => 'Update CAES Tools admin page for new sync targets',
+					'step12' => 'Rewrite Symplectic import files to target CPT posts (verify year data)',
+					'step13' => 'Retire import_news_experts() and import_news_writers()',
+				);
+				foreach ($phase3_steps as $key => $label): ?>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
+						<label>
+							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
+							<?php echo esc_html($label); ?>
+						</label>
 					</div>
-					<input type="submit" class="button button-secondary" value="Migrate Single User">
-					<p class="description">Runs immediately and reports results inline. Does not affect a running bulk job.</p>
-				</form>
-				<div id="pmig-single-result"></div>
+				<?php endforeach; ?>
+			</div>
+
+			<!-- ============ PHASE 4: UPDATE FRONT-END CODE ============ -->
+			<div class="pmig-panel">
+				<h2>Phase 4: Update Front-End Code</h2>
+				<?php
+				$phase4_steps = array(
+					'step14' => 'Create get_person_post_for_user() helper function',
+					'step15' => 'Update 8 user blocks to read from CPT post meta',
+					'step16' => 'Update pub-details-authors block for CPT posts',
+					'step17' => 'Update update_flat_author_ids_meta() and update_flat_expert_ids_meta()',
+					'step18' => 'Update block-variations/index.php for is_singular(caes_hub_person)',
+				);
+				foreach ($phase4_steps as $key => $label): ?>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
+						<label>
+							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
+							<?php echo esc_html($label); ?>
+						</label>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<!-- ============ PHASE 5: URL STRUCTURE AND TEMPLATES ============ -->
+			<div class="pmig-panel">
+				<h2>Phase 5: URL Structure and Templates</h2>
+				<?php
+				$phase5_steps = array(
+					'step19' => 'Set up /person/{post_id}/{slug}/ rewrite rules and permalink filter',
+					'step20' => 'Create single-caes_hub_person.html template; remove author.html and author-2.html',
+					'step21' => 'Add redirect for old /person/{user_id}/{slug}/ URLs via stored redirect map',
+					'step22' => 'Add 301 redirect from old /author/username/ URLs to new CPT URLs',
+				);
+				foreach ($phase5_steps as $key => $label): ?>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
+						<label>
+							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
+							<?php echo esc_html($label); ?>
+						</label>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<!-- ============ PHASE 6: CLEANUP ============ -->
+			<div class="pmig-panel">
+				<h2>Phase 6: Cleanup</h2>
+				<?php
+				$phase6_steps = array(
+					'step23' => 'Delete old user-targeted ACF field groups',
+					'step24' => 'Remove personnel_user and expert_user role definitions',
+					'step25' => 'Update content_manager_map_meta_cap filter (remove edit_user case, keep unfiltered_html)',
+					'step26' => 'Remove user profile accordion JS',
+					'step27' => 'Bulk-delete old personnel/expert user accounts (optional)',
+				);
+				foreach ($phase6_steps as $key => $label): ?>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
+						<label>
+							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
+							<?php echo esc_html($label); ?>
+						</label>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<!-- ============ RESET ============ -->
+			<div class="pmig-panel" style="border-color:#dc3232">
+				<h2 style="color:#dc3232">Reset</h2>
+				<p class="description">Clears all migration state, the lookup map, duplicate groups, and checklist progress. Pair with a fresh prod-to-staging database copy for a clean restart.</p>
+				<div class="pmig-btn-group" style="margin-top:8px">
+					<input type="button" id="pmig-delete-all-btn" class="button" style="color:#a00" value="Delete All Person Posts">
+					<input type="button" id="pmig-reset-all-btn" class="button" style="color:#a00" value="Reset Everything">
+				</div>
 			</div>
 
 		</div>
@@ -1240,6 +1510,8 @@ add_action('wp_ajax_person_migration_delete_all',            'person_migration_a
 add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');
 add_action('wp_ajax_person_migration_merge',                 'person_migration_ajax_merge');
 add_action('wp_ajax_person_migration_dismiss_group',         'person_migration_ajax_dismiss_group');
+add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_ajax_checklist_toggle');
+add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
@@ -2250,6 +2522,46 @@ function person_migration_ajax_dismiss_group() {
 	unset($duplicate_groups[$group_index]);
 	$duplicate_groups = array_values($duplicate_groups);
 	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
+
+	wp_send_json_success();
+}
+
+function person_migration_ajax_checklist_toggle() {
+	person_migration_check_ajax();
+
+	$step    = sanitize_text_field($_POST['step']);
+	$checked = !empty($_POST['checked']);
+
+	$checklist = person_migration_get_checklist();
+	if ($checked) {
+		$checklist[$step] = time();
+	} else {
+		unset($checklist[$step]);
+	}
+	update_option(PERSON_MIGRATION_CHECKLIST_KEY, $checklist, false);
+
+	wp_send_json_success();
+}
+
+function person_migration_ajax_reset_all() {
+	person_migration_check_ajax();
+
+	delete_option(PERSON_MIGRATION_STATE_KEY);
+	delete_option(PERSON_MIGRATION_MAP_KEY);
+	delete_option(PERSON_MIGRATION_DUPES_KEY);
+	delete_option(PERSON_MIGRATION_CHECKLIST_KEY);
+
+	// Clear duplicate group meta flags
+	$flagged = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'meta_key'       => '_duplicate_group',
+	));
+	foreach ($flagged as $pid) {
+		delete_post_meta($pid, '_duplicate_group');
+	}
 
 	wp_send_json_success();
 }
