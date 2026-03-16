@@ -86,32 +86,19 @@ function get_acf_authors_for_feed($post_id) {
             $custom_first = '';
             $custom_last = '';
             
-            // Check for user selection first
-            if (isset($item['user']) && !empty($item['user'])) {
-                $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-            }
-            
             // Check for custom group with nested first_name and last_name
             if (isset($item['custom']) && is_array($item['custom'])) {
                 $custom_first = $item['custom']['first_name'] ?? '';
                 $custom_last = $item['custom']['last_name'] ?? '';
             }
-            
-            // Fallback: check for numeric values (ACF internal field keys)
-            if (empty($user_id) && empty($custom_first) && empty($custom_last) && is_array($item)) {
-                foreach ($item as $key => $value) {
-                    if (is_numeric($value) && $value > 0) {
-                        $user_id = $value;
-                        break;
-                    }
+
+            // Try resolving as person CPT post or WP user
+            $person_id = resolve_person_id_from_repeater_row($item);
+            if ($person_id) {
+                $person = resolve_person_data($person_id);
+                if ($person) {
+                    $author_names[] = trim($person['first_name'] . ' ' . $person['last_name']);
                 }
-            }
-            
-            // Get author name
-            if ($user_id && is_numeric($user_id)) {
-                $first_name = get_the_author_meta('first_name', $user_id);
-                $last_name = get_the_author_meta('last_name', $user_id);
-                $author_names[] = trim("$first_name $last_name");
             } elseif (!empty($custom_first) || !empty($custom_last)) {
                 $author_names[] = trim("$custom_first $custom_last");
             }

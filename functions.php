@@ -18,6 +18,7 @@ require get_template_directory() . '/inc/acf.php';
 require get_template_directory() . '/inc/caes-tools.php';
 require get_template_directory() . '/inc/publications-support.php';
 require get_template_directory() . '/inc/user-support.php';
+require get_template_directory() . '/inc/person-cpt-helpers.php';
 require get_template_directory() . '/inc/person-cpt-migration.php';
 require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';

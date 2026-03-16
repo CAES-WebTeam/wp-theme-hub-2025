@@ -94,21 +94,18 @@ function caes_add_acf_authors_to_yoast_schema( $data ) {
                     ];
                 }
             } 
-            // Otherwise, handle it as a WordPress User entry.
+            // Otherwise, handle it as a person CPT post or WordPress user.
             else {
-                $user_data = $author_row['user'] ?? null;
-                $user_id = is_array($user_data) ? ($user_data['ID'] ?? null) : $user_data;
-                
-                if ( $user_id && is_numeric($user_id) ) {
-                    $display_name = get_the_author_meta('display_name', $user_id);
-                    $profile_url = get_author_posts_url($user_id);
-
-                    // Build a Person schema object WITH a URL.
-                    $person_schema = [
-                        '@type' => 'Person',
-                        'name'  => $display_name,
-                        'url'   => $profile_url,
-                    ];
+                $person_id = resolve_person_id_from_repeater_row($author_row);
+                if ($person_id) {
+                    $person = resolve_person_data($person_id);
+                    if ($person) {
+                        $person_schema = [
+                            '@type' => 'Person',
+                            'name'  => $person['full_name'],
+                            'url'   => $person['profile_url'],
+                        ];
+                    }
                 }
             }
 

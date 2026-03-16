@@ -201,55 +201,34 @@ function push_custom_data_layer()
                         }
                     }
                 } else {
-                    // Handle WordPress user selection
-                    $user_id = null;
-                    
-                    // First check for 'user' key (standard ACF format)
-                    if (isset($item['user']) && !empty($item['user'])) {
-                        $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-                    }
-                    
-                    // Fallback: check for numeric values in any field (ACF internal field keys)
-                    if (empty($user_id) && is_array($item)) {
-                        foreach ($item as $key => $value) {
-                            if (is_numeric($value) && $value > 0) {
-                                $user_id = $value;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if ($user_id && is_numeric($user_id) && $user_id > 0) {
-                        // Try to get email from ACF field first
-                        $email = get_field('field_uga_email_custom', 'user_' . $user_id);
-                        
-                        // If ACF field is empty, fall back to user email
-                        if (empty($email)) {
-                            $email = get_the_author_meta('user_email', $user_id);
-                        }
-                        
-                        // Extract username (part before @) if email is valid
-                        if ($email && !strpos($email, 'placeholder')) {
-                            $email_parts = explode('@', $email);
-                            if (count($email_parts) === 2) {
-                                $domain = $email_parts[1];
-                                // If domain doesn't contain "spoofed", use the username
-                                if (strpos($domain, 'spoofed') === false) {
-                                    $username = $email_parts[0];
-                                    if (!empty($username)) {
-                                        $usernames[] = $username;
+                    // Handle person CPT post or WordPress user
+                    $person_id = resolve_person_id_from_repeater_row($item);
+                    if ($person_id) {
+                        $person = resolve_person_data($person_id);
+                        if ($person) {
+                            $email = $person['email'];
+
+                            // Extract username (part before @) if email is valid
+                            if ($email && !strpos($email, 'placeholder')) {
+                                $email_parts = explode('@', $email);
+                                if (count($email_parts) === 2) {
+                                    $domain = $email_parts[1];
+                                    if (strpos($domain, 'spoofed') === false) {
+                                        $username = $email_parts[0];
+                                        if (!empty($username)) {
+                                            $usernames[] = $username;
+                                        }
                                     }
                                 }
-                            }
-                        } else {
-                            // Fallback: if no valid email, create identifier from display name
-                            $display_name = get_the_author_meta('display_name', $user_id);
-                            if (!empty($display_name)) {
-                                $identifier = strtolower($display_name);
-                                $identifier = preg_replace('/[^a-z0-9]+/', '-', $identifier);
-                                $identifier = trim($identifier, '-');
-                                if (!empty($identifier)) {
-                                    $usernames[] = $identifier;
+                            } else {
+                                // Fallback: create identifier from display name
+                                if (!empty($person['full_name'])) {
+                                    $identifier = strtolower($person['full_name']);
+                                    $identifier = preg_replace('/[^a-z0-9]+/', '-', $identifier);
+                                    $identifier = trim($identifier, '-');
+                                    if (!empty($identifier)) {
+                                        $usernames[] = $identifier;
+                                    }
                                 }
                             }
                         }

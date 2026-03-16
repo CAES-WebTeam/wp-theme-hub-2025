@@ -841,30 +841,15 @@ function generate_publication_pdf_file($post_id)
         $author_lines = [];
         if ($authors_data) {
             foreach ($authors_data as $item) {
-                $user_id = null;
-                if (isset($item['user']) && !empty($item['user'])) {
-                    $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-                }
-                if (empty($user_id) && is_array($item)) {
-                    foreach ($item as $key => $value) {
-                        if (is_numeric($value) && $value > 0) {
-                            $user_id = $value;
-                            break;
-                        }
-                    }
-                }
-
-                if ($user_id && is_numeric($user_id)) {
-                    $first_name = get_the_author_meta('first_name', $user_id);
-                    $last_name = get_the_author_meta('last_name', $user_id);
-                    $author_title = get_the_author_meta('title', $user_id);
-
-                    if ($first_name || $last_name) {
-                        $full_name = trim("$first_name $last_name");
+                $person_id = resolve_person_id_from_repeater_row($item);
+                if ($person_id) {
+                    $person = resolve_person_data($person_id);
+                    if ($person && (!empty($person['first_name']) || !empty($person['last_name']))) {
+                        $full_name = trim($person['first_name'] . ' ' . $person['last_name']);
                         $author_names[] = $full_name;
                         $author_line = '<strong>' . esc_html($full_name) . '</strong>';
-                        if (!empty($author_title)) {
-                            $author_line .= ', ' . esc_html($author_title);
+                        if (!empty($person['title'])) {
+                            $author_line .= ', ' . esc_html($person['title']);
                         }
                         $author_lines[] = $author_line;
                     }

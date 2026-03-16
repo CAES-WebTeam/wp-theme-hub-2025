@@ -202,12 +202,17 @@ function variations_query_filter($query, $block)
                 $query['order'] = 'DESC';
             }
 
-            // Filter by author if on author archive
+            // Filter by author if on author archive or person CPT page
+            $person_filter_id = null;
             if (is_author()) {
-                $author_id = get_queried_object_id();
+                $person_filter_id = get_queried_object_id();
+            } elseif (is_singular('caes_hub_person')) {
+                $person_filter_id = get_queried_object_id();
+            }
+            if ($person_filter_id) {
                 $meta_query[] = array(
                     'key' => 'all_author_ids',
-                    'value' => 'i:' . $author_id . ';',
+                    'value' => 'i:' . $person_filter_id . ';',
                     'compare' => 'LIKE'
                 );
             }
@@ -266,21 +271,25 @@ function variations_query_filter($query, $block)
                 ];
             }
             
-            // Filter by author (expert OR author) if on author archive
+            // Filter by author (expert OR author) if on author archive or person CPT page
+            $person_filter_id = null;
             if (is_author()) {
-                $author_id = get_queried_object_id();
-
+                $person_filter_id = get_queried_object_id();
+            } elseif (is_singular('caes_hub_person')) {
+                $person_filter_id = get_queried_object_id();
+            }
+            if ($person_filter_id) {
                 // Create an OR condition to check both expert and author fields
                 $meta_query[] = array(
                     'relation' => 'OR',
                     array(
                         'key' => 'all_expert_ids',
-                        'value' => 'i:' . $author_id . ';',
+                        'value' => 'i:' . $person_filter_id . ';',
                         'compare' => 'LIKE'
                     ),
                     array(
                         'key' => 'all_author_ids',
-                        'value' => 'i:' . $author_id . ';',
+                        'value' => 'i:' . $person_filter_id . ';',
                         'compare' => 'LIKE'
                     )
                 );

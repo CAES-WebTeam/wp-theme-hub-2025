@@ -539,6 +539,9 @@ function person_migration_run_swap_batch(&$state) {
 							}
 						} else {
 							update_post_meta($post->ID, $meta_key, $map[$old_val]);
+							if (count($state['errors']) < PERSON_MIGRATION_MAX_ERRORS) {
+								$state['errors'][] = 'Post ' . $post->ID . ': ' . $meta_key . ' changed from user ' . $old_val . ' to post ' . $map[$old_val];
+							}
 						}
 						$swaps_made++;
 					}
@@ -574,6 +577,74 @@ function person_migration_run_swap_batch(&$state) {
 		);
 		update_option(PERSON_MIGRATION_STATE_KEY, $state, false);
 	}
+}
+
+// Verify swap: sample posts and report whether repeater IDs point to CPT posts, users, or nothing
+function person_migration_ajax_verify_swap() {
+	person_migration_check_ajax();
+
+	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	$max_sample = 50;
+
+	// Get posts that actually have repeater data
+	$posts = get_posts(array(
+		'post_type'      => $post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => 200,
+		'orderby'        => 'rand',
+		'fields'         => 'ids',
+	));
+
+	$post_ids_count = 0;
+	$user_ids_count = 0;
+	$unknown_count  = 0;
+	$sampled        = 0;
+	$details        = array();
+
+	foreach ($posts as $pid) {
+		if ($sampled >= $max_sample) break;
+		$found_repeater = false;
+
+		foreach ($repeater_names as $rname) {
+			$count = (int) get_post_meta($pid, $rname, true);
+			if ($count <= 0) continue;
+			$found_repeater = true;
+
+			for ($i = 0; $i < $count; $i++) {
+				$meta_key = $rname . '_' . $i . '_user';
+				$val = get_post_meta($pid, $meta_key, true);
+				if (empty($val) || !is_numeric($val)) continue;
+
+				$val = (int) $val;
+				if (get_post_type($val) === 'caes_hub_person') {
+					$post_ids_count++;
+					$label = 'CPT post #' . $val . ' (' . get_the_title($val) . ')';
+				} elseif (get_userdata($val)) {
+					$user_ids_count++;
+					$user = get_userdata($val);
+					$label = 'WP user #' . $val . ' (' . $user->display_name . ')';
+				} else {
+					$unknown_count++;
+					$label = 'Unknown ID ' . $val;
+				}
+
+				if (count($details) < 100) {
+					$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label;
+				}
+			}
+		}
+
+		if ($found_repeater) $sampled++;
+	}
+
+	wp_send_json_success(array(
+		'sampled'     => $sampled,
+		'post_ids'    => $post_ids_count,
+		'user_ids'    => $user_ids_count,
+		'unknown_ids' => $unknown_count,
+		'details'     => $details,
+	));
 }
 
 // ============================================================
@@ -975,6 +1046,40 @@ function person_migration_enqueue_scripts($hook) {
 				doAction("person_migration_swap", { dry_run: dryRun ? 1 : 0 }, msg);
 			});
 
+			// Verify swap
+			$("#pmig-swap-verify-btn").on("click", function() {
+				$(this).prop("disabled", true).val("Checking...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_verify_swap", nonce: nonce },
+					success: function(response) {
+						$("#pmig-swap-verify-btn").prop("disabled", false).val("Verify");
+						if (response.success) {
+							var d = response.data;
+							var html = "<div class=\"notice notice-info\" style=\"margin:12px 0\">";
+							html += "<p><strong>Swap Verification</strong> (sampled " + esc(d.sampled) + " posts with repeater data)</p>";
+							html += "<p>IDs pointing to person CPT posts: <strong>" + esc(d.post_ids) + "</strong> | IDs pointing to WP users: <strong>" + esc(d.user_ids) + "</strong> | IDs not found: <strong>" + esc(d.unknown_ids) + "</strong></p>";
+							if (d.details && d.details.length) {
+								html += "<div style=\"font-size:12px;max-height:300px;overflow-y:auto;margin-top:8px;border:1px solid #ddd;padding:8px;background:#f9f9f9\">";
+								d.details.forEach(function(line) { html += "<div>" + esc(line) + "</div>"; });
+								html += "</div>";
+							}
+							html += "</div>";
+							var $step = $("#pmig-swap-verify-btn").closest(".pmig-step");
+							$step.find(".pmig-step-result").remove();
+							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
+						} else {
+							alert("Error: " + ((response.data && response.data.error_message) || "Unknown"));
+						}
+					},
+					error: function() {
+						$("#pmig-swap-verify-btn").prop("disabled", false).val("Verify");
+						alert("AJAX error.");
+					}
+				});
+			});
+
 			// Repopulate flat meta
 			$("#pmig-flat-meta-btn").on("click", function() {
 				var dryRun = $("#pmig-dry-run").is(":checked");
@@ -1371,6 +1476,7 @@ function person_migration_render_page() {
 						</div>
 						<div class="pmig-btn-group">
 							<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Run" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-swap-verify-btn" class="button" value="Verify" <?php echo !$step5_done ? 'disabled' : ''; ?>>
 							<?php if ($step7_done): ?>
 								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7" checked> Done</label>
 							<?php else: ?>
@@ -1530,6 +1636,7 @@ add_action('wp_ajax_person_migration_single',            'person_migration_ajax_
 add_action('wp_ajax_person_migration_swap',              'person_migration_ajax_swap');
 add_action('wp_ajax_person_migration_flat_meta',         'person_migration_ajax_flat_meta');
 add_action('wp_ajax_person_migration_revert_flat_meta',  'person_migration_ajax_revert_flat_meta');
+add_action('wp_ajax_person_migration_verify_swap',           'person_migration_ajax_verify_swap');
 add_action('wp_ajax_person_migration_link_content_managers', 'person_migration_ajax_link_content_managers');
 add_action('wp_ajax_person_migration_delete_all',            'person_migration_ajax_delete_all');
 add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');

@@ -147,21 +147,36 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
             $is_lead = !empty($data['lead']) && $data['lead'] == '1';
             $is_co = !empty($data['co']) && $data['co'] == '1';
 
-            $users = get_users([
+            // Try person CPT post first, fall back to WP user
+            $person_id = null;
+            $person_posts = get_posts([
+                'post_type' => 'caes_hub_person',
+                'post_status' => 'publish',
                 'meta_key' => 'college_id',
                 'meta_value' => $cid,
-                'number' => 1
+                'posts_per_page' => 1,
+                'fields' => 'ids',
             ]);
+            if (!empty($person_posts)) {
+                $person_id = $person_posts[0];
+            } else {
+                $users = get_users([
+                    'meta_key' => 'college_id',
+                    'meta_value' => $cid,
+                    'number' => 1
+                ]);
+                if (!empty($users)) {
+                    $person_id = $users[0]->ID;
+                }
+            }
 
-            if (!empty($users)) {
-                $user_id = $users[0]->ID;
-
+            if ($person_id) {
                 if ($is_lead && !$lead_author_user_id) {
-                    $lead_author_user_id = $user_id;
+                    $lead_author_user_id = $person_id;
                 }
 
                 $repeater[] = [
-                    'user' => $user_id,
+                    'user' => $person_id,
                     'lead_author' => $is_lead,
                     'co_author' => $is_co,
                 ];

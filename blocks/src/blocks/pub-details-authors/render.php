@@ -108,32 +108,17 @@ if (!function_exists('process_people')) {
                     $title = sanitize_text_field($custom_user['title'] ?? $custom_user['titile'] ?? '');
                     $profile_url = '';
                 } else {
-                    // Handle WordPress user selection (existing logic)
-                    $user_id = null;
-
-                    // First check for 'user' key (standard ACF format)
-                    if (isset($item['user']) && !empty($item['user'])) {
-                        $user_id = is_array($item['user']) ? ($item['user']['ID'] ?? null) : $item['user'];
-                    }
-
-                    // Fallback: check for numeric values in any field (ACF internal field keys)
-                    if (empty($user_id) && is_array($item)) {
-                        foreach ($item as $key => $value) {
-                            if (is_numeric($value) && $value > 0) {
-                                $user_id = $value;
-                                break;
-                            }
+                    // Handle person CPT post or WordPress user
+                    $person_id = resolve_person_id_from_repeater_row($item);
+                    if ($person_id) {
+                        $person = resolve_person_data($person_id);
+                        if ($person) {
+                            $display_name = $person['full_name'];
+                            $first_name   = $person['first_name'];
+                            $last_name    = $person['last_name'];
+                            $profile_url  = $person['profile_url'];
+                            $title        = $person['title'];
                         }
-                    }
-
-                    if ($user_id && is_numeric($user_id) && $user_id > 0) {
-                        $display_name = get_the_author_meta('display_name', $user_id);
-                        $first_name = get_the_author_meta('first_name', $user_id);
-                        $last_name = get_the_author_meta('last_name', $user_id);
-                        $profile_url = get_author_posts_url($user_id);
-                        $public_title = get_field('public_friendly_title', 'user_' . $user_id);
-                        $regular_title = get_the_author_meta('title', $user_id);
-                        $title = !empty($public_title) ? $public_title : $regular_title;
                     }
                 }
 
