@@ -538,6 +538,8 @@ function person_migration_run_swap_batch(&$state) {
 								$state['errors'][] = '[DRY RUN] Post ' . $post->ID . ': ' . $meta_key . ' would change from user ' . $old_val . ' to post ' . $map[$old_val];
 							}
 						} else {
+							// Back up original user ID before overwriting
+							update_post_meta($post->ID, $meta_key . '_backup', $old_val);
 							update_post_meta($post->ID, $meta_key, $map[$old_val]);
 							if (count($state['errors']) < PERSON_MIGRATION_MAX_ERRORS) {
 								$state['errors'][] = 'Post ' . $post->ID . ': ' . $meta_key . ' changed from user ' . $old_val . ' to post ' . $map[$old_val];
@@ -644,6 +646,179 @@ function person_migration_ajax_verify_swap() {
 		'user_ids'    => $user_ids_count,
 		'unknown_ids' => $unknown_count,
 		'details'     => $details,
+	));
+}
+
+// Revert swap: restore original user IDs from _backup meta keys
+function person_migration_ajax_revert_swap() {
+	person_migration_check_ajax();
+
+	$post_types = array('post', 'caes_publication', 'shorthand_story');
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	$sub_field_candidates = array('user', 'author', 'expert');
+
+	$posts = get_posts(array(
+		'post_type'      => $post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	$restored = 0;
+	$posts_touched = 0;
+
+	foreach ($posts as $pid) {
+		$post_restored = 0;
+		foreach ($repeater_names as $rname) {
+			$count = (int) get_post_meta($pid, $rname, true);
+			if ($count <= 0) continue;
+
+			for ($i = 0; $i < $count; $i++) {
+				foreach ($sub_field_candidates as $sub) {
+					$backup_key = $rname . '_' . $i . '_' . $sub . '_backup';
+					$backup_val = get_post_meta($pid, $backup_key, true);
+					if (!empty($backup_val)) {
+						$meta_key = $rname . '_' . $i . '_' . $sub;
+						update_post_meta($pid, $meta_key, $backup_val);
+						delete_post_meta($pid, $backup_key);
+						$post_restored++;
+					}
+				}
+			}
+		}
+		if ($post_restored > 0) {
+			$restored += $post_restored;
+			$posts_touched++;
+		}
+	}
+
+	wp_send_json_success(array(
+		'restored'      => $restored,
+		'posts_touched' => $posts_touched,
+	));
+}
+
+// ============================================================
+// Step 7b: Update ACF field types (User -> Post Object)
+// ============================================================
+
+/**
+ * Find ACF sub-fields named 'user' inside the authors/experts/translator/artists
+ * repeaters and change their type from 'user' to 'post_object' targeting caes_hub_person.
+ * This makes the admin editor show a person CPT picker instead of a user picker.
+ */
+function person_migration_ajax_update_field_types() {
+	person_migration_check_ajax();
+
+	$direction = isset($_POST['direction']) ? sanitize_text_field($_POST['direction']) : 'to_post_object';
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	$log = array();
+	$updated = 0;
+
+	// ACF stores fields as posts with post_type 'acf-field'.
+	// Sub-fields have their parent field as post_parent.
+	// We need to find repeater fields by name, then find their 'user' sub-fields.
+
+	foreach ($repeater_names as $rname) {
+		// Find the repeater field post(s)
+		$repeaters = get_posts(array(
+			'post_type'      => 'acf-field',
+			'post_status'    => 'publish',
+			'name'           => $rname,
+			'posts_per_page' => -1,
+		));
+
+		foreach ($repeaters as $repeater_post) {
+			// Find sub-fields named 'user' under this repeater
+			$sub_fields = get_posts(array(
+				'post_type'      => 'acf-field',
+				'post_status'    => 'publish',
+				'post_parent'    => $repeater_post->ID,
+				'name'           => 'user',
+				'posts_per_page' => -1,
+			));
+
+			foreach ($sub_fields as $sf) {
+				$settings = maybe_unserialize($sf->post_content);
+				if (!is_array($settings)) {
+					$log[] = 'Warning: could not parse settings for field ' . $sf->ID . ' (' . $rname . ' > user)';
+					continue;
+				}
+
+				$current_type = $settings['type'] ?? '';
+
+				if ($direction === 'to_post_object') {
+					if ($current_type === 'post_object') {
+						$log[] = $rname . ' > user (field ' . $sf->ID . '): already post_object, skipped';
+						continue;
+					}
+					// Back up original settings
+					update_post_meta($sf->ID, '_acf_field_settings_backup', $sf->post_content);
+
+					$settings['type'] = 'post_object';
+					$settings['post_type'] = array('caes_hub_person');
+					$settings['return_format'] = 'id';
+					$settings['multiple'] = 0;
+					$settings['allow_null'] = isset($settings['allow_null']) ? $settings['allow_null'] : 1;
+					// Remove user-specific settings
+					unset($settings['role']);
+
+					wp_update_post(array(
+						'ID'           => $sf->ID,
+						'post_content' => maybe_serialize($settings),
+					));
+
+					$log[] = $rname . ' > user (field ' . $sf->ID . '): changed from ' . $current_type . ' to post_object (caes_hub_person)';
+					$updated++;
+
+				} elseif ($direction === 'to_user') {
+					if ($current_type === 'user') {
+						$log[] = $rname . ' > user (field ' . $sf->ID . '): already user type, skipped';
+						continue;
+					}
+					// Restore from backup if available
+					$backup = get_post_meta($sf->ID, '_acf_field_settings_backup', true);
+					if (!empty($backup)) {
+						wp_update_post(array(
+							'ID'           => $sf->ID,
+							'post_content' => $backup,
+						));
+						delete_post_meta($sf->ID, '_acf_field_settings_backup');
+						$log[] = $rname . ' > user (field ' . $sf->ID . '): restored to user type from backup';
+					} else {
+						$settings['type'] = 'user';
+						$settings['return_format'] = 'array';
+						unset($settings['post_type']);
+						wp_update_post(array(
+							'ID'           => $sf->ID,
+							'post_content' => maybe_serialize($settings),
+						));
+						$log[] = $rname . ' > user (field ' . $sf->ID . '): reverted to user type (no backup found)';
+					}
+					$updated++;
+				}
+			}
+
+			if (empty($sub_fields)) {
+				$log[] = $rname . ' (repeater ' . $repeater_post->ID . '): no "user" sub-field found';
+			}
+		}
+
+		if (empty($repeaters)) {
+			$log[] = $rname . ': no repeater field found in ACF';
+		}
+	}
+
+	// Clear ACF cache so changes take effect immediately
+	if (function_exists('acf_clear_cache')) {
+		acf_clear_cache();
+	}
+	wp_cache_flush();
+
+	wp_send_json_success(array(
+		'direction' => $direction,
+		'updated'   => $updated,
+		'log'       => $log,
 	));
 }
 
@@ -1080,6 +1255,100 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Revert swap
+			$("#pmig-swap-revert-btn").on("click", function() {
+				if (!confirm("This will revert ACF field types back to User AND restore all original user IDs from backup. Continue?")) return;
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Reverting field types...");
+
+				// Step 1: Revert field types first
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_update_field_types", nonce: nonce, direction: "to_user" },
+					success: function(ftResponse) {
+						// Step 2: Revert the swap data
+						$btn.val("Reverting swap data...");
+						$.ajax({
+							url: ajaxurl,
+							method: "POST",
+							data: { action: "person_migration_revert_swap", nonce: nonce },
+							success: function(response) {
+								$btn.prop("disabled", false).val("Revert Swap");
+								if (response.success) {
+									var d = response.data;
+									var ft = ftResponse.success ? ftResponse.data : null;
+									var html = "<div class=\"notice notice-warning\" style=\"margin:12px 0\">";
+									html += "<p><strong>Full revert complete.</strong></p>";
+									if (ft) {
+										html += "<p>ACF field types: " + esc(ft.updated) + " fields reverted to User type.</p>";
+									}
+									html += "<p>Repeater data: restored " + esc(d.restored) + " values across " + esc(d.posts_touched) + " posts.</p>";
+									html += "</div>";
+									var $step = $btn.closest(".pmig-step");
+									$step.find(".pmig-step-result").remove();
+									$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
+								} else {
+									alert("Swap revert error: " + ((response.data && response.data.error_message) || "Unknown"));
+								}
+							},
+							error: function() {
+								$btn.prop("disabled", false).val("Revert Swap");
+								alert("AJAX error reverting swap data.");
+							}
+						});
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Revert Swap");
+						alert("AJAX error reverting field types.");
+					}
+				});
+			});
+
+			// Update ACF field types
+			function doFieldTypeAction(direction, btn, label) {
+				$(btn).prop("disabled", true).val("Working...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_update_field_types", nonce: nonce, direction: direction },
+					success: function(response) {
+						$(btn).prop("disabled", false).val(label);
+						if (response.success) {
+							var d = response.data;
+							var cssClass = direction === "to_post_object" ? "notice-success" : "notice-warning";
+							var html = "<div class=\"notice " + cssClass + "\" style=\"margin:12px 0\">";
+							html += "<p><strong>" + (direction === "to_post_object" ? "Field types updated." : "Field types reverted.") + "</strong> " + esc(d.updated) + " fields changed.</p>";
+							if (d.log && d.log.length) {
+								html += "<div style=\"font-size:12px;max-height:200px;overflow-y:auto;margin-top:8px;border:1px solid #ddd;padding:8px;background:#f9f9f9\">";
+								d.log.forEach(function(line) { html += "<div>" + esc(line) + "</div>"; });
+								html += "</div>";
+							}
+							html += "</div>";
+							var $step = $(btn).closest(".pmig-step");
+							$step.find(".pmig-step-result").remove();
+							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
+						} else {
+							alert("Error: " + ((response.data && response.data.error_message) || "Unknown"));
+						}
+					},
+					error: function() {
+						$(btn).prop("disabled", false).val(label);
+						alert("AJAX error.");
+					}
+				});
+			}
+
+			$("#pmig-field-types-btn").on("click", function() {
+				if (!confirm("Change repeater user sub-fields from User type to Post Object (caes_hub_person)? This affects the admin editor pickers.")) return;
+				doFieldTypeAction("to_post_object", this, "Update to Post Object");
+			});
+
+			$("#pmig-field-types-revert-btn").on("click", function() {
+				if (!confirm("Revert repeater user sub-fields back to User type? This restores the original admin editor pickers.")) return;
+				doFieldTypeAction("to_user", this, "Revert to User");
+			});
+
 			// Repopulate flat meta
 			$("#pmig-flat-meta-btn").on("click", function() {
 				var dryRun = $("#pmig-dry-run").is(":checked");
@@ -1477,10 +1746,32 @@ function person_migration_render_page() {
 						<div class="pmig-btn-group">
 							<input type="button" id="pmig-swap-btn" class="button pmig-action-btn" value="Run" <?php echo !$step5_done ? 'disabled' : ''; ?>>
 							<input type="button" id="pmig-swap-verify-btn" class="button" value="Verify" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-swap-revert-btn" class="button" value="Revert Swap" <?php echo !$step5_done ? 'disabled' : ''; ?> style="color:#b32d2e">
 							<?php if ($step7_done): ?>
 								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7" checked> Done</label>
 							<?php else: ?>
 								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Step 7b: Update ACF Field Types -->
+				<?php $step7b_done = !empty($checklist['step7b']); ?>
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step7b_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Update ACF Field Types</strong>
+							<span class="pmig-status-badge <?php echo $step7b_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step7b_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Change repeater sub-fields from User picker to Person CPT picker. Run immediately after the swap so editors see the correct data.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" id="pmig-field-types-btn" class="button" value="Update to Post Object" <?php echo !$step7_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-field-types-revert-btn" class="button" value="Revert to User" <?php echo !$step7b_done ? 'disabled' : ''; ?> style="color:#b32d2e">
+							<?php if ($step7b_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7b" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7b"> Mark done</label>
 							<?php endif; ?>
 						</div>
 					</div>
@@ -1637,6 +1928,8 @@ add_action('wp_ajax_person_migration_swap',              'person_migration_ajax_
 add_action('wp_ajax_person_migration_flat_meta',         'person_migration_ajax_flat_meta');
 add_action('wp_ajax_person_migration_revert_flat_meta',  'person_migration_ajax_revert_flat_meta');
 add_action('wp_ajax_person_migration_verify_swap',           'person_migration_ajax_verify_swap');
+add_action('wp_ajax_person_migration_revert_swap',           'person_migration_ajax_revert_swap');
+add_action('wp_ajax_person_migration_update_field_types',    'person_migration_ajax_update_field_types');
 add_action('wp_ajax_person_migration_link_content_managers', 'person_migration_ajax_link_content_managers');
 add_action('wp_ajax_person_migration_delete_all',            'person_migration_ajax_delete_all');
 add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');
