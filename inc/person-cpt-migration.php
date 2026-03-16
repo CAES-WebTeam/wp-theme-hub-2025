@@ -2628,14 +2628,88 @@ function person_migration_ajax_merge() {
 			$count = (int) get_post_meta($cp_id, $repeater_name, true);
 			if ($count <= 0) continue;
 
+			$had_donor = false;
+			$has_keeper = false;
+
+			// First pass: swap donor IDs to keeper and track duplicates
 			for ($i = 0; $i < $count; $i++) {
 				foreach ($sub_field_names as $sub) {
 					$meta_key = $repeater_name . '_' . $i . '_' . $sub;
 					$val = get_post_meta($cp_id, $meta_key, true);
-					if (!empty($val) && in_array((int)$val, $donor_all_ids)) {
+					if (empty($val)) continue;
+					if (in_array((int)$val, $donor_all_ids)) {
 						update_post_meta($cp_id, $meta_key, $keeper_target);
 						$refs_updated++;
+						$had_donor = true;
 					}
+					// Check if this row (before or after swap) points to keeper
+					$current = get_post_meta($cp_id, $meta_key, true);
+					if ((int)$current === (int)$keeper_target) {
+						$has_keeper = true;
+					}
+				}
+			}
+
+			// Second pass: if both donor and keeper were present, remove
+			// duplicate rows so the person only appears once
+			if ($had_donor && $has_keeper) {
+				$seen_keeper = false;
+				$rows_to_keep = array();
+				for ($i = 0; $i < $count; $i++) {
+					$row_id = null;
+					foreach ($sub_field_names as $sub) {
+						$meta_key = $repeater_name . '_' . $i . '_' . $sub;
+						$val = get_post_meta($cp_id, $meta_key, true);
+						if (!empty($val) && is_numeric($val)) {
+							$row_id = (int)$val;
+							break;
+						}
+					}
+					if ($row_id === (int)$keeper_target) {
+						if ($seen_keeper) {
+							// Skip this duplicate row
+							$log[] = 'Post #' . $cp_id . ': removed duplicate ' . $repeater_name . ' row [' . $i . '] for keeper #' . $keeper_target;
+							continue;
+						}
+						$seen_keeper = true;
+					}
+					$rows_to_keep[] = $i;
+				}
+
+				// Rewrite the repeater if rows were removed
+				if (count($rows_to_keep) < $count) {
+					// Collect all meta for each kept row
+					$all_row_meta = array();
+					foreach ($rows_to_keep as $old_i) {
+						$row_meta = array();
+						$prefix = $repeater_name . '_' . $old_i . '_';
+						// Get all meta keys for this row
+						$all_meta = get_post_meta($cp_id);
+						foreach ($all_meta as $mk => $mv) {
+							if (strpos($mk, $prefix) === 0) {
+								$suffix = substr($mk, strlen($prefix));
+								$row_meta[$suffix] = $mv[0];
+							}
+						}
+						$all_row_meta[] = $row_meta;
+					}
+
+					// Delete old rows
+					$all_meta = get_post_meta($cp_id);
+					foreach ($all_meta as $mk => $mv) {
+						if (preg_match('/^' . preg_quote($repeater_name, '/') . '_\d+_/', $mk)) {
+							delete_post_meta($cp_id, $mk);
+						}
+					}
+
+					// Write kept rows with new sequential indexes
+					foreach ($all_row_meta as $new_i => $row_meta) {
+						foreach ($row_meta as $suffix => $val) {
+							update_post_meta($cp_id, $repeater_name . '_' . $new_i . '_' . $suffix, $val);
+						}
+					}
+					// Update the repeater count
+					update_post_meta($cp_id, $repeater_name, count($all_row_meta));
 				}
 			}
 		}
