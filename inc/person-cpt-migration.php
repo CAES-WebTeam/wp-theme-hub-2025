@@ -743,23 +743,23 @@ function person_migration_ajax_update_field_types() {
 	// We need to find repeater fields by name, then find their 'user' sub-fields.
 
 	foreach ($repeater_names as $rname) {
-		// Find the repeater field post(s)
-		$repeaters = get_posts(array(
-			'post_type'      => 'acf-field',
-			'post_status'    => 'publish',
-			'name'           => $rname,
-			'posts_per_page' => -1,
+		// Find the repeater field post(s) -- ACF stores the field name in post_excerpt
+		global $wpdb;
+		$repeater_ids = $wpdb->get_col($wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_status = 'publish' AND post_excerpt = %s",
+			$rname
 		));
+		$repeaters = array_map('get_post', $repeater_ids);
+		$repeaters = array_filter($repeaters);
 
 		foreach ($repeaters as $repeater_post) {
 			// Find sub-fields named 'user' under this repeater
-			$sub_fields = get_posts(array(
-				'post_type'      => 'acf-field',
-				'post_status'    => 'publish',
-				'post_parent'    => $repeater_post->ID,
-				'name'           => 'user',
-				'posts_per_page' => -1,
+			$sub_field_ids = $wpdb->get_col($wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_status = 'publish' AND post_parent = %d AND post_excerpt = 'user'",
+				$repeater_post->ID
 			));
+			$sub_fields = array_map('get_post', $sub_field_ids);
+			$sub_fields = array_filter($sub_fields);
 
 			foreach ($sub_fields as $sf) {
 				$settings = maybe_unserialize($sf->post_content);
@@ -795,13 +795,12 @@ function person_migration_ajax_update_field_types() {
 					$updated++;
 
 					// Also update the sibling 'type' button group label: "User" -> "Person" (display only, stored value stays "User")
-					$type_fields = get_posts(array(
-						'post_type'      => 'acf-field',
-						'post_status'    => 'publish',
-						'post_parent'    => $repeater_post->ID,
-						'name'           => 'type',
-						'posts_per_page' => 1,
+					$type_field_ids = $wpdb->get_col($wpdb->prepare(
+						"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_status = 'publish' AND post_parent = %d AND post_excerpt = 'type' LIMIT 1",
+						$repeater_post->ID
 					));
+					$type_fields = array_map('get_post', $type_field_ids);
+					$type_fields = array_filter($type_fields);
 					if (!empty($type_fields)) {
 						$tf = $type_fields[0];
 						$tf_settings = maybe_unserialize($tf->post_content);
@@ -843,13 +842,12 @@ function person_migration_ajax_update_field_types() {
 					$updated++;
 
 					// Also revert the sibling 'type' button group label
-					$type_fields = get_posts(array(
-						'post_type'      => 'acf-field',
-						'post_status'    => 'publish',
-						'post_parent'    => $repeater_post->ID,
-						'name'           => 'type',
-						'posts_per_page' => 1,
+					$type_field_ids = $wpdb->get_col($wpdb->prepare(
+						"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'acf-field' AND post_status = 'publish' AND post_parent = %d AND post_excerpt = 'type' LIMIT 1",
+						$repeater_post->ID
 					));
+					$type_fields = array_map('get_post', $type_field_ids);
+					$type_fields = array_filter($type_fields);
 					if (!empty($type_fields)) {
 						$tf = $type_fields[0];
 						$tf_backup = get_post_meta($tf->ID, '_acf_field_settings_backup', true);
