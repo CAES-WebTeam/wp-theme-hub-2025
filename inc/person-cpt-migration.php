@@ -477,11 +477,14 @@ function person_migration_start_swap_job($dry_run = false) {
 	$repeater_meta_keys = array('authors', 'experts', 'translator', 'artists');
 
 	$total = 0;
+	$type_counts = array();
 	foreach ($post_types as $pt) {
 		$count = wp_count_posts($pt);
-		$total += (isset($count->publish) ? $count->publish : 0)
+		$pt_total = (isset($count->publish) ? $count->publish : 0)
 				+ (isset($count->draft) ? $count->draft : 0)
 				+ (isset($count->private) ? $count->private : 0);
+		$type_counts[$pt] = $pt_total;
+		$total += $pt_total;
 	}
 
 	if ($total === 0) return false;
@@ -493,6 +496,7 @@ function person_migration_start_swap_job($dry_run = false) {
 	$new_state['dry_run']        = $dry_run;
 	$new_state['started_at']     = time();
 	$new_state['total_users']    = $total; // reusing field name for total posts
+	$new_state['type_counts']    = $type_counts;
 	$new_state['last_completed'] = $last_completed;
 	update_option(PERSON_MIGRATION_STATE_KEY, $new_state, false);
 
@@ -877,11 +881,14 @@ function person_migration_start_flat_meta_job($dry_run = false, $revert = false)
 
 	$post_types = array('post', 'caes_publication', 'shorthand_story');
 	$total = 0;
+	$type_counts = array();
 	foreach ($post_types as $pt) {
 		$count = wp_count_posts($pt);
-		$total += (isset($count->publish) ? $count->publish : 0)
+		$pt_total = (isset($count->publish) ? $count->publish : 0)
 				+ (isset($count->draft) ? $count->draft : 0)
 				+ (isset($count->private) ? $count->private : 0);
+		$type_counts[$pt] = $pt_total;
+		$total += $pt_total;
 	}
 
 	if ($total === 0) return false;
@@ -893,6 +900,7 @@ function person_migration_start_flat_meta_job($dry_run = false, $revert = false)
 	$new_state['dry_run']        = $dry_run;
 	$new_state['started_at']     = time();
 	$new_state['total_users']    = $total;
+	$new_state['type_counts']    = $type_counts;
 	$new_state['last_completed'] = $last_completed;
 	update_option(PERSON_MIGRATION_STATE_KEY, $new_state, false);
 
@@ -1150,7 +1158,18 @@ function person_migration_enqueue_scripts($hook) {
 					var itemLabel = (state.mode === "migrate") ? "users" : "posts";
 					html += "<div class=\"pmig-progress-wrap\">";
 					html += "<div class=\"pmig-progress-bar\"><div class=\"pmig-progress-fill\" style=\"width:" + pct + "%\"></div></div>";
-					html += "<div class=\"pmig-progress-label\">" + esc(state.processed_users) + " / " + esc(state.total_users) + " " + itemLabel + " (" + pct + "%)</div>";
+					var breakdownStr = "";
+				if (state.type_counts && itemLabel === "posts") {
+					var parts = [];
+					var labels = {"post": "posts", "caes_publication": "pubs", "shorthand_story": "stories"};
+					for (var pt in state.type_counts) {
+						if (state.type_counts.hasOwnProperty(pt)) {
+							parts.push(esc(state.type_counts[pt]) + " " + (labels[pt] || pt));
+						}
+					}
+					if (parts.length) breakdownStr = " (" + parts.join(", ") + ")";
+				}
+				html += "<div class=\"pmig-progress-label\">" + esc(state.processed_users) + " / " + esc(state.total_users) + " " + itemLabel + breakdownStr + " (" + pct + "%)</div>";
 					html += "</div>";
 					html += renderStats(state.stats, state.mode);
 					html += "<div class=\"pmig-meta\">Started: " + fmtTs(state.started_at);
