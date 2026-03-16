@@ -69,32 +69,71 @@ Phase 2 steps must be executed in the order listed.
 
 ## Phase 4: Update Front-End Code
 
-14. Create a helper function `get_person_post_for_user($user_id)` that maps a content manager's WP user ID to their linked `caes_hub_person` post ID -- use this anywhere the theme needs to resolve `post_author` to a person profile
-15. Update the 8 user blocks (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
-16. Update `pub-details-authors` block to read from `caes_hub_person` posts instead of user data
-17. Update `update_flat_author_ids_meta()` in publications-support.php and `update_flat_expert_ids_meta()` in news-support.php to work with CPT post IDs
-18. Update block-variations/index.php -- replace `is_author()` checks with `is_singular('caes_hub_person')` and adjust meta query logic
+**Critical deployment note:** All template/rendering changes in this phase must be deployed to production **before** the repeater swap (Phase 2, step 7) runs on production. Each updated file must handle both user IDs and CPT post IDs gracefully during the transition -- check if the ID is a `caes_hub_person` post first, fall back to user lookup if not. This way the frontend works correctly both before and after the swap.
+
+14. Create a helper function `resolve_person_data($id)` that accepts either a user ID or a CPT post ID and returns a normalized array of person data (name, title, email, image, permalink, etc.). All files below should use this helper so the user-vs-post branching logic lives in one place.
+
+15. Update **pub-details-authors block** -- the primary rendering of authors/experts/translator/artists on publications and stories
+    - File: `blocks/src/blocks/pub-details-authors/render.php`
+    - Currently calls: `get_the_author_meta()`, `get_author_posts_url()`, `get_field('public_friendly_title', 'user_' . $user_id)`
+    - Change to: use `resolve_person_data()` for all person lookups
+
+16. Update **Yoast SEO schema** -- Person structured data for authors
+    - File: `inc/plugin-overrides/yoast-schema.php` (lines 67-130)
+    - Currently calls: `get_the_author_meta('display_name')`, `get_author_posts_url()`
+    - Change to: use `resolve_person_data()`
+
+17. Update **PDF generation** -- author names/titles in publication PDFs
+    - Files: `inc/publications-pdf/publications-pdf.php` (lines 839-878), `inc/publications-pdf/publications-pdf-mpdf.php` (lines 553-594)
+    - Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`, `get_the_author_meta('title')`, `get_field('public_friendly_title', 'user_' . $user_id)`
+    - Change to: use `resolve_person_data()`
+
+18. Update **RSS feed support** -- author names in feed output
+    - File: `inc/rss-support.php` (lines 79-127)
+    - Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`
+    - Change to: use `resolve_person_data()`
+
+19. Update **analytics data layer** -- author tracking in GA
+    - File: `inc/analytics.php` (lines 173-278)
+    - Currently calls: `get_field('field_uga_email_custom', 'user_' . $user_id)`, `get_the_author_meta('user_email')`, `get_the_author_meta('display_name')`
+    - Change to: use `resolve_person_data()`
+
+20. Update **flat meta save hooks** -- keep `all_author_ids` and `all_expert_ids` working during content edits
+    - Files: `inc/publications-support.php` (`update_flat_author_ids_meta()`, lines 918-970), `inc/news-support.php` (`update_flat_expert_ids_meta()`, lines 126-161)
+    - Must accept both user IDs and post IDs during transition, write post IDs after swap
+
+21. Update **block variations / archive queries** -- content feeds on person profile pages
+    - File: `block-variations/index.php` (lines 209-212, 277-285)
+    - Currently uses `is_author()` and LIKE queries against serialized user IDs in `all_author_ids` / `all_expert_ids`
+    - Change to: support `is_singular('caes_hub_person')` and query by post IDs
+
+22. Update the **8 user blocks** (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
+
+23. Update **publications content import** -- author mapping during pub imports
+    - File: `inc/publications-support.php` (lines 229-241, 152-154)
+    - Currently looks up users by `college_id` and stores `user_id` in repeater rows
+    - Change to: look up `caes_hub_person` posts by `college_id` meta and store post IDs
 
 ## Phase 5: URL Structure and Templates
 
-19. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug is derived from the person's display name (their preferred name) and is purely cosmetic -- the post ID is the stable identifier used for resolution. If WordPress appends `-2` etc. for duplicate names, it does not matter since the slug is never used for lookup.
-20. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`
-21. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
-22. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
+24. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug is derived from the person's display name (their preferred name) and is purely cosmetic -- the post ID is the stable identifier used for resolution. If WordPress appends `-2` etc. for duplicate names, it does not matter since the slug is never used for lookup.
+25. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`
+26. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
+27. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
 
 ## Phase 6: Cleanup
 
-23. Delete the old user-targeted ACF field groups (only after full verification)
-24. Remove `personnel_user` and `expert_user` role definitions
-25. Update `content_manager_map_meta_cap` filter -- remove the `edit_user`/`edit_users` case (no longer needed since personnel/expert data lives in the CPT) but keep the `unfiltered_html` case (still required for multisite)
-26. Remove user profile accordion JS
-27. Optionally bulk-delete the old personnel/expert user accounts
+28. Delete the old user-targeted ACF field groups (only after full verification)
+29. Remove `personnel_user` and `expert_user` role definitions
+30. Update `content_manager_map_meta_cap` filter -- remove the `edit_user`/`edit_users` case (no longer needed since personnel/expert data lives in the CPT) but keep the `unfiltered_html` case (still required for multisite)
+31. Remove user profile accordion JS
+32. Optionally bulk-delete the old personnel/expert user accounts
 
 ---
 
 ## Key Risks
 
-- **Repeater field migration** is the highest-risk step -- thousands of posts with serialized ACF data need user IDs swapped to post IDs
+- **Repeater field migration** is the highest-risk step -- thousands of posts with serialized ACF data need user IDs swapped to post IDs. Phase 4 code (dual user/post ID support) must be deployed before running the swap on production
 - **URL continuity** -- old links in emails, search engines, and external sites need working redirects
 - **Block markup** -- renaming blocks would break saved content, so block names must stay as-is
 - **Static expert/writer data** -- no re-import available, so the migration script is the only chance to get this data right
