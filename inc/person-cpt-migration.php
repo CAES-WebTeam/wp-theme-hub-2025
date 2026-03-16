@@ -1248,17 +1248,13 @@ function person_migration_get_dashboard_status() {
 	$cms = get_users(array('role' => 'content_manager', 'fields' => 'ID', 'number' => -1));
 	$cm_total = count($cms);
 	foreach ($cms as $cm_id) {
-		$personnel_id = get_user_meta($cm_id, 'personnel_id', true);
-		if (empty($personnel_id)) continue;
-		$posts = get_posts(array(
+		// Check if any person post has linked_wp_user set to this CM
+		$linked_posts = get_posts(array(
 			'post_type' => 'caes_hub_person', 'post_status' => 'publish',
-			'meta_key' => 'personnel_id', 'meta_value' => $personnel_id,
+			'meta_key' => 'linked_wp_user', 'meta_value' => $cm_id,
 			'posts_per_page' => 1, 'fields' => 'ids',
 		));
-		if (!empty($posts)) {
-			$linked = get_post_meta($posts[0], 'linked_wp_user', true);
-			if (!empty($linked) && (int)$linked === (int)$cm_id) $cm_linked++;
-		}
+		if (!empty($linked_posts)) $cm_linked++;
 	}
 
 	return array(
