@@ -100,7 +100,6 @@ function person_migration_get_simple_fields() {
 		'area_of_expertise',
 		'is_source',
 		'is_expert',
-		'is_active',
 		// Writer group
 		'writer_id',
 		'tagline',
