@@ -1009,6 +1009,25 @@ function person_migration_enqueue_scripts($hook) {
 								html += "</ul>";
 							}
 							html += "</div>";
+							if (d.needs_manual && d.needs_manual.length) {
+								html += "<div class=\"notice notice-warning\" style=\"margin:12px 0\"><p><strong>Manual linking needed for " + d.needs_manual.length + " content manager(s):</strong></p>";
+								html += "<p style=\"font-size:12px;color:#666\">For each CM below, click the Edit link for the correct person post, find the <code>linked_wp_user</code> field, and select their WP user account from the dropdown.</p>";
+								html += "<table class=\"widefat\" style=\"margin-top:8px\"><thead><tr><th>Content Manager</th><th>Reason</th><th>Candidate Person Posts</th></tr></thead><tbody>";
+								d.needs_manual.forEach(function(m) {
+									html += "<tr><td>" + esc(m.name) + " <span style=\"color:#999\">(user #" + esc(m.user_id) + ")</span></td>";
+									html += "<td style=\"font-size:12px\">" + esc(m.reason) + "</td><td>";
+									if (m.candidates && m.candidates.length) {
+										m.candidates.forEach(function(c, i) {
+											if (i > 0) html += " | ";
+											html += "<a href=\"" + esc(c.edit_url) + "\" target=\"_blank\">" + esc(c.title) + "</a>";
+										});
+									} else {
+										html += "<em>No candidates found</em>";
+									}
+									html += "</td></tr>";
+								});
+								html += "</tbody></table></div>";
+							}
 							// Show result right after the link CM step card
 							var $step = $("#pmig-link-cm-btn").closest(".pmig-step");
 							$step.find(".pmig-step-result").remove();
@@ -1661,54 +1680,116 @@ function person_migration_ajax_link_content_managers() {
 	$failed  = 0;
 	$errors  = array();
 
+	$needs_manual = array(); // CMs that couldn't be auto-linked
+
 	foreach ($content_managers as $cm) {
-		$personnel_id = get_user_meta($cm->ID, 'personnel_id', true);
-		if (empty($personnel_id)) {
-			$errors[] = 'User ' . $cm->ID . ' (' . $cm->display_name . '): no personnel_id, skipped.';
+		// Check if this CM already has a linked person post
+		$already_linked = false;
+		$existing_posts = get_posts(array(
+			'post_type'      => 'caes_hub_person',
+			'post_status'    => 'publish',
+			'meta_key'       => 'linked_wp_user',
+			'meta_value'     => $cm->ID,
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+		));
+		if (!empty($existing_posts)) {
 			$skipped++;
 			continue;
 		}
 
-		// Find the person post by personnel_id
-		$posts = get_posts(array(
-			'post_type'      => 'caes_hub_person',
-			'post_status'    => 'publish',
-			'meta_key'       => 'personnel_id',
-			'meta_value'     => $personnel_id,
-			'posts_per_page' => 1,
-			'fields'         => 'ids',
-		));
+		$post_id = null;
 
-		if (empty($posts)) {
-			$errors[] = 'User ' . $cm->ID . ' (' . $cm->display_name . '): no person post found for personnel_id ' . $personnel_id . '.';
+		// Try matching by personnel_id first
+		$personnel_id = get_user_meta($cm->ID, 'personnel_id', true);
+		if (!empty($personnel_id)) {
+			$posts = get_posts(array(
+				'post_type'      => 'caes_hub_person',
+				'post_status'    => 'publish',
+				'meta_key'       => 'personnel_id',
+				'meta_value'     => $personnel_id,
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+			));
+			if (!empty($posts)) {
+				$post_id = $posts[0];
+			}
+		}
+
+		// Fall back to matching by first_name + last_name
+		if (!$post_id) {
+			$first = $cm->first_name;
+			$last  = $cm->last_name;
+			if (!empty($first) && !empty($last)) {
+				$posts = get_posts(array(
+					'post_type'      => 'caes_hub_person',
+					'post_status'    => 'publish',
+					'posts_per_page' => 5,
+					'fields'         => 'ids',
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array('key' => 'first_name', 'value' => $first, 'compare' => '='),
+						array('key' => 'last_name',  'value' => $last,  'compare' => '='),
+					),
+				));
+				if (count($posts) === 1) {
+					$post_id = $posts[0]; // Exact single match
+				} elseif (count($posts) > 1) {
+					// Multiple matches -- needs manual review
+					$needs_manual[] = array(
+						'user_id'   => $cm->ID,
+						'name'      => $cm->display_name,
+						'reason'    => 'Multiple person posts match this name',
+						'candidates' => array_map(function($pid) {
+							return array('post_id' => $pid, 'title' => get_the_title($pid), 'edit_url' => get_edit_post_link($pid, 'raw'));
+						}, $posts),
+					);
+					$failed++;
+					continue;
+				}
+			}
+		}
+
+		if (!$post_id) {
+			$needs_manual[] = array(
+				'user_id'    => $cm->ID,
+				'name'       => $cm->display_name,
+				'reason'     => 'No person post found (no personnel_id, no name match)',
+				'candidates' => array(),
+			);
 			$failed++;
 			continue;
 		}
 
-		$post_id = $posts[0];
-
-		// Check if already linked
+		// Check if this person post is already linked to a different user
 		$existing = get_post_meta($post_id, 'linked_wp_user', true);
-		if (!empty($existing) && (int)$existing === $cm->ID) {
-			$skipped++;
+		if (!empty($existing) && (int)$existing !== $cm->ID) {
+			$needs_manual[] = array(
+				'user_id'    => $cm->ID,
+				'name'       => $cm->display_name,
+				'reason'     => 'Person post #' . $post_id . ' already linked to user ' . $existing,
+				'candidates' => array(array('post_id' => $post_id, 'title' => get_the_title($post_id), 'edit_url' => get_edit_post_link($post_id, 'raw'))),
+			);
+			$failed++;
 			continue;
 		}
 
 		update_post_meta($post_id, 'linked_wp_user', $cm->ID);
 
-		// Also add to the lookup map
 		$map = person_migration_get_map();
 		$map[$cm->ID] = $post_id;
 		update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
 
 		$linked++;
+		$errors[] = 'Linked user ' . $cm->ID . ' (' . $cm->display_name . ') to person post #' . $post_id;
 	}
 
 	wp_send_json_success(array(
-		'linked'  => $linked,
-		'skipped' => $skipped,
-		'failed'  => $failed,
-		'errors'  => $errors,
+		'linked'       => $linked,
+		'skipped'      => $skipped,
+		'failed'       => $failed,
+		'errors'       => $errors,
+		'needs_manual' => $needs_manual,
 	));
 }
 
