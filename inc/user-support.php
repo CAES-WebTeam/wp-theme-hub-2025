@@ -646,7 +646,10 @@ function content_manager_restrict_settings()
     ];
 
     $current_page = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-    if (in_array($current_page, $blocked_pages, true)) {
+    $allowed_subpages = ['admin-columns'];
+    $current_subpage = isset($_GET['page']) ? $_GET['page'] : '';
+
+    if (in_array($current_page, $blocked_pages, true) && !in_array($current_subpage, $allowed_subpages, true)) {
         wp_die(
             __('Sorry, you are not allowed to access this page.'),
             403
