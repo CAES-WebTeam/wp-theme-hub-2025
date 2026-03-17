@@ -628,7 +628,7 @@ function content_manager_restrict_settings()
         'Admin Columns',
         'Admin Columns',
         'manage_admin_columns',
-        'options-general.php?page=admin-columns',
+        'options-general.php?page=codepress-admin-columns',
         '',
         'dashicons-admin-settings',
         81
@@ -646,7 +646,7 @@ function content_manager_restrict_settings()
     ];
 
     $current_page = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-    $allowed_subpages = ['admin-columns'];
+    $allowed_subpages = ['codepress-admin-columns'];
     $current_subpage = isset($_GET['page']) ? $_GET['page'] : '';
 
     if (in_array($current_page, $blocked_pages, true) && !in_array($current_subpage, $allowed_subpages, true)) {
