@@ -195,10 +195,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   toTopButton.addEventListener('click', function (event) {
     event.preventDefault();
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    const SMOOTH_SCROLL_THRESHOLD = 3000;
+    const LEAD_IN_DISTANCE = 400;
+
+    if (window.scrollY > SMOOTH_SCROLL_THRESHOLD) {
+      window.scrollTo({ top: LEAD_IN_DISTANCE, behavior: 'instant' });
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   });
   /*** END TO TOP BUTTON */
 
