@@ -2028,6 +2028,7 @@ add_action('wp_ajax_person_migration_delete_all',            'person_migration_a
 add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');
 add_action('wp_ajax_person_migration_merge',                 'person_migration_ajax_merge');
 add_action('wp_ajax_person_migration_dismiss_group',         'person_migration_ajax_dismiss_group');
+add_action('wp_ajax_person_migration_replay_decisions',      'person_migration_ajax_replay_decisions');
 add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_ajax_checklist_toggle');
 add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
 
@@ -2344,6 +2345,7 @@ function person_migration_ajax_delete_all() {
 // ============================================================
 
 define('PERSON_MIGRATION_DUPES_KEY', 'person_cpt_duplicate_groups');
+define('PERSON_MIGRATION_MERGE_LOG_KEY', 'person_cpt_merge_decisions');
 
 function person_migration_ajax_scan_duplicates() {
 	person_migration_check_ajax();
@@ -2929,6 +2931,112 @@ function person_migration_render_merge_page() {
 				</script>
 			<?php endif; ?>
 		<?php endif; ?>
+
+		<?php
+		// Decision log section -- always visible
+		$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+		?>
+		<hr style="margin:24px 0">
+		<h2>Decision Log (<?php echo count($merge_log); ?> decisions)</h2>
+		<p class="description">Recorded merge/dismiss decisions. These are stored by source user ID so they can be replayed on production after a fresh migration.</p>
+
+		<?php if (!empty($merge_log)): ?>
+			<table class="widefat striped" style="margin-top:12px">
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Action</th>
+						<th>Details</th>
+						<th>Fields Copied</th>
+						<th>Timestamp</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ($merge_log as $di => $d): ?>
+						<tr>
+							<td><?php echo esc_html($di + 1); ?></td>
+							<td>
+								<?php if ($d['action'] === 'merge'): ?>
+									<strong style="color:#2271b1">Merge</strong>
+								<?php else: ?>
+									<span style="color:#888">Dismiss</span>
+								<?php endif; ?>
+							</td>
+							<td>
+								<?php if ($d['action'] === 'merge'): ?>
+									Keep: <?php echo esc_html($d['keeper_name']); ?> (user #<?php echo esc_html($d['keeper_uid']); ?>)<br>
+									Trash: user(s) #<?php echo esc_html(implode(', #', $d['donor_uids'])); ?>
+								<?php else: ?>
+									<?php echo esc_html($d['group_names']); ?><br>
+									<span style="color:#888">user(s) #<?php echo esc_html(implode(', #', $d['group_uids'])); ?></span>
+								<?php endif; ?>
+							</td>
+							<td><?php echo !empty($d['copy_fields']) ? esc_html(implode(', ', $d['copy_fields'])) : '<span style="color:#999">--</span>'; ?></td>
+							<td><?php echo esc_html($d['timestamp']); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+
+			<p style="margin-top:12px">
+				<button type="button" class="button button-primary" id="pmig-replay-btn">Replay All Decisions</button>
+				<button type="button" class="button" id="pmig-export-log-btn" style="margin-left:8px">Export as JSON</button>
+				<span class="description" style="margin-left:12px">Replay uses source user IDs from the lookup map to find the correct person posts in this environment.</span>
+			</p>
+			<div id="pmig-replay-result"></div>
+
+			<script>
+			jQuery(function($) {
+				var nonce = <?php echo wp_json_encode(wp_create_nonce('person_migration_nonce')); ?>;
+
+				$("#pmig-replay-btn").on("click", function() {
+					if (!confirm("Replay all merge/dismiss decisions from the log? This will merge and trash person posts based on the recorded decisions.")) return;
+					var $btn = $(this);
+					$btn.prop("disabled", true).text("Replaying...");
+					$.ajax({
+						url: ajaxurl,
+						method: "POST",
+						timeout: 300000,
+						data: { action: "person_migration_replay_decisions", nonce: nonce },
+						success: function(response) {
+							$btn.prop("disabled", false).text("Replay All Decisions");
+							if (response.success) {
+								var d = response.data;
+								var html = "<div class='notice notice-success' style='margin:12px 0'><p>Replay complete. " + d.applied + " applied, " + d.skipped + " skipped.</p>";
+								if (d.log && d.log.length) {
+									html += "<ul style='font-size:12px;margin-top:4px'>";
+									d.log.forEach(function(l) { html += "<li>" + $("<span>").text(l).html() + "</li>"; });
+									html += "</ul>";
+								}
+								html += "</div>";
+								$("#pmig-replay-result").html(html);
+							} else {
+								alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+							}
+						},
+						error: function() {
+							$btn.prop("disabled", false).text("Replay All Decisions");
+							alert("AJAX error or timeout.");
+						}
+					});
+				});
+
+				$("#pmig-export-log-btn").on("click", function() {
+					var logData = <?php echo wp_json_encode($merge_log); ?>;
+					var blob = new Blob([JSON.stringify(logData, null, 2)], { type: "application/json" });
+					var url = URL.createObjectURL(blob);
+					var a = document.createElement("a");
+					a.href = url;
+					a.download = "merge-decisions-" + new Date().toISOString().slice(0,10) + ".json";
+					a.click();
+					URL.revokeObjectURL(url);
+				});
+			});
+			</script>
+		<?php else: ?>
+			<p style="color:#999">No decisions recorded yet. Merge or dismiss duplicate groups to build the log.</p>
+		<?php endif; ?>
+
 	</div>
 	<?php
 }
@@ -3164,6 +3272,31 @@ function person_migration_ajax_merge() {
 	$duplicate_groups = array_values($duplicate_groups);
 	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
 
+	// Record decision for production replay (keyed by stable source user IDs)
+	$decision = array(
+		'action'       => 'merge',
+		'timestamp'    => current_time('mysql'),
+		'keeper_name'  => get_the_title($keep_post),
+		'keeper_uid'   => null,
+		'donor_uids'   => array(),
+		'copy_fields'  => $copy_fields,
+	);
+	foreach ($map as $uid => $mapped_pid) {
+		if ((int)$mapped_pid === (int)$keep_post) {
+			$decision['keeper_uid'] = (int)$uid;
+		}
+	}
+	foreach ($donor_ids as $donor_id) {
+		foreach ($map as $uid => $mapped_pid) {
+			if ((int)$mapped_pid === (int)$donor_id) {
+				$decision['donor_uids'][] = (int)$uid;
+			}
+		}
+	}
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	$merge_log[] = $decision;
+	update_option(PERSON_MIGRATION_MERGE_LOG_KEY, $merge_log, false);
+
 	wp_send_json_success(array(
 		'kept'          => $keep_post,
 		'trashed'       => $trashed,
@@ -3183,6 +3316,27 @@ function person_migration_ajax_dismiss_group() {
 		wp_send_json_error(array('error_message' => 'Invalid group index.'));
 	}
 
+	// Record dismiss decision for production replay
+	$map = person_migration_get_map();
+	$group_uids = array();
+	$group_names = array();
+	foreach ($duplicate_groups[$group_index] as $pid) {
+		$group_names[] = get_the_title($pid);
+		foreach ($map as $uid => $mapped_pid) {
+			if ((int)$mapped_pid === (int)$pid) {
+				$group_uids[] = (int)$uid;
+			}
+		}
+	}
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	$merge_log[] = array(
+		'action'      => 'dismiss',
+		'timestamp'   => current_time('mysql'),
+		'group_names' => implode(' / ', $group_names),
+		'group_uids'  => $group_uids,
+	);
+	update_option(PERSON_MIGRATION_MERGE_LOG_KEY, $merge_log, false);
+
 	// Clear duplicate meta flags on posts in this group
 	foreach ($duplicate_groups[$group_index] as $pid) {
 		delete_post_meta($pid, '_duplicate_group');
@@ -3194,6 +3348,234 @@ function person_migration_ajax_dismiss_group() {
 	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
 
 	wp_send_json_success();
+}
+
+function person_migration_ajax_replay_decisions() {
+	person_migration_check_ajax();
+
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	if (empty($merge_log)) {
+		wp_send_json_error(array('error_message' => 'No decisions to replay.'));
+	}
+
+	$map     = person_migration_get_map();
+	$log     = array();
+	$applied = 0;
+	$skipped = 0;
+
+	// Build reverse map: user_id => person post_id
+	// (already what $map is)
+
+	$content_post_types = array('post', 'publications', 'shorthand_story');
+	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
+	$sub_field_names    = array('user', 'author', 'expert');
+	$flat_fields        = array('all_author_ids', 'all_expert_ids');
+	$expert_fields      = person_migration_get_expert_fields();
+
+	foreach ($merge_log as $di => $decision) {
+		$label = '#' . ($di + 1) . ' (' . ($decision['action'] === 'merge' ? $decision['keeper_name'] : $decision['group_names']) . ')';
+
+		if ($decision['action'] === 'dismiss') {
+			// For dismiss, just remove the duplicate group flag if it exists
+			$group_uids = isset($decision['group_uids']) ? $decision['group_uids'] : array();
+			foreach ($group_uids as $uid) {
+				if (isset($map[$uid])) {
+					delete_post_meta((int)$map[$uid], '_duplicate_group');
+				}
+			}
+			$log[] = $label . ': dismissed';
+			$applied++;
+			continue;
+		}
+
+		// Merge decision
+		$keeper_uid = $decision['keeper_uid'];
+		$donor_uids = isset($decision['donor_uids']) ? $decision['donor_uids'] : array();
+
+		if (!$keeper_uid || !isset($map[$keeper_uid])) {
+			$log[] = $label . ': SKIPPED -- keeper user #' . $keeper_uid . ' not in lookup map';
+			$skipped++;
+			continue;
+		}
+
+		$keep_post = (int)$map[$keeper_uid];
+		$donor_posts = array();
+		$missing = false;
+		foreach ($donor_uids as $duid) {
+			if (!isset($map[$duid])) {
+				$log[] = $label . ': SKIPPED -- donor user #' . $duid . ' not in lookup map';
+				$missing = true;
+				break;
+			}
+			$donor_posts[] = (int)$map[$duid];
+		}
+		if ($missing) { $skipped++; continue; }
+
+		// Verify keeper and donors exist
+		if (get_post_status($keep_post) === false) {
+			$log[] = $label . ': SKIPPED -- keeper post #' . $keep_post . ' does not exist';
+			$skipped++;
+			continue;
+		}
+
+		// Copy expert/writer fields if specified
+		$copy_fields = isset($decision['copy_fields']) ? $decision['copy_fields'] : array();
+		foreach ($copy_fields as $field_name) {
+			if (!in_array($field_name, $expert_fields)) continue;
+			foreach ($donor_posts as $donor_pid) {
+				$donor_val = get_post_meta($donor_pid, $field_name, true);
+				if (!empty($donor_val)) {
+					update_post_meta($keep_post, $field_name, $donor_val);
+					$ref = get_post_meta($donor_pid, '_' . $field_name, true);
+					if ($ref !== '' && $ref !== false) {
+						update_post_meta($keep_post, '_' . $field_name, $ref);
+					}
+					break;
+				}
+			}
+		}
+
+		// Update lookup map: point donor user IDs to keeper post
+		foreach ($donor_uids as $duid) {
+			$map[$duid] = $keep_post;
+		}
+
+		// Build set of all donor IDs (CPT post IDs + user IDs)
+		$donor_all_ids = array_map('intval', $donor_posts);
+		foreach ($donor_uids as $duid) {
+			$donor_all_ids[] = (int)$duid;
+		}
+		$donor_all_ids = array_unique($donor_all_ids);
+
+		// Sweep content references
+		$refs_updated = 0;
+		$content_posts_list = get_posts(array(
+			'post_type'      => $content_post_types,
+			'post_status'    => array('publish', 'draft', 'private'),
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+		));
+
+		foreach ($content_posts_list as $cp_id) {
+			foreach ($repeater_names as $rn) {
+				$count = (int) get_post_meta($cp_id, $rn, true);
+				if ($count <= 0) continue;
+
+				$had_donor = false;
+				$has_keeper = false;
+
+				for ($i = 0; $i < $count; $i++) {
+					foreach ($sub_field_names as $sub) {
+						$mk = $rn . '_' . $i . '_' . $sub;
+						$val = get_post_meta($cp_id, $mk, true);
+						if (empty($val)) continue;
+						if (in_array((int)$val, $donor_all_ids)) {
+							update_post_meta($cp_id, $mk, $keep_post);
+							$refs_updated++;
+							$had_donor = true;
+						}
+						$current = get_post_meta($cp_id, $mk, true);
+						if ((int)$current === $keep_post) {
+							$has_keeper = true;
+						}
+					}
+				}
+
+				// Dedup if both donor and keeper were present
+				if ($had_donor && $has_keeper) {
+					$seen_keeper = false;
+					$rows_to_keep = array();
+					for ($i = 0; $i < $count; $i++) {
+						$row_id = null;
+						foreach ($sub_field_names as $sub) {
+							$mk = $rn . '_' . $i . '_' . $sub;
+							$val = get_post_meta($cp_id, $mk, true);
+							if (!empty($val) && is_numeric($val)) { $row_id = (int)$val; break; }
+						}
+						if ($row_id === $keep_post) {
+							if ($seen_keeper) continue;
+							$seen_keeper = true;
+						}
+						$rows_to_keep[] = $i;
+					}
+
+					if (count($rows_to_keep) < $count) {
+						$all_row_meta = array();
+						foreach ($rows_to_keep as $old_i) {
+							$row_meta = array();
+							$prefix = $rn . '_' . $old_i . '_';
+							$all_meta = get_post_meta($cp_id);
+							foreach ($all_meta as $mk => $mv) {
+								if (strpos($mk, $prefix) === 0) {
+									$row_meta[substr($mk, strlen($prefix))] = $mv[0];
+								}
+							}
+							$all_row_meta[] = $row_meta;
+						}
+						$all_meta = get_post_meta($cp_id);
+						foreach ($all_meta as $mk => $mv) {
+							if (preg_match('/^' . preg_quote($rn, '/') . '_\d+_/', $mk)) {
+								delete_post_meta($cp_id, $mk);
+							}
+						}
+						foreach ($all_row_meta as $new_i => $row_meta) {
+							foreach ($row_meta as $suffix => $val) {
+								update_post_meta($cp_id, $rn . '_' . $new_i . '_' . $suffix, $val);
+							}
+						}
+						update_post_meta($cp_id, $rn, count($all_row_meta));
+					}
+				}
+			}
+
+			foreach ($flat_fields as $ff) {
+				$raw = get_post_meta($cp_id, $ff, true);
+				if (empty($raw)) continue;
+				$ids = maybe_unserialize($raw);
+				if (!is_array($ids)) {
+					$ids = array_filter(array_map('trim', explode(',', $raw)));
+				}
+				$changed = false;
+				$new_ids = array();
+				foreach ($ids as $id) {
+					if (in_array((int)$id, $donor_all_ids)) {
+						$new_ids[] = (string)$keep_post;
+						$changed = true;
+					} else {
+						$new_ids[] = $id;
+					}
+				}
+				if ($changed) {
+					update_post_meta($cp_id, $ff, implode(',', array_unique($new_ids)));
+					$refs_updated++;
+				}
+			}
+		}
+
+		// Trash donor posts
+		foreach ($donor_posts as $dp) {
+			if (get_post_status($dp) !== false && get_post_status($dp) !== 'trash') {
+				wp_trash_post($dp);
+			}
+			delete_post_meta($dp, '_duplicate_group');
+		}
+		delete_post_meta($keep_post, '_duplicate_group');
+
+		$log[] = $label . ': merged -- kept post #' . $keep_post . ', refs updated: ' . $refs_updated;
+		$applied++;
+	}
+
+	// Save updated lookup map
+	update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
+
+	// Clear duplicate groups since replay handled them
+	update_option(PERSON_MIGRATION_DUPES_KEY, array(), false);
+
+	wp_send_json_success(array(
+		'applied' => $applied,
+		'skipped' => $skipped,
+		'log'     => $log,
+	));
 }
 
 function person_migration_ajax_checklist_toggle() {
