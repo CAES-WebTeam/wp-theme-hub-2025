@@ -466,6 +466,7 @@ add_action('init', 'add_expert_user_role');
  *  - wpseo_manage_options       : access Yoast SEO settings pages
  *  - wpseo_edit_advanced_metadata : edit advanced Yoast meta on posts
  *  - wpseo_bulk_edit            : use Yoast bulk editor
+ *  - manage_admin_columns       : access Admin Columns Pro settings and edit columns
  *
  * manage_options is required for Kinsta Cache (and some other plugin settings
  * pages). Because it also unlocks the Settings menu, a separate function
@@ -481,7 +482,7 @@ add_action('init', 'add_expert_user_role');
  */
 function add_content_manager_role()
 {
-    $role_version = 3;
+    $role_version = 4;
 
     if (get_option('content_manager_role_version') == $role_version) {
         return;
@@ -511,6 +512,9 @@ function add_content_manager_role()
     $caps['wpseo_manage_options']        = true;
     $caps['wpseo_edit_advanced_metadata'] = true;
     $caps['wpseo_bulk_edit']             = true;
+
+    // Admin Columns Pro settings and inline "edit columns" button
+    $caps['manage_admin_columns'] = true;
 
     add_role('content_manager', 'Content Manager', $caps);
     update_option('content_manager_role_version', $role_version);
@@ -618,6 +622,17 @@ function content_manager_restrict_settings()
     // Remove menus from the sidebar.
     remove_menu_page('options-general.php');
     remove_menu_page('caes-tools');
+
+    // Re-add Admin Columns Pro as a top-level menu since Settings was removed.
+    add_menu_page(
+        'Admin Columns',
+        'Admin Columns',
+        'manage_admin_columns',
+        'options-general.php?page=admin-columns',
+        '',
+        'dashicons-admin-settings',
+        81
+    );
 
     // Block direct access to restricted pages.
     $blocked_pages = [
