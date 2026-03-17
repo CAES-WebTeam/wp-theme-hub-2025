@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.3.27 | 2026-03-17 | Grant Content Manager role access to Admin Columns Pro settings and edit columns | Ashley |
 | 1.3.26 | 2026-03-12 | Fix PDF rendering boxes by sanitizing Unicode chars and enabling font substitution fallback | Ashley |
 | 1.3.25 | 2026-03-11 | Fix "headers already sent" warnings in events REST API CORS handler  | Ashley |
 | 1.3.2 | 2026-03-06 | Motion Scroll block and Grid pattern added  | Ashley |
