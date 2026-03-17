@@ -2997,8 +2997,26 @@ function person_migration_render_merge_page() {
 							</td>
 							<td>
 								<?php if ($d['action'] === 'merge'): ?>
-									Keep: <?php echo esc_html($d['keeper_name']); ?> (user #<?php echo esc_html($d['keeper_uid']); ?>)<br>
-									Trash: user(s) #<?php echo esc_html(implode(', #', $d['donor_uids'])); ?>
+									<strong>Keep:</strong> <?php echo esc_html($d['keeper_name']); ?> (user #<?php echo esc_html($d['keeper_uid']); ?>)<br>
+									<?php if (!empty($d['trashed'])): ?>
+										<strong>Trashed:</strong>
+										<?php foreach ($d['trashed'] as $td_item): ?>
+											<br>&nbsp;&nbsp;<?php echo esc_html($td_item['name']); ?> (user #<?php echo esc_html($td_item['uid']); ?>)
+											<?php if ($td_item['refs_reassigned'] > 0): ?>
+												<span style="color:#2271b1">&mdash; <?php echo esc_html($td_item['refs_reassigned']); ?> refs reassigned</span>
+											<?php else: ?>
+												<span style="color:#999">&mdash; no content refs</span>
+											<?php endif; ?>
+										<?php endforeach; ?>
+									<?php elseif (!empty($d['donor_uids'])): ?>
+										<strong>Trashed:</strong> user(s) #<?php echo esc_html(implode(', #', $d['donor_uids'])); ?>
+									<?php endif; ?>
+									<?php if (!empty($d['untouched'])): ?>
+										<br><strong>Untouched:</strong>
+										<?php foreach ($d['untouched'] as $ut_item): ?>
+											<br>&nbsp;&nbsp;<?php echo esc_html($ut_item['name']); ?> (user #<?php echo esc_html($ut_item['uid']); ?>) <span style="color:#999">&mdash; left as-is</span>
+										<?php endforeach; ?>
+									<?php endif; ?>
 								<?php else: ?>
 									<?php echo esc_html($d['group_names']); ?><br>
 									<span style="color:#888">user(s) #<?php echo esc_html(implode(', #', $d['group_uids'])); ?></span>
@@ -3312,26 +3330,61 @@ function person_migration_ajax_merge() {
 	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
 
 	// Record decision for production replay (keyed by stable source user IDs)
+	// Build detailed donor info including names and whether they had content
+	$donor_details = array();
+	foreach ($donor_ids as $donor_id) {
+		$donor_uid = null;
+		foreach ($map as $uid => $mapped_pid) {
+			if ((int)$mapped_pid === (int)$donor_id) {
+				$donor_uid = (int)$uid;
+				break;
+			}
+		}
+		$donor_details[] = array(
+			'uid'            => $donor_uid,
+			'name'           => get_the_title($donor_id),
+			'post_id'        => $donor_id,
+			'refs_reassigned' => $refs_updated,
+			'fields_copied'  => $fields_copied,
+		);
+	}
+
+	// Also note group members that were NOT trashed (kept untouched)
+	$untouched = array_diff($group, array($keep_post), $donor_ids);
+	$untouched_details = array();
+	foreach ($untouched as $ut_pid) {
+		$ut_uid = null;
+		foreach ($map as $uid => $mapped_pid) {
+			if ((int)$mapped_pid === (int)$ut_pid) {
+				$ut_uid = (int)$uid;
+				break;
+			}
+		}
+		$untouched_details[] = array(
+			'uid'  => $ut_uid,
+			'name' => get_the_title($ut_pid),
+		);
+	}
+
+	$keeper_uid = null;
+	foreach ($map as $uid => $mapped_pid) {
+		if ((int)$mapped_pid === (int)$keep_post) {
+			$keeper_uid = (int)$uid;
+			break;
+		}
+	}
+
 	$decision = array(
 		'action'       => 'merge',
 		'timestamp'    => current_time('mysql'),
 		'keeper_name'  => get_the_title($keep_post),
-		'keeper_uid'   => null,
-		'donor_uids'   => array(),
+		'keeper_uid'   => $keeper_uid,
+		'trashed'      => $donor_details,
+		'untouched'    => $untouched_details,
 		'copy_fields'  => $copy_fields,
+		// Legacy flat list for replay compatibility
+		'donor_uids'   => array_filter(array_column($donor_details, 'uid')),
 	);
-	foreach ($map as $uid => $mapped_pid) {
-		if ((int)$mapped_pid === (int)$keep_post) {
-			$decision['keeper_uid'] = (int)$uid;
-		}
-	}
-	foreach ($donor_ids as $donor_id) {
-		foreach ($map as $uid => $mapped_pid) {
-			if ((int)$mapped_pid === (int)$donor_id) {
-				$decision['donor_uids'][] = (int)$uid;
-			}
-		}
-	}
 	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
 	$merge_log[] = $decision;
 	update_option(PERSON_MIGRATION_MERGE_LOG_KEY, $merge_log, false);
