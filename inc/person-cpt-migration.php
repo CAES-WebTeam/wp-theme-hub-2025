@@ -2580,7 +2580,8 @@ function person_migration_render_merge_page() {
 								<th>
 									Post #<?php echo esc_html($pid); ?>
 									<br><small><?php echo esc_html(get_the_title($pid)); ?></small>
-									<br><label><input type="radio" name="keep_post" value="<?php echo esc_attr($pid); ?>" <?php checked($pid, $default_keep); ?>> Keep this one</label>
+									<br><label><input type="radio" name="keep_post" value="<?php echo esc_attr($pid); ?>" <?php checked($pid, $default_keep); ?>> Keep (merge target)</label>
+									<br><label><input type="checkbox" name="trash_posts[]" value="<?php echo esc_attr($pid); ?>" <?php echo ($pid !== $default_keep) ? 'checked' : ''; ?>> Trash this one</label>
 									<br><a href="<?php echo esc_url(get_edit_post_link($pid)); ?>" target="_blank">Edit</a>
 								</th>
 							<?php endforeach; ?>
@@ -2698,11 +2699,18 @@ function person_migration_render_merge_page() {
 				</table>
 
 				<input type="hidden" name="group_index" value="<?php echo esc_attr($viewing_group); ?>">
-				<p style="margin-top:16px">
-					<button type="submit" class="button button-primary" id="pmig-merge-btn">Reassign Content &amp; Trash Duplicate(s)</button>
-					<button type="button" class="button" id="pmig-dismiss-review-btn" style="margin-left:8px;color:#888">Dismiss (No Action Needed)</button>
-					<span class="description" style="margin-left:12px">Content references will be reassigned to the keeper. Checked expert fields will be copied. Duplicate(s) will be trashed.</span>
-				</p>
+
+				<div style="margin-top:20px;padding:16px;background:#f0f6fc;border:1px solid #c3d9ed;border-radius:4px">
+					<h3 style="margin:0 0 8px">Merge</h3>
+					<p class="description" style="margin:0 0 12px">Content references from checked "Trash" posts will be reassigned to the "Keep" post. Checked expert/writer fields above will be copied to the keeper. Only posts with "Trash" checked will be trashed.</p>
+					<button type="submit" class="button button-primary" id="pmig-merge-btn">Reassign Content &amp; Trash Selected</button>
+				</div>
+
+				<div style="margin-top:16px;padding:16px;background:#f7f7f7;border:1px solid #ddd;border-radius:4px">
+					<h3 style="margin:0 0 8px">Dismiss</h3>
+					<p class="description" style="margin:0 0 12px">These are not actually duplicates. Remove this group from the review list without making any changes. The decision is recorded in the log for production replay.</p>
+					<button type="button" class="button" id="pmig-dismiss-review-btn">Dismiss -- Not Duplicates</button>
+				</div>
 			</form>
 
 			<div id="pmig-merge-result"></div>
@@ -2711,8 +2719,25 @@ function person_migration_render_merge_page() {
 			jQuery(function($) {
 				var nonce = <?php echo wp_json_encode($nonce); ?>;
 
+				// Auto-toggle trash checkboxes when keep radio changes
+				$("input[name=keep_post]").on("change", function() {
+					var keepVal = $(this).val();
+					$("input[name='trash_posts[]']").each(function() {
+						$(this).prop("checked", $(this).val() !== keepVal);
+					});
+				});
+
+				// Prevent checking trash on the keep target
+				$("input[name='trash_posts[]']").on("change", function() {
+					var keepVal = $("input[name=keep_post]:checked").val();
+					if ($(this).val() === keepVal && $(this).is(":checked")) {
+						alert("You cannot trash the post you are keeping. Change the keep selection first.");
+						$(this).prop("checked", false);
+					}
+				});
+
 				$("#pmig-dismiss-review-btn").on("click", function() {
-					if (!confirm("Dismiss this group? It will not appear again unless you re-scan.")) return;
+					if (!confirm("Dismiss this group? These are not duplicates. It will not appear again unless you re-scan.")) return;
 					var $btn = $(this);
 					$btn.prop("disabled", true).text("Dismissing...");
 					$.ajax({
@@ -2724,12 +2749,12 @@ function person_migration_render_merge_page() {
 								window.location.href = <?php echo wp_json_encode(admin_url('admin.php?page=person-merge-duplicates')); ?>;
 							} else {
 								alert("Error: " + (response.data && response.data.error_message || "Unknown"));
-								$btn.prop("disabled", false).text("Dismiss (No Action Needed)");
+								$btn.prop("disabled", false).text("Dismiss -- Not Duplicates");
 							}
 						},
 						error: function() {
 							alert("AJAX error.");
-							$btn.prop("disabled", false).text("Dismiss (No Action Needed)");
+							$btn.prop("disabled", false).text("Dismiss -- Not Duplicates");
 						}
 					});
 				});
@@ -2740,12 +2765,19 @@ function person_migration_render_merge_page() {
 					var groupIndex = $("input[name=group_index]").val();
 					if (!keepPost) { alert("Select which post to keep."); return; }
 
+					var trashPosts = [];
+					$("input[name='trash_posts[]']:checked").each(function() {
+						trashPosts.push($(this).val());
+					});
+					if (trashPosts.length === 0) { alert("Check at least one post to trash, or use Dismiss if no action is needed."); return; }
+					if (trashPosts.indexOf(keepPost) !== -1) { alert("Cannot trash the post you are keeping."); return; }
+
 					var copyFields = [];
 					$("input[name='copy_fields[]']:checked").each(function() {
 						copyFields.push($(this).val());
 					});
 
-					if (!confirm("Reassign all content references to post #" + keepPost + " and trash the duplicate(s)?")) return;
+					if (!confirm("Reassign content from " + trashPosts.length + " post(s) to post #" + keepPost + " and trash them?")) return;
 
 					$("#pmig-merge-btn").prop("disabled", true).text("Processing...");
 					$.ajax({
@@ -2757,10 +2789,11 @@ function person_migration_render_merge_page() {
 							nonce: nonce,
 							keep_post: keepPost,
 							group_index: groupIndex,
-							copy_fields: copyFields
+							copy_fields: copyFields,
+							trash_posts: trashPosts
 						},
 						success: function(response) {
-							$("#pmig-merge-btn").prop("disabled", false).text("Reassign Content & Trash Duplicate(s)");
+							$("#pmig-merge-btn").prop("disabled", false).text("Reassign Content & Trash Selected");
 							if (response.success) {
 								var d = response.data;
 								var html = "<div class='notice notice-success' style='margin:12px 0'><p>Done! Kept post #" + d.kept + ". Content references reassigned: " + d.refs_updated + ". Posts trashed: " + d.trashed.join(", ") + ".</p>";
@@ -2777,7 +2810,7 @@ function person_migration_render_merge_page() {
 							}
 						},
 						error: function() {
-							$("#pmig-merge-btn").prop("disabled", false).text("Reassign Content & Trash Duplicate(s)");
+							$("#pmig-merge-btn").prop("disabled", false).text("Reassign Content & Trash Selected");
 							alert("AJAX error.");
 						}
 					});
@@ -3053,6 +3086,9 @@ function person_migration_ajax_merge() {
 	$copy_fields = isset($_POST['copy_fields']) && is_array($_POST['copy_fields'])
 		? array_map('sanitize_text_field', $_POST['copy_fields'])
 		: array();
+	$trash_posts = isset($_POST['trash_posts']) && is_array($_POST['trash_posts'])
+		? array_map('intval', $_POST['trash_posts'])
+		: array();
 
 	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
 	if (!isset($duplicate_groups[$group_index])) {
@@ -3064,7 +3100,10 @@ function person_migration_ajax_merge() {
 		wp_send_json_error(array('error_message' => 'Selected post is not in this duplicate group.'));
 	}
 
-	$donor_ids     = array_values(array_diff($group, array($keep_post)));
+	// Use explicitly selected trash posts, or fall back to all non-keepers
+	$donor_ids = !empty($trash_posts)
+		? array_values(array_intersect($trash_posts, array_diff($group, array($keep_post))))
+		: array_values(array_diff($group, array($keep_post)));
 	$log           = array();
 	$expert_fields = person_migration_get_expert_fields();
 
