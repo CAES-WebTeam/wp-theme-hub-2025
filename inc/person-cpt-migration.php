@@ -597,8 +597,8 @@ function person_migration_ajax_verify_swap() {
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
 		'post_status'    => array('publish', 'draft', 'private'),
-		'posts_per_page' => 200,
-		'orderby'        => 'rand',
+		'posts_per_page' => -1,
+		'orderby'        => 'ID',
 		'fields'         => 'ids',
 	));
 
