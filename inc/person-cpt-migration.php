@@ -634,9 +634,11 @@ function person_migration_ajax_verify_swap() {
 					$user = get_userdata($val);
 					$label = 'WP user #' . $val . ' (' . $user->display_name . ' -- roles: ' . implode(', ', $user->roles) . ')';
 					$flagged[] = array(
-						'text'     => 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label,
-						'post_id'  => $pid,
-						'user_id'  => $val,
+						'text'      => 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label,
+						'post_id'   => $pid,
+						'user_id'   => $val,
+						'user_name' => $user->display_name,
+						'roles'     => implode(', ', $user->roles),
 					);
 				} else {
 					$unknown_count++;
@@ -716,6 +718,112 @@ function person_migration_ajax_revert_swap() {
 }
 
 // ============================================================
+// Step 7c: Resolve flagged users (manual mapping)
+// ============================================================
+
+/**
+ * Search person CPT posts by name.
+ */
+function person_migration_ajax_search_persons() {
+	person_migration_check_ajax();
+
+	$search = sanitize_text_field($_POST['search'] ?? '');
+	if (strlen($search) < 2) {
+		wp_send_json_success(array('results' => array()));
+	}
+
+	$posts = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'publish',
+		's'              => $search,
+		'posts_per_page' => 10,
+		'orderby'        => 'title',
+		'order'          => 'ASC',
+	));
+
+	$results = array();
+	foreach ($posts as $p) {
+		$results[] = array(
+			'id'    => $p->ID,
+			'title' => $p->post_title,
+		);
+	}
+
+	wp_send_json_success(array('results' => $results));
+}
+
+/**
+ * Resolve flagged users by mapping them to person CPT posts and swapping all references.
+ * Expects $_POST['mappings'] as JSON: [ { user_id: 123, person_post_id: 456 }, ... ]
+ */
+function person_migration_ajax_resolve_flagged() {
+	person_migration_check_ajax();
+
+	$mappings_json = stripslashes($_POST['mappings'] ?? '[]');
+	$mappings = json_decode($mappings_json, true);
+
+	if (empty($mappings) || !is_array($mappings)) {
+		wp_send_json_error(array('error_message' => 'No mappings provided.'));
+	}
+
+	// Validate all mappings first
+	foreach ($mappings as $m) {
+		$uid = intval($m['user_id'] ?? 0);
+		$pid = intval($m['person_post_id'] ?? 0);
+		if (!$uid || !$pid) {
+			wp_send_json_error(array('error_message' => "Invalid mapping: user_id={$uid}, person_post_id={$pid}"));
+		}
+		if (get_post_type($pid) !== 'caes_hub_person') {
+			wp_send_json_error(array('error_message' => "Post #{$pid} is not a caes_hub_person."));
+		}
+	}
+
+	// Add to lookup map
+	$map = get_option('person_cpt_migration_user_post_map', array());
+	foreach ($mappings as $m) {
+		$map[intval($m['user_id'])] = intval($m['person_post_id']);
+	}
+	update_option('person_cpt_migration_user_post_map', $map);
+
+	// Swap all references for these user IDs
+	$post_types = array('post', 'publications', 'shorthand_story');
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	$user_ids_to_resolve = array_map(function($m) { return intval($m['user_id']); }, $mappings);
+
+	$swapped = 0;
+
+	$posts = get_posts(array(
+		'post_type'      => $post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	foreach ($posts as $pid) {
+		foreach ($repeater_names as $rname) {
+			$count = (int) get_post_meta($pid, $rname, true);
+			if ($count <= 0) continue;
+
+			for ($i = 0; $i < $count; $i++) {
+				$meta_key = $rname . '_' . $i . '_user';
+				$val = (int) get_post_meta($pid, $meta_key, true);
+
+				if ($val && in_array($val, $user_ids_to_resolve) && isset($map[$val])) {
+					update_post_meta($pid, $meta_key . '_backup', $val);
+					update_post_meta($pid, $meta_key, $map[$val]);
+					$swapped++;
+				}
+			}
+		}
+	}
+
+	wp_send_json_success(array(
+		'swapped'  => $swapped,
+		'mappings' => count($mappings),
+		'message'  => "Resolved {$swapped} references across " . count($mappings) . " user(s).",
+	));
+}
+
 // Step 7b: Update ACF field types (User -> Post Object)
 // ============================================================
 
@@ -1309,17 +1417,59 @@ function person_migration_enqueue_scripts($hook) {
 							html += "<p><strong>Swap Verification</strong> (scanned " + esc(String(d.total_posts)) + " posts)</p>";
 							html += "<p>CPT posts: <strong>" + esc(d.post_ids) + "</strong> | WP users: <strong style=\"" + (d.user_ids > 0 ? "color:#d63638" : "") + "\">" + esc(d.user_ids) + "</strong> | Not found: <strong style=\"" + (d.unknown_ids > 0 ? "color:#d63638" : "") + "\">" + esc(d.unknown_ids) + "</strong> | Custom entries: <strong>" + esc(d.custom || 0) + "</strong></p>";
 							if (d.flagged && d.flagged.length) {
-								html += "<div style=\"font-size:12px;margin-top:8px;border:2px solid #d63638;padding:8px;background:#fef1f1\">";
-								html += "<strong style=\"color:#d63638\">Flagged -- still pointing to WP users or unknown IDs:</strong>";
+								// Group flagged items by user_id
+								var userGroups = {};
 								d.flagged.forEach(function(item) {
-									html += "<div>" + esc(item.text);
-									html += " &mdash; <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/post.php?post=" + item.post_id + "&action=edit") + "\" target=\"_blank\">Edit post</a>";
-									if (item.user_id) {
-										html += " | <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/user-edit.php?user_id=" + item.user_id) + "\" target=\"_blank\">Edit user</a>";
+									var key = item.user_id || ("unknown_" + item.post_id);
+									if (!userGroups[key]) {
+										userGroups[key] = {
+											user_id: item.user_id || 0,
+											user_name: item.user_name || "Unknown",
+											roles: item.roles || "",
+											refs: []
+										};
 									}
-									html += "</div>";
+									userGroups[key].refs.push(item);
 								});
-								html += "</div>";
+
+								html += "<div style=\"font-size:12px;margin-top:8px;border:2px solid #d63638;padding:12px;background:#fef1f1\">";
+								html += "<strong style=\"color:#d63638\">Flagged -- " + d.flagged.length + " references across " + Object.keys(userGroups).length + " user(s) still pointing to WP users:</strong>";
+								html += "<p style=\"margin:6px 0 10px;color:#555\">For each user below, search for the matching Person post. Then click <strong>Apply All Mappings</strong> to swap them.</p>";
+								html += "<table style=\"width:100%;border-collapse:collapse;margin-top:6px\">";
+								html += "<thead><tr style=\"text-align:left;border-bottom:2px solid #ccc\"><th style=\"padding:4px 8px\">WP User</th><th style=\"padding:4px 8px\">Roles</th><th style=\"padding:4px 8px\">Refs</th><th style=\"padding:4px 8px\">Map to Person</th></tr></thead><tbody>";
+
+								Object.keys(userGroups).forEach(function(key) {
+									var g = userGroups[key];
+									html += "<tr data-user-id=\"" + esc(String(g.user_id)) + "\" style=\"border-bottom:1px solid #ddd\">";
+									html += "<td style=\"padding:6px 8px\">" + esc(g.user_name) + " <span style=\"color:#888\">(#" + esc(String(g.user_id)) + ")</span>";
+									if (g.user_id) html += " <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/user-edit.php?user_id=" + g.user_id) + "\" target=\"_blank\" style=\"font-size:11px\">view</a>";
+									html += "</td>";
+									html += "<td style=\"padding:6px 8px\">" + (g.roles ? esc(g.roles) : "<em style=\"color:#999\">none</em>") + "</td>";
+									html += "<td style=\"padding:6px 8px\">" + g.refs.length + " post(s)</td>";
+									html += "<td style=\"padding:6px 8px\">";
+									html += "<div style=\"position:relative;display:inline-block;width:280px\">";
+									html += "<input type=\"text\" class=\"pmig-resolve-search\" data-user-id=\"" + esc(String(g.user_id)) + "\" placeholder=\"Search person posts...\" value=\"" + esc(g.user_name) + "\" style=\"width:100%;padding:4px 6px\">";
+									html += "<div class=\"pmig-resolve-results\" style=\"display:none;position:absolute;z-index:100;background:#fff;border:1px solid #ccc;max-height:200px;overflow-y:auto;width:100%;box-shadow:0 2px 6px rgba(0,0,0,.15)\"></div>";
+									html += "<input type=\"hidden\" class=\"pmig-resolve-post-id\" data-user-id=\"" + esc(String(g.user_id)) + "\" value=\"\">";
+									html += "<span class=\"pmig-resolve-chosen\" style=\"display:none;margin-left:6px;color:#00a32a\"></span>";
+									html += "</div>";
+									html += "</td></tr>";
+
+									// Expandable ref list
+									html += "<tr style=\"border-bottom:1px solid #eee\"><td colspan=\"4\" style=\"padding:0 8px 6px\">";
+									html += "<details><summary style=\"cursor:pointer;font-size:11px;color:#666\">" + g.refs.length + " affected post(s)</summary>";
+									html += "<div style=\"font-size:11px;margin-top:2px;padding:4px;background:#fff\">";
+									g.refs.forEach(function(item) {
+										html += "<div>" + esc(item.text) + " &mdash; <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/post.php?post=" + item.post_id + "&action=edit") + "\" target=\"_blank\">Edit</a></div>";
+									});
+									html += "</div></details></td></tr>";
+								});
+
+								html += "</tbody></table>";
+								html += "<div style=\"margin-top:12px;text-align:right\">";
+								html += "<input type=\"button\" id=\"pmig-resolve-apply\" class=\"button button-primary\" value=\"Apply All Mappings\" style=\"margin-right:8px\">";
+								html += "<span id=\"pmig-resolve-status\" style=\"color:#555\"></span>";
+								html += "</div></div>";
 							}
 							if (d.details && d.details.length) {
 								html += "<details style=\"margin-top:8px\"><summary style=\"cursor:pointer;font-size:12px\">Sample details (" + d.details.length + " entries)</summary>";
@@ -1331,6 +1481,10 @@ function person_migration_enqueue_scripts($hook) {
 							var $step = $("#pmig-swap-verify-btn").closest(".pmig-step");
 							$step.find(".pmig-step-result").remove();
 							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
+							// Auto-search for each flagged user's name
+							$step.find(".pmig-resolve-search").each(function() {
+								$(this).trigger("input");
+							});
 						} else {
 							alert("Error: " + ((response.data && response.data.error_message) || "Unknown"));
 						}
@@ -1338,6 +1492,103 @@ function person_migration_enqueue_scripts($hook) {
 					error: function() {
 						$("#pmig-swap-verify-btn").prop("disabled", false).val("Verify");
 						alert("AJAX error.");
+					}
+				});
+			});
+
+			// Resolve flagged: search person posts
+			var resolveSearchTimer = null;
+			$(document).on("input", ".pmig-resolve-search", function() {
+				var $input = $(this);
+				var $wrapper = $input.parent();
+				var $results = $wrapper.find(".pmig-resolve-results");
+				var query = $input.val().trim();
+
+				clearTimeout(resolveSearchTimer);
+				if (query.length < 2) { $results.hide(); return; }
+
+				resolveSearchTimer = setTimeout(function() {
+					$.ajax({
+						url: ajaxurl,
+						method: "POST",
+						data: { action: "person_migration_search_persons", nonce: nonce, search: query },
+						success: function(response) {
+							if (!response.success || !response.data.results.length) {
+								$results.html("<div style=\"padding:6px;color:#999\">No results</div>").show();
+								return;
+							}
+							var rhtml = "";
+							response.data.results.forEach(function(p) {
+								rhtml += "<div class=\"pmig-resolve-result-item\" data-post-id=\"" + p.id + "\" style=\"padding:6px 8px;cursor:pointer;border-bottom:1px solid #eee\">";
+								rhtml += esc(p.title) + " <span style=\"color:#888\">(#" + p.id + ")</span></div>";
+							});
+							$results.html(rhtml).show();
+						}
+					});
+				}, 300);
+			});
+
+			// Resolve flagged: select a person post from results
+			$(document).on("click", ".pmig-resolve-result-item", function() {
+				var $item = $(this);
+				var postId = $item.data("post-id");
+				var postTitle = $item.text();
+				var $wrapper = $item.closest("td").find(".pmig-resolve-search").parent();
+				var userId = $wrapper.find(".pmig-resolve-search").data("user-id");
+
+				$wrapper.find(".pmig-resolve-search").val(postTitle).css("border-color", "#00a32a");
+				$wrapper.find(".pmig-resolve-post-id").val(postId);
+				$wrapper.find(".pmig-resolve-chosen").text("-> #" + postId).show();
+				$wrapper.find(".pmig-resolve-results").hide();
+			});
+
+			// Resolve flagged: close dropdown when clicking outside
+			$(document).on("click", function(e) {
+				if (!$(e.target).closest(".pmig-resolve-search, .pmig-resolve-results").length) {
+					$(".pmig-resolve-results").hide();
+				}
+			});
+
+			// Resolve flagged: apply all mappings
+			$(document).on("click", "#pmig-resolve-apply", function() {
+				var mappings = [];
+				$(".pmig-resolve-post-id").each(function() {
+					var postId = parseInt($(this).val());
+					var userId = parseInt($(this).data("user-id"));
+					if (postId && userId) {
+						mappings.push({ user_id: userId, person_post_id: postId });
+					}
+				});
+
+				if (mappings.length === 0) {
+					alert("No mappings selected. Search and select a person post for at least one user.");
+					return;
+				}
+
+				var total = $(".pmig-resolve-post-id").length;
+				if (mappings.length < total && !confirm(mappings.length + " of " + total + " users mapped. Unmapped users will be skipped. Continue?")) {
+					return;
+				}
+
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Applying...");
+				$("#pmig-resolve-status").text("");
+
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_resolve_flagged", nonce: nonce, mappings: JSON.stringify(mappings) },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Apply All Mappings");
+						if (response.success) {
+							$("#pmig-resolve-status").html("<span style=\"color:#00a32a\">" + esc(response.data.message) + " Re-run Verify to confirm.</span>");
+						} else {
+							$("#pmig-resolve-status").html("<span style=\"color:#d63638\">Error: " + esc(response.data.error_message || "Unknown") + "</span>");
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Apply All Mappings");
+						$("#pmig-resolve-status").html("<span style=\"color:#d63638\">AJAX error.</span>");
 					}
 				});
 			});
@@ -2026,6 +2277,8 @@ add_action('wp_ajax_person_migration_replay_decisions',      'person_migration_a
 add_action('wp_ajax_person_migration_clear_merge_log',       'person_migration_ajax_clear_merge_log');
 add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_ajax_checklist_toggle');
 add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
+add_action('wp_ajax_person_migration_search_persons',        'person_migration_ajax_search_persons');
+add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_ajax_resolve_flagged');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
