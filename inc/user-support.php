@@ -466,6 +466,7 @@ add_action('init', 'add_expert_user_role');
  *  - wpseo_manage_options       : access Yoast SEO settings pages
  *  - wpseo_edit_advanced_metadata : edit advanced Yoast meta on posts
  *  - wpseo_bulk_edit            : use Yoast bulk editor
+ *  - manage_admin_columns       : access Admin Columns Pro settings and edit columns
  *
  * manage_options is required for Kinsta Cache (and some other plugin settings
  * pages). Because it also unlocks the Settings menu, a separate function
@@ -481,7 +482,7 @@ add_action('init', 'add_expert_user_role');
  */
 function add_content_manager_role()
 {
-    $role_version = 3;
+    $role_version = 4;
 
     if (get_option('content_manager_role_version') == $role_version) {
         return;
@@ -511,6 +512,9 @@ function add_content_manager_role()
     $caps['wpseo_manage_options']        = true;
     $caps['wpseo_edit_advanced_metadata'] = true;
     $caps['wpseo_bulk_edit']             = true;
+
+    // Admin Columns Pro settings and inline "edit columns" button
+    $caps['manage_admin_columns'] = true;
 
     add_role('content_manager', 'Content Manager', $caps);
     update_option('content_manager_role_version', $role_version);
@@ -619,6 +623,17 @@ function content_manager_restrict_settings()
     remove_menu_page('options-general.php');
     remove_menu_page('caes-tools');
 
+    // Re-add Admin Columns Pro as a top-level menu since Settings was removed.
+    add_menu_page(
+        'Admin Columns',
+        'Admin Columns',
+        'manage_admin_columns',
+        'options-general.php?page=codepress-admin-columns',
+        '',
+        'dashicons-admin-settings',
+        81
+    );
+
     // Block direct access to restricted pages.
     $blocked_pages = [
         'options-general.php',
@@ -631,7 +646,10 @@ function content_manager_restrict_settings()
     ];
 
     $current_page = basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
-    if (in_array($current_page, $blocked_pages, true)) {
+    $allowed_subpages = ['codepress-admin-columns'];
+    $current_subpage = isset($_GET['page']) ? $_GET['page'] : '';
+
+    if (in_array($current_page, $blocked_pages, true) && !in_array($current_subpage, $allowed_subpages, true)) {
         wp_die(
             __('Sorry, you are not allowed to access this page.'),
             403
@@ -801,15 +819,23 @@ function sanitize_email_part($name)
     return $name;
 }
 
-// Turn email notifications on and off
+// Suppress all emails during personnel sync operations.
+// Safe to use: PHP filters are per-request only, so even if enable_user_notifications()
+// never runs (e.g. fatal error), the suppression cannot persist to other requests.
 function disable_user_notifications() {
-    add_filter('send_email_change_email', '__return_false');
-    add_filter('send_new_user_notifications', '__return_false'); 
-}  
+    add_filter('send_email_change_email', '__return_false');              // Email change notice to user
+    add_filter('send_password_change_email', '__return_false');           // Password change notice to user
+    add_filter('wp_send_new_user_notification_to_admin', '__return_false'); // New user notice to site admin (WP 6.1+)
+    add_filter('wp_send_new_user_notification_to_user', '__return_false');  // New user welcome email (WP 6.1+)
+    add_filter('pre_wp_mail', '__return_false');                          // Blocks wp_mail() entirely (WP 5.7+)
+}
 
 function enable_user_notifications() {
     remove_filter('send_email_change_email', '__return_false');
-    remove_filter('send_new_user_notifications', '__return_false'); 
+    remove_filter('send_password_change_email', '__return_false');
+    remove_filter('wp_send_new_user_notification_to_admin', '__return_false');
+    remove_filter('wp_send_new_user_notification_to_user', '__return_false');
+    remove_filter('pre_wp_mail', '__return_false');
 }
 
 /**
@@ -969,14 +995,14 @@ function sync_personnel_users()
             // Update Existing User
             try {
 
-                // Check to ensure email is not a duplicate. Generate a non-duplicate email if needed.
-                $email_to_use = $original_email;
-                
-                if (email_exists($original_email)) {
-                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                // Always use a spoofed email for the WP account to prevent accidental emails.
+                // The real email is stored in the ACF 'uga_email' field.
+                $existing_wp_email = get_userdata($user_id)->user_email;
+                if (strpos($existing_wp_email, '.spoofed') !== false) {
+                    $email_to_use = $existing_wp_email;
+                } else {
                     $unique_id = uniqid();
                     $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
                 $update_result = wp_update_user([
@@ -1031,15 +1057,10 @@ function sync_personnel_users()
         } else {
             // Create New User
             try {
-                $email_to_use = $original_email;
-                
-                // Check if email already exists in WordPress
-                if (email_exists($original_email) || $original_email == '') {
-                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                    $unique_id = uniqid();
-                    $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-                }
+                // Always use a spoofed email for the WP account to prevent accidental emails.
+                // The real email is stored in the ACF 'uga_email' field.
+                $unique_id = uniqid();
+                $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
 
                 // Check if username already exists
                 if (username_exists($username)) {
@@ -1117,6 +1138,290 @@ function sync_personnel_users()
 
     enable_user_notifications();
 }
+
+/**
+ * Syncs a single personnel user by College ID from the external API.
+ * Tries active first, then inactive if not found.
+ *
+ * @param int $college_id The College ID to fetch and sync.
+ * @return array|WP_Error Sync result on success, or WP_Error on failure.
+ */
+function sync_single_personnel_user($college_id)
+{
+    disable_user_notifications();
+
+    global $import_errors;
+    $import_errors = [];
+
+    $college_id = intval($college_id);
+    if ($college_id <= 0) {
+        enable_user_notifications();
+        return new WP_Error('invalid_id', 'Invalid College ID provided.');
+    }
+
+    // Try active first
+    $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true';
+    $response = wp_remote_get($api_url);
+
+    if (is_wp_error($response)) {
+        enable_user_notifications();
+        return new WP_Error('api_error', 'API Request Failed: ' . $response->get_error_message());
+    }
+
+    $users = json_decode(wp_remote_retrieve_body($response), true);
+
+    // If not found as active, try inactive
+    if (!is_array($users) || empty($users)) {
+        $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true&isActive=false';
+        $response = wp_remote_get($api_url);
+
+        if (is_wp_error($response)) {
+            enable_user_notifications();
+            return new WP_Error('api_error', 'API Request Failed (inactive): ' . $response->get_error_message());
+        }
+
+        $users = json_decode(wp_remote_retrieve_body($response), true);
+    }
+
+    if (!is_array($users) || empty($users)) {
+        output_sync_message("No personnel record found for College ID {$college_id}", 'error');
+        enable_user_notifications();
+        return new WP_Error('not_found', 'No personnel record found for College ID ' . $college_id);
+    }
+
+    $user = $users[0];
+
+    output_sync_message("Processing single personnel record for College ID {$college_id}");
+
+    // Validate required fields
+    $required_fields = ['PERSONNEL_ID', 'NAME', 'FNAME', 'LNAME'];
+    $missing_fields = [];
+    foreach ($required_fields as $field) {
+        if (!isset($user[$field]) || empty(trim($user[$field]))) {
+            $missing_fields[] = $field;
+        }
+    }
+
+    if (!empty($missing_fields)) {
+        $error_msg = 'Missing required fields: ' . implode(', ', $missing_fields);
+        output_sync_message($error_msg, 'error');
+        enable_user_notifications();
+        return new WP_Error('missing_fields', $error_msg);
+    }
+
+    // Spoof an email if necessary
+    if (!isset($user['EMAIL']) || empty(trim($user['EMAIL']))) {
+        $user['EMAIL'] = generate_placeholder_email($user['FNAME'], $user['LNAME']);
+    }
+
+    // Sanitize and extract user data
+    $personnel_id = intval($user['PERSONNEL_ID']);
+    $api_college_id = intval($user['COLLEGEID'] ?? 0);
+    $original_email = sanitize_email($user['EMAIL']);
+    $username = sanitize_user(strtolower(str_replace(' ', '', $user['NAME'])));
+    $first_name = sanitize_text_field($user['FNAME']);
+    $last_name = sanitize_text_field($user['LNAME']);
+    $display_name = sanitize_text_field($user['NAME']);
+    $nickname = sanitize_text_field($user['NAME']);
+    $title = sanitize_text_field($user['TITLE'] ?? '');
+    $department = sanitize_text_field($user['DEPARTMENT'] ?? '');
+    $program_area = sanitize_text_field($user['PROGRAMAREALIST'] ?? '');
+    $phone = sanitize_text_field($user['PHONE_NUMBER'] ?? '');
+    $cell_phone = sanitize_text_field($user['CELL_PHONE_NUMBER'] ?? '');
+    $fax = sanitize_text_field($user['FAX_NUMBER'] ?? '');
+    $caes_location_id = intval($user['CAES_LOCATION_ID'] ?? 0);
+    $mailing_address = sanitize_text_field($user['MAILING_ADDRESS1'] ?? '');
+    $mailing_address2 = sanitize_text_field($user['MAILING_ADDRESS2'] ?? '');
+    $mailing_city = sanitize_text_field($user['MAILING_CITY'] ?? '');
+    $mailing_state = sanitize_text_field($user['MAILING_STATE'] ?? '');
+    $mailing_zip = sanitize_text_field($user['MAILING_ZIP'] ?? '');
+    $shipping_address = sanitize_text_field($user['SHIPPING_ADDRESS1'] ?? '');
+    $shipping_address2 = sanitize_text_field($user['SHIPPING_ADDRESS2'] ?? '');
+    $shipping_city = sanitize_text_field($user['SHIPPING_CITY'] ?? '');
+    $shipping_state = sanitize_text_field($user['SHIPPING_STATE'] ?? '');
+    $shipping_zip = sanitize_text_field($user['SHIPPING_ZIP'] ?? '');
+    $image_name = sanitize_text_field($user['IMAGE'] ?? '');
+
+    if (!is_email($original_email)) {
+        output_sync_message("Invalid email: '{$user['EMAIL']}'", 'error');
+        enable_user_notifications();
+        return new WP_Error('invalid_email', "Invalid email: '{$user['EMAIL']}'");
+    }
+
+    if (empty($username) || strlen($username) < 3) {
+        output_sync_message("Invalid username derived from NAME: '{$user['NAME']}'", 'error');
+        enable_user_notifications();
+        return new WP_Error('invalid_username', "Invalid username derived from NAME: '{$user['NAME']}'");
+    }
+
+    // Check if user already exists by personnel_id
+    $existing_users = get_users([
+        'meta_key' => 'personnel_id',
+        'meta_value' => $personnel_id,
+        'number' => 1,
+        'fields' => ['ID']
+    ]);
+
+    $user_id = !empty($existing_users) ? $existing_users[0]->ID : null;
+    $action_taken = '';
+
+    // Always use a spoofed email for the WP account to prevent accidental emails.
+    // The real email is stored in the ACF 'uga_email' field.
+    $existing_wp_email = $user_id ? get_userdata($user_id)->user_email : null;
+
+    // Keep the existing spoofed email if one is already set, otherwise generate a new one
+    if ($existing_wp_email && strpos($existing_wp_email, '.spoofed') !== false) {
+        $email_to_use = $existing_wp_email;
+    } else {
+        $unique_id = uniqid();
+        $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
+    }
+
+    if ($user_id) {
+        // Update existing user
+        $update_result = wp_update_user([
+            'ID' => $user_id,
+            'user_email' => $email_to_use,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'nickname' => $nickname,
+            'display_name' => $display_name
+        ]);
+
+        if (is_wp_error($update_result)) {
+            enable_user_notifications();
+            return new WP_Error('update_failed', 'wp_update_user failed: ' . $update_result->get_error_message());
+        }
+
+        $action_taken = 'updated';
+        output_sync_message("Updated existing user (WP ID: {$user_id})");
+    } else {
+        // Create new user
+        if (username_exists($username)) {
+            $username = $username . '_' . $personnel_id;
+            output_sync_message("Username already exists. Using: '{$username}'");
+        }
+
+        $user_id = wp_insert_user([
+            'user_login' => $username,
+            'user_email' => $email_to_use,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'nickname' => $nickname,
+            'display_name' => $display_name,
+            'user_pass' => wp_generate_password(),
+            'role' => 'personnel_user'
+        ]);
+
+        if (is_wp_error($user_id)) {
+            enable_user_notifications();
+            return new WP_Error('create_failed', 'wp_insert_user failed: ' . $user_id->get_error_message());
+        }
+
+        $action_taken = 'created';
+        output_sync_message("Created new user (WP ID: {$user_id})");
+    }
+
+    // Update ACF fields
+    update_field('personnel_id', $personnel_id, 'user_' . $user_id);
+    update_field('college_id', $api_college_id, 'user_' . $user_id);
+    update_field('uga_email', $original_email, 'user_' . $user_id);
+    update_field('title', $title, 'user_' . $user_id);
+    update_field('phone_number', $phone, 'user_' . $user_id);
+    update_field('cell_phone_number', $cell_phone, 'user_' . $user_id);
+    update_field('fax_number', $fax, 'user_' . $user_id);
+    update_field('department', $department, 'user_' . $user_id);
+    update_field('program_area', $program_area, 'user_' . $user_id);
+    update_field('caes_location_id', $caes_location_id, 'user_' . $user_id);
+    update_field('mailing_address', $mailing_address, 'user_' . $user_id);
+    update_field('mailing_address2', $mailing_address2, 'user_' . $user_id);
+    update_field('mailing_city', $mailing_city, 'user_' . $user_id);
+    update_field('mailing_state', $mailing_state, 'user_' . $user_id);
+    update_field('mailing_zip', $mailing_zip, 'user_' . $user_id);
+    update_field('shipping_address', $shipping_address, 'user_' . $user_id);
+    update_field('shipping_address2', $shipping_address2, 'user_' . $user_id);
+    update_field('shipping_city', $shipping_city, 'user_' . $user_id);
+    update_field('shipping_state', $shipping_state, 'user_' . $user_id);
+    update_field('shipping_zip', $shipping_zip, 'user_' . $user_id);
+    update_field('image_name', $image_name, 'user_' . $user_id);
+
+    output_sync_message("Successfully {$action_taken} {$display_name} (Personnel ID: {$personnel_id}, WP User ID: {$user_id})", 'success');
+
+    enable_user_notifications();
+
+    return [
+        'action' => $action_taken,
+        'user_id' => $user_id,
+        'personnel_id' => $personnel_id,
+        'display_name' => $display_name,
+        'message' => ucfirst($action_taken) . " user: {$display_name} (Personnel ID: {$personnel_id}, WP User ID: {$user_id})"
+    ];
+}
+
+/**
+ * AJAX handler: Search the personnel API by name and return matching results.
+ * Searches both active and inactive personnel and combines the results.
+ */
+add_action('wp_ajax_search_personnel', 'ajax_search_personnel');
+function ajax_search_personnel()
+{
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Insufficient permissions.');
+    }
+
+    $search = sanitize_text_field($_GET['term'] ?? '');
+    if (strlen($search) < 2) {
+        wp_send_json([]);
+    }
+
+    $results = [];
+    $search_lower = strtolower($search);
+
+    // Search both active and inactive endpoints
+    $endpoints = [
+        'https://secure.caes.uga.edu/rest/personnel/Personnel/?returnContactInfoColumns=true',
+        'https://secure.caes.uga.edu/rest/personnel/Personnel/?returnContactInfoColumns=true&isActive=false',
+    ];
+
+    foreach ($endpoints as $api_url) {
+        $response = wp_remote_get($api_url);
+        if (is_wp_error($response)) {
+            continue;
+        }
+
+        $users = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($users)) {
+            continue;
+        }
+
+        foreach ($users as $user) {
+            if (!isset($user['NAME']) || !isset($user['COLLEGEID'])) {
+                continue;
+            }
+
+            if (strpos(strtolower($user['NAME']), $search_lower) !== false) {
+                $dept = $user['DEPARTMENT'] ?? '';
+                $label = $user['NAME'] . ($dept ? " - {$dept}" : '') . " (ID: {$user['COLLEGEID']})";
+                $results[] = [
+                    'label' => $label,
+                    'value' => intval($user['COLLEGEID']),
+                    'name' => $user['NAME'],
+                ];
+            }
+
+            if (count($results) >= 15) {
+                break;
+            }
+        }
+
+        if (count($results) >= 15) {
+            break;
+        }
+    }
+
+    wp_send_json($results);
+}
+
 /**
  * Sets up a daily CRON job to automatically run `sync_personnel_users`.
  * This ensures regular synchronization without manual intervention.
@@ -1295,14 +1600,14 @@ function sync_personnel_users2()
             output_sync_message("{$user_log_prefix}: UPDATING existing user ID {$user_id}");
             
             try {
-                // Check to ensure email is not a duplicate. Generate a non-duplicate email if needed.
-                $email_to_use = $original_email;
-                
-                if (email_exists($original_email)) {
-                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                // Always use a spoofed email for the WP account to prevent accidental emails.
+                // The real email is stored in the ACF 'uga_email' field.
+                $existing_wp_email = get_userdata($user_id)->user_email;
+                if (strpos($existing_wp_email, '.spoofed') !== false) {
+                    $email_to_use = $existing_wp_email;
+                } else {
                     $unique_id = uniqid();
                     $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
                 // Update core WordPress user fields.
@@ -1367,16 +1672,11 @@ function sync_personnel_users2()
             // Create New User if not found.
             output_sync_message("{$user_log_prefix}: CREATING new user");
             
-            $email_to_use = $original_email;
-                
-            // Check if email already exists in WordPress
-            if (email_exists($original_email)) {
-                // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                $unique_id = uniqid();
-                $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-            }
-            
+            // Always use a spoofed email for the WP account to prevent accidental emails.
+            // The real email is stored in the ACF 'uga_email' field.
+            $unique_id = uniqid();
+            $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
+
             // Check if username already exists
             if (username_exists($username)) {
                 $original_username = $username;
@@ -2243,6 +2543,18 @@ CSS;
                 display_import_error_summary('Inactive Personnel Sync');
                 break;
 
+            case 'import_single_personnel':
+                $college_id = intval($_GET['college_id'] ?? 0);
+                $current_action_name = 'Importing Single Personnel';
+                output_sync_message("Importing personnel with College ID: {$college_id}...", 'info');
+                $result = sync_single_personnel_user($college_id);
+                if (is_wp_error($result)) {
+                    output_sync_message('Error: ' . $result->get_error_message(), 'error');
+                } else {
+                    output_sync_message($result['message'], 'success');
+                }
+                break;
+
             case 'run_all_syncs':
                 $current_action_name = 'Running All Synchronizations';
                 output_sync_message('✨ Beginning all scheduled user data synchronization and import operations...', 'info');
@@ -2292,7 +2604,7 @@ CSS;
         }
         
         echo '</div>';
-        $back_url = esc_url(admin_url('tools.php?page=user-data-management'));
+        $back_url = esc_url(admin_url('admin.php?page=user-data-management'));
         echo '<p><a href="' . $back_url . '" class="button button-primary">← Back to User Data Management</a></p>';
         echo '</div>';
         
@@ -2316,16 +2628,93 @@ CSS;
 
     echo '<p>Use the buttons below to manage and synchronize user data. Each operation will display live progress updates and detailed error reports.</p>';
 
-    $form_action = esc_url(admin_url('tools.php'));
+    $form_action = esc_url(admin_url('admin.php'));
     echo '<form method="get" action="' . $form_action . '">';
     echo '<input type="hidden" name="page" value="user-data-management">';
+    echo '<h2>Import Single Personnel</h2>';
+    echo '<p>Search for a person by name to import or update their record. This searches both active and inactive personnel.</p>';
+    echo '<table class="form-table"><tbody><tr>';
+    echo '<th scope="row"><label for="personnel-search">Search by Name</label></th>';
+    echo '<td>';
+    echo '<input type="text" id="personnel-search" class="regular-text" placeholder="Start typing a name..." autocomplete="off">';
+    echo '<input type="hidden" id="personnel-college-id" name="college_id" value="">';
+    echo '<div id="personnel-search-results" style="display:none; border:1px solid #ccc; background:#fff; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:25em;"></div>';
+    echo '<p id="personnel-selected" style="display:none; margin-top:8px;"><strong>Selected:</strong> <span id="personnel-selected-name"></span> <a href="#" id="personnel-clear" style="margin-left:10px;">Clear</a></p>';
+    echo '<p style="margin-top:10px;"><a href="#" id="personnel-import-btn" class="button button-primary" style="display:none;">Import Selected Person</a></p>';
+    echo '</td>';
+    echo '</tr></tbody></table>';
+
+    // Inline JS for the search UI
+    echo '<script>
+    jQuery(function($) {
+        var searchTimer;
+        var $input = $("#personnel-search");
+        var $results = $("#personnel-search-results");
+        var $hiddenId = $("#personnel-college-id");
+        var $selected = $("#personnel-selected");
+        var $selectedName = $("#personnel-selected-name");
+        var $importBtn = $("#personnel-import-btn");
+        var $clear = $("#personnel-clear");
+        var baseUrl = ajaxurl.replace("admin-ajax.php", "admin.php") + "?page=user-data-management&action=import_single_personnel";
+
+        $input.on("keyup", function() {
+            clearTimeout(searchTimer);
+            var term = $(this).val();
+            if (term.length < 2) {
+                $results.hide().empty();
+                return;
+            }
+            searchTimer = setTimeout(function() {
+                $.getJSON(ajaxurl, { action: "search_personnel", term: term }, function(data) {
+                    $results.empty();
+                    if (!data.length) {
+                        $results.append("<div style=\"padding:8px 12px; color:#666;\">No results found</div>");
+                    }
+                    $.each(data, function(i, item) {
+                        $("<div>")
+                            .text(item.label)
+                            .css({ padding: "8px 12px", cursor: "pointer", borderBottom: "1px solid #eee" })
+                            .on("mouseenter", function() { $(this).css("background", "#f0f0f1"); })
+                            .on("mouseleave", function() { $(this).css("background", "#fff"); })
+                            .on("click", function() {
+                                $hiddenId.val(item.value);
+                                $input.val(item.name);
+                                $selectedName.text(item.label);
+                                $selected.show();
+                                $importBtn.attr("href", baseUrl + "&college_id=" + item.value).show();
+                                $results.hide().empty();
+                            })
+                            .appendTo($results);
+                    });
+                    $results.show();
+                });
+            }, 300);
+        });
+
+        $clear.on("click", function(e) {
+            e.preventDefault();
+            $input.val("");
+            $hiddenId.val("");
+            $selected.hide();
+            $importBtn.hide();
+        });
+
+        $(document).on("click", function(e) {
+            if (!$(e.target).closest("#personnel-search, #personnel-search-results").length) {
+                $results.hide();
+            }
+        });
+    });
+    </script>';
+
+    echo '<hr>';
     echo '<h2>Individual Data Operations</h2>';
     echo '<p>Run each data synchronization process separately. Each operation creates or updates WordPress user accounts and provides detailed error reporting.</p>';
     echo '<table class="form-table">';
     echo '<tbody>';
 
     // Sync Active Personnel row
-    $active_url = esc_url(add_query_arg('action', 'sync_personnel_active', admin_url('tools.php?page=user-data-management')));
+    $active_url = esc_url(add_query_arg('action', 'sync_personnel_active', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Sync Active Personnel</th>';
     echo '<td>';
@@ -2335,7 +2724,7 @@ CSS;
     echo '</tr>';
     
     // Sync Inactive Personnel row
-    $inactive_url = esc_url(add_query_arg('action', 'sync_personnel_inactive', admin_url('tools.php?page=user-data-management')));
+    $inactive_url = esc_url(add_query_arg('action', 'sync_personnel_inactive', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Sync Inactive Personnel</th>';
     echo '<td>';
@@ -2345,7 +2734,7 @@ CSS;
     echo '</tr>';
     
     // Import News Experts row
-    $experts_url = esc_url(add_query_arg('action', 'import_experts', admin_url('tools.php?page=user-data-management')));
+    $experts_url = esc_url(add_query_arg('action', 'import_experts', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Import News Experts</th>';
     echo '<td>';
@@ -2355,7 +2744,7 @@ CSS;
     echo '</tr>';
     
     // Import News Writers row
-    $writers_url = esc_url(add_query_arg('action', 'import_writers', admin_url('tools.php?page=user-data-management')));
+    $writers_url = esc_url(add_query_arg('action', 'import_writers', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Import News Writers</th>';
     echo '<td>';
@@ -2376,7 +2765,7 @@ CSS;
     echo '<li>Sync Inactive/Archived Personnel (with error summary)</li>';
     echo '</ol>';
     
-    $all_syncs_url = esc_url(add_query_arg('action', 'run_all_syncs', admin_url('tools.php?page=user-data-management')));
+    $all_syncs_url = esc_url(add_query_arg('action', 'run_all_syncs', admin_url('admin.php?page=user-data-management')));
     echo '<p>';
     echo '<a href="' . $all_syncs_url . '" class="button button-primary button-large">Run All Syncs Now</a>';
     echo '</p>';

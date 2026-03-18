@@ -28,6 +28,10 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.3.29 | 2026-03-18 | Add single personnel import with name search to User Data Management; fix all sync URLs to use admin.php; always use spoofed emails for personnel WP accounts; fix email suppression during sync to use correct WP filters | Ashley |
+| 1.3.28 | 2026-03-17 | Scroll behavior update: Long-distance scrolling (TOC nav, hash links, back-to-top) now jumps near the target and smooth scrolls the last stretch, preventing the dizzying rapid-scroll on long pages. | Ashley |
+| 1.3.27 | 2026-03-17 | Grant Content Manager role access to Admin Columns Pro settings and edit columns | Ashley |
+| 1.3.26 | 2026-03-12 | Fix PDF rendering boxes by sanitizing Unicode chars and enabling font substitution fallback | Ashley |
 | 1.3.25 | 2026-03-11 | Fix "headers already sent" warnings in events REST API CORS handler  | Ashley |
 | 1.3.2 | 2026-03-06 | Motion Scroll block and Grid pattern added  | Ashley |
 | 1.3.1 | 2026-03-06 | Fix to pub-series-nav styles | Ashley |

@@ -218,6 +218,25 @@ window.addEventListener('load', function () {
 
     const { stickyTOC, originalHeadingMap, stickyHeadingMap } = buildTOCs(headingsData) || {};
 
+    // Use smooth scroll for short distances; for long distances,
+    // jump to just above the target then smooth scroll the last bit
+    const SMOOTH_SCROLL_THRESHOLD = 3000; // pixels
+    const LEAD_IN_DISTANCE = 400; // pixels above target to land before smooth scrolling
+
+    function scrollToTarget(targetY) {
+        const distance = Math.abs(targetY - window.scrollY);
+
+        if (distance > SMOOTH_SCROLL_THRESHOLD) {
+            // Jump to just above the target, then smooth scroll the rest
+            window.scrollTo({ top: Math.max(0, targetY - LEAD_IN_DISTANCE), behavior: 'instant' });
+            requestAnimationFrame(() => {
+                window.scrollTo({ top: targetY, behavior: 'smooth' });
+            });
+        } else {
+            window.scrollTo({ top: targetY, behavior: 'smooth' });
+        }
+    }
+
     function enableSmoothScroll() {
         document.addEventListener('click', function (event) {
             if (event.target.tagName === 'A' && event.target.hash) {
@@ -226,18 +245,19 @@ window.addEventListener('load', function () {
                 // Only prevent default for same-page anchors
                 const linkUrl = new URL(event.target.href);
                 const currentUrl = new URL(window.location.href);
-                
+
                 if (linkUrl.pathname === currentUrl.pathname) {
                     event.preventDefault();
-                    
+
                     if (targetID === 'top-of-page') {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        scrollToTarget(0);
                         return;
                     }
 
                     const targetElement = document.getElementById(targetID);
                     if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const targetY = targetElement.getBoundingClientRect().top + window.scrollY;
+                        scrollToTarget(targetY);
                     }
                 }
             }
@@ -314,7 +334,8 @@ window.addEventListener('load', function () {
             if (targetElement) {
                 // Small delay to ensure layout is complete
                 setTimeout(() => {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const targetY = targetElement.getBoundingClientRect().top + window.scrollY;
+                    scrollToTarget(targetY);
                 }, 100);
             }
         }
