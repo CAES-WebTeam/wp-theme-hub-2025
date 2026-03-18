@@ -987,14 +987,14 @@ function sync_personnel_users()
             // Update Existing User
             try {
 
-                // Check to ensure email is not a duplicate. Generate a non-duplicate email if needed.
-                $email_to_use = $original_email;
-                
-                if (email_exists($original_email)) {
-                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                // Always use a spoofed email for the WP account to prevent accidental emails.
+                // The real email is stored in the ACF 'uga_email' field.
+                $existing_wp_email = get_userdata($user_id)->user_email;
+                if (strpos($existing_wp_email, '.spoofed') !== false) {
+                    $email_to_use = $existing_wp_email;
+                } else {
                     $unique_id = uniqid();
                     $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
                 $update_result = wp_update_user([
@@ -1049,15 +1049,10 @@ function sync_personnel_users()
         } else {
             // Create New User
             try {
-                $email_to_use = $original_email;
-                
-                // Check if email already exists in WordPress
-                if (email_exists($original_email) || $original_email == '') {
-                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                    $unique_id = uniqid();
-                    $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-                }
+                // Always use a spoofed email for the WP account to prevent accidental emails.
+                // The real email is stored in the ACF 'uga_email' field.
+                $unique_id = uniqid();
+                $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
 
                 // Check if username already exists
                 if (username_exists($username)) {
@@ -1597,14 +1592,14 @@ function sync_personnel_users2()
             output_sync_message("{$user_log_prefix}: UPDATING existing user ID {$user_id}");
             
             try {
-                // Check to ensure email is not a duplicate. Generate a non-duplicate email if needed.
-                $email_to_use = $original_email;
-                
-                if (email_exists($original_email)) {
-                    // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
+                // Always use a spoofed email for the WP account to prevent accidental emails.
+                // The real email is stored in the ACF 'uga_email' field.
+                $existing_wp_email = get_userdata($user_id)->user_email;
+                if (strpos($existing_wp_email, '.spoofed') !== false) {
+                    $email_to_use = $existing_wp_email;
+                } else {
                     $unique_id = uniqid();
                     $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                    output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
                 }
 
                 // Update core WordPress user fields.
@@ -1669,16 +1664,11 @@ function sync_personnel_users2()
             // Create New User if not found.
             output_sync_message("{$user_log_prefix}: CREATING new user");
             
-            $email_to_use = $original_email;
-                
-            // Check if email already exists in WordPress
-            if (email_exists($original_email)) {
-                // Strengthening unique emails further because there are just that many duplicates. JDK 8/14/2025
-                $unique_id = uniqid();
-                $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-                output_sync_message("{$user_log_prefix}: Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-            }
-            
+            // Always use a spoofed email for the WP account to prevent accidental emails.
+            // The real email is stored in the ACF 'uga_email' field.
+            $unique_id = uniqid();
+            $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
+
             // Check if username already exists
             if (username_exists($username)) {
                 $original_username = $username;
