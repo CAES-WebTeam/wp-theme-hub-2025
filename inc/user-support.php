@@ -2609,7 +2609,7 @@ CSS;
         }
         
         echo '</div>';
-        $back_url = esc_url(admin_url('tools.php?page=user-data-management'));
+        $back_url = esc_url(admin_url('admin.php?page=user-data-management'));
         echo '<p><a href="' . $back_url . '" class="button button-primary">← Back to User Data Management</a></p>';
         echo '</div>';
         
@@ -2633,7 +2633,7 @@ CSS;
 
     echo '<p>Use the buttons below to manage and synchronize user data. Each operation will display live progress updates and detailed error reports.</p>';
 
-    $form_action = esc_url(admin_url('tools.php'));
+    $form_action = esc_url(admin_url('admin.php'));
     echo '<form method="get" action="' . $form_action . '">';
     echo '<input type="hidden" name="page" value="user-data-management">';
     echo '<h2>Import Single Personnel</h2>';
@@ -2660,7 +2660,7 @@ CSS;
         var $selectedName = $("#personnel-selected-name");
         var $importBtn = $("#personnel-import-btn");
         var $clear = $("#personnel-clear");
-        var baseUrl = ajaxurl.replace("admin-ajax.php", "tools.php") + "?page=user-data-management&action=import_single_personnel";
+        var baseUrl = ajaxurl.replace("admin-ajax.php", "admin.php") + "?page=user-data-management&action=import_single_personnel";
 
         $input.on("keyup", function() {
             clearTimeout(searchTimer);
@@ -2719,7 +2719,7 @@ CSS;
     echo '<tbody>';
 
     // Sync Active Personnel row
-    $active_url = esc_url(add_query_arg('action', 'sync_personnel_active', admin_url('tools.php?page=user-data-management')));
+    $active_url = esc_url(add_query_arg('action', 'sync_personnel_active', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Sync Active Personnel</th>';
     echo '<td>';
@@ -2729,7 +2729,7 @@ CSS;
     echo '</tr>';
     
     // Sync Inactive Personnel row
-    $inactive_url = esc_url(add_query_arg('action', 'sync_personnel_inactive', admin_url('tools.php?page=user-data-management')));
+    $inactive_url = esc_url(add_query_arg('action', 'sync_personnel_inactive', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Sync Inactive Personnel</th>';
     echo '<td>';
@@ -2739,7 +2739,7 @@ CSS;
     echo '</tr>';
     
     // Import News Experts row
-    $experts_url = esc_url(add_query_arg('action', 'import_experts', admin_url('tools.php?page=user-data-management')));
+    $experts_url = esc_url(add_query_arg('action', 'import_experts', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Import News Experts</th>';
     echo '<td>';
@@ -2749,7 +2749,7 @@ CSS;
     echo '</tr>';
     
     // Import News Writers row
-    $writers_url = esc_url(add_query_arg('action', 'import_writers', admin_url('tools.php?page=user-data-management')));
+    $writers_url = esc_url(add_query_arg('action', 'import_writers', admin_url('admin.php?page=user-data-management')));
     echo '<tr>';
     echo '<th scope="row">Import News Writers</th>';
     echo '<td>';
@@ -2770,7 +2770,7 @@ CSS;
     echo '<li>Sync Inactive/Archived Personnel (with error summary)</li>';
     echo '</ol>';
     
-    $all_syncs_url = esc_url(add_query_arg('action', 'run_all_syncs', admin_url('tools.php?page=user-data-management')));
+    $all_syncs_url = esc_url(add_query_arg('action', 'run_all_syncs', admin_url('admin.php?page=user-data-management')));
     echo '<p>';
     echo '<a href="' . $all_syncs_url . '" class="button button-primary button-large">Run All Syncs Now</a>';
     echo '</p>';
