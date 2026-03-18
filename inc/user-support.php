@@ -819,15 +819,23 @@ function sanitize_email_part($name)
     return $name;
 }
 
-// Turn email notifications on and off
+// Suppress all emails during personnel sync operations.
+// Safe to use: PHP filters are per-request only, so even if enable_user_notifications()
+// never runs (e.g. fatal error), the suppression cannot persist to other requests.
 function disable_user_notifications() {
-    add_filter('send_email_change_email', '__return_false');
-    add_filter('send_new_user_notifications', '__return_false'); 
-}  
+    add_filter('send_email_change_email', '__return_false');              // Email change notice to user
+    add_filter('send_password_change_email', '__return_false');           // Password change notice to user
+    add_filter('wp_send_new_user_notification_to_admin', '__return_false'); // New user notice to site admin (WP 6.1+)
+    add_filter('wp_send_new_user_notification_to_user', '__return_false');  // New user welcome email (WP 6.1+)
+    add_filter('pre_wp_mail', '__return_false');                          // Blocks wp_mail() entirely (WP 5.7+)
+}
 
 function enable_user_notifications() {
     remove_filter('send_email_change_email', '__return_false');
-    remove_filter('send_new_user_notifications', '__return_false'); 
+    remove_filter('send_password_change_email', '__return_false');
+    remove_filter('wp_send_new_user_notification_to_admin', '__return_false');
+    remove_filter('wp_send_new_user_notification_to_user', '__return_false');
+    remove_filter('pre_wp_mail', '__return_false');
 }
 
 /**
