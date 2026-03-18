@@ -2660,7 +2660,7 @@ CSS;
         var $selectedName = $("#personnel-selected-name");
         var $importBtn = $("#personnel-import-btn");
         var $clear = $("#personnel-clear");
-        var baseUrl = "' . esc_js(admin_url('tools.php?page=user-data-management&action=import_single_personnel')) . '";
+        var baseUrl = ajaxurl.replace("admin-ajax.php", "tools.php") + "?page=user-data-management&action=import_single_personnel";
 
         $input.on("keyup", function() {
             clearTimeout(searchTimer);
