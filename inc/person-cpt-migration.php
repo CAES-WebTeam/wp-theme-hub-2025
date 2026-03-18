@@ -1481,7 +1481,7 @@ function person_migration_enqueue_scripts($hook) {
 							var $step = $("#pmig-swap-verify-btn").closest(".pmig-step");
 							$step.find(".pmig-step-result").remove();
 							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
-							// Auto-search for each flagged user's name
+							// Auto-search for each flagged user name
 							$step.find(".pmig-resolve-search").each(function() {
 								$(this).trigger("input");
 							});
