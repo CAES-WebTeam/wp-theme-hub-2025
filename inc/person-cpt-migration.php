@@ -2000,7 +2000,7 @@ function person_migration_render_page() {
 
 	?>
 	<div class="wrap">
-		<h1>Person CPT Migration Dashboard</h1>
+		<h1>Person CPT Migration Dashboard <small style="font-size:12px;color:#888">v2025.03.18a</small></h1>
 		<p>Tracks the full migration of <code>personnel_user</code> and <code>expert_user</code> WordPress users to <code>caes_hub_person</code> CPT posts.</p>
 
 		<div class="pmig-wrapper">
