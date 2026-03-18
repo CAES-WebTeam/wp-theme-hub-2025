@@ -824,6 +824,100 @@ function person_migration_ajax_resolve_flagged() {
 	));
 }
 
+/**
+ * Audit: find all WP users with no roles that are referenced in content repeater fields.
+ */
+function person_migration_ajax_roleless_audit() {
+	person_migration_check_ajax();
+
+	$post_types = array('post', 'publications', 'shorthand_story');
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+
+	// Step 1: Get all users with no roles
+	global $wpdb;
+	$all_users = $wpdb->get_results(
+		"SELECT u.ID, u.display_name, u.user_email, u.user_login
+		 FROM {$wpdb->users} u
+		 LEFT JOIN {$wpdb->usermeta} um ON u.ID = um.user_id AND um.meta_key = '{$wpdb->prefix}capabilities'
+		 WHERE um.meta_value IS NULL
+		    OR um.meta_value = 'a:0:{}'
+		    OR um.meta_value = ''
+		 ORDER BY u.display_name"
+	);
+
+	if (empty($all_users)) {
+		wp_send_json_success(array('users' => array(), 'message' => 'No roleless users found.'));
+	}
+
+	$roleless_ids = wp_list_pluck($all_users, 'ID');
+	$roleless_map = array();
+	foreach ($all_users as $u) {
+		$roleless_map[$u->ID] = $u;
+	}
+
+	// Step 2: Scan all content for references to these users
+	$posts = get_posts(array(
+		'post_type'      => $post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	$found_users = array(); // user_id => array of refs
+
+	foreach ($posts as $pid) {
+		foreach ($repeater_names as $rname) {
+			$count = (int) get_post_meta($pid, $rname, true);
+			if ($count <= 0) continue;
+
+			for ($i = 0; $i < $count; $i++) {
+				$val = (int) get_post_meta($pid, $rname . '_' . $i . '_user', true);
+				if ($val && in_array($val, $roleless_ids)) {
+					if (!isset($found_users[$val])) {
+						$found_users[$val] = array(
+							'user_id'      => $val,
+							'display_name' => $roleless_map[$val]->display_name,
+							'user_login'   => $roleless_map[$val]->user_login,
+							'user_email'   => $roleless_map[$val]->user_email,
+							'refs'         => array(),
+						);
+					}
+					$post_title = get_the_title($pid);
+					$post_type  = get_post_type($pid);
+					$found_users[$val]['refs'][] = array(
+						'post_id'    => $pid,
+						'post_title' => $post_title,
+						'post_type'  => $post_type,
+						'field'      => $rname,
+						'index'      => $i,
+					);
+				}
+			}
+		}
+	}
+
+	// Also report roleless users NOT referenced in any content
+	$unreferenced = array();
+	foreach ($all_users as $u) {
+		if (!isset($found_users[$u->ID])) {
+			$unreferenced[] = array(
+				'user_id'      => $u->ID,
+				'display_name' => $u->display_name,
+				'user_login'   => $u->user_login,
+				'user_email'   => $u->user_email,
+			);
+		}
+	}
+
+	wp_send_json_success(array(
+		'referenced'   => array_values($found_users),
+		'unreferenced' => $unreferenced,
+		'total_roleless' => count($all_users),
+		'total_referenced' => count($found_users),
+		'total_unreferenced' => count($unreferenced),
+	));
+}
+
 // Step 7b: Update ACF field types (User -> Post Object)
 // ============================================================
 
@@ -1843,6 +1937,68 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Roleless users audit
+			$("#pmig-roleless-audit-btn").on("click", function() {
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Scanning...");
+				$("#pmig-roleless-results").html("<p>Scanning all posts for roleless user references... this may take a moment.</p>");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_roleless_audit", nonce: nonce },
+					timeout: 300000,
+					success: function(response) {
+						$btn.prop("disabled", false).val("Scan for Roleless Users");
+						if (!response.success) {
+							$("#pmig-roleless-results").html("<p style=\"color:#d63638\">Error: " + esc(response.data.error_message || "Unknown") + "</p>");
+							return;
+						}
+						var d = response.data;
+						var html = "<div class=\"notice notice-info\" style=\"margin:0\">";
+						html += "<p><strong>" + esc(String(d.total_roleless)) + "</strong> total roleless users | <strong style=\"color:#d63638\">" + esc(String(d.total_referenced)) + "</strong> referenced in content | <strong>" + esc(String(d.total_unreferenced)) + "</strong> not referenced</p>";
+
+						if (d.referenced.length) {
+							html += "<h3 style=\"margin:12px 0 6px;font-size:13px\">Referenced in content (need attention):</h3>";
+							html += "<table style=\"width:100%;border-collapse:collapse;font-size:12px\">";
+							html += "<thead><tr style=\"border-bottom:2px solid #ccc;text-align:left\"><th style=\"padding:4px 8px\">User</th><th style=\"padding:4px 8px\">Login</th><th style=\"padding:4px 8px\">Email</th><th style=\"padding:4px 8px\">Content Refs</th></tr></thead><tbody>";
+							d.referenced.forEach(function(u) {
+								html += "<tr style=\"border-bottom:1px solid #eee\">";
+								html += "<td style=\"padding:6px 8px\">" + esc(u.display_name) + " <span style=\"color:#888\">(#" + esc(String(u.user_id)) + ")</span>";
+								html += " <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/user-edit.php?user_id=" + u.user_id) + "\" target=\"_blank\" style=\"font-size:11px\">edit</a></td>";
+								html += "<td style=\"padding:6px 8px\">" + esc(u.user_login) + "</td>";
+								html += "<td style=\"padding:6px 8px\">" + esc(u.user_email) + "</td>";
+								html += "<td style=\"padding:6px 8px\">";
+								html += "<details><summary style=\"cursor:pointer\">" + u.refs.length + " reference(s)</summary>";
+								html += "<div style=\"margin-top:4px\">";
+								u.refs.forEach(function(r) {
+									html += "<div>" + esc(r.post_type) + " #" + esc(String(r.post_id)) + " \"" + esc(r.post_title) + "\" > " + esc(r.field) + "[" + r.index + "]";
+									html += " <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/post.php?post=" + r.post_id + "&action=edit") + "\" target=\"_blank\">edit</a></div>";
+								});
+								html += "</div></details></td></tr>";
+							});
+							html += "</tbody></table>";
+						}
+
+						if (d.unreferenced.length) {
+							html += "<details style=\"margin-top:12px\"><summary style=\"cursor:pointer;font-size:12px\">" + esc(String(d.unreferenced.length)) + " roleless users NOT referenced in any content</summary>";
+							html += "<div style=\"font-size:11px;max-height:300px;overflow-y:auto;margin-top:4px;border:1px solid #ddd;padding:8px;background:#f9f9f9\">";
+							d.unreferenced.forEach(function(u) {
+								html += "<div>" + esc(u.display_name) + " (#" + esc(String(u.user_id)) + ") - " + esc(u.user_login) + " - " + esc(u.user_email);
+								html += " <a href=\"" + ajaxurl.replace("/admin-ajax.php", "/user-edit.php?user_id=" + u.user_id) + "\" target=\"_blank\">edit</a></div>";
+							});
+							html += "</div></details>";
+						}
+
+						html += "</div>";
+						$("#pmig-roleless-results").html(html);
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Scan for Roleless Users");
+						$("#pmig-roleless-results").html("<p style=\"color:#d63638\">AJAX error or timeout.</p>");
+					}
+				});
+			});
+
 			// Delete all person posts (batched)
 			$("#pmig-delete-all-btn").on("click", function() {
 				if (!confirm("This will permanently delete ALL caes_hub_person posts and clear the migration lookup map. This cannot be undone. Are you sure?")) return;
@@ -2000,7 +2156,7 @@ function person_migration_render_page() {
 
 	?>
 	<div class="wrap">
-		<h1>Person CPT Migration Dashboard <small style="font-size:12px;color:#888">v2025.03.18a</small></h1>
+		<h1>Person CPT Migration Dashboard <small style="font-size:12px;color:#888">v2025.03.18b</small></h1>
 		<p>Tracks the full migration of <code>personnel_user</code> and <code>expert_user</code> WordPress users to <code>caes_hub_person</code> CPT posts.</p>
 
 		<div class="pmig-wrapper">
@@ -2238,6 +2394,16 @@ function person_migration_render_page() {
 				<?php endforeach; ?>
 			</div>
 
+			<!-- ============ UTILITIES: ROLELESS USERS ============ -->
+			<div class="pmig-panel">
+				<h2>Utilities: Roleless Users Audit</h2>
+				<p class="description">Find WP users with no roles that are referenced in content repeater fields (authors, experts, translator, artists). These are ghost accounts that may need cleanup.</p>
+				<div class="pmig-btn-group" style="margin-top:8px">
+					<input type="button" id="pmig-roleless-audit-btn" class="button" value="Scan for Roleless Users">
+				</div>
+				<div id="pmig-roleless-results" style="margin-top:12px"></div>
+			</div>
+
 			<!-- ============ RESET ============ -->
 			<div class="pmig-panel" style="border-color:#dc3232">
 				<h2 style="color:#dc3232">Reset</h2>
@@ -2279,6 +2445,7 @@ add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_a
 add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
 add_action('wp_ajax_person_migration_search_persons',        'person_migration_ajax_search_persons');
 add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_ajax_resolve_flagged');
+add_action('wp_ajax_person_migration_roleless_audit',        'person_migration_ajax_roleless_audit');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
