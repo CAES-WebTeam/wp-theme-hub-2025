@@ -2029,6 +2029,7 @@ add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_a
 add_action('wp_ajax_person_migration_merge',                 'person_migration_ajax_merge');
 add_action('wp_ajax_person_migration_dismiss_group',         'person_migration_ajax_dismiss_group');
 add_action('wp_ajax_person_migration_replay_decisions',      'person_migration_ajax_replay_decisions');
+add_action('wp_ajax_person_migration_clear_merge_log',       'person_migration_ajax_clear_merge_log');
 add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_ajax_checklist_toggle');
 add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
 
@@ -3032,6 +3033,7 @@ function person_migration_render_merge_page() {
 			<p style="margin-top:12px">
 				<button type="button" class="button button-primary" id="pmig-replay-btn">Replay All Decisions</button>
 				<button type="button" class="button" id="pmig-export-log-btn" style="margin-left:8px">Export as JSON</button>
+				<button type="button" class="button" id="pmig-clear-log-btn" style="margin-left:8px;color:#d63638">Clear Log</button>
 				<span class="description" style="margin-left:12px">Replay uses source user IDs from the lookup map to find the correct person posts in this environment.</span>
 			</p>
 			<div id="pmig-replay-result"></div>
@@ -3068,6 +3070,29 @@ function person_migration_render_merge_page() {
 						error: function() {
 							$btn.prop("disabled", false).text("Replay All Decisions");
 							alert("AJAX error or timeout.");
+						}
+					});
+				});
+
+				$("#pmig-clear-log-btn").on("click", function() {
+					if (!confirm("Clear the entire decision log? This cannot be undone. Export first if you need a backup.")) return;
+					var $btn = $(this);
+					$btn.prop("disabled", true).text("Clearing...");
+					$.ajax({
+						url: ajaxurl,
+						method: "POST",
+						data: { action: "person_migration_clear_merge_log", nonce: nonce },
+						success: function(response) {
+							if (response.success) {
+								location.reload();
+							} else {
+								alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+								$btn.prop("disabled", false).text("Clear Log");
+							}
+						},
+						error: function() {
+							alert("AJAX error.");
+							$btn.prop("disabled", false).text("Clear Log");
 						}
 					});
 				});
@@ -3439,6 +3464,12 @@ function person_migration_ajax_dismiss_group() {
 	$duplicate_groups = array_values($duplicate_groups);
 	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
 
+	wp_send_json_success();
+}
+
+function person_migration_ajax_clear_merge_log() {
+	person_migration_check_ajax();
+	delete_option(PERSON_MIGRATION_MERGE_LOG_KEY);
 	wp_send_json_success();
 }
 
