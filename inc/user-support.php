@@ -1262,16 +1262,20 @@ function sync_single_personnel_user($college_id)
     $user_id = !empty($existing_users) ? $existing_users[0]->ID : null;
     $action_taken = '';
 
+    // Always use a spoofed email for the WP account to prevent accidental emails.
+    // The real email is stored in the ACF 'uga_email' field.
+    $existing_wp_email = $user_id ? get_userdata($user_id)->user_email : null;
+
+    // Keep the existing spoofed email if one is already set, otherwise generate a new one
+    if ($existing_wp_email && strpos($existing_wp_email, '.spoofed') !== false) {
+        $email_to_use = $existing_wp_email;
+    } else {
+        $unique_id = uniqid();
+        $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
+    }
+
     if ($user_id) {
         // Update existing user
-        $email_to_use = $original_email;
-        $existing_email_user = email_exists($original_email);
-        if ($existing_email_user && $existing_email_user !== $user_id) {
-            $unique_id = uniqid();
-            $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-            output_sync_message("Email {$original_email} belongs to another user. Using spoofed email: {$email_to_use}");
-        }
-
         $update_result = wp_update_user([
             'ID' => $user_id,
             'user_email' => $email_to_use,
@@ -1290,13 +1294,6 @@ function sync_single_personnel_user($college_id)
         output_sync_message("Updated existing user (WP ID: {$user_id})");
     } else {
         // Create new user
-        $email_to_use = $original_email;
-        if (email_exists($original_email) || $original_email == '') {
-            $unique_id = uniqid();
-            $email_to_use = "personnel_{$personnel_id}{$unique_id}@caes.uga.edu.spoofed";
-            output_sync_message("Email {$original_email} already exists. Using spoofed email: {$email_to_use}");
-        }
-
         if (username_exists($username)) {
             $username = $username . '_' . $personnel_id;
             output_sync_message("Username already exists. Using: '{$username}'");
