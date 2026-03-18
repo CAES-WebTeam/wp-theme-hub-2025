@@ -1157,7 +1157,7 @@ function sync_single_personnel_user($college_id)
     }
 
     // Try active first
-    $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id;
+    $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true';
     $response = wp_remote_get($api_url);
 
     if (is_wp_error($response)) {
@@ -1169,7 +1169,7 @@ function sync_single_personnel_user($college_id)
 
     // If not found as active, try inactive
     if (!is_array($users) || empty($users)) {
-        $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&isActive=false';
+        $api_url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true&isActive=false';
         $response = wp_remote_get($api_url);
 
         if (is_wp_error($response)) {
