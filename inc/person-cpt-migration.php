@@ -591,7 +591,7 @@ function person_migration_ajax_verify_swap() {
 
 	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names = array('authors', 'experts', 'translator', 'artists');
-	$max_sample = 50;
+	// Scan all posts -- no sampling limit
 
 	// Get posts that actually have repeater data
 	$posts = get_posts(array(
@@ -606,18 +606,13 @@ function person_migration_ajax_verify_swap() {
 	$user_ids_count = 0;
 	$unknown_count  = 0;
 	$custom_count   = 0;
-	$sampled        = 0;
 	$details        = array();
 	$flagged        = array(); // user IDs and unknown IDs -- always captured
 
 	foreach ($posts as $pid) {
-		if ($sampled >= $max_sample) break;
-		$found_repeater = false;
-
 		foreach ($repeater_names as $rname) {
 			$count = (int) get_post_meta($pid, $rname, true);
 			if ($count <= 0) continue;
-			$found_repeater = true;
 
 			for ($i = 0; $i < $count; $i++) {
 				$entry_type = get_post_meta($pid, $rname . '_' . $i . '_type', true);
@@ -658,11 +653,10 @@ function person_migration_ajax_verify_swap() {
 			}
 		}
 
-		if ($found_repeater) $sampled++;
 	}
 
 	wp_send_json_success(array(
-		'sampled'     => $sampled,
+		'total_posts' => count($posts),
 		'post_ids'    => $post_ids_count,
 		'user_ids'    => $user_ids_count,
 		'unknown_ids' => $unknown_count,
@@ -1312,7 +1306,7 @@ function person_migration_enqueue_scripts($hook) {
 						if (response.success) {
 							var d = response.data;
 							var html = "<div class=\"notice notice-info\" style=\"margin:12px 0\">";
-							html += "<p><strong>Swap Verification</strong> (sampled " + esc(d.sampled) + " posts with repeater data)</p>";
+							html += "<p><strong>Swap Verification</strong> (scanned " + esc(String(d.total_posts)) + " posts)</p>";
 							html += "<p>CPT posts: <strong>" + esc(d.post_ids) + "</strong> | WP users: <strong style=\"" + (d.user_ids > 0 ? "color:#d63638" : "") + "\">" + esc(d.user_ids) + "</strong> | Not found: <strong style=\"" + (d.unknown_ids > 0 ? "color:#d63638" : "") + "\">" + esc(d.unknown_ids) + "</strong> | Custom entries: <strong>" + esc(d.custom || 0) + "</strong></p>";
 							if (d.flagged && d.flagged.length) {
 								html += "<div style=\"font-size:12px;margin-top:8px;border:2px solid #d63638;padding:8px;background:#fef1f1\">";
