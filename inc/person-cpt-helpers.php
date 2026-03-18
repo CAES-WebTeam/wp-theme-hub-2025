@@ -149,3 +149,85 @@ function resolve_person_id_from_repeater_row($item) {
 
     return $id ? (int) $id : null;
 }
+
+// ============================================================
+// Admin columns: content counts for People list
+// ============================================================
+
+add_filter('manage_caes_hub_person_posts_columns', function ($columns) {
+    // Insert after title
+    $new = array();
+    foreach ($columns as $key => $label) {
+        $new[$key] = $label;
+        if ($key === 'title') {
+            $new['person_posts']        = 'Stories';
+            $new['person_publications'] = 'Pubs';
+            $new['person_shorthand']    = 'Shorthand';
+        }
+    }
+    return $new;
+});
+
+add_action('manage_caes_hub_person_posts_custom_column', function ($column, $post_id) {
+    $type_map = array(
+        'person_posts'        => 'post',
+        'person_publications' => 'publications',
+        'person_shorthand'    => 'shorthand_story',
+    );
+
+    if (!isset($type_map[$column])) return;
+
+    $post_type = $type_map[$column];
+    $person_id = $post_id;
+
+    // Count posts where this person appears in any repeater field
+    global $wpdb;
+    $count = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(DISTINCT p.ID)
+         FROM {$wpdb->posts} p
+         INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+         WHERE p.post_type = %s
+           AND p.post_status IN ('publish','draft','private')
+           AND pm.meta_key REGEXP %s
+           AND pm.meta_value = %s",
+        $post_type,
+        '^(authors|experts|translator|artists)_[0-9]+_user$',
+        (string) $person_id
+    ));
+
+    if ($count > 0) {
+        $url = admin_url('edit.php?post_type=' . $post_type . '&person_filter=' . $person_id);
+        echo '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>';
+    } else {
+        echo '<span style="color:#999">0</span>';
+    }
+}, 10, 2);
+
+// Filter post lists by person_filter param
+add_action('pre_get_posts', function ($query) {
+    if (!is_admin() || !$query->is_main_query()) return;
+
+    $person_id = isset($_GET['person_filter']) ? (int) $_GET['person_filter'] : 0;
+    if (!$person_id) return;
+
+    global $wpdb;
+    $post_ids = $wpdb->get_col($wpdb->prepare(
+        "SELECT DISTINCT post_id
+         FROM {$wpdb->postmeta}
+         WHERE meta_key REGEXP %s
+           AND meta_value = %s",
+        '^(authors|experts|translator|artists)_[0-9]+_user$',
+        (string) $person_id
+    ));
+
+    if (!empty($post_ids)) {
+        $query->set('post__in', $post_ids);
+    } else {
+        $query->set('post__in', array(0));
+    }
+});
+
+// Make columns sortable (sort by count isn't practical, but at least present)
+add_filter('manage_edit-caes_hub_person_sortable_columns', function ($columns) {
+    return $columns;
+});
