@@ -63,7 +63,7 @@ Phase 2 steps must be executed in the order listed.
 
 ## Phase 3: Update Sync Infrastructure
 
-10. Rewrite `sync_personnel_users()` and `sync_personnel_users2()` to create/update `caes_hub_person` posts instead of users; rename to `sync_active_personnel()` and `sync_inactive_personnel_authors()`
+10. Rewrite `sync_personnel_users()` and `sync_personnel_users2()` to create/update `caes_hub_person` posts instead of users; rename to `sync_active_personnel()` and `sync_inactive_personnel_authors()`. Must also update `is_active` on the CPT post (the merge tool and front-end rely on this field to determine active/inactive status)
 11. Update the CAES Tools admin page to reflect the new sync targets
 12. Rewrite both Symplectic import files to query `caes_hub_person` posts by meta and write to CPT post IDs. While updating, ensure the year data is carrying over correctly for scholarly works.
 13. Retire `import_news_experts()` and `import_news_writers()`
