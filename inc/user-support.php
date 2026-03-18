@@ -2645,7 +2645,6 @@ CSS;
     echo '<input type="hidden" id="personnel-college-id" name="college_id" value="">';
     echo '<div id="personnel-search-results" style="display:none; border:1px solid #ccc; background:#fff; max-height:200px; overflow-y:auto; position:absolute; z-index:1000; width:25em;"></div>';
     echo '<p id="personnel-selected" style="display:none; margin-top:8px;"><strong>Selected:</strong> <span id="personnel-selected-name"></span> <a href="#" id="personnel-clear" style="margin-left:10px;">Clear</a></p>';
-    $import_single_url = esc_url(admin_url('tools.php?page=user-data-management&action=import_single_personnel'));
     echo '<p style="margin-top:10px;"><a href="#" id="personnel-import-btn" class="button button-primary" style="display:none;">Import Selected Person</a></p>';
     echo '</td>';
     echo '</tr></tbody></table>';
@@ -2661,7 +2660,7 @@ CSS;
         var $selectedName = $("#personnel-selected-name");
         var $importBtn = $("#personnel-import-btn");
         var $clear = $("#personnel-clear");
-        var baseUrl = "' . esc_js($import_single_url) . '";
+        var baseUrl = "' . esc_js(admin_url('tools.php?page=user-data-management&action=import_single_personnel')) . '";
 
         $input.on("keyup", function() {
             clearTimeout(searchTimer);
