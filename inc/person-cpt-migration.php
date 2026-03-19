@@ -3298,6 +3298,7 @@ function person_migration_render_merge_page() {
 				?>
 				<?php
 				// Pre-compute bulk-eligible groups: exactly 2 members, emails match, one is personnel_user
+				$map = person_migration_get_map();
 				$bulk_eligible = array();
 				foreach ($duplicate_groups as $gi => $group) {
 					if (count($group) !== 2) continue;
