@@ -3406,7 +3406,18 @@ function person_migration_render_merge_page() {
 							$emails = array();
 							$group_has_content = false;
 							foreach ($group as $pid) {
-								$names[]  = get_the_title($pid) . ' (#' . $pid . ')';
+								$uid = array_search($pid, $map);
+								$role_tag = '';
+								if ($uid) {
+									$gu = get_userdata($uid);
+									if ($gu && in_array('personnel_user', $gu->roles)) $role_tag = ' [P]';
+									elseif ($gu && in_array('expert_user', $gu->roles)) $role_tag = ' [E]';
+								}
+								$is_expert_active = get_post_meta($pid, 'is_expert', true);
+								$active_tag = '';
+								if ($is_expert_active === '1' || $is_expert_active === 1) $active_tag = ' *active*';
+								elseif ($is_expert_active === '0' || $is_expert_active === 0) $active_tag = ' (inactive)';
+								$names[]  = get_the_title($pid) . ' (#' . $pid . ')' . $role_tag . $active_tag;
 								$e = get_post_meta($pid, 'uga_email', true);
 								if ($e) $emails[] = $e;
 								if (!empty($all_group_pids[$pid])) $group_has_content = true;
