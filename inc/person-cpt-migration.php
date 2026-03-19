@@ -3387,6 +3387,7 @@ function person_migration_render_merge_page() {
 				</div>
 				<?php endif; ?>
 
+				<style>.pmig-both-personnel td { background: #fcf0f1 !important; }</style>
 				<table class="widefat striped" style="margin-top:12px">
 					<thead>
 						<tr>
@@ -3441,7 +3442,7 @@ function person_migration_render_merge_page() {
 								$is_both_personnel = ($personnel_count === 2);
 							}
 							?>
-							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-bulk-keep="' . esc_attr($bulk_eligible[$gi]['keep']) . '" data-bulk-trash="' . esc_attr($bulk_eligible[$gi]['trash']) . '"'; ?> <?php if ($is_both_personnel) echo 'style="background:#fcf0f1"'; ?>>
+							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-bulk-keep="' . esc_attr($bulk_eligible[$gi]['keep']) . '" data-bulk-trash="' . esc_attr($bulk_eligible[$gi]['trash']) . '"'; ?> <?php if ($is_both_personnel) echo 'class="pmig-both-personnel"'; ?>>
 								<?php if ($bulk_count > 0): ?>
 								<td>
 									<?php if ($is_bulk): ?>
