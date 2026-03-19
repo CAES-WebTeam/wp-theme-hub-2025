@@ -2818,6 +2818,16 @@ function person_migration_ajax_scan_duplicates() {
 		}
 	}
 
+	// Filter out previously dismissed groups
+	$dismissed_pairs = get_option('person_migration_dismissed_pairs', array());
+	if (!empty($dismissed_pairs)) {
+		$duplicate_groups = array_values(array_filter($duplicate_groups, function($group) use ($dismissed_pairs) {
+			sort($group);
+			$key = implode(',', $group);
+			return !isset($dismissed_pairs[$key]);
+		}));
+	}
+
 	// Store the duplicate groups and set meta flags on posts
 	// First clear old flags
 	$old_flagged = get_posts(array(
@@ -4287,7 +4297,8 @@ function person_migration_ajax_dismiss_group() {
 	$map = person_migration_get_map();
 	$group_uids = array();
 	$group_names = array();
-	foreach ($duplicate_groups[$group_index] as $pid) {
+	$group_pids = $duplicate_groups[$group_index];
+	foreach ($group_pids as $pid) {
 		$group_names[] = get_the_title($pid);
 		foreach ($map as $uid => $mapped_pid) {
 			if ((int)$mapped_pid === (int)$pid) {
@@ -4303,6 +4314,13 @@ function person_migration_ajax_dismiss_group() {
 		'group_uids'  => $group_uids,
 	);
 	update_option(PERSON_MIGRATION_MERGE_LOG_KEY, $merge_log, false);
+
+	// Store dismissed post ID combo so re-scans skip it
+	sort($group_pids);
+	$dismissed_key = implode(',', $group_pids);
+	$dismissed_pairs = get_option('person_migration_dismissed_pairs', array());
+	$dismissed_pairs[$dismissed_key] = true;
+	update_option('person_migration_dismissed_pairs', $dismissed_pairs, false);
 
 	// Clear duplicate meta flags on posts in this group
 	foreach ($duplicate_groups[$group_index] as $pid) {
@@ -4575,6 +4593,7 @@ function person_migration_ajax_reset_all() {
 	delete_option(PERSON_MIGRATION_MAP_KEY);
 	delete_option(PERSON_MIGRATION_DUPES_KEY);
 	delete_option(PERSON_MIGRATION_CHECKLIST_KEY);
+	delete_option('person_migration_dismissed_pairs');
 
 	// Clear duplicate group meta flags
 	$flagged = get_posts(array(
