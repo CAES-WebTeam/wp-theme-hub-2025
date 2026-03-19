@@ -3296,9 +3296,50 @@ function person_migration_render_merge_page() {
 					}
 				}
 				?>
+				<?php
+				// Pre-compute bulk-eligible groups: exactly 2 members, emails match, one is personnel_user
+				$bulk_eligible = array();
+				foreach ($duplicate_groups as $gi => $group) {
+					if (count($group) !== 2) continue;
+					$emails_lc = array();
+					$personnel_pid = null;
+					$other_pid = null;
+					foreach ($group as $pid) {
+						$e = strtolower(trim(get_post_meta($pid, 'uga_email', true)));
+						if ($e) $emails_lc[$pid] = $e;
+						$uid = array_search($pid, $map);
+						if ($uid) {
+							$u = get_userdata($uid);
+							if ($u && in_array('personnel_user', $u->roles)) {
+								$personnel_pid = $pid;
+							}
+						}
+					}
+					if (!$personnel_pid) continue;
+					$other_pid = ($group[0] == $personnel_pid) ? $group[1] : $group[0];
+					// Check emails match
+					$e1 = isset($emails_lc[$group[0]]) ? $emails_lc[$group[0]] : '';
+					$e2 = isset($emails_lc[$group[1]]) ? $emails_lc[$group[1]] : '';
+					if ($e1 && $e2 && $e1 === $e2) {
+						$bulk_eligible[$gi] = array('keep' => $personnel_pid, 'trash' => $other_pid);
+					}
+				}
+				$bulk_count = count($bulk_eligible);
+				?>
+
+				<?php if ($bulk_count > 0): ?>
+				<div style="background:#f0f6fc; border:1px solid #c3c4c7; padding:12px 16px; margin-top:12px; border-radius:4px">
+					<strong><?php echo esc_html($bulk_count); ?> groups</strong> are eligible for bulk merge (2 members, matching email, one is personnel).
+					<button type="button" id="pmig-select-all-bulk" class="button button-small" style="margin-left:8px">Select All Eligible</button>
+					<button type="button" id="pmig-bulk-merge-btn" class="button button-primary button-small" style="margin-left:4px" disabled>Bulk Merge Selected (<span id="pmig-bulk-count">0</span>)</button>
+					<span id="pmig-bulk-status" style="margin-left:8px"></span>
+				</div>
+				<?php endif; ?>
+
 				<table class="widefat striped" style="margin-top:12px">
 					<thead>
 						<tr>
+							<?php if ($bulk_count > 0): ?><th style="width:30px"></th><?php endif; ?>
 							<th>Group</th>
 							<th>People</th>
 							<th>Matching On</th>
@@ -3334,8 +3375,16 @@ function person_migration_render_merge_page() {
 								$match_reasons[] = 'Name: ' . implode(', ', array_unique($name_keys));
 							}
 							if (empty($match_reasons)) $match_reasons[] = 'Name/email overlap';
+							$is_bulk = isset($bulk_eligible[$gi]);
 							?>
-							<tr>
+							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-bulk-keep="' . esc_attr($bulk_eligible[$gi]['keep']) . '" data-bulk-trash="' . esc_attr($bulk_eligible[$gi]['trash']) . '"'; ?>>
+								<?php if ($bulk_count > 0): ?>
+								<td>
+									<?php if ($is_bulk): ?>
+									<input type="checkbox" class="pmig-bulk-check" data-group="<?php echo esc_attr($gi); ?>">
+									<?php endif; ?>
+								</td>
+								<?php endif; ?>
 								<td><?php echo esc_html($gi + 1); ?></td>
 								<td><?php echo esc_html(implode(' / ', $names)); ?></td>
 								<td><?php echo esc_html(implode('; ', $match_reasons)); ?></td>
@@ -3352,6 +3401,85 @@ function person_migration_render_merge_page() {
 				<script>
 				jQuery(function($) {
 					var nonce = <?php echo wp_json_encode($nonce); ?>;
+
+					// Bulk merge checkbox handling
+					function updateBulkCount() {
+						var count = $(".pmig-bulk-check:checked").length;
+						$("#pmig-bulk-count").text(count);
+						$("#pmig-bulk-merge-btn").prop("disabled", count === 0);
+					}
+					$(".pmig-bulk-check").on("change", updateBulkCount);
+					$("#pmig-select-all-bulk").on("click", function() {
+						var allChecked = $(".pmig-bulk-check:checked").length === $(".pmig-bulk-check").length;
+						$(".pmig-bulk-check").prop("checked", !allChecked);
+						updateBulkCount();
+					});
+
+					// Bulk merge: process selected groups sequentially
+					$("#pmig-bulk-merge-btn").on("click", function() {
+						var $checked = $(".pmig-bulk-check:checked");
+						var total = $checked.length;
+						if (total === 0) return;
+						if (!confirm("Merge " + total + " groups? Each will keep the personnel record and trash the expert-only duplicate. No expert fields will be copied.")) return;
+
+						var $btn = $(this);
+						$btn.prop("disabled", true);
+						var $status = $("#pmig-bulk-status");
+						var done = 0, failed = 0;
+
+						// Build queue of group data
+						var queue = [];
+						$checked.each(function() {
+							var gi = $(this).data("group");
+							var $row = $(this).closest("tr");
+							queue.push({
+								group_index: gi,
+								keep_post: $row.data("bulk-keep"),
+								trash_post: $row.data("bulk-trash"),
+								$row: $row
+							});
+						});
+
+						function processNext() {
+							if (queue.length === 0) {
+								$status.html("<strong>Done.</strong> Merged: " + done + " | Failed: " + failed);
+								$btn.prop("disabled", true);
+								return;
+							}
+							var item = queue.shift();
+							$status.text("Processing " + (done + failed + 1) + " of " + total + "...");
+							$.ajax({
+								url: ajaxurl,
+								method: "POST",
+								data: {
+									action: "person_migration_merge",
+									nonce: nonce,
+									keep_post: item.keep_post,
+									group_index: item.group_index,
+									copy_fields: [],
+									trash_posts: [item.trash_post]
+								},
+								success: function(response) {
+									if (response.success) {
+										done++;
+										item.$row.fadeOut(200, function() { $(this).remove(); });
+									} else {
+										failed++;
+										item.$row.css("background", "#fcf0f1");
+									}
+									processNext();
+								},
+								error: function() {
+									failed++;
+									item.$row.css("background", "#fcf0f1");
+									processNext();
+								}
+							});
+						}
+						processNext();
+					});
+
+					// Dismiss button
 					$(".pmig-dismiss-btn").on("click", function() {
 						var $btn = $(this);
 						var gi = $btn.data("group");
