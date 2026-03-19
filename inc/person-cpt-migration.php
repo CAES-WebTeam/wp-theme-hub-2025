@@ -3329,6 +3329,9 @@ function person_migration_render_merge_page() {
 					$b = $info[$pids[1]];
 					$names_match = ($a['name'] && $b['name'] && $a['name'] === $b['name']);
 
+					// Skip if both are personnel -- needs manual review
+					if ($a['role'] === 'personnel' && $b['role'] === 'personnel') continue;
+
 					// Case 1: Personnel + Expert, emails match
 					if (($a['role'] === 'personnel' || $b['role'] === 'personnel') && $a['email'] && $b['email'] && $a['email'] === $b['email']) {
 						$keep = ($a['role'] === 'personnel') ? $pids[0] : $pids[1];
