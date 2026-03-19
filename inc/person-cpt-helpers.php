@@ -58,7 +58,7 @@ function _resolve_person_from_post($post_id) {
     $first_name    = get_post_meta($post_id, 'first_name', true);
     $last_name     = get_post_meta($post_id, 'last_name', true);
     $display_name  = get_post_meta($post_id, 'display_name', true);
-    $title         = get_field('public_friendly_title', $post_id);
+    $title         = get_post_meta($post_id, 'public_friendly_title', true);
     if (empty($title)) {
         $title = get_post_meta($post_id, 'title', true);
     }
