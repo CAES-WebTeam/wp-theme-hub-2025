@@ -3297,32 +3297,66 @@ function person_migration_render_merge_page() {
 				}
 				?>
 				<?php
-				// Pre-compute bulk-eligible groups: exactly 2 members, emails match, one is personnel_user
+				// Pre-compute bulk-eligible groups
 				$map = person_migration_get_map();
 				$bulk_eligible = array();
 				foreach ($duplicate_groups as $gi => $group) {
 					if (count($group) !== 2) continue;
-					$emails_lc = array();
-					$personnel_pid = null;
-					$other_pid = null;
+
+					// Gather info for both members
+					$info = array();
 					foreach ($group as $pid) {
-						$e = strtolower(trim(get_post_meta($pid, 'uga_email', true)));
-						if ($e) $emails_lc[$pid] = $e;
 						$uid = array_search($pid, $map);
+						$role = '';
 						if ($uid) {
 							$u = get_userdata($uid);
 							if ($u && in_array('personnel_user', $u->roles)) {
-								$personnel_pid = $pid;
+								$role = 'personnel';
+							} elseif ($u && in_array('expert_user', $u->roles)) {
+								$role = 'expert';
 							}
 						}
+						$info[$pid] = array(
+							'role'  => $role,
+							'email' => strtolower(trim(get_post_meta($pid, 'uga_email', true))),
+							'name'  => strtolower(trim(get_post_meta($pid, 'first_name', true) . ' ' . get_post_meta($pid, 'last_name', true))),
+							'phone' => preg_replace('/\D/', '', get_post_meta($pid, 'phone', true)),
+						);
 					}
-					if (!$personnel_pid) continue;
-					$other_pid = ($group[0] == $personnel_pid) ? $group[1] : $group[0];
-					// Check emails match
-					$e1 = isset($emails_lc[$group[0]]) ? $emails_lc[$group[0]] : '';
-					$e2 = isset($emails_lc[$group[1]]) ? $emails_lc[$group[1]] : '';
-					if ($e1 && $e2 && $e1 === $e2) {
-						$bulk_eligible[$gi] = array('keep' => $personnel_pid, 'trash' => $other_pid);
+
+					$pids = array_keys($info);
+					$a = $info[$pids[0]];
+					$b = $info[$pids[1]];
+					$names_match = ($a['name'] && $b['name'] && $a['name'] === $b['name']);
+
+					// Case 1: Personnel + Expert, emails match
+					if (($a['role'] === 'personnel' || $b['role'] === 'personnel') && $a['email'] && $b['email'] && $a['email'] === $b['email']) {
+						$keep = ($a['role'] === 'personnel') ? $pids[0] : $pids[1];
+						$trash = ($keep === $pids[0]) ? $pids[1] : $pids[0];
+						$bulk_eligible[$gi] = array('keep' => $keep, 'trash' => $trash, 'reason' => 'Personnel + matching email');
+						continue;
+					}
+
+					// Case 2: Personnel + Expert, expert missing email but names match
+					if (($a['role'] === 'personnel' || $b['role'] === 'personnel') && $names_match) {
+						$personnel_pid = ($a['role'] === 'personnel') ? $pids[0] : $pids[1];
+						$other_pid = ($personnel_pid === $pids[0]) ? $pids[1] : $pids[0];
+						$other = $info[$other_pid];
+						if (empty($other['email'])) {
+							$bulk_eligible[$gi] = array('keep' => $personnel_pid, 'trash' => $other_pid, 'reason' => 'Personnel + name match (expert has no email)');
+							continue;
+						}
+					}
+
+					// Case 3: Two experts, name + email + phone all match
+					if ($a['role'] === 'expert' && $b['role'] === 'expert' && $names_match) {
+						$emails_match = ($a['email'] && $b['email'] && $a['email'] === $b['email']);
+						$phones_match = ($a['phone'] && $b['phone'] && $a['phone'] === $b['phone']);
+						if ($emails_match && $phones_match) {
+							// Keep whichever has more content, or the first one
+							$bulk_eligible[$gi] = array('keep' => $pids[0], 'trash' => $pids[1], 'reason' => 'Two experts, name + email + phone match');
+							continue;
+						}
 					}
 				}
 				$bulk_count = count($bulk_eligible);
@@ -3330,7 +3364,7 @@ function person_migration_render_merge_page() {
 
 				<?php if ($bulk_count > 0): ?>
 				<div style="background:#f0f6fc; border:1px solid #c3c4c7; padding:12px 16px; margin-top:12px; border-radius:4px">
-					<strong><?php echo esc_html($bulk_count); ?> groups</strong> are eligible for bulk merge (2 members, matching email, one is personnel).
+					<strong><?php echo esc_html($bulk_count); ?> groups</strong> eligible for bulk merge.
 					<button type="button" id="pmig-select-all-bulk" class="button button-small" style="margin-left:8px">Select All Eligible</button>
 					<button type="button" id="pmig-bulk-merge-btn" class="button button-primary button-small" style="margin-left:4px" disabled>Bulk Merge Selected (<span id="pmig-bulk-count">0</span>)</button>
 					<span id="pmig-bulk-status" style="margin-left:8px"></span>
