@@ -3427,8 +3427,21 @@ function person_migration_render_merge_page() {
 							}
 							if (empty($match_reasons)) $match_reasons[] = 'Name/email overlap';
 							$is_bulk = isset($bulk_eligible[$gi]);
+							// Check if both members are personnel
+							$is_both_personnel = false;
+							if (count($group) === 2) {
+								$personnel_count = 0;
+								foreach ($group as $gpid) {
+									$guid = array_search($gpid, $map);
+									if ($guid) {
+										$gu = get_userdata($guid);
+										if ($gu && in_array('personnel_user', $gu->roles)) $personnel_count++;
+									}
+								}
+								$is_both_personnel = ($personnel_count === 2);
+							}
 							?>
-							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-bulk-keep="' . esc_attr($bulk_eligible[$gi]['keep']) . '" data-bulk-trash="' . esc_attr($bulk_eligible[$gi]['trash']) . '"'; ?>>
+							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-bulk-keep="' . esc_attr($bulk_eligible[$gi]['keep']) . '" data-bulk-trash="' . esc_attr($bulk_eligible[$gi]['trash']) . '"'; ?> <?php if ($is_both_personnel) echo 'style="background:#fcf0f1"'; ?>>
 								<?php if ($bulk_count > 0): ?>
 								<td>
 									<?php if ($is_bulk): ?>
