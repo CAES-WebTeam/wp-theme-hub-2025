@@ -3629,7 +3629,7 @@ function person_migration_render_merge_page() {
 						$.ajax({
 							url: ajaxurl,
 							method: "POST",
-							data: { action: "person_migration_group_detail", nonce: nonce, group_index: gi },
+							data: { action: "person_migration_group_detail", nonce: nonce, group_index: gi, find_post: $btn.closest("tr").data("bulk-keep") || 0 },
 							success: function(response) {
 								if (!response.success) {
 									$content.html("<span style='color:red'>Error: " + (response.data && response.data.error_message || "Unknown") + "</span>");
@@ -4586,13 +4586,30 @@ function person_migration_ajax_reset_all() {
 function person_migration_ajax_group_detail() {
 	person_migration_check_ajax();
 
+	$find_post = isset($_POST['find_post']) ? intval($_POST['find_post']) : 0;
 	$group_index = intval($_POST['group_index']);
 	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
 
-	if (!isset($duplicate_groups[$group_index])) {
+	// Find group by post ID (stable) or fall back to index
+	$group = null;
+	$resolved_index = null;
+	if ($find_post) {
+		foreach ($duplicate_groups as $idx => $g) {
+			if (in_array($find_post, $g)) {
+				$group = $g;
+				$resolved_index = $idx;
+				break;
+			}
+		}
+	}
+	if (!$group && isset($duplicate_groups[$group_index])) {
+		$group = $duplicate_groups[$group_index];
+		$resolved_index = $group_index;
+	}
+	if (!$group) {
 		wp_send_json_error(array('error_message' => 'Group not found'));
 	}
-	$group = $duplicate_groups[$group_index];
+	$group_index = $resolved_index;
 
 	$map = person_migration_get_map();
 	$expert_fields = person_migration_get_expert_fields();
