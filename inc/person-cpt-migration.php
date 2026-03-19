@@ -3677,14 +3677,27 @@ function person_migration_ajax_merge() {
 		: array();
 
 	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
-	if (!isset($duplicate_groups[$group_index])) {
-		wp_send_json_error(array('error_message' => 'Invalid group index.'));
-	}
 
-	$group = $duplicate_groups[$group_index];
-	if (!in_array($keep_post, $group)) {
-		wp_send_json_error(array('error_message' => 'Selected post is not in this duplicate group.'));
+	// Look up group by index first; if stale (e.g. during bulk merge), find by post ID
+	$group = null;
+	$resolved_index = null;
+	if (isset($duplicate_groups[$group_index]) && in_array($keep_post, $duplicate_groups[$group_index])) {
+		$group = $duplicate_groups[$group_index];
+		$resolved_index = $group_index;
+	} else {
+		// Fallback: search all groups for one containing the keep_post
+		foreach ($duplicate_groups as $idx => $g) {
+			if (in_array($keep_post, $g)) {
+				$group = $g;
+				$resolved_index = $idx;
+				break;
+			}
+		}
 	}
+	if (!$group) {
+		wp_send_json_error(array('error_message' => 'Could not find a duplicate group containing post #' . $keep_post));
+	}
+	$group_index = $resolved_index;
 
 	// Use explicitly selected trash posts, or fall back to all non-keepers
 	$donor_ids = !empty($trash_posts)
