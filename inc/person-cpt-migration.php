@@ -3013,7 +3013,18 @@ function person_migration_render_merge_page() {
 									if ($u) $role = implode(', ', $u->roles);
 								}
 							?>
-								<td><?php echo esc_html($role ?: 'Unknown'); ?> <?php echo $source_user_id ? '(User ' . esc_html($source_user_id) . ')' : ''; ?></td>
+								<td><?php
+									if ($role) {
+										echo esc_html($role);
+									} elseif ($source_user_id && $u) {
+										echo '<span style="color:#d63638">No roles (roleless user)</span>';
+									} elseif ($source_user_id) {
+										echo '<span style="color:#d63638">User not found</span>';
+									} else {
+										echo '<span style="color:#888">No source user in map</span>';
+									}
+									echo $source_user_id ? ' (User ' . esc_html($source_user_id) . ')' : '';
+								?></td>
 							<?php endforeach; ?>
 						</tr>
 						<tr>
@@ -3351,13 +3362,15 @@ function person_migration_render_merge_page() {
 						}
 					}
 
-					// Case 3: Two experts, name + email + phone all match
+					// Case 3: Two experts, name + email match -- keep higher user ID (newer)
 					if ($a['role'] === 'expert' && $b['role'] === 'expert' && $names_match) {
 						$emails_match = ($a['email'] && $b['email'] && $a['email'] === $b['email']);
-						$phones_match = ($a['phone'] && $b['phone'] && $a['phone'] === $b['phone']);
-						if ($emails_match && $phones_match) {
-							// Keep whichever has more content, or the first one
-							$bulk_eligible[$gi] = array('keep' => $pids[0], 'trash' => $pids[1], 'reason' => 'Two experts, name + email + phone match');
+						if ($emails_match) {
+							$uid_a = (int) array_search($pids[0], $map);
+							$uid_b = (int) array_search($pids[1], $map);
+							$keep = ($uid_b > $uid_a) ? $pids[1] : $pids[0];
+							$trash = ($keep === $pids[0]) ? $pids[1] : $pids[0];
+							$bulk_eligible[$gi] = array('keep' => $keep, 'trash' => $trash, 'reason' => 'Two experts, name + email match (keeping newer)');
 							continue;
 						}
 					}
