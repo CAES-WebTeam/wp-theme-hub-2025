@@ -112,6 +112,7 @@ if (!function_exists('process_people')) {
                     $person_id = resolve_person_id_from_repeater_row($item);
                     if ($person_id) {
                         $person = resolve_person_data($person_id);
+                        error_log("DEBUG pub-details-authors: Person ID: $person_id, source: " . ($person['source'] ?? 'null') . ", title: " . ($person['title'] ?? 'null') . ", pft: " . get_post_meta($person_id, 'public_friendly_title', true));
                         if ($person) {
                             $display_name = $person['full_name'];
                             $first_name   = $person['first_name'];
