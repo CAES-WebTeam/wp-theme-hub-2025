@@ -2818,15 +2818,40 @@ function person_migration_ajax_scan_duplicates() {
 		}
 	}
 
-	// Filter out previously dismissed groups
+	// Build dismissed set from stored pairs + decision log dismissals
 	$dismissed_pairs = get_option('person_migration_dismissed_pairs', array());
-	if (!empty($dismissed_pairs)) {
-		$duplicate_groups = array_values(array_filter($duplicate_groups, function($group) use ($dismissed_pairs) {
-			sort($group);
-			$key = implode(',', $group);
-			return !isset($dismissed_pairs[$key]);
-		}));
+
+	// Backfill from decision log: find all dismiss decisions and build post ID keys
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	$map = person_migration_get_map();
+	foreach ($merge_log as $decision) {
+		if ($decision['action'] !== 'dismiss') continue;
+		if (empty($decision['group_uids'])) continue;
+		// Convert user IDs back to post IDs
+		$pids = array();
+		foreach ($decision['group_uids'] as $uid) {
+			if (isset($map[$uid])) $pids[] = (int)$map[$uid];
+		}
+		if (count($pids) >= 2) {
+			sort($pids);
+			$dismissed_pairs[implode(',', $pids)] = true;
+		}
 	}
+	if (!empty($dismissed_pairs)) {
+		update_option('person_migration_dismissed_pairs', $dismissed_pairs, false);
+	}
+
+	// Also filter out groups where any member has been trashed
+	$duplicate_groups = array_values(array_filter($duplicate_groups, function($group) use ($dismissed_pairs) {
+		// Skip if any member is trashed
+		foreach ($group as $pid) {
+			if (get_post_status($pid) === 'trash') return false;
+		}
+		// Skip if dismissed
+		sort($group);
+		$key = implode(',', $group);
+		return !isset($dismissed_pairs[$key]);
+	}));
 
 	// Store the duplicate groups and set meta flags on posts
 	// First clear old flags
