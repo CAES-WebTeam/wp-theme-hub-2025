@@ -2446,6 +2446,7 @@ add_action('wp_ajax_person_migration_reset_all',             'person_migration_a
 add_action('wp_ajax_person_migration_search_persons',        'person_migration_ajax_search_persons');
 add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_ajax_resolve_flagged');
 add_action('wp_ajax_person_migration_roleless_audit',        'person_migration_ajax_roleless_audit');
+add_action('wp_ajax_person_migration_group_detail',          'person_migration_ajax_group_detail');
 
 function person_migration_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'person_migration_nonce')) {
@@ -3378,20 +3379,19 @@ function person_migration_render_merge_page() {
 				$bulk_count = count($bulk_eligible);
 				?>
 
-				<?php if ($bulk_count > 0): ?>
 				<div style="background:#f0f6fc; border:1px solid #c3c4c7; padding:12px 16px; margin-top:12px; border-radius:4px">
-					<strong><?php echo esc_html($bulk_count); ?> groups</strong> eligible for bulk merge.
-					<button type="button" id="pmig-select-all-bulk" class="button button-small" style="margin-left:8px">Select All Eligible</button>
-					<button type="button" id="pmig-bulk-merge-btn" class="button button-primary button-small" style="margin-left:4px" disabled>Bulk Merge Selected (<span id="pmig-bulk-count">0</span>)</button>
+					<strong><?php echo esc_html($bulk_count); ?></strong> auto-eligible for bulk merge |
+					<button type="button" id="pmig-select-all-bulk" class="button button-small" style="margin-left:4px">Select All Auto-Eligible</button>
+					<button type="button" id="pmig-select-all-any" class="button button-small" style="margin-left:4px">Select All With Checkbox</button>
+					<button type="button" id="pmig-bulk-merge-btn" class="button button-primary button-small" style="margin-left:4px" disabled>Merge Selected (<span id="pmig-bulk-count">0</span>)</button>
 					<span id="pmig-bulk-status" style="margin-left:8px"></span>
 				</div>
-				<?php endif; ?>
 
 				<style>.pmig-both-personnel td { background: #fcf0f1 !important; }</style>
 				<table class="widefat striped" style="margin-top:12px">
 					<thead>
 						<tr>
-							<?php if ($bulk_count > 0): ?><th style="width:30px"></th><?php endif; ?>
+							<th style="width:30px"></th>
 							<th>Group</th>
 							<th>People</th>
 							<th>Matching On</th>
@@ -3442,21 +3442,48 @@ function person_migration_render_merge_page() {
 								$is_both_personnel = ($personnel_count === 2);
 							}
 							?>
-							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-bulk-keep="' . esc_attr($bulk_eligible[$gi]['keep']) . '" data-bulk-trash="' . esc_attr($bulk_eligible[$gi]['trash']) . '"'; ?> <?php if ($is_both_personnel) echo 'class="pmig-both-personnel"'; ?>>
-								<?php if ($bulk_count > 0): ?>
+							<?php
+							// Determine best keeper for any row (personnel first, then higher user ID)
+							$row_keep = null;
+							$row_trash = array();
+							if (count($group) === 2) {
+								$personnel_pid_row = null;
+								$highest_uid_pid = null;
+								$highest_uid = 0;
+								foreach ($group as $gpid) {
+									$guid = array_search($gpid, $map);
+									if ($guid) {
+										$gu = get_userdata($guid);
+										if ($gu && in_array('personnel_user', $gu->roles)) $personnel_pid_row = $gpid;
+										if ((int)$guid > $highest_uid) {
+											$highest_uid = (int)$guid;
+											$highest_uid_pid = $gpid;
+										}
+									}
+								}
+								$row_keep = $personnel_pid_row ?: $highest_uid_pid ?: $group[0];
+								$row_trash = array_values(array_diff($group, array($row_keep)));
+							}
+							?>
+							<tr data-group="<?php echo esc_attr($gi); ?>" <?php if ($row_keep) echo 'data-bulk-keep="' . esc_attr($row_keep) . '" data-bulk-trash="' . esc_attr(implode(',', $row_trash)) . '"'; ?> <?php if ($is_both_personnel) echo 'class="pmig-both-personnel"'; ?>>
 								<td>
-									<?php if ($is_bulk): ?>
-									<input type="checkbox" class="pmig-bulk-check" data-group="<?php echo esc_attr($gi); ?>">
+									<?php if ($row_keep && !$is_both_personnel): ?>
+									<input type="checkbox" class="pmig-bulk-check" data-group="<?php echo esc_attr($gi); ?>" <?php if ($is_bulk) echo 'data-auto-eligible="1"'; ?>>
 									<?php endif; ?>
 								</td>
-								<?php endif; ?>
 								<td><?php echo esc_html($gi + 1); ?></td>
 								<td><?php echo esc_html(implode(' / ', $names)); ?></td>
 								<td><?php echo esc_html(implode('; ', $match_reasons)); ?></td>
 								<td><?php echo $group_has_content ? '<strong style="color:#d63638">Yes</strong>' : '<span style="color:#999">No</span>'; ?></td>
 								<td>
-									<a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates&group=' . $gi)); ?>" class="button button-small">Review</a>
+									<button type="button" class="button button-small pmig-expand-btn" data-group="<?php echo esc_attr($gi); ?>">Expand</button>
+									<a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates&group=' . $gi)); ?>" class="button button-small" style="color:#888;font-size:11px">Full</a>
 									<button type="button" class="button button-small pmig-dismiss-btn" data-group="<?php echo esc_attr($gi); ?>" style="color:#888">Dismiss</button>
+								</td>
+							</tr>
+							<tr class="pmig-detail-row" data-group="<?php echo esc_attr($gi); ?>" style="display:none">
+								<td colspan="7" style="padding:12px 16px;background:#f9f9f9">
+									<div class="pmig-detail-content" data-group="<?php echo esc_attr($gi); ?>">Loading...</div>
 								</td>
 							</tr>
 						<?php endforeach; ?>
@@ -3475,6 +3502,12 @@ function person_migration_render_merge_page() {
 					}
 					$(".pmig-bulk-check").on("change", updateBulkCount);
 					$("#pmig-select-all-bulk").on("click", function() {
+						var $eligible = $(".pmig-bulk-check[data-auto-eligible='1']");
+						var allChecked = $eligible.filter(":checked").length === $eligible.length;
+						$eligible.prop("checked", !allChecked);
+						updateBulkCount();
+					});
+					$("#pmig-select-all-any").on("click", function() {
 						var allChecked = $(".pmig-bulk-check:checked").length === $(".pmig-bulk-check").length;
 						$(".pmig-bulk-check").prop("checked", !allChecked);
 						updateBulkCount();
@@ -3522,11 +3555,13 @@ function person_migration_render_merge_page() {
 									keep_post: item.keep_post,
 									group_index: item.group_index,
 									copy_fields: [],
-									trash_posts: [item.trash_post]
+									trash_posts: String(item.trash_post).split(",")
+
 								},
 								success: function(response) {
 									if (response.success) {
 										done++;
+										item.$row.next(".pmig-detail-row").remove();
 										item.$row.fadeOut(200, function() { $(this).remove(); });
 									} else {
 										failed++;
@@ -3545,7 +3580,7 @@ function person_migration_render_merge_page() {
 					});
 
 					// Dismiss button
-					$(".pmig-dismiss-btn").on("click", function() {
+					$(document).on("click", ".pmig-dismiss-btn", function() {
 						var $btn = $(this);
 						var gi = $btn.data("group");
 						if (!confirm("Dismiss this group? It will not appear again unless you re-scan.")) return;
@@ -3556,7 +3591,9 @@ function person_migration_render_merge_page() {
 							data: { action: "person_migration_dismiss_group", nonce: nonce, group_index: gi },
 							success: function(response) {
 								if (response.success) {
-									$btn.closest("tr").fadeOut(300, function() { $(this).remove(); });
+									var $row = $btn.closest("tr");
+									$row.next(".pmig-detail-row").fadeOut(300, function() { $(this).remove(); });
+									$row.fadeOut(300, function() { $(this).remove(); });
 								} else {
 									alert("Error: " + (response.data && response.data.error_message || "Unknown"));
 									$btn.prop("disabled", false).text("Dismiss");
@@ -3568,6 +3605,188 @@ function person_migration_render_merge_page() {
 							}
 						});
 					});
+
+					// Expand/collapse detail row
+					$(document).on("click", ".pmig-expand-btn", function() {
+						var $btn = $(this);
+						var gi = $btn.data("group");
+						var $detailRow = $(".pmig-detail-row[data-group='" + gi + "']");
+						var $content = $detailRow.find(".pmig-detail-content");
+
+						if ($detailRow.is(":visible")) {
+							$detailRow.hide();
+							$btn.text("Expand");
+							return;
+						}
+
+						$detailRow.show();
+						$btn.text("Collapse");
+
+						// Only fetch if not already loaded
+						if ($content.data("loaded")) return;
+						$content.html("Loading...");
+
+						$.ajax({
+							url: ajaxurl,
+							method: "POST",
+							data: { action: "person_migration_group_detail", nonce: nonce, group_index: gi },
+							success: function(response) {
+								if (!response.success) {
+									$content.html("<span style='color:red'>Error: " + (response.data && response.data.error_message || "Unknown") + "</span>");
+									return;
+								}
+								$content.data("loaded", true);
+								renderGroupDetail($content, response.data, gi);
+							},
+							error: function() {
+								$content.html("<span style='color:red'>AJAX error</span>");
+							}
+						});
+					});
+
+					function renderGroupDetail($container, data, gi) {
+						var members = data.members;
+						var colCount = members.length;
+
+						// Build comparison table
+						var html = '<table class="widefat" style="margin:0"><thead><tr><th style="width:160px">Field</th>';
+						for (var m = 0; m < colCount; m++) {
+							var mem = members[m];
+							var roleLabel = mem.role;
+							var checked0 = (m === 0) ? " checked" : "";
+							var trashCheck = (m !== 0) ? " checked" : "";
+							// Pre-select personnel as keeper
+							if (mem.is_personnel) {
+								checked0 = " checked";
+								trashCheck = "";
+							}
+							html += '<th style="min-width:200px">';
+							html += '<strong>' + escHtml(mem.title) + '</strong> (#' + mem.post_id + ')';
+							html += '<br><span style="color:#666;font-size:12px">' + escHtml(roleLabel) + (mem.user_id ? ' (User ' + mem.user_id + ')' : '') + '</span>';
+							html += '<br><span style="font-size:12px">' + mem.ref_count + ' content ref(s)</span>';
+							html += '<br><label><input type="radio" name="inline_keep_' + gi + '" value="' + mem.post_id + '"' + checked0 + '> Keep</label>';
+							html += ' <label><input type="checkbox" class="inline-trash" name="inline_trash_' + gi + '" value="' + mem.post_id + '"' + trashCheck + '> Trash</label>';
+							html += ' <a href="' + mem.edit_url + '" target="_blank" style="font-size:11px">Edit</a>';
+							html += '</th>';
+						}
+						html += '</tr></thead><tbody>';
+
+						// Collect all field names across members
+						var allFields = {};
+						for (var m = 0; m < colCount; m++) {
+							for (var fn in members[m].fields) {
+								allFields[fn] = true;
+							}
+						}
+
+						for (var fn in allFields) {
+							var vals = [];
+							var hasVal = false;
+							for (var m = 0; m < colCount; m++) {
+								vals.push(members[m].fields[fn] || '');
+								if (members[m].fields[fn]) hasVal = true;
+							}
+							if (!hasVal) continue;
+
+							// Highlight differences
+							var unique = vals.filter(function(v, i, a) { return v && a.indexOf(v) === i; });
+							var diffStyle = unique.length > 1 ? ' style="background:#fff8e5"' : '';
+
+							html += '<tr' + diffStyle + '><td><strong>' + escHtml(fn) + '</strong></td>';
+							for (var m = 0; m < colCount; m++) {
+								html += '<td>' + escHtml(vals[m] || '') + '</td>';
+							}
+							html += '</tr>';
+						}
+
+						html += '</tbody></table>';
+
+						// Action buttons
+						html += '<div style="margin-top:10px;display:flex;gap:8px;align-items:center">';
+						html += '<button type="button" class="button button-primary pmig-inline-merge-btn" data-group="' + gi + '">Merge (keep selected, trash checked)</button>';
+						html += '<button type="button" class="button pmig-inline-dismiss-btn" data-group="' + gi + '" style="color:#888">Dismiss</button>';
+						html += '<span class="pmig-inline-status" data-group="' + gi + '"></span>';
+						html += '</div>';
+
+						$container.html(html);
+
+						// Fix radio/checkbox logic: uncheck trash on keeper
+						$container.find("input[name='inline_keep_" + gi + "']").on("change", function() {
+							var keepVal = $(this).val();
+							$container.find(".inline-trash").each(function() {
+								$(this).prop("checked", $(this).val() !== keepVal);
+							});
+						});
+						// Set initial state based on personnel pre-selection
+						var $keepRadio = $container.find("input[name='inline_keep_" + gi + "']:checked");
+						if ($keepRadio.length) {
+							var keepVal = $keepRadio.val();
+							$container.find(".inline-trash").each(function() {
+								$(this).prop("checked", $(this).val() !== keepVal);
+							});
+						}
+					}
+
+					// Inline merge
+					$(document).on("click", ".pmig-inline-merge-btn", function() {
+						var $btn = $(this);
+						var gi = $btn.data("group");
+						var $container = $(".pmig-detail-content[data-group='" + gi + "']");
+						var keepPost = $container.find("input[name='inline_keep_" + gi + "']:checked").val();
+						var trashPosts = [];
+						$container.find(".inline-trash:checked").each(function() {
+							trashPosts.push($(this).val());
+						});
+
+						if (!keepPost) { alert("Select a record to keep."); return; }
+						if (trashPosts.length === 0) { alert("Check at least one record to trash."); return; }
+						if (trashPosts.indexOf(keepPost) !== -1) { alert("Cannot trash the record you are keeping."); return; }
+
+						$btn.prop("disabled", true).text("Merging...");
+						var $status = $(".pmig-inline-status[data-group='" + gi + "']");
+
+						$.ajax({
+							url: ajaxurl,
+							method: "POST",
+							data: {
+								action: "person_migration_merge",
+								nonce: nonce,
+								keep_post: keepPost,
+								group_index: gi,
+								copy_fields: [],
+								trash_posts: trashPosts
+							},
+							success: function(response) {
+								if (response.success) {
+									$status.html('<span style="color:green">Merged! ' + response.data.refs_updated + ' refs updated.</span>');
+									var $mainRow = $("tr[data-group='" + gi + "']").first();
+									setTimeout(function() {
+										$mainRow.next(".pmig-detail-row").fadeOut(300, function() { $(this).remove(); });
+										$mainRow.fadeOut(300, function() { $(this).remove(); });
+									}, 1000);
+								} else {
+									$status.html('<span style="color:red">Error: ' + (response.data && response.data.error_message || "Unknown") + '</span>');
+									$btn.prop("disabled", false).text("Merge (keep selected, trash checked)");
+								}
+							},
+							error: function() {
+								$status.html('<span style="color:red">AJAX error</span>');
+								$btn.prop("disabled", false).text("Merge (keep selected, trash checked)");
+							}
+						});
+					});
+
+					// Inline dismiss
+					$(document).on("click", ".pmig-inline-dismiss-btn", function() {
+						var gi = $(this).data("group");
+						$(".pmig-dismiss-btn[data-group='" + gi + "']").click();
+					});
+
+					function escHtml(str) {
+						var div = document.createElement("div");
+						div.appendChild(document.createTextNode(str));
+						return div.innerHTML;
+					}
 				});
 				</script>
 			<?php endif; ?>
@@ -4359,4 +4578,90 @@ function person_migration_ajax_reset_all() {
 	}
 
 	wp_send_json_success();
+}
+
+/**
+ * AJAX: Return detail data for a duplicate group for inline expansion.
+ */
+function person_migration_ajax_group_detail() {
+	person_migration_check_ajax();
+
+	$group_index = intval($_POST['group_index']);
+	$duplicate_groups = get_option(PERSON_MIGRATION_DUPES_KEY, array());
+
+	if (!isset($duplicate_groups[$group_index])) {
+		wp_send_json_error(array('error_message' => 'Group not found'));
+	}
+	$group = $duplicate_groups[$group_index];
+
+	$map = person_migration_get_map();
+	$expert_fields = person_migration_get_expert_fields();
+
+	$key_fields = array('first_name', 'last_name', 'uga_email', 'phone', 'department', 'position', 'is_active',
+		'source_expert_id', 'description', 'area_of_expertise', 'is_source', 'is_expert', 'writer_id', 'tagline');
+
+	$content_post_types = array('post', 'publications', 'shorthand_story');
+	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
+	$sub_field_names    = array('user', 'author', 'expert');
+
+	// Pre-fetch all content posts once
+	$content_posts = get_posts(array(
+		'post_type'      => $content_post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	$members = array();
+	foreach ($group as $pid) {
+		$uid = array_search($pid, $map);
+		$role = '';
+		if ($uid) {
+			$u = get_userdata($uid);
+			if ($u && !empty($u->roles)) $role = implode(', ', $u->roles);
+		}
+
+		$all_ids = array((int)$pid);
+		if ($uid) $all_ids[] = (int)$uid;
+
+		$ref_count = 0;
+		foreach ($content_posts as $cp_id) {
+			$found = false;
+			foreach ($repeater_names as $rn) {
+				$count = (int)get_post_meta($cp_id, $rn, true);
+				for ($i = 0; $i < $count; $i++) {
+					foreach ($sub_field_names as $sf) {
+						$val = get_post_meta($cp_id, $rn . '_' . $i . '_' . $sf, true);
+						if (!empty($val) && in_array((int)$val, $all_ids)) {
+							$ref_count++;
+							$found = true;
+							break 3;
+						}
+					}
+				}
+			}
+		}
+
+		$fields = array();
+		foreach ($key_fields as $fn) {
+			$v = get_post_meta($pid, $fn, true);
+			if ($v !== '' && $v !== false && $v !== null) {
+				$fields[$fn] = is_array($v) ? json_encode($v) : mb_substr((string)$v, 0, 120);
+			}
+		}
+
+		$members[] = array(
+			'post_id'      => $pid,
+			'title'        => get_the_title($pid),
+			'role'         => $role ?: ($uid ? 'no roles' : 'no source user'),
+			'user_id'      => $uid ? (int)$uid : null,
+			'ref_count'    => $ref_count,
+			'fields'       => $fields,
+			'edit_url'     => get_edit_post_link($pid, 'raw'),
+			'is_personnel' => (strpos($role, 'personnel_user') !== false),
+			'expert_fields' => array_values($expert_fields),
+		);
+	}
+
+	wp_send_json_success(array('members' => $members, 'group_index' => $group_index));
 }
