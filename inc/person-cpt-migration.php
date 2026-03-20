@@ -4221,8 +4221,11 @@ function person_migration_ajax_merge() {
 		}
 	}
 
-	// Update the lookup map: point all donor user IDs to the keeper post
+	// Snapshot the reverse map BEFORE updating, so decision log can resolve UIDs
 	$map = person_migration_get_map();
+	$reverse_map = array_flip($map); // post_id => user_id (before donor UIDs get remapped)
+
+	// Update the lookup map: point all donor user IDs to the keeper post
 	foreach ($donor_ids as $donor_id) {
 		$donor_user_id = array_search($donor_id, $map);
 		if ($donor_user_id !== false) {
@@ -4406,13 +4409,7 @@ function person_migration_ajax_merge() {
 	// Build detailed donor info including names and whether they had content
 	$donor_details = array();
 	foreach ($donor_ids as $donor_id) {
-		$donor_uid = null;
-		foreach ($map as $uid => $mapped_pid) {
-			if ((int)$mapped_pid === (int)$donor_id) {
-				$donor_uid = (int)$uid;
-				break;
-			}
-		}
+		$donor_uid = isset($reverse_map[$donor_id]) ? (int)$reverse_map[$donor_id] : null;
 		$donor_details[] = array(
 			'uid'            => $donor_uid,
 			'name'           => get_the_title($donor_id),
@@ -4426,26 +4423,14 @@ function person_migration_ajax_merge() {
 	$untouched = array_diff($group, array($keep_post), $donor_ids);
 	$untouched_details = array();
 	foreach ($untouched as $ut_pid) {
-		$ut_uid = null;
-		foreach ($map as $uid => $mapped_pid) {
-			if ((int)$mapped_pid === (int)$ut_pid) {
-				$ut_uid = (int)$uid;
-				break;
-			}
-		}
+		$ut_uid = isset($reverse_map[$ut_pid]) ? (int)$reverse_map[$ut_pid] : null;
 		$untouched_details[] = array(
 			'uid'  => $ut_uid,
 			'name' => get_the_title($ut_pid),
 		);
 	}
 
-	$keeper_uid = null;
-	foreach ($map as $uid => $mapped_pid) {
-		if ((int)$mapped_pid === (int)$keep_post) {
-			$keeper_uid = (int)$uid;
-			break;
-		}
-	}
+	$keeper_uid = isset($reverse_map[$keep_post]) ? (int)$reverse_map[$keep_post] : null;
 
 	$decision = array(
 		'action'       => 'merge',
@@ -4582,7 +4567,16 @@ function person_migration_ajax_replay_decisions() {
 
 		// Merge decision
 		$keeper_uid = $decision['keeper_uid'];
-		$donor_uids = isset($decision['donor_uids']) ? $decision['donor_uids'] : array();
+		$donor_uids = isset($decision['donor_uids']) ? array_filter($decision['donor_uids']) : array();
+
+		// Fall back to trashed array if donor_uids is empty (map was already updated at export time)
+		if (empty($donor_uids) && !empty($decision['trashed'])) {
+			foreach ($decision['trashed'] as $t) {
+				if (!empty($t['uid'])) {
+					$donor_uids[] = $t['uid'];
+				}
+			}
+		}
 
 		if (!$keeper_uid || !isset($map[$keeper_uid])) {
 			$log[] = $label . ': SKIPPED -- keeper user #' . $keeper_uid . ' not in lookup map';
@@ -4591,17 +4585,46 @@ function person_migration_ajax_replay_decisions() {
 		}
 
 		$keep_post = (int)$map[$keeper_uid];
+
+		// Resolve donor posts: try UIDs first, fall back to name-based lookup
 		$donor_posts = array();
-		$missing = false;
 		foreach ($donor_uids as $duid) {
-			if (!isset($map[$duid])) {
-				$log[] = $label . ': SKIPPED -- donor user #' . $duid . ' not in lookup map';
-				$missing = true;
-				break;
+			if (isset($map[$duid])) {
+				$donor_posts[] = (int)$map[$duid];
 			}
-			$donor_posts[] = (int)$map[$duid];
 		}
-		if ($missing) { $skipped++; continue; }
+
+		// If no donors resolved via UIDs, find them by name from the trashed array
+		if (empty($donor_posts) && !empty($decision['trashed'])) {
+			foreach ($decision['trashed'] as $t) {
+				$donor_name = trim($t['name'] ?? '');
+				if (empty($donor_name)) continue;
+
+				// Search for a person post with this name that isn't the keeper
+				$candidates = get_posts(array(
+					'post_type'      => 'caes_hub_person',
+					'post_status'    => array('publish', 'draft', 'private'),
+					'posts_per_page' => 10,
+					'title'          => $donor_name,
+					'exclude'        => array($keep_post),
+					'fields'         => 'ids',
+				));
+
+				// get_posts title param isn't exact -- filter to exact match
+				foreach ($candidates as $cid) {
+					if (get_the_title($cid) === $donor_name && !in_array($cid, $donor_posts)) {
+						$donor_posts[] = $cid;
+						break;
+					}
+				}
+			}
+		}
+
+		if (empty($donor_posts)) {
+			$log[] = $label . ': SKIPPED -- could not resolve any donor posts';
+			$skipped++;
+			continue;
+		}
 
 		// Verify keeper and donors exist
 		if (get_post_status($keep_post) === false) {
