@@ -1987,7 +1987,7 @@ function person_migration_enqueue_scripts($hook) {
 						if (response.success) {
 							var d = response.data;
 							var status = d.diff === 0 ? "color:#46b450;font-weight:600" : "color:#d63638;font-weight:600";
-							var html = "<table class='widefat' style='max-width:500px'>";
+							var html = "<table class=\"widefat\" style=\"max-width:500px\">";
 							html += "<tr><td>Users in migration map</td><td><strong>" + d.total_migrated + "</strong></td></tr>";
 							html += "<tr><td>Merges performed</td><td><strong>" + d.merges + "</strong></td></tr>";
 							html += "<tr><td>Expected People posts</td><td><strong>" + d.expected + "</strong></td></tr>";
@@ -1998,16 +1998,16 @@ function person_migration_enqueue_scripts($hook) {
 							html += "<tr><td>Difference</td><td style=\"" + status + "\">" + (d.diff === 0 ? "0 (match)" : d.diff) + "</td></tr>";
 							html += "</table>";
 							if (d.diff !== 0) {
-								html += "<p style='color:#d63638'>Expected and actual counts do not match. Difference of <strong>" + d.diff + "</strong>. Check for manually created or deleted posts, or unrecorded merges.</p>";
+								html += "<p style=\"color:#d63638\">Expected and actual counts do not match. Difference of <strong>" + d.diff + "</strong>. Check for manually created or deleted posts, or unrecorded merges.</p>";
 							}
 							$("#pmig-count-audit-results").html(html);
 						} else {
-							$("#pmig-count-audit-results").html("<p style='color:red'>" + (response.data?.error_message || "Error") + "</p>");
+							$("#pmig-count-audit-results").html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
 						}
 					},
 					error: function() {
 						$btn.prop("disabled", false).val("Run Count Audit");
-						$("#pmig-count-audit-results").html("<p style='color:red'>Request failed.</p>");
+						$("#pmig-count-audit-results").html("<p style=\"color:red\">Request failed.</p>");
 					}
 				});
 			});
