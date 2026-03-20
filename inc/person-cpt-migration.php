@@ -2856,7 +2856,7 @@ function person_migration_ajax_scan_duplicates() {
 
 	$posts = get_posts(array(
 		'post_type'      => 'caes_hub_person',
-		'post_status'    => 'any',
+		'post_status'    => array('publish', 'draft', 'private'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
