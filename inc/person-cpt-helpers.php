@@ -168,19 +168,16 @@ add_filter('manage_caes_hub_person_posts_columns', function ($columns) {
     return $new;
 });
 
-add_action('manage_caes_hub_person_posts_custom_column', function ($column, $post_id) {
-    $type_map = array(
-        'person_posts'        => 'post',
-        'person_publications' => 'publications',
-        'person_shorthand'    => 'shorthand_story',
-    );
+/**
+ * Get content count for a person, with lazy caching.
+ */
+function _person_get_content_count($person_id, $post_type) {
+    $cache_key = '_content_count_' . $post_type;
+    $cached = get_post_meta($person_id, $cache_key, true);
+    if ($cached !== '' && $cached !== false) {
+        return (int) $cached;
+    }
 
-    if (!isset($type_map[$column])) return;
-
-    $post_type = $type_map[$column];
-    $person_id = $post_id;
-
-    // Count posts where this person appears in any repeater field
     global $wpdb;
     $count = (int) $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(DISTINCT p.ID)
@@ -195,11 +192,65 @@ add_action('manage_caes_hub_person_posts_custom_column', function ($column, $pos
         (string) $person_id
     ));
 
+    update_post_meta($person_id, $cache_key, $count);
+    return $count;
+}
+
+/**
+ * Invalidate content count cache for a person.
+ */
+function _person_invalidate_content_counts($person_id) {
+    delete_post_meta($person_id, '_content_count_post');
+    delete_post_meta($person_id, '_content_count_publications');
+    delete_post_meta($person_id, '_content_count_shorthand_story');
+}
+
+add_action('manage_caes_hub_person_posts_custom_column', function ($column, $post_id) {
+    $type_map = array(
+        'person_posts'        => 'post',
+        'person_publications' => 'publications',
+        'person_shorthand'    => 'shorthand_story',
+    );
+
+    if (!isset($type_map[$column])) return;
+
+    $post_type = $type_map[$column];
+    $count = _person_get_content_count($post_id, $post_type);
+
     if ($count > 0) {
-        $url = admin_url('edit.php?post_type=' . $post_type . '&person_filter=' . $person_id);
+        $url = admin_url('edit.php?post_type=' . $post_type . '&person_filter=' . $post_id);
         echo '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>';
     } else {
         echo '<span style="color:#999">0</span>';
+    }
+}, 10, 2);
+
+// Invalidate person content counts when a post/pub/shorthand is saved
+add_action('save_post', function ($post_id, $post) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
+    if (!in_array($post->post_type, array('post', 'publications', 'shorthand_story'))) return;
+
+    // Find all person IDs referenced in repeaters on this post
+    $repeater_names = array('authors', 'experts', 'translator', 'artists');
+    $sub_fields = array('user');
+    $person_ids = array();
+
+    foreach ($repeater_names as $rn) {
+        $count = (int) get_post_meta($post_id, $rn, true);
+        for ($i = 0; $i < $count; $i++) {
+            foreach ($sub_fields as $sf) {
+                $val = get_post_meta($post_id, $rn . '_' . $i . '_' . $sf, true);
+                if (!empty($val) && is_numeric($val)) {
+                    $person_ids[(int) $val] = true;
+                }
+            }
+        }
+    }
+
+    foreach (array_keys($person_ids) as $pid) {
+        if (get_post_type($pid) === 'caes_hub_person') {
+            _person_invalidate_content_counts($pid);
+        }
     }
 }, 10, 2);
 
