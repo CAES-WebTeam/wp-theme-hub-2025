@@ -4511,6 +4511,7 @@ function person_migration_ajax_dismiss_group() {
 function person_migration_ajax_clear_merge_log() {
 	person_migration_check_ajax();
 	delete_option(PERSON_MIGRATION_MERGE_LOG_KEY);
+	delete_option('person_migration_dismissed_pairs');
 	wp_send_json_success();
 }
 
