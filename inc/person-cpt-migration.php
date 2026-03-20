@@ -825,6 +825,43 @@ function person_migration_ajax_resolve_flagged() {
 }
 
 /**
+ * Audit: compare People CPT count to expected (migrated users minus merges).
+ */
+function person_migration_ajax_count_audit() {
+	person_migration_check_ajax();
+
+	$map = person_migration_get_map();
+	$total_migrated = count($map); // original user->post mappings created
+
+	// Count merges from decision log (each merge removes one post)
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	$merges = 0;
+	foreach ($merge_log as $decision) {
+		if (($decision['action'] ?? '') === 'merge') {
+			$merges++;
+		}
+	}
+
+	$expected = $total_migrated - $merges;
+
+	// Actual count of published + draft + private caes_hub_person posts
+	$actual_counts = wp_count_posts('caes_hub_person');
+	$actual = (int) $actual_counts->publish + (int) $actual_counts->draft + (int) $actual_counts->private;
+	$trashed = (int) $actual_counts->trash;
+
+	$diff = $actual - $expected;
+
+	wp_send_json_success(array(
+		'total_migrated' => $total_migrated,
+		'merges'         => $merges,
+		'expected'       => $expected,
+		'actual'         => $actual,
+		'trashed'        => $trashed,
+		'diff'           => $diff,
+	));
+}
+
+/**
  * Audit: find all WP users with no roles that are referenced in content repeater fields.
  */
 function person_migration_ajax_roleless_audit() {
@@ -1937,6 +1974,44 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Person CPT count audit
+			$("#pmig-count-audit-btn").on("click", function() {
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Auditing...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: { action: "person_migration_count_audit", nonce: nonce },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Run Count Audit");
+						if (response.success) {
+							var d = response.data;
+							var status = d.diff === 0 ? "color:#46b450;font-weight:600" : "color:#d63638;font-weight:600";
+							var html = "<table class='widefat' style='max-width:500px'>";
+							html += "<tr><td>Users in migration map</td><td><strong>" + d.total_migrated + "</strong></td></tr>";
+							html += "<tr><td>Merges performed</td><td><strong>" + d.merges + "</strong></td></tr>";
+							html += "<tr><td>Expected People posts</td><td><strong>" + d.expected + "</strong></td></tr>";
+							html += "<tr><td>Actual People posts (published/draft/private)</td><td><strong>" + d.actual + "</strong></td></tr>";
+							if (d.trashed > 0) {
+								html += "<tr><td>Trashed People posts</td><td><strong>" + d.trashed + "</strong></td></tr>";
+							}
+							html += "<tr><td>Difference</td><td style=\"" + status + "\">" + (d.diff === 0 ? "0 (match)" : d.diff) + "</td></tr>";
+							html += "</table>";
+							if (d.diff !== 0) {
+								html += "<p style='color:#d63638'>Expected and actual counts do not match. Difference of <strong>" + d.diff + "</strong>. Check for manually created or deleted posts, or unrecorded merges.</p>";
+							}
+							$("#pmig-count-audit-results").html(html);
+						} else {
+							$("#pmig-count-audit-results").html("<p style='color:red'>" + (response.data?.error_message || "Error") + "</p>");
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Run Count Audit");
+						$("#pmig-count-audit-results").html("<p style='color:red'>Request failed.</p>");
+					}
+				});
+			});
+
 			// Roleless users audit
 			$("#pmig-roleless-audit-btn").on("click", function() {
 				var $btn = $(this);
@@ -2394,6 +2469,16 @@ function person_migration_render_page() {
 				<?php endforeach; ?>
 			</div>
 
+			<!-- ============ UTILITIES: PERSON COUNT AUDIT ============ -->
+			<div class="pmig-panel">
+				<h2>Utilities: Person CPT Count Audit</h2>
+				<p class="description">Compare total People posts to expected count (original users migrated minus merged duplicates).</p>
+				<div class="pmig-btn-group" style="margin-top:8px">
+					<input type="button" id="pmig-count-audit-btn" class="button" value="Run Count Audit">
+				</div>
+				<div id="pmig-count-audit-results" style="margin-top:12px"></div>
+			</div>
+
 			<!-- ============ UTILITIES: ROLELESS USERS ============ -->
 			<div class="pmig-panel">
 				<h2>Utilities: Roleless Users Audit</h2>
@@ -2445,6 +2530,7 @@ add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_a
 add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
 add_action('wp_ajax_person_migration_search_persons',        'person_migration_ajax_search_persons');
 add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_ajax_resolve_flagged');
+add_action('wp_ajax_person_migration_count_audit',           'person_migration_ajax_count_audit');
 add_action('wp_ajax_person_migration_roleless_audit',        'person_migration_ajax_roleless_audit');
 add_action('wp_ajax_person_migration_group_detail',          'person_migration_ajax_group_detail');
 
