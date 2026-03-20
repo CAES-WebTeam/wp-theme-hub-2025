@@ -3,6 +3,9 @@
 // Get author ID
 $author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_user_id'] : get_queried_object_id();
 
+// Try CPT post first, fall back to user meta
+$person_post_id = function_exists('resolve_person_post_id') ? resolve_person_post_id($author_id) : null;
+
 // Get block attributes
 $mobile = $block['mobileVersion'] ?? false;
 $aspect_ratio = $block['aspectRatio'] ?? 'auto';
@@ -11,9 +14,15 @@ $width_unit = $block['widthUnit'] ?? '%';
 $full_height = $block['fullHeight'] ?? false;
 
 // Get first and last name
-$first_name = get_user_meta($author_id, 'first_name', true);
-$last_name = get_user_meta($author_id, 'last_name', true);
-$image_name = get_user_meta($author_id, 'image_name', true);
+if ($person_post_id) {
+    $first_name = get_post_meta($person_post_id, 'first_name', true);
+    $last_name  = get_post_meta($person_post_id, 'last_name', true);
+    $image_name = get_post_meta($person_post_id, 'image_name', true);
+} else {
+    $first_name = get_user_meta($author_id, 'first_name', true);
+    $last_name  = get_user_meta($author_id, 'last_name', true);
+    $image_name = get_user_meta($author_id, 'image_name', true);
+}
 
 // Determine additional class
 $mobile_class = $mobile ? 'mobile-version' : 'desktop-version';

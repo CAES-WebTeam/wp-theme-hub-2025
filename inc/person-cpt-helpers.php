@@ -119,6 +119,37 @@ function _resolve_person_from_user($user_id, $user = null) {
 }
 
 /**
+ * Given a WP user ID, return the corresponding caes_hub_person post ID (if one exists).
+ *
+ * Uses the migration map for fast lookup. Returns null if no CPT post is mapped.
+ * If the passed ID is already a caes_hub_person post, returns it directly.
+ *
+ * @param int $id A WP user ID or caes_hub_person post ID.
+ * @return int|null The CPT post ID, or null.
+ */
+function resolve_person_post_id($id) {
+    $id = (int) $id;
+    if ($id <= 0) {
+        return null;
+    }
+
+    // Already a CPT post?
+    if (get_post_type($id) === 'caes_hub_person') {
+        return $id;
+    }
+
+    // Check migration map: user ID -> post ID
+    if (function_exists('person_migration_get_map')) {
+        $map = person_migration_get_map();
+        if (isset($map[$id])) {
+            return (int) $map[$id];
+        }
+    }
+
+    return null;
+}
+
+/**
  * Extract the person ID from an ACF repeater row's 'user' field.
  *
  * Handles both array format (ACF formatted) and scalar (raw ID).

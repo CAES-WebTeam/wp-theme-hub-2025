@@ -3,12 +3,16 @@
 // Get author ID
 $author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_user_id'] : get_queried_object_id();
 
-// Try to get email from ACF field first
-$email = get_field('field_uga_email_custom', 'user_' . $author_id);
+// Try CPT post first, fall back to user meta
+$person_post_id = function_exists('resolve_person_post_id') ? resolve_person_post_id($author_id) : null;
 
-// If ACF field is empty, fall back to user email
-if (empty($email)) {
-    $email = get_the_author_meta('user_email', $author_id);
+if ($person_post_id) {
+    $email = get_post_meta($person_post_id, 'uga_email', true);
+} else {
+    $email = get_field('field_uga_email_custom', 'user_' . $author_id);
+    if (empty($email)) {
+        $email = get_the_author_meta('user_email', $author_id);
+    }
 }
 
 // Attributes for wrapper

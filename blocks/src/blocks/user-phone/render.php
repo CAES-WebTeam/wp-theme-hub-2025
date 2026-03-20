@@ -30,8 +30,9 @@ if (!function_exists('format_phone_number')) {
 // Get author ID
 $author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_user_id'] : get_queried_object_id();
 
-// Get phone number
-$phone_number = get_user_meta($author_id, 'phone_number', true);
+// Try CPT post first, fall back to user meta
+$person_post_id = function_exists('resolve_person_post_id') ? resolve_person_post_id($author_id) : null;
+$phone_number = $person_post_id ? get_post_meta($person_post_id, 'phone_number', true) : get_user_meta($author_id, 'phone_number', true);
 
 // Attributes for wrapper
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
