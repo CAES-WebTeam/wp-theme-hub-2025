@@ -2525,6 +2525,7 @@ add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_a
 add_action('wp_ajax_person_migration_merge',                 'person_migration_ajax_merge');
 add_action('wp_ajax_person_migration_dismiss_group',         'person_migration_ajax_dismiss_group');
 add_action('wp_ajax_person_migration_replay_decisions',      'person_migration_ajax_replay_decisions');
+add_action('wp_ajax_person_migration_import_decisions',      'person_migration_ajax_import_decisions');
 add_action('wp_ajax_person_migration_clear_merge_log',       'person_migration_ajax_clear_merge_log');
 add_action('wp_ajax_person_migration_checklist_toggle',      'person_migration_ajax_checklist_toggle');
 add_action('wp_ajax_person_migration_reset_all',             'person_migration_ajax_reset_all');
@@ -3990,9 +3991,10 @@ function person_migration_render_merge_page() {
 
 			<p style="margin-top:12px">
 				<button type="button" class="button button-primary" id="pmig-replay-btn">Replay All Decisions</button>
+				<label class="button" style="margin-left:8px;cursor:pointer">Import JSON <input type="file" id="pmig-import-log-file" accept=".json" style="display:none"></label>
 				<button type="button" class="button" id="pmig-export-log-btn" style="margin-left:8px">Export as JSON</button>
 				<button type="button" class="button" id="pmig-clear-log-btn" style="margin-left:8px;color:#d63638">Clear Log</button>
-				<span class="description" style="margin-left:12px">Replay uses source user IDs from the lookup map to find the correct person posts in this environment.</span>
+				<span class="description" style="margin-left:12px">Import a previously exported JSON, then Replay to apply decisions in this environment.</span>
 			</p>
 			<div id="pmig-replay-result"></div>
 
@@ -4064,6 +4066,36 @@ function person_migration_render_merge_page() {
 					a.download = "merge-decisions-" + new Date().toISOString().slice(0,10) + ".json";
 					a.click();
 					URL.revokeObjectURL(url);
+				});
+
+				$("#pmig-import-log-file").on("change", function() {
+					var file = this.files[0];
+					if (!file) return;
+					var reader = new FileReader();
+					reader.onload = function(e) {
+						try {
+							var data = JSON.parse(e.target.result);
+							if (!Array.isArray(data)) { alert("Invalid format: expected an array of decisions."); return; }
+							if (!confirm("Import " + data.length + " decisions into the log? This will replace the current log.")) return;
+							$.ajax({
+								url: ajaxurl,
+								method: "POST",
+								timeout: 30000,
+								data: { action: "person_migration_import_decisions", nonce: nonce, decisions: JSON.stringify(data) },
+								success: function(response) {
+									if (response.success) {
+										alert("Imported " + response.data.count + " decisions. The page will reload.");
+										location.reload();
+									} else {
+										alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+									}
+								},
+								error: function() { alert("AJAX error."); }
+							});
+						} catch(ex) { alert("Invalid JSON file."); }
+					};
+					reader.readAsText(file);
+					this.value = "";
 				});
 			});
 			</script>
@@ -4450,6 +4482,19 @@ function person_migration_ajax_clear_merge_log() {
 	person_migration_check_ajax();
 	delete_option(PERSON_MIGRATION_MERGE_LOG_KEY);
 	wp_send_json_success();
+}
+
+function person_migration_ajax_import_decisions() {
+	person_migration_check_ajax();
+
+	$raw = isset($_POST['decisions']) ? wp_unslash($_POST['decisions']) : '';
+	$decisions = json_decode($raw, true);
+	if (!is_array($decisions)) {
+		wp_send_json_error(array('error_message' => 'Invalid JSON data.'));
+	}
+
+	update_option(PERSON_MIGRATION_MERGE_LOG_KEY, $decisions, false);
+	wp_send_json_success(array('count' => count($decisions)));
 }
 
 function person_migration_ajax_replay_decisions() {
