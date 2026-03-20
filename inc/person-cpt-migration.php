@@ -1955,6 +1955,7 @@ function person_migration_enqueue_scripts($hook) {
 						if (response.success) {
 							var d = response.data;
 							var html = "<div class=\"notice notice-info\" style=\"margin:12px 0\"><p>Scan complete: <strong>" + esc(String(d.duplicate_groups)) + "</strong> duplicate groups found (" + esc(String(d.posts_flagged)) + " posts flagged).</p>";
+							html += "<p style=\"font-size:12px;color:#666\">Debug: queried " + d.total_queried + " posts, " + d.trashed_total + " trashed, " + d.dismissed_count + " dismissed pairs</p>";
 							if (d.duplicate_groups > 0) {
 								html += "<p><a href=\"" + esc(d.merge_url) + "\" class=\"button button-secondary\">Review &amp; Merge Duplicates</a></p>";
 							}
@@ -2964,10 +2965,16 @@ function person_migration_ajax_scan_duplicates() {
 
 	update_option(PERSON_MIGRATION_DUPES_KEY, $duplicate_groups, false);
 
+	// Debug: count trashed people posts for diagnostics
+	$trash_count = (int) wp_count_posts('caes_hub_person')->trash;
+
 	wp_send_json_success(array(
 		'duplicate_groups' => count($duplicate_groups),
 		'posts_flagged'    => $posts_flagged,
 		'merge_url'        => admin_url('admin.php?page=person-merge-duplicates'),
+		'total_queried'    => count($posts),
+		'trashed_total'    => $trash_count,
+		'dismissed_count'  => count($dismissed_pairs),
 	));
 }
 
@@ -4738,15 +4745,21 @@ function person_migration_ajax_replay_decisions() {
 		}
 
 		// Trash donor posts
+		$trashed_posts = array();
 		foreach ($donor_posts as $dp) {
-			if (get_post_status($dp) !== false && get_post_status($dp) !== 'trash') {
-				wp_trash_post($dp);
+			$status_before = get_post_status($dp);
+			if ($status_before !== false && $status_before !== 'trash') {
+				$result = wp_trash_post($dp);
+				$status_after = get_post_status($dp);
+				$trashed_posts[] = '#' . $dp . ' (' . $status_before . '->' . $status_after . ($result ? '' : ' FAILED') . ')';
+			} else {
+				$trashed_posts[] = '#' . $dp . ' (was: ' . ($status_before ?: 'not found') . ')';
 			}
 			delete_post_meta($dp, '_duplicate_group');
 		}
 		delete_post_meta($keep_post, '_duplicate_group');
 
-		$log[] = $label . ': merged -- kept post #' . $keep_post . ', refs updated: ' . $refs_updated;
+		$log[] = $label . ': merged -- kept post #' . $keep_post . ', refs updated: ' . $refs_updated . ', donors: ' . implode(', ', $trashed_posts);
 		$applied++;
 	}
 
