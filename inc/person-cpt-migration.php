@@ -4100,7 +4100,45 @@ function person_migration_render_merge_page() {
 			});
 			</script>
 		<?php else: ?>
-			<p style="color:#999">No decisions recorded yet. Merge or dismiss duplicate groups to build the log.</p>
+			<p style="color:#999">No decisions recorded yet. Import a previous export or merge/dismiss duplicate groups to build the log.</p>
+			<p style="margin-top:12px">
+				<label class="button" style="cursor:pointer">Import JSON <input type="file" id="pmig-import-log-file" accept=".json" style="display:none"></label>
+			</p>
+			<div id="pmig-replay-result"></div>
+			<script>
+			jQuery(function($) {
+				var nonce = <?php echo wp_json_encode(wp_create_nonce('person_migration_nonce')); ?>;
+				$("#pmig-import-log-file").on("change", function() {
+					var file = this.files[0];
+					if (!file) return;
+					var reader = new FileReader();
+					reader.onload = function(e) {
+						try {
+							var data = JSON.parse(e.target.result);
+							if (!Array.isArray(data)) { alert("Invalid format: expected an array of decisions."); return; }
+							if (!confirm("Import " + data.length + " decisions into the log? This will replace the current log.")) return;
+							$.ajax({
+								url: ajaxurl,
+								method: "POST",
+								timeout: 30000,
+								data: { action: "person_migration_import_decisions", nonce: nonce, decisions: JSON.stringify(data) },
+								success: function(response) {
+									if (response.success) {
+										alert("Imported " + response.data.count + " decisions. The page will reload.");
+										location.reload();
+									} else {
+										alert("Error: " + (response.data && response.data.error_message || "Unknown"));
+									}
+								},
+								error: function() { alert("AJAX error."); }
+							});
+						} catch(ex) { alert("Invalid JSON file."); }
+					};
+					reader.readAsText(file);
+					this.value = "";
+				});
+			});
+			</script>
 		<?php endif; ?>
 
 	</div>
