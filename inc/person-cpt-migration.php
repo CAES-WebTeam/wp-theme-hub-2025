@@ -5151,7 +5151,7 @@ function person_migration_ajax_replay_decisions() {
 		// Resolve donor posts: try UIDs first, fall back to name-based lookup
 		$donor_posts = array();
 		foreach ($donor_uids as $duid) {
-			if (isset($map[$duid])) {
+			if (isset($map[$duid]) && (int)$map[$duid] !== $keep_post) {
 				$donor_posts[] = (int)$map[$duid];
 			}
 		}
