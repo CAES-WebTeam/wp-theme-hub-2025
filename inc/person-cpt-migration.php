@@ -1078,10 +1078,48 @@ function person_migration_ajax_merge_ref_audit() {
 		}
 	}
 
+	// Debug: sample merge log entries to verify post IDs are current
+	$debug_samples = array();
+	$sample_count = 0;
+	foreach ($merge_log as $di => $decision) {
+		if (($decision['action'] ?? '') !== 'merge' || $sample_count >= 3) continue;
+		$sample = array(
+			'index'          => $di,
+			'keeper_name'    => $decision['keeper_name'] ?? '?',
+			'keeper_uid'     => $decision['keeper_uid'] ?? '?',
+			'keeper_post_id' => $decision['keeper_post_id'] ?? 'NOT SET',
+		);
+		if (!empty($decision['trashed'])) {
+			$sample['trashed'] = array_map(function($t) {
+				return array('post_id' => $t['post_id'] ?? '?', 'name' => $t['name'] ?? '?');
+			}, array_slice($decision['trashed'], 0, 2));
+		}
+		$debug_samples[] = $sample;
+		$sample_count++;
+	}
+
+	// Debug: check if sample donor post IDs exist as caes_hub_person
+	$debug_id_check = array();
+	$check_ids = array_slice(array_keys($donor_post_ids), 0, 5);
+	foreach ($check_ids as $did) {
+		$post_type = get_post_type($did);
+		$post_status = get_post_status($did);
+		$title = $post_type ? get_the_title($did) : false;
+		$debug_id_check[] = array(
+			'donor_post_id' => $did,
+			'exists'        => $post_type !== false,
+			'post_type'     => $post_type ?: 'N/A',
+			'status'        => $post_status ?: 'N/A',
+			'title'         => $title ?: 'N/A',
+		);
+	}
+
 	wp_send_json_success(array(
 		'problems'       => $problems,
 		'donors_checked' => count($donor_post_ids),
 		'posts_scanned'  => count($content_posts),
+		'debug_log_samples' => $debug_samples,
+		'debug_id_check'    => $debug_id_check,
 	));
 }
 
@@ -2427,6 +2465,20 @@ function person_migration_enqueue_scripts($hook) {
 									html += "</tr>";
 								});
 								html += "</tbody></table>";
+							}
+							// Debug info
+							if (d.debug_log_samples) {
+								html += "<details style=\"margin-top:12px\"><summary style=\"cursor:pointer;font-size:12px;color:#0073aa\">Debug: merge log samples</summary>";
+								html += "<pre style=\"font-size:11px;background:#f6f7f7;padding:8px;overflow:auto;max-height:300px\">" + JSON.stringify(d.debug_log_samples, null, 2) + "</pre>";
+								if (d.debug_id_check) {
+									html += "<h4 style=\"margin:8px 0 4px\">Donor post ID check (first 5):</h4>";
+									html += "<table class=\"widefat\" style=\"font-size:11px\"><thead><tr><th>Donor Post ID</th><th>Exists</th><th>Type</th><th>Status</th><th>Title</th></tr></thead><tbody>";
+									d.debug_id_check.forEach(function(c) {
+										html += "<tr><td>#" + c.donor_post_id + "</td><td>" + (c.exists ? "Yes" : "No") + "</td><td>" + c.post_type + "</td><td>" + c.status + "</td><td>" + $("<span>").text(c.title).html() + "</td></tr>";
+									});
+									html += "</tbody></table>";
+								}
+								html += "</details>";
 							}
 							$results.html(html);
 							if (d.problems.length > 0) {
