@@ -2192,9 +2192,10 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
-			// Person CPT count audit
-			$("#pmig-count-audit-btn").on("click", function() {
+			// Person CPT count audit (inline buttons)
+			$(".pmig-count-audit-inline-btn").on("click", function() {
 				var $btn = $(this);
+				var $results = $btn.closest(".pmig-verify-step").find(".pmig-count-audit-inline-results");
 				$btn.prop("disabled", true).val("Auditing...");
 				$.ajax({
 					url: ajaxurl,
@@ -2230,21 +2231,22 @@ function person_migration_enqueue_scripts($hook) {
 							if (d.diff !== 0 && (!d.missing_posts || d.missing_posts.length === 0)) {
 								html += "<p style=\"color:#d63638\">Expected and actual counts do not match. Difference of <strong>" + d.diff + "</strong>. Check for manually created or deleted posts, or unrecorded merges.</p>";
 							}
-							$("#pmig-count-audit-results").html(html);
+							$results.html(html);
 						} else {
-							$("#pmig-count-audit-results").html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
+							$results.html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
 						}
 					},
 					error: function() {
 						$btn.prop("disabled", false).val("Run Count Audit");
-						$("#pmig-count-audit-results").html("<p style=\"color:red\">Request failed.</p>");
+						$results.html("<p style=\"color:red\">Request failed.</p>");
 					}
 				});
 			});
 
-			// Flat meta ID audit
-			$("#pmig-flat-meta-audit-btn").on("click", function() {
+			// Flat meta ID audit (inline)
+			$(".pmig-flat-meta-audit-inline-btn").on("click", function() {
 				var $btn = $(this);
+				var $results = $btn.closest(".pmig-verify-step").find(".pmig-flat-meta-audit-inline-results");
 				$btn.prop("disabled", true).val("Scanning...");
 				$.ajax({
 					url: ajaxurl,
@@ -2281,21 +2283,22 @@ function person_migration_enqueue_scripts($hook) {
 									html += "</tbody></table>";
 								}
 							}
-							$("#pmig-flat-meta-audit-results").html(html);
+							$results.html(html);
 						} else {
-							$("#pmig-flat-meta-audit-results").html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
+							$results.html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
 						}
 					},
 					error: function() {
 						$btn.prop("disabled", false).val("Run Flat Meta Audit");
-						$("#pmig-flat-meta-audit-results").html("<p style=\"color:red\">Request failed or timed out.</p>");
+						$results.html("<p style=\"color:red\">Request failed or timed out.</p>");
 					}
 				});
 			});
 
-			// Merge reference audit
-			$("#pmig-merge-ref-audit-btn").on("click", function() {
+			// Merge reference audit (inline)
+			$(".pmig-merge-ref-audit-inline-btn").on("click", function() {
 				var $btn = $(this);
+				var $results = $btn.closest(".pmig-verify-step").find(".pmig-merge-ref-audit-inline-results");
 				$btn.prop("disabled", true).val("Scanning...");
 				$.ajax({
 					url: ajaxurl,
@@ -2323,14 +2326,14 @@ function person_migration_enqueue_scripts($hook) {
 								});
 								html += "</tbody></table>";
 							}
-							$("#pmig-merge-ref-audit-results").html(html);
+							$results.html(html);
 						} else {
-							$("#pmig-merge-ref-audit-results").html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
+							$results.html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
 						}
 					},
 					error: function() {
 						$btn.prop("disabled", false).val("Run Merge Reference Audit");
-						$("#pmig-merge-ref-audit-results").html("<p style=\"color:red\">Request failed or timed out.</p>");
+						$results.html("<p style=\"color:red\">Request failed or timed out.</p>");
 					}
 				});
 			});
@@ -2608,6 +2611,20 @@ function person_migration_render_page() {
 					</details>
 				</div>
 
+				<!-- Verify 5v: Person CPT Count Audit -->
+				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Verify: Person CPT Count Audit</strong>
+							<p class="description" style="margin:4px 0 0">Confirm map size matches People posts created. Before any merges, difference should be 0.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" class="button pmig-count-audit-inline-btn" value="Run Count Audit" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+						</div>
+					</div>
+					<div class="pmig-count-audit-inline-results" style="margin-top:8px"></div>
+				</div>
+
 				<!-- Step 6: Link Content Managers -->
 				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step6_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
 					<div style="display:flex;justify-content:space-between;align-items:center">
@@ -2689,6 +2706,34 @@ function person_migration_render_page() {
 					</div>
 				</div>
 
+				<!-- Verify 8v: Merge Reference Audit -->
+				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Verify: Merge Reference Audit</strong>
+							<p class="description" style="margin:4px 0 0">Confirm no content still references trashed donor post IDs.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" class="button pmig-merge-ref-audit-inline-btn" value="Run Merge Reference Audit" <?php echo !$step8_done ? 'disabled' : ''; ?>>
+						</div>
+					</div>
+					<div class="pmig-merge-ref-audit-inline-results" style="margin-top:8px"></div>
+				</div>
+
+				<!-- Verify 8v2: Person CPT Count Audit (post-merge) -->
+				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Verify: Person CPT Count Audit</strong>
+							<p class="description" style="margin:4px 0 0">Confirm expected vs actual post counts align after merges.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" class="button pmig-count-audit-inline-btn" value="Run Count Audit" <?php echo !$step8_done ? 'disabled' : ''; ?>>
+						</div>
+					</div>
+					<div class="pmig-count-audit-inline-results" style="margin-top:8px"></div>
+				</div>
+
 				<!-- Step 9: Repopulate Flat Meta -->
 				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step9_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
 					<div style="display:flex;justify-content:space-between;align-items:center">
@@ -2707,6 +2752,19 @@ function person_migration_render_page() {
 							<?php endif; ?>
 						</div>
 					</div>
+				</div>
+				<!-- Verify 9v: Flat Meta ID Audit -->
+				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Verify: Flat Meta ID Audit</strong>
+							<p class="description" style="margin:4px 0 0">Confirm all_author_ids and all_expert_ids contain CPT post IDs, not WP user IDs.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" class="button pmig-flat-meta-audit-inline-btn" value="Run Flat Meta Audit" <?php echo !$step9_done ? 'disabled' : ''; ?>>
+						</div>
+					</div>
+					<div class="pmig-flat-meta-audit-inline-results" style="margin-top:8px"></div>
 				</div>
 			</div>
 
@@ -2790,36 +2848,6 @@ function person_migration_render_page() {
 						</label>
 					</div>
 				<?php endforeach; ?>
-			</div>
-
-			<!-- ============ UTILITIES: PERSON COUNT AUDIT ============ -->
-			<div class="pmig-panel">
-				<h2>Utilities: Person CPT Count Audit</h2>
-				<p class="description">Compare total People posts to expected count (original users migrated minus merged duplicates).</p>
-				<div class="pmig-btn-group" style="margin-top:8px">
-					<input type="button" id="pmig-count-audit-btn" class="button" value="Run Count Audit">
-				</div>
-				<div id="pmig-count-audit-results" style="margin-top:12px"></div>
-			</div>
-
-			<!-- ============ UTILITIES: FLAT META ID AUDIT ============ -->
-			<div class="pmig-panel">
-				<h2>Utilities: Flat Meta ID Audit</h2>
-				<p class="description">Verify that all_author_ids and all_expert_ids contain CPT post IDs, not WP user IDs.</p>
-				<div class="pmig-btn-group" style="margin-top:8px">
-					<input type="button" id="pmig-flat-meta-audit-btn" class="button" value="Run Flat Meta Audit">
-				</div>
-				<div id="pmig-flat-meta-audit-results" style="margin-top:12px"></div>
-			</div>
-
-			<!-- ============ UTILITIES: MERGE REFERENCE AUDIT ============ -->
-			<div class="pmig-panel">
-				<h2>Utilities: Merge Reference Audit</h2>
-				<p class="description">Verify that no content still references trashed donor posts from merge decisions. Checks all repeater fields and flat meta across posts, publications, and shorthand stories.</p>
-				<div class="pmig-btn-group" style="margin-top:8px">
-					<input type="button" id="pmig-merge-ref-audit-btn" class="button" value="Run Merge Reference Audit">
-				</div>
-				<div id="pmig-merge-ref-audit-results" style="margin-top:12px"></div>
 			</div>
 
 			<!-- ============ UTILITIES: ROLELESS USERS ============ -->

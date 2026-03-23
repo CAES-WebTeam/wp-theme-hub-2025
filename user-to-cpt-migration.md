@@ -50,19 +50,27 @@ Phase 2 steps must be executed in the order listed.
    - Builds and stores a `user_id => post_id` lookup table (WP option) for use in subsequent steps
    - Logs counts and discrepancies for validation
    - Run on staging in dry-run mode first, review the log, then run live. Verify data integrity by comparing user counts to CPT post counts and spot-checking field values
+   - 5v. **Verify: Run Person CPT Count Audit** -- confirm the map size matches the number of People posts created (before any merges, difference should be 0)
+
 6. **Link Content Managers** -- Match content manager WP accounts to their existing person posts by personnel_id and set the `linked_wp_user` field. Runs synchronously. Independent of content reference updates but requires step 5 to be complete so the person posts exist.
    > **Open question:** The link is only needed if something in the system needs to map `get_current_user_id()` to a person post (e.g., auto-populating the current user as an author, "My Profile" admin links, or similar). If no such feature exists or is planned, this step can be deferred or skipped. Review before running on production.
+
 7. **Swap Repeater IDs** -- Update every ACF repeater row (`authors`, `experts`, `translator`, `artists`) across all posts, publications, and shorthand stories, swapping user IDs for CPT post IDs using the lookup table. Each original user ID is backed up to a `_backup` meta key before overwriting so the swap can be fully reverted. Uses the same async batch runner with dry-run support and logging. Includes a Verify button (samples posts and reports what IDs resolve to) and a Revert Swap button (restores all original user IDs from backups and reverts ACF field types). Must run before duplicate merging so that all content references are in a consistent format (post IDs).
-    7b. **Update ACF Field Types** -- After the swap, change the `user` sub-field in each repeater (authors, experts, translator, artists) from ACF User type to Post Object type targeting `caes_hub_person`. This makes the admin editor show a person CPT picker instead of a user picker. Original field settings are backed up and can be reverted independently. Must run immediately after the swap; the Revert Swap button automatically reverts field types as well.
+   - 7a. **Verify swap** -- use the built-in Verify button to confirm all repeater IDs now point to `caes_hub_person` posts. Resolve any flagged users that weren't in the map.
+   - 7b. **Update ACF Field Types** -- After the swap, change the `user` sub-field in each repeater (authors, experts, translator, artists) from ACF User type to Post Object type targeting `caes_hub_person`. This makes the admin editor show a person CPT picker instead of a user picker. Original field settings are backed up and can be reverted independently. Must run immediately after the swap; the Revert Swap button automatically reverts field types as well.
+
 8. **Review & Merge Duplicates** -- Scan for person posts that share the same `uga_email` or `first_name + last_name` (personnel and expert records for the same real person). Review page shows a side-by-side comparison with content references listed, and allows:
    - Optionally copying expert-specific fields (source_expert_id, description, area_of_expertise, etc.) to the keeper
    - Reassigning all content references (repeaters + flat meta) from the duplicate to the keeper
    - Trashing the duplicate
    - Dismissing false-positive matches
    - Must run after the repeater swap (step 7) so content references are post IDs and changes are immediately verifiable
-   - On production: import the decisions JSON exported from staging, then Replay to apply them
-   - **After merging is complete, re-run step 9 (Repopulate Flat Meta)** to rebuild indexes with the final post IDs
+   - On production: import the decisions JSON exported from staging, then Replay to apply them. Re-scan to confirm 0 duplicate groups remain.
+   - 8v. **Verify: Run Merge Reference Audit** -- confirm no content still references any trashed donor post IDs
+   - 8v2. **Verify: Run Person CPT Count Audit** -- confirm expected vs actual post counts align (small differences from multi-donor merges or edge cases are acceptable)
+
 9. **Repopulate Flat Meta** -- Rebuild the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Must run after both the swap and duplicate merge so the indexes reflect the final state. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool includes a "Revert flat meta" action that copies the backup fields back to the originals.
+   - 9v. **Verify: Run Flat Meta ID Audit** -- confirm all `all_author_ids` and `all_expert_ids` values contain CPT post IDs, not WP user IDs
 
 ## Phase 3: Update Sync Infrastructure
 
