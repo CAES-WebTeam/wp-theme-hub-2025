@@ -833,16 +833,24 @@ function person_migration_ajax_count_audit() {
 	$map = person_migration_get_map();
 	$total_migrated = count($map); // original user->post mappings created
 
-	// Count merges from decision log (each merge removes one post)
+	// Count total donors trashed from decision log (a single merge can trash multiple donors)
 	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
-	$merges = 0;
+	$merge_decisions = 0;
+	$donors_trashed = 0;
 	foreach ($merge_log as $decision) {
 		if (($decision['action'] ?? '') === 'merge') {
-			$merges++;
+			$merge_decisions++;
+			$trashed_in_decision = isset($decision['trashed']) ? count($decision['trashed']) : 0;
+			// Fall back to donor_uids count if trashed array missing
+			if ($trashed_in_decision === 0 && !empty($decision['donor_uids'])) {
+				$trashed_in_decision = count($decision['donor_uids']);
+			}
+			// Minimum 1 per merge if we have no detail
+			$donors_trashed += max($trashed_in_decision, 1);
 		}
 	}
 
-	$expected = $total_migrated - $merges;
+	$expected = $total_migrated - $donors_trashed;
 
 	// Actual count of published + draft + private caes_hub_person posts
 	$actual_counts = wp_count_posts('caes_hub_person');
@@ -852,11 +860,12 @@ function person_migration_ajax_count_audit() {
 	$diff = $actual - $expected;
 
 	wp_send_json_success(array(
-		'total_migrated' => $total_migrated,
-		'merges'         => $merges,
-		'expected'       => $expected,
-		'actual'         => $actual,
-		'trashed'        => $trashed,
+		'total_migrated'  => $total_migrated,
+		'merge_decisions' => $merge_decisions,
+		'donors_trashed'  => $donors_trashed,
+		'expected'        => $expected,
+		'actual'          => $actual,
+		'trashed'         => $trashed,
 		'diff'           => $diff,
 	));
 }
@@ -1990,7 +1999,8 @@ function person_migration_enqueue_scripts($hook) {
 							var status = d.diff === 0 ? "color:#46b450;font-weight:600" : "color:#d63638;font-weight:600";
 							var html = "<table class=\"widefat\" style=\"max-width:500px\">";
 							html += "<tr><td>Users in migration map</td><td><strong>" + d.total_migrated + "</strong></td></tr>";
-							html += "<tr><td>Merges performed</td><td><strong>" + d.merges + "</strong></td></tr>";
+							html += "<tr><td>Merge decisions</td><td><strong>" + d.merge_decisions + "</strong></td></tr>";
+							html += "<tr><td>Donors trashed (from log)</td><td><strong>" + d.donors_trashed + "</strong></td></tr>";
 							html += "<tr><td>Expected People posts</td><td><strong>" + d.expected + "</strong></td></tr>";
 							html += "<tr><td>Actual People posts (published/draft/private)</td><td><strong>" + d.actual + "</strong></td></tr>";
 							if (d.trashed > 0) {

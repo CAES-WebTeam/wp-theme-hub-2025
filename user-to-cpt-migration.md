@@ -60,6 +60,8 @@ Phase 2 steps must be executed in the order listed.
    - Trashing the duplicate
    - Dismissing false-positive matches
    - Must run after the repeater swap (step 7) so content references are post IDs and changes are immediately verifiable
+   - On production: import the decisions JSON exported from staging, then Replay to apply them
+   - **After merging is complete, re-run step 9 (Repopulate Flat Meta)** to rebuild indexes with the final post IDs
 9. **Repopulate Flat Meta** -- Rebuild the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Must run after both the swap and duplicate merge so the indexes reflect the final state. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool includes a "Revert flat meta" action that copies the backup fields back to the originals.
 
 ## Phase 3: Update Sync Infrastructure
