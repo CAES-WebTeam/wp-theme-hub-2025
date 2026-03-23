@@ -991,23 +991,24 @@ function person_migration_ajax_merge_ref_audit() {
 
 	// Collect all donor post IDs that should no longer appear in content
 	$map = person_migration_get_map();
-	$donor_post_ids = array();
+	$donor_post_ids = array(); // post_id => array('donor_name', 'keeper_name', 'keeper_post_id')
 	foreach ($merge_log as $decision) {
 		if (($decision['action'] ?? '') !== 'merge') continue;
 
-		// From donor_uids via map
-		if (!empty($decision['donor_uids'])) {
-			foreach ($decision['donor_uids'] as $uid) {
-				if (isset($map[$uid])) {
-					// After merge, map points donor UID to keeper -- get the original post from trashed array
-				}
-			}
+		$keeper_name = $decision['keeper_name'] ?? 'unknown';
+		$keeper_post_id = null;
+		if (!empty($decision['keeper_uid']) && isset($map[$decision['keeper_uid']])) {
+			$keeper_post_id = (int) $map[$decision['keeper_uid']];
 		}
-		// From trashed array (has post_id)
+
 		if (!empty($decision['trashed'])) {
 			foreach ($decision['trashed'] as $t) {
 				if (!empty($t['post_id'])) {
-					$donor_post_ids[(int) $t['post_id']] = $decision['keeper_name'] ?? 'unknown';
+					$donor_post_ids[(int) $t['post_id']] = array(
+						'donor_name'     => $t['name'] ?? 'unknown',
+						'keeper_name'    => $keeper_name,
+						'keeper_post_id' => $keeper_post_id,
+					);
 				}
 			}
 		}
@@ -1039,13 +1040,16 @@ function person_migration_ajax_merge_ref_audit() {
 				$mk = $rn . '_' . $i . '_user';
 				$val = get_post_meta($cp_id, $mk, true);
 				if (!empty($val) && isset($donor_post_ids[(int) $val])) {
+					$info = $donor_post_ids[(int) $val];
 					$problems[] = array(
-						'content_id'    => $cp_id,
-						'content_title' => get_the_title($cp_id),
-						'content_type'  => get_post_type($cp_id),
-						'field'         => $mk,
-						'donor_post_id' => (int) $val,
-						'keeper_name'   => $donor_post_ids[(int) $val],
+						'content_id'      => $cp_id,
+						'content_title'   => get_the_title($cp_id),
+						'content_type'    => get_post_type($cp_id),
+						'field'           => $mk,
+						'donor_post_id'   => (int) $val,
+						'donor_name'      => $info['donor_name'],
+						'keeper_name'     => $info['keeper_name'],
+						'keeper_post_id'  => $info['keeper_post_id'],
 					);
 				}
 			}
@@ -1058,13 +1062,16 @@ function person_migration_ajax_merge_ref_audit() {
 			$ids = is_array($raw) ? $raw : array_filter(array_map('trim', explode(',', $raw)));
 			foreach ($ids as $id) {
 				if (isset($donor_post_ids[(int) $id])) {
+					$info = $donor_post_ids[(int) $id];
 					$problems[] = array(
-						'content_id'    => $cp_id,
-						'content_title' => get_the_title($cp_id),
-						'content_type'  => get_post_type($cp_id),
-						'field'         => $ff,
-						'donor_post_id' => (int) $id,
-						'keeper_name'   => $donor_post_ids[(int) $id],
+						'content_id'      => $cp_id,
+						'content_title'   => get_the_title($cp_id),
+						'content_type'    => get_post_type($cp_id),
+						'field'           => $ff,
+						'donor_post_id'   => (int) $id,
+						'donor_name'      => $info['donor_name'],
+						'keeper_name'     => $info['keeper_name'],
+						'keeper_post_id'  => $info['keeper_post_id'],
 					);
 				}
 			}
@@ -1076,6 +1083,101 @@ function person_migration_ajax_merge_ref_audit() {
 		'donors_checked' => count($donor_post_ids),
 		'posts_scanned'  => count($content_posts),
 	));
+}
+
+/**
+ * Fix stale references: swap all donor post IDs in content to their keeper post IDs.
+ */
+function person_migration_ajax_fix_stale_refs() {
+	person_migration_check_ajax();
+	@set_time_limit(300);
+
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	$map = person_migration_get_map();
+
+	// Build donor_post_id => keeper_post_id mapping
+	$donor_to_keeper = array();
+	foreach ($merge_log as $decision) {
+		if (($decision['action'] ?? '') !== 'merge') continue;
+
+		$keeper_post_id = null;
+		if (!empty($decision['keeper_uid']) && isset($map[$decision['keeper_uid']])) {
+			$keeper_post_id = (int) $map[$decision['keeper_uid']];
+		}
+		if (!$keeper_post_id) continue;
+
+		if (!empty($decision['trashed'])) {
+			foreach ($decision['trashed'] as $t) {
+				if (!empty($t['post_id'])) {
+					$donor_to_keeper[(int) $t['post_id']] = $keeper_post_id;
+				}
+			}
+		}
+	}
+
+	if (empty($donor_to_keeper)) {
+		wp_send_json_success(array('fixed' => 0, 'posts_updated' => 0));
+	}
+
+	$content_post_types = array('post', 'publications', 'shorthand_story');
+	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
+	$flat_fields        = array('all_author_ids', 'all_expert_ids');
+	$fixed = 0;
+	$posts_updated = array();
+
+	$content_posts = get_posts(array(
+		'post_type'      => $content_post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	foreach ($content_posts as $cp_id) {
+		$touched = false;
+
+		// Fix repeater fields
+		foreach ($repeater_names as $rn) {
+			$count = (int) get_post_meta($cp_id, $rn, true);
+			for ($i = 0; $i < $count; $i++) {
+				$mk = $rn . '_' . $i . '_user';
+				$val = get_post_meta($cp_id, $mk, true);
+				if (!empty($val) && isset($donor_to_keeper[(int) $val])) {
+					update_post_meta($cp_id, $mk, $donor_to_keeper[(int) $val]);
+					$fixed++;
+					$touched = true;
+				}
+			}
+		}
+
+		// Fix flat meta
+		foreach ($flat_fields as $ff) {
+			$raw = get_post_meta($cp_id, $ff, true);
+			if (empty($raw)) continue;
+			$ids = is_array($raw) ? $raw : array_filter(array_map('trim', explode(',', $raw)));
+			$changed = false;
+			$new_ids = array();
+			foreach ($ids as $id) {
+				if (isset($donor_to_keeper[(int) $id])) {
+					$new_ids[] = $donor_to_keeper[(int) $id];
+					$changed = true;
+					$fixed++;
+				} else {
+					$new_ids[] = $id;
+				}
+			}
+			if ($changed) {
+				$new_ids = array_unique($new_ids);
+				update_post_meta($cp_id, $ff, implode(',', $new_ids));
+				$touched = true;
+			}
+		}
+
+		if ($touched) {
+			$posts_updated[] = $cp_id;
+		}
+	}
+
+	wp_send_json_success(array('fixed' => $fixed, 'posts_updated' => count($posts_updated)));
 }
 
 /**
@@ -2314,25 +2416,58 @@ function person_migration_enqueue_scripts($hook) {
 								html += "<div class=\"notice notice-success\" style=\"margin:8px 0\"><p>No stale references found. All content correctly points to keeper posts.</p></div>";
 							} else {
 								html += "<div class=\"notice notice-error\" style=\"margin:8px 0\"><p><strong>" + d.problems.length + "</strong> stale references found:</p></div>";
-								html += "<table class=\"widefat striped\" style=\"font-size:12px\"><thead><tr><th>Content</th><th>Type</th><th>Field</th><th>Still references donor</th><th>Should be keeper</th></tr></thead><tbody>";
+								html += "<table class=\"widefat striped\" style=\"font-size:12px\"><thead><tr><th>Content</th><th>Type</th><th>Field</th><th>References (trashed donor)</th><th>Donor was duplicate of (keeper)</th></tr></thead><tbody>";
 								d.problems.forEach(function(p) {
 									html += "<tr>";
 									html += "<td><a href=\"post.php?post=" + p.content_id + "&action=edit\">" + $("<span>").text(p.content_title).html() + " (#" + p.content_id + ")</a></td>";
 									html += "<td>" + $("<span>").text(p.content_type).html() + "</td>";
 									html += "<td>" + $("<span>").text(p.field).html() + "</td>";
-									html += "<td style=\"color:#d63638\">#" + p.donor_post_id + "</td>";
-									html += "<td>" + $("<span>").text(p.keeper_name).html() + "</td>";
+									html += "<td style=\"color:#d63638\">" + $("<span>").text(p.donor_name).html() + " (#" + p.donor_post_id + ")</td>";
+									html += "<td>" + $("<span>").text(p.keeper_name).html() + (p.keeper_post_id ? " (#" + p.keeper_post_id + ")" : "") + "</td>";
 									html += "</tr>";
 								});
 								html += "</tbody></table>";
 							}
 							$results.html(html);
+							if (d.problems.length > 0) {
+								$btn.closest(".pmig-btn-group").find(".pmig-fix-stale-refs-btn").show();
+							} else {
+								$btn.closest(".pmig-btn-group").find(".pmig-fix-stale-refs-btn").hide();
+							}
 						} else {
 							$results.html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
 						}
 					},
 					error: function() {
 						$btn.prop("disabled", false).val("Run Merge Reference Audit");
+						$results.html("<p style=\"color:red\">Request failed or timed out.</p>");
+					}
+				});
+			});
+
+			// Fix stale references
+			$(".pmig-fix-stale-refs-btn").on("click", function() {
+				if (!confirm("This will update all stale donor references to point to their keeper posts. Continue?")) return;
+				var $btn = $(this);
+				var $results = $btn.closest(".pmig-verify-step").find(".pmig-merge-ref-audit-inline-results");
+				$btn.prop("disabled", true).val("Fixing...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 300000,
+					data: { action: "person_migration_fix_stale_refs", nonce: nonce },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Fix Stale References");
+						if (response.success) {
+							var d = response.data;
+							$results.html("<div class=\"notice notice-success\" style=\"margin:8px 0\"><p>Fixed <strong>" + d.fixed + "</strong> references across <strong>" + d.posts_updated + "</strong> content items.</p></div>");
+							$btn.hide();
+						} else {
+							$results.html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Fix Stale References");
 						$results.html("<p style=\"color:red\">Request failed or timed out.</p>");
 					}
 				});
@@ -2715,6 +2850,7 @@ function person_migration_render_page() {
 						</div>
 						<div class="pmig-btn-group">
 							<input type="button" class="button pmig-merge-ref-audit-inline-btn" value="Run Merge Reference Audit" <?php echo !$step8_done ? 'disabled' : ''; ?>>
+							<input type="button" class="button pmig-fix-stale-refs-btn" value="Fix Stale References" style="display:none;color:#b32d2e">
 						</div>
 					</div>
 					<div class="pmig-merge-ref-audit-inline-results" style="margin-top:8px"></div>
@@ -2905,6 +3041,7 @@ add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_a
 add_action('wp_ajax_person_migration_count_audit',           'person_migration_ajax_count_audit');
 add_action('wp_ajax_person_migration_merge_ref_audit',       'person_migration_ajax_merge_ref_audit');
 add_action('wp_ajax_person_migration_flat_meta_audit',       'person_migration_ajax_flat_meta_audit');
+add_action('wp_ajax_person_migration_fix_stale_refs',        'person_migration_ajax_fix_stale_refs');
 add_action('wp_ajax_person_migration_roleless_audit',        'person_migration_ajax_roleless_audit');
 add_action('wp_ajax_person_migration_group_detail',          'person_migration_ajax_group_detail');
 
@@ -5155,12 +5292,26 @@ function person_migration_ajax_replay_decisions() {
 		}
 		delete_post_meta($keep_post, '_duplicate_group');
 
+		// Update the merge log entry with current post IDs so audits work on this install
+		$merge_log[$di]['keeper_post_id'] = $keep_post;
+		$new_trashed = array();
+		foreach ($donor_posts as $dp) {
+			$new_trashed[] = array(
+				'post_id' => $dp,
+				'name'    => get_the_title($dp) ?: ('post #' . $dp),
+			);
+		}
+		$merge_log[$di]['trashed'] = $new_trashed;
+
 		$log[] = $label . ': merged -- kept post #' . $keep_post . ', refs updated: ' . $refs_updated . ', donors: ' . implode(', ', $trashed_posts);
 		$applied++;
 	}
 
 	// Save updated lookup map
 	update_option(PERSON_MIGRATION_MAP_KEY, $map, false);
+
+	// Save the merge log with updated post IDs for this install
+	update_option(PERSON_MIGRATION_MERGE_LOG_KEY, $merge_log, false);
 
 	// Clear duplicate groups since replay handled them
 	update_option(PERSON_MIGRATION_DUPES_KEY, array(), false);
