@@ -87,6 +87,7 @@ if (!function_exists('process_people')) {
     function process_people($people, $asSnippet = false, $oneLine = false)
     {
         $names = [];
+        $snippet_sources = [];
         $output = '';
 
         if ($people) {
@@ -129,6 +130,7 @@ if (!function_exists('process_people')) {
 
                     if ($asSnippet) {
                         $names[] = $full_name;
+                        $snippet_sources[] = ($person_source_comment ?? '');
                     } else {
                         if ($oneLine) {
                             $output .= $person_source_comment ?? '';
@@ -173,7 +175,15 @@ if (!function_exists('process_people')) {
                 $formatted_names = implode(', ', $names) . ', and ' . $last;
             }
 
-            return $asSnippet ? esc_html($formatted_names) : $output;
+            if ($asSnippet) {
+                $sources = array_filter($snippet_sources);
+                $sources_comment = !empty($sources) ? '<!-- sources: ' . implode(', ', array_map(function($s) {
+                    // Extract just the inner text from <!-- person: ... -->
+                    return trim(str_replace(array('<!--', '-->'), '', $s));
+                }, $sources)) . ' -->' : '';
+                return $sources_comment . esc_html($formatted_names);
+            }
+            return $output;
         } else {
             return $asSnippet ? '' : $output;
         }
