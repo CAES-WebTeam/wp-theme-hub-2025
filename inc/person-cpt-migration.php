@@ -894,6 +894,90 @@ function person_migration_ajax_count_audit() {
 }
 
 /**
+ * Audit: verify flat meta fields contain CPT post IDs, not WP user IDs.
+ */
+function person_migration_ajax_flat_meta_audit() {
+	person_migration_check_ajax();
+	@set_time_limit(120);
+
+	$content_post_types = array('post', 'publications', 'shorthand_story');
+	$flat_fields = array('all_author_ids', 'all_expert_ids');
+
+	$content_posts = get_posts(array(
+		'post_type'      => $content_post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	$posts_checked = 0;
+	$ids_checked = 0;
+	$user_ids_found = array();
+	$not_found_ids = array();
+	$cpt_ids = 0;
+
+	foreach ($content_posts as $cp_id) {
+		foreach ($flat_fields as $ff) {
+			$raw = get_post_meta($cp_id, $ff, true);
+			if (empty($raw)) continue;
+			$ids = is_array($raw) ? $raw : array_filter(array_map('trim', explode(',', $raw)));
+			foreach ($ids as $id) {
+				$id = (int) $id;
+				if ($id <= 0) continue;
+				$ids_checked++;
+
+				$post_type = get_post_type($id);
+				if ($post_type === 'caes_hub_person') {
+					$cpt_ids++;
+				} elseif ($post_type === false) {
+					// Check if it's a WP user
+					$user = get_userdata($id);
+					if ($user) {
+						$user_ids_found[] = array(
+							'content_id'    => $cp_id,
+							'content_title' => get_the_title($cp_id),
+							'field'         => $ff,
+							'id'            => $id,
+							'type'          => 'user',
+							'name'          => $user->display_name,
+						);
+					} else {
+						$not_found_ids[] = array(
+							'content_id'    => $cp_id,
+							'content_title' => get_the_title($cp_id),
+							'field'         => $ff,
+							'id'            => $id,
+						);
+					}
+				} else {
+					// Some other post type
+					$user = get_userdata($id);
+					if ($user) {
+						$user_ids_found[] = array(
+							'content_id'    => $cp_id,
+							'content_title' => get_the_title($cp_id),
+							'field'         => $ff,
+							'id'            => $id,
+							'type'          => 'user (also matches post type: ' . $post_type . ')',
+							'name'          => $user->display_name,
+						);
+					}
+				}
+			}
+		}
+		$posts_checked++;
+	}
+
+	wp_send_json_success(array(
+		'posts_checked'  => $posts_checked,
+		'ids_checked'    => $ids_checked,
+		'cpt_ids'        => $cpt_ids,
+		'user_ids'       => $user_ids_found,
+		'not_found'      => $not_found_ids,
+	));
+}
+
+/**
  * Audit: verify no content still references trashed donor posts from merge decisions.
  */
 function person_migration_ajax_merge_ref_audit() {
@@ -2158,6 +2242,57 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Flat meta ID audit
+			$("#pmig-flat-meta-audit-btn").on("click", function() {
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Scanning...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 300000,
+					data: { action: "person_migration_flat_meta_audit", nonce: nonce },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Run Flat Meta Audit");
+						if (response.success) {
+							var d = response.data;
+							var html = "<p>Checked <strong>" + d.ids_checked + "</strong> IDs across <strong>" + d.posts_checked + "</strong> content items. <strong>" + d.cpt_ids + "</strong> are CPT post IDs.</p>";
+							if (d.user_ids.length === 0 && d.not_found.length === 0) {
+								html += "<div class=\"notice notice-success\" style=\"margin:8px 0\"><p>All flat meta IDs are valid CPT post IDs.</p></div>";
+							} else {
+								if (d.user_ids.length > 0) {
+									html += "<div class=\"notice notice-error\" style=\"margin:8px 0\"><p><strong>" + d.user_ids.length + "</strong> WP user IDs found (should be CPT post IDs):</p></div>";
+									html += "<table class=\"widefat striped\" style=\"font-size:12px\"><thead><tr><th>Content</th><th>Field</th><th>ID</th><th>User Name</th></tr></thead><tbody>";
+									d.user_ids.forEach(function(u) {
+										html += "<tr><td><a href=\"post.php?post=" + u.content_id + "&action=edit\">" + $("<span>").text(u.content_title).html() + "</a></td>";
+										html += "<td>" + $("<span>").text(u.field).html() + "</td>";
+										html += "<td style=\"color:#d63638\">" + u.id + "</td>";
+										html += "<td>" + $("<span>").text(u.name).html() + "</td></tr>";
+									});
+									html += "</tbody></table>";
+								}
+								if (d.not_found.length > 0) {
+									html += "<div class=\"notice notice-warning\" style=\"margin:8px 0\"><p><strong>" + d.not_found.length + "</strong> IDs that resolve to neither a CPT post nor a user:</p></div>";
+									html += "<table class=\"widefat striped\" style=\"font-size:12px\"><thead><tr><th>Content</th><th>Field</th><th>ID</th></tr></thead><tbody>";
+									d.not_found.forEach(function(n) {
+										html += "<tr><td><a href=\"post.php?post=" + n.content_id + "&action=edit\">" + $("<span>").text(n.content_title).html() + "</a></td>";
+										html += "<td>" + $("<span>").text(n.field).html() + "</td>";
+										html += "<td style=\"color:#b32d2e\">" + n.id + "</td></tr>";
+									});
+									html += "</tbody></table>";
+								}
+							}
+							$("#pmig-flat-meta-audit-results").html(html);
+						} else {
+							$("#pmig-flat-meta-audit-results").html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Run Flat Meta Audit");
+						$("#pmig-flat-meta-audit-results").html("<p style=\"color:red\">Request failed or timed out.</p>");
+					}
+				});
+			});
+
 			// Merge reference audit
 			$("#pmig-merge-ref-audit-btn").on("click", function() {
 				var $btn = $(this);
@@ -2667,6 +2802,16 @@ function person_migration_render_page() {
 				<div id="pmig-count-audit-results" style="margin-top:12px"></div>
 			</div>
 
+			<!-- ============ UTILITIES: FLAT META ID AUDIT ============ -->
+			<div class="pmig-panel">
+				<h2>Utilities: Flat Meta ID Audit</h2>
+				<p class="description">Verify that all_author_ids and all_expert_ids contain CPT post IDs, not WP user IDs.</p>
+				<div class="pmig-btn-group" style="margin-top:8px">
+					<input type="button" id="pmig-flat-meta-audit-btn" class="button" value="Run Flat Meta Audit">
+				</div>
+				<div id="pmig-flat-meta-audit-results" style="margin-top:12px"></div>
+			</div>
+
 			<!-- ============ UTILITIES: MERGE REFERENCE AUDIT ============ -->
 			<div class="pmig-panel">
 				<h2>Utilities: Merge Reference Audit</h2>
@@ -2731,6 +2876,7 @@ add_action('wp_ajax_person_migration_search_persons',        'person_migration_a
 add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_ajax_resolve_flagged');
 add_action('wp_ajax_person_migration_count_audit',           'person_migration_ajax_count_audit');
 add_action('wp_ajax_person_migration_merge_ref_audit',       'person_migration_ajax_merge_ref_audit');
+add_action('wp_ajax_person_migration_flat_meta_audit',       'person_migration_ajax_flat_meta_audit');
 add_action('wp_ajax_person_migration_roleless_audit',        'person_migration_ajax_roleless_audit');
 add_action('wp_ajax_person_migration_group_detail',          'person_migration_ajax_group_detail');
 
