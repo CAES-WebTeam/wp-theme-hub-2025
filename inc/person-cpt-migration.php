@@ -859,14 +859,37 @@ function person_migration_ajax_count_audit() {
 
 	$diff = $actual - $expected;
 
+	// Find post IDs in the map that don't exist in any status
+	$missing_posts = array();
+	$status_counts = array();
+	$unique_post_ids = array_unique(array_values($map));
+	foreach ($unique_post_ids as $post_id) {
+		$status = get_post_status((int) $post_id);
+		if ($status === false) {
+			// Find which user ID(s) map to this post
+			$user_ids = array_keys(array_filter($map, function($pid) use ($post_id) {
+				return (int) $pid === (int) $post_id;
+			}));
+			$missing_posts[] = array(
+				'post_id'  => (int) $post_id,
+				'user_ids' => $user_ids,
+			);
+		} else {
+			$status_counts[$status] = ($status_counts[$status] ?? 0) + 1;
+		}
+	}
+
 	wp_send_json_success(array(
-		'total_migrated'  => $total_migrated,
-		'merge_decisions' => $merge_decisions,
-		'donors_trashed'  => $donors_trashed,
-		'expected'        => $expected,
-		'actual'          => $actual,
-		'trashed'         => $trashed,
-		'diff'           => $diff,
+		'total_migrated'   => $total_migrated,
+		'unique_post_ids'  => count($unique_post_ids),
+		'merge_decisions'  => $merge_decisions,
+		'donors_trashed'   => $donors_trashed,
+		'expected'         => $expected,
+		'actual'           => $actual,
+		'trashed'          => $trashed,
+		'diff'             => $diff,
+		'status_counts'    => $status_counts,
+		'missing_posts'    => $missing_posts,
 	));
 }
 
@@ -1999,6 +2022,7 @@ function person_migration_enqueue_scripts($hook) {
 							var status = d.diff === 0 ? "color:#46b450;font-weight:600" : "color:#d63638;font-weight:600";
 							var html = "<table class=\"widefat\" style=\"max-width:500px\">";
 							html += "<tr><td>Users in migration map</td><td><strong>" + d.total_migrated + "</strong></td></tr>";
+							html += "<tr><td>Unique post IDs in map</td><td><strong>" + d.unique_post_ids + "</strong></td></tr>";
 							html += "<tr><td>Merge decisions</td><td><strong>" + d.merge_decisions + "</strong></td></tr>";
 							html += "<tr><td>Donors trashed (from log)</td><td><strong>" + d.donors_trashed + "</strong></td></tr>";
 							html += "<tr><td>Expected People posts</td><td><strong>" + d.expected + "</strong></td></tr>";
@@ -2006,9 +2030,19 @@ function person_migration_enqueue_scripts($hook) {
 							if (d.trashed > 0) {
 								html += "<tr><td>Trashed People posts</td><td><strong>" + d.trashed + "</strong></td></tr>";
 							}
+							html += "<tr><td>Actual + Trashed</td><td><strong>" + (d.actual + d.trashed) + "</strong></td></tr>";
 							html += "<tr><td>Difference</td><td style=\"" + status + "\">" + (d.diff === 0 ? "0 (match)" : d.diff) + "</td></tr>";
 							html += "</table>";
-							if (d.diff !== 0) {
+							if (d.missing_posts && d.missing_posts.length > 0) {
+								html += "<h4 style=\"margin:12px 0 4px\">Missing posts (" + d.missing_posts.length + " post IDs in map that no longer exist):</h4>";
+								html += "<table class=\"widefat\" style=\"max-width:600px;font-size:12px\">";
+								html += "<thead><tr><th>Post ID</th><th>Mapped from user ID(s)</th></tr></thead>";
+								d.missing_posts.forEach(function(m) {
+									html += "<tr><td>#" + m.post_id + "</td><td>" + m.user_ids.join(", ") + "</td></tr>";
+								});
+								html += "</table>";
+							}
+							if (d.diff !== 0 && (!d.missing_posts || d.missing_posts.length === 0)) {
 								html += "<p style=\"color:#d63638\">Expected and actual counts do not match. Difference of <strong>" + d.diff + "</strong>. Check for manually created or deleted posts, or unrecorded merges.</p>";
 							}
 							$("#pmig-count-audit-results").html(html);
