@@ -894,6 +894,107 @@ function person_migration_ajax_count_audit() {
 }
 
 /**
+ * Audit: verify no content still references trashed donor posts from merge decisions.
+ */
+function person_migration_ajax_merge_ref_audit() {
+	person_migration_check_ajax();
+	@set_time_limit(120);
+
+	$merge_log = get_option(PERSON_MIGRATION_MERGE_LOG_KEY, array());
+	if (empty($merge_log)) {
+		wp_send_json_error(array('error_message' => 'No merge decisions in the log.'));
+	}
+
+	// Collect all donor post IDs that should no longer appear in content
+	$map = person_migration_get_map();
+	$donor_post_ids = array();
+	foreach ($merge_log as $decision) {
+		if (($decision['action'] ?? '') !== 'merge') continue;
+
+		// From donor_uids via map
+		if (!empty($decision['donor_uids'])) {
+			foreach ($decision['donor_uids'] as $uid) {
+				if (isset($map[$uid])) {
+					// After merge, map points donor UID to keeper -- get the original post from trashed array
+				}
+			}
+		}
+		// From trashed array (has post_id)
+		if (!empty($decision['trashed'])) {
+			foreach ($decision['trashed'] as $t) {
+				if (!empty($t['post_id'])) {
+					$donor_post_ids[(int) $t['post_id']] = $decision['keeper_name'] ?? 'unknown';
+				}
+			}
+		}
+	}
+
+	if (empty($donor_post_ids)) {
+		wp_send_json_success(array('problems' => array(), 'donors_checked' => 0, 'posts_scanned' => 0));
+	}
+
+	// Scan all content for references to donor post IDs
+	$content_post_types = array('post', 'publications', 'shorthand_story');
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	$flat_fields = array('all_author_ids', 'all_expert_ids');
+
+	$content_posts = get_posts(array(
+		'post_type'      => $content_post_types,
+		'post_status'    => array('publish', 'draft', 'private'),
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+	));
+
+	$problems = array();
+
+	foreach ($content_posts as $cp_id) {
+		// Check repeater fields
+		foreach ($repeater_names as $rn) {
+			$count = (int) get_post_meta($cp_id, $rn, true);
+			for ($i = 0; $i < $count; $i++) {
+				$mk = $rn . '_' . $i . '_user';
+				$val = get_post_meta($cp_id, $mk, true);
+				if (!empty($val) && isset($donor_post_ids[(int) $val])) {
+					$problems[] = array(
+						'content_id'    => $cp_id,
+						'content_title' => get_the_title($cp_id),
+						'content_type'  => get_post_type($cp_id),
+						'field'         => $mk,
+						'donor_post_id' => (int) $val,
+						'keeper_name'   => $donor_post_ids[(int) $val],
+					);
+				}
+			}
+		}
+
+		// Check flat meta
+		foreach ($flat_fields as $ff) {
+			$raw = get_post_meta($cp_id, $ff, true);
+			if (empty($raw)) continue;
+			$ids = is_array($raw) ? $raw : array_filter(array_map('trim', explode(',', $raw)));
+			foreach ($ids as $id) {
+				if (isset($donor_post_ids[(int) $id])) {
+					$problems[] = array(
+						'content_id'    => $cp_id,
+						'content_title' => get_the_title($cp_id),
+						'content_type'  => get_post_type($cp_id),
+						'field'         => $ff,
+						'donor_post_id' => (int) $id,
+						'keeper_name'   => $donor_post_ids[(int) $id],
+					);
+				}
+			}
+		}
+	}
+
+	wp_send_json_success(array(
+		'problems'       => $problems,
+		'donors_checked' => count($donor_post_ids),
+		'posts_scanned'  => count($content_posts),
+	));
+}
+
+/**
  * Audit: find all WP users with no roles that are referenced in content repeater fields.
  */
 function person_migration_ajax_roleless_audit() {
@@ -2057,6 +2158,48 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Merge reference audit
+			$("#pmig-merge-ref-audit-btn").on("click", function() {
+				var $btn = $(this);
+				$btn.prop("disabled", true).val("Scanning...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 300000,
+					data: { action: "person_migration_merge_ref_audit", nonce: nonce },
+					success: function(response) {
+						$btn.prop("disabled", false).val("Run Merge Reference Audit");
+						if (response.success) {
+							var d = response.data;
+							var html = "<p>Checked <strong>" + d.donors_checked + "</strong> donor post IDs across <strong>" + d.posts_scanned + "</strong> content items.</p>";
+							if (d.problems.length === 0) {
+								html += "<div class=\"notice notice-success\" style=\"margin:8px 0\"><p>No stale references found. All content correctly points to keeper posts.</p></div>";
+							} else {
+								html += "<div class=\"notice notice-error\" style=\"margin:8px 0\"><p><strong>" + d.problems.length + "</strong> stale references found:</p></div>";
+								html += "<table class=\"widefat striped\" style=\"font-size:12px\"><thead><tr><th>Content</th><th>Type</th><th>Field</th><th>Still references donor</th><th>Should be keeper</th></tr></thead><tbody>";
+								d.problems.forEach(function(p) {
+									html += "<tr>";
+									html += "<td><a href=\"post.php?post=" + p.content_id + "&action=edit\">" + $("<span>").text(p.content_title).html() + " (#" + p.content_id + ")</a></td>";
+									html += "<td>" + $("<span>").text(p.content_type).html() + "</td>";
+									html += "<td>" + $("<span>").text(p.field).html() + "</td>";
+									html += "<td style=\"color:#d63638\">#" + p.donor_post_id + "</td>";
+									html += "<td>" + $("<span>").text(p.keeper_name).html() + "</td>";
+									html += "</tr>";
+								});
+								html += "</tbody></table>";
+							}
+							$("#pmig-merge-ref-audit-results").html(html);
+						} else {
+							$("#pmig-merge-ref-audit-results").html("<p style=\"color:red\">" + (response.data?.error_message || "Error") + "</p>");
+						}
+					},
+					error: function() {
+						$btn.prop("disabled", false).val("Run Merge Reference Audit");
+						$("#pmig-merge-ref-audit-results").html("<p style=\"color:red\">Request failed or timed out.</p>");
+					}
+				});
+			});
+
 			// Roleless users audit
 			$("#pmig-roleless-audit-btn").on("click", function() {
 				var $btn = $(this);
@@ -2524,6 +2667,16 @@ function person_migration_render_page() {
 				<div id="pmig-count-audit-results" style="margin-top:12px"></div>
 			</div>
 
+			<!-- ============ UTILITIES: MERGE REFERENCE AUDIT ============ -->
+			<div class="pmig-panel">
+				<h2>Utilities: Merge Reference Audit</h2>
+				<p class="description">Verify that no content still references trashed donor posts from merge decisions. Checks all repeater fields and flat meta across posts, publications, and shorthand stories.</p>
+				<div class="pmig-btn-group" style="margin-top:8px">
+					<input type="button" id="pmig-merge-ref-audit-btn" class="button" value="Run Merge Reference Audit">
+				</div>
+				<div id="pmig-merge-ref-audit-results" style="margin-top:12px"></div>
+			</div>
+
 			<!-- ============ UTILITIES: ROLELESS USERS ============ -->
 			<div class="pmig-panel">
 				<h2>Utilities: Roleless Users Audit</h2>
@@ -2577,6 +2730,7 @@ add_action('wp_ajax_person_migration_reset_all',             'person_migration_a
 add_action('wp_ajax_person_migration_search_persons',        'person_migration_ajax_search_persons');
 add_action('wp_ajax_person_migration_resolve_flagged',       'person_migration_ajax_resolve_flagged');
 add_action('wp_ajax_person_migration_count_audit',           'person_migration_ajax_count_audit');
+add_action('wp_ajax_person_migration_merge_ref_audit',       'person_migration_ajax_merge_ref_audit');
 add_action('wp_ajax_person_migration_roleless_audit',        'person_migration_ajax_roleless_audit');
 add_action('wp_ajax_person_migration_group_detail',          'person_migration_ajax_group_detail');
 
