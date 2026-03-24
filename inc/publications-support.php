@@ -1,6 +1,6 @@
 <?php
 
-add_filter('default_content', 'publication_default_content', 10, 2);
+// add_filter('default_content', 'publication_default_content', 10, 2);
 
 // Insert default content into new publications
 function publication_default_content($content, $post)
