@@ -3,7 +3,7 @@
  * Title: Immersive Cover
  * Slug: caes-theme/immersive-cover
  * Description: A full-width cover block with post title and author bylines for immersive storytelling layouts.
- * Categories: featured, media
+ * Categories: featured, media, immersive
  * Keywords: cover, hero, immersive, title
  * Viewport Width: 1400
  */

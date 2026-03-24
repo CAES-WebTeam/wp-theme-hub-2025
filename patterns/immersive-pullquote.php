@@ -3,7 +3,7 @@
  * Title: Immersive Pullquote
  * Slug: caes-theme/immersive-pullquote
  * Description: A pullquote with a background image from theme assets.
- * Categories: featured, text
+ * Categories: featured, text, immersive
  * Keywords: pullquote, quote, immersive
  * Viewport Width: 1400
  */

@@ -3,7 +3,7 @@
  * Title: Immersive Story
  * Slug: caes-theme/immersive
  * Description: A full immersive storytelling layout combining a cover hero, reveal, pullquote, motion scroll, and gallery.
- * Categories: featured, media
+ * Categories: featured, media, immersive
  * Keywords: immersive, story, scroll, reveal, motion
  * Viewport Width: 1400
  */
