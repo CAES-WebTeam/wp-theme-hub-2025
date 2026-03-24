@@ -59,18 +59,8 @@ Phase 2 steps must be executed in the order listed.
    - 7a. **Verify swap** -- use the built-in Verify button to confirm all repeater IDs now point to `caes_hub_person` posts. Resolve any flagged users that weren't in the map.
    - 7b. **Update ACF Field Types** -- After the swap, change the `user` sub-field in each repeater (authors, experts, translator, artists) from ACF User type to Post Object type targeting `caes_hub_person`. This makes the admin editor show a person CPT picker instead of a user picker. Original field settings are backed up and can be reverted independently. Must run immediately after the swap; the Revert Swap button automatically reverts field types as well.
 
-8. **Review & Merge Duplicates** -- Scan for person posts that share the same `uga_email` or `first_name + last_name` (personnel and expert records for the same real person). Review page shows a side-by-side comparison with content references listed, and allows:
-   - Optionally copying expert-specific fields (source_expert_id, description, area_of_expertise, etc.) to the keeper
-   - Reassigning all content references (repeaters + flat meta) from the duplicate to the keeper
-   - Trashing the duplicate
-   - Dismissing false-positive matches
-   - Must run after the repeater swap (step 7) so content references are post IDs and changes are immediately verifiable
-   - On production: import the decisions JSON exported from staging, then Replay to apply them. Re-scan to confirm 0 duplicate groups remain.
-   - 8v. **Verify: Run Merge Reference Audit** -- confirm no content still references any trashed donor post IDs
-   - 8v2. **Verify: Run Person CPT Count Audit** -- confirm expected vs actual post counts align (small differences from multi-donor merges or edge cases are acceptable)
-
-9. **Repopulate Flat Meta** -- Rebuild the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Must run after both the swap and duplicate merge so the indexes reflect the final state. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool includes a "Revert flat meta" action that copies the backup fields back to the originals.
-   - 9v. **Verify: Run Flat Meta ID Audit** -- confirm all `all_author_ids` and `all_expert_ids` values contain CPT post IDs, not WP user IDs
+8. **Repopulate Flat Meta** -- Rebuild the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Must run after the swap (step 7) so the indexes use CPT post IDs. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool includes a "Revert flat meta" action that copies the backup fields back to the originals.
+   - 8v. **Verify: Run Flat Meta ID Audit** -- confirm all `all_author_ids` and `all_expert_ids` values contain CPT post IDs, not WP user IDs
 
 ## Phase 3: Update Sync Infrastructure
 
@@ -142,6 +132,10 @@ Phase 2 steps must be executed in the order listed.
 30. Update `content_manager_map_meta_cap` filter -- remove the `edit_user`/`edit_users` case (no longer needed since personnel/expert data lives in the CPT) but keep the `unfiltered_html` case (still required for multisite)
 31. Remove user profile accordion JS
 32. Optionally bulk-delete the old personnel/expert user accounts
+
+## Future: Review & Merge Duplicates
+
+Personnel and expert records for the same real person will exist as separate `caes_hub_person` posts after migration. Both are valid and functional. Each post retains its source fields (`personnel_id`, `source_expert_id`, `writer_id`, `uga_email`, etc.) so duplicates can be identified and merged at any time using the existing scan/merge tools in the migration dashboard.
 
 ---
 

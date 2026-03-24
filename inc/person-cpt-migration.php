@@ -2873,55 +2873,6 @@ function person_migration_render_page() {
 					</div>
 				</div>
 
-				<!-- Step 8: Review & Merge Duplicates -->
-				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step8_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
-					<div style="display:flex;justify-content:space-between;align-items:center">
-						<div>
-							<strong>Review &amp; Merge Duplicates</strong>
-							<span class="pmig-status-badge <?php echo $step8_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step8_done ? 'Complete' : 'Not Started'; ?></span>
-							<p class="description" style="margin:4px 0 0">Scan for duplicate person posts and merge them. Groups found: <strong><?php echo esc_html($dupe_groups); ?></strong></p>
-						</div>
-						<div class="pmig-btn-group">
-							<input type="button" id="pmig-scan-dupes-btn" class="button" value="Scan" <?php echo !$step7_done ? 'disabled' : ''; ?>>
-							<a href="<?php echo esc_url(admin_url('admin.php?page=person-merge-duplicates')); ?>" class="button" <?php echo !$step7_done ? 'style="pointer-events:none;opacity:0.5"' : ''; ?>>Review</a>
-							<?php if ($step8_done): ?>
-								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step8" checked> Done</label>
-							<?php else: ?>
-								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step8"> Mark done</label>
-							<?php endif; ?>
-						</div>
-					</div>
-				</div>
-
-				<!-- Verify 8v: Merge Reference Audit -->
-				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
-					<div style="display:flex;justify-content:space-between;align-items:center">
-						<div>
-							<strong>Verify: Merge Reference Audit</strong>
-							<p class="description" style="margin:4px 0 0">Confirm no content still references trashed donor post IDs.</p>
-						</div>
-						<div class="pmig-btn-group">
-							<input type="button" class="button pmig-merge-ref-audit-inline-btn" value="Run Merge Reference Audit" <?php echo !$step8_done ? 'disabled' : ''; ?>>
-							<input type="button" class="button pmig-fix-stale-refs-btn" value="Fix Stale References" style="display:none;color:#b32d2e">
-						</div>
-					</div>
-					<div class="pmig-merge-ref-audit-inline-results" style="margin-top:8px"></div>
-				</div>
-
-				<!-- Verify 8v2: Person CPT Count Audit (post-merge) -->
-				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
-					<div style="display:flex;justify-content:space-between;align-items:center">
-						<div>
-							<strong>Verify: Person CPT Count Audit</strong>
-							<p class="description" style="margin:4px 0 0">Confirm expected vs actual post counts align after merges.</p>
-						</div>
-						<div class="pmig-btn-group">
-							<input type="button" class="button pmig-count-audit-inline-btn" value="Run Count Audit" <?php echo !$step8_done ? 'disabled' : ''; ?>>
-						</div>
-					</div>
-					<div class="pmig-count-audit-inline-results" style="margin-top:8px"></div>
-				</div>
-
 				<!-- Step 9: Repopulate Flat Meta -->
 				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step9_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
 					<div style="display:flex;justify-content:space-between;align-items:center">
@@ -2931,7 +2882,7 @@ function person_migration_render_page() {
 							<p class="description" style="margin:4px 0 0">Rebuild all_author_ids and all_expert_ids with CPT post IDs. Originals are backed up for revert.</p>
 						</div>
 						<div class="pmig-btn-group">
-							<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Run" <?php echo !$step8_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-flat-meta-btn" class="button pmig-action-btn" value="Run" <?php echo !$step7_done ? 'disabled' : ''; ?>>
 							<input type="button" id="pmig-revert-btn" class="button" value="Revert" <?php echo !$step9_done ? 'disabled' : ''; ?>>
 							<?php if ($step9_done): ?>
 								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step9" checked> Done</label>
