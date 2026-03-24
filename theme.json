@@ -788,13 +788,6 @@
             "postTypes": [
                 "post"
             ]
-        },
-        {
-            "name": "immersive",
-            "title": "Immersive",
-            "postTypes": [
-                "post"
-            ]
         }
     ]
 }
