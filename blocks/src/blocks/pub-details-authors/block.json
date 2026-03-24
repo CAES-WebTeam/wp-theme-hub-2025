@@ -23,7 +23,13 @@
     "typography": {
       "fontSize": true,
       "lineHeight": true,
-      "textAlign": true
+      "textAlign": true,
+      "__experimentalFontFamily": true,
+      "__experimentalFontStyle": true,
+      "__experimentalFontWeight": true,
+      "__experimentalTextDecoration": true,
+      "__experimentalTextTransform": true,
+      "__experimentalLetterSpacing": true
     }
   },
   "attributes": {
