@@ -3,7 +3,7 @@
 /**
  * Title: Grid
  * Slug: caes-hub/grid-1
- * Categories: content_patterns
+ * Categories: content_patterns, immersive
  * Description: Basic grid pattern
  * Keywords: grid, layout
  * Block Types: core/group
