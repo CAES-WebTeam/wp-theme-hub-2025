@@ -79,7 +79,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
 <div <?php echo $wrapper_attributes; ?> style="--texture-url: url('<?php echo get_template_directory_uri(); ?>/assets/images/texture.jpg');">
     <!-- Gallery main display area -->
     <div class="gallery-main">
-        <figure class="gallery-figure">
+        <figure class="gallery-figure" id="<?php echo $gallery_id; ?>-image">
             <?php 
             $first_image = $legacy_gallery[0]['image'];
             $first_caption = $legacy_gallery[0]['caption'] ?? '';
