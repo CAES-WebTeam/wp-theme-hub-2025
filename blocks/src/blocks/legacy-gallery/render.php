@@ -109,30 +109,27 @@ $wrapper_attributes = get_block_wrapper_attributes([
     <!-- Gallery filmstrip navigation (only show for multiple images) -->
     <nav class="gallery-filmstrip" aria-label="Gallery navigation">
         <div class="filmstrip-container">
-            <ul class="filmstrip-list" role="tablist" aria-label="Gallery images">
+            <ul class="filmstrip-list" aria-label="Gallery images">
                 <?php foreach ($legacy_gallery as $index => $item): ?>
-                    <?php 
+                    <?php
                     $image = $item['image'];
                     $caption = $item['caption'] ?? '';
                     $is_first = $index === 0;
                     $image_number = $index + 1;
                     ?>
-                    <li class="filmstrip-item" role="presentation">
-                        <button 
+                    <li class="filmstrip-item">
+                        <button
                             class="filmstrip-thumb<?php echo $is_first ? ' active' : ''; ?>"
-                            role="tab"
-                            aria-selected="<?php echo $is_first ? 'true' : 'false'; ?>"
-                            aria-controls="<?php echo $gallery_id; ?>-image"
-                            aria-label="Show image <?php echo $image_number; ?> of <?php echo $total_images; ?><?php echo $caption ? ': ' . wp_strip_all_tags($caption) : ''; ?>"
+                            aria-current="<?php echo $is_first ? 'true' : 'false'; ?>"
+                            aria-label="Show image <?php echo $image_number; ?> of <?php echo $total_images; ?>"
                             data-gallery-thumb="<?php echo $index; ?>"
                             data-image-url="<?php echo esc_url($image['url']); ?>"
                             data-image-alt="<?php echo esc_attr($image['alt'] ?: 'Gallery image ' . $image_number . ' of ' . $total_images); ?>"
                             data-image-width="<?php echo esc_attr($image['width']); ?>"
                             data-image-height="<?php echo esc_attr($image['height']); ?>"
                             data-image-caption="<?php echo esc_attr($caption); ?>"
-                            tabindex="<?php echo $is_first ? '0' : '-1'; ?>"
                         >
-                            <img 
+                            <img
                                 src="<?php echo esc_url($image['sizes']['thumbnail']); ?>"
                                 alt=""
                                 class="thumb-image"
@@ -148,7 +145,7 @@ $wrapper_attributes = get_block_wrapper_attributes([
         
         <!-- Screen reader navigation info -->
         <div class="gallery-sr-info sr-only" aria-live="polite" aria-atomic="true">
-            <span data-gallery-sr-current">Showing image 1 of <?php echo $total_images; ?></span>
+            <span data-gallery-sr-current>Showing image 1 of <?php echo $total_images; ?></span>
         </div>
     </nav>
     <?php endif; ?>
