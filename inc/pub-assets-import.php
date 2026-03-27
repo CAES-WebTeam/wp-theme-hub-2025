@@ -406,6 +406,15 @@ function pub_assets_ajax_reset() {
 
 // ── Core: process one publication ──────────────────────────────────────────────
 
+/**
+ * Convert a payload folder name to the WordPress publication_number value.
+ * The first hyphen in the folder name is a space in the stored pub number;
+ * all subsequent hyphens are literal (e.g. "B-1524-3" → "B 1524-3").
+ */
+function pub_assets_folder_to_pub_number( $folder_name ) {
+	return preg_replace( '/-/', ' ', $folder_name, 1 );
+}
+
 function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
 	$result = [
 		'status'          => '',
@@ -428,7 +437,9 @@ function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
 		return $result;
 	}
 
-	// Look up the post by publication_number ACF field
+	// Look up the post by publication_number ACF field.
+	// Folder names use a hyphen where the stored pub number has a space (first hyphen only).
+	$wp_pub_number = pub_assets_folder_to_pub_number( $pub_number );
 	$posts = get_posts( [
 		'post_type'      => 'publications',
 		'posts_per_page' => 1,
@@ -436,7 +447,7 @@ function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
 		'fields'         => 'ids',
 		'meta_query'     => [ [
 			'key'   => 'publication_number',
-			'value' => $pub_number,
+			'value' => $wp_pub_number,
 		] ],
 	] );
 
