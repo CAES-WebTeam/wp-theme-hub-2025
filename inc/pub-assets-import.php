@@ -769,7 +769,29 @@ function pub_assets_import_page() {
 				?>
 			</div>
 
-			<?php if ( ! empty( $state['publications'] ) ) : ?>
+			<?php if ( ! empty( $state['publications'] ) ) :
+				// Build a folder-name → permalink map in one batch query.
+				$wp_numbers = array_map(
+					function( $p ) { return pub_assets_folder_to_pub_number( $p['number'] ); },
+					$state['publications']
+				);
+				$pub_posts = get_posts( [
+					'post_type'      => 'publications',
+					'posts_per_page' => -1,
+					'post_status'    => 'any',
+					'fields'         => 'ids',
+					'meta_query'     => [ [
+						'key'     => 'publication_number',
+						'value'   => $wp_numbers,
+						'compare' => 'IN',
+					] ],
+				] );
+				$permalink_map = []; // wp_pub_number => permalink
+				foreach ( $pub_posts as $pid ) {
+					$pnum = get_post_meta( $pid, 'publication_number', true );
+					$permalink_map[ $pnum ] = get_permalink( $pid );
+				}
+			?>
 			<details style="margin-top:18px;">
 				<summary style="cursor:pointer; font-weight:600; font-size:14px;">
 					Publication List (<?php echo count( $state['publications'] ); ?> items)
@@ -783,11 +805,22 @@ function pub_assets_import_page() {
 						</tr>
 					</thead>
 					<tbody>
-					<?php foreach ( $state['publications'] as $i => $pub ) : ?>
+					<?php foreach ( $state['publications'] as $i => $pub ) :
+						$wp_num   = pub_assets_folder_to_pub_number( $pub['number'] );
+						$post_url = $permalink_map[ $wp_num ] ?? null;
+					?>
 						<tr>
 							<td><?php echo $i + 1; ?></td>
 							<td><?php echo esc_html( $pub['number'] ); ?></td>
-							<td style="font-size:11px; color:#888;"><?php echo esc_html( $pub['dir'] ); ?></td>
+							<td style="font-size:11px;">
+								<?php if ( $post_url ) : ?>
+									<a href="<?php echo esc_url( $post_url ); ?>" target="_blank" rel="noopener">
+										<?php echo esc_html( $pub['dir'] ); ?>
+									</a>
+								<?php else : ?>
+									<span style="color:#888;"><?php echo esc_html( $pub['dir'] ); ?></span>
+								<?php endif; ?>
+							</td>
 						</tr>
 					<?php endforeach; ?>
 					</tbody>
