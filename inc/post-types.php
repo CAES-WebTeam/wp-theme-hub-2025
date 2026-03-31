@@ -631,6 +631,7 @@ add_action('init', function () {
         'show_in_rest'      => true,
         'query_var'         => false,
         'rewrite'           => false,
+        'meta_box_cb'       => false, // Hide from edit screen -- shown read-only via ACF in Elements section
     ));
 });
 
