@@ -185,19 +185,8 @@ function resolve_person_id_from_repeater_row($item) {
 // Admin columns: content counts for People list
 // ============================================================
 
-add_filter('manage_caes_hub_person_posts_columns', function ($columns) {
-    // Insert after title
-    $new = array();
-    foreach ($columns as $key => $label) {
-        $new[$key] = $label;
-        if ($key === 'title') {
-            $new['person_posts']        = 'Stories';
-            $new['person_publications'] = 'Pubs';
-            $new['person_shorthand']    = 'Shorthand';
-        }
-    }
-    return $new;
-});
+// Content count columns removed from list table for performance.
+// Counts are still available via the migration dashboard audits.
 
 /**
  * Get content count for a person, with lazy caching.
@@ -236,25 +225,7 @@ function _person_invalidate_content_counts($person_id) {
     delete_post_meta($person_id, '_content_count_shorthand_story');
 }
 
-add_action('manage_caes_hub_person_posts_custom_column', function ($column, $post_id) {
-    $type_map = array(
-        'person_posts'        => 'post',
-        'person_publications' => 'publications',
-        'person_shorthand'    => 'shorthand_story',
-    );
-
-    if (!isset($type_map[$column])) return;
-
-    $post_type = $type_map[$column];
-    $count = _person_get_content_count($post_id, $post_type);
-
-    if ($count > 0) {
-        $url = admin_url('edit.php?post_type=' . $post_type . '&person_filter=' . $post_id);
-        echo '<a href="' . esc_url($url) . '">' . esc_html($count) . '</a>';
-    } else {
-        echo '<span style="color:#999">0</span>';
-    }
-}, 10, 2);
+// Column rendering removed (see above).
 
 // Invalidate person content counts when a post/pub/shorthand is saved
 add_action('save_post', function ($post_id, $post) {
