@@ -284,3 +284,40 @@ add_action('pre_get_posts', function ($query) {
 add_filter('manage_edit-caes_hub_person_sortable_columns', function ($columns) {
     return $columns;
 });
+
+// Add Source and Status columns to People list table
+add_filter('manage_caes_hub_person_posts_columns', function ($columns) {
+    $new = array();
+    foreach ($columns as $key => $label) {
+        $new[$key] = $label;
+        if ($key === 'title') {
+            $new['person_source'] = 'Source';
+            $new['person_status'] = 'Status';
+        }
+    }
+    return $new;
+});
+
+add_action('manage_caes_hub_person_posts_custom_column', function ($column, $post_id) {
+    if ($column === 'person_source') {
+        $pid = intval(get_post_meta($post_id, 'personnel_id', true));
+        if ($pid > 0) {
+            echo '<span style="background:#0073aa;color:#fff;padding:2px 8px;border-radius:3px;font-size:12px;white-space:nowrap">Personnel</span>';
+        } else {
+            echo '<span style="background:#826eb4;color:#fff;padding:2px 8px;border-radius:3px;font-size:12px;white-space:nowrap">Expert / Writer</span>';
+        }
+    }
+    if ($column === 'person_status') {
+        $pid = intval(get_post_meta($post_id, 'personnel_id', true));
+        if ($pid > 0) {
+            $active = get_post_meta($post_id, 'is_active', true);
+            if ($active === '0' || $active === 0) {
+                echo '<span style="background:#dc3232;color:#fff;padding:2px 8px;border-radius:3px;font-size:12px">Inactive</span>';
+            } else {
+                echo '<span style="color:#46b450;font-size:12px;font-weight:600">Active</span>';
+            }
+        } else {
+            echo '<span style="color:#999;font-size:12px">&mdash;</span>';
+        }
+    }
+}, 10, 2);
