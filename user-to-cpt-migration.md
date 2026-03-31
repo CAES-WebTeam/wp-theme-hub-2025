@@ -62,12 +62,30 @@ Phase 2 steps must be executed in the order listed.
 8. **Repopulate Flat Meta** -- Rebuild the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Must run after the swap (step 7) so the indexes use CPT post IDs. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool includes a "Revert flat meta" action that copies the backup fields back to the originals.
    - 8v. **Verify: Run Flat Meta ID Audit** -- confirm all `all_author_ids` and `all_expert_ids` values contain CPT post IDs, not WP user IDs
 
-## Phase 3: Update Sync Infrastructure
+## Phase 3: People CPT Data Sync
 
-10. Rewrite `sync_personnel_users()` and `sync_personnel_users2()` to create/update `caes_hub_person` posts instead of users; rename to `sync_active_personnel()` and `sync_inactive_personnel_authors()`. Must also update `is_active` on the CPT post (the merge tool and front-end rely on this field to determine active/inactive status)
-11. Update the CAES Tools admin page to reflect the new sync targets
-12. Rewrite both Symplectic import files to query `caes_hub_person` posts by meta and write to CPT post IDs. While updating, ensure the year data is carrying over correctly for scholarly works.
-13. Retire `import_news_experts()` and `import_news_writers()`
+Build a single admin page under CAES Tools ("People CPT Data Sync") that replaces all user-targeted sync tools. Two sync sections on one page, each with: last cron result summary, Run Now / Stop buttons, progress display, and error log. A single-person lookup by college ID pulls from both APIs and updates one post.
+
+10. **Personnel API Sync** -- Replaces `sync_personnel_users()` and `sync_personnel_users2()`.
+    - Queries the CAES personnel API (`secure.caes.uga.edu/rest/personnel/Personnel`)
+    - Matches API records to existing `caes_hub_person` posts by `personnel_id` meta
+    - Updates personnel fields: first_name, last_name, display_name, title, phone, addresses, image_name, college_id, caes_location_id, is_active
+    - Assigns `person_department` and `person_program_area` taxonomy terms
+    - New personnel (no matching CPT post) auto-creates a person post
+    - Personnel absent from the API response: mark `is_active = false` on existing post
+    - Does NOT touch expert/writer fields (static, no API source)
+    - Async batch architecture (same pattern as symplectic CPT importer)
+    - Shows last cron run: timestamp, created/updated/marked-inactive/error counts, error log
+
+11. **Symplectic Elements Sync** -- Relocate the existing `symplectic-scheduled-import-cpt.php` control panel onto this same page.
+    - Only processes person posts that already have a `personnel_id` -- never creates new posts
+    - Updates: elements_user_id, elements_overview, areas_of_expertise taxonomy, scholarly_works/distinctions/courses repeaters
+    - Ensure year data carries over correctly for scholarly works
+    - Shows last cron run results same as personnel sync
+
+12. **Daily cron** runs personnel sync first, then symplectic sync in sequence.
+
+13. Retire `import_news_experts()`, `import_news_writers()`, old user-targeted sync functions, and the "User Data Management" tool page.
 
 ## Phase 4: Update Front-End Code
 
