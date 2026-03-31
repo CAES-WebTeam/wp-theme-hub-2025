@@ -407,9 +407,11 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 	}
 
 	$records = json_decode(wp_remote_retrieve_body($response), true);
+	$is_active = true;
 
 	// Try inactive if not found
 	if (!is_array($records) || empty($records)) {
+		$is_active = false;
 		$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true&isActive=false';
 		$response = wp_remote_get($url, array('timeout' => 30));
 		if (is_wp_error($response)) {
@@ -441,6 +443,7 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 	}
 
 	if ($dry_run) {
+		$data['is_active'] = $is_active;
 		return array(
 			'status'        => 'ok',
 			'action'        => $existing_post ? 'would_update' : 'would_create',
@@ -658,6 +661,7 @@ function person_data_sync_enqueue($hook) {
 			function renderPersonnelPreview(data) {
 				var fields = [
 					["Name", data.display_name], ["Personnel ID", data.personnel_id], ["College ID", data.college_id],
+					["Active Status", data.is_active ? "Active" : "Inactive"],
 					["Email", data.email], ["Title", data.title], ["Department", data.department],
 					["Program Area", data.program_area], ["Phone", data.phone_number]
 				];
