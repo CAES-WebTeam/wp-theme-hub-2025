@@ -52,6 +52,7 @@ function personnel_cpt_default_state() {
 			'updated'        => 0,
 			'marked_inactive' => 0,
 			'unpublished'    => 0,
+			'expert_unpublished' => 0,
 			'reactivated'    => 0,
 			'skipped'        => 0,
 			'errors'         => 0,
@@ -404,8 +405,26 @@ function personnel_cpt_run_batch() {
 				}
 			}
 		}
+		// Unpublish expert/writer posts (no personnel_id) that aren't credited anywhere
+		$expert_unpublished = 0;
+		$expert_posts = $wpdb->get_col(
+			"SELECT p.ID FROM {$wpdb->posts} p
+			 WHERE p.post_type = 'caes_hub_person' AND p.post_status = 'publish'
+			 AND p.ID NOT IN (
+			 	SELECT post_id FROM {$wpdb->postmeta}
+			 	WHERE meta_key = 'personnel_id' AND meta_value != '' AND meta_value != '0'
+			 )"
+		);
+		foreach ($expert_posts as $ep_id) {
+			if (!isset($credited_set[(string) $ep_id])) {
+				wp_update_post(array('ID' => intval($ep_id), 'post_status' => 'draft'));
+				$expert_unpublished++;
+			}
+		}
+
 		$state['stats']['marked_inactive'] = $inactive_count;
 		$state['stats']['unpublished'] = $unpublished_count;
+		$state['stats']['expert_unpublished'] = $expert_unpublished;
 		$state['stats']['reactivated'] = $reactivated_count;
 
 		$state['status'] = 'complete';
@@ -627,6 +646,7 @@ function person_data_sync_enqueue($hook) {
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.updated)   + "</div><div class=\"pds-stat-label\">Updated</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value warn\">"    + esc(s.marked_inactive) + "</div><div class=\"pds-stat-label\">Marked Inactive</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value warn\">"    + esc(s.unpublished || 0) + "</div><div class=\"pds-stat-label\">Unpublished</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value warn\">"    + esc(s.expert_unpublished || 0) + "</div><div class=\"pds-stat-label\">Experts Unpublished</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.reactivated || 0) + "</div><div class=\"pds-stat-label\">Reactivated</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.fields_written) + "</div><div class=\"pds-stat-label\">Fields Written</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value" + (s.errors > 0 ? " failed" : "") + "\">" + esc(s.errors) + "</div><div class=\"pds-stat-label\">Errors</div></div>"
