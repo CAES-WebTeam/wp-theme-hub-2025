@@ -3,7 +3,7 @@
  * Title: Motion Scroll Story
  * Slug: caes-theme/motion-scroll-story
  * Description: A scroll-driven motion block with three frames for immersive storytelling.
- * Categories: featured, media
+ * Categories: featured, media, immersive
  * Keywords: motion, scroll, story, immersive
  * Block Types: caes-hub/motion-scroll
  * Viewport Width: 1400

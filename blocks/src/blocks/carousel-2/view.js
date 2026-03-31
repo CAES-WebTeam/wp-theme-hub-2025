@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
       slide.style.opacity = i === index ? '1' : '0';
       slide.style.zIndex = i === index ? '1' : '0';
       slide.setAttribute('aria-hidden', i !== index);
+      slide.inert = i !== index;
     });
     updateCounter();
     adjustCarouselHeight();
@@ -142,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initialize
   slides.forEach((slide, i) => {
     slide.setAttribute('aria-hidden', i !== 0);
+    slide.inert = i !== 0;
     slide.style.transition = 'opacity 0.5s ease';
     slide.style.opacity = i === 0 ? '1' : '0';
     slide.style.position = 'absolute';

@@ -25,7 +25,6 @@ add_filter('rest_prepare_post', function ($response, $post, $request) {
 }, 10, 3);
 
 add_filter('default_content', 'story_default_content', 10, 2);
-
 // Insert default content into new posts
 function story_default_content($content, $post)
 {

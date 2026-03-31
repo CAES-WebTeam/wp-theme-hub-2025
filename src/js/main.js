@@ -64,6 +64,13 @@ function handleOverflowScroll() {
     // Check for overflow
     if (table.scrollWidth > wrapper.clientWidth) {
       wrapper.classList.add('responsitable-scroll');
+      wrapper.setAttribute('tabindex', '0');
+      wrapper.setAttribute('role', 'region');
+      wrapper.setAttribute('aria-label', 'Scrollable table');
+    } else {
+      wrapper.removeAttribute('tabindex');
+      wrapper.removeAttribute('role');
+      wrapper.removeAttribute('aria-label');
     }
   });
 }

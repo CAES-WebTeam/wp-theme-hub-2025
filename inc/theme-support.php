@@ -248,6 +248,13 @@ add_action('init', function () {
                 'description' => __('Design patterns that can be used in article and publication content', 'field-report'),
             )
         );
+        register_block_pattern_category(
+            'immersive',
+            array(
+                'label' => __('Immersive', 'field-report'),
+                'description' => __('Patterns for immersive, scroll-driven storytelling layouts', 'field-report'),
+            )
+        );
     }
 });
 

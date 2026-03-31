@@ -3,7 +3,7 @@
  * Title: Reveal Story
  * Slug: caes-theme/reveal-story
  * Description: A scroll-driven reveal block with three frames for immersive storytelling.
- * Categories: featured, media
+ * Categories: featured, media, immersive
  * Keywords: reveal, scroll, story, immersive
  * Block Types: caes-hub/reveal
  * Viewport Width: 1400

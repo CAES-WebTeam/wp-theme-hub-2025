@@ -54,10 +54,10 @@ function initGallery(gallery) {
         // Update caption
         if (caption) {
             if (imageCaption) {
-                caption.innerHTML = imageCaption;
+                caption.textContent = imageCaption;
                 caption.classList.remove('sr-only');
             } else {
-                caption.innerHTML = `Image ${index + 1} of ${totalImages}`;
+                caption.textContent = `Image ${index + 1} of ${totalImages}`;
                 caption.classList.add('sr-only');
             }
         }
@@ -79,13 +79,12 @@ function initGallery(gallery) {
     function updateActiveStates(activeIndex) {
         thumbButtons.forEach((button, index) => {
             const isActive = index === activeIndex;
-            
+
             // Update visual active state
             button.classList.toggle('active', isActive);
-            
+
             // Update ARIA attributes
-            button.setAttribute('aria-selected', isActive.toString());
-            button.tabIndex = isActive ? 0 : -1;
+            button.setAttribute('aria-current', isActive.toString());
         });
     }
     
