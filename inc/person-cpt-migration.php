@@ -72,8 +72,6 @@ function person_migration_get_simple_fields() {
 		'college_id',
 		'uga_email',
 		'title',
-		'department',
-		'program_area',
 		'phone_number',
 		'cell_phone_number',
 		'fax_number',
@@ -216,6 +214,24 @@ function person_migration_migrate_single_user($user_id, $dry_run = false) {
 				$result['field_log'][] = '[DRY RUN] ' . $field_name . ' = "' . $display_val . '"';
 			} else {
 				update_post_meta($post_id, $field_name, $value);
+				$fields_written++;
+			}
+		}
+	}
+
+	// Assign department and program_area as taxonomy terms
+	$tax_mappings = array(
+		'department'   => 'person_department',
+		'program_area' => 'person_program_area',
+	);
+	foreach ($tax_mappings as $meta_key => $taxonomy) {
+		$value = get_user_meta($user_id, $meta_key, true);
+		if (!empty($value)) {
+			$value = trim($value);
+			if ($dry_run) {
+				$result['field_log'][] = '[DRY RUN] ' . $taxonomy . ' = "' . mb_substr($value, 0, 80) . '"';
+			} else {
+				wp_set_object_terms($post_id, $value, $taxonomy);
 				$fields_written++;
 			}
 		}
@@ -5401,8 +5417,9 @@ function person_migration_ajax_group_detail() {
 	$map = person_migration_get_map();
 	$expert_fields = person_migration_get_expert_fields();
 
-	$key_fields = array('first_name', 'last_name', 'uga_email', 'phone', 'department', 'position', 'is_active',
+	$key_fields = array('first_name', 'last_name', 'uga_email', 'phone', 'position', 'is_active',
 		'source_expert_id', 'description', 'area_of_expertise', 'is_source', 'is_expert', 'writer_id', 'tagline');
+	$key_taxonomies = array('department' => 'person_department', 'program_area' => 'person_program_area');
 
 	$content_post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names     = array('authors', 'experts', 'translator', 'artists');
@@ -5451,6 +5468,12 @@ function person_migration_ajax_group_detail() {
 			$v = get_post_meta($pid, $fn, true);
 			if ($v !== '' && $v !== false && $v !== null) {
 				$fields[$fn] = is_array($v) ? json_encode($v) : mb_substr((string)$v, 0, 120);
+			}
+		}
+		foreach ($key_taxonomies as $label => $tax) {
+			$terms = get_the_terms($pid, $tax);
+			if (!empty($terms) && !is_wp_error($terms)) {
+				$fields[$label] = implode(', ', wp_list_pluck($terms, 'name'));
 			}
 		}
 

@@ -548,6 +548,62 @@ add_action('init', function () {
 // Include ACF field groups for the caes_hub_person CPT
 include_once(get_template_directory() . '/inc/acf-fields/person-cpt-field-group.php');
 
+// Register 'Department' taxonomy for person CPT.
+add_action('init', function () {
+    register_taxonomy('person_department', array('caes_hub_person'), array(
+        'labels' => array(
+            'name'              => 'Departments',
+            'singular_name'     => 'Department',
+            'menu_name'         => 'Departments',
+            'all_items'         => 'All Departments',
+            'edit_item'         => 'Edit Department',
+            'update_item'       => 'Update Department',
+            'add_new_item'      => 'Add New Department',
+            'new_item_name'     => 'New Department Name',
+            'search_items'      => 'Search Departments',
+            'not_found'         => 'No departments found',
+            'no_terms'          => 'No departments',
+            'back_to_items'     => '← Go to departments',
+        ),
+        'hierarchical'      => true,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_in_menu'      => true,
+        'show_in_rest'      => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'people/department', 'with_front' => false),
+    ));
+});
+
+// Register 'Program Area' taxonomy for person CPT.
+add_action('init', function () {
+    register_taxonomy('person_program_area', array('caes_hub_person'), array(
+        'labels' => array(
+            'name'              => 'Program Areas',
+            'singular_name'     => 'Program Area',
+            'menu_name'         => 'Program Areas',
+            'all_items'         => 'All Program Areas',
+            'edit_item'         => 'Edit Program Area',
+            'update_item'       => 'Update Program Area',
+            'add_new_item'      => 'Add New Program Area',
+            'new_item_name'     => 'New Program Area Name',
+            'search_items'      => 'Search Program Areas',
+            'not_found'         => 'No program areas found',
+            'no_terms'          => 'No program areas',
+            'back_to_items'     => '← Go to program areas',
+        ),
+        'hierarchical'      => true,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_in_menu'      => true,
+        'show_in_rest'      => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'people/program-area', 'with_front' => false),
+    ));
+});
+
 // Register 'Areas of Expertise' taxonomy (FOR/ANZSRC) for Symplectic Elements user data.
 // Attached to caes_hub_person CPT. Also used via ACF on user profiles during migration.
 add_action('init', function () {
