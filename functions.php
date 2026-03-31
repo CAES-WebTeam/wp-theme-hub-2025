@@ -28,7 +28,7 @@ require get_template_directory() . '/inc/rss-support.php';
 require get_template_directory() . '/inc/symplectic-query-tool.php';
 // require get_template_directory() . '/inc/symplectic-individual-user-import.php'; // Retired
 require get_template_directory() . '/inc/symplectic-scheduled-import.php';
-require get_template_directory() . '/inc/symplectic-scheduled-import-cpt.php';
+// require get_template_directory() . '/inc/symplectic-scheduled-import-cpt.php';
 require get_template_directory() . '/inc/person-cpt-data-sync.php';
 
 // Publications PDF generation
