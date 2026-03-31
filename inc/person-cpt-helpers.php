@@ -66,6 +66,23 @@ function _resolve_person_from_post($post_id) {
     $profile_url   = get_permalink($post_id);
 
     $full_name = !empty($display_name) ? $display_name : trim("$first_name $last_name");
+    $is_active = get_post_meta($post_id, 'is_active', true);
+
+    // Inactive personnel: return name only, hide contact/title details
+    if ($is_active === '0' || $is_active === 0) {
+        return array(
+            'source'       => 'post',
+            'id'           => $post_id,
+            'first_name'   => $first_name ?: '',
+            'last_name'    => $last_name ?: '',
+            'display_name' => $display_name ?: '',
+            'full_name'    => $full_name,
+            'title'        => '',
+            'email'        => '',
+            'profile_url'  => $profile_url ?: '',
+            'is_active'    => false,
+        );
+    }
 
     return array(
         'source'       => 'post',
@@ -77,6 +94,7 @@ function _resolve_person_from_post($post_id) {
         'title'        => $title ?: '',
         'email'        => $uga_email ?: '',
         'profile_url'  => $profile_url ?: '',
+        'is_active'    => true,
     );
 }
 
@@ -204,7 +222,7 @@ function _person_get_content_count($person_id, $post_type) {
          FROM {$wpdb->posts} p
          INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
          WHERE p.post_type = %s
-           AND p.post_status IN ('publish','draft','private')
+           AND p.post_status IN ('publish','private')
            AND pm.meta_key REGEXP %s
            AND pm.meta_value = %s",
         $post_type,

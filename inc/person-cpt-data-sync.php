@@ -51,6 +51,8 @@ function personnel_cpt_default_state() {
 			'created'        => 0,
 			'updated'        => 0,
 			'marked_inactive' => 0,
+			'unpublished'    => 0,
+			'reactivated'    => 0,
 			'skipped'        => 0,
 			'errors'         => 0,
 			'fields_written' => 0,
@@ -359,17 +361,53 @@ function personnel_cpt_run_batch() {
 			if ($p > 0) $api_pids[$p] = true;
 		}
 
+		// One bulk query: all person post IDs credited on published/private content
+		global $wpdb;
+		$credited_ids = $wpdb->get_col(
+			"SELECT DISTINCT pm.meta_value FROM {$wpdb->postmeta} pm
+			 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
+			 AND p.post_type IN ('post','publications','shorthand_story')
+			 AND p.post_status IN ('publish','private')"
+		);
+		$credited_set = array_flip($credited_ids);
+
 		$inactive_count = 0;
+		$unpublished_count = 0;
+		$reactivated_count = 0;
+
 		foreach ($pid_map as $pid => $post_id) {
 			if (!isset($api_pids[$pid])) {
+				// Not in active API -- mark inactive (only on first transition)
 				$current = get_post_meta($post_id, 'is_active', true);
-				if ($current !== '0' && $current !== false) {
-					update_post_meta($post_id, 'is_active', 0);
-					$inactive_count++;
+				if ($current === '0') {
+					continue; // already inactive, skip
+				}
+				update_post_meta($post_id, 'is_active', 0);
+				$inactive_count++;
+
+				// If not credited on any published/private content, unpublish
+				if (!isset($credited_set[(string) $post_id])) {
+					if (get_post_status($post_id) === 'publish') {
+						wp_update_post(array('ID' => $post_id, 'post_status' => 'draft'));
+						$unpublished_count++;
+					}
+				}
+			} else {
+				// In active API -- reactivate if previously inactive
+				$current = get_post_meta($post_id, 'is_active', true);
+				if ($current === '0') {
+					update_post_meta($post_id, 'is_active', 1);
+					if (get_post_status($post_id) === 'draft') {
+						wp_update_post(array('ID' => $post_id, 'post_status' => 'publish'));
+					}
+					$reactivated_count++;
 				}
 			}
 		}
 		$state['stats']['marked_inactive'] = $inactive_count;
+		$state['stats']['unpublished'] = $unpublished_count;
+		$state['stats']['reactivated'] = $reactivated_count;
 
 		$state['status'] = 'complete';
 		$state['completed_at'] = time();
@@ -444,9 +482,16 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 
 	if ($dry_run) {
 		$data['is_active'] = $is_active;
+		$action = $existing_post ? 'would_update' : 'would_create';
+		if (!$is_active && $existing_post) {
+			$has_content = _person_get_content_count($existing_post, 'post')
+				+ _person_get_content_count($existing_post, 'publications')
+				+ _person_get_content_count($existing_post, 'shorthand_story');
+			$action = $has_content > 0 ? 'would_deactivate' : 'would_unpublish';
+		}
 		return array(
 			'status'        => 'ok',
-			'action'        => $existing_post ? 'would_update' : 'would_create',
+			'action'        => $action,
 			'post_id'       => $existing_post,
 			'fields_written' => 0,
 			'error_message' => '',
@@ -454,7 +499,28 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 		);
 	}
 
-	return personnel_cpt_sync_single_record($data, $existing_post);
+	$result = personnel_cpt_sync_single_record($data, $existing_post);
+
+	// Handle inactive personnel
+	if (!$is_active && $result['status'] === 'ok' && $result['post_id']) {
+		$post_id = $result['post_id'];
+		update_post_meta($post_id, 'is_active', 0);
+
+		$has_content = _person_get_content_count($post_id, 'post')
+			+ _person_get_content_count($post_id, 'publications')
+			+ _person_get_content_count($post_id, 'shorthand_story');
+
+		if ($has_content > 0) {
+			$result['action'] = 'deactivated';
+		} else {
+			if (get_post_status($post_id) === 'publish') {
+				wp_update_post(array('ID' => $post_id, 'post_status' => 'draft'));
+			}
+			$result['action'] = 'unpublished';
+		}
+	}
+
+	return $result;
 }
 
 // ============================================================
@@ -561,6 +627,8 @@ function person_data_sync_enqueue($hook) {
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.created)   + "</div><div class=\"pds-stat-label\">Created</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.updated)   + "</div><div class=\"pds-stat-label\">Updated</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value warn\">"    + esc(s.marked_inactive) + "</div><div class=\"pds-stat-label\">Marked Inactive</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value warn\">"    + esc(s.unpublished || 0) + "</div><div class=\"pds-stat-label\">Unpublished</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.reactivated || 0) + "</div><div class=\"pds-stat-label\">Reactivated</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.fields_written) + "</div><div class=\"pds-stat-label\">Fields Written</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value" + (s.errors > 0 ? " failed" : "") + "\">" + esc(s.errors) + "</div><div class=\"pds-stat-label\">Errors</div></div>"
 					+ "</div>";
