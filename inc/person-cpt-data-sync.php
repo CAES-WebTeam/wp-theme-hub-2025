@@ -392,7 +392,7 @@ function personnel_cpt_run_batch() {
 // Single-person sync (by college_id, used from admin UI)
 // ============================================================
 
-function personnel_cpt_sync_single_by_college_id($college_id) {
+function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) {
 	$college_id = intval($college_id);
 	if ($college_id <= 0) {
 		return new WP_Error('invalid_id', 'Invalid College ID.');
@@ -438,6 +438,17 @@ function personnel_cpt_sync_single_by_college_id($college_id) {
 		if (!empty($posts)) {
 			$existing_post = $posts[0];
 		}
+	}
+
+	if ($dry_run) {
+		return array(
+			'status'        => 'ok',
+			'action'        => $existing_post ? 'would_update' : 'would_create',
+			'post_id'       => $existing_post,
+			'fields_written' => 0,
+			'error_message' => '',
+			'preview_data'  => $data,
+		);
 	}
 
 	return personnel_cpt_sync_single_record($data, $existing_post);
@@ -644,25 +655,48 @@ function person_data_sync_enqueue($hook) {
 			});
 
 			// Single person sync
+			function renderPersonnelPreview(data) {
+				var fields = [
+					["Name", data.display_name], ["Personnel ID", data.personnel_id], ["College ID", data.college_id],
+					["Email", data.email], ["Title", data.title], ["Department", data.department],
+					["Program Area", data.program_area], ["Phone", data.phone_number]
+				];
+				var html = "<table style=\"font-size:12px;border-collapse:collapse;width:100%\">";
+				fields.forEach(function(f) {
+					if (f[1]) html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666;white-space:nowrap;vertical-align:top\">" + esc(f[0]) + "</td><td style=\"padding:3px 0\">" + esc(f[1]) + "</td></tr>";
+				});
+				html += "</table>";
+				return html;
+			}
+
 			$("#pds-single-form").on("submit", function(e) {
 				e.preventDefault();
 				var cid = $("#pds-single-cid").val().trim();
 				if (!cid) { alert("Please enter a College ID."); return; }
+				var isDryRun = $("#pds-single-dryrun").is(":checked");
 				var $btn = $(this).find("input[type=submit]");
-				$btn.prop("disabled", true).val("Syncing...");
-				$("#pds-single-result").html("<p><span class=\"dashicons dashicons-update pds-spin\"></span> Syncing...</p>");
+				$btn.prop("disabled", true).val(isDryRun ? "Fetching..." : "Syncing...");
+				$("#pds-single-result").html("<p><span class=\"dashicons dashicons-update pds-spin\"></span> " + (isDryRun ? "Fetching preview..." : "Syncing...") + "</p>");
 				$.ajax({
 					url: ajaxurl, method: "POST", timeout: 60000,
-					data: { action: "personnel_cpt_sync_single", nonce: nonceP, college_id: cid },
+					data: { action: "personnel_cpt_sync_single", nonce: nonceP, college_id: cid, dry_run: isDryRun ? 1 : 0 },
 					success: function(r) {
 						$btn.prop("disabled", false).val("Sync Single Person");
 						if (r.success) {
 							var d = r.data;
 							var sc = d.status === "ok" ? "#46b450" : "#dc3232";
 							var html = "<div style=\"padding:12px;background:#fff;border:1px solid #ccd0d4;border-radius:4px\">";
-							html += "<strong style=\"color:" + sc + "\">" + esc(d.status.toUpperCase()) + "</strong>&ensp;";
-							html += esc(d.action) + " --- Post #" + esc(d.post_id) + " --- " + esc(d.post_title);
-							html += "<span style=\"color:#666;font-size:12px\"> --- " + esc(d.fields_written) + " fields written</span>";
+							if (d.dry_run) {
+								html += "<strong style=\"color:#0073aa\">DRY RUN</strong>&ensp;";
+								html += "<span style=\"color:#666;font-size:12px\">" + esc(d.action) + (d.post_id ? " --- Post #" + esc(d.post_id) + " --- " + esc(d.post_title) : " --- new post") + "</span>";
+								if (d.preview_data) {
+									html += "<div style=\"margin-top:10px\">" + renderPersonnelPreview(d.preview_data) + "</div>";
+								}
+							} else {
+								html += "<strong style=\"color:" + sc + "\">" + esc(d.status.toUpperCase()) + "</strong>&ensp;";
+								html += esc(d.action) + " --- Post #" + esc(d.post_id) + " --- " + esc(d.post_title);
+								html += "<span style=\"color:#666;font-size:12px\"> --- " + esc(d.fields_written) + " fields written</span>";
+							}
 							if (d.error_message) html += "<div style=\"color:#dc3232;margin-top:6px;font-size:12px\">" + esc(d.error_message) + "</div>";
 							html += "</div>";
 							$("#pds-single-result").html(html);
@@ -793,25 +827,58 @@ function person_data_sync_enqueue($hook) {
 			});
 
 			// Single Elements import
+			function renderElementsPreview(data) {
+				var html = "<table style=\"font-size:12px;border-collapse:collapse;width:100%\">";
+				html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666\">UGA ID</td><td style=\"padding:3px 0\">" + esc(data.uga_id) + "</td></tr>";
+				html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666\">Elements User ID</td><td style=\"padding:3px 0\">" + esc(data.elements_user_id) + "</td></tr>";
+				if (data.overview) html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666;vertical-align:top\">Overview</td><td style=\"padding:3px 0;font-size:11px\">" + esc(data.overview) + (data.overview.length >= 300 ? "..." : "") + "</td></tr>";
+				if (data.keywords && data.keywords.length) html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666;vertical-align:top\">Keywords</td><td style=\"padding:3px 0\">" + data.keywords.map(esc).join(", ") + "</td></tr>";
+				html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666\">Publications</td><td style=\"padding:3px 0\">" + esc(data.publications_count) + " found</td></tr>";
+				if (data.publications && data.publications.length) {
+					data.publications.forEach(function(p) {
+						html += "<tr><td></td><td style=\"padding:2px 0;font-size:11px;color:#333\">" + esc(p.title);
+						if (p.journal) html += " <span style=\"color:#666\">(" + esc(p.journal) + ")</span>";
+						if (p.year) html += " <span style=\"color:#999\">" + esc(p.year) + "</span>";
+						html += "</td></tr>";
+					});
+				}
+				html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666\">Distinctions</td><td style=\"padding:3px 0\">" + esc(data.distinctions_count) + " found</td></tr>";
+				html += "<tr><td style=\"padding:3px 8px 3px 0;color:#666\">Courses</td><td style=\"padding:3px 0\">" + esc(data.courses_count) + " found</td></tr>";
+				html += "</table>";
+				return html;
+			}
+
 			$("#pds-single-elements-form").on("submit", function(e) {
 				e.preventDefault();
 				var pid = $("#pds-single-elements-pid").val().trim();
 				if (!pid) { alert("Please enter a Personnel ID."); return; }
+				var isDryRun = $("#pds-single-elements-dryrun").is(":checked");
 				var $btn = $(this).find("input[type=submit]");
-				$btn.prop("disabled", true).val("Importing...");
-				$("#pds-single-elements-result").html("<p><span class=\"dashicons dashicons-update pds-spin\"></span> Importing...</p>");
+				$btn.prop("disabled", true).val(isDryRun ? "Fetching..." : "Importing...");
+				$("#pds-single-elements-result").html("<p><span class=\"dashicons dashicons-update pds-spin\"></span> " + (isDryRun ? "Fetching preview..." : "Importing...") + "</p>");
 				$.ajax({
 					url: ajaxurl, method: "POST", timeout: 300000,
-					data: { action: "symplectic_cpt_import_single", nonce: nonceS, personnel_id: pid },
+					data: { action: "symplectic_cpt_import_single", nonce: nonceS, personnel_id: pid, dry_run: isDryRun ? 1 : 0 },
 					success: function(r) {
 						$btn.prop("disabled", false).val("Import Elements Data");
 						if (r.success) {
 							var d = r.data;
 							var sc = d.status === "ok" ? "#46b450" : (d.status === "failed" ? "#dc3232" : "#999");
 							var html = "<div style=\"padding:12px;background:#fff;border:1px solid #ccd0d4;border-radius:4px\">";
-							html += "<strong style=\"color:" + sc + "\">" + esc(d.status.toUpperCase()) + "</strong>&ensp;";
-							html += esc(d.post_title) + " (Post " + esc(d.post_id) + ")";
-							html += "<span style=\"color:#666;font-size:12px\"> --- " + esc(d.fields_written) + " fields written</span>";
+							if (d.dry_run) {
+								html += "<strong style=\"color:#0073aa\">DRY RUN</strong>&ensp;";
+								html += esc(d.post_title) + " (Post " + esc(d.post_id) + ")";
+								if (d.preview_data) {
+									html += "<div style=\"margin-top:10px\">" + renderElementsPreview(d.preview_data) + "</div>";
+								}
+								if (d.fetch_errors && d.fetch_errors.length) {
+									html += "<div style=\"margin-top:8px;color:#9a5e00;font-size:11px\"><strong>Fetch warnings:</strong> " + d.fetch_errors.map(esc).join("; ") + "</div>";
+								}
+							} else {
+								html += "<strong style=\"color:" + sc + "\">" + esc(d.status.toUpperCase()) + "</strong>&ensp;";
+								html += esc(d.post_title) + " (Post " + esc(d.post_id) + ")";
+								html += "<span style=\"color:#666;font-size:12px\"> --- " + esc(d.fields_written) + " fields written</span>";
+							}
 							if (d.error_message) html += "<div style=\"color:#dc3232;margin-top:6px;font-size:12px\">" + esc(d.error_message) + "</div>";
 							html += "</div>";
 							$("#pds-single-elements-result").html(html);
@@ -916,6 +983,9 @@ function person_data_sync_render_page() {
 								<label for="pds-single-cid">College ID</label>
 								<input type="text" id="pds-single-cid" placeholder="e.g. 12345" style="width:200px">
 							</div>
+							<label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;font-size:12px;cursor:pointer">
+								<input type="checkbox" id="pds-single-dryrun" checked> Dry run (preview only)
+							</label><br>
 							<input type="submit" class="button button-secondary" value="Sync Single Person">
 						</form>
 						<div id="pds-single-result" style="margin-top:12px"></div>
@@ -928,6 +998,9 @@ function person_data_sync_render_page() {
 								<label for="pds-single-elements-pid">Personnel ID</label>
 								<input type="text" id="pds-single-elements-pid" placeholder="e.g. 3885" style="width:200px">
 							</div>
+							<label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:12px;font-size:12px;cursor:pointer">
+								<input type="checkbox" id="pds-single-elements-dryrun" checked> Dry run (preview only)
+							</label><br>
 							<input type="submit" class="button button-secondary" value="Import Elements Data"
 								<?php echo $symplectic_ok ? '' : 'disabled'; ?>>
 						</form>
@@ -1001,8 +1074,10 @@ function personnel_cpt_ajax_sync_single() {
 		wp_send_json_error(array('error_message' => 'College ID is required.'));
 	}
 
+	$dry_run = !empty($_POST['dry_run']);
+
 	@set_time_limit(60);
-	$result = personnel_cpt_sync_single_by_college_id($college_id);
+	$result = personnel_cpt_sync_single_by_college_id($college_id, $dry_run);
 
 	if (is_wp_error($result)) {
 		wp_send_json_error(array('error_message' => $result->get_error_message()));
@@ -1010,14 +1085,21 @@ function personnel_cpt_ajax_sync_single() {
 
 	$post_title = $result['post_id'] ? get_the_title($result['post_id']) : '';
 
-	wp_send_json_success(array(
+	$response = array(
 		'status'         => $result['status'],
 		'action'         => $result['action'],
 		'post_id'        => $result['post_id'],
 		'post_title'     => $post_title,
 		'fields_written' => $result['fields_written'],
 		'error_message'  => $result['error_message'],
-	));
+		'dry_run'        => $dry_run,
+	);
+
+	if ($dry_run && isset($result['preview_data'])) {
+		$response['preview_data'] = $result['preview_data'];
+	}
+
+	wp_send_json_success($response);
 }
 
 /**
@@ -1250,7 +1332,7 @@ function symplectic_cpt_run_batch() {
 // Core per-post import
 // ============================================================
 
-function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 0) {
+function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 0, $dry_run = false) {
 	if (!$deadline) $deadline = time() + 180;
 	$result = array(
 		'status'         => 'failed',
@@ -1454,6 +1536,28 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 			 - (isset($a['citation-count']) ? $a['citation-count'] : -1);
 	});
 	$publications = array_slice($publications, 0, 5);
+
+	if ($dry_run) {
+		$result['status'] = 'ok';
+		$result['fetch_errors'] = $fetch_errors;
+		$result['preview_data'] = array(
+			'uga_id'              => $uga_id,
+			'elements_user_id'    => $elements_user_id,
+			'overview'            => isset($user_info['overview']) ? mb_substr($user_info['overview'], 0, 300) : null,
+			'keywords'            => isset($user_info['keywords']) ? $user_info['keywords'] : array(),
+			'publications_count'  => count($publications),
+			'publications'        => array_map(function($p) {
+				return array(
+					'title'   => isset($p['title']) ? $p['title'] : '',
+					'journal' => isset($p['journal']) ? $p['journal'] : '',
+					'year'    => isset($p['publication_date']) ? $p['publication_date'] : '',
+				);
+			}, $publications),
+			'distinctions_count'  => count($activities),
+			'courses_count'       => count($teaching_activities),
+		);
+		return $result;
+	}
 
 	// Write to ACF fields on the CPT post
 	// Clear existing fields first
@@ -1817,6 +1921,8 @@ function symplectic_cpt_ajax_import_single() {
 		wp_send_json_error(array('error_message' => 'Personnel ID is required.'));
 	}
 
+	$dry_run = !empty($_POST['dry_run']);
+
 	$posts = get_posts(array(
 		'post_type'      => 'caes_hub_person',
 		'post_status'    => 'publish',
@@ -1831,9 +1937,9 @@ function symplectic_cpt_ajax_import_single() {
 
 	$post = $posts[0];
 	@set_time_limit(300);
-	$result = symplectic_cpt_import_single_post($post->ID, $personnel_id);
+	$result = symplectic_cpt_import_single_post($post->ID, $personnel_id, 0, $dry_run);
 
-	wp_send_json_success(array(
+	$response = array(
 		'status'         => $result['status'],
 		'post_id'        => $post->ID,
 		'post_title'     => $post->post_title,
@@ -1841,5 +1947,12 @@ function symplectic_cpt_ajax_import_single() {
 		'fields_failed'  => $result['fields_failed'],
 		'fetch_errors'   => $result['fetch_errors'],
 		'error_message'  => $result['error_message'],
-	));
+		'dry_run'        => $dry_run,
+	);
+
+	if ($dry_run && isset($result['preview_data'])) {
+		$response['preview_data'] = $result['preview_data'];
+	}
+
+	wp_send_json_success($response);
 }
