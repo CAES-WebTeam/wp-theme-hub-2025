@@ -3507,25 +3507,6 @@ function person_migration_ajax_scan_duplicates() {
 }
 
 // ============================================================
-// Admin list column: duplicate flag
-// ============================================================
-
-add_filter('manage_caes_hub_person_posts_columns', 'person_migration_add_dupe_column');
-function person_migration_add_dupe_column($columns) {
-	$columns['duplicate'] = 'Duplicate';
-	return $columns;
-}
-
-add_action('manage_caes_hub_person_posts_custom_column', 'person_migration_dupe_column_content', 10, 2);
-function person_migration_dupe_column_content($column, $post_id) {
-	if ($column !== 'duplicate') return;
-	$group = get_post_meta($post_id, '_duplicate_group', true);
-	if ($group !== '' && $group !== false) {
-		$merge_url = admin_url('admin.php?page=person-merge-duplicates&group=' . intval($group));
-		echo '<a href="' . esc_url($merge_url) . '" style="color:#d63638;font-weight:600">Duplicate</a>';
-	}
-}
-
 // ============================================================
 // Merge duplicates review page
 // ============================================================
