@@ -573,6 +573,7 @@ add_action('init', function () {
         'show_admin_column' => true,
         'query_var'         => true,
         'rewrite'           => array('slug' => 'people/department', 'with_front' => false),
+        'meta_box_cb'       => false, // Hide from edit screen -- sourced from personnel database
     ));
 });
 
@@ -601,6 +602,7 @@ add_action('init', function () {
         'show_admin_column' => true,
         'query_var'         => true,
         'rewrite'           => array('slug' => 'people/program-area', 'with_front' => false),
+        'meta_box_cb'       => false, // Hide from edit screen -- sourced from personnel database
     ));
 });
 
