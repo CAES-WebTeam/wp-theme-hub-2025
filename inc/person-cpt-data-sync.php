@@ -378,13 +378,12 @@ function personnel_cpt_run_batch() {
 
 		foreach ($pid_map as $pid => $post_id) {
 			if (!isset($api_pids[$pid])) {
-				// Not in active API -- mark inactive (only on first transition)
+				// Not in active API -- mark inactive
 				$current = get_post_meta($post_id, 'is_active', true);
-				if ($current === '0') {
-					continue; // already inactive, skip
+				if ($current !== '0' && $current !== 0) {
+					update_post_meta($post_id, 'is_active', 0);
+					$inactive_count++;
 				}
-				update_post_meta($post_id, 'is_active', 0);
-				$inactive_count++;
 
 				// If not credited on any published/private content, unpublish
 				if (!isset($credited_set[(string) $post_id])) {
