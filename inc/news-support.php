@@ -146,11 +146,20 @@ function update_flat_expert_ids_meta($post_id)
     $expert_ids = [];
 
     foreach ($experts as $expert_row) {
-        // Ensure the 'user' sub-field exists and is a valid user ID
-        if (!empty($expert_row['user']) && is_numeric($expert_row['user'])) {
-            $expert_ids[] = (int) $expert_row['user'];
+        $raw = $expert_row['user'] ?? null;
+
+        // After the ACF field type swap, the value may be a WP_Post object or array.
+        if (is_object($raw)) {
+            $id = (int) $raw->ID;
+        } elseif (is_array($raw)) {
+            $id = (int) ($raw['ID'] ?? 0);
         } else {
-            // Log an error if an expert entry is malformed
+            $id = (int) $raw;
+        }
+
+        if ($id > 0) {
+            $expert_ids[] = $id;
+        } else {
             error_log("⚠️ Invalid or missing 'user' field in expert entry for post ID: {$post_id}");
         }
     }

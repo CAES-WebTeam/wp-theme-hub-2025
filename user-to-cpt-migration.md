@@ -111,10 +111,10 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - ~~Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`~~
     - ~~Change to: use `resolve_person_data()`~~
 
-19. Update **analytics data layer** -- author tracking in GA
-    - File: `inc/analytics.php` (lines 173-278)
-    - Currently calls: `get_field('field_uga_email_custom', 'user_' . $user_id)`, `get_the_author_meta('user_email')`, `get_the_author_meta('display_name')`
-    - Change to: use `resolve_person_data()`
+19. ~~Update **analytics data layer** -- author tracking in GA~~ ✅ Done
+    - ~~File: `inc/analytics.php` (lines 173-278)~~
+    - ~~Currently calls: `get_field('field_uga_email_custom', 'user_' . $user_id)`, `get_the_author_meta('user_email')`, `get_the_author_meta('display_name')`~~
+    - Repeater-based fields already use `resolve_person_data()`. Events block reads `post_author` (a content manager / event role user who retains their WP account) -- no change needed.
 
 20. **Flat meta save hooks** -- no code changes needed
     - Files: `inc/publications-support.php` (`update_flat_author_ids_meta()`), `inc/news-support.php` (`update_flat_expert_ids_meta()`)
