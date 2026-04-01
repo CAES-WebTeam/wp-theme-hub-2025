@@ -279,7 +279,7 @@ function caes_override_twitter_author( $twitter_data ) {
     }
 
     if ( ! empty($author_names) ) {
-        $twitter_data['data1'] = implode(', ', $author_names);
+        $twitter_data['Written by'] = implode(', ', $author_names);
     }
 
     return $twitter_data;
