@@ -230,8 +230,7 @@ add_filter( 'wpseo_meta_author', 'caes_change_meta_author_tag', 10, 2 );
  */
 function caes_remove_yoast_author_meta_tag( $presenters ) {
     return array_filter( $presenters, function( $presenter ) {
-        return ! $presenter instanceof \Yoast\WP\SEO\Presenters\Meta_Author_Presenter
-            && ! $presenter instanceof \Yoast\WP\SEO\Presenters\Twitter\Author_Presenter;
+        return ! $presenter instanceof \Yoast\WP\SEO\Presenters\Meta_Author_Presenter;
     });
 }
 
@@ -239,18 +238,19 @@ add_filter( 'wpseo_frontend_presenters', 'caes_remove_yoast_author_meta_tag' );
 
 
 /**
- * Output a corrected twitter:data1 "Written by" tag using ACF authors.
- * Runs after Yoast outputs its Twitter card tags so our version takes precedence,
- * but the default presenter is already removed above.
+ * Override Yoast's Twitter "Written by" data with ACF authors.
+ *
+ * @param array $twitter_data The Twitter card data array from Yoast.
+ * @return array The modified Twitter card data.
  */
-function caes_add_twitter_author_tag_manually() {
+function caes_override_twitter_author( $twitter_data ) {
     if ( ! is_singular() ) {
-        return;
+        return $twitter_data;
     }
 
     $authors = get_field('authors');
     if ( empty($authors) ) {
-        return;
+        return $twitter_data;
     }
 
     $author_names = [];
@@ -279,13 +279,13 @@ function caes_add_twitter_author_tag_manually() {
     }
 
     if ( ! empty($author_names) ) {
-        $authors_string = esc_attr( implode(', ', $author_names) );
-        echo '<meta name="twitter:label1" content="Written by" class="yoast-seo-meta-tag" />' . "\n";
-        echo '<meta name="twitter:data1" content="' . $authors_string . '" class="yoast-seo-meta-tag" />' . "\n";
+        $twitter_data['data1'] = implode(', ', $author_names);
     }
+
+    return $twitter_data;
 }
 
-add_action( 'wp_head', 'caes_add_twitter_author_tag_manually', 1 );
+add_filter( 'wpseo_twitter_data', 'caes_override_twitter_author', 10, 1 );
 
 
 /**
