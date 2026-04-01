@@ -96,15 +96,15 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - Currently calls: `get_the_author_meta()`, `get_author_posts_url()`, `get_field('public_friendly_title', 'user_' . $user_id)`
     - Change to: use `resolve_person_data()` for all person lookups
 
-16. ~~Update **Yoast SEO schema** -- Person structured data for authors~~  ✅ Done
-    - File: `inc/plugin-overrides/yoast-schema.php` (lines 67-130)
+16. ~~Update **Yoast SEO schema** -- Person structured data for authors~~ ✅ Done
+    - ~~File: `inc/plugin-overrides/yoast-schema.php` (lines 67-130)~~
     - ~~Currently calls: `get_the_author_meta('display_name')`, `get_author_posts_url()`~~
-    - Updated `caes_change_meta_author_tag` and `caes_add_author_meta_tag_manually` to use `resolve_person_id_from_repeater_row()` + `resolve_person_data()`
+    - ~~Change to: use `resolve_person_data()`~~
 
-17. Update **PDF generation** -- author names/titles in publication PDFs
-    - Files: `inc/publications-pdf/publications-pdf.php` (lines 839-878), `inc/publications-pdf/publications-pdf-mpdf.php` (lines 553-594)
-    - Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`, `get_the_author_meta('title')`, `get_field('public_friendly_title', 'user_' . $user_id)`
-    - Change to: use `resolve_person_data()`
+17. ~~Update **PDF generation** -- author names/titles in publication PDFs~~ ✅ Done
+    - ~~Files: `inc/publications-pdf/publications-pdf.php` (lines 839-878), `inc/publications-pdf/publications-pdf-mpdf.php` (lines 553-594)~~
+    - ~~Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`, `get_the_author_meta('title')`, `get_field('public_friendly_title', 'user_' . $user_id)`~~
+    - ~~Change to: use `resolve_person_data()`~~
 
 18. Update **RSS feed support** -- author names in feed output
     - File: `inc/rss-support.php` (lines 79-127)
