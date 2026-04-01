@@ -342,7 +342,7 @@ add_filter('query_loop_block_query_vars', 'variations_query_filter', 99, 2);
 add_filter('render_block', function ($block_content, $block) {
     // Only apply to core/query blocks on author archive pages that use our variations
     if (
-        is_author() &&
+        ( is_author() || is_singular('caes_hub_person') ) &&
         $block['blockName'] === 'core/query' &&
         isset($block['attrs']['namespace'])
     ) {

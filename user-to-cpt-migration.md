@@ -124,6 +124,8 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - File: `block-variations/index.php` (lines 209-212, 277-285)
     - Currently uses `is_author()` and LIKE queries against serialized user IDs in `all_author_ids` / `all_expert_ids`
     - Change to: support `is_singular('caes_hub_person')` and query by post IDs
+    - **Query filtering** (lines 207-218, 275-295): already handles both `is_author()` and `is_singular('caes_hub_person')` -- no change needed. LIKE query format also works correctly post-migration since flat meta will use CPT post IDs in the same serialized format.
+    - **render_block filter** (lines 342-414): only fires on `is_author()` -- needs to also fire on `is_singular('caes_hub_person')` so person CPT profile pages get the "Expert Resources" / "Stories" headings and anchor-linked pagination
 
 22. Update the **8 user blocks** (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
 
