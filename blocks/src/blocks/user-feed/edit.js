@@ -78,26 +78,25 @@ export default function Edit({ attributes, setAttributes }) {
 
         if (missingIds.length > 0) {
             apiFetch({
-                path: `/wp/v2/users?include=${missingIds.join(',')}&_fields=id,name,slug`
+                path: `/wp/v2/caes_hub_person?include=${missingIds.join(',')}&per_page=${missingIds.length}&_fields=id,title`
             })
-                .then((users) => {
-                    const userList = users.map((user) => ({
-                        id: user.id,
-                        label: user.name || `User #${user.id}`,
+                .then((persons) => {
+                    const personList = persons.map((person) => ({
+                        id: person.id,
+                        label: person.title?.rendered || `Person #${person.id}`,
                     }));
                     setSelectedUsers(prev => {
-                        // Merge new users with existing, avoid duplicates
                         const existing = prev.filter(u => !missingIds.includes(u.id));
-                        return [...existing, ...userList];
+                        return [...existing, ...personList];
                     });
                 })
                 .catch((error) => {
-                    console.error('Error fetching selected users:', error);
+                    console.error('Error fetching selected persons:', error);
                 });
         }
     }, [userIds]);
 
-    // Search users with debounce
+    // Search persons with debounce
     const searchUsers = (term) => {
         if (term.length < 3) {
             setAvailableUsers([]);
@@ -107,14 +106,14 @@ export default function Edit({ attributes, setAttributes }) {
         setIsLoading(true);
 
         apiFetch({
-            path: `/wp/v2/users?search=${encodeURIComponent(term)}&per_page=20&_fields=id,name,slug`
+            path: `/wp/v2/caes_hub_person?search=${encodeURIComponent(term)}&per_page=20&_fields=id,title`
         })
-            .then((users) => {
-                const userList = users.map((user) => ({
-                    id: user.id,
-                    label: user.name || `User #${user.id}`,
+            .then((persons) => {
+                const personList = persons.map((person) => ({
+                    id: person.id,
+                    label: person.title?.rendered || `Person #${person.id}`,
                 }));
-                setAvailableUsers(userList);
+                setAvailableUsers(personList);
                 setIsLoading(false);
             })
             .catch(() => {
@@ -245,7 +244,7 @@ export default function Edit({ attributes, setAttributes }) {
             <InspectorControls>
                 <PanelBody title={__('User Feed Settings', 'user-feed')}>
                     <FormTokenField
-                        label={__('Select Users', 'user-feed')}
+                        label={__('Select People', 'user-feed')}
                         value={selectedUserLabels}
                         suggestions={userSuggestions}
                         onInputChange={handleSearch}
@@ -260,12 +259,12 @@ export default function Edit({ attributes, setAttributes }) {
                         }}
                         help={
                             searchTerm.length > 0 && searchTerm.length < 3
-                                ? __('Type at least 3 characters to search users', 'user-feed')
+                                ? __('Type at least 3 characters to search people', 'user-feed')
                                 : isLoading
-                                    ? __('Searching users...', 'user-feed')
+                                    ? __('Searching people...', 'user-feed')
                                     : availableUsers.length === 0 && searchTerm.length >= 3
-                                        ? __('No users found. Try a different search term.', 'user-feed')
-                                        : __('Search for users to add them to the feed', 'user-feed')
+                                        ? __('No people found. Try a different search term.', 'user-feed')
+                                        : __('Search for people to add them to the feed', 'user-feed')
                         }
                     />
                     {isLoading && <Spinner />}

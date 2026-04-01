@@ -55,52 +55,72 @@ if ($displayLayout === 'grid' && $gridItemPosition === 'auto') {
 
 $wrapper_attributes = get_block_wrapper_attributes();
 
-// For now, we only support hand-picked users (matching our simplified edit.js)
-if ($feed_type === 'hand-picked') {
-    if (empty($user_ids)) {
-        return;
-    }
-
-    // Create cache key based on user IDs
-    $cache_key = 'user_feed_users_' . md5(implode('_', $user_ids));
-    
-    // Try to get cached users first
-    $users = wp_cache_get($cache_key, 'caes_user_feed');
-    
-    if (false === $users) {
-        // Cache miss - fetch users from database
-        $block_query_args = array(
-            'include'    => $user_ids,
-            'orderby'    => 'include',
-            'number'     => count($user_ids),
-        );
-        
-        $user_query = new WP_User_Query($block_query_args);
-        $users = $user_query->get_results();
-        
-        // Cache the results for 1 hour (3600 seconds)
-        // You can adjust this time based on how often user data changes
-        wp_cache_set($cache_key, $users, 'caes_user_feed', HOUR_IN_SECONDS);
-    }
-} else {
+// We only support hand-picked users/persons
+if ($feed_type !== 'hand-picked' || empty($user_ids)) {
     return;
 }
 
-if (!empty($users)) {
+// Separate IDs into CPT post IDs and WP user IDs
+$person_post_ids = array();
+$wp_user_ids     = array();
+foreach ($user_ids as $id) {
+    $id = (int) $id;
+    if (get_post_type($id) === 'caes_hub_person') {
+        $person_post_ids[] = $id;
+    } else {
+        $wp_user_ids[] = $id;
+    }
+}
+
+// Build an ordered list of render items: each has an 'id' and 'type' (post|user)
+$render_items = array();
+foreach ($user_ids as $id) {
+    $id = (int) $id;
+    if (in_array($id, $person_post_ids, true)) {
+        $render_items[] = array('id' => $id, 'type' => 'post');
+    } else {
+        $render_items[] = array('id' => $id, 'type' => 'user');
+    }
+}
+
+// Pre-fetch WP users in one query if needed
+$wp_users_by_id = array();
+if (!empty($wp_user_ids)) {
+    $cache_key = 'user_feed_users_' . md5(implode('_', $wp_user_ids));
+    $fetched   = wp_cache_get($cache_key, 'caes_user_feed');
+    if (false === $fetched) {
+        $uq      = new WP_User_Query(array('include' => $wp_user_ids, 'orderby' => 'include', 'number' => count($wp_user_ids)));
+        $fetched = $uq->get_results();
+        wp_cache_set($cache_key, $fetched, 'caes_user_feed', HOUR_IN_SECONDS);
+    }
+    foreach ($fetched as $u) {
+        $wp_users_by_id[$u->ID] = $u;
+    }
+}
+
+if (!empty($render_items)) {
 ?>
     <div <?php echo wp_kses_post($wrapper_attributes); ?>>
         <div class="<?php echo esc_attr($classes); ?>" style="<?php echo esc_attr($inline_style); ?>">
 
             <?php
-            foreach ($users as $user) {
-
-                caes_set_current_user($user); // Set global context
+            foreach ($render_items as $item) {
+                if ($item['type'] === 'post') {
+                    // CPT person post -- set global to post ID so inner blocks use resolve_person_post_id()
+                    $GLOBALS['caes_current_user_id'] = $item['id'];
+                    $context_user_id = $item['id'];
+                } else {
+                    // WP user -- set global to user ID (pre-migration path)
+                    $user = $wp_users_by_id[$item['id']] ?? null;
+                    if (!$user) continue;
+                    caes_set_current_user($user);
+                    $context_user_id = $user->ID;
+                }
 
                 $block_context = array(
                     'caes-hub/user-feed/userIds' => $user_ids,
                     'caes-hub/user-feed/queryId' => $query_id,
-                    'userId' => $user->ID,
-                    'user' => $user,
+                    'userId'                     => $context_user_id,
                 );
 
                 if (!empty($block->inner_blocks)) {

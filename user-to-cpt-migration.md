@@ -134,7 +134,9 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - ~~Change to: support `is_singular('caes_hub_person')` and query by post IDs~~
     - Query filtering already handled both cases. `render_block` filter extended to include `is_singular('caes_hub_person')`.
 
-22. Update the **8 user blocks** (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
+22. ~~Update the **8 user blocks** (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break~~ ✅ Done
+    - 7 data blocks already used `resolve_person_post_id()` with user meta fallback
+    - `user-feed/render.php` updated to detect CPT post IDs vs WP user IDs in `userIds`, handling both during the transition period
 
 23. Update **publications content import** -- author mapping during pub imports
     - File: `inc/publications-support.php` (lines 229-241, 152-154)
