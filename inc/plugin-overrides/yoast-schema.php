@@ -285,7 +285,7 @@ function caes_override_twitter_author( $twitter_data ) {
     return $twitter_data;
 }
 
-add_filter( 'wpseo_twitter_data', 'caes_override_twitter_author', 10, 1 );
+add_filter( 'wpseo_enhanced_slack_data', 'caes_override_twitter_author', 10, 1 );
 
 
 /**
