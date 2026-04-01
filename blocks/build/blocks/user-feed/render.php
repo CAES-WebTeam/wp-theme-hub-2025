@@ -109,12 +109,14 @@ if (!empty($render_items)) {
                     // CPT person post -- set global to post ID so inner blocks use resolve_person_post_id()
                     $GLOBALS['caes_current_user_id'] = $item['id'];
                     $context_user_id = $item['id'];
+                    echo '<!-- person: caes_hub_person #' . $item['id'] . ' -->';
                 } else {
                     // WP user -- set global to user ID (pre-migration path)
                     $user = $wp_users_by_id[$item['id']] ?? null;
                     if (!$user) continue;
                     caes_set_current_user($user);
                     $context_user_id = $user->ID;
+                    echo '<!-- person: wp_user #' . $user->ID . ' -->';
                 }
 
                 $block_context = array(
