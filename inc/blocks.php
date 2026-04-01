@@ -90,6 +90,7 @@ function caes_hub_block_init()
 
 	// Register User Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-bio');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/person-areas-of-expertise');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-feed');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-department');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-name');

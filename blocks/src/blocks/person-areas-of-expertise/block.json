@@ -1,0 +1,43 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "caes-hub/person-areas-of-expertise",
+    "version": "0.1.0",
+    "title": "Person Areas of Expertise",
+    "category": "theme",
+    "icon": "tag",
+    "description": "Displays the person's areas of expertise as taxonomy terms.",
+    "acf": {
+        "mode": "preview",
+        "renderTemplate": "./render.php"
+    },
+    "supports": {
+        "anchor": true,
+        "typography": {
+            "lineHeight": true,
+            "fontSize": true
+        },
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "padding": true,
+            "margin": true,
+            "blockGap": true
+        }
+    },
+    "attributes": {
+        "linkTerms": {
+            "type": "boolean",
+            "default": false
+        }
+    },
+    "usesContext": [
+        "caes-hub/user-feed/userId",
+        "caes-hub/user-feed/user"
+    ],
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css"
+}

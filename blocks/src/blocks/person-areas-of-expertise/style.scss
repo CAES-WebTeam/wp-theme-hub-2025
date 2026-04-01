@@ -1,0 +1,13 @@
+.wp-block-caes-hub-person-areas-of-expertise {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .person-expertise-term {
+        display: inline-block;
+        border-radius: 50rem;
+        padding: 0 var(--wp--preset--spacing--40);
+        font-size: 1.3rem;
+        text-decoration: none;
+    }
+}
