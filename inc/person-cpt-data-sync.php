@@ -8,7 +8,10 @@
  * Personnel sync: creates/updates person posts from the personnel database.
  * Symplectic sync: imports scholarly works, distinctions, courses, overview,
  * and areas of expertise from Symplectic Elements API.
+ *
+ * @version 1.0.0
  */
+define('PERSON_CPT_DATA_SYNC_VERSION', '1.0.0');
 
 define('PERSONNEL_CPT_BATCH_SIZE', 50);
 define('PERSONNEL_CPT_MAX_ERRORS', 200);
@@ -1001,7 +1004,7 @@ function person_data_sync_render_page() {
 	$next_s_cron = wp_next_scheduled(SYMPLECTIC_CPT_CRON_HOOK);
 	?>
 	<div class="wrap">
-		<h1>People CPT Data Sync</h1>
+		<h1>People CPT Data Sync <span style="font-size:12px;color:#999;font-weight:normal">v<?php echo PERSON_CPT_DATA_SYNC_VERSION; ?></span></h1>
 		<p>Syncs personnel data from the CAES Personnel API and Symplectic Elements data into <code>caes_hub_person</code> posts. Both run daily via cron.</p>
 
 		<div class="pds-wrapper">
