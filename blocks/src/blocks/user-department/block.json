@@ -3,7 +3,7 @@
     "apiVersion": 3,
     "name": "caes-hub/user-department",
     "version": "0.1.0",
-    "title": "User Department",
+    "title": "Person Department",
     "category": "theme",
     "icon": "admin-users",
     "description": "Displays the user's department.",

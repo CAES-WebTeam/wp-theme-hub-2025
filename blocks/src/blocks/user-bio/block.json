@@ -3,7 +3,7 @@
     "apiVersion": 3,
     "name": "caes-hub/user-bio",
     "version": "0.1.0",
-    "title": "User Biography or Tagline",
+    "title": "Person Biography or Tagline",
     "category": "theme",
     "icon": "admin-users",
     "description": "Displays the user's biography or tagline.",

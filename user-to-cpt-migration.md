@@ -151,6 +151,19 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 26. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
 27. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
 
+## Phase 5.5: Blocks for Symplectic Elements Data
+
+a. First, for all current "user-" blocks, change "User" in the titles (what editors see) to "Person". DO NOT CHANGE CODE THAT WILL MAKE BLOCKS BREAK.
+b. Make new blocks for the following, referencing the sections in single-caes_hub_person.html for design, and other "user-" blocks for block formatting:
+- b-1: Areas of Expertise
+- b-2: Department
+- b-3: About (reference "Overview" from Symplectic data) - for this one, rework "user-bio"
+- b-4: Courses
+- b-5: Scholarly Works (called "Publications" in the template, but we want it to be called Scholarly Works)
+- b-6: Awards and Honors ("distinctions" in symplectic data)
+c. Some symplectic data is missing, I will work on this with Jesse:
+- c-1: Education
+
 ## Phase 6: Cleanup
 
 28. Delete the old user-targeted ACF field groups (only after full verification)
