@@ -1273,9 +1273,14 @@ function symplectic_cpt_get_person_posts($offset = 0, $number = -1) {
 	return get_posts(array(
 		'post_type'      => 'caes_hub_person',
 		'post_status'    => 'publish',
-		'meta_key'       => 'personnel_id',
-		'meta_compare'   => '!=',
-		'meta_value'     => '',
+		'meta_query'     => array(
+			array('key' => 'personnel_id', 'value' => '', 'compare' => '!='),
+			array(
+				'relation' => 'OR',
+				array('key' => 'is_active', 'value' => '1'),
+				array('key' => 'is_active', 'compare' => 'NOT EXISTS'),
+			),
+		),
 		'posts_per_page' => $number,
 		'offset'         => $offset,
 		'orderby'        => 'ID',
@@ -1288,9 +1293,14 @@ function symplectic_cpt_count_person_posts() {
 	$posts = get_posts(array(
 		'post_type'      => 'caes_hub_person',
 		'post_status'    => 'publish',
-		'meta_key'       => 'personnel_id',
-		'meta_compare'   => '!=',
-		'meta_value'     => '',
+		'meta_query'     => array(
+			array('key' => 'personnel_id', 'value' => '', 'compare' => '!='),
+			array(
+				'relation' => 'OR',
+				array('key' => 'is_active', 'value' => '1'),
+				array('key' => 'is_active', 'compare' => 'NOT EXISTS'),
+			),
+		),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -1521,6 +1531,16 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 	}
 
 	$elements_user_id = isset($user_info['id']) ? (int)$user_info['id'] : null;
+	$last_modified = isset($user_info['last-modified-when']) ? (string)$user_info['last-modified-when'] : '';
+
+	// Check if the user data has changed since last sync
+	if (!$dry_run && $last_modified !== '') {
+		$stored_modified = get_post_meta($post_id, '_symplectic_last_modified', true);
+		if ($stored_modified === $last_modified) {
+			$result['status'] = 'skipped';
+			return $result;
+		}
+	}
 
 	// Fetch relationships (publications, distinctions, courses)
 	$publications        = array();
@@ -1768,6 +1788,12 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 	$result['status']         = ($fields_failed === 0) ? 'ok' : ($fields_written > 0 ? 'ok' : 'failed');
 	$result['fields_written'] = $fields_written;
 	$result['fields_failed']  = $fields_failed;
+
+	// Store last-modified timestamp for change detection on future runs
+	if ($result['status'] === 'ok' && $last_modified !== '') {
+		update_post_meta($post_id, '_symplectic_last_modified', $last_modified);
+	}
+
 	return $result;
 }
 
