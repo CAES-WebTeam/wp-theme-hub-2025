@@ -198,25 +198,23 @@ function caes_change_meta_author_tag( $author, $presentation = null ) {
                 $author_names[] = $full_name;
             }
         } 
-        // Handle WordPress User entries
+        // Handle WordPress User / CPT Person entries
         else {
-            $user_data = $author_row['user'] ?? null;
-            $user_id = is_array($user_data) ? ($user_data['ID'] ?? null) : $user_data;
-            
-            if ( $user_id && is_numeric($user_id) ) {
-                $display_name = get_the_author_meta('display_name', $user_id);
-                if ( ! empty($display_name) ) {
-                    $author_names[] = $display_name;
+            $person_id = resolve_person_id_from_repeater_row( $author_row );
+            if ( $person_id ) {
+                $person = resolve_person_data( $person_id );
+                if ( $person && ! empty( $person['full_name'] ) ) {
+                    $author_names[] = $person['full_name'];
                 }
             }
         }
     }
-    
+
     // Join multiple authors with commas
     if ( ! empty($author_names) ) {
         return implode(', ', $author_names);
     }
-    
+
     return $author;
 }
 
@@ -271,18 +269,16 @@ function caes_add_author_meta_tag_manually() {
                 $author_names[] = $full_name;
             }
         } else {
-            $user_data = $author_row['user'] ?? null;
-            $user_id = is_array($user_data) ? ($user_data['ID'] ?? null) : $user_data;
-            
-            if ( $user_id && is_numeric($user_id) ) {
-                $display_name = get_the_author_meta('display_name', $user_id);
-                if ( ! empty($display_name) ) {
-                    $author_names[] = $display_name;
+            $person_id = resolve_person_id_from_repeater_row( $author_row );
+            if ( $person_id ) {
+                $person = resolve_person_data( $person_id );
+                if ( $person && ! empty( $person['full_name'] ) ) {
+                    $author_names[] = $person['full_name'];
                 }
             }
         }
     }
-    
+
     // Output the meta tag if we have authors
     if ( ! empty($author_names) ) {
         $authors_string = esc_attr( implode(', ', $author_names) );
