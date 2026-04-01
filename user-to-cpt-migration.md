@@ -85,8 +85,6 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 
 12. **Daily cron** runs personnel sync first, then symplectic sync in sequence.
 
-13. Retire `import_news_experts()`, `import_news_writers()`, old user-targeted sync functions, and the "User Data Management" tool page.
-
 ## Phase 4: Update Front-End Code
 
 **Critical deployment note:** All template/rendering changes in this phase must be deployed to production **before** the repeater swap (Phase 2, step 7) runs on production. Each updated file must handle both user IDs and CPT post IDs gracefully during the transition -- check if the ID is a `caes_hub_person` post first, fall back to user lookup if not. This way the frontend works correctly both before and after the swap.
@@ -150,6 +148,7 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 30. Update `content_manager_map_meta_cap` filter -- remove the `edit_user`/`edit_users` case (no longer needed since personnel/expert data lives in the CPT) but keep the `unfiltered_html` case (still required for multisite)
 31. Remove user profile accordion JS
 32. Optionally bulk-delete the old personnel/expert user accounts
+33. Retire `import_news_experts()`, `import_news_writers()`, old user-targeted sync functions, and the "User Data Management" tool page.
 
 ## Future: Review & Merge Duplicates
 

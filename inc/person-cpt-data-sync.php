@@ -444,6 +444,11 @@ function personnel_cpt_run_batch() {
 		$state['_api_data'] = null;
 		update_option(PERSONNEL_CPT_STATE_KEY, $state, false);
 		delete_transient('personnel_cpt_api_data');
+
+		// If this was a cron run, automatically start the Symplectic sync
+		if ($state['triggered_by'] === 'cron') {
+			symplectic_cpt_start_job('cron');
+		}
 	}
 }
 
@@ -1001,11 +1006,11 @@ function person_data_sync_enqueue($hook) {
 function person_data_sync_render_page() {
 	$symplectic_ok = defined('SYMPLECTIC_API_USERNAME') && defined('SYMPLECTIC_API_PASSWORD') && defined('CF_810_API_ENDPOINT_KEY');
 	$next_p_cron = wp_next_scheduled(PERSONNEL_CPT_CRON_HOOK);
-	$next_s_cron = wp_next_scheduled(SYMPLECTIC_CPT_CRON_HOOK);
+	// Symplectic sync runs automatically after personnel sync completes (no independent cron)
 	?>
 	<div class="wrap">
 		<h1>People CPT Data Sync <span style="font-size:12px;color:#999;font-weight:normal">v<?php echo PERSON_CPT_DATA_SYNC_VERSION; ?></span></h1>
-		<p>Syncs personnel data from the CAES Personnel API and Symplectic Elements data into <code>caes_hub_person</code> posts. Both run daily via cron.</p>
+		<p>Syncs personnel data from the CAES Personnel API and Symplectic Elements data into <code>caes_hub_person</code> posts. Daily cron runs personnel sync first, then Symplectic sync automatically.</p>
 
 		<div class="pds-wrapper">
 
@@ -1041,9 +1046,7 @@ function person_data_sync_render_page() {
 					<?php if (!$symplectic_ok): ?>
 					<div class="notice notice-error" style="margin:8px 0"><p>Missing API credentials in wp-config.php.</p></div>
 					<?php endif; ?>
-					<?php if ($next_s_cron): ?>
-					<p class="description">Next scheduled run: <strong><?php echo esc_html(date('Y-m-d H:i:s', $next_s_cron)); ?></strong></p>
-					<?php endif; ?>
+					<p class="description">Runs automatically after personnel sync completes via cron, or manually below.</p>
 
 					<div style="margin:16px 0">
 						<strong style="font-size:12px;text-transform:uppercase;color:#555">Current Status</strong>
@@ -1220,20 +1223,18 @@ define('SYMPLECTIC_CPT_BATCH_HOOK',  'symplectic_cpt_import_batch');
 // Cron scheduling
 // ============================================================
 
-add_action('init', 'symplectic_cpt_maybe_schedule');
+// Symplectic sync is triggered automatically after personnel sync completes (cron),
+// or manually from the admin page. No independent cron schedule.
+add_action('init', 'symplectic_cpt_unschedule_legacy');
 
-function symplectic_cpt_maybe_schedule() {
-	if (!wp_next_scheduled(SYMPLECTIC_CPT_CRON_HOOK)) {
-		wp_schedule_event(strtotime('tomorrow midnight'), 'daily', SYMPLECTIC_CPT_CRON_HOOK);
+function symplectic_cpt_unschedule_legacy() {
+	$ts = wp_next_scheduled(SYMPLECTIC_CPT_CRON_HOOK);
+	if ($ts) {
+		wp_unschedule_event($ts, SYMPLECTIC_CPT_CRON_HOOK);
 	}
 }
 
-add_action(SYMPLECTIC_CPT_CRON_HOOK,  'symplectic_cpt_daily_trigger');
 add_action(SYMPLECTIC_CPT_BATCH_HOOK, 'symplectic_cpt_run_batch');
-
-function symplectic_cpt_daily_trigger() {
-	symplectic_cpt_start_job('cron');
-}
 
 // ============================================================
 // State management
