@@ -59,6 +59,14 @@ Phase 2 steps must be executed in the order listed.
    - 7a. **Verify swap** -- use the built-in Verify button to confirm all repeater IDs now point to `caes_hub_person` posts. Resolve any flagged users that weren't in the map.
    - 7b. **Update ACF Field Types** -- After the swap, change the `user` sub-field in each repeater (authors, experts, translator, artists) from ACF User type to Post Object type targeting `caes_hub_person`. This makes the admin editor show a person CPT picker instead of a user picker. Original field settings are backed up and can be reverted independently. Must run immediately after the swap; the Revert Swap button automatically reverts field types as well.
 
+8a. **Swap User Feed Block Attributes** -- Scan all post_content for `caes-hub/user-feed` blocks and swap `userIds` values from WP user IDs to CPT post IDs using the lookup map. Must run after step 7 so the lookup map is complete.
+   - Query all posts where `post_content LIKE '%caes-hub/user-feed%'`
+   - For each block found, map each user ID in `userIds` to its CPT post ID via the lookup map; log any IDs not found in the map
+   - Back up the original `post_content` to a `_user_feed_block_backup` meta key before overwriting
+   - Includes a Revert action that restores `post_content` from the backup meta key
+   - Dry-run mode: report which posts are affected and what the ID swap would look like, without writing anything
+   - Also update `render.php` in `user-feed` to handle both user IDs and CPT post IDs during the transition period (before this step runs), fetching person posts by post ID and users by user ID accordingly
+
 8. **Repopulate Flat Meta** -- Rebuild the flat meta fields (`all_author_ids`, `all_expert_ids`) with CPT post IDs across all content. Must run after the swap (step 7) so the indexes use CPT post IDs. Before overwriting, back up the original values into `_all_author_ids_backup` and `_all_expert_ids_backup` meta fields on each post so the old user-ID-based indexes can be restored if needed. The admin tool includes a "Revert flat meta" action that copies the backup fields back to the originals.
    - 8v. **Verify: Run Flat Meta ID Audit** -- confirm all `all_author_ids` and `all_expert_ids` values contain CPT post IDs, not WP user IDs
 
@@ -116,16 +124,15 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - ~~Currently calls: `get_field('field_uga_email_custom', 'user_' . $user_id)`, `get_the_author_meta('user_email')`, `get_the_author_meta('display_name')`~~
     - Repeater-based fields already use `resolve_person_data()`. Events block reads `post_author` (a content manager / event role user who retains their WP account) -- no change needed.
 
-20. **Flat meta save hooks** -- no code changes needed
-    - Files: `inc/publications-support.php` (`update_flat_author_ids_meta()`), `inc/news-support.php` (`update_flat_expert_ids_meta()`)
-    - These hooks read raw `$_POST` data and pass through whatever ID is in the repeater's `user` subfield -- they naturally write user IDs before the swap and post IDs after. No dual-ID logic required
+20. ~~**Flat meta save hooks**~~ ✅ Done
+    - `update_flat_author_ids_meta()` (`inc/publications-support.php`): reads from `$_POST` directly -- passes through whatever ID is in the `user` subfield, no change needed
+    - `update_flat_expert_ids_meta()` (`inc/news-support.php`): updated to handle post object/array return from ACF after the field type swap, in addition to plain numeric IDs
 
-21. Update **block variations / archive queries** -- content feeds on person profile pages
-    - File: `block-variations/index.php` (lines 209-212, 277-285)
-    - Currently uses `is_author()` and LIKE queries against serialized user IDs in `all_author_ids` / `all_expert_ids`
-    - Change to: support `is_singular('caes_hub_person')` and query by post IDs
-    - **Query filtering** (lines 207-218, 275-295): already handles both `is_author()` and `is_singular('caes_hub_person')` -- no change needed. LIKE query format also works correctly post-migration since flat meta will use CPT post IDs in the same serialized format.
-    - **render_block filter** (lines 342-414): only fires on `is_author()` -- needs to also fire on `is_singular('caes_hub_person')` so person CPT profile pages get the "Expert Resources" / "Stories" headings and anchor-linked pagination
+21. ~~Update **block variations / archive queries** -- content feeds on person profile pages~~ ✅ Done
+    - ~~File: `block-variations/index.php` (lines 209-212, 277-285)~~
+    - ~~Currently uses `is_author()` and LIKE queries against serialized user IDs in `all_author_ids` / `all_expert_ids`~~
+    - ~~Change to: support `is_singular('caes_hub_person')` and query by post IDs~~
+    - Query filtering already handled both cases. `render_block` filter extended to include `is_singular('caes_hub_person')`.
 
 22. Update the **8 user blocks** (`user-image`, `user-bio`, `user-name`, `user-email`, `user-phone`, `user-position`, `user-department`, `user-feed`) to read from `caes_hub_person` post meta instead of user meta -- keep block names unchanged so saved block markup in the database doesn't break
 

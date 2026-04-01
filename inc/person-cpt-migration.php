@@ -2205,6 +2205,77 @@ function person_migration_enqueue_scripts($hook) {
 				doAction("person_migration_revert_flat_meta", {}, "Revert flat meta fields to their backed-up values?");
 			});
 
+			// User Feed block swap helpers
+			function pmigUserFeedRequest(dryRun) {
+				var btn = dryRun ? $("#pmig-user-feed-scan-btn") : $("#pmig-user-feed-swap-btn");
+				btn.prop("disabled", true).val(dryRun ? "Scanning..." : "Swapping...");
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 120000,
+					data: { action: "person_migration_user_feed_swap", nonce: nonce, dry_run: dryRun ? 1 : 0 },
+					success: function(response) {
+						btn.prop("disabled", false).val(dryRun ? "Dry Run" : "Run");
+						if (response.success) {
+							var d = response.data;
+							var cls = dryRun ? "notice-info" : "notice-success";
+							var html = "<div class=\"notice " + cls + "\" style=\"margin:12px 0\"><p>" + esc(d.affected) + " post(s) affected, " + esc(d.swapped) + " ID(s) swapped, " + esc(d.not_in_map) + " ID(s) not in map.</p>";
+							if (d.details && d.details.length) {
+								html += "<table class=\"widefat\" style=\"margin-top:8px\"><thead><tr><th>Post</th><th>Changes</th></tr></thead><tbody>";
+								d.details.forEach(function(r) {
+									html += "<tr><td><a href=\"" + esc(r.edit_url) + "\" target=\"_blank\">" + esc(r.title) + "</a> <span style=\"color:#999\">(#" + esc(r.post_id) + ")</span></td><td style=\"font-size:12px\">" + esc(r.summary) + "</td></tr>";
+								});
+								html += "</tbody></table>";
+							}
+							if (d.warnings && d.warnings.length) {
+								html += "<ul style=\"font-size:12px;margin-top:4px;color:#b32d2e\">";
+								d.warnings.forEach(function(w) { html += "<li>" + esc(w) + "</li>"; });
+								html += "</ul>";
+							}
+							html += "</div>";
+							var $step = btn.closest(".pmig-step");
+							$step.find(".pmig-step-result").remove();
+							$step.append("<div class=\"pmig-step-result\">" + html + "</div>");
+						} else {
+							alert("Error: " + ((response.data && response.data.error_message) ? response.data.error_message : "Unknown error"));
+						}
+					},
+					error: function() {
+						btn.prop("disabled", false).val(dryRun ? "Dry Run" : "Run");
+						alert("AJAX error.");
+					}
+				});
+			}
+
+			$("#pmig-user-feed-scan-btn").on("click", function() { pmigUserFeedRequest(true); });
+			$("#pmig-user-feed-swap-btn").on("click", function() {
+				if (!confirm("Swap userIds in all user-feed blocks? Original post content will be backed up.")) return;
+				pmigUserFeedRequest(false);
+			});
+			$("#pmig-user-feed-revert-btn").on("click", function() {
+				if (!confirm("Revert all user-feed block changes? This restores post_content from the backup.")) return;
+				$(this).prop("disabled", true).val("Reverting...");
+				var self = this;
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					timeout: 120000,
+					data: { action: "person_migration_user_feed_revert", nonce: nonce },
+					success: function(response) {
+						$(self).prop("disabled", false).val("Revert");
+						if (response.success) {
+							var d = response.data;
+							var $step = $(self).closest(".pmig-step");
+							$step.find(".pmig-step-result").remove();
+							$step.append("<div class=\"pmig-step-result\"><div class=\"notice notice-success\" style=\"margin:12px 0\"><p>" + esc(d.reverted) + " post(s) reverted.</p></div></div>");
+						} else {
+							alert("Error: " + ((response.data && response.data.error_message) ? response.data.error_message : "Unknown error"));
+						}
+					},
+					error: function() { $(self).prop("disabled", false).val("Revert"); alert("AJAX error."); }
+				});
+			});
+
 			// Link content managers
 			$("#pmig-link-cm-btn").on("click", function() {
 				if (!confirm("Link content manager WP accounts to their existing person posts by matching on personnel_id?")) return;
@@ -2752,11 +2823,12 @@ function person_migration_render_page() {
 	$cm_linked    = $ds['cm_linked'];
 
 	// Determine step statuses
-	$step5_done = $person_count > 0 && $map_count > 0;
-	$step6_done = !empty($checklist['step6']);
-	$step7_done = !empty($checklist['step7']);
-	$step8_done = !empty($checklist['step8']);
-	$step9_done = !empty($checklist['step9']);
+	$step5_done  = $person_count > 0 && $map_count > 0;
+	$step6_done  = !empty($checklist['step6']);
+	$step7_done  = !empty($checklist['step7']);
+	$step8a_done = !empty($checklist['step8a']);
+	$step8_done  = !empty($checklist['step8']);
+	$step9_done  = !empty($checklist['step9']);
 
 	?>
 	<div class="wrap">
@@ -2884,6 +2956,27 @@ function person_migration_render_page() {
 								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7b" checked> Done</label>
 							<?php else: ?>
 								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step7b"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Step 8a: Swap User Feed Block Attributes -->
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step8a_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Swap User Feed Block Attributes</strong>
+							<span class="pmig-status-badge <?php echo $step8a_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step8a_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Scan all post content for <code>caes-hub/user-feed</code> blocks and swap <code>userIds</code> from WP user IDs to CPT post IDs. Original post content is backed up before overwriting.</p>
+						</div>
+						<div class="pmig-btn-group">
+							<input type="button" id="pmig-user-feed-scan-btn" class="button" value="Dry Run" <?php echo !$step7_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-user-feed-swap-btn" class="button pmig-action-btn" value="Run" <?php echo !$step7_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-user-feed-revert-btn" class="button" value="Revert" <?php echo !$step8a_done ? 'disabled' : ''; ?> style="color:#b32d2e">
+							<?php if ($step8a_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step8a" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step8a"> Mark done</label>
 							<?php endif; ?>
 						</div>
 					</div>
@@ -3045,6 +3138,8 @@ add_action('wp_ajax_person_migration_revert_flat_meta',  'person_migration_ajax_
 add_action('wp_ajax_person_migration_verify_swap',           'person_migration_ajax_verify_swap');
 add_action('wp_ajax_person_migration_revert_swap',           'person_migration_ajax_revert_swap');
 add_action('wp_ajax_person_migration_update_field_types',    'person_migration_ajax_update_field_types');
+add_action('wp_ajax_person_migration_user_feed_swap',   'person_migration_ajax_user_feed_swap');
+add_action('wp_ajax_person_migration_user_feed_revert', 'person_migration_ajax_user_feed_revert');
 add_action('wp_ajax_person_migration_link_content_managers', 'person_migration_ajax_link_content_managers');
 add_action('wp_ajax_person_migration_delete_all',            'person_migration_ajax_delete_all');
 add_action('wp_ajax_person_migration_scan_duplicates',       'person_migration_ajax_scan_duplicates');
@@ -3190,6 +3285,140 @@ function person_migration_ajax_revert_flat_meta() {
 		}
 	}
 	wp_send_json_success(array('message' => 'Flat meta revert queued.'));
+}
+
+/**
+ * Scan all post_content for caes-hub/user-feed blocks and swap userIds
+ * from WP user IDs to CPT post IDs using the migration lookup map.
+ * Backs up original post_content to _user_feed_block_backup meta before writing.
+ */
+function person_migration_ajax_user_feed_swap() {
+	person_migration_check_ajax();
+	@set_time_limit(120);
+
+	$dry_run = !empty($_POST['dry_run']);
+	$map     = person_migration_get_map();
+
+	if (empty($map)) {
+		wp_send_json_error(array('error_message' => 'Lookup map is empty. Run the migration first.'));
+	}
+
+	global $wpdb;
+	$posts = $wpdb->get_results(
+		"SELECT ID, post_title, post_content FROM {$wpdb->posts}
+		 WHERE post_status NOT IN ('trash','auto-draft')
+		 AND post_content LIKE '%caes-hub/user-feed%'"
+	);
+
+	$affected   = 0;
+	$swapped    = 0;
+	$not_in_map = 0;
+	$details    = array();
+	$warnings   = array();
+
+	foreach ($posts as $post) {
+		// Parse all user-feed block attribute JSON from post_content
+		preg_match_all('/<!-- wp:caes-hub\/user-feed ({.*?}) -->/', $post->post_content, $matches);
+		if (empty($matches[1])) {
+			continue;
+		}
+
+		$new_content  = $post->post_content;
+		$post_swapped = 0;
+		$post_skipped = 0;
+		$changes      = array();
+
+		foreach ($matches[0] as $i => $original_comment) {
+			$attrs = json_decode($matches[1][$i], true);
+			if (!isset($attrs['userIds']) || !is_array($attrs['userIds'])) {
+				continue;
+			}
+
+			$new_ids     = array();
+			$changed     = false;
+			foreach ($attrs['userIds'] as $uid) {
+				$uid = (int) $uid;
+				if (isset($map[$uid])) {
+					$new_ids[] = (int) $map[$uid];
+					$changes[] = 'user ' . $uid . ' -> post ' . $map[$uid];
+					$post_swapped++;
+					$changed = true;
+				} else {
+					// Already a CPT post ID or genuinely missing -- keep as-is
+					$new_ids[] = $uid;
+					if (get_post_type($uid) !== 'caes_hub_person') {
+						$warnings[] = 'Post #' . $post->ID . ' (' . $post->post_title . '): user ID ' . $uid . ' not in map';
+						$post_skipped++;
+					}
+				}
+			}
+
+			if ($changed) {
+				$attrs['userIds'] = $new_ids;
+				$new_comment      = '<!-- wp:caes-hub/user-feed ' . wp_json_encode($attrs) . ' -->';
+				$new_content      = str_replace($original_comment, $new_comment, $new_content);
+			}
+		}
+
+		if ($post_swapped === 0) {
+			continue;
+		}
+
+		$affected++;
+		$swapped    += $post_swapped;
+		$not_in_map += $post_skipped;
+
+		$details[] = array(
+			'post_id'  => $post->ID,
+			'title'    => $post->post_title,
+			'edit_url' => get_edit_post_link($post->ID, 'raw'),
+			'summary'  => implode(', ', $changes),
+		);
+
+		if (!$dry_run) {
+			// Back up original post_content before overwriting
+			if (!get_post_meta($post->ID, '_user_feed_block_backup', true)) {
+				update_post_meta($post->ID, '_user_feed_block_backup', $post->post_content);
+			}
+			$wpdb->update($wpdb->posts, array('post_content' => $new_content), array('ID' => $post->ID));
+			clean_post_cache($post->ID);
+		}
+	}
+
+	wp_send_json_success(array(
+		'affected'   => $affected,
+		'swapped'    => $swapped,
+		'not_in_map' => $not_in_map,
+		'details'    => $details,
+		'warnings'   => $warnings,
+		'dry_run'    => $dry_run,
+	));
+}
+
+/**
+ * Revert user-feed block post_content from the _user_feed_block_backup meta key.
+ */
+function person_migration_ajax_user_feed_revert() {
+	person_migration_check_ajax();
+	@set_time_limit(120);
+
+	global $wpdb;
+	$post_ids = $wpdb->get_col(
+		"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_user_feed_block_backup'"
+	);
+
+	$reverted = 0;
+	foreach ($post_ids as $post_id) {
+		$backup = get_post_meta($post_id, '_user_feed_block_backup', true);
+		if (!empty($backup)) {
+			$wpdb->update($wpdb->posts, array('post_content' => $backup), array('ID' => $post_id));
+			delete_post_meta($post_id, '_user_feed_block_backup');
+			clean_post_cache($post_id);
+			$reverted++;
+		}
+	}
+
+	wp_send_json_success(array('reverted' => $reverted));
 }
 
 function person_migration_ajax_link_content_managers() {
