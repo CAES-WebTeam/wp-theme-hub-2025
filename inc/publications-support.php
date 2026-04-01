@@ -152,8 +152,10 @@ function clean_wysiwyg_content($content)
 
 // ===================
 // PUBLICATIONS IMPORT ACTIONS
+// (WP All Import no longer used for publications -- this hook is retained for reference only)
 // ===================
 
+/*
 add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
     if (get_post_type($post_id) !== 'publications') return;
 
@@ -347,6 +349,7 @@ add_action('pmxi_saved_post', function ($post_id, $xml, $is_update) {
         }
     }
 }, 10, 3);
+*/
 
 
 function clean_html($html)
