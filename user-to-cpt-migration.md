@@ -147,7 +147,7 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 **Critical deployment note:** Steps 24-27 must be deployed together as one unit. The redirect rules (steps 26-27) depend on the lookup map from Phase 2 step 5, which already exists by this point. Do NOT deploy the new rewrite rules (step 24) without the redirect code (steps 26-27) or old URLs will 404.
 
 24. Keep the `/person/{id}/{slug}/` URL structure using custom rewrite rules that resolve to `caes_hub_person` posts by post ID (replaces the current rules that resolve to `?author=`). Update the permalink filter to generate `/person/{post_id}/{slug}/` links. The slug is derived from the person's display name (their preferred name) and is purely cosmetic -- the post ID is the stable identifier used for resolution. If WordPress appends `-2` etc. for duplicate names, it does not matter since the slug is never used for lookup.
-25. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template; remove both `author.html` and `author-2.html`
+25. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template
 26. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
 27. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
 
@@ -159,6 +159,7 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 31. Remove user profile accordion JS
 32. Optionally bulk-delete the old personnel/expert user accounts
 33. Retire `import_news_experts()`, `import_news_writers()`, old user-targeted sync functions, and the "User Data Management" tool page.
+34. Remove both `author.html` and `author-2.html` templates
 
 ## Future: Review & Merge Duplicates
 

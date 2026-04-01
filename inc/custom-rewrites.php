@@ -275,25 +275,65 @@ function custom_publications_rewrite_rules()
 add_action('init', 'custom_publications_rewrite_rules');
 
 /**
- * Custom rewrite rules for person (author) pages
+ * Custom rewrite rules for person (caes_hub_person CPT) pages.
+ * The post ID is the stable identifier; the slug is cosmetic and ignored for resolution.
  */
 function custom_person_rewrite_rules()
 {
     // Single person page: /person/123/display-name/
     add_rewrite_rule(
         '^person/([0-9]+)/([^/]+)/?$',
-        'index.php?author=$matches[1]',
+        'index.php?caes_person_id=$matches[1]',
         'top'
     );
 
     // Paginated person pages: /person/123/display-name/page/2/
     add_rewrite_rule(
         '^person/([0-9]+)/([^/]+)/page/([0-9]+)/?$',
-        'index.php?author=$matches[1]&paged=$matches[3]',
+        'index.php?caes_person_id=$matches[1]&paged=$matches[3]',
         'top'
     );
 }
 add_action('init', 'custom_person_rewrite_rules');
+
+/**
+ * Register the caes_person_id query var.
+ */
+function caes_person_register_query_vars( $vars ) {
+    $vars[] = 'caes_person_id';
+    return $vars;
+}
+add_filter( 'query_vars', 'caes_person_register_query_vars' );
+
+/**
+ * Resolve caes_person_id to a caes_hub_person singular page.
+ * Sets the queried object to the CPT post so templates and schema work correctly.
+ */
+function caes_person_resolve_query( $query ) {
+    if ( ! $query->is_main_query() || is_admin() ) {
+        return;
+    }
+
+    $person_id = (int) $query->get( 'caes_person_id' );
+    if ( ! $person_id ) {
+        return;
+    }
+
+    $post = get_post( $person_id );
+    if ( ! $post || $post->post_type !== 'caes_hub_person' || $post->post_status !== 'publish' ) {
+        $query->set_404();
+        return;
+    }
+
+    $query->set( 'post_type', 'caes_hub_person' );
+    $query->set( 'p', $person_id );
+    $query->is_single   = true;
+    $query->is_singular = true;
+    $query->is_author   = false;
+    $query->is_archive  = false;
+    $query->is_home     = false;
+}
+add_action( 'pre_get_posts', 'caes_person_resolve_query' );
 
 // ===================================
 // PERMALINK MODIFICATION SECTION
@@ -418,27 +458,59 @@ function custom_topic_term_link($termlink, $term, $taxonomy)
 add_filter('term_link', 'custom_topic_term_link', 10, 3);
 
 /**
- * Modify author links to use /person/ID/display-name/ format
+ * Modify author links to use /person/ID/display-name/ format.
+ * After migration, $author_id may be a caes_hub_person post ID or a WP user ID.
  */
 function custom_person_author_link($link, $author_id)
 {
-    $user = get_userdata($author_id);
-    if (!$user) {
+    $author_id = (int) $author_id;
+
+    // Try CPT post first
+    if ( get_post_type( $author_id ) === 'caes_hub_person' ) {
+        $display_name = get_post_meta( $author_id, 'display_name', true );
+        if ( empty( $display_name ) ) {
+            $first = get_post_meta( $author_id, 'first_name', true );
+            $last  = get_post_meta( $author_id, 'last_name', true );
+            $display_name = trim( "$first $last" );
+        }
+        $slug = sanitize_title( $display_name ) ?: 'person';
+        return home_url( "/person/{$author_id}/{$slug}/" );
+    }
+
+    // Fall back to WP user (pre-migration path)
+    $user = get_userdata( $author_id );
+    if ( ! $user ) {
         return $link;
     }
 
-    // Get display name and sanitize it for URL
-    $display_name = $user->display_name;
-    $display_name_slug = sanitize_title($display_name);
-
-    // If display name is empty, fall back to user_nicename
-    if (empty($display_name_slug)) {
+    $display_name_slug = sanitize_title( $user->display_name );
+    if ( empty( $display_name_slug ) ) {
         $display_name_slug = $user->user_nicename;
     }
 
-    return home_url("/person/{$author_id}/{$display_name_slug}/");
+    return home_url( "/person/{$author_id}/{$display_name_slug}/" );
 }
 add_filter('author_link', 'custom_person_author_link', 10, 2);
+
+/**
+ * Generate /person/{post_id}/{slug}/ permalinks for caes_hub_person posts.
+ */
+function caes_person_cpt_permalink( $post_link, $post ) {
+    if ( ! $post instanceof WP_Post || $post->post_type !== 'caes_hub_person' ) {
+        return $post_link;
+    }
+
+    $display_name = get_post_meta( $post->ID, 'display_name', true );
+    if ( empty( $display_name ) ) {
+        $first = get_post_meta( $post->ID, 'first_name', true );
+        $last  = get_post_meta( $post->ID, 'last_name', true );
+        $display_name = trim( "$first $last" );
+    }
+    $slug = sanitize_title( $display_name ) ?: $post->post_name;
+
+    return home_url( "/person/{$post->ID}/{$slug}/" );
+}
+add_filter( 'post_type_link', 'caes_person_cpt_permalink', 10, 2 );
 
 // ===================================
 // QUERY & TEMPLATE LOGIC
@@ -638,26 +710,89 @@ function redirect_author_to_person()
         $user = get_user_by('slug', $username);
 
         if ($user) {
-            // Generate new URL
-            $display_name_slug = sanitize_title($user->display_name);
-            if (empty($display_name_slug)) {
-                $display_name_slug = $user->user_nicename;
+            // Check migration map for a CPT post ID first
+            $map     = function_exists('person_migration_get_map') ? person_migration_get_map() : get_option('person_cpt_migration_user_post_map', array());
+            $post_id = isset($map[$user->ID]) ? (int) $map[$user->ID] : 0;
+
+            if ($post_id && get_post_type($post_id) === 'caes_hub_person') {
+                $display_name = get_post_meta($post_id, 'display_name', true);
+                if (empty($display_name)) {
+                    $first = get_post_meta($post_id, 'first_name', true);
+                    $last  = get_post_meta($post_id, 'last_name', true);
+                    $display_name = trim("$first $last");
+                }
+                $slug = sanitize_title($display_name) ?: $user->user_nicename;
+                $new_url = "/person/{$post_id}/{$slug}/";
+            } else {
+                // Pre-migration fallback: redirect to user ID-based URL
+                $display_name_slug = sanitize_title($user->display_name);
+                if (empty($display_name_slug)) {
+                    $display_name_slug = $user->user_nicename;
+                }
+                $new_url = "/person/{$user->ID}/{$display_name_slug}/";
             }
 
-            $new_url = "/person/{$user->ID}/{$display_name_slug}/";
-
-            // Add pagination if present
             if ($page_num) {
                 $new_url .= "page/{$page_num}/";
             }
 
-            // Perform 301 redirect
             wp_redirect(home_url($new_url), 301);
             exit;
         }
     }
 }
 add_action('template_redirect', 'redirect_author_to_person');
+
+/**
+ * Redirect old /person/{user_id}/{slug}/ URLs to new /person/{post_id}/{slug}/ format.
+ * Uses the migration lookup map (user_id => post_id) stored as a WP option.
+ * Only fires when the ID in the URL is a known user ID in the map -- new CPT post IDs
+ * pass through normally to caes_person_resolve_query.
+ */
+function redirect_old_person_user_id_to_cpt()
+{
+    if (is_admin() || isset($_GET['preview'])) return;
+
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+
+    if (!preg_match('#^/person/([0-9]+)/([^/]+)(?:/page/([0-9]+))?/?$#', $requested_path, $matches)) {
+        return;
+    }
+
+    $id       = (int) $matches[1];
+    $page_num = isset($matches[3]) ? $matches[3] : null;
+
+    // If this ID is already a caes_hub_person post, let it through
+    if (get_post_type($id) === 'caes_hub_person') {
+        return;
+    }
+
+    // Check the migration map for a matching CPT post ID
+    $map     = function_exists('person_migration_get_map') ? person_migration_get_map() : get_option('person_cpt_migration_user_post_map', array());
+    $post_id = isset($map[$id]) ? (int) $map[$id] : 0;
+
+    if (!$post_id) {
+        return;
+    }
+
+    // Build the new URL using the CPT post's display name
+    $display_name = get_post_meta($post_id, 'display_name', true);
+    if (empty($display_name)) {
+        $first = get_post_meta($post_id, 'first_name', true);
+        $last  = get_post_meta($post_id, 'last_name', true);
+        $display_name = trim("$first $last");
+    }
+    $slug    = sanitize_title($display_name) ?: 'person';
+    $new_url = "/person/{$post_id}/{$slug}/";
+
+    if ($page_num) {
+        $new_url .= "page/{$page_num}/";
+    }
+
+    wp_redirect(home_url($new_url), 301);
+    exit;
+}
+add_action('template_redirect', 'redirect_old_person_user_id_to_cpt');
 
 // Redirect /blog/features/ URLs to /features/
 function redirect_blog_features_to_features()
