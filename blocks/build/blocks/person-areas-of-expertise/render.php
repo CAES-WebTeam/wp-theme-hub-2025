@@ -15,18 +15,28 @@ if (empty($terms) || is_wp_error($terms)) {
     return;
 }
 
-$link_terms = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
-$attrs      = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
+$link_terms   = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
+$show_heading = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
+$attrs        = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
 
 echo '<div ' . $attrs . '>';
+
+if ($show_heading) {
+    echo '<h2 class="person-areas-of-expertise__heading">' . esc_html__('Areas of expertise', 'caes-hub') . '</h2>';
+}
+
+echo '<div class="person-areas-of-expertise__terms">';
 foreach ($terms as $term) {
     $label = esc_html($term->name);
+    $class = 'person-expertise-term has-hedges-background-color has-background';
     if ($link_terms) {
-        $url   = esc_url(get_term_link($term));
-        echo '<a href="' . $url . '" class="person-expertise-term">' . $label . '</a>';
+        $url = esc_url(get_term_link($term));
+        echo '<a href="' . $url . '" class="' . $class . '">' . $label . '</a>';
     } else {
-        echo '<span class="person-expertise-term">' . $label . '</span>';
+        echo '<span class="' . $class . '">' . $label . '</span>';
     }
 }
+echo '</div>';
+
 echo '</div>';
 ?>

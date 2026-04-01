@@ -31,6 +31,10 @@
         "linkTerms": {
             "type": "boolean",
             "default": false
+        },
+        "showHeading": {
+            "type": "boolean",
+            "default": false
         }
     },
     "usesContext": [
