@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/user-position",
   "version": "0.1.0",
-  "title": "User Position Title",
+  "title": "Person Position Title",
   "category": "theme",
   "icon": "admin-users",
   "description": "Displays the user's position title.",

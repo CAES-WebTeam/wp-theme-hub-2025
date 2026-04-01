@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/user-image",
   "version": "0.1.0",
-  "title": "User Profile Photo",
+  "title": "Person Profile Photo",
   "category": "theme",
   "icon": "admin-users",
   "description": "Displays the user's profile photo.",

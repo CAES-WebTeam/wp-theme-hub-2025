@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/user-feed",
   "version": "0.1.0",
-  "title": "User Feed",
+  "title": "Person Feed",
   "category": "widgets",
   "icon": "admin-users",
   "description": "Displays a feed of users based on selected criteria.",

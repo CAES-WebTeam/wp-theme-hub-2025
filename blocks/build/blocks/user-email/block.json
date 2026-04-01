@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/user-email",
   "version": "0.1.0",
-  "title": "User Email",
+  "title": "Person Email",
   "category": "theme",
   "icon": "admin-users",
   "description": "Displays the user's email.",

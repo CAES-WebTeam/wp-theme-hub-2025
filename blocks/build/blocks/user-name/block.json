@@ -3,7 +3,7 @@
   "apiVersion": 3,
   "name": "caes-hub/user-name",
   "version": "0.1.0",
-  "title": "User Name",
+  "title": "Person Name",
   "category": "theme",
   "icon": "admin-users",
   "description": "Displays the user's name.",
