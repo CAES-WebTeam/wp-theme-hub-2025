@@ -230,11 +230,62 @@ add_filter( 'wpseo_meta_author', 'caes_change_meta_author_tag', 10, 2 );
  */
 function caes_remove_yoast_author_meta_tag( $presenters ) {
     return array_filter( $presenters, function( $presenter ) {
-        return ! $presenter instanceof \Yoast\WP\SEO\Presenters\Meta_Author_Presenter;
+        return ! $presenter instanceof \Yoast\WP\SEO\Presenters\Meta_Author_Presenter
+            && ! $presenter instanceof \Yoast\WP\SEO\Presenters\Twitter\Author_Presenter;
     });
 }
 
 add_filter( 'wpseo_frontend_presenters', 'caes_remove_yoast_author_meta_tag' );
+
+
+/**
+ * Output a corrected twitter:data1 "Written by" tag using ACF authors.
+ * Runs after Yoast outputs its Twitter card tags so our version takes precedence,
+ * but the default presenter is already removed above.
+ */
+function caes_add_twitter_author_tag_manually() {
+    if ( ! is_singular() ) {
+        return;
+    }
+
+    $authors = get_field('authors');
+    if ( empty($authors) ) {
+        return;
+    }
+
+    $author_names = [];
+
+    foreach ( $authors as $author_row ) {
+        $entry_type = $author_row['type'] ?? '';
+
+        if ( $entry_type === 'Custom' ) {
+            $custom_user = $author_row['custom_user'] ?? $author_row['custom'] ?? [];
+            $first_name  = $custom_user['first_name'] ?? '';
+            $last_name   = $custom_user['last_name'] ?? '';
+            $full_name   = trim("$first_name $last_name");
+
+            if ( ! empty($full_name) ) {
+                $author_names[] = $full_name;
+            }
+        } else {
+            $person_id = resolve_person_id_from_repeater_row( $author_row );
+            if ( $person_id ) {
+                $person = resolve_person_data( $person_id );
+                if ( $person && ! empty( $person['full_name'] ) ) {
+                    $author_names[] = $person['full_name'];
+                }
+            }
+        }
+    }
+
+    if ( ! empty($author_names) ) {
+        $authors_string = esc_attr( implode(', ', $author_names) );
+        echo '<meta name="twitter:label1" content="Written by" class="yoast-seo-meta-tag" />' . "\n";
+        echo '<meta name="twitter:data1" content="' . $authors_string . '" class="yoast-seo-meta-tag" />' . "\n";
+    }
+}
+
+add_action( 'wp_head', 'caes_add_twitter_author_tag_manually', 1 );
 
 
 /**
