@@ -106,10 +106,10 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - ~~Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`, `get_the_author_meta('title')`, `get_field('public_friendly_title', 'user_' . $user_id)`~~
     - ~~Change to: use `resolve_person_data()`~~
 
-18. Update **RSS feed support** -- author names in feed output
-    - File: `inc/rss-support.php` (lines 79-127)
-    - Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`
-    - Change to: use `resolve_person_data()`
+18. ~~Update **RSS feed support** -- author names in feed output~~ ✅ Done
+    - ~~File: `inc/rss-support.php` (lines 79-127)~~
+    - ~~Currently calls: `get_the_author_meta('first_name')`, `get_the_author_meta('last_name')`~~
+    - ~~Change to: use `resolve_person_data()`~~
 
 19. Update **analytics data layer** -- author tracking in GA
     - File: `inc/analytics.php` (lines 173-278)

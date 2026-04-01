@@ -212,6 +212,37 @@ function custom_topic_rewrite_rules()
         'index.php?topics=$matches[2]&post_type=$matches[1]&paged=$matches[3]',
         'top'
     );
+
+    // Feed rules for features (shorthand_story) category and tag archives
+    add_rewrite_rule(
+        '^features/category/([^/]+)/feed/?$',
+        'index.php?category_name=$matches[1]&feed=rss2',
+        'top'
+    );
+    add_rewrite_rule(
+        '^features/tag/([^/]+)/feed/?$',
+        'index.php?tag=$matches[1]&feed=rss2',
+        'top'
+    );
+
+    // Feed rules for news (post) category and tag archives
+    add_rewrite_rule(
+        '^news/category/([^/]+)/feed/?$',
+        'index.php?category_name=$matches[1]&feed=rss2',
+        'top'
+    );
+    add_rewrite_rule(
+        '^news/tag/([^/]+)/feed/?$',
+        'index.php?tag=$matches[1]&feed=rss2',
+        'top'
+    );
+
+    // Feed rules for publications category archives
+    add_rewrite_rule(
+        '^publications/category/([^/]+)/feed/?$',
+        'index.php?publication_category=$matches[1]&feed=rss2',
+        'top'
+    );
 }
 add_action('init', 'custom_topic_rewrite_rules');
 

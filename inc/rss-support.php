@@ -29,9 +29,19 @@ function filter_taxonomy_feeds_by_post_type($query) {
     $post_type = null;
     if (strpos($request_uri, '/publications/topic/') !== false) {
         $post_type = 'publications';
+    } elseif (strpos($request_uri, '/publications/category/') !== false) {
+        $post_type = 'publications';
     } elseif (strpos($request_uri, '/news/topic/') !== false) {
         $post_type = array('post', 'shorthand_story');
+    } elseif (strpos($request_uri, '/news/category/') !== false) {
+        $post_type = 'post';
+    } elseif (strpos($request_uri, '/news/tag/') !== false) {
+        $post_type = 'post';
     } elseif (strpos($request_uri, '/features/topic/') !== false) {
+        $post_type = 'shorthand_story';
+    } elseif (strpos($request_uri, '/features/category/') !== false) {
+        $post_type = 'shorthand_story';
+    } elseif (strpos($request_uri, '/features/tag/') !== false) {
         $post_type = 'shorthand_story';
     } elseif (strpos($request_uri, '/events/topic/') !== false) {
         $post_type = 'events';
@@ -82,7 +92,7 @@ function get_acf_authors_for_feed($post_id) {
     
     if ($authors && is_array($authors)) {
         foreach ($authors as $item) {
-            $user_id = null;
+            // $user_id = null;
             $custom_first = '';
             $custom_last = '';
             
