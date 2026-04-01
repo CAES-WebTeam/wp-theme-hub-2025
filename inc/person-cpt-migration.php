@@ -2717,7 +2717,7 @@ function person_migration_get_dashboard_status() {
 	// Detect linked content managers
 	$cm_linked = 0;
 	$cm_total  = 0;
-	$cms = get_users(array('role' => 'content_manager', 'fields' => 'ID', 'number' => -1));
+	$cms = get_users(array('role__in' => array('content_manager', 'event_submitter', 'event_approver'), 'fields' => 'ID', 'number' => -1));
 	$cm_total = count($cms);
 	foreach ($cms as $cm_id) {
 		// Check if any person post has linked_wp_user set to this CM
@@ -3197,9 +3197,9 @@ function person_migration_ajax_link_content_managers() {
 	@set_time_limit(120);
 
 	$content_managers = get_users(array(
-		'role'    => 'content_manager',
-		'fields'  => 'all',
-		'number'  => -1,
+		'role__in' => array('content_manager', 'event_submitter', 'event_approver'),
+		'fields'   => 'all',
+		'number'   => -1,
 	));
 
 	$linked  = 0;
