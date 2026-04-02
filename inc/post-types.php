@@ -635,6 +635,15 @@ add_action('init', function () {
     ));
 });
 
+// Strip leading numeric codes (e.g. "060705 ") from areas_of_expertise term names on the front end.
+add_filter('get_term', function ($term) {
+    if (is_admin() || ! is_object($term) || $term->taxonomy !== 'areas_of_expertise') {
+        return $term;
+    }
+    $term->name = preg_replace('/^\d+\s+/', '', $term->name);
+    return $term;
+});
+
 // Add 'Areas of Expertise' taxonomy management page under the Users menu.
 add_action('admin_menu', function () {
     add_submenu_page(
