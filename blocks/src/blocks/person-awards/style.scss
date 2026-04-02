@@ -1,0 +1,15 @@
+.wp-block-caes-hub-person-awards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+
+    .person-awards__heading {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .person-awards__list {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}

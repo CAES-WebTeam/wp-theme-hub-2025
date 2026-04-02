@@ -1,1 +1,206 @@
-import*as e from"@wordpress/interactivity";var t={d:(e,o)=>{for(var n in o)t.o(o,n)&&!t.o(e,n)&&Object.defineProperty(e,n,{enumerable:!0,get:o[n]})},o:(e,t)=>Object.prototype.hasOwnProperty.call(e,t)};const o=(s={getContext:()=>e.getContext,getElement:()=>e.getElement,store:()=>e.store},i={},t.d(i,s),i),{state:n}=(0,o.store)("action-share",{state:{get isOpen(){return(0,o.getContext)().isOpen}},actions:{toggle:()=>{const e=(0,o.getContext)();e.isOpen=!e.isOpen},shareOnFacebook:()=>{const e=(0,o.getContext)().postUrl,t=`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(e)}`;window.open(t,"facebookShareWindow","width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1")},shareOnX:()=>{const e=(0,o.getContext)(),t=e.postUrl,n=encodeURIComponent(e.postTitle),s=`https://twitter.com/intent/tweet?url=${encodeURIComponent(t)}&text=${n}`;window.open(s,"twitterShareWindow","width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1")},shareOnPinterest:()=>{const e=(0,o.getContext)(),t=e.postUrl,n=encodeURIComponent(e.postTitle),s=encodeURIComponent(e.postImage),i=`https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(t)}&media=${s}&description=${n}`;window.open(i,"pinterestShareWindow","width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1")},shareOnLinkedIn:()=>{const e=(0,o.getContext)(),t=e.postUrl,n=encodeURIComponent(e.postTitle),s=`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(t)}&title=${n}`;window.open(s,"linkedInShareWindow","width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1")},shareOnReddit:()=>{const e=(0,o.getContext)(),t=e.postUrl,n=encodeURIComponent(e.postTitle),s=`https://www.reddit.com/submit?url=${encodeURIComponent(t)}&title=${n}`;window.open(s,"redditShareWindow","width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1")},shareByEmail:()=>{const e=(0,o.getContext)(),t=e.postUrl,n=`mailto:?subject=${encodeURIComponent(e.postTitle)}&body=${t}`;window.location.href=n},copyUrl:()=>{const e=(0,o.getContext)().postUrl,t=document.querySelector(".caes-hub-copy-url__tooltip");navigator.clipboard.writeText(e).then((()=>{t.innerText="Copied!",t.style.display="block",setTimeout((()=>{t.style.display="none"}),2e3)})).catch((()=>{t.innerText="Failed to copy!",t.style.display="block",setTimeout((()=>{t.style.display="none"}),2e3)}))}},callbacks:{openModal:()=>{const{ref:e}=(0,o.getElement)(),t=(0,o.getContext)();n.isOpen?(e.style.opacity="0",e.style.visibility="visible",setTimeout((()=>{e.showModal(),e.style.opacity="1"}),10)):(e.style.opacity="0",setTimeout((()=>{e.close(),e.style.visibility="hidden"}),300)),e.addEventListener("close",(()=>{e.style.visibility="hidden",e.style.opacity="0",setTimeout((()=>{t.isOpen=!1}),300)}))},showCopyTooltip:(e,t,o)=>{t.innerText=o,t.style.display="block";const n=e.getBoundingClientRect();t.style.left=`${n.left+window.pageXOffset}px`,t.style.top=n.top+window.pageYOffset-30+"px",setTimeout((()=>{t.style.display="none"}),2e3)}}});var s,i;
+import * as __WEBPACK_EXTERNAL_MODULE__wordpress_interactivity_8e89b257__ from "@wordpress/interactivity";
+/******/ var __webpack_modules__ = ({
+
+/***/ "@wordpress/interactivity":
+/*!*******************************************!*\
+  !*** external "@wordpress/interactivity" ***!
+  \*******************************************/
+/***/ ((module) => {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE__wordpress_interactivity_8e89b257__;
+
+/***/ })
+
+/******/ });
+/************************************************************************/
+/******/ // The module cache
+/******/ var __webpack_module_cache__ = {};
+/******/ 
+/******/ // The require function
+/******/ function __webpack_require__(moduleId) {
+/******/ 	// Check if module is in cache
+/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 	if (cachedModule !== undefined) {
+/******/ 		return cachedModule.exports;
+/******/ 	}
+/******/ 	// Create a new module (and put it into the cache)
+/******/ 	var module = __webpack_module_cache__[moduleId] = {
+/******/ 		// no module.id needed
+/******/ 		// no module.loaded needed
+/******/ 		exports: {}
+/******/ 	};
+/******/ 
+/******/ 	// Execute the module function
+/******/ 	__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 
+/******/ 	// Return the exports of the module
+/******/ 	return module.exports;
+/******/ }
+/******/ 
+/************************************************************************/
+/******/ /* webpack/runtime/make namespace object */
+/******/ (() => {
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = (exports) => {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/ })();
+/******/ 
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+/*!*****************************************!*\
+  !*** ./src/blocks/action-share/view.js ***!
+  \*****************************************/
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/interactivity */ "@wordpress/interactivity");
+
+
+/* eslint-disable no-console */
+// console.log('action-share is here');
+/* eslint-enable no-console */
+
+const {
+  state
+} = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.store)("action-share", {
+  state: {
+    get isOpen() {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      return context.isOpen;
+    }
+  },
+  actions: {
+    toggle: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      context.isOpen = !context.isOpen;
+    },
+    shareOnFacebook: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl;
+      const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+      window.open(facebookShareUrl, 'facebookShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
+    },
+    shareOnX: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl;
+      const postTitle = encodeURIComponent(context.postTitle);
+      const twitterShareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${postTitle}`;
+      window.open(twitterShareUrl, 'twitterShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
+    },
+    shareOnPinterest: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl;
+      const postTitle = encodeURIComponent(context.postTitle);
+      const postImage = encodeURIComponent(context.postImage);
+      const pinterestShareUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(postUrl)}&media=${postImage}&description=${postTitle}`;
+      window.open(pinterestShareUrl, 'pinterestShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
+    },
+    shareOnLinkedIn: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl;
+      const postTitle = encodeURIComponent(context.postTitle);
+      const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}&title=${postTitle}`;
+      window.open(linkedInShareUrl, 'linkedInShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
+    },
+    shareOnReddit: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl;
+      const postTitle = encodeURIComponent(context.postTitle);
+      const redditShareUrl = `https://www.reddit.com/submit?url=${encodeURIComponent(postUrl)}&title=${postTitle}`;
+      window.open(redditShareUrl, 'redditShareWindow', 'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1');
+    },
+    // shareOnPocket: () => {
+    //     const context = getContext();
+    //     const postUrl = context.postUrl;
+    //     const pocketShareUrl = `https://getpocket.com/save?url=${encodeURIComponent(postUrl)}`;
+    //     window.open(
+    //         pocketShareUrl,
+    //         'pocketShareWindow',
+    //         'width=500,height=500,top=100,left=100,toolbar=0,menubar=0,scrollbars=1,resizable=1'
+    //     );
+    // },
+    shareByEmail: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl;
+      const postTitle = encodeURIComponent(context.postTitle);
+      const emailShareUrl = `mailto:?subject=${postTitle}&body=${postUrl}`;
+      window.location.href = emailShareUrl;
+    },
+    copyUrl: () => {
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      const postUrl = context.postUrl; // Get the post URL from the context
+      const copyMessage = document.querySelector('.caes-hub-copy-url__tooltip');
+
+      // Use modern Clipboard API to copy the URL
+      navigator.clipboard.writeText(postUrl).then(() => {
+        // Display success message
+        copyMessage.innerText = "Copied!";
+        copyMessage.style.display = 'block';
+
+        // Hide the message after 2 seconds
+        setTimeout(() => {
+          copyMessage.style.display = 'none';
+        }, 2000);
+      }).catch(() => {
+        // Display error message if copying fails
+        copyMessage.innerText = "Failed to copy!";
+        copyMessage.style.display = 'block';
+        setTimeout(() => {
+          copyMessage.style.display = 'none';
+        }, 2000);
+      });
+    }
+  },
+  callbacks: {
+    openModal: () => {
+      const {
+        ref
+      } = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getElement)();
+      const context = (0,_wordpress_interactivity__WEBPACK_IMPORTED_MODULE_0__.getContext)();
+      if (state.isOpen) {
+        ref.style.opacity = '0';
+        ref.style.visibility = 'visible';
+        setTimeout(() => {
+          ref.showModal();
+          ref.style.opacity = '1';
+        }, 10);
+      } else {
+        ref.style.opacity = '0';
+        setTimeout(() => {
+          ref.close();
+          ref.style.visibility = 'hidden';
+        }, 300);
+      }
+      // Make sure the modal is closed when the user hits escape
+      ref.addEventListener('close', () => {
+        ref.style.visibility = 'hidden';
+        ref.style.opacity = '0';
+        setTimeout(() => {
+          context.isOpen = false;
+        }, 300);
+      });
+    },
+    showCopyTooltip: (copyButton, copyMessage, message) => {
+      copyMessage.innerText = message;
+      copyMessage.style.display = 'block';
+
+      // Position the tooltip above the button
+      const rect = copyButton.getBoundingClientRect();
+      copyMessage.style.left = `${rect.left + window.pageXOffset}px`;
+      copyMessage.style.top = `${rect.top + window.pageYOffset - 30}px`; // Adjust the position above the button
+
+      // Hide the tooltip after 2 seconds
+      setTimeout(() => {
+        copyMessage.style.display = 'none';
+      }, 2000);
+    }
+  }
+});
+})();
+
+
+//# sourceMappingURL=view.js.map

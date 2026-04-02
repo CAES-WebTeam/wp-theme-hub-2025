@@ -1,0 +1,61 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "caes-hub/person-awards",
+    "version": "0.1.0",
+    "title": "Person Awards and Honors",
+    "category": "theme",
+    "icon": "awards",
+    "description": "Displays the person's awards and honors, synced from Symplectic Elements.",
+    "acf": {
+        "mode": "preview",
+        "renderTemplate": "./render.php"
+    },
+    "supports": {
+        "anchor": true,
+        "typography": {
+            "lineHeight": true,
+            "fontSize": true
+        },
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "padding": true,
+            "margin": true,
+            "blockGap": true
+        },
+        "layout": {
+            "default": {
+                "type": "flex",
+                "orientation": "vertical"
+            }
+        }
+    },
+    "attributes": {
+        "showHeading": {
+            "type": "boolean",
+            "default": false
+        },
+        "headingLevel": {
+            "type": "number",
+            "default": 2
+        },
+        "headingFontSize": {
+            "type": "string",
+            "default": ""
+        },
+        "itemFontSize": {
+            "type": "string",
+            "default": ""
+        }
+    },
+    "usesContext": [
+        "caes-hub/user-feed/userId",
+        "caes-hub/user-feed/user"
+    ],
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css"
+}

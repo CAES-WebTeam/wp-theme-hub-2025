@@ -1,0 +1,15 @@
+.wp-block-caes-hub-person-scholarly-works {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+
+    .person-scholarly-works__heading {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .person-scholarly-works__list {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}

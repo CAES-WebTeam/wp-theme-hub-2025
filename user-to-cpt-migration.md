@@ -158,11 +158,12 @@ b. Make new blocks for the following, referencing the sections in single-caes_hu
 - ~~b-1: Areas of Expertise~~
 - b-2: Department
 - ~~b-3: About (reference "Overview" from Symplectic data) - for this one, rework "user-bio"~~
-- b-4: Courses
+- ~~b-4: Courses~~
 - b-5: Scholarly Works (called "Publications" in the template, but we want it to be called Scholarly Works)
 - b-6: Awards and Honors ("distinctions" in symplectic data)
 c. Some symplectic data is missing, I will work on this with Jesse:
 - c-1: Education
+- c-2: Can we get the profile URL in the API?
 
 ## Phase 6: Cleanup
 

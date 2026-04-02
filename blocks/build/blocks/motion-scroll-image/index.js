@@ -1,1 +1,504 @@
-(()=>{"use strict";var e,l={5728:()=>{const e=window.wp.blocks,l=window.wp.i18n,o=window.wp.blockEditor,t=window.wp.components,s=window.wp.element,i=window.ReactJSXRuntime,r=e=>{let l=e.replace("#","");return 3===l.length&&(l=l[0]+l[0]+l[1]+l[1]+l[2]+l[2]),{r:parseInt(l.slice(0,2),16)/255,g:parseInt(l.slice(2,4),16)/255,b:parseInt(l.slice(4,6),16)/255}},n=(e,l)=>{const o=r(e[0]),t=r(e[1]);return(0,i.jsxs)("filter",{id:l,children:[(0,i.jsx)("feColorMatrix",{colorInterpolationFilters:"sRGB",type:"matrix",values:".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"}),(0,i.jsxs)("feComponentTransfer",{colorInterpolationFilters:"sRGB",children:[(0,i.jsx)("feFuncR",{type:"table",tableValues:`${o.r} ${t.r}`}),(0,i.jsx)("feFuncG",{type:"table",tableValues:`${o.g} ${t.g}`}),(0,i.jsx)("feFuncB",{type:"table",tableValues:`${o.b} ${t.b}`}),(0,i.jsx)("feFuncA",{type:"table",tableValues:"0 1"})]})]})},a=(e,l)=>!Array.isArray(e)||e.length<2?null:(0,i.jsx)("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"0 0 0 0",width:"0",height:"0",focusable:"false",role:"none",style:{visibility:"hidden",position:"absolute",left:"-9999px",overflow:"hidden"},"aria-hidden":"true",children:(0,i.jsx)("defs",{children:n(e,l)})}),c=JSON.parse('{"UU":"caes-hub/motion-scroll-image"}');(0,e.registerBlockType)(c.UU,{edit:({attributes:e,setAttributes:r,context:n,clientId:c})=>{const{slideIndex:d}=e,m=n["caes-hub/motion-scroll-slides"]||[],p=(0,o.useBlockProps)({className:"caes-motion-scroll-image-editor"}),h=m[d]||null,u=h?.mobileImage||h?.image||null,b=h?.mobileDuotone||h?.duotone||null,g=h?.mobileImage?h?.mobileCaption||"":h?.caption||"",f=`motion-scroll-image-duotone-${c}`,v=(0,s.useRef)();(0,s.useEffect)((()=>{const e=v.current;if(e)if(Array.isArray(b)&&b.length>=2){const l=e.ownerDocument.URL.split("#")[0];e.style.filter=`url('${l}#${f}')`}else e.style.filter=""}),[b,f,u]);const x=m.map(((e,l)=>({label:`${l+1}. ${e.image?.alt||`Image ${l+1}`}`,value:l})));return 0===x.length&&x.push({label:(0,l.__)("No images available","caes-motion-scroll"),value:-1}),(0,i.jsxs)(i.Fragment,{children:[(0,i.jsx)(o.InspectorControls,{children:(0,i.jsx)(t.PanelBody,{title:(0,l.__)("Image Selection","caes-motion-scroll"),initialOpen:!0,children:(0,i.jsx)(t.SelectControl,{label:(0,l.__)("Select Image","caes-motion-scroll"),value:d,options:x,onChange:e=>r({slideIndex:parseInt(e,10)}),help:(0,l.__)("Choose which image from the parent block to display on mobile.","caes-motion-scroll")})})}),(0,i.jsx)("div",{...p,children:(0,i.jsx)("div",{className:"motion-scroll-image-preview",children:u?(0,i.jsxs)(i.Fragment,{children:[b&&a(b,f),(0,i.jsx)("img",{ref:v,src:u.url,alt:u.alt||""}),g&&(0,i.jsx)("div",{className:"motion-scroll-image-caption-preview",children:g}),(0,i.jsxs)("div",{className:"motion-scroll-image-label",children:[(0,i.jsx)("span",{"aria-hidden":"true",children:"📱"})," ",(0,l.__)("Mobile Only","caes-motion-scroll")]})]}):(0,i.jsx)("div",{className:"motion-scroll-image-placeholder",children:(0,i.jsx)("p",{children:0===m.length?(0,l.__)("Add images to the parent Motion Scroll block first","caes-motion-scroll"):(0,l.__)("Select an image in the sidebar","caes-motion-scroll")})})})})]})},save:function(){return null}})}},o={};function t(e){var s=o[e];if(void 0!==s)return s.exports;var i=o[e]={exports:{}};return l[e](i,i.exports,t),i.exports}t.m=l,e=[],t.O=(l,o,s,i)=>{if(!o){var r=1/0;for(d=0;d<e.length;d++){for(var[o,s,i]=e[d],n=!0,a=0;a<o.length;a++)(!1&i||r>=i)&&Object.keys(t.O).every((e=>t.O[e](o[a])))?o.splice(a--,1):(n=!1,i<r&&(r=i));if(n){e.splice(d--,1);var c=s();void 0!==c&&(l=c)}}return l}i=i||0;for(var d=e.length;d>0&&e[d-1][2]>i;d--)e[d]=e[d-1];e[d]=[o,s,i]},t.o=(e,l)=>Object.prototype.hasOwnProperty.call(e,l),(()=>{var e={1141:0,6569:0};t.O.j=l=>0===e[l];var l=(l,o)=>{var s,i,[r,n,a]=o,c=0;if(r.some((l=>0!==e[l]))){for(s in n)t.o(n,s)&&(t.m[s]=n[s]);if(a)var d=a(t)}for(l&&l(o);c<r.length;c++)i=r[c],t.o(e,i)&&e[i]&&e[i][0](),e[i]=0;return t.O(d)},o=globalThis.webpackChunktheme_blocks=globalThis.webpackChunktheme_blocks||[];o.forEach(l.bind(null,0)),o.push=l.bind(null,o.push.bind(o))})();var s=t.O(void 0,[6569],(()=>t(5728)));s=t.O(s)})();
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/blocks/motion-scroll-image/edit.js":
+/*!************************************************!*\
+  !*** ./src/blocks/motion-scroll-image/edit.js ***!
+  \************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/i18n */ "@wordpress/i18n");
+/* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__);
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "react/jsx-runtime");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__);
+/**
+ * Motion Scroll Image Block Editor
+ */
+
+
+
+
+
+const parseColor = hex => {
+  let color = hex.replace('#', '');
+  if (color.length === 3) {
+    color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2];
+  }
+  return {
+    r: parseInt(color.slice(0, 2), 16) / 255,
+    g: parseInt(color.slice(2, 4), 16) / 255,
+    b: parseInt(color.slice(4, 6), 16) / 255
+  };
+};
+const getDuotoneFilterPrimitives = (duotone, filterId) => {
+  const shadow = parseColor(duotone[0]);
+  const highlight = parseColor(duotone[1]);
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("filter", {
+    id: filterId,
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feColorMatrix", {
+      colorInterpolationFilters: "sRGB",
+      type: "matrix",
+      values: ".299 .587 .114 0 0 .299 .587 .114 0 0 .299 .587 .114 0 0 0 0 0 1 0"
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("feComponentTransfer", {
+      colorInterpolationFilters: "sRGB",
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncR", {
+        type: "table",
+        tableValues: `${shadow.r} ${highlight.r}`
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncG", {
+        type: "table",
+        tableValues: `${shadow.g} ${highlight.g}`
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncB", {
+        type: "table",
+        tableValues: `${shadow.b} ${highlight.b}`
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("feFuncA", {
+        type: "table",
+        tableValues: "0 1"
+      })]
+    })]
+  });
+};
+const getDuotoneFilter = (duotone, filterId) => {
+  if (!Array.isArray(duotone) || duotone.length < 2) {
+    return null;
+  }
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("svg", {
+    xmlns: "http://www.w3.org/2000/svg",
+    viewBox: "0 0 0 0",
+    width: "0",
+    height: "0",
+    focusable: "false",
+    role: "none",
+    style: {
+      visibility: 'hidden',
+      position: 'absolute',
+      left: '-9999px',
+      overflow: 'hidden'
+    },
+    "aria-hidden": "true",
+    children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("defs", {
+      children: getDuotoneFilterPrimitives(duotone, filterId)
+    })
+  });
+};
+const Edit = ({
+  attributes,
+  setAttributes,
+  context,
+  clientId
+}) => {
+  const {
+    slideIndex
+  } = attributes;
+  const slides = context['caes-hub/motion-scroll-slides'] || [];
+  const blockProps = (0,_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.useBlockProps)({
+    className: 'caes-motion-scroll-image-editor'
+  });
+
+  // Get the selected slide, preferring mobile-specific fields with desktop fallback
+  const selectedSlide = slides[slideIndex] || null;
+  const selectedImage = selectedSlide?.mobileImage || selectedSlide?.image || null;
+  const duotone = selectedSlide?.mobileDuotone || selectedSlide?.duotone || null;
+  // If a mobile image is set, use mobileCaption (even if empty — user may have cleared it intentionally).
+  // Otherwise fall back to the desktop caption.
+  const displayCaption = selectedSlide?.mobileImage ? selectedSlide?.mobileCaption || '' : selectedSlide?.caption || '';
+  const filterId = `motion-scroll-image-duotone-${clientId}`;
+
+  // Apply duotone filter using the iframe document's actual URL to avoid
+  // the <base> tag breaking fragment-only url(#id) CSS filter references.
+  const imgRef = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useRef)();
+  (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_3__.useEffect)(() => {
+    const el = imgRef.current;
+    if (!el) return;
+    if (Array.isArray(duotone) && duotone.length >= 2) {
+      const docUrl = el.ownerDocument.URL.split('#')[0];
+      el.style.filter = `url('${docUrl}#${filterId}')`;
+    } else {
+      el.style.filter = '';
+    }
+  }, [duotone, filterId, selectedImage]);
+
+  // Create options for the select control
+  const imageOptions = slides.map((slide, index) => {
+    const label = slide.image?.alt || `Image ${index + 1}`;
+    return {
+      label: `${index + 1}. ${label}`,
+      value: index
+    };
+  });
+
+  // Add a default "no selection" option if no slides
+  if (imageOptions.length === 0) {
+    imageOptions.push({
+      label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('No images available', 'caes-motion-scroll'),
+      value: -1
+    });
+  }
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_1__.InspectorControls, {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.PanelBody, {
+        title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Image Selection', 'caes-motion-scroll'),
+        initialOpen: true,
+        children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+          label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select Image', 'caes-motion-scroll'),
+          value: slideIndex,
+          options: imageOptions,
+          onChange: value => setAttributes({
+            slideIndex: parseInt(value, 10)
+          }),
+          help: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Choose which image from the parent block to display on mobile.', 'caes-motion-scroll')
+        })
+      })
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+      ...blockProps,
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+        className: "motion-scroll-image-preview",
+        children: selectedImage ? /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.Fragment, {
+          children: [duotone && getDuotoneFilter(duotone, filterId), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
+            ref: imgRef,
+            src: selectedImage.url,
+            alt: selectedImage.alt || ''
+          }), displayCaption && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+            className: "motion-scroll-image-caption-preview",
+            children: displayCaption
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+            className: "motion-scroll-image-label",
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+              "aria-hidden": "true",
+              children: "\uD83D\uDCF1"
+            }), " ", (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Mobile Only', 'caes-motion-scroll')]
+          })]
+        }) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+          className: "motion-scroll-image-placeholder",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("p", {
+            children: slides.length === 0 ? (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Add images to the parent Motion Scroll block first', 'caes-motion-scroll') : (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_0__.__)('Select an image in the sidebar', 'caes-motion-scroll')
+          })
+        })
+      })
+    })]
+  });
+};
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Edit);
+
+/***/ }),
+
+/***/ "./src/blocks/motion-scroll-image/index.js":
+/*!*************************************************!*\
+  !*** ./src/blocks/motion-scroll-image/index.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/blocks */ "@wordpress/blocks");
+/* harmony import */ var _wordpress_blocks__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _edit__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./edit */ "./src/blocks/motion-scroll-image/edit.js");
+/* harmony import */ var _save__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./save */ "./src/blocks/motion-scroll-image/save.js");
+/* harmony import */ var _block_json__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./block.json */ "./src/blocks/motion-scroll-image/block.json");
+/* harmony import */ var _editor_scss__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./editor.scss */ "./src/blocks/motion-scroll-image/editor.scss");
+/* harmony import */ var _style_scss__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./style.scss */ "./src/blocks/motion-scroll-image/style.scss");
+/**
+ * Motion Scroll Image Block Registration
+ */
+
+
+
+
+
+
+(0,_wordpress_blocks__WEBPACK_IMPORTED_MODULE_0__.registerBlockType)(_block_json__WEBPACK_IMPORTED_MODULE_3__.name, {
+  edit: _edit__WEBPACK_IMPORTED_MODULE_1__["default"],
+  save: _save__WEBPACK_IMPORTED_MODULE_2__["default"]
+});
+
+/***/ }),
+
+/***/ "./src/blocks/motion-scroll-image/save.js":
+/*!************************************************!*\
+  !*** ./src/blocks/motion-scroll-image/save.js ***!
+  \************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ save)
+/* harmony export */ });
+/**
+ * Motion Scroll Image Block Save (Dynamic render via PHP)
+ */
+function save() {
+  return null;
+}
+
+/***/ }),
+
+/***/ "./src/blocks/motion-scroll-image/editor.scss":
+/*!****************************************************!*\
+  !*** ./src/blocks/motion-scroll-image/editor.scss ***!
+  \****************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "./src/blocks/motion-scroll-image/style.scss":
+/*!***************************************************!*\
+  !*** ./src/blocks/motion-scroll-image/style.scss ***!
+  \***************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+// extracted by mini-css-extract-plugin
+
+
+/***/ }),
+
+/***/ "react/jsx-runtime":
+/*!**********************************!*\
+  !*** external "ReactJSXRuntime" ***!
+  \**********************************/
+/***/ ((module) => {
+
+module.exports = window["ReactJSXRuntime"];
+
+/***/ }),
+
+/***/ "@wordpress/block-editor":
+/*!*************************************!*\
+  !*** external ["wp","blockEditor"] ***!
+  \*************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blockEditor"];
+
+/***/ }),
+
+/***/ "@wordpress/blocks":
+/*!********************************!*\
+  !*** external ["wp","blocks"] ***!
+  \********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["blocks"];
+
+/***/ }),
+
+/***/ "@wordpress/components":
+/*!************************************!*\
+  !*** external ["wp","components"] ***!
+  \************************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["components"];
+
+/***/ }),
+
+/***/ "@wordpress/element":
+/*!*********************************!*\
+  !*** external ["wp","element"] ***!
+  \*********************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["element"];
+
+/***/ }),
+
+/***/ "@wordpress/i18n":
+/*!******************************!*\
+  !*** external ["wp","i18n"] ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = window["wp"]["i18n"];
+
+/***/ }),
+
+/***/ "./src/blocks/motion-scroll-image/block.json":
+/*!***************************************************!*\
+  !*** ./src/blocks/motion-scroll-image/block.json ***!
+  \***************************************************/
+/***/ ((module) => {
+
+module.exports = /*#__PURE__*/JSON.parse('{"$schema":"https://schemas.wp.org/trunk/block.json","apiVersion":3,"name":"caes-hub/motion-scroll-image","version":"0.1.0","title":"Motion Scroll Mobile Image","parent":["caes-hub/motion-scroll"],"category":"media","icon":"format-image","description":"Mobile-only image placeholder that displays a selected image from the parent Motion Scroll block.","textdomain":"caes-motion-scroll","usesContext":["caes-hub/motion-scroll-slides"],"attributes":{"slideIndex":{"type":"number","default":0}},"supports":{"html":false,"reusable":false,"lock":false,"spacing":{"margin":true,"padding":true}},"editorScript":"file:./index.js","editorStyle":"file:./index.css","style":"file:./style-index.css","render":"file:./render.php"}');
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/chunk loaded */
+/******/ 	(() => {
+/******/ 		var deferred = [];
+/******/ 		__webpack_require__.O = (result, chunkIds, fn, priority) => {
+/******/ 			if(chunkIds) {
+/******/ 				priority = priority || 0;
+/******/ 				for(var i = deferred.length; i > 0 && deferred[i - 1][2] > priority; i--) deferred[i] = deferred[i - 1];
+/******/ 				deferred[i] = [chunkIds, fn, priority];
+/******/ 				return;
+/******/ 			}
+/******/ 			var notFulfilled = Infinity;
+/******/ 			for (var i = 0; i < deferred.length; i++) {
+/******/ 				var [chunkIds, fn, priority] = deferred[i];
+/******/ 				var fulfilled = true;
+/******/ 				for (var j = 0; j < chunkIds.length; j++) {
+/******/ 					if ((priority & 1 === 0 || notFulfilled >= priority) && Object.keys(__webpack_require__.O).every((key) => (__webpack_require__.O[key](chunkIds[j])))) {
+/******/ 						chunkIds.splice(j--, 1);
+/******/ 					} else {
+/******/ 						fulfilled = false;
+/******/ 						if(priority < notFulfilled) notFulfilled = priority;
+/******/ 					}
+/******/ 				}
+/******/ 				if(fulfilled) {
+/******/ 					deferred.splice(i--, 1)
+/******/ 					var r = fn();
+/******/ 					if (r !== undefined) result = r;
+/******/ 				}
+/******/ 			}
+/******/ 			return result;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"blocks/motion-scroll-image/index": 0,
+/******/ 			"blocks/motion-scroll-image/style-index": 0
+/******/ 		};
+/******/ 		
+/******/ 		// no chunk on demand loading
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		__webpack_require__.O.j = (chunkId) => (installedChunks[chunkId] === 0);
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 			return __webpack_require__.O(result);
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunktheme_blocks"] = globalThis["webpackChunktheme_blocks"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, ["blocks/motion-scroll-image/style-index"], () => (__webpack_require__("./src/blocks/motion-scroll-image/index.js")))
+/******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
+/******/ 	
+/******/ })()
+;
+//# sourceMappingURL=index.js.map
