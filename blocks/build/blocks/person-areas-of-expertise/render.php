@@ -9,9 +9,19 @@ if (!$person_post_id) {
     return;
 }
 
-$terms = get_the_terms($person_post_id, 'areas_of_expertise');
+$term_ids = get_field('elements_areas_of_expertise', $person_post_id);
 
-if (empty($terms) || is_wp_error($terms)) {
+if (empty($term_ids)) {
+    return;
+}
+
+$terms = array_filter(array_map(function($id) {
+    return get_term($id, 'areas_of_expertise');
+}, (array) $term_ids), function($t) {
+    return $t && ! is_wp_error($t);
+});
+
+if (empty($terms)) {
     return;
 }
 
