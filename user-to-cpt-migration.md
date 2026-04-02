@@ -155,9 +155,9 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 
 a. First, for all current "user-" blocks, change "User" in the titles (what editors see) to "Person". DO NOT CHANGE CODE THAT WILL MAKE BLOCKS BREAK.
 b. Make new blocks for the following, referencing the sections in single-caes_hub_person.html for design, and other "user-" blocks for block formatting:
-- b-1: Areas of Expertise
+- ~~b-1: Areas of Expertise~~
 - b-2: Department
-- b-3: About (reference "Overview" from Symplectic data) - for this one, rework "user-bio"
+- ~~b-3: About (reference "Overview" from Symplectic data) - for this one, rework "user-bio"~~
 - b-4: Courses
 - b-5: Scholarly Works (called "Publications" in the template, but we want it to be called Scholarly Works)
 - b-6: Awards and Honors ("distinctions" in symplectic data)

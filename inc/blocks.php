@@ -92,6 +92,7 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-bio');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/person-areas-of-expertise');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/person-overview');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/person-courses');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-feed');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-department');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-name');
