@@ -34,6 +34,12 @@
         }
     },
     "attributes": {
+        "anchor": {
+            "type": "string",
+            "source": "attribute",
+            "selector": "*",
+            "attribute": "id"
+        },
         "addressType": {
             "type": "string",
             "default": "mailing"

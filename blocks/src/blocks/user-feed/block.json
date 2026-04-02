@@ -25,6 +25,18 @@
 		}
 	},
 	"attributes": {
+        "anchor": {
+            "type": "string",
+            "source": "attribute",
+            "selector": "*",
+            "attribute": "id"
+        },
+        "anchor": {
+            "type": "string",
+            "source": "attribute",
+            "selector": "*",
+            "attribute": "id"
+        },
 		"className": {
 			"type": "string",
 			"default": "link-item-with-name"

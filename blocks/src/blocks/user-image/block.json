@@ -28,6 +28,12 @@
     }
   },
   "attributes": {
+        "anchor": {
+            "type": "string",
+            "source": "attribute",
+            "selector": "*",
+            "attribute": "id"
+        },
     "mobileVersion": {
       "type": "boolean",
       "default": false

@@ -28,6 +28,12 @@
     }
   },
   "attributes": {
+        "anchor": {
+            "type": "string",
+            "source": "attribute",
+            "selector": "*",
+            "attribute": "id"
+        },
     "element": {
       "type": "string",
       "default": "h1"
