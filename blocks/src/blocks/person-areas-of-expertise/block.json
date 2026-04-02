@@ -35,6 +35,14 @@
         "showHeading": {
             "type": "boolean",
             "default": false
+        },
+        "headingLevel": {
+            "type": "number",
+            "default": 2
+        },
+        "termFontSize": {
+            "type": "string",
+            "default": "1.3rem"
         }
     },
     "usesContext": [
