@@ -25,11 +25,11 @@ if (empty($terms)) {
     return;
 }
 
-$link_terms        = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
-$show_heading      = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
-$heading_level     = isset($block['headingLevel']) ? (int) $block['headingLevel'] : 2;
-$term_font_size    = isset($block['termFontSize']) ? $block['termFontSize'] : '1.3rem';
-$heading_font_size = isset($block['headingFontSize']) ? $block['headingFontSize'] : '';
+$link_terms        = isset($attributes['linkTerms']) ? (bool) $attributes['linkTerms'] : false;
+$show_heading      = isset($attributes['showHeading']) ? (bool) $attributes['showHeading'] : false;
+$heading_level     = isset($attributes['headingLevel']) ? (int) $attributes['headingLevel'] : 2;
+$term_font_size    = isset($attributes['termFontSize']) ? $attributes['termFontSize'] : '1.3rem';
+$heading_font_size = isset($attributes['headingFontSize']) ? $attributes['headingFontSize'] : '';
 
 // Clamp heading level to valid range
 $heading_level = max(1, min(6, $heading_level));
@@ -38,7 +38,7 @@ $heading_tag   = 'h' . $heading_level;
 $term_style    = $term_font_size ? ' style="' . esc_attr( safecss_filter_attr( 'font-size:' . $term_font_size ) ) . '"' : '';
 $heading_style = $heading_font_size ? ' style="' . esc_attr( safecss_filter_attr( 'font-size:' . $heading_font_size ) ) . '"' : '';
 
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
+$attrs = get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
 
 echo '<div ' . $attrs . '>';
 

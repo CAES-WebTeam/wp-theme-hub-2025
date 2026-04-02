@@ -7,10 +7,6 @@
     "category": "theme",
     "icon": "list-view",
     "description": "Jump links to major sections of the person profile.",
-    "acf": {
-        "mode": "preview",
-        "renderTemplate": "./render.php"
-    },
     "supports": {
         "anchor": true,
         "typography": {
@@ -40,6 +36,7 @@
         "showCourses":          { "type": "boolean", "default": true },
         "showScholarlyWorks":   { "type": "boolean", "default": true }
     },
+    "render": "file:./render.php",
     "editorScript": "file:./index.js",
     "editorStyle": "file:./index.css",
     "style": "file:./style-index.css"

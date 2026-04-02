@@ -7,10 +7,6 @@
     "category": "theme",
     "icon": "location",
     "description": "Displays the person's mailing or shipping address from the personnel info section.",
-    "acf": {
-        "mode": "preview",
-        "renderTemplate": "./render.php"
-    },
     "supports": {
         "anchor": true,
         "typography": {
@@ -64,6 +60,7 @@
         "caes-hub/user-feed/userId",
         "caes-hub/user-feed/user"
     ],
+    "render": "file:./render.php",
     "editorScript": "file:./index.js",
     "editorStyle": "file:./index.css",
     "style": "file:./style-index.css"

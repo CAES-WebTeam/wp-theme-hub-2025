@@ -9,7 +9,7 @@ if (!$person_post_id) {
     return;
 }
 
-$address_type = isset($block['addressType']) ? $block['addressType'] : 'mailing';
+$address_type = isset($attributes['addressType']) ? $attributes['addressType'] : 'mailing';
 $prefix       = $address_type === 'shipping' ? 'shipping' : 'mailing';
 
 $line1 = get_post_meta($person_post_id, $prefix . '_address', true);
@@ -22,10 +22,10 @@ if (empty($line1) && empty($city)) {
     return;
 }
 
-$show_heading      = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
-$heading_level     = isset($block['headingLevel']) ? (int) $block['headingLevel'] : 2;
-$heading_font_size = isset($block['headingFontSize']) ? $block['headingFontSize'] : '';
-$content_font_size = isset($block['contentFontSize']) ? $block['contentFontSize'] : '';
+$show_heading      = isset($attributes['showHeading']) ? (bool) $attributes['showHeading'] : false;
+$heading_level     = isset($attributes['headingLevel']) ? (int) $attributes['headingLevel'] : 2;
+$heading_font_size = isset($attributes['headingFontSize']) ? $attributes['headingFontSize'] : '';
+$content_font_size = isset($attributes['contentFontSize']) ? $attributes['contentFontSize'] : '';
 
 // Clamp heading level to valid range
 $heading_level = max(1, min(6, $heading_level));
@@ -38,7 +38,7 @@ $default_heading = $address_type === 'shipping'
     ? esc_html__('Shipping Address', 'caes-hub')
     : esc_html__('Mailing Address', 'caes-hub');
 
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-address']);
+$attrs = get_block_wrapper_attributes(['class' => 'person-address']);
 
 // Build address lines
 $lines = array_filter([

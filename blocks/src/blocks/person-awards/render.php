@@ -15,10 +15,10 @@ if (empty($distinctions)) {
     return;
 }
 
-$show_heading      = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
-$heading_level     = isset($block['headingLevel']) ? (int) $block['headingLevel'] : 2;
-$heading_font_size = isset($block['headingFontSize']) ? $block['headingFontSize'] : '';
-$item_font_size    = isset($block['itemFontSize']) ? $block['itemFontSize'] : '';
+$show_heading      = isset($attributes['showHeading']) ? (bool) $attributes['showHeading'] : false;
+$heading_level     = isset($attributes['headingLevel']) ? (int) $attributes['headingLevel'] : 2;
+$heading_font_size = isset($attributes['headingFontSize']) ? $attributes['headingFontSize'] : '';
+$item_font_size    = isset($attributes['itemFontSize']) ? $attributes['itemFontSize'] : '';
 
 // Clamp heading level to valid range
 $heading_level = max(1, min(6, $heading_level));
@@ -27,7 +27,7 @@ $heading_tag   = 'h' . $heading_level;
 $heading_style = $heading_font_size ? ' style="' . esc_attr( safecss_filter_attr( 'font-size:' . $heading_font_size ) ) . '"' : '';
 $list_style    = $item_font_size ? ' style="' . esc_attr( safecss_filter_attr( 'font-size:' . $item_font_size ) ) . '"' : '';
 
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-awards']);
+$attrs = get_block_wrapper_attributes(['class' => 'person-awards']);
 
 echo '<div ' . $attrs . '>';
 

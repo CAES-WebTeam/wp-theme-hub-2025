@@ -37,7 +37,7 @@ $sections = [
 
 $links = [];
 foreach ($sections as $attr => $section) {
-    $enabled = isset($block[$attr]) ? (bool) $block[$attr] : true;
+    $enabled = isset($attributes[$attr]) ? (bool) $attributes[$attr] : true;
     if ($enabled && $has[$attr]) {
         $links[] = $section;
     }
@@ -47,7 +47,7 @@ if (empty($links)) {
     return;
 }
 
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-section-nav']);
+$attrs = get_block_wrapper_attributes(['class' => 'person-section-nav']);
 
 echo '<nav ' . $attrs . '>';
 foreach ($links as $link) {
