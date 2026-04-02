@@ -56,11 +56,14 @@ foreach ($works as $work) {
 
     $meta = $parts ? ' ' . implode('. ', $parts) . '.' : '';
 
+    $allowed = [ 'i' => [], 'em' => [], 'b' => [], 'strong' => [], 'sup' => [], 'sub' => [] ];
+    $safe_title = wp_kses($title, $allowed);
+
     if ($doi) {
         $doi_url = esc_url('https://doi.org/' . ltrim($doi, 'https://doi.org/'));
-        echo '<li><a href="' . $doi_url . '"><strong>' . esc_html($title) . '</strong></a>' . $meta . '</li>';
+        echo '<li><a href="' . $doi_url . '"><strong>' . $safe_title . '</strong></a>' . $meta . '</li>';
     } else {
-        echo '<li><strong>' . esc_html($title) . '</strong>' . $meta . '</li>';
+        echo '<li><strong>' . $safe_title . '</strong>' . $meta . '</li>';
     }
 }
 echo '</ul>';
