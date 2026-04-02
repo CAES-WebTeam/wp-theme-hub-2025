@@ -11,7 +11,8 @@ import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import './editor.scss';
 
 export default function Edit({ attributes, setAttributes }) {
-    const { linkTerms, showHeading, headingLevel, termFontSize, headingFontSize } = attributes;
+    const { linkTerms, showHeading, headingLevel, termFontSize, headingFontSize, style } = attributes;
+    const blockGap = style?.spacing?.blockGap;
     const [ fontSizes ] = useSettings( 'typography.fontSizes' );
 
     const TagName = `h${headingLevel}`;
@@ -70,7 +71,7 @@ export default function Edit({ attributes, setAttributes }) {
                     />
                 </PanelBody>
             </InspectorControls>
-            <div {...useBlockProps({ className: 'person-areas-of-expertise' })}>
+            <div {...useBlockProps({ className: 'person-areas-of-expertise', style: blockGap ? { gap: blockGap } : {} })}>
                 {showHeading && (
                     <TagName
                         className="wp-block-heading person-areas-of-expertise__heading"
