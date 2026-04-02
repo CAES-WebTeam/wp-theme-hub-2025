@@ -3,6 +3,11 @@
     flex-direction: column;
     gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
 
+    .person-areas-of-expertise__heading {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
     .person-areas-of-expertise__terms {
         display: flex;
         flex-wrap: wrap;
