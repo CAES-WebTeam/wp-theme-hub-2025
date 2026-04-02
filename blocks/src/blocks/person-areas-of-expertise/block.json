@@ -25,6 +25,12 @@
             "padding": true,
             "margin": true,
             "blockGap": true
+        },
+        "layout": {
+            "default": {
+                "type": "flex",
+                "orientation": "vertical"
+            }
         }
     },
     "attributes": {
@@ -43,6 +49,10 @@
         "termFontSize": {
             "type": "string",
             "default": "1.3rem"
+        },
+        "headingFontSize": {
+            "type": "string",
+            "default": ""
         }
     },
     "usesContext": [

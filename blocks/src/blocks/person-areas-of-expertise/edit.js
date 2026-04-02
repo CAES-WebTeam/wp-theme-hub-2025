@@ -7,11 +7,11 @@ import {
     FontSizePicker,
     useSettings,
 } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl } from '@wordpress/components';
+import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import './editor.scss';
 
 export default function Edit({ attributes, setAttributes }) {
-    const { linkTerms, showHeading, headingLevel, termFontSize } = attributes;
+    const { linkTerms, showHeading, headingLevel, termFontSize, headingFontSize } = attributes;
     const [ fontSizes ] = useSettings( 'typography.fontSizes' );
 
     const TagName = `h${headingLevel}`;
@@ -40,6 +40,25 @@ export default function Edit({ attributes, setAttributes }) {
                     />
                 </PanelBody>
             </InspectorControls>
+            {showHeading && (
+                <InspectorControls>
+                    <PanelBody title={__('Heading Size', 'caes-hub')}>
+                        <SelectControl
+                            label={__('Heading level', 'caes-hub')}
+                            value={headingLevel}
+                            options={[1,2,3,4,5,6].map((n) => ({ label: `H${n}`, value: n }))}
+                            onChange={(value) => setAttributes({ headingLevel: parseInt(value) })}
+                        />
+                        <FontSizePicker
+                            fontSizes={fontSizes}
+                            value={headingFontSize}
+                            onChange={(value) => setAttributes({ headingFontSize: value || '' })}
+                            withReset
+                            size="__unstable-large"
+                        />
+                    </PanelBody>
+                </InspectorControls>
+            )}
             <InspectorControls>
                 <PanelBody title={__('Term Size', 'caes-hub')}>
                     <FontSizePicker
@@ -53,7 +72,10 @@ export default function Edit({ attributes, setAttributes }) {
             </InspectorControls>
             <div {...useBlockProps({ className: 'person-areas-of-expertise' })}>
                 {showHeading && (
-                    <TagName className="wp-block-heading person-areas-of-expertise__heading">
+                    <TagName
+                        className="wp-block-heading person-areas-of-expertise__heading"
+                        style={headingFontSize ? { fontSize: headingFontSize } : {}}
+                    >
                         {__('Areas of expertise', 'caes-hub')}
                     </TagName>
                 )}

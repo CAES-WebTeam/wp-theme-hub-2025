@@ -39,10 +39,13 @@ $attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-ar
 echo '<div ' . $attrs . '>';
 
 if ($show_heading) {
-    echo '<' . $heading_tag . ' class="wp-block-heading person-areas-of-expertise__heading">' . esc_html__('Areas of expertise', 'caes-hub') . '</' . $heading_tag . '>';
+    echo '<' . $heading_tag . ' class="wp-block-heading person-areas-of-expertise__heading"' . $heading_style . '>' . esc_html__('Areas of expertise', 'caes-hub') . '</' . $heading_tag . '>';
 }
 
-$term_style = $term_font_size ? ' style="font-size:' . esc_attr($term_font_size) . '"' : '';
+$heading_font_size = isset($block['headingFontSize']) ? $block['headingFontSize'] : '';
+
+$term_style    = $term_font_size ? ' style="font-size:' . esc_attr($term_font_size) . '"' : '';
+$heading_style = $heading_font_size ? ' style="font-size:' . esc_attr($heading_font_size) . '"' : '';
 
 echo '<div class="person-areas-of-expertise__terms">';
 foreach ($terms as $term) {
