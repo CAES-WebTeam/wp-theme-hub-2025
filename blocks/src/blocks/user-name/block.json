@@ -30,9 +30,8 @@
   "attributes": {
         "anchor": {
             "type": "string",
-            "source": "attribute",
-            "selector": "*",
-            "attribute": "id"
+            "default": ""
+        },
         },
     "element": {
       "type": "string",

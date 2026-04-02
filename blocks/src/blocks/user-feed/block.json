@@ -27,15 +27,13 @@
 	"attributes": {
         "anchor": {
             "type": "string",
-            "source": "attribute",
-            "selector": "*",
-            "attribute": "id"
+            "default": ""
         },
         "anchor": {
             "type": "string",
-            "source": "attribute",
-            "selector": "*",
-            "attribute": "id"
+            "default": ""
+        },
+        },
         },
 		"className": {
 			"type": "string",
