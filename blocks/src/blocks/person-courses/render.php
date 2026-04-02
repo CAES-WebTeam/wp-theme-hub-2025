@@ -24,8 +24,8 @@ $item_font_size    = isset($block['itemFontSize']) ? $block['itemFontSize'] : ''
 $heading_level = max(1, min(6, $heading_level));
 $heading_tag   = 'h' . $heading_level;
 
-$heading_style = $heading_font_size ? ' style="font-size:' . esc_attr($heading_font_size) . '"' : '';
-$list_style    = $item_font_size ? ' style="font-size:' . esc_attr($item_font_size) . '"' : '';
+$heading_style = $heading_font_size ? ' style="' . esc_attr( safecss_filter_attr( 'font-size:' . $heading_font_size ) ) . '"' : '';
+$list_style    = $item_font_size ? ' style="' . esc_attr( safecss_filter_attr( 'font-size:' . $item_font_size ) ) . '"' : '';
 
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-courses']);
 
