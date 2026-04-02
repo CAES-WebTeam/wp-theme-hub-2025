@@ -25,15 +25,24 @@ if (empty($terms)) {
     return;
 }
 
-$link_terms   = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
-$show_heading = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
-$attrs        = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
+$link_terms    = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
+$show_heading  = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
+$heading_level = isset($block['headingLevel']) ? (int) $block['headingLevel'] : 2;
+$term_font_size = isset($block['termFontSize']) ? $block['termFontSize'] : '1.3rem';
+
+// Clamp heading level to valid range
+$heading_level = max(1, min(6, $heading_level));
+$heading_tag   = 'h' . $heading_level;
+
+$attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
 
 echo '<div ' . $attrs . '>';
 
 if ($show_heading) {
-    echo '<h2 class="person-areas-of-expertise__heading">' . esc_html__('Areas of expertise', 'caes-hub') . '</h2>';
+    echo '<' . $heading_tag . ' class="wp-block-heading person-areas-of-expertise__heading">' . esc_html__('Areas of expertise', 'caes-hub') . '</' . $heading_tag . '>';
 }
+
+$term_style = $term_font_size ? ' style="font-size:' . esc_attr($term_font_size) . '"' : '';
 
 echo '<div class="person-areas-of-expertise__terms">';
 foreach ($terms as $term) {
@@ -41,9 +50,9 @@ foreach ($terms as $term) {
     $class = 'person-expertise-term has-hedges-background-color has-background';
     if ($link_terms) {
         $url = esc_url(get_term_link($term));
-        echo '<a href="' . $url . '" class="' . $class . '">' . $label . '</a>';
+        echo '<a href="' . $url . '" class="' . $class . '"' . $term_style . '>' . $label . '</a>';
     } else {
-        echo '<span class="' . $class . '">' . $label . '</span>';
+        echo '<span class="' . $class . '"' . $term_style . '>' . $label . '</span>';
     }
 }
 echo '</div>';
