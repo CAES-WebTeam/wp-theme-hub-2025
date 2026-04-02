@@ -25,14 +25,18 @@ if (empty($terms)) {
     return;
 }
 
-$link_terms    = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
-$show_heading  = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
-$heading_level = isset($block['headingLevel']) ? (int) $block['headingLevel'] : 2;
-$term_font_size = isset($block['termFontSize']) ? $block['termFontSize'] : '1.3rem';
+$link_terms        = isset($block['linkTerms']) ? (bool) $block['linkTerms'] : false;
+$show_heading      = isset($block['showHeading']) ? (bool) $block['showHeading'] : false;
+$heading_level     = isset($block['headingLevel']) ? (int) $block['headingLevel'] : 2;
+$term_font_size    = isset($block['termFontSize']) ? $block['termFontSize'] : '1.3rem';
+$heading_font_size = isset($block['headingFontSize']) ? $block['headingFontSize'] : '';
 
 // Clamp heading level to valid range
 $heading_level = max(1, min(6, $heading_level));
 $heading_tag   = 'h' . $heading_level;
+
+$term_style    = $term_font_size ? ' style="font-size:' . esc_attr($term_font_size) . '"' : '';
+$heading_style = $heading_font_size ? ' style="font-size:' . esc_attr($heading_font_size) . '"' : '';
 
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => 'person-areas-of-expertise']);
 
@@ -41,11 +45,6 @@ echo '<div ' . $attrs . '>';
 if ($show_heading) {
     echo '<' . $heading_tag . ' class="wp-block-heading person-areas-of-expertise__heading"' . $heading_style . '>' . esc_html__('Areas of expertise', 'caes-hub') . '</' . $heading_tag . '>';
 }
-
-$heading_font_size = isset($block['headingFontSize']) ? $block['headingFontSize'] : '';
-
-$term_style    = $term_font_size ? ' style="font-size:' . esc_attr($term_font_size) . '"' : '';
-$heading_style = $heading_font_size ? ' style="font-size:' . esc_attr($heading_font_size) . '"' : '';
 
 echo '<div class="person-areas-of-expertise__terms">';
 foreach ($terms as $term) {
