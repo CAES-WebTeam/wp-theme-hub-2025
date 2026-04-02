@@ -40,8 +40,8 @@ export default function Edit({ attributes, setAttributes }) {
                     />
                 </PanelBody>
             </InspectorControls>
-            <InspectorControls group="typography">
-                <PanelBody title={__('Term size', 'caes-hub')}>
+            <InspectorControls>
+                <PanelBody title={__('Term Size', 'caes-hub')}>
                     <FontSizePicker
                         fontSizes={fontSizes}
                         value={termFontSize}
