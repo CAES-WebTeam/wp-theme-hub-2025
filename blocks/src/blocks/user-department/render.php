@@ -9,14 +9,11 @@ $person_post_id = function_exists('resolve_person_post_id') ? resolve_person_pos
 $departments = [];
 
 if ($person_post_id) {
-    // ACF taxonomy field with save_terms=0 -- use get_field() not get_the_terms()
-    $term_ids = get_field('personnel_department', $person_post_id);
-    if (!empty($term_ids)) {
-        foreach ((array) $term_ids as $id) {
-            $term = get_term($id, 'person_department');
-            if ($term && !is_wp_error($term)) {
-                $departments[] = $term->name;
-            }
+    // Sync uses wp_set_object_terms() so get_the_terms() is correct here
+    $terms = get_the_terms($person_post_id, 'person_department');
+    if (!empty($terms) && !is_wp_error($terms)) {
+        foreach ($terms as $term) {
+            $departments[] = $term->name;
         }
     }
 } else {
