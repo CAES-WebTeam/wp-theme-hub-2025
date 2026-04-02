@@ -6,6 +6,7 @@ import {
     HeadingLevelDropdown,
     FontSizePicker,
     useSettings,
+    getSpacingPresetCssVar,
 } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import './editor.scss';
@@ -71,7 +72,7 @@ export default function Edit({ attributes, setAttributes }) {
                     />
                 </PanelBody>
             </InspectorControls>
-            <div {...useBlockProps({ className: 'person-areas-of-expertise', style: blockGap ? { gap: blockGap } : {} })}>
+            <div {...useBlockProps({ className: 'person-areas-of-expertise', style: blockGap ? { gap: getSpacingPresetCssVar( blockGap ) } : {} })}>
                 {showHeading && (
                     <TagName
                         className="wp-block-heading person-areas-of-expertise__heading"
