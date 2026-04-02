@@ -1,0 +1,10 @@
+.wp-block-caes-hub-person-overview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+
+    .person-overview__heading {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}
