@@ -168,6 +168,7 @@ c. Some symplectic data is missing, I will work on this with Jesse:
 - c-3: We need authors on scholarly works.
 - c-4: We need year too on scholarly works.
 - c-5: Dates on Awards and Honors?
+- c-6: Website link?
 
 ## Phase 6: Cleanup
 

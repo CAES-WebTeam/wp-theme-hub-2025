@@ -1,0 +1,19 @@
+.wp-block-caes-hub-person-section-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--wp--preset--spacing--50);
+
+    .person-section-nav__link {
+        font-family: var(--wp--preset--font-family--oswald);
+        font-size: var(--wp--preset--font-size--regular);
+        font-weight: 400;
+        text-transform: uppercase;
+        text-decoration: none;
+        line-height: 1.2;
+        color: inherit;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

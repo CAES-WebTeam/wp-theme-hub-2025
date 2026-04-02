@@ -1,0 +1,41 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "caes-hub/person-section-nav",
+    "version": "0.1.0",
+    "title": "Person Section Nav",
+    "category": "theme",
+    "icon": "list-view",
+    "description": "Jump links to major sections of the person profile.",
+    "acf": {
+        "mode": "preview",
+        "renderTemplate": "./render.php"
+    },
+    "supports": {
+        "anchor": true,
+        "typography": {
+            "lineHeight": true,
+            "fontSize": true
+        },
+        "color": {
+            "background": true,
+            "text": true
+        },
+        "spacing": {
+            "padding": true,
+            "margin": true,
+            "blockGap": true
+        }
+    },
+    "attributes": {
+        "showAreasOfExpertise": { "type": "boolean", "default": true },
+        "showAbout":            { "type": "boolean", "default": true },
+        "showEducation":        { "type": "boolean", "default": true },
+        "showAwards":           { "type": "boolean", "default": true },
+        "showCourses":          { "type": "boolean", "default": true },
+        "showScholarlyWorks":   { "type": "boolean", "default": true }
+    },
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./index.css",
+    "style": "file:./style-index.css"
+}
