@@ -351,7 +351,7 @@ window.addEventListener('resize', handleOverflowScroll);
 
             if (type === 'shift') {
                 const factor = shiftFactor[speed] !== undefined ? shiftFactor[speed] : shiftFactor.medium;
-                const dir    = reverse ? -1 : 1;
+                const dir    = reverse ? 1 : -1;
                 const offset = dir * progress * rect.height * factor;
                 img.style.transform = 'translateY(' + offset.toFixed(2) + 'px)';
             } else if (type === 'zoom') {
