@@ -1,5 +1,14 @@
 // Cover Block Parallax
 
+// Fit text: the algorithm only measures correctly when parentElement is display:flex.
+// The cover inner container is display:block, so we switch it to flex column only
+// when it contains a fit-text heading — matching how group blocks work.
+.wp-block-cover__inner-container:has(.has-fit-text) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 // Shift + combo: image needs extra height so translateY never reveals a gap.
 // The JS drives the transform; CSS just sets up the oversized image.
 .wp-block-cover[data-parallax="shift"],
