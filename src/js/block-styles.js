@@ -71,6 +71,14 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
             );
         }
 
+        const { Notice } = wp.components;
+
+        const note = createElement(
+            Notice,
+            { key: 'parallax-note', status: 'info', isDismissible: false },
+            'Custom feature added by the CAES Field Report theme.'
+        );
+
         return createElement(
             Fragment,
             null,
@@ -78,7 +86,7 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
             createElement(
                 InspectorControls,
                 null,
-                createElement(PanelBody, { title: 'Parallax', initialOpen: false }, ...controls)
+                createElement(PanelBody, { title: 'Parallax', initialOpen: false }, note, ...controls)
             )
         );
     };
