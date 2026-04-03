@@ -71,11 +71,9 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
             );
         }
 
-        const { Notice } = wp.components;
-
         const note = createElement(
-            Notice,
-            { key: 'parallax-note', status: 'info', isDismissible: false },
+            'p',
+            { key: 'parallax-note', style: { fontSize: '12px', color: '#757575', margin: '0 0 12px' } },
             'Custom feature added by the CAES Field Report theme.'
         );
 
