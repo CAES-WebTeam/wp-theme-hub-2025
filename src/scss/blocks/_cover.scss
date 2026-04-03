@@ -1,12 +1,5 @@
 // Cover Block Parallax
 
-// Fit text: heading must shrink to content width so the binary search can detect overflow.
-// Without this, display:block stretches the heading to 100% and scrollWidth never exceeds clientWidth.
-.wp-block-cover .wp-block-heading.has-fit-text {
-    width: fit-content;
-    max-width: 100%;
-}
-
 // Shift + combo: image needs extra height so translateY never reveals a gap.
 // The JS drives the transform; CSS just sets up the oversized image.
 .wp-block-cover[data-parallax="shift"],
