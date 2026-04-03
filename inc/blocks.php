@@ -130,23 +130,29 @@ function caes_hub_cover_parallax_render($block_content, $block) {
         return $block_content;
     }
 
-    $parallax_type  = isset($block['attrs']['caesParallaxType']) ? $block['attrs']['caesParallaxType'] : 'none';
-    $parallax_speed = isset($block['attrs']['caesParallaxSpeed']) ? $block['attrs']['caesParallaxSpeed'] : 'medium';
+    $parallax_type      = isset($block['attrs']['caesParallaxType'])      ? $block['attrs']['caesParallaxType']      : 'none';
+    $parallax_speed     = isset($block['attrs']['caesParallaxSpeed'])     ? $block['attrs']['caesParallaxSpeed']     : 'medium';
+    $parallax_direction = isset($block['attrs']['caesParallaxDirection']) ? $block['attrs']['caesParallaxDirection'] : 'default';
 
     if ($parallax_type === 'none') {
         return $block_content;
     }
 
-    $allowed_types  = ['shift', 'zoom'];
-    $allowed_speeds = ['slow', 'medium', 'fast'];
+    $allowed_types      = ['shift', 'zoom'];
+    $allowed_speeds     = ['slow', 'medium', 'fast'];
+    $allowed_directions = ['default', 'reverse'];
 
-    if (!in_array($parallax_type, $allowed_types, true) || !in_array($parallax_speed, $allowed_speeds, true)) {
+    if (
+        !in_array($parallax_type, $allowed_types, true) ||
+        !in_array($parallax_speed, $allowed_speeds, true) ||
+        !in_array($parallax_direction, $allowed_directions, true)
+    ) {
         return $block_content;
     }
 
     $block_content = preg_replace(
         '/(<div\b[^>]*\bwp-block-cover\b[^>]*)(>)/',
-        '$1 data-parallax="' . esc_attr($parallax_type) . '" data-parallax-speed="' . esc_attr($parallax_speed) . '"$2',
+        '$1 data-parallax="' . esc_attr($parallax_type) . '" data-parallax-speed="' . esc_attr($parallax_speed) . '" data-parallax-direction="' . esc_attr($parallax_direction) . '"$2',
         $block_content,
         1
     );

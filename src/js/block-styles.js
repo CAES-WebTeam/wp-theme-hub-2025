@@ -23,6 +23,10 @@ addFilter(
                     type: 'string',
                     default: 'medium',
                 },
+                caesParallaxDirection: {
+                    type: 'string',
+                    default: 'default',
+                },
             }),
         });
     }
@@ -35,7 +39,7 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
         }
 
         const { attributes, setAttributes } = props;
-        const { caesParallaxType, caesParallaxSpeed } = attributes;
+        const { caesParallaxType, caesParallaxSpeed, caesParallaxDirection } = attributes;
 
         const controls = [
             createElement(SelectControl, {
@@ -54,6 +58,16 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
         ];
 
         if (caesParallaxType !== 'none') {
+            const directionOptions = caesParallaxType === 'shift'
+                ? [
+                    { label: 'Up (default)', value: 'default' },
+                    { label: 'Down', value: 'reverse' },
+                ]
+                : [
+                    { label: 'Zoom in (default)', value: 'default' },
+                    { label: 'Zoom out', value: 'reverse' },
+                ];
+
             controls.push(
                 createElement(SelectControl, {
                     key: 'parallax-speed',
@@ -66,6 +80,15 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
                     ],
                     onChange: function (value) {
                         setAttributes({ caesParallaxSpeed: value });
+                    },
+                }),
+                createElement(SelectControl, {
+                    key: 'parallax-direction',
+                    label: 'Direction',
+                    value: caesParallaxDirection,
+                    options: directionOptions,
+                    onChange: function (value) {
+                        setAttributes({ caesParallaxDirection: value });
                     },
                 })
             );

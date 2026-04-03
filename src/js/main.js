@@ -341,21 +341,27 @@ window.addEventListener('resize', handleOverflowScroll);
             // Skip elements well outside the viewport
             if (rect.bottom < -viewH || rect.top > viewH * 2) return;
 
-            const type  = cover.dataset.parallax;
-            const speed = cover.dataset.parallaxSpeed || 'medium';
+            const type      = cover.dataset.parallax;
+            const speed     = cover.dataset.parallaxSpeed || 'medium';
+            const reverse   = cover.dataset.parallaxDirection === 'reverse';
 
             // progress: negative when element is below center, positive when above
-            const centerY   = rect.top + rect.height / 2;
-            const progress  = (viewH / 2 - centerY) / (viewH / 2 + rect.height / 2);
+            const centerY  = rect.top + rect.height / 2;
+            const progress = (viewH / 2 - centerY) / (viewH / 2 + rect.height / 2);
 
             if (type === 'shift') {
                 const factor = shiftFactor[speed] !== undefined ? shiftFactor[speed] : shiftFactor.medium;
-                const offset = progress * rect.height * factor;
+                const dir    = reverse ? -1 : 1;
+                const offset = dir * progress * rect.height * factor;
                 img.style.transform = 'translateY(' + offset.toFixed(2) + 'px)';
             } else if (type === 'zoom') {
                 const maxScale = zoomScale[speed] !== undefined ? zoomScale[speed] : zoomScale.medium;
-                // maxScale when below viewport, 1.0 when above — never go below 1
-                const scale = Math.max(1, maxScale - (maxScale - 1) * ((progress + 1) / 2));
+                // zoom in (default): grows as element scrolls up through viewport
+                // zoom out (reverse): shrinks as element scrolls up through viewport
+                const t     = (progress + 1) / 2; // 0 (below) → 1 (above)
+                const scale = reverse
+                    ? Math.max(1, maxScale - (maxScale - 1) * t)
+                    : Math.max(1, 1 + (maxScale - 1) * t);
                 img.style.transform = 'scale(' + scale.toFixed(4) + ')';
             }
         });
