@@ -123,7 +123,7 @@ add_action('init', 'caes_hub_block_init');
 
 /** COVER BLOCK PARALLAX **/
 
-add_filter('render_block', 'caes_hub_cover_parallax_render', 10, 2);
+// add_filter('render_block', 'caes_hub_cover_parallax_render', 10, 2);
 
 function caes_hub_cover_parallax_render($block_content, $block) {
     if ($block['blockName'] !== 'core/cover') {
