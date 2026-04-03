@@ -37,7 +37,7 @@ function pub_assets_import_menu() {
 		return;
 	}
 	add_submenu_page(
-		'caes-tools',
+		'edit.php?post_type=publications',
 		'Bulk Publication Assets Import',
 		'Pub Assets Import',
 		'manage_options',
@@ -51,7 +51,7 @@ function pub_assets_import_menu() {
 add_action( 'admin_enqueue_scripts', 'pub_assets_import_enqueue' );
 
 function pub_assets_import_enqueue( $hook ) {
-	if ( $hook !== 'caes-tools_page_pub-assets-import' ) {
+	if ( $hook !== 'publications_page_pub-assets-import' ) {
 		return;
 	}
 	wp_enqueue_style( 'wp-admin' );
@@ -742,9 +742,72 @@ function pub_assets_import_page() {
 		</p>
 		<p style="color:#666; font-size:12px;">
 			Content is stored as a single <strong>Custom HTML</strong> Gutenberg block. After import
-			you can open any post in the block editor and use <em>Transform → Convert to blocks</em>
+			you can open any post in the block editor and use <em>Transform &rarr; Convert to blocks</em>
 			to decompose it into native paragraph, heading, and image blocks.
 		</p>
+
+		<details class="pub-assets-instructions" style="margin: 14px 0 20px; border:1px solid #ccd0d4; border-radius:4px; padding:0;">
+			<summary style="cursor:pointer; font-weight:600; font-size:14px; padding:12px 16px; background:#f0f0f1; border-radius:4px;">
+				Instructions &amp; Payload Format
+			</summary>
+			<div style="padding:14px 18px 18px;">
+				<h3 style="margin-top:4px;">Overview</h3>
+				<ol>
+					<li><strong>Prepare a ZIP</strong> containing one folder per publication (see format below).</li>
+					<li><strong>Upload &amp; Scan</strong> &mdash; the tool extracts the ZIP and lists every publication it found.</li>
+					<li><strong>Start Import</strong> &mdash; the tool processes each publication one at a time:
+						<ul style="margin:4px 0 4px 18px; list-style:disc;">
+							<li>Looks up the post by its <code>publication_number</code> field.</li>
+							<li>If no matching post exists, the publication is <strong>skipped</strong> with a warning.</li>
+							<li>If the post exists, all images are uploaded to the Media Library and the post content is replaced with the HTML from the payload.</li>
+						</ul>
+					</li>
+					<li>You can <strong>Stop</strong> at any time and <strong>Resume</strong> later &mdash; progress is saved.</li>
+				</ol>
+
+				<h3>Payload ZIP Format</h3>
+				<p>
+					Inside the ZIP, each publication is a folder named by its publication number.
+					The folder must contain an HTML file with the <strong>same name</strong> as the folder,
+					plus any images referenced in the HTML. One or more outer wrapper folders (e.g. a
+					<code>PAYLOAD/</code> parent) are fine and will be traversed automatically.
+				</p>
+
+				<h4 style="margin-bottom:6px;">Example structure</h4>
+				<pre style="background:#f6f7f7; border:1px solid #ddd; border-radius:3px; padding:12px 14px; font-size:12px; line-height:1.6; overflow-x:auto; margin:0 0 14px;">payload.zip
+ └── PAYLOAD/
+      ├── B-1461/
+      │    ├── B-1461.html
+      │    ├── horse-pregnancy-ultrasound.jpg
+      │    └── hormone-chart.jpg
+      ├── C-1178/
+      │    ├── C-1178.html
+      │    ├── mite-lifecycle-diagram.jpg
+      │    └── bermudagrass-damage.jpg
+      └── B-1524-3/
+           ├── B-1524-3.html
+           └── soil-sampling-map.jpg</pre>
+
+				<h4 style="margin-bottom:6px;">Key rules</h4>
+				<ul style="margin-top:0;">
+					<li>
+						<strong>Folder name = publication number</strong> (with a hyphen instead of a space).
+						For example, publication <em>B 1461</em> uses folder <code>B-1461/</code>.
+						Only the <em>first</em> hyphen is converted to a space; subsequent hyphens are kept
+						(e.g. <code>B-1524-3/</code> &rarr; <em>B 1524-3</em>).
+					</li>
+					<li><strong>HTML filename must match the folder name</strong> &mdash; e.g. <code>B-1461/B-1461.html</code>.</li>
+					<li>
+						<strong>Image <code>src</code> placeholders</strong> in the HTML should use the pattern
+						<code>/wp-content/uploads/YYYY/MM/filename.jpg</code>. The tool replaces these
+						with the actual Media Library URL after upload.
+					</li>
+					<li>Supported image formats: <strong>JPG, JPEG, PNG, GIF, WebP, SVG</strong>.</li>
+					<li>If an image with the same filename already exists in the Media Library, it will be <strong>reused</strong> rather than re-uploaded.</li>
+					<li>The tool <strong>never creates new posts</strong> &mdash; it only updates posts that already exist with a matching publication number.</li>
+				</ul>
+			</div>
+		</details>
 
 		<div id="pub-assets-messages"></div>
 
@@ -753,12 +816,6 @@ function pub_assets_import_page() {
 			 style="<?php echo $show_upload ? '' : 'display:none'; ?>">
 			<h2>Step 1 — Upload Payload ZIP</h2>
 			<div class="pub-assets-upload-area">
-				<p>
-					Select the payload ZIP file. Inside the ZIP, each publication lives in its own
-					folder named by its publication number (e.g. <code>B-1461/</code>), containing
-					<code>B-1461.html</code> and any image files. Any level of outer wrapper folders
-					is fine.
-				</p>
 				<div class="pub-assets-upload-row">
 					<input type="file" id="pub-assets-zip-input" accept=".zip" />
 					<button id="pub-assets-upload-btn" class="button button-primary">Upload &amp; Scan</button>
