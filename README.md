@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.3.4 | 2026-04-03 | Bulk publication assets import tool for updating existing publications with HTML content and images from a ZIP payload; role-gated to Content Manager and Administrator | Jesse |
 | 1.3.3 | 2026-03-24 | Add immersive patterns | Ashley |
 | 1.3.29 | 2026-03-18 | Add single personnel import with name search to User Data Management; fix all sync URLs to use admin.php; always use spoofed emails for personnel WP accounts; fix email suppression during sync to use correct WP filters | Ashley |
 | 1.3.28 | 2026-03-17 | Scroll behavior update: Long-distance scrolling (TOC nav, hash links, back-to-top) now jumps near the target and smooth scrolls the last stretch, preventing the dizzying rapid-scroll on long pages. | Ashley |

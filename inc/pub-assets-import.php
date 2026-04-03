@@ -18,11 +18,24 @@ define( 'PUB_ASSETS_STATE_KEY',   'pub_assets_import_state' );
 define( 'PUB_ASSETS_UPLOAD_DIR',  'pub-assets-import' );
 define( 'PUB_ASSETS_MAX_LOG',     500 );
 
+// ── Role check ─────────────────────────────────────────────────────────────────
+
+/**
+ * Returns true if the current user is an Administrator or Content Manager.
+ */
+function pub_assets_user_authorized() {
+	$user = wp_get_current_user();
+	return array_intersect( [ 'administrator', 'content_manager' ], (array) $user->roles ) ? true : false;
+}
+
 // ── Admin menu ─────────────────────────────────────────────────────────────────
 
 add_action( 'admin_menu', 'pub_assets_import_menu' );
 
 function pub_assets_import_menu() {
+	if ( ! pub_assets_user_authorized() ) {
+		return;
+	}
 	add_submenu_page(
 		'caes-tools',
 		'Bulk Publication Assets Import',
@@ -96,7 +109,7 @@ function pub_assets_log( &$state, $level, $message ) {
 
 function pub_assets_ajax_upload() {
 	check_ajax_referer( 'pub_assets_nonce', 'nonce' );
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! pub_assets_user_authorized() ) {
 		wp_die( 'Unauthorized' );
 	}
 
@@ -241,7 +254,7 @@ function pub_assets_scan( $base_dir ) {
 
 function pub_assets_ajax_start() {
 	check_ajax_referer( 'pub_assets_nonce', 'nonce' );
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! pub_assets_user_authorized() ) {
 		wp_die( 'Unauthorized' );
 	}
 
@@ -270,7 +283,7 @@ function pub_assets_ajax_start() {
 
 function pub_assets_ajax_tick() {
 	check_ajax_referer( 'pub_assets_nonce', 'nonce' );
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! pub_assets_user_authorized() ) {
 		wp_die( 'Unauthorized' );
 	}
 
@@ -375,7 +388,7 @@ function pub_assets_tick_response( $state, $new_log ) {
 
 function pub_assets_ajax_stop() {
 	check_ajax_referer( 'pub_assets_nonce', 'nonce' );
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! pub_assets_user_authorized() ) {
 		wp_die( 'Unauthorized' );
 	}
 
@@ -390,7 +403,7 @@ function pub_assets_ajax_stop() {
 
 function pub_assets_ajax_reset() {
 	check_ajax_referer( 'pub_assets_nonce', 'nonce' );
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! pub_assets_user_authorized() ) {
 		wp_die( 'Unauthorized' );
 	}
 
@@ -477,35 +490,62 @@ function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
 			continue;
 		}
 
-		$image_path    = $pub_dir . '/' . $filename;
-		$attachment_id = pub_assets_upload_image( $image_path, $post_id, $filename );
+		$image_path = $pub_dir . '/' . $filename;
+		$img        = pub_assets_upload_image( $image_path, $post_id, $filename );
 
-		if ( is_wp_error( $attachment_id ) ) {
+		if ( is_wp_error( $img ) ) {
 			pub_assets_log( $state, 'warning',
 				'[' . $pub_number . '] Image upload failed for ' . $filename . ': ' .
-				$attachment_id->get_error_message()
+				$img->get_error_message()
 			);
 			continue;
 		}
 
-		if ( is_array( $attachment_id ) && isset( $attachment_id['reused'] ) ) {
+		if ( $img['reused'] ) {
 			$result['images_reused']++;
-			$attachment_id = $attachment_id['id'];
 		} else {
 			$result['images_uploaded']++;
 		}
 
-		$attachment_url = wp_get_attachment_url( $attachment_id );
-		if ( ! $attachment_url ) {
+		if ( ! $img['url'] ) {
+			pub_assets_log( $state, 'warning',
+				'[' . $pub_number . '] Could not resolve URL for attachment ID ' . $img['id'] . ' (' . $filename . ').'
+			);
 			continue;
 		}
 
 		// Replace the YYYY/MM placeholder src (absolute or root-relative) with the real URL
-		$escaped = preg_quote( $filename, '#' );
-		$html    = preg_replace(
+		$escaped       = preg_quote( $filename, '#' );
+		$replace_count = 0;
+		$html          = preg_replace(
 			'#(?:https?://[^/]+)?/wp-content/uploads/YYYY/MM/' . $escaped . '#',
-			$attachment_url,
-			$html
+			$img['url'],
+			$html,
+			-1,
+			$replace_count
+		);
+
+		// Build verbose log line for this image
+		$status_label = $img['reused'] ? 'reused' : 'uploaded';
+		$size_str     = $img['filesize'] > 0 ? round( $img['filesize'] / 1024, 1 ) . ' KB' : 'size unknown';
+		$dims_str     = ( $img['width'] && $img['height'] ) ? $img['width'] . '×' . $img['height'] . 'px' : '';
+		$src_str      = $replace_count > 0 ? 'src patched' : 'src not found in HTML';
+
+		$parts = [
+			$status_label . ' (ID ' . $img['id'] . ')',
+			$img['mime'],
+			$size_str,
+		];
+		if ( $dims_str ) {
+			$parts[] = $dims_str;
+		}
+		$parts[] = $img['relative_path'] ?: $img['url'];
+		$parts[] = $src_str;
+
+		pub_assets_log(
+			$state,
+			$replace_count > 0 ? ( $img['reused'] ? 'info' : 'success' ) : 'warning',
+			'[' . $pub_number . '] ' . $filename . ': ' . implode( ' | ', $parts )
 		);
 	}
 
@@ -534,6 +574,8 @@ function pub_assets_upload_image( $image_path, $post_id, $filename ) {
 	require_once ABSPATH . 'wp-admin/includes/image.php';
 	require_once ABSPATH . 'wp-admin/includes/media.php';
 
+	$reused = false;
+
 	// Check if an attachment with this filename already exists in the media library
 	$existing = get_posts( [
 		'post_type'   => 'attachment',
@@ -548,31 +590,52 @@ function pub_assets_upload_image( $image_path, $post_id, $filename ) {
 	] );
 
 	if ( ! empty( $existing ) ) {
-		return [ 'reused' => true, 'id' => (int) $existing[0] ];
+		$attachment_id = (int) $existing[0];
+		$reused        = true;
+	} else {
+		// Copy to a true temp file so media_handle_sideload can move it without
+		// destroying our extracted copy (needed in case of resume after stop).
+		$tmp = wp_tempnam( $filename );
+		if ( ! copy( $image_path, $tmp ) ) {
+			return new WP_Error( 'copy_failed', 'Could not copy image to temp location.' );
+		}
+
+		$file_array = [
+			'name'     => $filename,
+			'tmp_name' => $tmp,
+			'error'    => 0,
+			'size'     => filesize( $tmp ),
+			'type'     => mime_content_type( $tmp ),
+		];
+
+		$attachment_id = media_handle_sideload( $file_array, $post_id, null, [ 'test_form' => false ] );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			@unlink( $tmp );
+			return $attachment_id;
+		}
 	}
 
-	// Copy to a true temp file so media_handle_sideload can move it without
-	// destroying our extracted copy (needed in case of resume after stop).
-	$tmp = wp_tempnam( $filename );
-	if ( ! copy( $image_path, $tmp ) ) {
-		return new WP_Error( 'copy_failed', 'Could not copy image to temp location.' );
-	}
+	// Gather metadata for the caller to log
+	$url           = wp_get_attachment_url( $attachment_id ) ?: '';
+	$relative_path = get_post_meta( $attachment_id, '_wp_attached_file', true );
+	$mime          = get_post_mime_type( $attachment_id ) ?: '';
+	$attached_file = get_attached_file( $attachment_id );
+	$filesize      = ( $attached_file && file_exists( $attached_file ) ) ? filesize( $attached_file ) : 0;
+	$img_meta      = wp_get_attachment_metadata( $attachment_id );
+	$width         = $img_meta['width']  ?? 0;
+	$height        = $img_meta['height'] ?? 0;
 
-	$file_array = [
-		'name'     => $filename,
-		'tmp_name' => $tmp,
-		'error'    => 0,
-		'size'     => filesize( $tmp ),
-		'type'     => mime_content_type( $tmp ),
+	return [
+		'id'            => $attachment_id,
+		'reused'        => $reused,
+		'url'           => $url,
+		'relative_path' => $relative_path,
+		'mime'          => $mime,
+		'filesize'      => $filesize,
+		'width'         => $width,
+		'height'        => $height,
 	];
-
-	$attachment_id = media_handle_sideload( $file_array, $post_id, null, [ 'test_form' => false ] );
-
-	if ( is_wp_error( $attachment_id ) ) {
-		@unlink( $tmp );
-	}
-
-	return $attachment_id;
 }
 
 // ── Filesystem helper ──────────────────────────────────────────────────────────
@@ -660,6 +723,9 @@ function pub_assets_import_css() {
 // ── Page render ────────────────────────────────────────────────────────────────
 
 function pub_assets_import_page() {
+	if ( ! pub_assets_user_authorized() ) {
+		wp_die( 'You do not have permission to access this page.' );
+	}
 	$state  = pub_assets_get_state();
 	$status = $state['status'];
 	$nonce  = wp_create_nonce( 'pub_assets_nonce' );
