@@ -120,3 +120,36 @@ function caes_hub_block_init()
 
 }
 add_action('init', 'caes_hub_block_init');
+
+/** COVER BLOCK PARALLAX **/
+
+add_filter('render_block', 'caes_hub_cover_parallax_render', 10, 2);
+
+function caes_hub_cover_parallax_render($block_content, $block) {
+    if ($block['blockName'] !== 'core/cover') {
+        return $block_content;
+    }
+
+    $parallax_type  = isset($block['attrs']['caesParallaxType']) ? $block['attrs']['caesParallaxType'] : 'none';
+    $parallax_speed = isset($block['attrs']['caesParallaxSpeed']) ? $block['attrs']['caesParallaxSpeed'] : 'medium';
+
+    if ($parallax_type === 'none') {
+        return $block_content;
+    }
+
+    $allowed_types  = ['shift', 'zoom'];
+    $allowed_speeds = ['slow', 'medium', 'fast'];
+
+    if (!in_array($parallax_type, $allowed_types, true) || !in_array($parallax_speed, $allowed_speeds, true)) {
+        return $block_content;
+    }
+
+    $block_content = preg_replace(
+        '/(<div\b[^>]*\bwp-block-cover\b[^>]*)(>)/',
+        '$1 data-parallax="' . esc_attr($parallax_type) . '" data-parallax-speed="' . esc_attr($parallax_speed) . '"$2',
+        $block_content,
+        1
+    );
+
+    return $block_content;
+}

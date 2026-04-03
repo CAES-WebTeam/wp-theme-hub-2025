@@ -27,7 +27,7 @@ function theme_editor_assets()
     wp_enqueue_script(
         'block-styles',
         get_theme_file_uri() . '/assets/js/block-styles.js',
-        array('wp-blocks', 'wp-dom-ready', 'wp-edit-post')
+        array('wp-blocks', 'wp-dom-ready', 'wp-edit-post', 'wp-hooks', 'wp-compose', 'wp-element', 'wp-block-editor', 'wp-components')
     );
 }
 add_action('enqueue_block_editor_assets', 'theme_editor_assets');

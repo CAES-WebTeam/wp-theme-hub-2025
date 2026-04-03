@@ -318,3 +318,60 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Recheck for responsive tables on window resize
 window.addEventListener('resize', handleOverflowScroll);
+
+/*** START COVER PARALLAX */
+(function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const covers = document.querySelectorAll('.wp-block-cover[data-parallax]');
+    if (!covers.length) return;
+
+    const shiftFactor = { slow: 0.12, medium: 0.22, fast: 0.35 };
+    const zoomScale   = { slow: 1.08, medium: 1.16, fast: 1.28 };
+
+    function updateParallax() {
+        const viewH = window.innerHeight;
+
+        covers.forEach(function (cover) {
+            const img = cover.querySelector('.wp-block-cover__image-background');
+            if (!img) return;
+
+            const rect = cover.getBoundingClientRect();
+
+            // Skip elements well outside the viewport
+            if (rect.bottom < -viewH || rect.top > viewH * 2) return;
+
+            const type  = cover.dataset.parallax;
+            const speed = cover.dataset.parallaxSpeed || 'medium';
+
+            // progress: negative when element is below center, positive when above
+            const centerY   = rect.top + rect.height / 2;
+            const progress  = (viewH / 2 - centerY) / (viewH / 2 + rect.height / 2);
+
+            if (type === 'shift') {
+                const factor = shiftFactor[speed] !== undefined ? shiftFactor[speed] : shiftFactor.medium;
+                const offset = progress * rect.height * factor;
+                img.style.transform = 'translateY(' + offset.toFixed(2) + 'px)';
+            } else if (type === 'zoom') {
+                const maxScale = zoomScale[speed] !== undefined ? zoomScale[speed] : zoomScale.medium;
+                // maxScale when below viewport, 1.0 when above — never go below 1
+                const scale = Math.max(1, maxScale - (maxScale - 1) * ((progress + 1) / 2));
+                img.style.transform = 'scale(' + scale.toFixed(4) + ')';
+            }
+        });
+    }
+
+    let ticking = false;
+    window.addEventListener('scroll', function () {
+        if (!ticking) {
+            requestAnimationFrame(function () {
+                updateParallax();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
+
+    updateParallax();
+})();
+/*** END COVER PARALLAX */

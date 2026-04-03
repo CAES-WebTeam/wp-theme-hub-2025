@@ -1,5 +1,93 @@
 // ADD BLOCK STYLES
 
+/** COVER BLOCK PARALLAX CONTROLS **/
+
+const { addFilter } = wp.hooks;
+const { createHigherOrderComponent } = wp.compose;
+const { Fragment, createElement } = wp.element;
+const { InspectorControls } = wp.blockEditor;
+const { PanelBody, SelectControl } = wp.components;
+
+addFilter(
+    'blocks.registerBlockType',
+    'caes-hub/cover-parallax-attributes',
+    function (settings, name) {
+        if (name !== 'core/cover') return settings;
+        return Object.assign({}, settings, {
+            attributes: Object.assign({}, settings.attributes, {
+                caesParallaxType: {
+                    type: 'string',
+                    default: 'none',
+                },
+                caesParallaxSpeed: {
+                    type: 'string',
+                    default: 'medium',
+                },
+            }),
+        });
+    }
+);
+
+const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
+    return function (props) {
+        if (props.name !== 'core/cover') {
+            return createElement(BlockEdit, props);
+        }
+
+        const { attributes, setAttributes } = props;
+        const { caesParallaxType, caesParallaxSpeed } = attributes;
+
+        const controls = [
+            createElement(SelectControl, {
+                key: 'parallax-type',
+                label: 'Parallax Effect',
+                value: caesParallaxType,
+                options: [
+                    { label: 'None', value: 'none' },
+                    { label: 'Shift', value: 'shift' },
+                    { label: 'Zoom', value: 'zoom' },
+                ],
+                onChange: function (value) {
+                    setAttributes({ caesParallaxType: value });
+                },
+            }),
+        ];
+
+        if (caesParallaxType !== 'none') {
+            controls.push(
+                createElement(SelectControl, {
+                    key: 'parallax-speed',
+                    label: 'Speed',
+                    value: caesParallaxSpeed,
+                    options: [
+                        { label: 'Slow', value: 'slow' },
+                        { label: 'Medium', value: 'medium' },
+                        { label: 'Fast', value: 'fast' },
+                    ],
+                    onChange: function (value) {
+                        setAttributes({ caesParallaxSpeed: value });
+                    },
+                })
+            );
+        }
+
+        return createElement(
+            Fragment,
+            null,
+            createElement(BlockEdit, props),
+            createElement(
+                InspectorControls,
+                null,
+                createElement(PanelBody, { title: 'Parallax', initialOpen: false }, ...controls)
+            )
+        );
+    };
+}, 'withParallaxControls');
+
+addFilter('editor.BlockEdit', 'caes-hub/cover-parallax-controls', withParallaxControls);
+
+/** END COVER BLOCK PARALLAX CONTROLS **/
+
 // List Editor Styles
 
 wp.blocks.registerBlockStyle('core/list', {
