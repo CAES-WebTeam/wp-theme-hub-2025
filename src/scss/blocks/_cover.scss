@@ -1,12 +1,12 @@
 // Cover Block Parallax
 
-// Fit text: the algorithm only measures correctly when parentElement is display:flex.
-// The cover inner container is display:block, so we switch it to flex column only
-// when it contains a fit-text heading — matching how group blocks work.
-.wp-block-cover__inner-container:has(.has-fit-text) {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+// Fit text: the binary search algorithm measures scrollWidth vs clientWidth to find
+// the optimal font size. Inside a cover (display:block parent), overflow-wrap causes
+// text to wrap at any size, so scrollWidth never exceeds clientWidth and the search
+// always hits the 2400px maximum. Disabling wrapping lets scrollWidth reflect the
+// true text width so the constraint is detectable.
+.wp-block-cover .wp-block-heading.has-fit-text {
+    white-space: nowrap;
 }
 
 // Shift + combo: image needs extra height so translateY never reveals a gap.
