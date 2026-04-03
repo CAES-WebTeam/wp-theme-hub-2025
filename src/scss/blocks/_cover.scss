@@ -1,8 +1,9 @@
 // Cover Block Parallax
 
-// Shift: image needs extra height so translateY never reveals a gap.
+// Shift + combo: image needs extra height so translateY never reveals a gap.
 // The JS drives the transform; CSS just sets up the oversized image.
-.wp-block-cover[data-parallax="shift"] {
+.wp-block-cover[data-parallax="shift"],
+.wp-block-cover[data-parallax="combo"] {
     overflow: hidden;
 
     .wp-block-cover__image-background {
