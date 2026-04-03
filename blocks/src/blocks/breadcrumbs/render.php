@@ -602,7 +602,7 @@ function caes_hub_get_date_breadcrumbs($start_position) {
 }
 
 // Generate breadcrumb items
-$cache_key = 'caes_hub_breadcrumbs_' . get_queried_object_id() . '_' . get_query_var('post_type', 'default') . '_' . serialize($attributes);
+$cache_key = 'caes_hub_breadcrumbs_' . get_queried_object_id() . '_' . get_query_var('post_type', 'default') . '_' . md5(wp_json_encode($attributes));
 $breadcrumb_items = wp_cache_get($cache_key);
 
 if (false === $breadcrumb_items) {
