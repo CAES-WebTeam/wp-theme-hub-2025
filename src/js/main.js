@@ -341,29 +341,36 @@ window.addEventListener('resize', handleOverflowScroll);
             // Skip elements well outside the viewport
             if (rect.bottom < -viewH || rect.top > viewH * 2) return;
 
-            const type      = cover.dataset.parallax;
-            const speed     = cover.dataset.parallaxSpeed || 'medium';
-            const reverse   = cover.dataset.parallaxDirection === 'reverse';
+            const type           = cover.dataset.parallax;
+            const speed          = cover.dataset.parallaxSpeed || 'medium';
+            const shiftReverse   = cover.dataset.parallaxShiftDirection === 'reverse';
+            const zoomReverse    = cover.dataset.parallaxZoomDirection === 'reverse';
 
             // progress: negative when element is below center, positive when above
             const centerY  = rect.top + rect.height / 2;
             const progress = (viewH / 2 - centerY) / (viewH / 2 + rect.height / 2);
+            const t        = (progress + 1) / 2; // 0 (below viewport) → 1 (above viewport)
 
-            if (type === 'shift') {
+            const applyShift = type === 'shift' || type === 'combo';
+            const applyZoom  = type === 'zoom'  || type === 'combo';
+
+            let translateY = 0;
+            let scale      = 1;
+
+            if (applyShift) {
                 const factor = shiftFactor[speed] !== undefined ? shiftFactor[speed] : shiftFactor.medium;
-                const dir    = reverse ? 1 : -1;
-                const offset = dir * progress * rect.height * factor;
-                img.style.transform = 'translateY(' + offset.toFixed(2) + 'px)';
-            } else if (type === 'zoom') {
+                const dir    = shiftReverse ? 1 : -1;
+                translateY   = dir * progress * rect.height * factor;
+            }
+
+            if (applyZoom) {
                 const maxScale = zoomScale[speed] !== undefined ? zoomScale[speed] : zoomScale.medium;
-                // zoom in (default): grows as element scrolls up through viewport
-                // zoom out (reverse): shrinks as element scrolls up through viewport
-                const t     = (progress + 1) / 2; // 0 (below) → 1 (above)
-                const scale = reverse
+                scale = zoomReverse
                     ? Math.max(1, maxScale - (maxScale - 1) * t)
                     : Math.max(1, 1 + (maxScale - 1) * t);
-                img.style.transform = 'scale(' + scale.toFixed(4) + ')';
             }
+
+            img.style.transform = 'translateY(' + translateY.toFixed(2) + 'px) scale(' + scale.toFixed(4) + ')';
         });
     }
 

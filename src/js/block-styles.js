@@ -23,7 +23,11 @@ addFilter(
                     type: 'string',
                     default: 'medium',
                 },
-                caesParallaxDirection: {
+                caesParallaxShiftDirection: {
+                    type: 'string',
+                    default: 'default',
+                },
+                caesParallaxZoomDirection: {
                     type: 'string',
                     default: 'default',
                 },
@@ -39,7 +43,7 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
         }
 
         const { attributes, setAttributes } = props;
-        const { caesParallaxType, caesParallaxSpeed, caesParallaxDirection } = attributes;
+        const { caesParallaxType, caesParallaxSpeed, caesParallaxShiftDirection, caesParallaxZoomDirection } = attributes;
 
         const controls = [
             createElement(SelectControl, {
@@ -50,6 +54,7 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
                     { label: 'None', value: 'none' },
                     { label: 'Shift', value: 'shift' },
                     { label: 'Zoom', value: 'zoom' },
+                    { label: 'Shift + Zoom', value: 'combo' },
                 ],
                 onChange: function (value) {
                     setAttributes({ caesParallaxType: value });
@@ -58,16 +63,6 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
         ];
 
         if (caesParallaxType !== 'none') {
-            const directionOptions = caesParallaxType === 'shift'
-                ? [
-                    { label: 'Up (default)', value: 'default' },
-                    { label: 'Down', value: 'reverse' },
-                ]
-                : [
-                    { label: 'Zoom in (default)', value: 'default' },
-                    { label: 'Zoom out', value: 'reverse' },
-                ];
-
             controls.push(
                 createElement(SelectControl, {
                     key: 'parallax-speed',
@@ -81,14 +76,39 @@ const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
                     onChange: function (value) {
                         setAttributes({ caesParallaxSpeed: value });
                     },
-                }),
+                })
+            );
+        }
+
+        if (caesParallaxType === 'shift' || caesParallaxType === 'combo') {
+            controls.push(
                 createElement(SelectControl, {
-                    key: 'parallax-direction',
-                    label: 'Direction',
-                    value: caesParallaxDirection,
-                    options: directionOptions,
+                    key: 'parallax-shift-direction',
+                    label: 'Shift Direction',
+                    value: caesParallaxShiftDirection,
+                    options: [
+                        { label: 'Up (default)', value: 'default' },
+                        { label: 'Down', value: 'reverse' },
+                    ],
                     onChange: function (value) {
-                        setAttributes({ caesParallaxDirection: value });
+                        setAttributes({ caesParallaxShiftDirection: value });
+                    },
+                })
+            );
+        }
+
+        if (caesParallaxType === 'zoom' || caesParallaxType === 'combo') {
+            controls.push(
+                createElement(SelectControl, {
+                    key: 'parallax-zoom-direction',
+                    label: 'Zoom Direction',
+                    value: caesParallaxZoomDirection,
+                    options: [
+                        { label: 'Zoom in (default)', value: 'default' },
+                        { label: 'Zoom out', value: 'reverse' },
+                    ],
+                    onChange: function (value) {
+                        setAttributes({ caesParallaxZoomDirection: value });
                     },
                 })
             );
