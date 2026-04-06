@@ -28,3 +28,10 @@
         will-change: transform;
     }
 }
+
+// Trailing motion effect on all parallax types, respecting reduced motion.
+@media (prefers-reduced-motion: no-preference) {
+    .wp-block-cover[data-parallax] .wp-block-cover__image-background {
+        transition: transform 0.4s cubic-bezier(0, 0, 0, 1);
+    }
+}
