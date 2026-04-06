@@ -34,7 +34,6 @@
             "type": "string",
             "default": ""
         },
-        },
         "linkTerms": {
             "type": "boolean",
             "default": false

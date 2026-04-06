@@ -44,8 +44,12 @@ foreach ($distinctions as $item) {
         continue;
     }
 
-    $suffix = $date ? ' (' . esc_html($date) . ')' : '';
-    echo '<li>' . esc_html($title) . $suffix . '</li>';
+    echo '<li>';
+    echo '<span class="person-awards__item-title">' . esc_html($title) . '</span>';
+    if ($date) {
+        echo '<span class="person-awards__item-date">' . esc_html($date) . '</span>';
+    }
+    echo '</li>';
 }
 echo '</ul>';
 

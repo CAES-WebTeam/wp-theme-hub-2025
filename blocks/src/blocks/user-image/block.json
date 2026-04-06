@@ -32,7 +32,6 @@
             "type": "string",
             "default": ""
         },
-        },
     "mobileVersion": {
       "type": "boolean",
       "default": false

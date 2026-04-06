@@ -28,7 +28,6 @@
             "type": "string",
             "default": ""
         },
-        },
         "showAreasOfExpertise": { "type": "boolean", "default": true },
         "showAbout":            { "type": "boolean", "default": true },
         "showEducation":        { "type": "boolean", "default": true },

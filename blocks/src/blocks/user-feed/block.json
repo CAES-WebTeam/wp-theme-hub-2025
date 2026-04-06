@@ -29,12 +29,6 @@
             "type": "string",
             "default": ""
         },
-        "anchor": {
-            "type": "string",
-            "default": ""
-        },
-        },
-        },
 		"className": {
 			"type": "string",
 			"default": "link-item-with-name"

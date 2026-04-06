@@ -34,7 +34,6 @@
             "type": "string",
             "default": ""
         },
-        },
         "showHeading": {
             "type": "boolean",
             "default": false

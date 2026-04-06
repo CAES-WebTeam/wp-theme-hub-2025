@@ -32,7 +32,6 @@
             "type": "string",
             "default": ""
         },
-        },
     "element": {
       "type": "string",
       "default": "h1"

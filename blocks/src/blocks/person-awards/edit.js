@@ -87,7 +87,10 @@ export default function Edit({ attributes, setAttributes }) {
                     style={itemFontSize ? { fontSize: itemFontSize } : {}}
                 >
                     {PREVIEW_AWARDS.map((a) => (
-                        <li key={a.title}>{a.title} ({a.date})</li>
+                        <li key={a.title}>
+                            <span className="person-awards__item-title">{a.title}</span>
+                            {a.date && <span className="person-awards__item-date">{a.date}</span>}
+                        </li>
                     ))}
                 </ul>
             </div>
