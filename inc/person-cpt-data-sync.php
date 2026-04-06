@@ -1534,6 +1534,24 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		$user_info['overview'] = (string)$overview_nodes[0];
 	}
 
+	$degree_nodes = $object->xpath('.//api:record/api:native/api:field[@name="degrees"]/api:degrees/api:degree[@privacy="public"]');
+	if (!empty($degree_nodes)) {
+		$user_info['degrees'] = array();
+		foreach ($degree_nodes as $deg) {
+			$deg->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+			$name_nodes  = $deg->xpath('./api:name');
+			$inst_nodes  = $deg->xpath('./api:institution/api:line[@type="organisation"]');
+			$year_nodes  = $deg->xpath('./api:end-date/api:year');
+			$fos_nodes   = $deg->xpath('./api:field-of-study');
+			$user_info['degrees'][] = array(
+				'degree_name'          => !empty($name_nodes)  ? (string)$name_nodes[0]  : '',
+				'degree_institution'   => !empty($inst_nodes)  ? (string)$inst_nodes[0]  : '',
+				'degree_year'          => !empty($year_nodes)  ? (string)$year_nodes[0]  : '',
+				'degree_field_of_study' => !empty($fos_nodes)  ? (string)$fos_nodes[0]  : '',
+			);
+		}
+	}
+
 	$elements_user_id = isset($user_info['id']) ? (int)$user_info['id'] : null;
 	$last_modified = isset($user_info['last-modified-when']) ? (string)$user_info['last-modified-when'] : '';
 
@@ -1683,6 +1701,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		'field_person_cpt_elements_scholarly_works',
 		'field_person_cpt_elements_distinctions',
 		'field_person_cpt_elements_courses_taught',
+		'field_person_cpt_elements_degrees',
 	) as $fk) {
 		delete_field($fk, $post_id);
 	}
@@ -1784,6 +1803,17 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		$r = ($r !== false) ? true : false;
 		if (!$r) {
 			$stored = get_field('field_person_cpt_elements_courses_taught', $post_id);
+			$r = !empty($stored);
+		}
+		if ($r) $fields_written++; else $fields_failed++;
+	}
+
+	// Degrees repeater
+	if (!empty($user_info['degrees'])) {
+		$r = update_field('field_person_cpt_elements_degrees', $user_info['degrees'], $post_id);
+		$r = ($r !== false) ? true : false;
+		if (!$r) {
+			$stored = get_field('field_person_cpt_elements_degrees', $post_id);
 			$r = !empty($stored);
 		}
 		if ($r) $fields_written++; else $fields_failed++;
