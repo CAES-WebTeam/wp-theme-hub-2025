@@ -1228,6 +1228,7 @@ function person_cpt_readonly_synced_fields($field)
 		'field_person_cpt_elements_scholarly_works',
 		'field_person_cpt_elements_distinctions',
 		'field_person_cpt_elements_courses_taught',
+		'field_person_cpt_elements_degrees',
 	);
 
 	if (isset($field['parent']) && in_array($field['parent'], $synced_repeater_keys, true)) {
