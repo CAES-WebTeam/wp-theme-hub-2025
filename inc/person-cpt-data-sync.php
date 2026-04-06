@@ -1823,6 +1823,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 			'pub_journal'        => isset($pub['journal'])          ? $pub['journal']          : '',
 			'pub_doi'            => isset($pub['doi'])              ? $pub['doi']              : '',
 			'pub_year'           => isset($pub['publication_date']) ? $pub['publication_date'] : '',
+			'pub_authors'        => isset($pub['authors'])          ? $pub['authors']          : '',
 			'pub_citation_count' => isset($pub['citation-count'])  ? (int)$pub['citation-count'] : '',
 		);
 	}
@@ -1966,6 +1967,25 @@ function symplectic_cpt_extract_publication_fields($pub_xml) {
 				case 'journal':          $data['journal']          = $val; break;
 				case 'publication-date': $data['publication_date'] = $val; break;
 				case 'doi':              $data['doi']              = $val; break;
+			}
+		}
+
+		if ($name === 'authors' && (string)$field['type'] === 'person-list') {
+			$field->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+			$persons = $field->xpath('./api:people/api:person');
+			$parts   = array();
+			foreach ($persons as $person) {
+				$person->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+				$ln = $person->xpath('./api:last-name');
+				$in = $person->xpath('./api:initials');
+				$last     = !empty($ln) ? (string)$ln[0] : '';
+				$initials = !empty($in) ? (string)$in[0] : '';
+				if ($last) {
+					$parts[] = $initials ? $last . ' ' . $initials : $last;
+				}
+			}
+			if (!empty($parts)) {
+				$data['authors'] = implode(', ', $parts);
 			}
 		}
 	}

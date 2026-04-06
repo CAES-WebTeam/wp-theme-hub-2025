@@ -634,6 +634,21 @@ add_action('acf/include_fields', function () {
 						'append' => '',
 					),
 					array(
+						'key' => 'field_person_cpt_pub_authors',
+						'label' => 'Authors',
+						'name' => 'pub_authors',
+						'type' => 'text',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array('width' => '', 'class' => '', 'id' => ''),
+						'default_value' => '',
+						'maxlength' => '',
+						'allow_in_bindings' => 0,
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+					),
+					array(
 						'key' => 'field_person_cpt_pub_citation_count',
 						'label' => 'Citation Count',
 						'name' => 'pub_citation_count',
@@ -1226,6 +1241,7 @@ function person_cpt_readonly_synced_fields($field)
 	// Also catch repeater sub-fields (their parent is the repeater field key, not the group)
 	$synced_repeater_keys = array(
 		'field_person_cpt_elements_scholarly_works',
+		'field_person_cpt_pub_authors',
 		'field_person_cpt_elements_distinctions',
 		'field_person_cpt_elements_courses_taught',
 		'field_person_cpt_elements_degrees',
