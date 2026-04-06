@@ -1955,7 +1955,7 @@ function symplectic_cpt_extract_publication_fields($pub_xml) {
 				$y  = !empty($yn) ? (string)$yn[0] : '';
 				$m  = !empty($mn) ? (int)(string)$mn[0] : 0;
 				if ($y) {
-					$val = $m ? date('M', mktime(0, 0, 0, $m, 1)) . ' ' . $y : $y;
+					$val = $y;
 				}
 			}
 		}
@@ -1995,8 +1995,9 @@ function symplectic_cpt_extract_activity_fields($activity_xml) {
 		} elseif ($type === 'date') {
 			$d = $field->xpath('./api:date');
 			if (!empty($d)) {
-				$y = (string)$d[0]->year; $m = (string)$d[0]->month; $day = (string)$d[0]->day;
-				if ($y) { $val = $y; if ($m) { $val = $m . '/' . $val; if ($day) $val = $day . '/' . $val; } }
+				$d[0]->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+				$yn = $d[0]->xpath('./api:year');
+				if (!empty($yn)) $val = (string)$yn[0];
 			}
 		}
 
