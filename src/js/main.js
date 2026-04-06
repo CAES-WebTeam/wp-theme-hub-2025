@@ -320,7 +320,6 @@ document.addEventListener('DOMContentLoaded', function () {
 window.addEventListener('resize', handleOverflowScroll);
 
 /*** START COVER PARALLAX */
-/* TEMPORARILY DISABLED
 (function () {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -386,7 +385,6 @@ window.addEventListener('resize', handleOverflowScroll);
         }
     }, { passive: true });
 
-    updateParallax();
+    requestAnimationFrame(updateParallax);
 })();
-TEMPORARILY DISABLED */
 /*** END COVER PARALLAX */
