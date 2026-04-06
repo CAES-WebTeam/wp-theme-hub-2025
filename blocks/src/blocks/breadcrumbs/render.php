@@ -163,6 +163,22 @@ function caes_hub_get_singular_breadcrumbs($start_position) {
                 'position' => $position++
             );
         }
+    } elseif ($post_type === 'events') {
+        // Add Events page
+        $events_page = get_page_by_path('events');
+        if ($events_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($events_page->ID),
+                'url' => get_permalink($events_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Events',
+                'url' => home_url('/events/'),
+                'position' => $position++
+            );
+        }
     } else {
         // Handle other post types and pages with existing logic
         $post_type_object = get_post_type_object($post_type);
@@ -427,6 +443,49 @@ function caes_hub_get_taxonomy_breadcrumbs($start_position) {
         return $breadcrumbs;
     }
     
+    // Special handling for event_caes_departments taxonomy
+    if ($term->taxonomy === 'event_caes_departments') {
+        // Add Events page
+        $events_page = get_page_by_path('events');
+        if ($events_page) {
+            $breadcrumbs[] = array(
+                'title' => get_the_title($events_page->ID),
+                'url' => get_permalink($events_page->ID),
+                'position' => $position++
+            );
+        } else {
+            $breadcrumbs[] = array(
+                'title' => 'Events',
+                'url' => home_url('/events/'),
+                'position' => $position++
+            );
+        }
+
+        // Handle term hierarchy
+        if ($term->parent) {
+            $ancestors = get_ancestors($term->term_id, $term->taxonomy);
+            $ancestors = array_reverse($ancestors);
+
+            foreach ($ancestors as $ancestor_id) {
+                $ancestor = get_term($ancestor_id, $term->taxonomy);
+                $breadcrumbs[] = array(
+                    'title' => $ancestor->name,
+                    'url' => get_term_link($ancestor),
+                    'position' => $position++
+                );
+            }
+        }
+
+        // Current term
+        $breadcrumbs[] = array(
+            'title' => $term->name,
+            'url' => null,
+            'position' => $position
+        );
+
+        return $breadcrumbs;
+    }
+
     // Handle post type archive if taxonomy is tied to custom post type
     $taxonomy = get_taxonomy($term->taxonomy);
     if (!empty($taxonomy->object_type) && !in_array('post', $taxonomy->object_type)) {
@@ -543,7 +602,7 @@ function caes_hub_get_date_breadcrumbs($start_position) {
 }
 
 // Generate breadcrumb items
-$cache_key = 'caes_hub_breadcrumbs_' . get_queried_object_id() . '_' . get_query_var('post_type', 'default') . '_' . serialize($attributes);
+$cache_key = 'caes_hub_breadcrumbs_' . get_queried_object_id() . '_' . get_query_var('post_type', 'default') . '_' . md5(wp_json_encode($attributes));
 $breadcrumb_items = wp_cache_get($cache_key);
 
 if (false === $breadcrumb_items) {
