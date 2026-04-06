@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 1.3.6 | 2026-04-06 | Parallax options added to core cover blocks | Ashley |
 | 1.3.5 | 2026-04-03 | Bulk publication assets import tool for updating existing publications with HTML content and images from a ZIP payload; role-gated to Content Manager and Administrator | Jesse |
 | 1.3.4 | 2026-04-03 | Added Events parent breadcrumb to single event pages and department event taxonomy pages (e.g. Alumni and Friends). Replaced serialize() with wp_json_encode() + md5() for cache key generation. Turned on default new post template for pubs. | Ashley |
 | 1.3.3 | 2026-03-24 | Add immersive patterns | Ashley |
