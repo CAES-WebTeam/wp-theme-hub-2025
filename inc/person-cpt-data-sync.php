@@ -992,6 +992,53 @@ function person_data_sync_enqueue($hook) {
 				});
 			});
 
+			// Clear timestamp -- single
+			$("#pds-clear-ts-single").on("click", function() {
+				var pid = $("#pds-clear-ts-pid").val().trim();
+				if (!pid) { alert("Please enter a Personnel ID."); return; }
+				var $btn = $(this).prop("disabled", true).val("Clearing...");
+				$("#pds-clear-ts-single-result").html("<p><span class=\"dashicons dashicons-update pds-spin\"></span> Clearing...</p>");
+				$.ajax({
+					url: ajaxurl, method: "POST",
+					data: { action: "symplectic_cpt_clear_timestamp_single", nonce: nonceS, personnel_id: pid },
+					success: function(r) {
+						$btn.prop("disabled", false).text("Clear Timestamp");
+						if (r.success) {
+							$("#pds-clear-ts-single-result").html("<div style=\"padding:10px;background:#fff;border:1px solid #ccd0d4;border-radius:4px\"><strong style=\"color:#46b450\">Cleared</strong> &mdash; Post " + esc(r.data.post_id) + " will be fully re-imported on next sync.</div>");
+						} else {
+							$("#pds-clear-ts-single-result").html("<div class=\"notice notice-error\"><p>" + esc(r.data && r.data.error_message || "Unknown error") + "</p></div>");
+						}
+					},
+					error: function(x, s, e) {
+						$btn.prop("disabled", false).text("Clear Timestamp");
+						$("#pds-clear-ts-single-result").html("<div class=\"notice notice-error\"><p>AJAX error: " + esc(e) + "</p></div>");
+					}
+				});
+			});
+
+			// Clear timestamps -- all
+			$("#pds-clear-ts-all").on("click", function() {
+				if (!confirm("Clear sync timestamps for all person posts? They will all be fully re-imported on the next Elements sync.")) return;
+				var $btn = $(this).prop("disabled", true).text("Clearing...");
+				$("#pds-clear-ts-all-result").html("<p><span class=\"dashicons dashicons-update pds-spin\"></span> Clearing...</p>");
+				$.ajax({
+					url: ajaxurl, method: "POST",
+					data: { action: "symplectic_cpt_clear_timestamps", nonce: nonceS },
+					success: function(r) {
+						$btn.prop("disabled", false).text("Clear All Timestamps");
+						if (r.success) {
+							$("#pds-clear-ts-all-result").html("<div style=\"padding:10px;background:#fff;border:1px solid #ccd0d4;border-radius:4px\"><strong style=\"color:#46b450\">Cleared " + esc(r.data.cleared) + " timestamps.</strong> All person posts will be fully re-imported on the next Elements sync.</div>");
+						} else {
+							$("#pds-clear-ts-all-result").html("<div class=\"notice notice-error\"><p>" + esc(r.data && r.data.error_message || "Unknown error") + "</p></div>");
+						}
+					},
+					error: function(x, s, e) {
+						$btn.prop("disabled", false).text("Clear All Timestamps");
+						$("#pds-clear-ts-all-result").html("<div class=\"notice notice-error\"><p>AJAX error: " + esc(e) + "</p></div>");
+					}
+				});
+			});
+
 			// Initial poll both
 			pollPersonnel();
 			pollSymplectic();
@@ -1102,6 +1149,31 @@ function person_data_sync_render_page() {
 								<?php echo $symplectic_ok ? '' : 'disabled'; ?>>
 						</form>
 						<div id="pds-single-elements-result" style="margin-top:12px"></div>
+					</div>
+				</div>
+			</div>
+
+		<!-- CLEAR SYNC TIMESTAMPS -->
+			<div class="pds-panel" style="margin-top:20px">
+				<h2>Clear Elements Sync Timestamps</h2>
+				<p class="description" style="margin-bottom:16px">Clearing a timestamp forces the next sync to re-import all data from Symplectic, bypassing the change-detection check. Use this after adding new fields.</p>
+
+				<div style="display:flex;gap:40px;flex-wrap:wrap">
+					<div style="flex:1;min-width:300px">
+						<h3 style="margin-top:0;font-size:13px">Single Person</h3>
+						<div class="pds-form-group">
+							<label for="pds-clear-ts-pid">Personnel ID</label>
+							<input type="text" id="pds-clear-ts-pid" placeholder="e.g. 3885" style="width:200px">
+						</div>
+						<button id="pds-clear-ts-single" class="button button-secondary" <?php echo $symplectic_ok ? '' : 'disabled'; ?>>Clear Timestamp</button>
+						<div id="pds-clear-ts-single-result" style="margin-top:12px"></div>
+					</div>
+
+					<div style="flex:1;min-width:300px">
+						<h3 style="margin-top:0;font-size:13px">All People</h3>
+						<p class="description" style="margin-bottom:12px">Clears timestamps for every person post. The next full sync will re-import all Elements data.</p>
+						<button id="pds-clear-ts-all" class="button button-secondary" <?php echo $symplectic_ok ? '' : 'disabled'; ?>>Clear All Timestamps</button>
+						<div id="pds-clear-ts-all-result" style="margin-top:12px"></div>
 					</div>
 				</div>
 			</div>
@@ -1998,6 +2070,8 @@ add_action('wp_ajax_symplectic_cpt_trigger',       'symplectic_cpt_ajax_trigger'
 add_action('wp_ajax_symplectic_cpt_stop',          'symplectic_cpt_ajax_stop');
 add_action('wp_ajax_symplectic_cpt_resume',        'symplectic_cpt_ajax_resume');
 add_action('wp_ajax_symplectic_cpt_import_single', 'symplectic_cpt_ajax_import_single');
+add_action('wp_ajax_symplectic_cpt_clear_timestamps',        'symplectic_cpt_ajax_clear_timestamps');
+add_action('wp_ajax_symplectic_cpt_clear_timestamp_single',  'symplectic_cpt_ajax_clear_timestamp_single');
 
 function symplectic_cpt_check_ajax() {
 	if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'symplectic_cpt_nonce')) {
@@ -2106,4 +2180,42 @@ function symplectic_cpt_ajax_import_single() {
 	}
 
 	wp_send_json_success($response);
+}
+
+function symplectic_cpt_ajax_clear_timestamps() {
+	symplectic_cpt_check_ajax();
+	$posts = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'any',
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'meta_query'     => array(array('key' => '_symplectic_last_modified', 'compare' => 'EXISTS')),
+	));
+	$count = 0;
+	foreach ($posts as $post_id) {
+		delete_post_meta($post_id, '_symplectic_last_modified');
+		$count++;
+	}
+	wp_send_json_success(array('cleared' => $count));
+}
+
+function symplectic_cpt_ajax_clear_timestamp_single() {
+	symplectic_cpt_check_ajax();
+	$personnel_id = isset($_POST['personnel_id']) ? sanitize_text_field($_POST['personnel_id']) : '';
+	if (empty($personnel_id)) {
+		wp_send_json_error(array('error_message' => 'Personnel ID is required.'));
+	}
+	$posts = get_posts(array(
+		'post_type'      => 'caes_hub_person',
+		'post_status'    => 'any',
+		'posts_per_page' => 1,
+		'fields'         => 'ids',
+		'meta_key'       => 'personnel_id',
+		'meta_value'     => $personnel_id,
+	));
+	if (empty($posts)) {
+		wp_send_json_error(array('error_message' => 'No caes_hub_person post found with personnel_id = ' . $personnel_id));
+	}
+	delete_post_meta($posts[0], '_symplectic_last_modified');
+	wp_send_json_success(array('cleared' => 1, 'post_id' => $posts[0]));
 }
