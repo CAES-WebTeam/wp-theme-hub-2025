@@ -329,6 +329,22 @@ window.addEventListener('resize', handleOverflowScroll);
     const shiftFactor = { slow: 0.12, medium: 0.22, fast: 0.35 };
     const zoomScale   = { slow: 1.08, medium: 1.16, fast: 1.28 };
 
+    // Apply image buffer sizing based on shift factor so translateY never reveals a gap.
+    // Buffer percent must exceed the max shift amount (factor * 100%) on each side.
+    covers.forEach(function (cover) {
+        const type  = cover.dataset.parallax;
+        const speed = cover.dataset.parallaxSpeed || 'medium';
+
+        if (type === 'shift' || type === 'combo') {
+            const img = cover.querySelector('.wp-block-cover__image-background');
+            if (!img) return;
+            const factor  = shiftFactor[speed] !== undefined ? shiftFactor[speed] : shiftFactor.medium;
+            const buffer  = Math.ceil(factor * 100) + 5; // extra 5% safety margin
+            img.style.height = (100 + buffer * 2) + '%';
+            img.style.top    = '-' + buffer + '%';
+        }
+    });
+
     function updateParallax() {
         const viewH = window.innerHeight;
 

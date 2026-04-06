@@ -16,8 +16,6 @@
     overflow: hidden;
 
     .wp-block-cover__image-background {
-        height: 140% !important;
-        top: -20% !important;
         will-change: transform;
     }
 }
