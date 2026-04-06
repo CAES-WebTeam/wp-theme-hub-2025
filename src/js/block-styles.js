@@ -1,5 +1,142 @@
 // ADD BLOCK STYLES
 
+/** COVER BLOCK PARALLAX CONTROLS **/
+
+const { addFilter } = wp.hooks;
+const { createHigherOrderComponent } = wp.compose;
+const { Fragment, createElement } = wp.element;
+const { InspectorControls } = wp.blockEditor;
+const { PanelBody, SelectControl } = wp.components;
+
+addFilter(
+    'blocks.registerBlockType',
+    'caes-hub/cover-parallax-attributes',
+    function (settings, name) {
+        if (name !== 'core/cover') return settings;
+        return Object.assign({}, settings, {
+            attributes: Object.assign({}, settings.attributes, {
+                caesParallaxType: {
+                    type: 'string',
+                    default: 'none',
+                },
+                caesParallaxSpeed: {
+                    type: 'string',
+                    default: 'medium',
+                },
+                caesParallaxShiftDirection: {
+                    type: 'string',
+                    default: 'default',
+                },
+                caesParallaxZoomDirection: {
+                    type: 'string',
+                    default: 'default',
+                },
+            }),
+        });
+    }
+);
+
+const withParallaxControls = createHigherOrderComponent(function (BlockEdit) {
+    return function (props) {
+        if (props.name !== 'core/cover') {
+            return createElement(BlockEdit, props);
+        }
+
+        const { attributes, setAttributes } = props;
+        const { caesParallaxType, caesParallaxSpeed, caesParallaxShiftDirection, caesParallaxZoomDirection } = attributes;
+
+        const controls = [
+            createElement(SelectControl, {
+                key: 'parallax-type',
+                label: 'Parallax Effect',
+                value: caesParallaxType,
+                options: [
+                    { label: 'None', value: 'none' },
+                    { label: 'Shift', value: 'shift' },
+                    { label: 'Zoom', value: 'zoom' },
+                    { label: 'Shift + Zoom', value: 'combo' },
+                ],
+                onChange: function (value) {
+                    setAttributes({ caesParallaxType: value });
+                },
+            }),
+        ];
+
+        if (caesParallaxType !== 'none') {
+            controls.push(
+                createElement(SelectControl, {
+                    key: 'parallax-speed',
+                    label: 'Speed',
+                    value: caesParallaxSpeed,
+                    options: [
+                        { label: 'Slow', value: 'slow' },
+                        { label: 'Medium', value: 'medium' },
+                        { label: 'Fast', value: 'fast' },
+                    ],
+                    onChange: function (value) {
+                        setAttributes({ caesParallaxSpeed: value });
+                    },
+                })
+            );
+        }
+
+        if (caesParallaxType === 'shift' || caesParallaxType === 'combo') {
+            controls.push(
+                createElement(SelectControl, {
+                    key: 'parallax-shift-direction',
+                    label: 'Shift Direction',
+                    value: caesParallaxShiftDirection,
+                    options: [
+                        { label: 'Up (default)', value: 'default' },
+                        { label: 'Down', value: 'reverse' },
+                    ],
+                    onChange: function (value) {
+                        setAttributes({ caesParallaxShiftDirection: value });
+                    },
+                })
+            );
+        }
+
+        if (caesParallaxType === 'zoom' || caesParallaxType === 'combo') {
+            controls.push(
+                createElement(SelectControl, {
+                    key: 'parallax-zoom-direction',
+                    label: 'Zoom Direction',
+                    value: caesParallaxZoomDirection,
+                    options: [
+                        { label: 'Zoom in (default)', value: 'default' },
+                        { label: 'Zoom out', value: 'reverse' },
+                    ],
+                    onChange: function (value) {
+                        setAttributes({ caesParallaxZoomDirection: value });
+                    },
+                })
+            );
+        }
+
+        const note = createElement(
+            'p',
+            { key: 'parallax-note', style: { fontSize: '12px', color: '#757575', margin: '0 0 12px' } },
+            'Custom feature added by the CAES Field Report theme.'
+        );
+
+        return createElement(
+            Fragment,
+            null,
+            createElement(BlockEdit, props),
+            createElement(
+                InspectorControls,
+                null,
+                createElement(PanelBody, { title: 'Parallax', initialOpen: false }, note, ...controls)
+            )
+        );
+    };
+}, 'withParallaxControls');
+
+addFilter('editor.BlockEdit', 'caes-hub/cover-parallax-controls', withParallaxControls);
+
+/** END COVER BLOCK PARALLAX CONTROLS **/
+
 // List Editor Styles
 
 wp.blocks.registerBlockStyle('core/list', {
