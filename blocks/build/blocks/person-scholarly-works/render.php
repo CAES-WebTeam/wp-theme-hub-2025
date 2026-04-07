@@ -63,7 +63,15 @@ foreach ($works as $work) {
     }
     echo esc_html($meta);
     if ($authors) {
-        echo '<br><span class="person-scholarly-works__authors">' . esc_html($authors) . '</span>';
+        $author_list = array_map('trim', explode(',', $authors));
+        $total       = count($author_list);
+        if ($total > 5) {
+            $display = implode(', ', array_slice($author_list, 0, 5));
+            $display .= ' ... ' . ($total - 5) . ' more';
+        } else {
+            $display = $authors;
+        }
+        echo '<br><span class="person-scholarly-works__authors">' . esc_html($display) . '</span>';
     }
     echo '</li>';
 }
