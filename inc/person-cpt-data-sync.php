@@ -559,7 +559,7 @@ function person_data_sync_add_page() {
 	add_submenu_page(
 		'caes-tools',
 		'People CPT Data Sync',
-		'People Data Sync',
+		'People CPT Data Sync',
 		'manage_options',
 		'person-data-sync',
 		'person_data_sync_render_page'

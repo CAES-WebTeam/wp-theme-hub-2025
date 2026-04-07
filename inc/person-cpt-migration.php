@@ -1649,7 +1649,7 @@ function person_migration_add_admin_page() {
 	add_submenu_page(
 		'caes-tools',
 		'People User to CPT Migration',
-		'People User to Migration',
+		'People User to CPT Migration',
 		'manage_options',
 		'person-cpt-migration',
 		'person_migration_render_page'
