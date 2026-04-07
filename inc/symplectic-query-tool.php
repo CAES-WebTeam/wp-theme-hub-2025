@@ -617,7 +617,7 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                 html += "<h3>Scholarly and Creative Works <span class=\"symplectic-section-count\">(" + publications.length + " items)</span></h3>";
 
                 publications.forEach(function(pub) {
-                    var privacyColor = (pub.relationship_effective_privacy === 'Public') ? '#46b450' : '#dc3232';
+                    var privacyColor = (pub.relationship_effective_privacy === "Public") ? "#46b450" : "#dc3232";
                     html += "<div class=\"symplectic-item\">";
                     html += "<div class=\"symplectic-item-title\">" + escapeHtml(pub.title || "Untitled") + "</div>";
                     html += "<div class=\"symplectic-item-meta\">";
