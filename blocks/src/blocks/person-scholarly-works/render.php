@@ -69,5 +69,11 @@ foreach ($works as $work) {
 }
 echo '</ul>';
 
+$fragment = get_field('elements_profile_url_fragment', $person_post_id);
+if ($fragment) {
+    $experts_url = esc_url('https://experts.uga.edu/' . $fragment . '/publications');
+    echo '<p class="person-scholarly-works__full-list"><a href="' . $experts_url . '">' . esc_html__('View full list of scholarly works', 'caes-hub') . '</a></p>';
+}
+
 echo '</div>';
 ?>

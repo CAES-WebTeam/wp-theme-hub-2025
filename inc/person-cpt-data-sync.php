@@ -1601,6 +1601,11 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		}
 	}
 
+	$fragment_nodes = $object->xpath('./api:public-url-path-fragment');
+	if (!empty($fragment_nodes)) {
+		$user_info['profile_url_fragment'] = (string)$fragment_nodes[0];
+	}
+
 	$overview_nodes = $object->xpath('.//api:record/api:native/api:field[@name="overview"]/api:text');
 	if (!empty($overview_nodes)) {
 		$user_info['overview'] = (string)$overview_nodes[0];
@@ -1772,6 +1777,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 	// Clear existing fields first
 	foreach (array(
 		'field_person_cpt_elements_user_id',
+		'field_person_cpt_elements_profile_url_fragment',
 		'field_person_cpt_elements_overview',
 		'field_person_cpt_elements_areas_of_expertise',
 		'field_person_cpt_elements_scholarly_works',
@@ -1797,6 +1803,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 	};
 
 	$write_field('field_person_cpt_elements_user_id', $elements_user_id);
+	$write_field('field_person_cpt_elements_profile_url_fragment', isset($user_info['profile_url_fragment']) ? $user_info['profile_url_fragment'] : null);
 	$write_field('field_person_cpt_elements_overview', isset($user_info['overview']) ? $user_info['overview'] : null);
 
 	// Areas of expertise -- resolve/create taxonomy terms
