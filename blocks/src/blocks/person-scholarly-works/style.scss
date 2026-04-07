@@ -25,26 +25,7 @@
         }
     }
 
-    .person-scholarly-works__authors {
-        &::before {
-            content: '';
-            display: flex;
-            align-items: flex-start;
-            line-height: 1;
-            width: 14px;
-            height: 14px;
-            mask-image: url('../../../../assets/images/events-contact.svg');
-            mask-size: contain;
-            mask-repeat: no-repeat;
-            mask-position: center;
-            background-color: var(--wp--preset--color--contrast-two);
-            margin-right: 0.3em;
-            vertical-align: middle;
-            opacity: 0.6;
-        }
-    }
-
-    .person-scholarly-works__full-list {
+.person-scholarly-works__full-list {
         margin-top: 0;
         margin-bottom: 0;
     }
