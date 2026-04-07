@@ -57,9 +57,9 @@ foreach ($works as $work) {
     echo '<li>';
     if ($doi) {
         $doi_url = esc_url('https://doi.org/' . ltrim($doi, 'https://doi.org/'));
-        echo '<a href="' . $doi_url . '"><strong>' . $safe_title . '</strong></a>';
+        echo '<a href="' . $doi_url . '">' . $safe_title . '</a>';
     } else {
-        echo '<strong>' . $safe_title . '</strong>';
+        echo $safe_title;
     }
     echo esc_html($meta);
     if ($authors) {
