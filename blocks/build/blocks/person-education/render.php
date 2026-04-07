@@ -37,10 +37,12 @@ if ($show_heading) {
 
 echo '<div class="person-education__list"' . $list_style . '>';
 foreach ($degrees as $degree) {
-    $name          = ! empty($degree['degree_name'])          ? $degree['degree_name']          : '';
+    $name           = ! empty($degree['degree_name'])           ? $degree['degree_name']           : '';
     $field_of_study = ! empty($degree['degree_field_of_study']) ? $degree['degree_field_of_study'] : '';
-    $institution   = ! empty($degree['degree_institution'])   ? $degree['degree_institution']   : '';
-    $year          = ! empty($degree['degree_year'])          ? $degree['degree_year']          : '';
+    $institution    = ! empty($degree['degree_institution'])    ? $degree['degree_institution']    : '';
+    $state          = ! empty($degree['degree_state'])          ? $degree['degree_state']          : '';
+    $country        = ! empty($degree['degree_country'])        ? $degree['degree_country']        : '';
+    $year           = ! empty($degree['degree_year'])           ? $degree['degree_year']           : '';
 
     if (empty($name) && empty($institution)) {
         continue;
@@ -50,8 +52,9 @@ foreach ($degrees as $degree) {
     $title_parts = array_filter([$name, $field_of_study]);
     $title = implode(', ', $title_parts);
 
-    // "Utah State University (1992)"
-    $institution_line = $institution;
+    // "Utah State University, UT, United States (1992)"
+    $location_parts = array_filter([$institution, $state, $country]);
+    $institution_line = implode(', ', $location_parts);
     if ($year) {
         $institution_line .= ' (' . $year . ')';
     }

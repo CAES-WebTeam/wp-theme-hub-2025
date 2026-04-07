@@ -1613,13 +1613,17 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 			$deg->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 			$name_nodes  = $deg->xpath('./api:name');
 			$inst_nodes  = $deg->xpath('./api:institution/api:line[@type="organisation"]');
+			$state_nodes = $deg->xpath('./api:institution/api:line[@type="state"]');
+			$country_nodes = $deg->xpath('./api:institution/api:line[@type="country"]');
 			$year_nodes  = $deg->xpath('./api:end-date/api:year');
 			$fos_nodes   = $deg->xpath('./api:field-of-study');
 			$user_info['degrees'][] = array(
-				'degree_name'          => !empty($name_nodes)  ? (string)$name_nodes[0]  : '',
-				'degree_institution'   => !empty($inst_nodes)  ? (string)$inst_nodes[0]  : '',
-				'degree_year'          => !empty($year_nodes)  ? (string)$year_nodes[0]  : '',
-				'degree_field_of_study' => !empty($fos_nodes)  ? (string)$fos_nodes[0]  : '',
+				'degree_name'           => !empty($name_nodes)    ? (string)$name_nodes[0]    : '',
+				'degree_institution'    => !empty($inst_nodes)    ? (string)$inst_nodes[0]    : '',
+				'degree_state'          => !empty($state_nodes)   ? (string)$state_nodes[0]   : '',
+				'degree_country'        => !empty($country_nodes) ? (string)$country_nodes[0] : '',
+				'degree_year'           => !empty($year_nodes)    ? (string)$year_nodes[0]    : '',
+				'degree_field_of_study' => !empty($fos_nodes)     ? (string)$fos_nodes[0]     : '',
 			);
 		}
 	}
