@@ -27,8 +27,8 @@ require get_template_directory() . '/inc/rss-support.php';
 // require get_template_directory() . '/inc/multisite-script-protect.php';
 require get_template_directory() . '/inc/symplectic-query-tool.php';
 // require get_template_directory() . '/inc/symplectic-individual-user-import.php'; // Retired
-require get_template_directory() . '/inc/symplectic-scheduled-import.php';
-// require get_template_directory() . '/inc/symplectic-scheduled-import-cpt.php';
+// require get_template_directory() . '/inc/symplectic-scheduled-import.php'; // Retired -- replaced by person-cpt-data-sync.php
+// require get_template_directory() . '/inc/symplectic-scheduled-import-cpt.php'; // Retired -- merged into person-cpt-data-sync.php
 require get_template_directory() . '/inc/person-cpt-data-sync.php';
 
 // Publications PDF generation
