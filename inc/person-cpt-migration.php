@@ -1648,8 +1648,8 @@ add_action('admin_menu', 'person_migration_add_admin_page');
 function person_migration_add_admin_page() {
 	add_submenu_page(
 		'caes-tools',
-		'Person CPT Migration',
-		'Person CPT Migration',
+		'People User to CPT Migration',
+		'People User to Migration',
 		'manage_options',
 		'person-cpt-migration',
 		'person_migration_render_page'
@@ -4114,7 +4114,7 @@ function person_migration_render_merge_page() {
 
 		<?php else: ?>
 			<?php if (empty($duplicate_groups)): ?>
-				<p>No duplicate groups found. Run "Scan for Duplicates" from the <a href="<?php echo esc_url(admin_url('admin.php?page=person-cpt-migration')); ?>">Person CPT Migration</a> page first.</p>
+				<p>No duplicate groups found. Run "Scan for Duplicates" from the <a href="<?php echo esc_url(admin_url('admin.php?page=person-cpt-migration')); ?>">People User to CPT Migration</a> page first.</p>
 			<?php else: ?>
 				<p><?php echo count($duplicate_groups); ?> duplicate group(s) found. Click a group to review and merge.</p>
 				<?php
