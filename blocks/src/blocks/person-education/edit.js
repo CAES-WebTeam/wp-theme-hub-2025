@@ -6,6 +6,7 @@ import {
     HeadingLevelDropdown,
     FontSizePicker,
     useSettings,
+    getSpacingPresetCssVar,
 } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import './editor.scss';
@@ -16,7 +17,8 @@ const PREVIEW_DEGREES = [
 ];
 
 export default function Edit({ attributes, setAttributes }) {
-    const { showHeading, headingLevel, headingFontSize, itemFontSize } = attributes;
+    const { showHeading, headingLevel, headingFontSize, itemFontSize, style } = attributes;
+    const blockGap = style?.spacing?.blockGap;
     const [ fontSizes ] = useSettings( 'typography.fontSizes' );
 
     const TagName = `h${headingLevel}`;
@@ -70,7 +72,7 @@ export default function Edit({ attributes, setAttributes }) {
                     />
                 </PanelBody>
             </InspectorControls>
-            <div {...useBlockProps({ className: 'person-education' })}>
+            <div {...useBlockProps({ className: 'person-education', style: blockGap ? { gap: getSpacingPresetCssVar( blockGap ) } : {} })}>
                 {showHeading && (
                     <TagName
                         className="wp-block-heading person-education__heading"
