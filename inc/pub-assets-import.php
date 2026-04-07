@@ -548,11 +548,12 @@ function pub_assets_tick_image( &$state ) {
 		return;
 	}
 
-	// Replace the YYYY/MM placeholder src with the real uploaded URL
+	// Replace any /wp-content/uploads/YYYY/MM/ style src (literal placeholder or real date)
+	// with the actual uploaded URL. The HTML payload may use either convention.
 	$escaped       = preg_quote( $filename, '#' );
 	$replace_count = 0;
 	$q['html']     = preg_replace(
-		'#(?:https?://[^/]+)?/wp-content/uploads/YYYY/MM/' . $escaped . '#',
+		'#(?:https?://[^/]+)?/wp-content/uploads/(?:YYYY/MM|\d{4}/\d{2})/' . $escaped . '#',
 		$img['url'],
 		$q['html'],
 		-1,
@@ -631,23 +632,30 @@ function pub_assets_upload_image( $image_path, $post_id, $filename ) {
 
 	$reused = false;
 
-	// Check if an attachment with this filename already exists in the media library
-	$existing = get_posts( [
-		'post_type'   => 'attachment',
-		'post_status' => 'any',
-		'numberposts' => 1,
-		'fields'      => 'ids',
-		'meta_query'  => [ [
-			'key'     => '_wp_attached_file',
-			'value'   => $filename,
-			'compare' => 'LIKE',
-		] ],
-	] );
+	// Check if an attachment with this exact filename already exists in the media library.
+	// _wp_attached_file stores paths like '2024/06/filename.jpg', so we LIKE-search for
+	// anything ending in /filename.jpg, then verify the basename exactly to avoid
+	// false positives (e.g. 'cyst.jpg' matching 'cysts.jpg').
+	global $wpdb;
+	$candidate_ids = $wpdb->get_col( $wpdb->prepare(
+		"SELECT post_id FROM {$wpdb->postmeta}
+		 WHERE meta_key = '_wp_attached_file'
+		   AND meta_value LIKE %s
+		 LIMIT 10",
+		'%' . $wpdb->esc_like( '/' . $filename )
+	) );
 
-	if ( ! empty( $existing ) ) {
-		$attachment_id = (int) $existing[0];
-		$reused        = true;
-	} else {
+	$attachment_id = null;
+	foreach ( $candidate_ids as $cid ) {
+		$stored = get_post_meta( (int) $cid, '_wp_attached_file', true );
+		if ( basename( $stored ) === $filename ) {
+			$attachment_id = (int) $cid;
+			$reused        = true;
+			break;
+		}
+	}
+
+	if ( ! $reused ) {
 		// Copy to a true temp file so media_handle_sideload can move it without
 		// destroying our extracted copy (needed in case of resume after stop).
 		$tmp = wp_tempnam( $filename );
