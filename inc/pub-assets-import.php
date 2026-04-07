@@ -469,20 +469,6 @@ function pub_assets_tick_setup( &$state ) {
 
 	$post_id = (int) $posts[0];
 
-	// Skip posts that already have non-trivial content to protect in-progress work.
-	// Strip the wp:html wrapper and block comments so we don't mistake a previously
-	// imported (but otherwise empty) block for real content.
-	$existing_content = get_post_field( 'post_content', $post_id );
-	$stripped         = trim( preg_replace( '#<!--\s*/?wp:[^>]*-->#', '', $existing_content ) );
-	if ( $stripped !== '' ) {
-		pub_assets_log( $state, 'warning',
-			'[' . $pub_number . '] Post already has content — skipped to protect existing work (post ID ' . $post_id . ').'
-		);
-		$state['skipped']++;
-		$state['current_index']++;
-		return;
-	}
-
 	$html = file_get_contents( $html_file );
 	if ( $html === false ) {
 		pub_assets_log( $state, 'error', '[' . $pub_number . '] Could not read HTML file.' );
