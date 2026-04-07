@@ -97,6 +97,7 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/person-awards');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/person-address');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/person-section-nav');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/person-education');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-feed');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-department');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-name');
