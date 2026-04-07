@@ -16,11 +16,11 @@
 
         li {
             padding: 0.75em 0;
-            border-bottom: 1px solid currentColor;
+            border-bottom: 1px solid var(--wp--preset--color--base-three);
             opacity: 1;
 
             &:first-child {
-                border-top: 1px solid currentColor;
+                border-top: 1px solid var(--wp--preset--color--base-three);
             }
         }
     }
@@ -28,14 +28,16 @@
     .person-scholarly-works__authors {
         &::before {
             content: '';
-            display: inline-block;
+            display: flex;
+            align-items: flex-start;
+            line-height: 1;
             width: 14px;
             height: 14px;
             mask-image: url('../../../../assets/images/events-contact.svg');
             mask-size: contain;
             mask-repeat: no-repeat;
             mask-position: center;
-            background-color: currentColor;
+            background-color: var(--wp--preset--color--contrast-two);
             margin-right: 0.3em;
             vertical-align: middle;
             opacity: 0.6;
