@@ -617,14 +617,21 @@ function symplectic_query_tool_enqueue_scripts($hook) {
                 html += "<h3>Scholarly and Creative Works <span class=\"symplectic-section-count\">(" + publications.length + " items)</span></h3>";
 
                 publications.forEach(function(pub) {
+                    var privacyColor = (pub.relationship_effective_privacy === 'Public') ? '#46b450' : '#dc3232';
                     html += "<div class=\"symplectic-item\">";
                     html += "<div class=\"symplectic-item-title\">" + escapeHtml(pub.title || "Untitled") + "</div>";
                     html += "<div class=\"symplectic-item-meta\">";
                     if (pub.type) html += "<span><strong>Type:</strong> " + escapeHtml(pub.type) + "</span>";
                     if (pub.publication_date) html += "<span><strong>Date:</strong> " + escapeHtml(pub.publication_date) + "</span>";
                     if (pub.journal) html += "<span><strong>Journal:</strong> " + escapeHtml(pub.journal) + "</span>";
+                    if (pub.authors) html += "<span><strong>Authors:</strong> " + escapeHtml(pub.authors) + "</span>";
                     if (pub.doi) html += "<span><strong>DOI:</strong> " + escapeHtml(pub.doi) + "</span>";
+                    if (pub.volume) html += "<span><strong>Volume:</strong> " + escapeHtml(pub.volume) + "</span>";
+                    if (pub.issue) html += "<span><strong>Issue:</strong> " + escapeHtml(pub.issue) + "</span>";
+                    if (pub.publisher) html += "<span><strong>Publisher:</strong> " + escapeHtml(pub.publisher) + "</span>";
                     if (pub["citation-count"] !== undefined) html += "<span><strong>Citations:</strong> " + escapeHtml(String(pub["citation-count"])) + "</span>";
+                    if (pub.relationship_effective_privacy) html += "<span><strong>Privacy:</strong> <span style=\"color:" + privacyColor + ";font-weight:600\">" + escapeHtml(pub.relationship_effective_privacy) + "</span></span>";
+                    if (pub.relationship_is_favourite) html += "<span><strong>Favourite:</strong> " + escapeHtml(pub.relationship_is_favourite) + "</span>";
                     html += "</div>";
                     html += "</div>";
                 });
@@ -1195,18 +1202,37 @@ function symplectic_query_api_handler() {
                 if ($rel_xml !== false) {
                     $rel_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 
-                    // Get objects from THIS PAGE ONLY
-                    $page_objects = $rel_xml->xpath('//api:object');
+                    // Get relationships from THIS PAGE ONLY (to capture privacy info)
+                    $page_relationships = $rel_xml->xpath('//api:relationship');
 
-                    // Process this page's objects immediately before fetching next page
-                    if (!empty($page_objects)) {
-                        foreach ($page_objects as $rel_object) {
+                    // Process this page's relationships immediately before fetching next page
+                    if (!empty($page_relationships)) {
+                        foreach ($page_relationships as $relationship) {
+                            $relationship->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+                            // Capture relationship-level privacy fields
+                            $privacy_nodes           = $relationship->xpath('./api:privacy-level');
+                            $eff_privacy_nodes       = $relationship->xpath('./api:effective-privacy-level');
+                            $favourite_nodes         = $relationship->xpath('./api:is-favourite');
+                            $rel_privacy             = !empty($privacy_nodes)     ? (string)$privacy_nodes[0]     : '';
+                            $rel_effective_privacy   = !empty($eff_privacy_nodes) ? (string)$eff_privacy_nodes[0] : '';
+                            $rel_favourite           = !empty($favourite_nodes)   ? (string)$favourite_nodes[0]   : '';
+
+                            $rel_objects = $relationship->xpath('./api:related/api:object');
+                            if (empty($rel_objects)) continue;
+
+                            foreach ($rel_objects as $rel_object) {
                             $obj_data = array();
 
                             // Get all attributes
                             foreach ($rel_object->attributes() as $attr_name => $attr_value) {
                                 $obj_data[$attr_name] = (string)$attr_value;
                             }
+
+                            // Attach privacy info from the relationship wrapper
+                            $obj_data['relationship_privacy']           = $rel_privacy;
+                            $obj_data['relationship_effective_privacy'] = $rel_effective_privacy;
+                            $obj_data['relationship_is_favourite']      = $rel_favourite;
 
                             // Sort by category
                             $category = isset($obj_data['category']) ? $obj_data['category'] : null;
@@ -1239,10 +1265,11 @@ function symplectic_query_api_handler() {
                             }
 
                             $total_objects_processed++;
+                            } // end foreach $rel_objects
                         }
 
                         // Free memory after processing this batch
-                        unset($page_objects);
+                        unset($page_relationships);
                     }
 
                     // Check for pagination info to see if there's a next page
