@@ -12,8 +12,8 @@ import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import './editor.scss';
 
 const PREVIEW_WORKS = [
-    { title: 'Single Cell Multi-Omics Reveals Rare Biosynthetic Cell Types in the Medicinal Tree Camptotheca acuminata.', year: '2025', journal: 'Plant Biotechnology Journal' },
-    { title: 'Discovery of iridoid cyclase completes the iridoid pathway in asterids.', year: '2025', journal: 'Nature Plants' },
+    { title: 'Single Cell Multi-Omics Reveals Rare Biosynthetic Cell Types in the Medicinal Tree Camptotheca acuminata.', year: '2025', journal: 'Plant Biotechnology Journal', authors: 'Smith J, Doe A, Johnson B' },
+    { title: 'Discovery of iridoid cyclase completes the iridoid pathway in asterids.', year: '2025', journal: 'Nature Plants', authors: 'Doe A, Smith J' },
 ];
 
 export default function Edit({ attributes, setAttributes }) {
@@ -87,7 +87,8 @@ export default function Edit({ attributes, setAttributes }) {
                 >
                     {PREVIEW_WORKS.map((w) => (
                         <li key={w.title}>
-                            <strong>{w.title}</strong> ({w.year}). {w.journal}.
+                            <strong>{w.title}</strong>, {[w.journal, w.year ? `(${w.year})` : ''].filter(Boolean).join(', ')}.
+                            {w.authors && <><br /><span className="person-scholarly-works__authors">{w.authors}</span></>}
                         </li>
                     ))}
                 </ul>

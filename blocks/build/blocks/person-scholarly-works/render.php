@@ -46,25 +46,26 @@ foreach ($works as $work) {
         continue;
     }
 
-    $parts = [];
-    if ($year) {
-        $parts[] = esc_html('(' . $year . ')');
-    }
-    if ($journal) {
-        $parts[] = esc_html($journal);
-    }
+    $authors = ! empty($work['pub_authors']) ? $work['pub_authors'] : '';
 
-    $meta = $parts ? ' ' . implode('. ', $parts) . '.' : '';
+    $meta_parts = array_filter([$journal, $year ? '(' . $year . ')' : '']);
+    $meta = $meta_parts ? ', ' . implode(', ', $meta_parts) . '.' : '';
 
     $allowed = [ 'i' => [], 'em' => [], 'b' => [], 'strong' => [], 'sup' => [], 'sub' => [] ];
     $safe_title = wp_kses($title, $allowed);
 
+    echo '<li>';
     if ($doi) {
         $doi_url = esc_url('https://doi.org/' . ltrim($doi, 'https://doi.org/'));
-        echo '<li><a href="' . $doi_url . '"><strong>' . $safe_title . '</strong></a>' . $meta . '</li>';
+        echo '<a href="' . $doi_url . '"><strong>' . $safe_title . '</strong></a>';
     } else {
-        echo '<li><strong>' . $safe_title . '</strong>' . $meta . '</li>';
+        echo '<strong>' . $safe_title . '</strong>';
     }
+    echo esc_html($meta);
+    if ($authors) {
+        echo '<br><span class="person-scholarly-works__authors">' . esc_html($authors) . '</span>';
+    }
+    echo '</li>';
 }
 echo '</ul>';
 
