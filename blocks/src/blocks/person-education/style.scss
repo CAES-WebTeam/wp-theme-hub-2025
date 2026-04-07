@@ -1,0 +1,22 @@
+.wp-block-caes-hub-person-education {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wp--style--block-gap, var(--wp--preset--spacing--40));
+
+    .person-education__heading {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    .person-education__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--wp--preset--spacing--40, 1.5rem);
+    }
+
+    .person-education__item-title,
+    .person-education__item-institution {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}

@@ -6,20 +6,17 @@ import {
     HeadingLevelDropdown,
     FontSizePicker,
     useSettings,
-    getSpacingPresetCssVar,
 } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl, SelectControl } from '@wordpress/components';
 import './editor.scss';
 
-const PREVIEW_AWARDS = [
-    { title: 'Award Title Goes Here, Institution Name Here', date: '2023' },
-    { title: 'Award Title Goes Here, Institution Name Here 2', date: '2021' },
-    { title: 'Award Title Goes Here, Institution Name Here 3', date: '2017' },
+const PREVIEW_DEGREES = [
+    { name: 'Doctor of Philosophy', fieldOfStudy: 'Horticultural Science', institution: 'Michigan State University', year: '1999' },
+    { name: 'Master of Science', fieldOfStudy: 'Forestry', institution: 'University of Florence', year: '1993' },
 ];
 
 export default function Edit({ attributes, setAttributes }) {
-    const { showHeading, headingLevel, headingFontSize, itemFontSize, style } = attributes;
-    const blockGap = style?.spacing?.blockGap;
+    const { showHeading, headingLevel, headingFontSize, itemFontSize } = attributes;
     const [ fontSizes ] = useSettings( 'typography.fontSizes' );
 
     const TagName = `h${headingLevel}`;
@@ -35,7 +32,7 @@ export default function Edit({ attributes, setAttributes }) {
                 </BlockControls>
             )}
             <InspectorControls>
-                <PanelBody title={__('Awards Settings', 'caes-hub')}>
+                <PanelBody title={__('Education Settings', 'caes-hub')}>
                     <ToggleControl
                         label={__('Show heading', 'caes-hub')}
                         checked={showHeading}
@@ -73,23 +70,30 @@ export default function Edit({ attributes, setAttributes }) {
                     />
                 </PanelBody>
             </InspectorControls>
-            <div {...useBlockProps({ className: 'person-awards', style: blockGap ? { gap: getSpacingPresetCssVar( blockGap ) } : {} })}>
+            <div {...useBlockProps({ className: 'person-education' })}>
                 {showHeading && (
                     <TagName
-                        className="wp-block-heading person-awards__heading"
+                        className="wp-block-heading person-education__heading"
                         style={headingFontSize ? { fontSize: headingFontSize } : {}}
                     >
-                        {__('Awards and Honors', 'caes-hub')}
+                        {__('Education', 'caes-hub')}
                     </TagName>
                 )}
-                <ul
-                    className="wp-block-list person-awards__list"
+                <div
+                    className="person-education__list"
                     style={itemFontSize ? { fontSize: itemFontSize } : {}}
                 >
-                    {PREVIEW_AWARDS.map((a) => (
-                        <li key={a.title}>{a.title}{a.date ? ` (${a.date})` : ''}</li>
+                    {PREVIEW_DEGREES.map((d) => (
+                        <div key={d.name + d.institution} className="person-education__item">
+                            <p className="person-education__item-title">
+                                <strong>{[d.name, d.fieldOfStudy].filter(Boolean).join(', ')}</strong>
+                            </p>
+                            <p className="person-education__item-institution">
+                                {d.institution}{d.year ? ` (${d.year})` : ''}
+                            </p>
+                        </div>
                     ))}
-                </ul>
+                </div>
             </div>
         </>
     );
