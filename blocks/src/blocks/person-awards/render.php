@@ -35,6 +35,13 @@ if ($show_heading) {
     echo '<' . $heading_tag . ' class="wp-block-heading person-awards__heading"' . $heading_style . '>' . esc_html__('Awards and Honors', 'caes-hub') . '</' . $heading_tag . '>';
 }
 
+// Sort latest to oldest by distinction_date (year string, descending)
+usort($distinctions, function($a, $b) {
+    $ya = !empty($a['distinction_date']) ? (int) $a['distinction_date'] : 0;
+    $yb = !empty($b['distinction_date']) ? (int) $b['distinction_date'] : 0;
+    return $yb - $ya;
+});
+
 echo '<ul class="wp-block-list person-awards__list"' . $list_style . '>';
 foreach ($distinctions as $item) {
     $title = ! empty($item['distinction_title']) ? $item['distinction_title'] : '';
