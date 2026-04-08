@@ -355,3 +355,24 @@ add_action('manage_caes_hub_person_posts_custom_column', function ($column, $pos
         }
     }
 }, 10, 2);
+
+/**
+ * Hide the "Contact" heading on inactive person profiles.
+ *
+ * The heading lives as a core/heading block in the template HTML. Rather than
+ * creating a custom block for a single heading, we suppress it here when the
+ * person is inactive and the heading text is "Contact".
+ */
+add_filter('render_block', function ($block_content, $block) {
+    if ($block['blockName'] !== 'core/heading' || !is_singular('caes_hub_person')) {
+        return $block_content;
+    }
+    $post_id = get_queried_object_id();
+    if (!$post_id || !function_exists('is_person_active') || is_person_active($post_id)) {
+        return $block_content;
+    }
+    if (strip_tags($block_content) === 'Contact') {
+        return '';
+    }
+    return $block_content;
+}, 10, 2);
