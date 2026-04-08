@@ -164,7 +164,7 @@ b. Make new blocks for the following, referencing the sections in single-caes_hu
 -  ~~b-7: Person Address. This can be switched between mailing or shipping address. Data comes from  personnel info section.~~
 c. Some symplectic data is missing, I will work on this with Jesse:
 - ~~c-1: Education (degrees from Symplectic `degrees` field, `privacy="public"` only)~~ ✅ Done
-- c-2: Can we get the profile URL in the API? If so, need to add the scholarly links link to the bottom of that list.
+- c-2: ~~Can we get the profile URL in the API? If so, need to add the scholarly links link to the bottom of that list.~~
 - c-3: ~~We need authors on scholarly works.~~
 - c-4: ~~We need year too on scholarly works.~~
 - c-5: ~~Dates on Awards and Honors?~~
