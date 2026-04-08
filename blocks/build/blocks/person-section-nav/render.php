@@ -12,6 +12,10 @@ $has = [
     'showScholarlyWorks'   => false,
 ];
 
+if ($person_post_id && function_exists('is_person_active') && !is_person_active($person_post_id)) {
+    return;
+}
+
 if ($person_post_id) {
     $term_ids = get_field('elements_areas_of_expertise', $person_post_id);
     $has['showAreasOfExpertise'] = !empty($term_ids);

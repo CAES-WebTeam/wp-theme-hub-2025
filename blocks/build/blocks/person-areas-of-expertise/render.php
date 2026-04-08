@@ -9,6 +9,10 @@ if (!$person_post_id) {
     return;
 }
 
+if (function_exists('is_person_active') && !is_person_active($person_post_id)) {
+    return;
+}
+
 $term_ids = get_field('elements_areas_of_expertise', $person_post_id);
 
 if (empty($term_ids)) {

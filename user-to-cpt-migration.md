@@ -80,7 +80,7 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
     - Updates personnel fields: first_name, last_name, display_name, title, phone, addresses, image_name, college_id, caes_location_id, is_active
     - Assigns `person_department` and `person_program_area` taxonomy terms
     - New personnel (no matching CPT post) auto-creates a person post
-    - Personnel absent from the API response: mark `is_active = false` on existing post
+    - Personnel absent from the API response: mark `is_active = false` on existing post. If the person has no attributed content (posts, publications, shorthand stories), the post is set to `draft` (unpublished). If they do have attributed content, the post stays published but all profile blocks (position, department, contact info, image, bio, symplectic data) are hidden -- only their name remains visible. This is enforced per-block via an `is_person_active()` helper in `person-cpt-helpers.php`.
     - Does NOT touch expert/writer fields (static, no API source)
     - Async batch architecture (same pattern as symplectic CPT importer)
     - Shows last cron run: timestamp, created/updated/marked-inactive/error counts, error log

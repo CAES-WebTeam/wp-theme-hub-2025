@@ -168,6 +168,22 @@ function resolve_person_post_id($id) {
 }
 
 /**
+ * Returns true if the given caes_hub_person post is active.
+ *
+ * Inactive persons still have published posts when content is attributed to them,
+ * but their profile data (contact info, title, symplectic data, etc.) should be hidden.
+ * Relies on WP's object cache so repeated calls within a request are free.
+ *
+ * @param int $post_id A caes_hub_person post ID.
+ * @return bool
+ */
+function is_person_active( $post_id ) {
+    $is_active = get_post_meta( (int) $post_id, 'is_active', true );
+    // Treat missing meta (pre-sync) as active so nothing breaks before first sync
+    return $is_active === '' || (bool) $is_active;
+}
+
+/**
  * Extract the person ID from an ACF repeater row's 'user' field.
  *
  * Handles both array format (ACF formatted) and scalar (raw ID).

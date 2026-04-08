@@ -9,6 +9,10 @@ if (!$person_post_id) {
     return;
 }
 
+if (function_exists('is_person_active') && !is_person_active($person_post_id)) {
+    return;
+}
+
 $courses = get_field('elements_courses_taught', $person_post_id);
 
 if (empty($courses)) {

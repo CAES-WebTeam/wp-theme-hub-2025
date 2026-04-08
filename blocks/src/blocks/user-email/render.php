@@ -6,6 +6,10 @@ $author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_us
 // Try CPT post first, fall back to user meta
 $person_post_id = function_exists('resolve_person_post_id') ? resolve_person_post_id($author_id) : null;
 
+if ($person_post_id && function_exists('is_person_active') && !is_person_active($person_post_id)) {
+    return;
+}
+
 if ($person_post_id) {
     $email = get_post_meta($person_post_id, 'uga_email', true);
 } else {

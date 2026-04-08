@@ -9,6 +9,10 @@ if (!$person_post_id) {
     return;
 }
 
+if (function_exists('is_person_active') && !is_person_active($person_post_id)) {
+    return;
+}
+
 $address_type = isset($attributes['addressType']) ? $attributes['addressType'] : 'mailing';
 $prefix       = $address_type === 'shipping' ? 'shipping' : 'mailing';
 
