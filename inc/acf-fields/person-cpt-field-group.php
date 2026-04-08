@@ -911,6 +911,20 @@ add_action('acf/include_fields', function () {
 					),
 				),
 			),
+			array(
+				'key' => 'field_person_cpt_elements_has_content',
+				'label' => 'Has Symplectic Content',
+				'name' => 'elements_has_content',
+				'type' => 'true_false',
+				'instructions' => 'Set automatically by the sync. True if any Symplectic data (overview, degrees, scholarly works, etc.) was imported.',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array('width' => '', 'class' => '', 'id' => ''),
+				'message' => '',
+				'default_value' => 0,
+				'ui' => 1,
+				'allow_in_bindings' => 0,
+			),
 		),
 		'location' => array(
 			array(

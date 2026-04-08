@@ -1903,6 +1903,15 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		if ($r) $fields_written++; else $fields_failed++;
 	}
 
+	// Set the has_content flag based on whether any content was imported
+	$has_content = !empty($user_info['overview'])
+		|| !empty($user_info['keywords'])
+		|| !empty($user_info['degrees'])
+		|| !empty($publications)
+		|| !empty($activities)
+		|| !empty($teaching_activities);
+	update_field('field_person_cpt_elements_has_content', $has_content ? 1 : 0, $post_id);
+
 	$result['status']         = ($fields_failed === 0) ? 'ok' : ($fields_written > 0 ? 'ok' : 'failed');
 	$result['fields_written'] = $fields_written;
 	$result['fields_failed']  = $fields_failed;
