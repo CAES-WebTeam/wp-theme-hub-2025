@@ -35,6 +35,13 @@ if ($show_heading) {
     echo '<' . $heading_tag . ' class="wp-block-heading person-education__heading"' . $heading_style . '>' . esc_html__('Education', 'caes-hub') . '</' . $heading_tag . '>';
 }
 
+// Sort latest to oldest; degrees without a year go to the bottom
+usort($degrees, function($a, $b) {
+    $ya = !empty($a['degree_year']) ? (int) $a['degree_year'] : 0;
+    $yb = !empty($b['degree_year']) ? (int) $b['degree_year'] : 0;
+    return $yb - $ya;
+});
+
 echo '<div class="person-education__list"' . $list_style . '>';
 foreach ($degrees as $degree) {
     $name           = ! empty($degree['degree_name'])           ? $degree['degree_name']           : '';
