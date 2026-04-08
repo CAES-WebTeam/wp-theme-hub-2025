@@ -33,10 +33,12 @@ require get_template_directory() . '/inc/person-cpt-data-sync.php';
 
 // Switch to simplified block template for person posts without Symplectic Elements data
 add_filter( 'get_block_templates', function ( $templates, $query, $template_type ) {
+	error_log( '[person-template] get_block_templates fired. type=' . $template_type . ' is_singular=' . ( is_singular( 'caes_hub_person' ) ? 'yes' : 'no' ) . ' queried_id=' . get_queried_object_id() . ' slugs=' . implode( ',', array_map( fn($t) => $t->slug, $templates ) ) );
 	if ( $template_type !== 'wp_template' || ! is_singular( 'caes_hub_person' ) ) {
 		return $templates;
 	}
-	$has_symplectic = get_post_meta( get_the_ID(), 'elements_user_id', true );
+	$has_symplectic = get_post_meta( get_queried_object_id(), 'elements_user_id', true );
+	error_log( '[person-template] post_id=' . get_queried_object_id() . ' has_symplectic=' . ( $has_symplectic ? 'yes' : 'no' ) );
 	if ( ! $has_symplectic ) {
 		foreach ( $templates as &$template ) {
 			if ( $template->slug === 'single-caes_hub_person' ) {
