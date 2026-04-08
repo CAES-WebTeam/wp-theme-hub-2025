@@ -18,8 +18,7 @@ if ($person_post_id) {
 
     $has['showAbout'] = !empty(get_field('elements_overview', $person_post_id));
 
-    // Education: no block yet, check for a stored field or just allow toggle to control it
-    $has['showEducation'] = true;
+    $has['showEducation'] = !empty(get_field('elements_degrees', $person_post_id));
 
     $has['showAwards']       = !empty(get_field('elements_distinctions', $person_post_id));
     $has['showCourses']      = !empty(get_field('elements_courses_taught', $person_post_id));
