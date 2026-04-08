@@ -357,26 +357,6 @@ add_action('manage_caes_hub_person_posts_custom_column', function ($column, $pos
 }, 10, 2);
 
 /**
- * DEBUG: dump is_active state in the footer on person profile pages.
- * Remove this before merging to main.
- */
-add_action('wp_footer', function () {
-    if (!is_singular('caes_hub_person')) {
-        return;
-    }
-    $post_id      = get_queried_object_id();
-    $raw_meta     = get_post_meta($post_id, 'is_active', true);
-    $helper_says  = function_exists('is_person_active') ? (is_person_active($post_id) ? 'true' : 'false') : 'function missing';
-    $has_content  = get_post_meta($post_id, 'elements_has_content', true);
-    echo '<div style="position:fixed;bottom:0;left:0;right:0;background:#1d2327;color:#f0f0f0;font:13px monospace;padding:8px 16px;z-index:99999">';
-    echo '[person-debug] post_id=' . $post_id;
-    echo ' | is_active (raw meta)=' . var_export($raw_meta, true);
-    echo ' | is_person_active()=' . $helper_says;
-    echo ' | elements_has_content=' . var_export($has_content, true);
-    echo '</div>';
-});
-
-/**
  * Hide the "Contact" heading on inactive person profiles.
  *
  * The heading lives as a core/heading block in the template HTML. Rather than
@@ -392,7 +372,6 @@ add_filter('render_block', function ($block_content, $block) {
         return $block_content;
     }
     $text = trim(strip_tags($block_content));
-    error_log('[person-debug] render_block heading text=' . var_export($text, true) . ' post_id=' . $post_id);
     if ($text === 'Contact') {
         return '';
     }
