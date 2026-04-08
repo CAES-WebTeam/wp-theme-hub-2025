@@ -282,7 +282,7 @@ function personnel_cpt_start_job($triggered_by = 'manual') {
 	$new_state['last_completed'] = $last_completed;
 
 	// Store API data in a transient (too large for the state option alongside everything else)
-	set_transient('personnel_cpt_api_data', $api_data, 3600);
+	set_transient('personnel_cpt_api_data', $api_data, 4 * HOUR_IN_SECONDS);
 
 	update_option(PERSONNEL_CPT_STATE_KEY, $new_state, false);
 	wp_schedule_single_event(time(), PERSONNEL_CPT_BATCH_HOOK);
