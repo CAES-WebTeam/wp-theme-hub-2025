@@ -31,6 +31,26 @@ require get_template_directory() . '/inc/symplectic-query-tool.php';
 // require get_template_directory() . '/inc/symplectic-scheduled-import-cpt.php'; // Retired -- merged into person-cpt-data-sync.php
 require get_template_directory() . '/inc/person-cpt-data-sync.php';
 
+// Switch to simplified block template for person posts without Symplectic Elements data
+add_filter( 'get_block_templates', function ( $templates, $query, $template_type ) {
+	if ( $template_type !== 'wp_template' || ! is_singular( 'caes_hub_person' ) ) {
+		return $templates;
+	}
+	$has_symplectic = get_post_meta( get_the_ID(), 'elements_user_id', true );
+	if ( ! $has_symplectic ) {
+		foreach ( $templates as &$template ) {
+			if ( $template->slug === 'single-caes_hub_person' ) {
+				$file = get_template_directory() . '/templates/single-caes_hub_person-no-symplectic.html';
+				if ( file_exists( $file ) ) {
+					$template->content = file_get_contents( $file );
+				}
+				break;
+			}
+		}
+	}
+	return $templates;
+}, 10, 3 );
+
 // Publications PDF generation
 require get_template_directory() . '/inc/publications-pdf/publications-pdf-mpdf.php';
 require get_template_directory() . '/inc/publications-pdf/pdf-queue.php';
