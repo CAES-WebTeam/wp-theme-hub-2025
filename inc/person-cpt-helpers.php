@@ -391,7 +391,9 @@ add_filter('render_block', function ($block_content, $block) {
     if (!$post_id || !function_exists('is_person_active') || is_person_active($post_id)) {
         return $block_content;
     }
-    if (strip_tags($block_content) === 'Contact') {
+    $text = trim(strip_tags($block_content));
+    error_log('[person-debug] render_block heading text=' . var_export($text, true) . ' post_id=' . $post_id);
+    if ($text === 'Contact') {
         return '';
     }
     return $block_content;
