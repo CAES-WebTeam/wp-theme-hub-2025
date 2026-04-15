@@ -74,7 +74,7 @@ function pub_assets_default_state() {
 		'upload_dir'     => '',        // absolute path to extracted payload directory
 		'publications'   => [],        // [ ['number' => 'B-1461', 'dir' => '/abs/path'], … ]
 		'total'          => 0,
-		'current_index'  => 0,         // next publication to process
+		'current_index'  => 0,         // publications fully completed
 		'updated'        => 0,
 		'skipped'        => 0,         // post not found in WP
 		'error_count'    => 0,
@@ -83,6 +83,11 @@ function pub_assets_default_state() {
 		'stop_requested' => false,
 		'started_at'     => 0,
 		'completed_at'   => 0,
+		// Mid-publication work queue. null = between publications.
+		// While processing a publication this holds all working state so that
+		// each tick can handle exactly one image upload (one thumbnail-generation
+		// event) rather than an entire publication at once.
+		'pub_queue'      => null,
 	];
 }
 
@@ -280,6 +285,14 @@ function pub_assets_ajax_start() {
 }
 
 // ── Tick ───────────────────────────────────────────────────────────────────────
+//
+// Each tick does exactly ONE of:
+//   • Setup   — find the post, read the HTML, build the image queue
+//   • Image   — upload one image and patch its src in the HTML
+//   • Finalize — write the patched HTML to post_content
+//
+// This caps per-tick work at a single thumbnail-generation event, preventing
+// memory exhaustion on publications with many images.
 
 function pub_assets_ajax_tick() {
 	check_ajax_referer( 'pub_assets_nonce', 'nonce' );
@@ -287,8 +300,7 @@ function pub_assets_ajax_tick() {
 		wp_die( 'Unauthorized' );
 	}
 
-	// Give each tick its own generous time budget
-	@set_time_limit( 120 );
+	@set_time_limit( 60 );
 
 	$state = pub_assets_get_state();
 
@@ -296,10 +308,11 @@ function pub_assets_ajax_tick() {
 	if ( $state['stop_requested'] ) {
 		$state['status']         = 'stopped';
 		$state['stop_requested'] = false;
-		pub_assets_log(
-			$state, 'warning',
-			'Stopped by user at item ' . ( $state['current_index'] + 1 ) . ' of ' . $state['total'] . '.'
-		);
+		$where = $state['pub_queue']
+			? 'mid-publication ' . $state['pub_queue']['pub_number'] .
+			  ' (image ' . $state['pub_queue']['img_idx'] . '/' . count( $state['pub_queue']['images'] ) . ')'
+			: 'item ' . ( $state['current_index'] + 1 ) . ' of ' . $state['total'];
+		pub_assets_log( $state, 'warning', 'Stopped by user at ' . $where . '.' );
 		pub_assets_save_state( $state );
 		wp_send_json_success( pub_assets_tick_response( $state, [] ) );
 		return;
@@ -310,8 +323,8 @@ function pub_assets_ajax_tick() {
 		return;
 	}
 
-	// Check for completion
-	if ( $state['current_index'] >= $state['total'] ) {
+	// Completion check: no active queue and all publications accounted for
+	if ( $state['pub_queue'] === null && $state['current_index'] >= $state['total'] ) {
 		$state['status']       = 'complete';
 		$state['completed_at'] = time();
 		pub_assets_log( $state, 'info', sprintf(
@@ -323,46 +336,19 @@ function pub_assets_ajax_tick() {
 		return;
 	}
 
-	$pub           = $state['publications'][ $state['current_index'] ];
 	$log_idx_start = count( $state['log'] );
 
-	$result = pub_assets_process_one( $pub['number'], $pub['dir'], $state );
-
-	switch ( $result['status'] ) {
-		case 'updated':
-			$state['updated']++;
-			pub_assets_log( $state, 'success',
-				'[' . $pub['number'] . '] Updated (post ID ' . $result['post_id'] . ').'
-			);
-			if ( ! empty( $result['images_uploaded'] ) ) {
-				pub_assets_log( $state, 'info',
-					'[' . $pub['number'] . '] ' . $result['images_uploaded'] . ' image(s) uploaded.'
-				);
-			}
-			if ( ! empty( $result['images_reused'] ) ) {
-				pub_assets_log( $state, 'info',
-					'[' . $pub['number'] . '] ' . $result['images_reused'] . ' image(s) already in media library.'
-				);
-			}
-			break;
-
-		case 'skipped':
-			$state['skipped']++;
-			pub_assets_log( $state, 'warning',
-				'[' . $pub['number'] . '] No matching post found — skipped.'
-			);
-			break;
-
-		case 'error':
-			$state['error_count']++;
-			$state['errors'][] = '[' . $pub['number'] . '] ' . $result['message'];
-			pub_assets_log( $state, 'error',
-				'[' . $pub['number'] . '] Error: ' . $result['message']
-			);
-			break;
+	if ( $state['pub_queue'] === null ) {
+		// Phase 1: set up a new publication
+		pub_assets_tick_setup( $state );
+	} elseif ( $state['pub_queue']['img_idx'] < count( $state['pub_queue']['images'] ) ) {
+		// Phase 2: upload the next queued image
+		pub_assets_tick_image( $state );
+	} else {
+		// Phase 3: all images done — write the post content
+		pub_assets_tick_finalize( $state );
 	}
 
-	$state['current_index']++;
 	$new_log = array_slice( $state['log'], $log_idx_start );
 	pub_assets_save_state( $state );
 
@@ -417,7 +403,7 @@ function pub_assets_ajax_reset() {
 	wp_send_json_success( [ 'message' => 'State reset.' ] );
 }
 
-// ── Core: process one publication ──────────────────────────────────────────────
+// ── Core: tick phase functions ─────────────────────────────────────────────────
 
 /**
  * Convert a payload folder name to the WordPress publication_number value.
@@ -428,30 +414,38 @@ function pub_assets_folder_to_pub_number( $folder_name ) {
 	return preg_replace( '/-/', ' ', $folder_name, 1 );
 }
 
-function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
-	$result = [
-		'status'          => '',
-		'message'         => '',
-		'post_id'         => null,
-		'images_uploaded' => 0,
-		'images_reused'   => 0,
-	];
+/**
+ * Phase 1 — Look up the post, read the HTML, and build the image queue.
+ * Advances current_index immediately for skips/errors so the next tick
+ * moves on. Sets pub_queue for publications that need processing.
+ */
+function pub_assets_tick_setup( &$state ) {
+	$pub        = $state['publications'][ $state['current_index'] ];
+	$pub_number = $pub['number'];
+	$pub_dir    = $pub['dir'];
 
 	if ( ! is_dir( $pub_dir ) ) {
-		$result['status']  = 'error';
-		$result['message'] = 'Directory not found on server (was the session reset?): ' . $pub_dir;
-		return $result;
+		pub_assets_log( $state, 'error',
+			'[' . $pub_number . '] Directory not found on server — skipping.'
+		);
+		$state['error_count']++;
+		$state['errors'][]  = '[' . $pub_number . '] Directory not found.';
+		$state['current_index']++;
+		return;
 	}
 
 	$html_file = $pub_dir . '/' . $pub_number . '.html';
 	if ( ! file_exists( $html_file ) ) {
-		$result['status']  = 'error';
-		$result['message'] = 'HTML file not found: ' . basename( $html_file );
-		return $result;
+		pub_assets_log( $state, 'error',
+			'[' . $pub_number . '] HTML file not found: ' . basename( $html_file )
+		);
+		$state['error_count']++;
+		$state['errors'][]  = '[' . $pub_number . '] HTML file not found.';
+		$state['current_index']++;
+		return;
 	}
 
-	// Look up the post by publication_number ACF field.
-	// Folder names use a hyphen where the stored pub number has a space (first hyphen only).
+	// Find the WordPress post by publication_number ACF field
 	$wp_pub_number = pub_assets_folder_to_pub_number( $pub_number );
 	$posts = get_posts( [
 		'post_type'      => 'publications',
@@ -465,92 +459,140 @@ function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
 	] );
 
 	if ( empty( $posts ) ) {
-		$result['status'] = 'skipped';
-		return $result;
+		pub_assets_log( $state, 'warning',
+			'[' . $pub_number . '] No matching post found — skipped.'
+		);
+		$state['skipped']++;
+		$state['current_index']++;
+		return;
 	}
 
-	$post_id         = (int) $posts[0];
-	$result['post_id'] = $post_id;
+	$post_id = (int) $posts[0];
 
 	$html = file_get_contents( $html_file );
 	if ( $html === false ) {
-		$result['status']  = 'error';
-		$result['message'] = 'Could not read HTML file.';
-		return $result;
+		pub_assets_log( $state, 'error', '[' . $pub_number . '] Could not read HTML file.' );
+		$state['error_count']++;
+		$state['errors'][]  = '[' . $pub_number . '] Could not read HTML file.';
+		$state['current_index']++;
+		return;
 	}
 
-	// Upload images and replace placeholder src URLs
+	// Collect image files in the publication folder
 	$image_extensions = [ 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg' ];
+	$images = [];
 	foreach ( scandir( $pub_dir ) as $filename ) {
 		if ( $filename === '.' || $filename === '..' ) {
 			continue;
 		}
 		$ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
-		if ( ! in_array( $ext, $image_extensions, true ) ) {
-			continue;
+		if ( in_array( $ext, $image_extensions, true ) ) {
+			$images[] = $filename;
 		}
+	}
+	sort( $images );
 
-		$image_path = $pub_dir . '/' . $filename;
-		$img        = pub_assets_upload_image( $image_path, $post_id, $filename );
+	$img_label = count( $images ) > 0 ? count( $images ) . ' image(s) to upload' : 'no images';
+	pub_assets_log( $state, 'info',
+		'[' . $pub_number . '] Starting (post ID ' . $post_id . ', ' . $img_label . ').'
+	);
 
-		if ( is_wp_error( $img ) ) {
-			pub_assets_log( $state, 'warning',
-				'[' . $pub_number . '] Image upload failed for ' . $filename . ': ' .
-				$img->get_error_message()
-			);
-			continue;
-		}
+	$state['pub_queue'] = [
+		'pub_number' => $pub_number,
+		'pub_dir'    => $pub_dir,
+		'post_id'    => $post_id,
+		'html'       => $html,
+		'images'     => $images,
+		'img_idx'    => 0,
+		'uploaded'   => 0,
+		'reused'     => 0,
+	];
+	// current_index is NOT advanced here — it advances in finalize.
+}
 
-		if ( $img['reused'] ) {
-			$result['images_reused']++;
-		} else {
-			$result['images_uploaded']++;
-		}
+/**
+ * Phase 2 — Upload the next image in the queue and patch its src in the HTML.
+ * One call = one image = one thumbnail-generation event.
+ */
+function pub_assets_tick_image( &$state ) {
+	$q          = &$state['pub_queue'];
+	$pub_number = $q['pub_number'];
+	$filename   = $q['images'][ $q['img_idx'] ];
+	$image_path = $q['pub_dir'] . '/' . $filename;
+	$img_num    = $q['img_idx'] + 1;
+	$img_total  = count( $q['images'] );
 
-		if ( ! $img['url'] ) {
-			pub_assets_log( $state, 'warning',
-				'[' . $pub_number . '] Could not resolve URL for attachment ID ' . $img['id'] . ' (' . $filename . ').'
-			);
-			continue;
-		}
+	$img = pub_assets_upload_image( $image_path, $q['post_id'], $filename );
 
-		// Replace the YYYY/MM placeholder src (absolute or root-relative) with the real URL
-		$escaped       = preg_quote( $filename, '#' );
-		$replace_count = 0;
-		$html          = preg_replace(
-			'#(?:https?://[^/]+)?/wp-content/uploads/YYYY/MM/' . $escaped . '#',
-			$img['url'],
-			$html,
-			-1,
-			$replace_count
+	if ( is_wp_error( $img ) ) {
+		pub_assets_log( $state, 'warning',
+			'[' . $pub_number . '] Image ' . $img_num . '/' . $img_total . ': ' .
+			$filename . ' — upload failed: ' . $img->get_error_message()
 		);
-
-		// Build verbose log line for this image
-		$status_label = $img['reused'] ? 'reused' : 'uploaded';
-		$size_str     = $img['filesize'] > 0 ? round( $img['filesize'] / 1024, 1 ) . ' KB' : 'size unknown';
-		$dims_str     = ( $img['width'] && $img['height'] ) ? $img['width'] . '×' . $img['height'] . 'px' : '';
-		$src_str      = $replace_count > 0 ? 'src patched' : 'src not found in HTML';
-
-		$parts = [
-			$status_label . ' (ID ' . $img['id'] . ')',
-			$img['mime'],
-			$size_str,
-		];
-		if ( $dims_str ) {
-			$parts[] = $dims_str;
-		}
-		$parts[] = $img['relative_path'] ?: $img['url'];
-		$parts[] = $src_str;
-
-		pub_assets_log(
-			$state,
-			$replace_count > 0 ? ( $img['reused'] ? 'info' : 'success' ) : 'warning',
-			'[' . $pub_number . '] ' . $filename . ': ' . implode( ' | ', $parts )
-		);
+		$q['img_idx']++;
+		return;
 	}
 
-	// Wrap in a Gutenberg custom HTML block
-	$post_content = "<!-- wp:html -->\n" . trim( $html ) . "\n<!-- /wp:html -->";
+	if ( $img['reused'] ) {
+		$q['reused']++;
+	} else {
+		$q['uploaded']++;
+	}
+
+	if ( ! $img['url'] ) {
+		pub_assets_log( $state, 'warning',
+			'[' . $pub_number . '] Image ' . $img_num . '/' . $img_total . ': ' .
+			$filename . ' — could not resolve URL for attachment ID ' . $img['id'] . '.'
+		);
+		$q['img_idx']++;
+		return;
+	}
+
+	// Replace any /wp-content/uploads/YYYY/MM/ style src (literal placeholder or real date)
+	// with the actual uploaded URL. The HTML payload may use either convention.
+	$escaped       = preg_quote( $filename, '#' );
+	$replace_count = 0;
+	$q['html']     = preg_replace(
+		'#(?:https?://[^/]+)?/wp-content/uploads/(?:YYYY/MM|\d{4}/\d{2})/' . $escaped . '#',
+		$img['url'],
+		$q['html'],
+		-1,
+		$replace_count
+	);
+
+	// Verbose log line
+	$status_label = $img['reused'] ? 'reused' : 'uploaded';
+	$size_str     = $img['filesize'] > 0 ? round( $img['filesize'] / 1024, 1 ) . ' KB' : 'size unknown';
+	$dims_str     = ( $img['width'] && $img['height'] ) ? $img['width'] . '×' . $img['height'] . 'px' : '';
+	$src_str      = $replace_count > 0 ? 'src patched' : 'src not found in HTML';
+
+	$parts = [ $status_label . ' (ID ' . $img['id'] . ')', $img['mime'], $size_str ];
+	if ( $dims_str ) {
+		$parts[] = $dims_str;
+	}
+	$parts[] = $img['relative_path'] ?: $img['url'];
+	$parts[] = $src_str;
+
+	pub_assets_log(
+		$state,
+		$replace_count > 0 ? ( $img['reused'] ? 'info' : 'success' ) : 'warning',
+		'[' . $pub_number . '] Image ' . $img_num . '/' . $img_total . ': ' .
+		$filename . ' — ' . implode( ' | ', $parts )
+	);
+
+	$q['img_idx']++;
+}
+
+/**
+ * Phase 3 — Write the patched HTML to post_content, log a summary, and
+ * clear the queue so the next tick moves on to the next publication.
+ */
+function pub_assets_tick_finalize( &$state ) {
+	$q          = $state['pub_queue'];
+	$pub_number = $q['pub_number'];
+	$post_id    = $q['post_id'];
+
+	$post_content = "<!-- wp:html -->\n" . trim( $q['html'] ) . "\n<!-- /wp:html -->";
 
 	$update = wp_update_post( [
 		'ID'           => $post_id,
@@ -558,13 +600,27 @@ function pub_assets_process_one( $pub_number, $pub_dir, &$state ) {
 	], true );
 
 	if ( is_wp_error( $update ) ) {
-		$result['status']  = 'error';
-		$result['message'] = 'wp_update_post failed: ' . $update->get_error_message();
-		return $result;
+		pub_assets_log( $state, 'error',
+			'[' . $pub_number . '] wp_update_post failed: ' . $update->get_error_message()
+		);
+		$state['error_count']++;
+		$state['errors'][] = '[' . $pub_number . '] ' . $update->get_error_message();
+	} else {
+		$state['updated']++;
+		$summary = [ 'post ID ' . $post_id ];
+		if ( $q['uploaded'] ) {
+			$summary[] = $q['uploaded'] . ' image(s) uploaded';
+		}
+		if ( $q['reused'] ) {
+			$summary[] = $q['reused'] . ' reused';
+		}
+		pub_assets_log( $state, 'success',
+			'[' . $pub_number . '] Updated (' . implode( ', ', $summary ) . ').'
+		);
 	}
 
-	$result['status'] = 'updated';
-	return $result;
+	$state['pub_queue']     = null;
+	$state['current_index']++;
 }
 
 // ── Image upload helper ────────────────────────────────────────────────────────
@@ -576,23 +632,30 @@ function pub_assets_upload_image( $image_path, $post_id, $filename ) {
 
 	$reused = false;
 
-	// Check if an attachment with this filename already exists in the media library
-	$existing = get_posts( [
-		'post_type'   => 'attachment',
-		'post_status' => 'any',
-		'numberposts' => 1,
-		'fields'      => 'ids',
-		'meta_query'  => [ [
-			'key'     => '_wp_attached_file',
-			'value'   => $filename,
-			'compare' => 'LIKE',
-		] ],
-	] );
+	// Check if an attachment with this exact filename already exists in the media library.
+	// _wp_attached_file stores paths like '2024/06/filename.jpg', so we LIKE-search for
+	// anything ending in /filename.jpg, then verify the basename exactly to avoid
+	// false positives (e.g. 'cyst.jpg' matching 'cysts.jpg').
+	global $wpdb;
+	$candidate_ids = $wpdb->get_col( $wpdb->prepare(
+		"SELECT post_id FROM {$wpdb->postmeta}
+		 WHERE meta_key = '_wp_attached_file'
+		   AND meta_value LIKE %s
+		 LIMIT 10",
+		'%' . $wpdb->esc_like( '/' . $filename )
+	) );
 
-	if ( ! empty( $existing ) ) {
-		$attachment_id = (int) $existing[0];
-		$reused        = true;
-	} else {
+	$attachment_id = null;
+	foreach ( $candidate_ids as $cid ) {
+		$stored = get_post_meta( (int) $cid, '_wp_attached_file', true );
+		if ( basename( $stored ) === $filename ) {
+			$attachment_id = (int) $cid;
+			$reused        = true;
+			break;
+		}
+	}
+
+	if ( ! $reused ) {
 		// Copy to a true temp file so media_handle_sideload can move it without
 		// destroying our extracted copy (needed in case of resume after stop).
 		$tmp = wp_tempnam( $filename );
