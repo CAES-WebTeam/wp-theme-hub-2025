@@ -138,31 +138,19 @@
 				// background transition.
 				let sectionHeight;
 				if (isLastFrame) {
-					// Content on the last frame is pinned via CSS position: sticky so it
-					// stays visible at a centered rest position while the incoming
-					// background transition finishes.
-					//
-					// Sticky activates when content's top reaches `targetTop` in the
-					// viewport, and releases when the section's bottom passes that line.
-					// So the section must extend at least `incomingTransitionOverlap +
-					// targetTop` to keep content pinned until the transition ends.
-					const targetTop = Math.max(0, (viewportHeight - contentHeight) / 2);
+					// The sticky backgrounds element releases when
+					//   scrollIntoBlock > cumulativeHeight - viewportHeight
+					// So to keep the background pinned through the full incoming
+					// transition, the last section must extend at least
+					//   incomingTransitionOverlap + viewportHeight
+					// past its own start. We also respect the natural content scroll
+					// distance, whichever is larger, and add the usual exit padding.
 					const incomingTransitionOverlap = prevTransitionDistance * (1 - entryOffsetRatio);
-					sectionHeight = Math.max(scrollToExit, incomingTransitionOverlap + targetTop)
+					const minHoldHeight = incomingTransitionOverlap + viewportHeight;
+					sectionHeight = Math.max(scrollToExit, minHoldHeight)
 						+ (viewportHeight * config.exitScrollDistance);
-
-					// Apply sticky to content so it holds at center.
-					if (content) {
-						content.style.position = 'sticky';
-						content.style.top = targetTop + 'px';
-					}
 				} else {
 					sectionHeight = scrollToExit + (transitionDistance * entryOffsetRatio);
-					// Clear any sticky styles if this frame was previously the last.
-					if (content) {
-						content.style.position = '';
-						content.style.top = '';
-					}
 				}
 
 				frameData.push({
