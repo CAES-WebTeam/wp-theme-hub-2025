@@ -138,19 +138,12 @@
 				// background transition.
 				let sectionHeight;
 				if (isLastFrame) {
-					// For the last frame, content enters from below, reaches a centered
-					// resting position, and is then pinned by updateContentPositions so it
-					// stays on screen while any remaining incoming transition completes.
-					// Section must extend at least:
-					//  - far enough for the incoming transition (from the previous frame)
-					//    to finish: prevTransitionDistance * (1 - entryOffsetRatio)
-					//  - far enough for the content to reach its centered rest point:
-					//    scrollToReachCenter = initialPaddingTop + contentHeight/2 - vh/2
-					//                        = vh + contentHeight/2 - vh/2
-					//                        = (vh + contentHeight) / 2
+					// The incoming transition from the previous frame may extend into this
+					// section (when entryOffsetRatio < 1). Make sure this section is long
+					// enough for that transition to finish before the block unsticks.
 					const incomingTransitionOverlap = prevTransitionDistance * (1 - entryOffsetRatio);
-					const scrollToReachCenter = (viewportHeight + contentHeight) / 2;
-					sectionHeight = Math.max(scrollToReachCenter, incomingTransitionOverlap)
+					const contentDistance = scrollToExit;
+					sectionHeight = Math.max(contentDistance, incomingTransitionOverlap)
 						+ (viewportHeight * config.exitScrollDistance);
 				} else {
 					sectionHeight = scrollToExit + (transitionDistance * entryOffsetRatio);
@@ -335,26 +328,20 @@
 		function updateContentPositions(scrollIntoBlock) {
 			const viewportHeight = window.innerHeight;
 
-			// Pin the last frame's content once it reaches a centered "resting"
-			// position so it doesn't scroll off the top while the incoming background
-			// transition is still completing. Translates the content downward to
-			// counteract further scroll until the block releases.
-			const lastFrame = frameData[frameData.length - 1];
-			if (lastFrame && lastFrame.content) {
-				// Natural top of the content relative to the viewport top
-				// (sectionStart + initialPaddingTop is the content's absolute top;
-				// subtract scrollIntoBlock to get its viewport-relative position).
-				// initialPaddingTop for the last (non-first) frame is viewportHeight.
-				const naturalTop = lastFrame.sectionStart + viewportHeight - scrollIntoBlock;
-				const targetTop = Math.max(0, (viewportHeight - lastFrame.contentHeight) / 2);
+			frameData.forEach((frame) => {
+				if (!frame.content) return;
 
-				if (naturalTop < targetTop && scrollIntoBlock < lastFrame.sectionEnd) {
-					// Content has scrolled above the target — pin it at target.
-					lastFrame.content.style.transform = `translateY(${targetTop - naturalTop}px)`;
-				} else {
-					lastFrame.content.style.transform = '';
-				}
-			}
+				// Calculate where content should be positioned
+				// Content starts at bottom of viewport, scrolls to top, then off top
+				const localScroll = scrollIntoBlock - frame.sectionStart;
+
+				// Content enters when localScroll = 0 (at bottom)
+				// Content is centered when localScroll = viewportHeight * 0.15
+				// Content exits when localScroll = viewportHeight + contentHeight
+
+				// The content div uses CSS to position itself, we just need to ensure
+				// the section is tall enough (which we do in calculateLayout)
+			});
 		}
 
 		/**
