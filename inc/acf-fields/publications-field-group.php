@@ -560,7 +560,7 @@ add_action( 'acf/include_fields', function() {
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array(
-						'width' => '30',
+						'width' => '',
 						'class' => '',
 						'id' => '',
 					),
@@ -593,7 +593,7 @@ add_action( 'acf/include_fields', function() {
 						),
 					),
 					'wrapper' => array(
-						'width' => '70',
+						'width' => '',
 						'class' => '',
 						'id' => '',
 					),
