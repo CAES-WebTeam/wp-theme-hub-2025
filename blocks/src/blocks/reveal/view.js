@@ -138,15 +138,31 @@
 				// background transition.
 				let sectionHeight;
 				if (isLastFrame) {
-					// The incoming transition from the previous frame may extend into this
-					// section (when entryOffsetRatio < 1). Make sure this section is long
-					// enough for that transition to finish before the block unsticks.
+					// Content on the last frame is pinned via CSS position: sticky so it
+					// stays visible at a centered rest position while the incoming
+					// background transition finishes.
+					//
+					// Sticky activates when content's top reaches `targetTop` in the
+					// viewport, and releases when the section's bottom passes that line.
+					// So the section must extend at least `incomingTransitionOverlap +
+					// targetTop` to keep content pinned until the transition ends.
+					const targetTop = Math.max(0, (viewportHeight - contentHeight) / 2);
 					const incomingTransitionOverlap = prevTransitionDistance * (1 - entryOffsetRatio);
-					const contentDistance = scrollToExit;
-					sectionHeight = Math.max(contentDistance, incomingTransitionOverlap)
+					sectionHeight = Math.max(scrollToExit, incomingTransitionOverlap + targetTop)
 						+ (viewportHeight * config.exitScrollDistance);
+
+					// Apply sticky to content so it holds at center.
+					if (content) {
+						content.style.position = 'sticky';
+						content.style.top = targetTop + 'px';
+					}
 				} else {
 					sectionHeight = scrollToExit + (transitionDistance * entryOffsetRatio);
+					// Clear any sticky styles if this frame was previously the last.
+					if (content) {
+						content.style.position = '';
+						content.style.top = '';
+					}
 				}
 
 				frameData.push({
