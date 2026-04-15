@@ -368,18 +368,22 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				</PanelBody>
 
 				<PanelBody title={__('Scroll Behavior', 'caes-reveal')} initialOpen={false}>
-					<SelectControl
+					<RangeControl
 						label={__('Content Entry Offset', 'caes-reveal')}
-						help={__('Controls when the next slide\'s content enters the viewport during the background transition. Full = content enters after the transition completes. None = content enters as the transition begins (content scrolls up while the background is still transitioning).', 'caes-reveal')}
-						value={contentEntryOffset || 'full'}
-						options={[
-							{ label: __('Full (100%)', 'caes-reveal'), value: 'full' },
-							{ label: __('Three Quarter (75%)', 'caes-reveal'), value: 'three-quarter' },
-							{ label: __('Half (50%)', 'caes-reveal'), value: 'half' },
-							{ label: __('Quarter (25%)', 'caes-reveal'), value: 'quarter' },
-							{ label: __('None (0%)', 'caes-reveal'), value: 'none' },
-						]}
+						help={__('Controls when the next slide\'s content enters the viewport during the background transition. 100 = content enters after the transition completes. 0 = content enters as the transition begins (content scrolls up while the background is still transitioning). Drag the slider in 25% steps, or type a precise value.', 'caes-reveal')}
+						value={typeof contentEntryOffset === 'number' ? contentEntryOffset : 100}
 						onChange={(value) => setAttributes({ contentEntryOffset: value })}
+						min={0}
+						max={100}
+						step={25}
+						marks={[
+							{ value: 0, label: '0%' },
+							{ value: 25, label: '25%' },
+							{ value: 50, label: '50%' },
+							{ value: 75, label: '75%' },
+							{ value: 100, label: '100%' },
+						]}
+						withInputField={true}
 					/>
 				</PanelBody>
 

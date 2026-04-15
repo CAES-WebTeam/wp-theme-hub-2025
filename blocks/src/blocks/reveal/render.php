@@ -26,7 +26,22 @@
 $frames              = $attributes['frames'] ?? [];
 $overlay_color       = $attributes['overlayColor'] ?? '#000000';
 $overlay_opacity     = $attributes['overlayOpacity'] ?? 30;
-$content_entry_offset = $attributes['contentEntryOffset'] ?? 'full';
+$content_entry_offset_raw = $attributes['contentEntryOffset'] ?? 100;
+
+// Backward-compat: earlier versions stored this as a keyword string. Normalize
+// to a 0-100 integer percentage.
+if (is_string($content_entry_offset_raw)) {
+	$legacy_map = [
+		'full'          => 100,
+		'three-quarter' => 75,
+		'half'          => 50,
+		'quarter'       => 25,
+		'none'          => 0,
+	];
+	$content_entry_offset = $legacy_map[$content_entry_offset_raw] ?? 100;
+} else {
+	$content_entry_offset = max(0, min(100, (int) $content_entry_offset_raw));
+}
 
 // Early return if no frames
 if (empty($frames)) {

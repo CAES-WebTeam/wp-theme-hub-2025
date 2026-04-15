@@ -52,15 +52,8 @@
       ]
     },
     "contentEntryOffset": {
-      "type": "string",
-      "default": "full",
-      "enum": [
-        "full",
-        "three-quarter",
-        "half",
-        "quarter",
-        "none"
-      ]
+      "type": "number",
+      "default": 100
     }
   },
   "supports": {

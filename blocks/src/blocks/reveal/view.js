@@ -55,17 +55,14 @@
 			const viewportHeight = window.innerHeight;
 			frameData = [];
 
-			// Read per-block content entry offset (how far content is pushed down
-			// within each section before scrolling moves it up and out).
-			const entryOffsetKey = block.getAttribute('data-entry-offset') || 'full';
-			const entryOffsetRatios = {
-				'full': 1,
-				'three-quarter': 0.75,
-				'half': 0.5,
-				'quarter': 0.25,
-				'none': 0,
-			};
-			const entryOffsetRatio = entryOffsetRatios[entryOffsetKey] ?? 1;
+			// Read per-block content entry offset as a 0-100 percentage on the
+			// block element. Legacy string keywords are normalized server-side in
+			// render.php before being emitted as data-entry-offset.
+			const entryOffsetAttr = block.getAttribute('data-entry-offset');
+			const entryOffsetPercent = entryOffsetAttr === null || entryOffsetAttr === ''
+				? 100
+				: Math.max(0, Math.min(100, parseFloat(entryOffsetAttr)));
+			const entryOffsetRatio = (isNaN(entryOffsetPercent) ? 100 : entryOffsetPercent) / 100;
 			const entryOffsetPx = viewportHeight * entryOffsetRatio;
 
 			let cumulativeHeight = 0;
