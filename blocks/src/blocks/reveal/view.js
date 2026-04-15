@@ -69,6 +69,9 @@
 			const entryOffsetPx = viewportHeight * entryOffsetRatio;
 
 			let cumulativeHeight = 0;
+			// Track the previous frame's transition distance so the last section can
+			// guarantee enough scroll room for any overlapping transition to complete.
+			let prevTransitionDistance = 0;
 
 			sections.forEach((section, index) => {
 				const content = section.querySelector('.reveal-frame-content');
@@ -133,9 +136,18 @@
 				// transition (default); lower ratios let the next section (and its content)
 				// overlap the transition zone so content enters the viewport during the
 				// background transition.
-				const sectionHeight = isLastFrame
-					? scrollToExit + (viewportHeight * config.exitScrollDistance)
-					: scrollToExit + (transitionDistance * entryOffsetRatio);
+				let sectionHeight;
+				if (isLastFrame) {
+					// The incoming transition from the previous frame may extend into this
+					// section (when entryOffsetRatio < 1). Make sure this section is long
+					// enough for that transition to finish before the block unsticks.
+					const incomingTransitionOverlap = prevTransitionDistance * (1 - entryOffsetRatio);
+					const contentDistance = scrollToExit;
+					sectionHeight = Math.max(contentDistance, incomingTransitionOverlap)
+						+ (viewportHeight * config.exitScrollDistance);
+				} else {
+					sectionHeight = scrollToExit + (transitionDistance * entryOffsetRatio);
+				}
 
 				frameData.push({
 					index,
@@ -156,6 +168,7 @@
 				});
 
 				cumulativeHeight += sectionHeight;
+				prevTransitionDistance = transitionDistance;
 
 				// Set section height
 				section.style.height = sectionHeight + 'px';
