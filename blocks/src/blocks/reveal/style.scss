@@ -260,8 +260,9 @@ $reveal-mobile-breakpoint: 782px;
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
-	// Add padding-top equal to viewport height so content starts at bottom
-	padding-top: 100vh;
+	// Add padding-top equal to viewport height so content starts at bottom.
+	// Overridable per-block via the --reveal-entry-offset custom property.
+	padding-top: var(--reveal-entry-offset, 100vh);
 	box-sizing: border-box;
 }
 

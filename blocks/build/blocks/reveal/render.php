@@ -23,9 +23,20 @@
  */
 
 // Get block attributes
-$frames          = $attributes['frames'] ?? [];
-$overlay_color   = $attributes['overlayColor'] ?? '#000000';
-$overlay_opacity = $attributes['overlayOpacity'] ?? 30;
+$frames              = $attributes['frames'] ?? [];
+$overlay_color       = $attributes['overlayColor'] ?? '#000000';
+$overlay_opacity     = $attributes['overlayOpacity'] ?? 30;
+$content_entry_offset = $attributes['contentEntryOffset'] ?? 'full';
+
+// Map offset keyword to a viewport-height value
+$entry_offset_map = [
+	'full'          => '100vh',
+	'three-quarter' => '75vh',
+	'half'          => '50vh',
+	'quarter'       => '25vh',
+	'none'          => '0',
+];
+$entry_offset_value = $entry_offset_map[$content_entry_offset] ?? '100vh';
 
 // Early return if no frames
 if (empty($frames)) {
@@ -54,6 +65,8 @@ $wrapper_attributes = get_block_wrapper_attributes(
 		'id'    => $block_id,
 		'class' => 'caes-reveal',
 		'data-frame-count' => count($frames),
+		'data-entry-offset' => $content_entry_offset,
+		'style' => '--reveal-entry-offset: ' . $entry_offset_value . ';',
 	]
 );
 

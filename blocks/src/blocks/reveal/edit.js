@@ -140,7 +140,7 @@ const generateFrameId = () => {
 };
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { frames, overlayColor, overlayOpacity } = attributes;
+	const { frames, overlayColor, overlayOpacity, contentEntryOffset } = attributes;
 	const [showFrameManager, setShowFrameManager] = useState(false);
 	const [showOverlayColorPicker, setShowOverlayColorPicker] = useState(false);
 
@@ -365,6 +365,22 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					>
 						{__('Manage Frames', 'caes-reveal')}
 					</Button>
+				</PanelBody>
+
+				<PanelBody title={__('Scroll Behavior', 'caes-reveal')} initialOpen={false}>
+					<SelectControl
+						label={__('Content Entry Offset', 'caes-reveal')}
+						help={__('How far content is pushed down before it enters the viewport. Lower values make items appear sooner as the user scrolls.', 'caes-reveal')}
+						value={contentEntryOffset || 'full'}
+						options={[
+							{ label: __('Full (100%)', 'caes-reveal'), value: 'full' },
+							{ label: __('Three Quarter (75%)', 'caes-reveal'), value: 'three-quarter' },
+							{ label: __('Half (50%)', 'caes-reveal'), value: 'half' },
+							{ label: __('Quarter (25%)', 'caes-reveal'), value: 'quarter' },
+							{ label: __('None (0%)', 'caes-reveal'), value: 'none' },
+						]}
+						onChange={(value) => setAttributes({ contentEntryOffset: value })}
+					/>
 				</PanelBody>
 
 				<PanelBody title={__('Overlay', 'caes-reveal')} initialOpen={false}>
@@ -665,9 +681,11 @@ const FrameManagerPanel = ({
 								label={__('Speed', 'caes-reveal')}
 								value={frame.transition.speed || 'normal'}
 								options={[
+									{ label: __('Very Slow', 'caes-reveal'), value: 'very-slow' },
 									{ label: __('Slow', 'caes-reveal'), value: 'slow' },
 									{ label: __('Normal', 'caes-reveal'), value: 'normal' },
 									{ label: __('Fast', 'caes-reveal'), value: 'fast' },
+									{ label: __('Very Fast', 'caes-reveal'), value: 'very-fast' },
 								]}
 								onChange={(value) =>
 									onUpdate({

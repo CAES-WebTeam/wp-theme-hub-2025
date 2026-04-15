@@ -55,6 +55,19 @@
 			const viewportHeight = window.innerHeight;
 			frameData = [];
 
+			// Read per-block content entry offset (how far content is pushed down
+			// within each section before scrolling moves it up and out).
+			const entryOffsetKey = block.getAttribute('data-entry-offset') || 'full';
+			const entryOffsetRatios = {
+				'full': 1,
+				'three-quarter': 0.75,
+				'half': 0.5,
+				'quarter': 0.25,
+				'none': 0,
+			};
+			const entryOffsetRatio = entryOffsetRatios[entryOffsetKey] ?? 1;
+			const entryOffsetPx = viewportHeight * entryOffsetRatio;
+
 			let cumulativeHeight = 0;
 
 			sections.forEach((section, index) => {
@@ -77,11 +90,17 @@
 				const speed = bg ? (bg.getAttribute('data-speed') || 'normal') : 'normal';
 				let transitionDistance;
 				switch (speed) {
+					case 'very-slow':
+						transitionDistance = viewportHeight * 3.5;
+						break;
 					case 'slow':
 						transitionDistance = viewportHeight * 2.5;
 						break;
 					case 'fast':
 						transitionDistance = viewportHeight * 1.0;
+						break;
+					case 'very-fast':
+						transitionDistance = viewportHeight * 0.5;
 						break;
 					default:
 						transitionDistance = viewportHeight * 1.8;
@@ -94,10 +113,11 @@
 				const isFirstFrame = index === 0;
 				const isLastFrame = index === sections.length - 1;
 
-				// How far content is pushed down within its section before scrolling begins
+				// How far content is pushed down within its section before scrolling begins.
+				// First frame is centered; other frames respect the per-block entry offset.
 				const initialPaddingTop = isFirstFrame
 					? Math.max(0, (viewportHeight - contentHeight) / 2)
-					: viewportHeight;
+					: entryOffsetPx;
 
 				// Override CSS padding-top for the first frame so content starts centered
 				if (isFirstFrame) {

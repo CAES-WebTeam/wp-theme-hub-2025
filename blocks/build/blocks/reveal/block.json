@@ -44,9 +44,22 @@
       "type": "string",
       "default": "normal",
       "enum": [
+        "very-slow",
         "slow",
         "normal",
-        "fast"
+        "fast",
+        "very-fast"
+      ]
+    },
+    "contentEntryOffset": {
+      "type": "string",
+      "default": "full",
+      "enum": [
+        "full",
+        "three-quarter",
+        "half",
+        "quarter",
+        "none"
       ]
     }
   },
