@@ -370,7 +370,7 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 				<PanelBody title={__('Scroll Behavior', 'caes-reveal')} initialOpen={false}>
 					<SelectControl
 						label={__('Content Entry Offset', 'caes-reveal')}
-						help={__('How far content is pushed down before it enters the viewport. Lower values make items appear sooner as the user scrolls.', 'caes-reveal')}
+						help={__('Controls when the next slide\'s content enters the viewport during the background transition. Full = content enters after the transition completes. None = content enters as the transition begins (content scrolls up while the background is still transitioning).', 'caes-reveal')}
 						value={contentEntryOffset || 'full'}
 						options={[
 							{ label: __('Full (100%)', 'caes-reveal'), value: 'full' },

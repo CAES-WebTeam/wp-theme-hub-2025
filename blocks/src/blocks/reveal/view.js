@@ -114,10 +114,11 @@
 				const isLastFrame = index === sections.length - 1;
 
 				// How far content is pushed down within its section before scrolling begins.
-				// First frame is centered; other frames respect the per-block entry offset.
+				// First frame is centered; other frames sit a full viewport below section start
+				// (the entry offset is applied via section overlap below, not via padding).
 				const initialPaddingTop = isFirstFrame
 					? Math.max(0, (viewportHeight - contentHeight) / 2)
-					: entryOffsetPx;
+					: viewportHeight;
 
 				// Override CSS padding-top for the first frame so content starts centered
 				if (isFirstFrame) {
@@ -127,9 +128,14 @@
 				// How far user must scroll before content exits the top of the viewport
 				const scrollToExit = initialPaddingTop + contentHeight;
 
+				// Controls when the NEXT section enters the viewport relative to this
+				// frame's transition. Ratio of 1 keeps the next section entirely after the
+				// transition (default); lower ratios let the next section (and its content)
+				// overlap the transition zone so content enters the viewport during the
+				// background transition.
 				const sectionHeight = isLastFrame
 					? scrollToExit + (viewportHeight * config.exitScrollDistance)
-					: scrollToExit + transitionDistance;
+					: scrollToExit + (transitionDistance * entryOffsetRatio);
 
 				frameData.push({
 					index,
@@ -194,32 +200,31 @@
 		 * Determine which frame is active and calculate transition progress
 		 */
 		function getCurrentFrameState(scrollIntoBlock) {
-			const viewportHeight = window.innerHeight;
-
 			let activeIndex = 0;
 			let transitioningToIndex = -1;
 			let transitionProgress = 0;
 
+			// First, check transition zones (which may overlap next section due to entry offset).
+			// A transition from frame i to i+1 takes priority over plain section detection.
 			for (let i = 0; i < frameData.length; i++) {
 				const frame = frameData[i];
+				if (frame.isLastFrame) continue;
 
-				if (scrollIntoBlock >= frame.sectionStart && scrollIntoBlock < frame.sectionEnd) {
+				if (scrollIntoBlock >= frame.transitionStart && scrollIntoBlock < frame.transitionEnd) {
 					activeIndex = i;
-
-					// Check if we're in the transition zone
-					if (!frame.isLastFrame && scrollIntoBlock >= frame.transitionStart) {
-						transitioningToIndex = i + 1;
-						const progressIntoTransition = scrollIntoBlock - frame.transitionStart;
-						transitionProgress = Math.min(1, Math.max(0, progressIntoTransition / frame.transitionDistance));
-					}
-
-					break;
+					transitioningToIndex = i + 1;
+					const progressIntoTransition = scrollIntoBlock - frame.transitionStart;
+					transitionProgress = Math.min(1, Math.max(0, progressIntoTransition / frame.transitionDistance));
+					return { activeIndex, transitioningToIndex, transitionProgress };
 				}
 			}
 
-			// If we've scrolled past all frames, show the last one
-			if (scrollIntoBlock >= frameData[frameData.length - 1]?.sectionEnd) {
-				activeIndex = frameData.length - 1;
+			// Not in any transition — pick the latest frame whose section has started.
+			for (let i = frameData.length - 1; i >= 0; i--) {
+				if (scrollIntoBlock >= frameData[i].sectionStart) {
+					activeIndex = i;
+					break;
+				}
 			}
 
 			return { activeIndex, transitioningToIndex, transitionProgress };
