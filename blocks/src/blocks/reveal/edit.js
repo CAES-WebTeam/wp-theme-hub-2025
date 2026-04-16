@@ -679,6 +679,7 @@ const FrameManagerPanel = ({
 								}
 							/>
 						</div>
+						<div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #ddd' }} />
 						<RangeControl
 							label={__('Content Reveal Timing (%)', 'caes-reveal')}
 							help={__('How long to wait before showing this slide\'s content. At 100%, content waits until the background has fully transitioned. At 0%, content starts appearing immediately as the background transitions in.', 'caes-reveal')}

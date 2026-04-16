@@ -51,13 +51,37 @@
 		/**
 		 * Calculate layout metrics for each frame
 		 */
+		/**
+		 * Convert a speed keyword to a scroll distance in pixels.
+		 */
+		function speedToDistance(speed, vh) {
+			switch (speed) {
+				case 'very-slow': return vh * 3.5;
+				case 'slow':      return vh * 2.5;
+				case 'fast':      return vh * 1.0;
+				case 'very-fast': return vh * 0.5;
+				default:          return vh * 1.8;
+			}
+		}
+
+		/**
+		 * Read a data-entry-offset attribute and return a 0-1 ratio.
+		 */
+		function readEntryOffsetRatio(el) {
+			const attr = el ? el.getAttribute('data-entry-offset') : null;
+			const pct = attr === null || attr === ''
+				? 100
+				: Math.max(0, Math.min(100, parseFloat(attr)));
+			return (isNaN(pct) ? 100 : pct) / 100;
+		}
+
 		function calculateLayout() {
 			const viewportHeight = window.innerHeight;
 			frameData = [];
 
 			let cumulativeHeight = 0;
-			// Track the previous frame's transition distance so the last section can
-			// guarantee enough scroll room for any overlapping transition to complete.
+			// Track the previous frame's outgoing transition distance so the
+			// last section can guarantee enough scroll room.
 			let prevTransitionDistance = 0;
 
 			sections.forEach((section, index) => {
@@ -76,43 +100,26 @@
 				}
 				contentHeight = Math.max(contentHeight, 100);
 
-				// Get per-frame entry offset (0-100 percentage, normalized to 0-1 ratio)
-				const entryOffsetAttr = section.getAttribute('data-entry-offset');
-				const entryOffsetPercent = entryOffsetAttr === null || entryOffsetAttr === ''
-					? 100
-					: Math.max(0, Math.min(100, parseFloat(entryOffsetAttr)));
-				const entryOffsetRatio = (isNaN(entryOffsetPercent) ? 100 : entryOffsetPercent) / 100;
-
-				// Get transition config
-				const speed = bg ? (bg.getAttribute('data-speed') || 'normal') : 'normal';
-				let transitionDistance;
-				switch (speed) {
-					case 'very-slow':
-						transitionDistance = viewportHeight * 3.5;
-						break;
-					case 'slow':
-						transitionDistance = viewportHeight * 2.5;
-						break;
-					case 'fast':
-						transitionDistance = viewportHeight * 1.0;
-						break;
-					case 'very-fast':
-						transitionDistance = viewportHeight * 0.5;
-						break;
-					default:
-						transitionDistance = viewportHeight * 1.8;
-				}
-
-				// Calculate section height:
-				// For frame 0: content starts centered, padding-top = (vh - contentHeight) / 2
-				// For other frames: content enters from bottom, padding-top = 100vh (CSS default)
-				// transitionDistance for the background transition (except last frame)
 				const isFirstFrame = index === 0;
 				const isLastFrame = index === sections.length - 1;
 
-				// How far content is pushed down within its section before scrolling begins.
-				// First frame is centered; other frames sit a full viewport below section start
-				// (the entry offset is applied via section overlap below, not via padding).
+				// Per-frame entry offset (controls when THIS frame's content
+				// enters during the incoming transition).
+				const entryOffsetRatio = readEntryOffsetRatio(section);
+
+				// Transition FROM this frame TO the next: all transition
+				// properties (type, speed, entry offset) live on the INCOMING
+				// frame, so we read the next frame's speed for this transition.
+				let transitionDistance = 0;
+				if (!isLastFrame) {
+					const nextBg = backgrounds[index + 1];
+					const nextSpeed = nextBg ? (nextBg.getAttribute('data-speed') || 'normal') : 'normal';
+					transitionDistance = speedToDistance(nextSpeed, viewportHeight);
+				}
+
+				// How far content is pushed down within its section before
+				// scrolling begins. First frame is centered; others sit a full
+				// viewport below section start.
 				const initialPaddingTop = isFirstFrame
 					? Math.max(0, (viewportHeight - contentHeight) / 2)
 					: viewportHeight;
@@ -125,11 +132,6 @@
 				// How far user must scroll before content exits the top of the viewport
 				const scrollToExit = initialPaddingTop + contentHeight;
 
-				// Controls when the NEXT section enters the viewport relative to
-				// this frame's transition. The *next* frame's entryOffsetRatio
-				// determines overlap: ratio 1 keeps the next section entirely
-				// after the transition; lower ratios overlap into the transition
-				// zone so the next content enters sooner.
 				let sectionHeight;
 				if (isLastFrame) {
 					// Use THIS frame's own entry offset to compute how much of
@@ -143,12 +145,7 @@
 				} else {
 					// Look ahead to the next frame's entry offset to determine
 					// how much this section's transition zone should overlap.
-					const nextSection = sections[index + 1];
-					const nextAttr = nextSection ? nextSection.getAttribute('data-entry-offset') : null;
-					const nextPercent = nextAttr === null || nextAttr === ''
-						? 100
-						: Math.max(0, Math.min(100, parseFloat(nextAttr)));
-					const nextRatio = (isNaN(nextPercent) ? 100 : nextPercent) / 100;
+					const nextRatio = readEntryOffsetRatio(sections[index + 1]);
 					sectionHeight = scrollToExit + (transitionDistance * nextRatio);
 				}
 
