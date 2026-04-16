@@ -55,16 +55,6 @@
 			const viewportHeight = window.innerHeight;
 			frameData = [];
 
-			// Read per-block content entry offset as a 0-100 percentage on the
-			// block element. Legacy string keywords are normalized server-side in
-			// render.php before being emitted as data-entry-offset.
-			const entryOffsetAttr = block.getAttribute('data-entry-offset');
-			const entryOffsetPercent = entryOffsetAttr === null || entryOffsetAttr === ''
-				? 100
-				: Math.max(0, Math.min(100, parseFloat(entryOffsetAttr)));
-			const entryOffsetRatio = (isNaN(entryOffsetPercent) ? 100 : entryOffsetPercent) / 100;
-			const entryOffsetPx = viewportHeight * entryOffsetRatio;
-
 			let cumulativeHeight = 0;
 			// Track the previous frame's transition distance so the last section can
 			// guarantee enough scroll room for any overlapping transition to complete.
@@ -85,6 +75,13 @@
 					}
 				}
 				contentHeight = Math.max(contentHeight, 100);
+
+				// Get per-frame entry offset (0-100 percentage, normalized to 0-1 ratio)
+				const entryOffsetAttr = section.getAttribute('data-entry-offset');
+				const entryOffsetPercent = entryOffsetAttr === null || entryOffsetAttr === ''
+					? 100
+					: Math.max(0, Math.min(100, parseFloat(entryOffsetAttr)));
+				const entryOffsetRatio = (isNaN(entryOffsetPercent) ? 100 : entryOffsetPercent) / 100;
 
 				// Get transition config
 				const speed = bg ? (bg.getAttribute('data-speed') || 'normal') : 'normal';
@@ -128,26 +125,31 @@
 				// How far user must scroll before content exits the top of the viewport
 				const scrollToExit = initialPaddingTop + contentHeight;
 
-				// Controls when the NEXT section enters the viewport relative to this
-				// frame's transition. Ratio of 1 keeps the next section entirely after the
-				// transition (default); lower ratios let the next section (and its content)
-				// overlap the transition zone so content enters the viewport during the
-				// background transition.
+				// Controls when the NEXT section enters the viewport relative to
+				// this frame's transition. The *next* frame's entryOffsetRatio
+				// determines overlap: ratio 1 keeps the next section entirely
+				// after the transition; lower ratios overlap into the transition
+				// zone so the next content enters sooner.
 				let sectionHeight;
 				if (isLastFrame) {
-					// The sticky backgrounds element releases when
-					//   scrollIntoBlock > cumulativeHeight - viewportHeight
-					// So to keep the background pinned through the full incoming
-					// transition, the last section must extend at least
-					//   incomingTransitionOverlap + viewportHeight
-					// past its own start. We also respect the natural content scroll
-					// distance, whichever is larger, and add the usual exit padding.
+					// Use THIS frame's own entry offset to compute how much of
+					// the previous transition overlaps into this section. The
+					// section must extend at least that much + a full viewport
+					// so the sticky background holds through the transition.
 					const incomingTransitionOverlap = prevTransitionDistance * (1 - entryOffsetRatio);
 					const minHoldHeight = incomingTransitionOverlap + viewportHeight;
 					sectionHeight = Math.max(scrollToExit, minHoldHeight)
 						+ (viewportHeight * config.exitScrollDistance);
 				} else {
-					sectionHeight = scrollToExit + (transitionDistance * entryOffsetRatio);
+					// Look ahead to the next frame's entry offset to determine
+					// how much this section's transition zone should overlap.
+					const nextSection = sections[index + 1];
+					const nextAttr = nextSection ? nextSection.getAttribute('data-entry-offset') : null;
+					const nextPercent = nextAttr === null || nextAttr === ''
+						? 100
+						: Math.max(0, Math.min(100, parseFloat(nextAttr)));
+					const nextRatio = (isNaN(nextPercent) ? 100 : nextPercent) / 100;
+					sectionHeight = scrollToExit + (transitionDistance * nextRatio);
 				}
 
 				frameData.push({

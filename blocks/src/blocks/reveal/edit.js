@@ -132,6 +132,7 @@ const DEFAULT_FRAME = {
 	transition: {
 		type: 'fade',
 		speed: 'normal',
+		entryOffset: 100,
 	},
 };
 
@@ -140,7 +141,7 @@ const generateFrameId = () => {
 };
 
 const Edit = ({ attributes, setAttributes, clientId }) => {
-	const { frames, overlayColor, overlayOpacity, contentEntryOffset } = attributes;
+	const { frames, overlayColor, overlayOpacity } = attributes;
 	const [showFrameManager, setShowFrameManager] = useState(false);
 	const [showOverlayColorPicker, setShowOverlayColorPicker] = useState(false);
 
@@ -365,28 +366,6 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					>
 						{__('Manage Frames', 'caes-reveal')}
 					</Button>
-				</PanelBody>
-
-				<PanelBody title={__('Scroll Behavior', 'caes-reveal')} initialOpen={false}>
-					<RangeControl
-						label={__('Content Entry Offset (%)', 'caes-reveal')}
-						help={__('Controls when the next slide\'s content enters the viewport during the background transition. 100 = content enters after the transition completes. 0 = content enters as the transition begins. Drag the slider or type a precise value.', 'caes-reveal')}
-						value={typeof contentEntryOffset === 'number' ? contentEntryOffset : 100}
-						onChange={(value) => setAttributes({ contentEntryOffset: value ?? 100 })}
-						min={0}
-						max={100}
-						step={1}
-						marks={[
-							{ value: 0, label: '0' },
-							{ value: 25, label: '25' },
-							{ value: 50, label: '50' },
-							{ value: 75, label: '75' },
-							{ value: 100, label: '100' },
-						]}
-						withInputField={true}
-						allowReset={true}
-						resetFallbackValue={100}
-					/>
 				</PanelBody>
 
 				<PanelBody title={__('Overlay', 'caes-reveal')} initialOpen={false}>
@@ -700,6 +679,29 @@ const FrameManagerPanel = ({
 								}
 							/>
 						</div>
+						<RangeControl
+							label={__('Content Reveal Timing (%)', 'caes-reveal')}
+							help={__('How long to wait before showing this slide\'s content. At 100%, content waits until the background has fully transitioned. At 0%, content starts appearing immediately as the background transitions in.', 'caes-reveal')}
+							value={typeof frame.transition.entryOffset === 'number' ? frame.transition.entryOffset : 100}
+							onChange={(value) =>
+								onUpdate({
+									transition: { ...frame.transition, entryOffset: value ?? 100 },
+								})
+							}
+							min={0}
+							max={100}
+							step={1}
+							marks={[
+								{ value: 0, label: '0' },
+								{ value: 25, label: '25' },
+								{ value: 50, label: '50' },
+								{ value: 75, label: '75' },
+								{ value: 100, label: '100' },
+							]}
+							withInputField={true}
+							allowReset={true}
+							resetFallbackValue={100}
+						/>
 					</div>}
 				</div>
 			)}
