@@ -44,9 +44,11 @@
 			"type": "string",
 			"default": "normal",
 			"enum": [
+				"very-slow",
 				"slow",
 				"normal",
-				"fast"
+				"fast",
+				"very-fast"
 			]
 		}
 	},

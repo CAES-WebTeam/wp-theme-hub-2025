@@ -132,6 +132,7 @@ const DEFAULT_FRAME = {
 	transition: {
 		type: 'fade',
 		speed: 'normal',
+		entryOffset: 100,
 	},
 };
 
@@ -665,9 +666,11 @@ const FrameManagerPanel = ({
 								label={__('Speed', 'caes-reveal')}
 								value={frame.transition.speed || 'normal'}
 								options={[
+									{ label: __('Very Slow', 'caes-reveal'), value: 'very-slow' },
 									{ label: __('Slow', 'caes-reveal'), value: 'slow' },
 									{ label: __('Normal', 'caes-reveal'), value: 'normal' },
 									{ label: __('Fast', 'caes-reveal'), value: 'fast' },
+									{ label: __('Very Fast', 'caes-reveal'), value: 'very-fast' },
 								]}
 								onChange={(value) =>
 									onUpdate({
@@ -676,6 +679,30 @@ const FrameManagerPanel = ({
 								}
 							/>
 						</div>
+						<div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #ddd' }} />
+						<RangeControl
+							label={__('Content Reveal Timing (%)', 'caes-reveal')}
+							help={__('How long to wait before showing this slide\'s content. At 100%, content waits until the background has fully transitioned. At 0%, content starts appearing immediately as the background transitions in.', 'caes-reveal')}
+							value={typeof frame.transition.entryOffset === 'number' ? frame.transition.entryOffset : 100}
+							onChange={(value) =>
+								onUpdate({
+									transition: { ...frame.transition, entryOffset: value ?? 100 },
+								})
+							}
+							min={0}
+							max={100}
+							step={1}
+							marks={[
+								{ value: 0, label: '0' },
+								{ value: 25, label: '25' },
+								{ value: 50, label: '50' },
+								{ value: 75, label: '75' },
+								{ value: 100, label: '100' },
+							]}
+							withInputField={true}
+							allowReset={true}
+							resetFallbackValue={100}
+						/>
 					</div>}
 				</div>
 			)}

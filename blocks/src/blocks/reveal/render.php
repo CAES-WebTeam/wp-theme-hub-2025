@@ -23,9 +23,9 @@
  */
 
 // Get block attributes
-$frames          = $attributes['frames'] ?? [];
-$overlay_color   = $attributes['overlayColor'] ?? '#000000';
-$overlay_opacity = $attributes['overlayOpacity'] ?? 30;
+$frames              = $attributes['frames'] ?? [];
+$overlay_color       = $attributes['overlayColor'] ?? '#000000';
+$overlay_opacity     = $attributes['overlayOpacity'] ?? 30;
 
 // Early return if no frames
 if (empty($frames)) {
@@ -208,6 +208,14 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 			$mobile_duotone      = $frame['mobileDuotone'] ?? null;
 			$transition_type     = $frame['transition']['type'] ?? 'fade';
 			$transition_speed    = $frame['transition']['speed'] ?? 'normal';
+			$entry_offset_raw    = $frame['transition']['entryOffset'] ?? null;
+			// Backward-compat: earlier versions stored offset as a block-level string keyword.
+			if (is_string($entry_offset_raw)) {
+				$legacy_map = ['full' => 100, 'three-quarter' => 75, 'half' => 50, 'quarter' => 25, 'none' => 0];
+				$entry_offset = $legacy_map[$entry_offset_raw] ?? 100;
+			} else {
+				$entry_offset = $entry_offset_raw !== null ? max(0, min(100, (int) $entry_offset_raw)) : 100;
+			}
 
 			if (empty($desktop_image)) {
 				continue;
@@ -254,7 +262,8 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 			<div class="reveal-frame-background<?php echo $index === 0 ? ' is-active' : ''; ?>"
 				data-frame-index="<?php echo esc_attr($index); ?>"
 				data-transition="<?php echo esc_attr($transition_type); ?>"
-				data-speed="<?php echo esc_attr($transition_speed); ?>">
+				data-speed="<?php echo esc_attr($transition_speed); ?>"
+				data-entry-offset="<?php echo esc_attr($entry_offset); ?>">
 				<figure class="reveal-frame" style="<?php echo esc_attr($frame_style_attr); ?>">
 					<?php if ($use_separate_images) : ?>
 						<img
@@ -325,6 +334,13 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 			$desktop_image = $frame['desktopImage'] ?? null;
 			$mobile_image  = $frame['mobileImage'] ?? null;
 			$transition_speed = $frame['transition']['speed'] ?? 'normal';
+			$section_entry_offset_raw = $frame['transition']['entryOffset'] ?? null;
+			if (is_string($section_entry_offset_raw)) {
+				$section_legacy = ['full' => 100, 'three-quarter' => 75, 'half' => 50, 'quarter' => 25, 'none' => 0];
+				$section_entry_offset = $section_legacy[$section_entry_offset_raw] ?? 100;
+			} else {
+				$section_entry_offset = $section_entry_offset_raw !== null ? max(0, min(100, (int) $section_entry_offset_raw)) : 100;
+			}
 
 			if (empty($desktop_image)) {
 				continue;
@@ -343,7 +359,8 @@ $frame_contents = caes_reveal_parse_frame_content($content);
 		?>
 			<section class="reveal-frame-section"
 				data-frame-index="<?php echo esc_attr($index); ?>"
-				data-speed="<?php echo esc_attr($transition_speed); ?>">
+				data-speed="<?php echo esc_attr($transition_speed); ?>"
+				data-entry-offset="<?php echo esc_attr($section_entry_offset); ?>">
 				<?php if ($desktop_desc || $mobile_desc) : ?>
 					<?php if ($descs_differ) : ?>
 						<span class="reveal-frame-image-description reveal-image-desc-desktop"><?php echo $desktop_desc; ?></span>

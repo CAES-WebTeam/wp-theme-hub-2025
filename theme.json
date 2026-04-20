@@ -468,8 +468,6 @@
         },
         "color": {
             "defaultPalette": false,
-            "defaultGradients": false,
-            "customGradient": false,
             "link": true,
             "palette": [
                 {

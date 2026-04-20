@@ -1212,11 +1212,22 @@ function custom_series_alphanumeric_orderby($orderby, $query)
     //    and '28' from 'SB 28-19'.
     $primary_num_sort = "CAST(SUBSTRING_INDEX(SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, '-', 1), ' ', -1) AS UNSIGNED)";
 
-    // 3. Sort by the series number (after the dash), if it exists.
-    $series_num_sort = "CAST(SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, '-', -1) AS UNSIGNED)";
+    // Count of dashes in the publication number, used to detect how many
+    // sub-segments exist (e.g. "AP 114" has 0, "AP 114-04" has 1, "AP 114-04-03" has 2).
+    $dash_count = "(LENGTH({$wpdb->postmeta}.meta_value) - LENGTH(REPLACE({$wpdb->postmeta}.meta_value, '-', '')))";
+
+    // 3. Sort by the second segment (first number after the first dash).
+    //    "AP 114-04" and "AP 114-04-03" both yield 4 here.
+    //    Missing segments sort as 0 so main entries precede their children.
+    $second_num_sort = "CASE WHEN {$dash_count} >= 1 THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, '-', 2), '-', -1) AS UNSIGNED) ELSE 0 END";
+
+    // 4. Sort by the third segment (after the second dash), if present.
+    //    A missing third segment sorts as 0, placing the main entry (e.g. "AP 114-04")
+    //    before its sub-sections ("AP 114-04-03", "AP 114-04-04", ...).
+    $third_num_sort = "CASE WHEN {$dash_count} >= 2 THEN CAST(SUBSTRING_INDEX({$wpdb->postmeta}.meta_value, '-', -1) AS UNSIGNED) ELSE 0 END";
 
     // Combine the sorting criteria for a full alphanumeric sort.
-    $orderby = "{$prefix_sort} ASC, {$primary_num_sort} ASC, {$series_num_sort} ASC";
+    $orderby = "{$prefix_sort} ASC, {$primary_num_sort} ASC, {$second_num_sort} ASC, {$third_num_sort} ASC";
 
 
     return $orderby;
