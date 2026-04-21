@@ -2788,9 +2788,11 @@ function person_migration_get_dashboard_status() {
 	// Detect linked content managers
 	$cm_linked = 0;
 	$cm_total  = 0;
-	$cms = get_users(array('role__in' => array('content_manager', 'event_submitter', 'event_approver'), 'fields' => 'ID', 'number' => -1));
+	$cms = get_users(array('role__in' => array('content_manager', 'event_submitter', 'event_approver'), 'fields' => 'all', 'number' => -1));
+	$cms = array_filter($cms, function($u) { return !in_array($u->user_login, array('ashwhee'), true); });
 	$cm_total = count($cms);
-	foreach ($cms as $cm_id) {
+	foreach ($cms as $cm_obj) {
+		$cm_id = $cm_obj->ID;
 		// Check if any person post has linked_wp_user set to this CM
 		$linked_posts = get_posts(array(
 			'post_type' => 'caes_hub_person', 'post_status' => 'publish',
@@ -3438,7 +3440,15 @@ function person_migration_ajax_link_content_managers() {
 
 	$needs_manual = array(); // CMs that couldn't be auto-linked
 
+	// Users to skip entirely (by login)
+	$skip_logins = array('ashwhee');
+
 	foreach ($content_managers as $cm) {
+		if (in_array($cm->user_login, $skip_logins, true)) {
+			$skipped++;
+			continue;
+		}
+
 		// Check if this CM already has a linked person post
 		$already_linked = false;
 		$existing_posts = get_posts(array(
