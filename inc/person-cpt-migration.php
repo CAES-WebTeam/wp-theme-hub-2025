@@ -3453,9 +3453,9 @@ function person_migration_ajax_link_content_managers() {
 		$already_linked = false;
 		$existing_posts = get_posts(array(
 			'post_type'      => 'caes_hub_person',
-			'post_status'    => 'publish',
+			'post_status'    => 'any',
 			'meta_key'       => 'linked_wp_user',
-			'meta_value'     => $cm->ID,
+			'meta_value'     => (string) $cm->ID,
 			'posts_per_page' => 1,
 			'fields'         => 'ids',
 		));
