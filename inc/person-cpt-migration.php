@@ -3464,6 +3464,39 @@ function person_migration_ajax_link_content_managers() {
 			continue;
 		}
 
+		// Debug: check all person posts that have linked_wp_user set and look for this user
+		$debug_posts = get_posts(array(
+			'post_type'      => 'caes_hub_person',
+			'post_status'    => 'any',
+			'meta_key'       => 'linked_wp_user',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+		));
+		$debug_matches = array();
+		foreach ($debug_posts as $dp) {
+			$raw = get_post_meta($dp, 'linked_wp_user', true);
+			if ($raw == $cm->ID || (is_array($raw) && in_array($cm->ID, $raw))) {
+				$debug_matches[] = array('post_id' => $dp, 'raw_value' => $raw, 'type' => gettype($raw));
+			}
+		}
+		// Also search by display_name to find her person post
+		$debug_name_posts = get_posts(array(
+			'post_type' => 'caes_hub_person', 'post_status' => 'any',
+			's' => $cm->display_name, 'posts_per_page' => 5, 'fields' => 'ids',
+		));
+		$debug_name_meta = array();
+		foreach ($debug_name_posts as $dnp) {
+			$debug_name_meta[] = array(
+				'post_id' => $dnp,
+				'title' => get_the_title($dnp),
+				'linked_wp_user_raw' => get_post_meta($dnp, 'linked_wp_user', true),
+				'linked_wp_user_type' => gettype(get_post_meta($dnp, 'linked_wp_user', true)),
+			);
+		}
+		if (!empty($debug_matches) || $cm->ID == 4782) {
+			$errors[] = 'DEBUG user ' . $cm->ID . ' (' . $cm->display_name . '): meta_query found ' . count($existing_posts) . ' posts. Brute-force found ' . count($debug_matches) . ' matches: ' . json_encode($debug_matches) . '. Name search: ' . json_encode($debug_name_meta);
+		}
+
 		$post_id = null;
 
 		// Try matching by personnel_id first
