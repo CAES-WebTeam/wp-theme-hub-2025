@@ -150,6 +150,18 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 25. Use `author-2.html` as the basis for the new `single-caes_hub_person.html` template
 26. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
 27. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
+28. Add 301 redirect from old CAES/Extension personnel URLs to new CPT URLs
+
+### Redirect Summary
+
+| Redirect | Matches | Looks up by | Redirects to | Status |
+|---|---|---|---|---|
+| `redirect_author_to_person` | `/author/{username}/` | WP user slug, then migration map (user ID to post ID) | `/person/{post_id}/{slug}/` | Done |
+| `redirect_old_person_user_id_to_cpt` | `/person/{user_id}/{slug}/` | Migration map (user ID to post ID) | `/person/{post_id}/{slug}/` | Done |
+| `redirect_old_personnel_to_person_cpt` | `/about/personnel/person/{college_id}/...` (old CAES site) | `college_id` post meta on `caes_hub_person` | `/person/{post_id}/{slug}/` | Done |
+| `redirect_old_personnel_to_person_cpt` | `/about/personnel-directory/person/{college_id}/...` (old Extension site) | `college_id` post meta on `caes_hub_person` | `/person/{post_id}/{slug}/` | Done |
+
+All redirects are 301s. All live in `inc/custom-rewrites.php`, hooked on `template_redirect`.
 
 ## Phase 5.5: Blocks for Symplectic Elements Data
 
