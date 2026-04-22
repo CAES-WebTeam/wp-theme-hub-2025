@@ -169,7 +169,7 @@ All redirects are 301s. All live in `inc/custom-rewrites.php`, hooked on `templa
 a. First, for all current "user-" blocks, change "User" in the titles (what editors see) to "Person". DO NOT CHANGE CODE THAT WILL MAKE BLOCKS BREAK.
 b. Make new blocks for the following, referencing the sections in single-caes_hub_person.html for design, and other "user-" blocks for block formatting:
 - ~~b-1: Areas of Expertise~~
-- b-2: Department
+- b-2: Department(s), need link(s)
 - ~~b-3: About (reference "Overview" from Symplectic data) - for this one, rework "user-bio"~~
 - ~~b-4: Courses~~
 - ~~b-5: Scholarly Works (called "Publications" in the template, but we want it to be called Scholarly Works)~~
@@ -181,7 +181,7 @@ c. Some symplectic data is missing, I will work on this with Jesse:
 - c-3: ~~We need authors on scholarly works.~~
 - c-4: ~~We need year too on scholarly works.~~
 - c-5: ~~Dates on Awards and Honors?~~
-- c-6: Website link?
+- c-6: Website link, possibly from Elements
 
 ## Phase 6: Cleanup
 

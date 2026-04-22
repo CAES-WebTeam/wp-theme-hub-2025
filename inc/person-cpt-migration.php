@@ -182,6 +182,12 @@ function person_migration_migrate_single_user($user_id, $dry_run = false) {
 			return $result;
 		}
 		$result['post_id'] = $post_id;
+
+		// Debug: verify the post was actually created as publish
+		$actual_status = get_post_status($post_id);
+		if ($actual_status !== 'publish') {
+			$result['field_log'][] = 'WARNING: Post created but status is "' . $actual_status . '" instead of "publish" (post_id=' . $post_id . ', title="' . $display_name . '")';
+		}
 	}
 
 	$fields_written = 0;
