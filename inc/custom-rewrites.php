@@ -794,6 +794,52 @@ function redirect_old_person_user_id_to_cpt()
 }
 add_action('template_redirect', 'redirect_old_person_user_id_to_cpt');
 
+/**
+ * Redirect old CAES/Extension personnel URLs to new person CPT URLs.
+ * Matches:
+ *   /about/personnel/person/{college_id}/...          (old CAES site)
+ *   /about/personnel-directory/person/{college_id}/... (old Extension site)
+ */
+function redirect_old_personnel_to_person_cpt()
+{
+    if (is_admin() || isset($_GET['preview'])) return;
+
+    $requested_path = untrailingslashit(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+
+    if (!preg_match('#^/about/personnel(?:-directory)?/person/([0-9]+)(?:/|$)#', $requested_path, $matches)) {
+        return;
+    }
+
+    $college_id = $matches[1];
+
+    $posts = get_posts(array(
+        'post_type'      => 'caes_hub_person',
+        'post_status'    => 'publish',
+        'meta_key'       => 'college_id',
+        'meta_value'     => $college_id,
+        'posts_per_page' => 1,
+        'fields'         => 'ids',
+    ));
+
+    if (empty($posts)) {
+        return;
+    }
+
+    $post_id      = $posts[0];
+    $display_name = get_post_meta($post_id, 'display_name', true);
+    if (empty($display_name)) {
+        $first = get_post_meta($post_id, 'first_name', true);
+        $last  = get_post_meta($post_id, 'last_name', true);
+        $display_name = trim("$first $last");
+    }
+    $slug    = sanitize_title($display_name) ?: 'person';
+    $new_url = "/person/{$post_id}/{$slug}/";
+
+    wp_redirect(home_url($new_url), 301);
+    exit;
+}
+add_action('template_redirect', 'redirect_old_personnel_to_person_cpt');
+
 // Redirect /blog/features/ URLs to /features/
 function redirect_blog_features_to_features()
 {
