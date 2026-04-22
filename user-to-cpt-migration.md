@@ -151,6 +151,7 @@ Build a single admin page under CAES Tools ("People CPT Data Sync") that replace
 26. Add a redirect rule for old `/person/{user_id}/{slug}/` URLs -- generate a static `user_id => post_id` redirect map (stored as a WP option) during migration; only old-format URLs hit this lookup, and traffic to them fades over time
 27. Add 301 redirect from old `/author/username/` URLs to new CPT URLs
 28. Add 301 redirect from old CAES/Extension personnel URLs to new CPT URLs
+29. **Flush permalinks** -- Go to Settings > Permalinks and click Save Changes so WordPress picks up the new CPT rewrite rules. Person profile URLs will 404 until this is done.
 
 ### Redirect Summary
 

@@ -3016,6 +3016,25 @@ function person_migration_render_page() {
 					</div>
 					<div class="pmig-flat-meta-audit-inline-results" style="margin-top:8px"></div>
 				</div>
+
+				<!-- Flush Permalinks reminder -->
+				<?php $step_flush_done = !empty($checklist['step_flush_permalinks']); ?>
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step_flush_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Flush Permalinks</strong>
+							<span class="pmig-status-badge <?php echo $step_flush_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step_flush_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">Go to <strong>Settings &gt; Permalinks</strong> and click <strong>Save Changes</strong> so WordPress picks up the new CPT rewrite rules. Person profile URLs will 404 until this is done.</p>
+						</div>
+						<div>
+							<?php if ($step_flush_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step_flush_permalinks" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step_flush_permalinks"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<!-- ============ PHASE 3: UPDATE SYNC INFRASTRUCTURE ============ -->
