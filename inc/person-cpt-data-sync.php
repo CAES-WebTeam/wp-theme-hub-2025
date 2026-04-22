@@ -151,7 +151,7 @@ function personnel_cpt_build_pid_map() {
 // Core: sync a single personnel record to a CPT post
 // ============================================================
 
-function personnel_cpt_sync_single_record($data, $existing_post_id = null) {
+function personnel_cpt_sync_single_record($data, $existing_post_id = null, $is_active = true) {
 	$result = array(
 		'status'         => 'ok',
 		'action'         => 'none',
@@ -225,8 +225,8 @@ function personnel_cpt_sync_single_record($data, $existing_post_id = null) {
 		}
 	}
 
-	// Mark as active
-	update_post_meta($post_id, 'is_active', 1);
+	// Set active status
+	update_post_meta($post_id, 'is_active', $is_active ? 1 : 0);
 	$result['fields_written']++;
 
 	// Taxonomy fields
@@ -525,12 +525,11 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 		);
 	}
 
-	$result = personnel_cpt_sync_single_record($data, $existing_post);
+	$result = personnel_cpt_sync_single_record($data, $existing_post, $is_active);
 
-	// Handle inactive personnel
+	// Handle inactive personnel -- draft if no attributed content
 	if (!$is_active && $result['status'] === 'ok' && $result['post_id']) {
 		$post_id = $result['post_id'];
-		update_post_meta($post_id, 'is_active', 0);
 
 		$has_content = _person_get_content_count($post_id, 'post')
 			+ _person_get_content_count($post_id, 'publications')
