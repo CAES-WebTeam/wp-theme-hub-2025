@@ -812,10 +812,17 @@ function person_data_sync_enqueue($hook) {
 			// ---- SYMPLECTIC SYNC ----
 
 			function renderSStats(s) {
-				var calls    = s.api_calls || 0;
-				var ms       = s.api_time_ms || 0;
-				var avgMs    = calls > 0 ? Math.round(ms / calls) : 0;
-				var totalSec = (ms / 1000).toFixed(0);
+				var calls       = s.api_calls || 0;
+				var apiMs       = s.api_time_ms || 0;
+				var avgApiMs    = calls > 0 ? Math.round(apiMs / calls) : 0;
+				var totalApiSec = (apiMs / 1000).toFixed(0);
+				var postsDone   = (s.posts_ok || 0) + (s.posts_failed || 0);
+				var postMs      = s.post_time_ms || 0;
+				var avgPostMs   = postsDone > 0 ? Math.round(postMs / postsDone) : 0;
+				var nonApiPerPost = postsDone > 0 ? Math.round((postMs - apiMs) / postsDone) : 0;
+				var lagMs       = s.cron_lag_ms || 0;
+				var lagCount    = s.cron_lag_count || 0;
+				var avgLagSec   = lagCount > 0 ? (lagMs / lagCount / 1000).toFixed(1) : 0;
 				return "<div class=\"pds-stat-grid\">"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.posts_ok)       + "</div><div class=\"pds-stat-label\">Posts OK</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value failed\">"  + esc(s.posts_failed)   + "</div><div class=\"pds-stat-label\">Failed</div></div>"
@@ -823,8 +830,11 @@ function person_data_sync_enqueue($hook) {
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.fields_written) + "</div><div class=\"pds-stat-label\">Fields Written</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value" + (s.fetch_errors > 0 ? " failed" : "") + "\">" + esc(s.fetch_errors) + "</div><div class=\"pds-stat-label\">Fetch Errors</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(calls) + "</div><div class=\"pds-stat-label\">API Calls</div></div>"
-					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(avgMs) + " ms</div><div class=\"pds-stat-label\">Avg API Time</div></div>"
-					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(totalSec) + " s</div><div class=\"pds-stat-label\">Total API Time</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(avgApiMs) + " ms</div><div class=\"pds-stat-label\">Avg API Time</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(totalApiSec) + " s</div><div class=\"pds-stat-label\">Total API Time</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(avgPostMs) + " ms</div><div class=\"pds-stat-label\">Avg Post Time</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(nonApiPerPost) + " ms</div><div class=\"pds-stat-label\">Avg DB+Other</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(avgLagSec) + " s</div><div class=\"pds-stat-label\">Avg Cron Lag</div></div>"
 					+ "</div>";
 			}
 
@@ -1334,6 +1344,10 @@ function symplectic_cpt_default_state() {
 			'fetch_errors'   => 0,
 			'api_calls'      => 0,
 			'api_time_ms'    => 0,
+			'post_time_ms'   => 0,
+			'cron_lag_ms'    => 0,
+			'cron_lag_count' => 0,
+			'last_batch_end' => 0,
 		),
 		'errors'          => array(),
 		'stop_requested'  => false,
@@ -1443,6 +1457,15 @@ function symplectic_cpt_run_batch() {
 		return;
 	}
 
+	// Track WP cron lag: time between scheduled batch end and actual batch start.
+	if (!empty($state['stats']['last_batch_end'])) {
+		$lag_ms = (int) round((microtime(true) - $state['stats']['last_batch_end']) * 1000);
+		// Subtract our intentional 2-second delay to measure pure cron lag.
+		$lag_ms = max(0, $lag_ms - 2000);
+		$state['stats']['cron_lag_ms']    += $lag_ms;
+		$state['stats']['cron_lag_count']++;
+	}
+
 	if (!defined('SYMPLECTIC_API_USERNAME') || !defined('SYMPLECTIC_API_PASSWORD') || !defined('CF_810_API_ENDPOINT_KEY')) {
 		$state['status']       = 'error';
 		$state['completed_at'] = time();
@@ -1469,7 +1492,9 @@ function symplectic_cpt_run_batch() {
 		}
 
 		$deadline = time() + 180; // 3-minute per-post hard timeout
+		$post_t0  = microtime(true);
 		$result   = symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline);
+		$state['stats']['post_time_ms'] += (int) round((microtime(true) - $post_t0) * 1000);
 		$state['processed_posts']++;
 
 		if ($result['status'] === 'ok') {
@@ -1498,6 +1523,8 @@ function symplectic_cpt_run_batch() {
 	}
 
 	if ($state['processed_posts'] < $state['total_posts'] && !empty($post_ids)) {
+		$state['stats']['last_batch_end'] = microtime(true);
+		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
 		wp_schedule_single_event(time() + 2, SYMPLECTIC_CPT_BATCH_HOOK);
 	} else {
 		$state['status']       = 'complete';
