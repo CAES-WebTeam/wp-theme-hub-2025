@@ -111,6 +111,52 @@ function personnel_cpt_fetch_api_data() {
 	return $data;
 }
 
+/**
+ * Fetch the Departments API and cache a label => site_url map for the
+ * duration of a sync run. Each department term gets its URL stored as
+ * term meta so the front end can render a link.
+ */
+function personnel_cpt_refresh_department_urls() {
+	$url = 'https://secure.caes.uga.edu/rest/personnel/Departments?showSiteURLs=true';
+	$response = wp_remote_get($url, array('timeout' => 30));
+	if (is_wp_error($response)) return;
+
+	$data = json_decode(wp_remote_retrieve_body($response), true);
+	if (!is_array($data)) return;
+
+	$map = array();
+	foreach ($data as $row) {
+		$label = isset($row['LABEL']) ? trim((string) $row['LABEL']) : '';
+		$site  = isset($row['SITE_URL']) ? trim((string) $row['SITE_URL']) : '';
+		if ($label === '' || $site === '') continue;
+		$map[$label] = esc_url_raw($site);
+	}
+	set_transient('personnel_cpt_dept_urls', $map, 4 * HOUR_IN_SECONDS);
+}
+
+/**
+ * Look up the site URL for a department label and update the term meta.
+ * Called after wp_set_object_terms during personnel sync.
+ */
+function personnel_cpt_update_department_url($department_label) {
+	if (empty($department_label)) return;
+	$map = get_transient('personnel_cpt_dept_urls');
+	if (!is_array($map)) {
+		// Lazy-fetch for single-person syncs that didn't run start_job.
+		personnel_cpt_refresh_department_urls();
+		$map = get_transient('personnel_cpt_dept_urls');
+	}
+	if (!is_array($map) || !isset($map[$department_label])) return;
+
+	$term = get_term_by('name', $department_label, 'person_department');
+	if (!$term || is_wp_error($term)) return;
+
+	$current = get_term_meta($term->term_id, 'site_url', true);
+	if ($current !== $map[$department_label]) {
+		update_term_meta($term->term_id, 'site_url', $map[$department_label]);
+	}
+}
+
 function personnel_cpt_sanitize_record($record) {
 	return array(
 		'personnel_id'    => intval($record['PERSONNEL_ID'] ?? 0),
@@ -247,6 +293,7 @@ function personnel_cpt_sync_single_record($data, $existing_post_id = null, $is_a
 	// Taxonomy fields
 	if (!empty($data['department'])) {
 		wp_set_object_terms($post_id, $data['department'], 'person_department');
+		personnel_cpt_update_department_url($data['department']);
 		$result['fields_written']++;
 	}
 	if (!empty($data['program_area'])) {
@@ -298,6 +345,9 @@ function personnel_cpt_start_job($triggered_by = 'manual') {
 
 	// Store API data in a transient (too large for the state option alongside everything else)
 	set_transient('personnel_cpt_api_data', $api_data, 4 * HOUR_IN_SECONDS);
+
+	// Fetch and cache departments URL map (label => site_url) for the duration of this run
+	personnel_cpt_refresh_department_urls();
 
 	update_option(PERSONNEL_CPT_STATE_KEY, $new_state, false);
 	wp_schedule_single_event(time(), PERSONNEL_CPT_BATCH_HOOK);
