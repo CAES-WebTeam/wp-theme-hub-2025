@@ -19,6 +19,21 @@ define('PERSONNEL_CPT_STATE_KEY', 'personnel_cpt_sync_state');
 define('PERSONNEL_CPT_CRON_HOOK', 'personnel_cpt_sync_daily');
 define('PERSONNEL_CPT_BATCH_HOOK', 'personnel_cpt_sync_batch');
 
+/**
+ * Fire a non-blocking loopback to wp-cron.php so scheduled batches run
+ * immediately instead of waiting for site traffic to trigger WP-Cron.
+ * Mirrors WordPress core's spawn_cron() pattern. Safe on hosts that allow
+ * self-requests (most do); silently no-ops if the request fails.
+ */
+function person_cpt_spawn_cron_loopback() {
+	$url = site_url('wp-cron.php?doing_wp_cron=' . sprintf('%.22F', microtime(true)));
+	wp_remote_post($url, array(
+		'timeout'   => 0.01,
+		'blocking'  => false,
+		'sslverify' => apply_filters('https_local_ssl_verify', false),
+	));
+}
+
 // ============================================================
 // Cron scheduling
 // ============================================================
@@ -286,6 +301,7 @@ function personnel_cpt_start_job($triggered_by = 'manual') {
 
 	update_option(PERSONNEL_CPT_STATE_KEY, $new_state, false);
 	wp_schedule_single_event(time(), PERSONNEL_CPT_BATCH_HOOK);
+	person_cpt_spawn_cron_loopback();
 	return true;
 }
 
@@ -357,6 +373,7 @@ function personnel_cpt_run_batch() {
 
 	if ($state['processed'] < $state['total_records'] && !empty($batch)) {
 		wp_schedule_single_event(time() + 2, PERSONNEL_CPT_BATCH_HOOK);
+		person_cpt_spawn_cron_loopback();
 	} else {
 		// Mark any existing person posts whose personnel_id was NOT in the API as inactive
 		$api_pids = array();
@@ -1432,6 +1449,7 @@ function symplectic_cpt_start_job($triggered_by = 'manual') {
 	update_option(SYMPLECTIC_CPT_STATE_KEY, $new_state, false);
 
 	wp_schedule_single_event(time(), SYMPLECTIC_CPT_BATCH_HOOK);
+	person_cpt_spawn_cron_loopback();
 	return true;
 }
 
@@ -1447,6 +1465,7 @@ function symplectic_cpt_resume_job() {
 	$state['stop_requested'] = false;
 	update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
 	wp_schedule_single_event(time(), SYMPLECTIC_CPT_BATCH_HOOK);
+	person_cpt_spawn_cron_loopback();
 	return true;
 }
 
@@ -1526,6 +1545,7 @@ function symplectic_cpt_run_batch() {
 		$state['stats']['last_batch_end'] = microtime(true);
 		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
 		wp_schedule_single_event(time() + 2, SYMPLECTIC_CPT_BATCH_HOOK);
+		person_cpt_spawn_cron_loopback();
 	} else {
 		$state['status']       = 'complete';
 		$state['completed_at'] = time();
