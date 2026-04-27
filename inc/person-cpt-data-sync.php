@@ -28,7 +28,7 @@ define('PERSONNEL_CPT_BATCH_HOOK', 'personnel_cpt_sync_batch');
 function person_cpt_spawn_cron_loopback() {
 	$url = site_url('wp-cron.php?doing_wp_cron=' . sprintf('%.22F', microtime(true)));
 	wp_remote_post($url, array(
-		'timeout'   => 0.01,
+		'timeout'   => 1,
 		'blocking'  => false,
 		'sslverify' => apply_filters('https_local_ssl_verify', false),
 	));
