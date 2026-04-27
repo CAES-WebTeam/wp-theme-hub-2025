@@ -1494,6 +1494,18 @@ function symplectic_cpt_run_batch() {
 
 	$post_ids = symplectic_cpt_get_person_posts($state['processed_posts'], SYMPLECTIC_CPT_BATCH_SIZE);
 
+	// Save progress while preserving any external status change (stop, reset, etc.).
+	$save_state = function($state) {
+		$current = symplectic_cpt_get_state();
+		if ($current['status'] !== 'running') {
+			return false; // External actor changed the state; don't clobber it.
+		}
+		$state['status'] = $current['status'];
+		$state['stop_requested'] = $current['stop_requested'];
+		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
+		return true;
+	};
+
 	foreach ($post_ids as $post_id) {
 		// Re-read state before each post to detect an external stop.
 		$check = symplectic_cpt_get_state();
@@ -1505,7 +1517,7 @@ function symplectic_cpt_run_batch() {
 		if (empty($personnel_id)) {
 			$state['stats']['posts_skipped']++;
 			$state['processed_posts']++;
-			update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
+			if (!$save_state($state)) return;
 			continue;
 		}
 
@@ -1537,12 +1549,12 @@ function symplectic_cpt_run_batch() {
 			}
 		}
 
-		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
+		if (!$save_state($state)) return;
 	}
 
 	if ($state['processed_posts'] < $state['total_posts'] && !empty($post_ids)) {
 		$state['stats']['last_batch_end'] = microtime(true);
-		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
+		if (!$save_state($state)) return;
 		wp_schedule_single_event(time(), SYMPLECTIC_CPT_BATCH_HOOK);
 		person_cpt_spawn_cron_loopback();
 	} else {
