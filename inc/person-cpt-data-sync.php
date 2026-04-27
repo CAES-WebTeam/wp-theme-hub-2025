@@ -1639,8 +1639,8 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 			$wn->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
 			$url_nodes   = $wn->xpath('./api:url');
 			$label_nodes = $wn->xpath('./api:label');
-			$url   = !empty($url_nodes)   ? trim((string)$url_nodes[0])   : '';
-			$label = !empty($label_nodes) ? trim((string)$label_nodes[0]) : '';
+			$url   = !empty($url_nodes)   ? esc_url_raw(trim((string)$url_nodes[0])) : '';
+			$label = !empty($label_nodes) ? trim((string)$label_nodes[0])           : '';
 			if ($url === '') continue;
 			$user_info['websites'][] = array(
 				'website_label' => $label,
