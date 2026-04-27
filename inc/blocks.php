@@ -105,6 +105,7 @@ function caes_hub_block_init()
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-email');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-phone');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/user-image');
+	register_block_type(get_template_directory() . '/blocks/build/blocks/user-url');
 
 	// Navigation Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/nav-flyout');
