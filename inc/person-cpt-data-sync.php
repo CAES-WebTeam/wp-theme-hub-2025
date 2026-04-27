@@ -1632,6 +1632,23 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		}
 	}
 
+	$website_nodes = $object->xpath('.//api:record/api:native/api:field[@name="personal-websites"]/api:web-addresses/api:web-address[@privacy="public"]');
+	if (!empty($website_nodes)) {
+		$user_info['websites'] = array();
+		foreach ($website_nodes as $wn) {
+			$wn->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+			$url_nodes   = $wn->xpath('./api:url');
+			$label_nodes = $wn->xpath('./api:label');
+			$url   = !empty($url_nodes)   ? trim((string)$url_nodes[0])   : '';
+			$label = !empty($label_nodes) ? trim((string)$label_nodes[0]) : '';
+			if ($url === '') continue;
+			$user_info['websites'][] = array(
+				'website_label' => $label,
+				'website_url'   => $url,
+			);
+		}
+	}
+
 	$elements_user_id = isset($user_info['id']) ? (int)$user_info['id'] : null;
 	$last_modified = isset($user_info['last-modified-when']) ? (string)$user_info['last-modified-when'] : '';
 
@@ -1783,6 +1800,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		'field_person_cpt_elements_distinctions',
 		'field_person_cpt_elements_courses_taught',
 		'field_person_cpt_elements_degrees',
+		'field_person_cpt_elements_websites',
 	) as $fk) {
 		delete_field($fk, $post_id);
 	}
@@ -1902,10 +1920,22 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		if ($r) $fields_written++; else $fields_failed++;
 	}
 
+	// Websites repeater
+	if (!empty($user_info['websites'])) {
+		$r = update_field('field_person_cpt_elements_websites', $user_info['websites'], $post_id);
+		$r = ($r !== false) ? true : false;
+		if (!$r) {
+			$stored = get_field('field_person_cpt_elements_websites', $post_id);
+			$r = !empty($stored);
+		}
+		if ($r) $fields_written++; else $fields_failed++;
+	}
+
 	// Set the has_content flag based on whether any content was imported
 	$has_content = !empty($user_info['overview'])
 		|| !empty($user_info['keywords'])
 		|| !empty($user_info['degrees'])
+		|| !empty($user_info['websites'])
 		|| !empty($publications)
 		|| !empty($activities)
 		|| !empty($teaching_activities);

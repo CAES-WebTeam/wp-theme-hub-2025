@@ -183,7 +183,8 @@ c. Some symplectic data is missing, I will work on this with Jesse:
 - c-5: ~~Dates on Awards and Honors?~~
 - c-6: Website link, possibly from Elements
 - c-7: Data display issue. If a course does not have an
-- c-8: Are we able to list which publications/posts/shorthand_story entries the person is connected to under the edit screen for their profile?
+- c-8: ~~Are we able to list which publications/posts/shorthand_story entries the person is connected to under the edit screen for their profile?~~ Cancelled for now.
+- c-9: Informational page for the "People" section that explains the process of how profiles are pulled in, how data is displayed, what fields editors can override.
 
 ## Phase 6: Cleanup
 
