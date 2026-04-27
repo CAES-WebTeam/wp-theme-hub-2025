@@ -319,18 +319,20 @@ add_filter('manage_edit-caes_hub_person_sortable_columns', function ($columns) {
     return $columns;
 });
 
-// Add Source and Status columns to People list table
+// Add Source, Status, and Has Content columns to People list table
 add_filter('manage_caes_hub_person_posts_columns', function ($columns) {
     $new = array();
     foreach ($columns as $key => $label) {
         $new[$key] = $label;
         if ($key === 'title') {
-            $new['person_source'] = 'Source';
-            $new['person_status'] = 'Status';
+            $new['person_source']      = 'Source';
+            $new['person_status']      = 'Status';
+            $new['person_has_content'] = 'Has Content';
         }
     }
     return $new;
 });
+
 
 add_action('manage_caes_hub_person_posts_custom_column', function ($column, $post_id) {
     if ($column === 'person_source') {
@@ -352,6 +354,16 @@ add_action('manage_caes_hub_person_posts_custom_column', function ($column, $pos
             }
         } else {
             echo '<span style="color:#999;font-size:12px">&mdash;</span>';
+        }
+    }
+    if ($column === 'person_has_content') {
+        $has = (int) get_post_meta($post_id, '_content_count_post', true) > 0
+            || (int) get_post_meta($post_id, '_content_count_publications', true) > 0
+            || (int) get_post_meta($post_id, '_content_count_shorthand_story', true) > 0;
+        if ($has) {
+            echo '<span style="color:#46b450;font-weight:600">Yes</span>';
+        } else {
+            echo '<span style="color:#999">No</span>';
         }
     }
 }, 10, 2);

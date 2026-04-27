@@ -182,7 +182,10 @@ c. Some symplectic data is missing, I will work on this with Jesse:
 - c-4: ~~We need year too on scholarly works.~~
 - c-5: ~~Dates on Awards and Honors?~~
 - c-6: Website link, possibly from Elements
-
+- c-7: Data display issue. If a course does not have an
+- c-8: Are we able to list which publications/posts/shorthand_story entries the person is connected to under the edit screen for their profile?
+- c-9: Are we able to have a "Yes" or "No" listed on the people CPT list that shows if they have connected stories/posts/pubs/etc? Something quick to list so that page doesn't get bogged down?
+ 
 ## Phase 6: Cleanup
 
 28. Delete the old user-targeted ACF field groups (only after full verification)
