@@ -1318,7 +1318,7 @@ function personnel_cpt_ajax_sync_single() {
  * - Fixes missing journal field extraction for scholarly works
  */
 
-define('SYMPLECTIC_CPT_BATCH_SIZE',  25);
+define('SYMPLECTIC_CPT_BATCH_SIZE',  100);
 define('SYMPLECTIC_CPT_MAX_ERRORS',  200);
 define('SYMPLECTIC_CPT_STATE_KEY',   'symplectic_cpt_import_state');
 define('SYMPLECTIC_CPT_CRON_HOOK',   'symplectic_cpt_import_daily');
@@ -1470,6 +1470,7 @@ function symplectic_cpt_resume_job() {
 }
 
 function symplectic_cpt_run_batch() {
+	@set_time_limit(300);
 	$state = symplectic_cpt_get_state();
 
 	if ($state['status'] !== 'running') {
