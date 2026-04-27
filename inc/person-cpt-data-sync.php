@@ -372,7 +372,7 @@ function personnel_cpt_run_batch() {
 	}
 
 	if ($state['processed'] < $state['total_records'] && !empty($batch)) {
-		wp_schedule_single_event(time() + 2, PERSONNEL_CPT_BATCH_HOOK);
+		wp_schedule_single_event(time(), PERSONNEL_CPT_BATCH_HOOK);
 		person_cpt_spawn_cron_loopback();
 	} else {
 		// Mark any existing person posts whose personnel_id was NOT in the API as inactive
@@ -1476,11 +1476,9 @@ function symplectic_cpt_run_batch() {
 		return;
 	}
 
-	// Track WP cron lag: time between scheduled batch end and actual batch start.
+	// Track WP cron lag: time between previous batch end and this batch start.
 	if (!empty($state['stats']['last_batch_end'])) {
 		$lag_ms = (int) round((microtime(true) - $state['stats']['last_batch_end']) * 1000);
-		// Subtract our intentional 2-second delay to measure pure cron lag.
-		$lag_ms = max(0, $lag_ms - 2000);
 		$state['stats']['cron_lag_ms']    += $lag_ms;
 		$state['stats']['cron_lag_count']++;
 	}
@@ -1544,7 +1542,7 @@ function symplectic_cpt_run_batch() {
 	if ($state['processed_posts'] < $state['total_posts'] && !empty($post_ids)) {
 		$state['stats']['last_batch_end'] = microtime(true);
 		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
-		wp_schedule_single_event(time() + 2, SYMPLECTIC_CPT_BATCH_HOOK);
+		wp_schedule_single_event(time(), SYMPLECTIC_CPT_BATCH_HOOK);
 		person_cpt_spawn_cron_loopback();
 	} else {
 		$state['status']       = 'complete';
