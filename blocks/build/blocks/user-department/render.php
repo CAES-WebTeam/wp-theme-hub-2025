@@ -9,7 +9,7 @@ if ($person_post_id && function_exists('is_person_active') && !is_person_active(
     return;
 }
 
-// Build department list
+// Build department list with optional site_url
 $departments = [];
 
 if ($person_post_id) {
@@ -17,13 +17,16 @@ if ($person_post_id) {
     $terms = get_the_terms($person_post_id, 'person_department');
     if (!empty($terms) && !is_wp_error($terms)) {
         foreach ($terms as $term) {
-            $departments[] = $term->name;
+            $departments[] = array(
+                'name' => $term->name,
+                'url'  => get_term_meta($term->term_id, 'site_url', true),
+            );
         }
     }
 } else {
     $dept = get_field('department', 'user_' . $author_id);
     if (!empty($dept)) {
-        $departments[] = $dept;
+        $departments[] = array('name' => $dept, 'url' => '');
     }
 }
 
@@ -33,12 +36,22 @@ if (empty($departments)) {
 
 $attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
 
+$render_dept = function($d) {
+    $name = esc_html($d['name']);
+    if (!empty($d['url'])) {
+        // Force https on output even if stored as http
+        $href = preg_replace('#^http://#i', 'https://', $d['url']);
+        return '<a href="' . esc_url($href) . '">' . $name . '</a>';
+    }
+    return $name;
+};
+
 if (count($departments) === 1) {
-    echo '<p ' . $attrs . '>' . esc_html($departments[0]) . '</p>';
+    echo '<p ' . $attrs . '>' . $render_dept($departments[0]) . '</p>';
 } else {
     echo '<ul ' . $attrs . '>';
     foreach ($departments as $dept) {
-        echo '<li>' . esc_html($dept) . '</li>';
+        echo '<li>' . $render_dept($dept) . '</li>';
     }
     echo '</ul>';
 }
