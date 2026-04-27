@@ -812,12 +812,19 @@ function person_data_sync_enqueue($hook) {
 			// ---- SYMPLECTIC SYNC ----
 
 			function renderSStats(s) {
+				var calls    = s.api_calls || 0;
+				var ms       = s.api_time_ms || 0;
+				var avgMs    = calls > 0 ? Math.round(ms / calls) : 0;
+				var totalSec = (ms / 1000).toFixed(0);
 				return "<div class=\"pds-stat-grid\">"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value ok\">"      + esc(s.posts_ok)       + "</div><div class=\"pds-stat-label\">Posts OK</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value failed\">"  + esc(s.posts_failed)   + "</div><div class=\"pds-stat-label\">Failed</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.posts_skipped)  + "</div><div class=\"pds-stat-label\">Skipped</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.fields_written) + "</div><div class=\"pds-stat-label\">Fields Written</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value" + (s.fetch_errors > 0 ? " failed" : "") + "\">" + esc(s.fetch_errors) + "</div><div class=\"pds-stat-label\">Fetch Errors</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(calls) + "</div><div class=\"pds-stat-label\">API Calls</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(avgMs) + " ms</div><div class=\"pds-stat-label\">Avg API Time</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(totalSec) + " s</div><div class=\"pds-stat-label\">Total API Time</div></div>"
 					+ "</div>";
 			}
 
@@ -1284,7 +1291,7 @@ function personnel_cpt_ajax_sync_single() {
  * - Fixes missing journal field extraction for scholarly works
  */
 
-define('SYMPLECTIC_CPT_BATCH_SIZE',  10);
+define('SYMPLECTIC_CPT_BATCH_SIZE',  25);
 define('SYMPLECTIC_CPT_MAX_ERRORS',  200);
 define('SYMPLECTIC_CPT_STATE_KEY',   'symplectic_cpt_import_state');
 define('SYMPLECTIC_CPT_CRON_HOOK',   'symplectic_cpt_import_daily');
@@ -1325,6 +1332,8 @@ function symplectic_cpt_default_state() {
 			'posts_skipped'  => 0,
 			'fields_written' => 0,
 			'fetch_errors'   => 0,
+			'api_calls'      => 0,
+			'api_time_ms'    => 0,
 		),
 		'errors'          => array(),
 		'stop_requested'  => false,
@@ -1473,6 +1482,8 @@ function symplectic_cpt_run_batch() {
 
 		$state['stats']['fields_written'] += $result['fields_written'];
 		$state['stats']['fetch_errors']   += count($result['fetch_errors']);
+		$state['stats']['api_calls']      += isset($result['api_calls']) ? $result['api_calls'] : 0;
+		$state['stats']['api_time_ms']    += isset($result['api_time_ms']) ? $result['api_time_ms'] : 0;
 
 		if (!empty($result['error_message']) && count($state['errors']) < SYMPLECTIC_CPT_MAX_ERRORS) {
 			$state['errors'][] = 'Post ' . $post_id . ' (pid:' . $personnel_id . '): ' . $result['error_message'];
@@ -1516,7 +1527,17 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		'fields_failed'  => 0,
 		'fetch_errors'   => array(),
 		'error_message'  => null,
+		'api_calls'      => 0,
+		'api_time_ms'    => 0,
 	);
+
+	$timed_get = function($url, $args) use (&$result) {
+		$t0 = microtime(true);
+		$resp = wp_remote_get($url, $args);
+		$result['api_calls']++;
+		$result['api_time_ms'] += (int) round((microtime(true) - $t0) * 1000);
+		return $resp;
+	};
 
 	// Fetch UGA ID from CAES internal personnel API
 	if (time() >= $deadline) {
@@ -1526,7 +1547,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 	$caes_url  = 'https://secure.caes.uga.edu/rest/personnel/getUGAids'
 		. '?PersonnelID=' . urlencode($personnel_id)
 		. '&APIkey=' . urlencode(CF_810_API_ENDPOINT_KEY);
-	$caes_resp = wp_remote_get($caes_url, array('timeout' => 15, 'sslverify' => true));
+	$caes_resp = $timed_get($caes_url, array('timeout' => 15, 'sslverify' => true));
 
 	if (is_wp_error($caes_resp)) {
 		$result['error_message'] = 'CAES API: ' . $caes_resp->get_error_message();
@@ -1558,7 +1579,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 
 	$user_url  = 'https://uga.elements.symplectic.org:8091/secure-api/v6.13/users'
 		. '?query=proprietary-id%3D%22' . urlencode($uga_id) . '%22&detail=full';
-	$user_resp = wp_remote_get($user_url, $api_args);
+	$user_resp = $timed_get($user_url, $api_args);
 
 	if (is_wp_error($user_resp)) {
 		$result['error_message'] = 'Elements user API: ' . $user_resp->get_error_message();
@@ -1682,7 +1703,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 				break;
 			}
 
-			$rel_resp = wp_remote_get($rel_url, $api_args);
+			$rel_resp = $timed_get($rel_url, $api_args);
 			if (is_wp_error($rel_resp)) {
 				$fetch_errors[] = 'Relationships p' . $page_count . ': ' . $rel_resp->get_error_message();
 				break;
