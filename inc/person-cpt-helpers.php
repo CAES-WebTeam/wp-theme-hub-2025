@@ -238,7 +238,7 @@ function _person_get_content_count($person_id, $post_type) {
          FROM {$wpdb->posts} p
          INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
          WHERE p.post_type = %s
-           AND p.post_status IN ('publish','private')
+           AND p.post_status IN ('publish','private','future')
            AND pm.meta_key REGEXP %s
            AND pm.meta_value = %s",
         $post_type,

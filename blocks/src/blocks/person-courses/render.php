@@ -43,10 +43,11 @@ echo '<ul class="wp-block-list person-courses__list"' . $list_style . '>';
 foreach ($courses as $course) {
     $code  = ! empty($course['course_code']) ? esc_html($course['course_code']) . ': ' : '';
     $title = ! empty($course['course_title']) ? esc_html($course['course_title']) : '';
+    $term  = ! empty($course['course_term']) ? ' (' . esc_html($course['course_term']) . ')' : '';
     if (empty($code) && empty($title)) {
         continue;
     }
-    echo '<li>' . $code . $title . '</li>';
+    echo '<li>' . $code . $title . $term . '</li>';
 }
 echo '</ul>';
 

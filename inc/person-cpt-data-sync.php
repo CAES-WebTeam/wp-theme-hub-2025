@@ -372,7 +372,7 @@ function personnel_cpt_run_batch() {
 			 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
 			 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
 			 AND p.post_type IN ('post','publications','shorthand_story')
-			 AND p.post_status IN ('publish','private')"
+			 AND p.post_status IN ('publish','private','future')"
 		);
 		$credited_set = array_flip($credited_ids);
 

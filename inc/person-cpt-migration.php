@@ -533,7 +533,7 @@ function person_migration_run_swap_batch(&$state) {
 
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => PERSON_MIGRATION_BATCH_SIZE,
 		'offset'         => $state['processed_users'],
 		'orderby'        => 'ID',
@@ -618,7 +618,7 @@ function person_migration_ajax_verify_swap() {
 	// Get posts that actually have repeater data
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'orderby'        => 'ID',
 		'fields'         => 'ids',
@@ -700,7 +700,7 @@ function person_migration_ajax_revert_swap() {
 
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -816,7 +816,7 @@ function person_migration_ajax_resolve_flagged() {
 
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -927,7 +927,7 @@ function person_migration_ajax_flat_meta_audit() {
 
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -1047,7 +1047,7 @@ function person_migration_ajax_merge_ref_audit() {
 
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -1187,7 +1187,7 @@ function person_migration_ajax_fix_stale_refs() {
 
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -1274,7 +1274,7 @@ function person_migration_ajax_roleless_audit() {
 	// Step 2: Scan all content for references to these users
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -1544,7 +1544,7 @@ function person_migration_run_flat_meta_batch(&$state, $revert = false) {
 
 	$posts = get_posts(array(
 		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => PERSON_MIGRATION_BATCH_SIZE,
 		'offset'         => $state['processed_users'],
 		'orderby'        => 'ID',
@@ -3682,7 +3682,7 @@ function person_migration_ajax_scan_duplicates() {
 
 	$posts = get_posts(array(
 		'post_type'      => 'caes_hub_person',
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -3882,7 +3882,7 @@ function person_migration_render_merge_page() {
 
 			$content_posts = get_posts(array(
 				'post_type'      => $content_post_types,
-				'post_status'    => array('publish', 'draft', 'private'),
+				'post_status'    => array('publish', 'draft', 'private', 'future'),
 				'posts_per_page' => -1,
 				'fields'         => 'ids',
 			));
@@ -4211,7 +4211,7 @@ function person_migration_render_merge_page() {
 
 				$list_content_posts = get_posts(array(
 					'post_type'      => $list_content_types,
-					'post_status'    => array('publish', 'draft', 'private'),
+					'post_status'    => array('publish', 'draft', 'private', 'future'),
 					'posts_per_page' => -1,
 					'fields'         => 'ids',
 				));
@@ -5067,7 +5067,7 @@ function person_migration_ajax_merge() {
 
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
@@ -5410,7 +5410,7 @@ function person_migration_ajax_replay_decisions() {
 				// Search for a person post with this name that isn't the keeper
 				$candidates = get_posts(array(
 					'post_type'      => 'caes_hub_person',
-					'post_status'    => array('publish', 'draft', 'private'),
+					'post_status'    => array('publish', 'draft', 'private', 'future'),
 					'posts_per_page' => 10,
 					'title'          => $donor_name,
 					'exclude'        => array($keep_post),
@@ -5473,7 +5473,7 @@ function person_migration_ajax_replay_decisions() {
 		$refs_updated = 0;
 		$content_posts_list = get_posts(array(
 			'post_type'      => $content_post_types,
-			'post_status'    => array('publish', 'draft', 'private'),
+			'post_status'    => array('publish', 'draft', 'private', 'future'),
 			'posts_per_page' => -1,
 			'fields'         => 'ids',
 		));
@@ -5706,7 +5706,7 @@ function person_migration_ajax_group_detail() {
 	// Pre-fetch all content posts once
 	$content_posts = get_posts(array(
 		'post_type'      => $content_post_types,
-		'post_status'    => array('publish', 'draft', 'private'),
+		'post_status'    => array('publish', 'draft', 'private', 'future'),
 		'posts_per_page' => -1,
 		'fields'         => 'ids',
 	));
