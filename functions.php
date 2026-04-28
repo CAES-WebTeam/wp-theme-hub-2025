@@ -24,12 +24,9 @@ require get_template_directory() . '/inc/news-support.php';
 require get_template_directory() . '/block-variations/index.php';
 require get_template_directory() . '/inc/custom-rewrites.php';
 require get_template_directory() . '/inc/rss-support.php';
-// require get_template_directory() . '/inc/multisite-script-protect.php';
 require get_template_directory() . '/inc/symplectic-query-tool.php';
-// require get_template_directory() . '/inc/symplectic-individual-user-import.php'; // Retired
-// require get_template_directory() . '/inc/symplectic-scheduled-import.php'; // Retired -- replaced by person-cpt-data-sync.php
-// require get_template_directory() . '/inc/symplectic-scheduled-import-cpt.php'; // Retired -- merged into person-cpt-data-sync.php
 require get_template_directory() . '/inc/person-cpt-data-sync.php';
+require get_template_directory() . '/inc/cli/person-sync-cli.php';
 
 // Switch to simplified block template for person posts without Symplectic Elements data
 add_filter( 'get_block_templates', function ( $templates, $query, $template_type ) {

@@ -26,6 +26,10 @@ define('PERSONNEL_CPT_BATCH_HOOK', 'personnel_cpt_sync_batch');
  * self-requests (most do); silently no-ops if the request fails.
  */
 function person_cpt_spawn_cron_loopback() {
+	// CLI runs batches in a tight loop; firing a loopback would spawn a concurrent run.
+	if (defined('WP_CLI') && WP_CLI) {
+		return;
+	}
 	$url = site_url('wp-cron.php?doing_wp_cron=' . sprintf('%.22F', microtime(true)));
 	wp_remote_post($url, array(
 		'timeout'   => 1,
