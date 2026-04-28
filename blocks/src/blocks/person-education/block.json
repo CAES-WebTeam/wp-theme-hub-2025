@@ -49,6 +49,10 @@
         "itemFontSize": {
             "type": "string",
             "default": ""
+        },
+        "highestOnly": {
+            "type": "boolean",
+            "default": false
         }
     },
     "usesContext": [

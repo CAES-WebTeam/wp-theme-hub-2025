@@ -17,7 +17,7 @@ const PREVIEW_DEGREES = [
 ];
 
 export default function Edit({ attributes, setAttributes }) {
-    const { showHeading, headingLevel, headingFontSize, itemFontSize, style } = attributes;
+    const { showHeading, headingLevel, headingFontSize, itemFontSize, highestOnly, style } = attributes;
     const blockGap = style?.spacing?.blockGap;
     const [ fontSizes ] = useSettings( 'typography.fontSizes' );
 
@@ -39,6 +39,12 @@ export default function Edit({ attributes, setAttributes }) {
                         label={__('Show heading', 'caes-hub')}
                         checked={showHeading}
                         onChange={(value) => setAttributes({ showHeading: value })}
+                    />
+                    <ToggleControl
+                        label={__('Show highest degree only', 'caes-hub')}
+                        help={__('Display only the highest-ranked degree (PhD > Master\'s > Bachelor\'s, then most recent year).', 'caes-hub')}
+                        checked={!!highestOnly}
+                        onChange={(value) => setAttributes({ highestOnly: value })}
                     />
                 </PanelBody>
             </InspectorControls>

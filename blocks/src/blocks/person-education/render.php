@@ -23,6 +23,7 @@ $show_heading      = isset($attributes['showHeading']) ? (bool) $attributes['sho
 $heading_level     = isset($attributes['headingLevel']) ? (int) $attributes['headingLevel'] : 2;
 $heading_font_size = isset($attributes['headingFontSize']) ? $attributes['headingFontSize'] : '';
 $item_font_size    = isset($attributes['itemFontSize']) ? $attributes['itemFontSize'] : '';
+$highest_only      = !empty($attributes['highestOnly']);
 
 // Clamp heading level to valid range
 $heading_level = max(1, min(6, $heading_level));
@@ -39,12 +40,31 @@ if ($show_heading) {
     echo '<' . $heading_tag . ' class="wp-block-heading person-education__heading"' . $heading_style . '>' . esc_html__('Education', 'caes-hub') . '</' . $heading_tag . '>';
 }
 
-// Sort latest to oldest; degrees without a year go to the bottom
-usort($degrees, function($a, $b) {
+// Rank a degree by perceived level (higher = more advanced).
+// Heuristic based on common degree-name keywords; falls back to 0 for unknowns.
+$rank_degree = function($degree) {
+    $name = strtolower(trim($degree['degree_name'] ?? ''));
+    if ($name === '') return 0;
+    if (preg_match('/\b(ph\.?d|d\.?phil|doctor of philosophy|doctorate|d\.?ed|ed\.?d|d\.?sc|sc\.?d|j\.?d|m\.?d|d\.?v\.?m)\b/', $name)) return 4;
+    if (preg_match('/\b(master|m\.?s|m\.?a|m\.?b\.?a|m\.?ed|m\.?eng|m\.?p\.?h|m\.?f\.?a)\b/', $name)) return 3;
+    if (preg_match('/\b(bachelor|b\.?s|b\.?a|b\.?eng|b\.?ed|b\.?f\.?a)\b/', $name)) return 2;
+    if (preg_match('/\b(associate|a\.?a|a\.?s)\b/', $name)) return 1;
+    return 0;
+};
+
+// Sort by rank desc, then by year desc; unknowns at the bottom
+usort($degrees, function($a, $b) use ($rank_degree) {
+    $ra = $rank_degree($a);
+    $rb = $rank_degree($b);
+    if ($ra !== $rb) return $rb - $ra;
     $ya = !empty($a['degree_year']) ? (int) $a['degree_year'] : 0;
     $yb = !empty($b['degree_year']) ? (int) $b['degree_year'] : 0;
     return $yb - $ya;
 });
+
+if ($highest_only) {
+    $degrees = array_slice($degrees, 0, 1);
+}
 
 echo '<div class="person-education__list"' . $list_style . '>';
 foreach ($degrees as $degree) {
