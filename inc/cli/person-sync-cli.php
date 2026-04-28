@@ -30,15 +30,18 @@ class CAES_Person_Sync_CLI {
      */
     public function personnel($args, $assoc_args) {
         $quiet = !empty($assoc_args['quiet']);
+        $force = !empty($assoc_args['force']);
 
         WP_CLI::log('Starting personnel sync...');
+
+        $this->maybe_force_reset(PERSONNEL_CPT_STATE_KEY, PERSONNEL_CPT_BATCH_HOOK, $force);
 
         // Reuse existing setup: fetch API, build dept URL map, set state to running.
         $started = personnel_cpt_start_job('cli');
         if (!$started) {
             $state = personnel_cpt_get_state();
             if ($state['status'] === 'running') {
-                WP_CLI::error('A sync is already running. Stop it from the dashboard first.');
+                WP_CLI::error('A sync is already running. Use --force to override, or stop it from the dashboard first.');
             }
             WP_CLI::error('Could not start sync. Check API credentials and connectivity.');
         }
@@ -61,14 +64,17 @@ class CAES_Person_Sync_CLI {
      */
     public function symplectic($args, $assoc_args) {
         $quiet = !empty($assoc_args['quiet']);
+        $force = !empty($assoc_args['force']);
 
         WP_CLI::log('Starting Symplectic sync...');
+
+        $this->maybe_force_reset(SYMPLECTIC_CPT_STATE_KEY, SYMPLECTIC_CPT_BATCH_HOOK, $force);
 
         $started = symplectic_cpt_start_job('cli');
         if (!$started) {
             $state = symplectic_cpt_get_state();
             if ($state['status'] === 'running') {
-                WP_CLI::error('A sync is already running. Stop it from the dashboard first.');
+                WP_CLI::error('A sync is already running. Use --force to override, or stop it from the dashboard first.');
             }
             WP_CLI::error('Could not start sync. Check API credentials and that person posts exist.');
         }
@@ -76,6 +82,39 @@ class CAES_Person_Sync_CLI {
         wp_clear_scheduled_hook(SYMPLECTIC_CPT_BATCH_HOOK);
 
         $this->loop_until_complete('symplectic', $quiet);
+    }
+
+    /**
+     * Reset stuck sync state and clear scheduled cron events. Use after a
+     * crashed CLI run or when the dashboard "Stop" button isn't enough.
+     *
+     * @when after_wp_load
+     */
+    public function reset($args, $assoc_args) {
+        delete_option(PERSONNEL_CPT_STATE_KEY);
+        delete_option(SYMPLECTIC_CPT_STATE_KEY);
+        wp_clear_scheduled_hook(PERSONNEL_CPT_BATCH_HOOK);
+        wp_clear_scheduled_hook(SYMPLECTIC_CPT_BATCH_HOOK);
+        if (function_exists('wp_cache_flush')) {
+            wp_cache_flush();
+        }
+        WP_CLI::success('Sync state cleared and pending cron events removed.');
+    }
+
+    /**
+     * If --force is used, clear state and any orphaned cron events so a
+     * fresh start_job can succeed even if previous run left status='running'.
+     */
+    private function maybe_force_reset($state_key, $batch_hook, $force) {
+        if (!$force) {
+            return;
+        }
+        WP_CLI::warning("--force: clearing existing state and pending cron events.");
+        delete_option($state_key);
+        wp_clear_scheduled_hook($batch_hook);
+        if (function_exists('wp_cache_flush')) {
+            wp_cache_flush();
+        }
     }
 
     /**
@@ -121,6 +160,9 @@ class CAES_Person_Sync_CLI {
             };
             pcntl_signal(SIGINT, $handler);
             pcntl_signal(SIGTERM, $handler);
+            if (defined('SIGHUP')) {
+                pcntl_signal(SIGHUP, $handler);
+            }
         }
 
         $start = microtime(true);
