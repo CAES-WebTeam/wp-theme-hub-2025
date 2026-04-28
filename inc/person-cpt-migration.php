@@ -3041,6 +3041,57 @@ function person_migration_render_page() {
 						</div>
 					</div>
 				</div>
+
+				<!-- Run WP-CLI personnel + Symplectic sync -->
+				<?php $step_cli_sync_done = !empty($checklist['step_cli_sync']); ?>
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step_cli_sync_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Run Personnel &amp; Symplectic Sync (WP-CLI)</strong>
+							<span class="pmig-status-badge <?php echo $step_cli_sync_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step_cli_sync_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">SSH into the site and run the imports detached so they survive disconnects. Watch via <code>tail -f sync.log</code> or the <strong>People CPT Data Sync</strong> dashboard.</p>
+							<pre style="background:#f6f7f7;border:1px solid #ddd;padding:8px;margin:6px 0 0;font-size:11px;line-height:1.5;white-space:pre-wrap">cd ~/public
+nohup wp caes person-sync all &gt; sync.log 2&gt;&amp;1 &amp;
+tail -f sync.log
+
+# Or run individually:
+wp caes person-sync personnel
+wp caes person-sync symplectic
+
+# If a previous run is stuck:
+wp caes person-sync reset</pre>
+						</div>
+						<div>
+							<?php if ($step_cli_sync_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step_cli_sync" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step_cli_sync"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+
+				<!-- Tag dept heads + Science You Can Trust feed -->
+				<?php $step_dept_heads_feed_done = !empty($checklist['step_dept_heads_feed']); ?>
+				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step_dept_heads_feed_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
+					<div style="display:flex;justify-content:space-between;align-items:center">
+						<div>
+							<strong>Tag Department Heads &amp; Update Science You Can Trust</strong>
+							<span class="pmig-status-badge <?php echo $step_dept_heads_feed_done ? 'complete' : 'idle'; ?>" style="margin-left:8px"><?php echo $step_dept_heads_feed_done ? 'Complete' : 'Not Started'; ?></span>
+							<p class="description" style="margin:4px 0 0">
+								Tag each department head with a <code>person_tag</code> (e.g. <em>department-head</em>) via the Editorial section of their person edit screen.
+								Then update the <a href="https://fieldreport.caes.uga.edu/publications/science-you-can-trust/" target="_blank" rel="noopener">Science You Can Trust page</a> to use a <strong>caes-hub/user-feed</strong> block in <em>By tag</em> mode pointing at that tag.
+							</p>
+						</div>
+						<div>
+							<?php if ($step_dept_heads_feed_done): ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step_dept_heads_feed" checked> Done</label>
+							<?php else: ?>
+								<label style="font-size:11px;margin-left:4px"><input type="checkbox" class="pmig-checklist-toggle" data-step="step_dept_heads_feed"> Mark done</label>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<!-- ============ PHASE 3: UPDATE SYNC INFRASTRUCTURE ============ -->
