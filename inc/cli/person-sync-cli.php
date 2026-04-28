@@ -160,8 +160,13 @@ class CAES_Person_Sync_CLI {
             };
             pcntl_signal(SIGINT, $handler);
             pcntl_signal(SIGTERM, $handler);
-            if (defined('SIGHUP')) {
-                pcntl_signal(SIGHUP, $handler);
+            // Only register SIGHUP if it isn't already being ignored (e.g. by nohup).
+            // Overriding nohup's SIG_IGN would defeat nohup's whole purpose.
+            if (defined('SIGHUP') && function_exists('pcntl_signal_get_handler')) {
+                $current = pcntl_signal_get_handler(SIGHUP);
+                if ($current !== SIG_IGN) {
+                    pcntl_signal(SIGHUP, $handler);
+                }
             }
         }
 
