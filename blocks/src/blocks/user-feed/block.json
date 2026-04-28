@@ -41,6 +41,18 @@
 			"type": "string",
 			"default": "hand-picked"
 		},
+		"tagIds": {
+			"type": "array",
+			"default": []
+		},
+		"departmentIds": {
+			"type": "array",
+			"default": []
+		},
+		"expertiseIds": {
+			"type": "array",
+			"default": []
+		},
 		"numberOfUsers": {
 			"type": "number",
 			"default": 5

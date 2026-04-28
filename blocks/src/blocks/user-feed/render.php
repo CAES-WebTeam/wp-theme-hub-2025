@@ -14,6 +14,9 @@ if (!function_exists('caes_get_current_user_id')) {
 
 // Get attributes with proper defaults to match frontend
 $user_ids = isset($block->attributes['userIds']) ? $block->attributes['userIds'] : [];
+$tag_ids = isset($block->attributes['tagIds']) ? $block->attributes['tagIds'] : [];
+$department_ids = isset($block->attributes['departmentIds']) ? $block->attributes['departmentIds'] : [];
+$expertise_ids = isset($block->attributes['expertiseIds']) ? $block->attributes['expertiseIds'] : [];
 $feed_type = isset($block->attributes['feedType']) ? $block->attributes['feedType'] : 'hand-picked';
 $number_of_users = isset($block->attributes['numberOfUsers']) ? $block->attributes['numberOfUsers'] : 5;
 $query_id = isset($block->attributes['queryId']) ? $block->attributes['queryId'] : 100;
@@ -55,32 +58,73 @@ if ($displayLayout === 'grid' && $gridItemPosition === 'auto') {
 
 $wrapper_attributes = get_block_wrapper_attributes();
 
-// We only support hand-picked users/persons
-if ($feed_type !== 'hand-picked' || empty($user_ids)) {
+$tax_modes = array(
+    'by-tag'        => array('taxonomy' => 'person_tag',         'ids' => $tag_ids),
+    'by-department' => array('taxonomy' => 'person_department',  'ids' => $department_ids),
+    'by-expertise'  => array('taxonomy' => 'areas_of_expertise', 'ids' => $expertise_ids),
+);
+
+if (isset($tax_modes[$feed_type])) {
+    $taxonomy = $tax_modes[$feed_type]['taxonomy'];
+    $term_ids = $tax_modes[$feed_type]['ids'];
+    if (empty($term_ids)) {
+        return;
+    }
+    // Query active person posts that have any of the selected terms.
+    $tax_query_results = get_posts(array(
+        'post_type'      => 'caes_hub_person',
+        'post_status'    => 'publish',
+        'posts_per_page' => max(1, (int) $number_of_users),
+        'fields'         => 'ids',
+        'tax_query'      => array(
+            array(
+                'taxonomy' => $taxonomy,
+                'field'    => 'term_id',
+                'terms'    => array_map('intval', $term_ids),
+            ),
+        ),
+        'meta_query'     => array(
+            'relation' => 'OR',
+            array('key' => 'is_active', 'value' => '1'),
+            array('key' => 'is_active', 'compare' => 'NOT EXISTS'),
+        ),
+    ));
+    if (empty($tax_query_results)) {
+        return;
+    }
+    $render_items = array();
+    foreach ($tax_query_results as $pid) {
+        $render_items[] = array('id' => (int) $pid, 'type' => 'post');
+    }
+    $wp_users_by_id = array();
+} elseif ($feed_type === 'hand-picked') {
+    if (empty($user_ids)) {
+        return;
+    }
+    // Separate IDs into CPT post IDs and WP user IDs
+    $person_post_ids = array();
+    $wp_user_ids     = array();
+    foreach ($user_ids as $id) {
+        $id = (int) $id;
+        if (get_post_type($id) === 'caes_hub_person') {
+            $person_post_ids[] = $id;
+        } else {
+            $wp_user_ids[] = $id;
+        }
+    }
+
+    // Build an ordered list of render items: each has an 'id' and 'type' (post|user)
+    $render_items = array();
+    foreach ($user_ids as $id) {
+        $id = (int) $id;
+        if (in_array($id, $person_post_ids, true)) {
+            $render_items[] = array('id' => $id, 'type' => 'post');
+        } else {
+            $render_items[] = array('id' => $id, 'type' => 'user');
+        }
+    }
+} else {
     return;
-}
-
-// Separate IDs into CPT post IDs and WP user IDs
-$person_post_ids = array();
-$wp_user_ids     = array();
-foreach ($user_ids as $id) {
-    $id = (int) $id;
-    if (get_post_type($id) === 'caes_hub_person') {
-        $person_post_ids[] = $id;
-    } else {
-        $wp_user_ids[] = $id;
-    }
-}
-
-// Build an ordered list of render items: each has an 'id' and 'type' (post|user)
-$render_items = array();
-foreach ($user_ids as $id) {
-    $id = (int) $id;
-    if (in_array($id, $person_post_ids, true)) {
-        $render_items[] = array('id' => $id, 'type' => 'post');
-    } else {
-        $render_items[] = array('id' => $id, 'type' => 'user');
-    }
 }
 
 // Pre-fetch WP users in one query if needed

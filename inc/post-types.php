@@ -644,6 +644,35 @@ add_filter('get_term', function ($term) {
     return $term;
 });
 
+// Register 'Person Tags' taxonomy (free-form tags for person CPT).
+add_action('init', function () {
+    register_taxonomy('person_tag', array('caes_hub_person'), array(
+        'labels' => array(
+            'name'              => 'Person Tags',
+            'singular_name'     => 'Person Tag',
+            'menu_name'         => 'Tags',
+            'all_items'         => 'All Tags',
+            'edit_item'         => 'Edit Tag',
+            'update_item'       => 'Update Tag',
+            'add_new_item'      => 'Add New Tag',
+            'new_item_name'     => 'New Tag Name',
+            'search_items'      => 'Search Tags',
+            'not_found'         => 'No tags found',
+            'no_terms'          => 'No tags',
+            'back_to_items'     => '← Go to tags',
+        ),
+        'hierarchical'      => false,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_in_menu'      => true,
+        'show_in_rest'      => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'people/tag', 'with_front' => false),
+        'meta_box_cb'       => false, // Managed via ACF field in the Editorial group.
+    ));
+});
+
 // Add 'Areas of Expertise' taxonomy management page under the Users menu.
 add_action('admin_menu', function () {
     add_submenu_page(

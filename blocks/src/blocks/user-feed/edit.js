@@ -51,6 +51,9 @@ export default function Edit({ attributes, setAttributes }) {
     const {
         userIds = [],
         feedType = 'hand-picked',
+        tagIds = [],
+        departmentIds = [],
+        expertiseIds = [],
         numberOfUsers = 5,
         customGapStep = 0,
         displayLayout = 'list',
@@ -65,6 +68,28 @@ export default function Edit({ attributes, setAttributes }) {
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchTimeout, setSearchTimeout] = useState(null);
+
+    // Term lists per taxonomy used by the by-* feed types
+    const [termsByTax, setTermsByTax] = useState({
+        person_tag: [],
+        person_department: [],
+        areas_of_expertise: [],
+    });
+
+    useEffect(() => {
+        const taxes = ['person_tag', 'person_department', 'areas_of_expertise'];
+        Promise.all(
+            taxes.map((tax) =>
+                apiFetch({ path: `/wp/v2/${tax}?per_page=100&_fields=id,name` })
+                    .then((terms) => [tax, (terms || []).map((t) => ({ id: t.id, label: t.name }))])
+                    .catch(() => [tax, []])
+            )
+        ).then((results) => {
+            const map = { person_tag: [], person_department: [], areas_of_expertise: [] };
+            results.forEach(([tax, list]) => { map[tax] = list; });
+            setTermsByTax(map);
+        });
+    }, []);
 
     // Update selectedUsers when userIds change (from saved attributes)
     useEffect(() => {
@@ -243,31 +268,84 @@ export default function Edit({ attributes, setAttributes }) {
         <>
             <InspectorControls>
                 <PanelBody title={__('User Feed Settings', 'user-feed')}>
-                    <FormTokenField
-                        label={__('Select People', 'user-feed')}
-                        value={selectedUserLabels}
-                        suggestions={userSuggestions}
-                        onInputChange={handleSearch}
-                        onChange={(selectedLabels) => {
-                            const selectedIds = selectedLabels
-                                .map((label) => {
-                                    const match = allUsers.find((u) => u.label === label);
-                                    return match ? match.id : null;
-                                })
-                                .filter((id) => id !== null);
-                            setAttributes({ userIds: selectedIds });
-                        }}
-                        help={
-                            searchTerm.length > 0 && searchTerm.length < 3
-                                ? __('Type at least 3 characters to search people', 'user-feed')
-                                : isLoading
-                                    ? __('Searching people...', 'user-feed')
-                                    : availableUsers.length === 0 && searchTerm.length >= 3
-                                        ? __('No people found. Try a different search term.', 'user-feed')
-                                        : __('Search for people to add them to the feed', 'user-feed')
-                        }
+                    <SelectControl
+                        label={__('Feed Type', 'user-feed')}
+                        value={feedType}
+                        options={[
+                            { value: 'hand-picked', label: __('Hand-picked', 'user-feed') },
+                            { value: 'by-tag', label: __('By tag', 'user-feed') },
+                            { value: 'by-department', label: __('By department', 'user-feed') },
+                            { value: 'by-expertise', label: __('By area of expertise', 'user-feed') },
+                        ]}
+                        onChange={(value) => setAttributes({ feedType: value })}
                     />
-                    {isLoading && <Spinner />}
+
+                    {feedType === 'hand-picked' && (
+                        <>
+                            <FormTokenField
+                                label={__('Select People', 'user-feed')}
+                                value={selectedUserLabels}
+                                suggestions={userSuggestions}
+                                onInputChange={handleSearch}
+                                onChange={(selectedLabels) => {
+                                    const selectedIds = selectedLabels
+                                        .map((label) => {
+                                            const match = allUsers.find((u) => u.label === label);
+                                            return match ? match.id : null;
+                                        })
+                                        .filter((id) => id !== null);
+                                    setAttributes({ userIds: selectedIds });
+                                }}
+                                help={
+                                    searchTerm.length > 0 && searchTerm.length < 3
+                                        ? __('Type at least 3 characters to search people', 'user-feed')
+                                        : isLoading
+                                            ? __('Searching people...', 'user-feed')
+                                            : availableUsers.length === 0 && searchTerm.length >= 3
+                                                ? __('No people found. Try a different search term.', 'user-feed')
+                                                : __('Search for people to add them to the feed', 'user-feed')
+                                }
+                            />
+                            {isLoading && <Spinner />}
+                        </>
+                    )}
+
+                    {feedType !== 'hand-picked' && (() => {
+                        const taxConfig = {
+                            'by-tag':        { tax: 'person_tag',         attr: 'tagIds',        ids: tagIds,        label: __('Select Tags', 'user-feed'),               help: __('People tagged with any of these tags will be shown.', 'user-feed') },
+                            'by-department': { tax: 'person_department',  attr: 'departmentIds', ids: departmentIds, label: __('Select Departments', 'user-feed'),         help: __('People in any of these departments will be shown.', 'user-feed') },
+                            'by-expertise':  { tax: 'areas_of_expertise', attr: 'expertiseIds',  ids: expertiseIds,  label: __('Select Areas of Expertise', 'user-feed'),  help: __('People with any of these areas of expertise will be shown.', 'user-feed') },
+                        }[feedType];
+                        if (!taxConfig) return null;
+                        const allTerms = termsByTax[taxConfig.tax] || [];
+                        const selectedLabels = allTerms.filter((t) => taxConfig.ids.includes(t.id)).map((t) => t.label);
+                        return (
+                            <>
+                                <FormTokenField
+                                    label={taxConfig.label}
+                                    value={selectedLabels}
+                                    suggestions={allTerms.map((t) => t.label)}
+                                    onChange={(labels) => {
+                                        const ids = labels
+                                            .map((label) => {
+                                                const match = allTerms.find((t) => t.label === label);
+                                                return match ? match.id : null;
+                                            })
+                                            .filter((id) => id !== null);
+                                        setAttributes({ [taxConfig.attr]: ids });
+                                    }}
+                                    help={taxConfig.help}
+                                />
+                                <NumberControl
+                                    label={__('Maximum number of people', 'user-feed')}
+                                    value={numberOfUsers}
+                                    onChange={(value) => setAttributes({ numberOfUsers: parseInt(value, 10) || 5 })}
+                                    min={1}
+                                    max={100}
+                                />
+                            </>
+                        );
+                    })()}
                 </PanelBody>
 
                 <PanelBody title={__('Layout Settings', 'user-feed')} initialOpen={false}>
@@ -352,19 +430,30 @@ export default function Edit({ attributes, setAttributes }) {
 
             <div {...blockProps}>
                 <div className={combinedClassName}>
-                    {(!userIds || userIds.length === 0) && (
-                        <p className="user-feed-empty">
-                            {__('Please select one or more users from the sidebar.', 'user-feed')}
-                        </p>
-                    )}
-
-                    {userIds && userIds.length > 0 && (
-                        <InnerBlocks
-                            template={DEFAULT_TEMPLATE}
-                            templateLock={false}
-                            renderAppender={InnerBlocks.ButtonBlockAppender}
-                        />
-                    )}
+                    {(() => {
+                        const hasIds = {
+                            'hand-picked':   userIds && userIds.length > 0,
+                            'by-tag':        tagIds && tagIds.length > 0,
+                            'by-department': departmentIds && departmentIds.length > 0,
+                            'by-expertise':  expertiseIds && expertiseIds.length > 0,
+                        }[feedType];
+                        if (!hasIds) {
+                            const msg = {
+                                'hand-picked':   __('Please select one or more people from the sidebar.', 'user-feed'),
+                                'by-tag':        __('Please select one or more tags from the sidebar.', 'user-feed'),
+                                'by-department': __('Please select one or more departments from the sidebar.', 'user-feed'),
+                                'by-expertise':  __('Please select one or more areas of expertise from the sidebar.', 'user-feed'),
+                            }[feedType] || '';
+                            return <p className="user-feed-empty">{msg}</p>;
+                        }
+                        return (
+                            <InnerBlocks
+                                template={DEFAULT_TEMPLATE}
+                                templateLock={false}
+                                renderAppender={InnerBlocks.ButtonBlockAppender}
+                            />
+                        );
+                    })()}
                 </div>
             </div>
         </>
