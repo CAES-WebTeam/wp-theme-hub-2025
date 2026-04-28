@@ -106,7 +106,11 @@ if (!empty($render_items)) {
             <?php
             foreach ($render_items as $item) {
                 if ($item['type'] === 'post') {
-                    // CPT person post -- set global to post ID so inner blocks use resolve_person_post_id()
+                    // CPT person post -- skip inactive people
+                    if (function_exists('is_person_active') && !is_person_active($item['id'])) {
+                        continue;
+                    }
+                    // Set global to post ID so inner blocks use resolve_person_post_id()
                     $GLOBALS['caes_current_user_id'] = $item['id'];
                     $context_user_id = $item['id'];
                     echo '<!-- person: caes_hub_person #' . $item['id'] . ' -->';
@@ -114,6 +118,13 @@ if (!empty($render_items)) {
                     // WP user -- set global to user ID (pre-migration path)
                     $user = $wp_users_by_id[$item['id']] ?? null;
                     if (!$user) continue;
+                    // Skip inactive people if a person post is linked
+                    if (function_exists('resolve_person_post_id') && function_exists('is_person_active')) {
+                        $linked_post_id = resolve_person_post_id($user->ID);
+                        if ($linked_post_id && !is_person_active($linked_post_id)) {
+                            continue;
+                        }
+                    }
                     caes_set_current_user($user);
                     $context_user_id = $user->ID;
                     echo '<!-- person: wp_user #' . $user->ID . ' -->';
