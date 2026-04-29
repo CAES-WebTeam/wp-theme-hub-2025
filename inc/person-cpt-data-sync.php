@@ -1834,14 +1834,27 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 			}
 
 			$rel_xml->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
-			$page_objects = $rel_xml->xpath('//api:object');
+			$relationships = $rel_xml->xpath('//api:relationship');
 
-			if (!empty($page_objects)) {
-				foreach ($page_objects as $rel_obj) {
+			if (!empty($relationships)) {
+				foreach ($relationships as $rel) {
 					if (time() >= $deadline) {
 						$fetch_errors[] = 'Timed out (3 min) while processing relationships.';
 						break 2;
 					}
+					$rel->registerXPathNamespace('api', 'http://www.symplectic.co.uk/publications/api');
+
+					// Skip anything the user has set to non-public in Elements.
+					$priv_nodes = $rel->xpath('./api:effective-privacy-level');
+					$privacy = !empty($priv_nodes) ? (string) $priv_nodes[0] : '';
+					if ($privacy !== '' && strcasecmp($privacy, 'Public') !== 0) {
+						continue;
+					}
+
+					$obj_nodes = $rel->xpath('./api:related/api:object');
+					if (empty($obj_nodes)) continue;
+					$rel_obj = $obj_nodes[0];
+
 					$obj_data = array();
 					foreach ($rel_obj->attributes() as $k => $v) {
 						$obj_data[$k] = (string)$v;
@@ -1872,7 +1885,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 						}
 					}
 				}
-				unset($page_objects);
+				unset($relationships);
 			}
 
 			// Pagination
