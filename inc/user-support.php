@@ -2218,8 +2218,6 @@ CSS;
     echo '<h2>Run All Syncs in Logical Order</h2>';
     echo '<p>This comprehensive option will execute all four synchronization processes sequentially in the recommended order, providing live updates and detailed error summaries for each step. Perfect for a full refresh of user data with complete visibility into any issues.</p>';
     echo '<ol>';
-    echo '<li>Import News Experts (with error summary)</li>';
-    echo '<li>Import News Writers (with error summary)</li>';
     echo '<li>Sync Active Personnel (with error summary)</li>';
     echo '<li>Sync Inactive/Archived Personnel (with error summary)</li>';
     echo '</ol>';
