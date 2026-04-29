@@ -715,6 +715,12 @@ function person_data_sync_enqueue($hook) {
 				errors.forEach(function(e) { html += "<div>" + esc(e) + "</div>"; });
 				return html + "</div></div>";
 			}
+			function renderWarnings(warnings) {
+				if (!warnings || !warnings.length) return "";
+				var html = "<div style=\"margin-top:10px\"><strong style=\"font-size:12px;color:#b26200\">Warnings (" + esc(warnings.length) + "):</strong><div class=\"pds-error-list\" style=\"color:#b26200\">";
+				warnings.forEach(function(w) { html += "<div>" + esc(w) + "</div>"; });
+				return html + "</div></div>";
+			}
 
 			// ---- PERSONNEL SYNC ----
 
@@ -899,6 +905,7 @@ function person_data_sync_enqueue($hook) {
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value failed\">"  + esc(s.posts_failed)   + "</div><div class=\"pds-stat-label\">Failed</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.posts_skipped)  + "</div><div class=\"pds-stat-label\">Skipped</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(s.fields_written) + "</div><div class=\"pds-stat-label\">Fields Written</div></div>"
+					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value" + (s.warnings > 0 ? " warn" : "") + "\">" + esc(s.warnings || 0) + "</div><div class=\"pds-stat-label\">Warnings</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value" + (s.fetch_errors > 0 ? " failed" : "") + "\">" + esc(s.fetch_errors) + "</div><div class=\"pds-stat-label\">Fetch Errors</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(calls) + "</div><div class=\"pds-stat-label\">API Calls</div></div>"
 					+ "<div class=\"pds-stat\"><div class=\"pds-stat-value neutral\">" + esc(avgApiMs) + " ms</div><div class=\"pds-stat-label\">Avg API Time</div></div>"
@@ -931,6 +938,7 @@ function person_data_sync_enqueue($hook) {
 					}
 					html += "</div>";
 					html += renderErrors(state.errors);
+					html += renderWarnings(state.warnings);
 				} else {
 					html += "<p style=\"color:#666;font-size:13px\">No import is currently running.</p>";
 				}
@@ -948,6 +956,7 @@ function person_data_sync_enqueue($hook) {
 				html += "</div>";
 				html += renderSStats(lc.stats);
 				html += renderErrors(lc.errors);
+				html += renderWarnings(lc.warnings);
 				$section.find(".pds-last-completed-panel").html(html);
 			}
 
@@ -1413,6 +1422,7 @@ function symplectic_cpt_default_state() {
 			'posts_skipped'  => 0,
 			'fields_written' => 0,
 			'fetch_errors'   => 0,
+			'warnings'       => 0,
 			'api_calls'      => 0,
 			'api_time_ms'    => 0,
 			'post_time_ms'   => 0,
@@ -1421,6 +1431,7 @@ function symplectic_cpt_default_state() {
 			'last_batch_end' => 0,
 		),
 		'errors'          => array(),
+		'warnings'        => array(),
 		'stop_requested'  => false,
 		'last_completed'  => null,
 	);
@@ -1597,6 +1608,14 @@ function symplectic_cpt_run_batch() {
 		if (!empty($result['error_message']) && count($state['errors']) < SYMPLECTIC_CPT_MAX_ERRORS) {
 			$state['errors'][] = 'Post ' . $post_id . ' (pid:' . $personnel_id . '): ' . $result['error_message'];
 		}
+		if (!empty($result['warning_message'])) {
+			$state['stats']['warnings']++;
+			if (!isset($state['warnings'])) $state['warnings'] = array();
+			if (count($state['warnings']) < SYMPLECTIC_CPT_MAX_ERRORS) {
+				$person_name = get_the_title($post_id);
+				$state['warnings'][] = ($person_name ? $person_name : 'Post ' . $post_id) . ' (pid:' . $personnel_id . '): ' . $result['warning_message'];
+			}
+		}
 		foreach ($result['fetch_errors'] as $fe) {
 			if (count($state['errors']) < SYMPLECTIC_CPT_MAX_ERRORS) {
 				$state['errors'][] = 'Post ' . $post_id . ' fetch: ' . $fe;
@@ -1622,6 +1641,7 @@ function symplectic_cpt_run_batch() {
 			'processed_posts' => $state['processed_posts'],
 			'stats'           => $state['stats'],
 			'errors'          => $state['errors'],
+			'warnings'        => isset($state['warnings']) ? $state['warnings'] : array(),
 		);
 		update_option(SYMPLECTIC_CPT_STATE_KEY, $state, false);
 	}
@@ -1639,6 +1659,7 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 		'fields_failed'  => 0,
 		'fetch_errors'   => array(),
 		'error_message'  => null,
+		'warning_message' => null,
 		'api_calls'      => 0,
 		'api_time_ms'    => 0,
 	);
@@ -1672,7 +1693,8 @@ function symplectic_cpt_import_single_post($post_id, $personnel_id, $deadline = 
 
 	$caes_data = json_decode(wp_remote_retrieve_body($caes_resp), true);
 	if (empty($caes_data) || !isset($caes_data[0]['UGA_ID']) || empty($caes_data[0]['UGA_ID'])) {
-		$result['error_message'] = 'No UGA ID found for personnel_id ' . $personnel_id;
+		$result['status'] = 'skipped';
+		$result['warning_message'] = 'No UGA ID for personnel_id ' . $personnel_id . ' -- no Symplectic data to import.';
 		return $result;
 	}
 
