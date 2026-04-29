@@ -3163,12 +3163,38 @@ wp caes person-sync reset</pre>
 					'step26' => 'Remove user profile accordion JS',
 					'step27' => 'Bulk-delete old personnel/expert user accounts (optional)',
 				);
-				foreach ($phase6_steps as $key => $label): ?>
+				foreach ($phase6_steps as $key => $label):
+					$is_step27 = ($key === 'step27');
+				?>
 					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
 						<label>
 							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
 							<?php echo esc_html($label); ?>
 						</label>
+						<?php if ($is_step27): ?>
+							<div style="margin:8px 0 4px 24px;padding:10px 12px;border-left:3px solid #f0b849;background:#fffdf5;font-size:12px;line-height:1.5">
+								<strong>Recipe (run via SSH on the live container):</strong>
+								<ol style="margin:6px 0 0 16px;padding:0">
+									<li><strong>Snapshot users to a CSV first</strong> (so you can reverse if needed):
+										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --fields=ID,user_login,user_email,display_name,roles --format=csv > personnel_users_backup.csv
+wp user list --role=expert_user --fields=ID,user_login,user_email,display_name,roles --format=csv > expert_users_backup.csv</pre>
+									</li>
+									<li><strong>Dry-run check counts</strong> -- verify no overlap with content_manager / event roles:
+										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --format=count
+wp user list --role=expert_user --format=count
+# Sanity: no one with both legacy + content_manager
+wp user list --role__in=personnel_user,expert_user --role__in=content_manager,event_submitter,event_approver --format=count</pre>
+									</li>
+									<li><strong>Reassign any authored content to admin user 1</strong> on delete (in case any of these accounts are listed as <code>post_author</code> on posts/pubs/stories):
+										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --field=ID | xargs -I {} wp user delete {} --reassign=1 --yes
+wp user list --role=expert_user --field=ID | xargs -I {} wp user delete {} --reassign=1 --yes</pre>
+									</li>
+								</ol>
+								<p style="margin:6px 0 0;color:#8a6d3b">
+									<strong>Safety notes:</strong> only targets <code>personnel_user</code> and <code>expert_user</code> roles by name. Content managers, event submitters, event approvers, administrators, editors, and subscribers are untouched. Run in staging first; verify the People CPT, repeater authors, and the front end still look right before running on prod.
+								</p>
+							</div>
+						<?php endif; ?>
 					</div>
 				<?php endforeach; ?>
 			</div>
