@@ -3136,19 +3136,18 @@ wp caes person-sync reset</pre>
 			<!-- ============ PHASE 5: URL STRUCTURE AND TEMPLATES ============ -->
 			<div class="pmig-panel">
 				<h2>Phase 5: URL Structure and Templates</h2>
+				<p class="description" style="margin:0 0 8px;color:#46b450;font-size:12px"><span class="dashicons dashicons-yes-alt" style="font-size:14px;vertical-align:middle"></span> Complete -- baked into the deployed theme code. <strong>Reminder:</strong> redirects only kick in after the &quot;Flush Permalinks&quot; step in Phase 2.</p>
 				<?php
 				$phase5_steps = array(
 					'step19' => 'Set up /person/{post_id}/{slug}/ rewrite rules and permalink filter',
-					'step20' => 'Create single-caes_hub_person.html template; remove author.html and author-2.html',
-					'step21' => 'Add redirect for old /person/{user_id}/{slug}/ URLs via stored redirect map',
+					'step20' => 'Create single-caes_hub_person.html template (author.html / author-2.html removal handled in Phase 6)',
+					'step21' => 'Add redirect for old /person/{user_id}/{slug}/ URLs via the migration map',
 					'step22' => 'Add 301 redirect from old /author/username/ URLs to new CPT URLs',
 				);
 				foreach ($phase5_steps as $key => $label): ?>
-					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
-						<label>
-							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
-							<?php echo esc_html($label); ?>
-						</label>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;color:#666">
+						<span class="dashicons dashicons-yes" style="font-size:16px;color:#46b450;vertical-align:middle;margin-right:4px"></span>
+						<?php echo esc_html($label); ?>
 					</div>
 				<?php endforeach; ?>
 			</div>
