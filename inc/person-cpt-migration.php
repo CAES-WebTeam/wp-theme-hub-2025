@@ -3157,11 +3157,11 @@ wp caes person-sync reset</pre>
 				<h2>Phase 6: Cleanup</h2>
 				<?php
 				$phase6_steps = array(
-					'step23' => 'Delete old user-targeted ACF field groups',
+					'step27' => 'Bulk-delete old personnel/expert user accounts (optional)',
 					'step24' => 'Remove personnel_user and expert_user role definitions',
+					'step23' => 'Delete old user-targeted ACF field groups',
 					'step25' => 'Update content_manager_map_meta_cap filter (remove edit_user case, keep unfiltered_html)',
 					'step26' => 'Remove user profile accordion JS',
-					'step27' => 'Bulk-delete old personnel/expert user accounts (optional)',
 				);
 				foreach ($phase6_steps as $key => $label):
 					$is_step27 = ($key === 'step27');

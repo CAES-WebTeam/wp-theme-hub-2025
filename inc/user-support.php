@@ -455,12 +455,10 @@ add_action('init', 'add_expert_user_role');
 /**
  * Adds the 'Content Manager' custom user role.
  *
- * Designed for Creative Team staff who need full content management plus the
- * ability to edit user profiles (e.g. ACF fields like "public-friendly title")
- * without requiring Super Admin access on the multisite network.
+ * Designed for Creative Team staff who need full content management on the
+ * multisite network without requiring Super Admin access.
  *
  * Based on Editor capabilities with additions:
- *  - edit_users / list_users    : edit user profiles on this site
  *  - edit_theme_options         : manage menus and widgets
  *  - unfiltered_html            : paste/write raw HTML in the editor
  *  - wpseo_manage_options       : access Yoast SEO settings pages
@@ -472,17 +470,11 @@ add_action('init', 'add_expert_user_role');
  * pages). Because it also unlocks the Settings menu, a separate function
  * (content_manager_restrict_settings) hides and blocks those pages.
  *
- * Explicitly excluded (handled by map_meta_cap filter and menu restrictions):
- *  - create_users / delete_users / remove_users  : no user creation or removal
- *  - promote_users                                : no role changes
- *  - install_plugins / install_themes             : inherited exclusion from Editor base
- *  - manage_network / manage_sites                : inherited exclusion from Editor base
- *
  * Uses a version option so capabilities can be updated by bumping $role_version.
  */
 function add_content_manager_role()
 {
-    $role_version = 4;
+    $role_version = 5;
 
     if (get_option('content_manager_role_version') == $role_version) {
         return;
@@ -493,10 +485,6 @@ function add_content_manager_role()
 
     $editor_role = get_role('editor');
     $caps = $editor_role ? $editor_role->capabilities : [];
-
-    // User management (requires map_meta_cap filter below to work in multisite)
-    $caps['edit_users']         = true;
-    $caps['list_users']         = true;
 
     // Theme options (menus, widgets)
     $caps['edit_theme_options'] = true;
@@ -522,67 +510,22 @@ function add_content_manager_role()
 add_action('init', 'add_content_manager_role');
 
 /**
- * Override multisite capability restrictions for Content Managers.
+ * Allow Content Managers to use unfiltered HTML in posts.
  *
- * WordPress multisite blocks edit_users and unfiltered_html for all
- * non-super-admins via map_meta_cap. This filter re-enables those
- * capabilities for content_manager users with the following safety rails:
- *
- *  - Cannot edit Super Admin profiles
- *  - Cannot edit users who are not members of the current site
- *  - Cannot promote, delete, remove, or create users
+ * WordPress multisite blocks unfiltered_html for all non-super-admins via
+ * map_meta_cap. Content managers need it for embeds, scripts, and similar
+ * content in posts/publications/stories.
  */
 function content_manager_map_meta_cap($caps, $cap, $user_id, $args)
 {
+    if ($cap !== 'unfiltered_html') {
+        return $caps;
+    }
     $user = get_userdata($user_id);
     if (!$user || !in_array('content_manager', (array) $user->roles)) {
         return $caps;
     }
-
-    switch ($cap) {
-        case 'edit_user':
-        case 'edit_users':
-            if (!empty($args[0])) {
-                $target_user_id = (int) $args[0];
-
-                // Users can always edit their own profile.
-                if ($target_user_id === $user_id) {
-                    break;
-                }
-
-                // Never allow editing Super Admin profiles.
-                if (is_super_admin($target_user_id)) {
-                    return ['do_not_allow'];
-                }
-
-                // Only allow editing users who belong to this site.
-                if (is_multisite() && !is_user_member_of_blog($target_user_id, get_current_blog_id())) {
-                    return ['do_not_allow'];
-                }
-            }
-
-            // Map to the primitive cap the role already has.
-            return ['edit_users'];
-
-        case 'list_users':
-            return ['list_users'];
-
-        // Block all user lifecycle operations.
-        case 'promote_user':
-        case 'promote_users':
-        case 'delete_user':
-        case 'delete_users':
-        case 'remove_user':
-        case 'remove_users':
-        case 'create_users':
-            return ['do_not_allow'];
-
-        // Allow unfiltered HTML (multisite core maps this to do_not_allow).
-        case 'unfiltered_html':
-            return ['unfiltered_html'];
-    }
-
-    return $caps;
+    return ['unfiltered_html'];
 }
 add_filter('map_meta_cap', 'content_manager_map_meta_cap', 10, 4);
 
