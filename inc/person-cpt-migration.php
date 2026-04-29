@@ -3097,6 +3097,7 @@ wp caes person-sync reset</pre>
 			<!-- ============ PHASE 3: UPDATE SYNC INFRASTRUCTURE ============ -->
 			<div class="pmig-panel">
 				<h2>Phase 3: Update Sync Infrastructure</h2>
+				<p class="description" style="margin:0 0 8px;color:#46b450;font-size:12px"><span class="dashicons dashicons-yes-alt" style="font-size:14px;vertical-align:middle"></span> Complete -- these are baked into the deployed theme code.</p>
 				<?php
 				$phase3_steps = array(
 					'step10' => 'Rewrite sync_personnel_users() / sync_personnel_users2() to target CPT posts',
@@ -3105,11 +3106,9 @@ wp caes person-sync reset</pre>
 					'step13' => 'Retire import_news_experts() and import_news_writers()',
 				);
 				foreach ($phase3_steps as $key => $label): ?>
-					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
-						<label>
-							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
-							<?php echo esc_html($label); ?>
-						</label>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;color:#666">
+						<span class="dashicons dashicons-yes" style="font-size:16px;color:#46b450;vertical-align:middle;margin-right:4px"></span>
+						<?php echo esc_html($label); ?>
 					</div>
 				<?php endforeach; ?>
 			</div>
