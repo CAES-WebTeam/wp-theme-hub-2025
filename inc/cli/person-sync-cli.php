@@ -160,14 +160,10 @@ class CAES_Person_Sync_CLI {
             };
             pcntl_signal(SIGINT, $handler);
             pcntl_signal(SIGTERM, $handler);
-            // Only register SIGHUP if it isn't already being ignored (e.g. by nohup).
-            // Overriding nohup's SIG_IGN would defeat nohup's whole purpose.
-            if (defined('SIGHUP') && function_exists('pcntl_signal_get_handler')) {
-                $current = pcntl_signal_get_handler(SIGHUP);
-                if ($current !== SIG_IGN) {
-                    pcntl_signal(SIGHUP, $handler);
-                }
-            }
+            // Don't register SIGHUP -- doing so overrides nohup's SIG_IGN and
+            // kills detached runs on SSH disconnect. PHP can't reliably detect
+            // whether nohup is active, so the safest choice is to leave SIGHUP
+            // alone. Use `wp caes person-sync reset` if a non-nohup run dies.
         }
 
         $start = microtime(true);
