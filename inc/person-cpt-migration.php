@@ -3176,11 +3176,32 @@ wp caes person-sync reset</pre>
 								<strong>Recipe (run via SSH on the live container):</strong>
 								<ol style="margin:6px 0 0 16px;padding:0">
 									<li><strong>Snapshot users + their CAES IDs to TSV</strong> (so you can cross-reference back to the personnel/expert databases later if needed). Use your saved snapshot commands file -- run the two <code>wp db query</code> blocks via SSH to produce <code>personnel_users_backup.tsv</code> and <code>expert_users_backup.tsv</code>.</li>
-									<li><strong>Dry-run check counts</strong> -- verify no overlap with content_manager / event roles:
-										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --format=count
-wp user list --role=expert_user --format=count
-# Sanity: no one with both legacy + content_manager
-wp user list --role__in=personnel_user,expert_user --role__in=content_manager,event_submitter,event_approver --format=count</pre>
+									<li><strong>Check counts</strong> and verify no overlap with content_manager / event roles:
+										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">echo "personnel_user: $(wp user list --role=personnel_user --format=count)"
+echo "expert_user: $(wp user list --role=expert_user --format=count)"
+
+# Overlap check -- count users who hold BOTH a legacy role AND an active staff role.
+# Should return 0. If &gt; 0, run the SELECT version below to see who they are and
+# remove just the legacy role from those accounts before doing the bulk delete.
+wp db query "
+SELECT COUNT(*)
+FROM wp_users u
+JOIN wp_usermeta um ON um.user_id = u.ID AND um.meta_key='wp_capabilities'
+WHERE (um.meta_value LIKE '%personnel_user%' OR um.meta_value LIKE '%expert_user%')
+  AND (um.meta_value LIKE '%content_manager%' OR um.meta_value LIKE '%event_submitter%' OR um.meta_value LIKE '%event_approver%')
+"
+
+# If overlap is &gt; 0, list them and remove the legacy role from each:
+wp db query "
+SELECT u.ID, u.user_login, u.user_email, u.display_name, um.meta_value AS roles
+FROM wp_users u
+JOIN wp_usermeta um ON um.user_id = u.ID AND um.meta_key='wp_capabilities'
+WHERE (um.meta_value LIKE '%personnel_user%' OR um.meta_value LIKE '%expert_user%')
+  AND (um.meta_value LIKE '%content_manager%' OR um.meta_value LIKE '%event_submitter%' OR um.meta_value LIKE '%event_approver%')
+"
+# Then for each one:
+# wp user remove-role &lt;USER_ID&gt; personnel_user
+# wp user remove-role &lt;USER_ID&gt; expert_user</pre>
 									</li>
 									<li><strong>Reassign any authored content to admin user 1</strong> on delete (in case any of these accounts are listed as <code>post_author</code> on posts/pubs/stories):
 										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --field=ID | xargs -I {} wp user delete {} --reassign=1 --yes
