@@ -3175,9 +3175,14 @@ wp caes person-sync reset</pre>
 							<div style="margin:8px 0 4px 24px;padding:10px 12px;border-left:3px solid #f0b849;background:#fffdf5;font-size:12px;line-height:1.5">
 								<strong>Recipe (run via SSH on the live container):</strong>
 								<ol style="margin:6px 0 0 16px;padding:0">
-									<li><strong>Snapshot users to a CSV first</strong> (so you can reverse if needed):
-										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --fields=ID,user_login,user_email,display_name,roles --format=csv > personnel_users_backup.csv
-wp user list --role=expert_user --fields=ID,user_login,user_email,display_name,roles --format=csv > expert_users_backup.csv</pre>
+									<li><strong>Snapshot users + their CAES IDs to JSON</strong> (so you can cross-reference back to the personnel/expert databases later if needed):
+										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap"># Personnel users -- includes personnel_id, college_id from user meta
+wp user list --role=personnel_user --fields=ID,user_login,user_email,display_name --format=json &gt; personnel_users_basic.json
+wp user list --role=personnel_user --field=ID | xargs -I {} sh -c 'echo "===USER {}===" &gt;&gt; personnel_users_meta.txt; wp user meta list {} --keys=personnel_id,college_id --format=table &gt;&gt; personnel_users_meta.txt'
+
+# Expert users -- includes source_expert_id, writer_id, personnel_id from user meta
+wp user list --role=expert_user --fields=ID,user_login,user_email,display_name --format=json &gt; expert_users_basic.json
+wp user list --role=expert_user --field=ID | xargs -I {} sh -c 'echo "===USER {}===" &gt;&gt; expert_users_meta.txt; wp user meta list {} --keys=personnel_id,source_expert_id,writer_id --format=table &gt;&gt; expert_users_meta.txt'</pre>
 									</li>
 									<li><strong>Dry-run check counts</strong> -- verify no overlap with content_manager / event roles:
 										<pre style="background:#f6f7f7;border:1px solid #ddd;padding:6px;margin:4px 0;font-size:11px;white-space:pre-wrap">wp user list --role=personnel_user --format=count
