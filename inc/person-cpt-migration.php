@@ -3116,20 +3116,19 @@ wp caes person-sync reset</pre>
 			<!-- ============ PHASE 4: UPDATE FRONT-END CODE ============ -->
 			<div class="pmig-panel">
 				<h2>Phase 4: Update Front-End Code</h2>
+				<p class="description" style="margin:0 0 8px;color:#46b450;font-size:12px"><span class="dashicons dashicons-yes-alt" style="font-size:14px;vertical-align:middle"></span> Complete -- these are baked into the deployed theme code.</p>
 				<?php
 				$phase4_steps = array(
-					'step14' => 'Create get_person_post_for_user() helper function',
+					'step14' => 'Create resolve_person_post_id() helper function',
 					'step15' => 'Update 8 user blocks to read from CPT post meta',
 					'step16' => 'Update pub-details-authors block for CPT posts',
 					'step17' => 'Update update_flat_author_ids_meta() and update_flat_expert_ids_meta()',
 					'step18' => 'Update block-variations/index.php for is_singular(caes_hub_person)',
 				);
 				foreach ($phase4_steps as $key => $label): ?>
-					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0">
-						<label>
-							<input type="checkbox" class="pmig-checklist-toggle" data-step="<?php echo esc_attr($key); ?>" <?php checked(!empty($checklist[$key])); ?>>
-							<?php echo esc_html($label); ?>
-						</label>
+					<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;color:#666">
+						<span class="dashicons dashicons-yes" style="font-size:16px;color:#46b450;vertical-align:middle;margin-right:4px"></span>
+						<?php echo esc_html($label); ?>
 					</div>
 				<?php endforeach; ?>
 			</div>
