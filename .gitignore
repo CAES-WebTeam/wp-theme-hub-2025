@@ -32,3 +32,8 @@ node_modules/
 # ds store
 .DS_Store
 json/symplectic-query-raw-json-example.txt
+
+
+# Local notes (not committed)
+NOTES.md
+.notes/

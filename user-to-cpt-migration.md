@@ -200,6 +200,26 @@ c. Some symplectic data is missing, I will work on this with Jesse:
 
 Personnel and expert records for the same real person will exist as separate `caes_hub_person` posts after migration. Both are valid and functional. Each post retains its source fields (`personnel_id`, `source_expert_id`, `writer_id`, `uga_email`, etc.) so duplicates can be identified and merged at any time using the existing scan/merge tools in the migration dashboard.
 
+## Future: Cross-Site Data Sharing (College/Dept Sites)
+
+Other UGA sites (college site, departmental sites) will need to display person cards that link back to full Field Report profiles. Two viable approaches when this becomes a priority:
+
+### Option A: Custom optimized REST endpoint
+- Build something like `/wp-json/caes/v1/people-cards?dept=X` that returns just the card-relevant fields
+- Smaller payload than default WP REST API, indexed for filter use
+- Add Cloudflare/Kinsta CDN caching on top
+- Trade-offs: still hits Field Report on cache misses, every request counts as a Kinsta visit, scales until search load gets heavy
+
+### Option B: Push-based sync (recommended for high-traffic directory use)
+- Scheduled job on Field Report exports denormalized JSON snapshot(s) after each personnel sync (e.g. `/wp-content/uploads/people-export.json`)
+- Public, CDN-cacheable file -- consumer sites fetch once per render and filter/search client-side or server-side
+- File size: ~1MB gzipped for 5000 people with basic card fields
+- Variants: single file, per-department files, or webhook-on-change
+- Zero per-request load on Field Report, basically free with CDN caching
+- Trade-offs: one-cron-cycle latency, consumers responsible for filtering, must carefully decide what counts as "public"
+
+**Recommendation:** start with Option A when first need arises (low overhead to build); move to Option B if traffic grows or Kinsta visit budget becomes a concern.
+
 ---
 
 ## Key Risks
