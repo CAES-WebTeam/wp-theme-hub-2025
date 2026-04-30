@@ -16,22 +16,6 @@ if (! defined('ABSPATH')) {
 include_once(get_template_directory() . '/inc/acf-fields/user-field-group.php');
 
 /**
- * Customize the label shown in ACF user-picker dropdowns (experts, authors,
- * artists, etc.) to "Display Name (email)" so admins can disambiguate people
- * with similar names.
- */
-add_filter('acf/fields/user/result', function ($text, $user, $field, $post_id) {
-    if (!($user instanceof WP_User)) {
-        return $text;
-    }
-    $name = $user->display_name ?: trim($user->first_name . ' ' . $user->last_name);
-    if (!$name) {
-        $name = $user->user_login;
-    }
-    return $user->user_email ? sprintf('%s (%s)', $name, $user->user_email) : $name;
-}, 10, 4);
-
-/**
  * ---------------------------------------------------------------------------------
  * 1b. User Profile Cleanup
  * ---------------------------------------------------------------------------------
