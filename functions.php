@@ -28,14 +28,27 @@ require get_template_directory() . '/inc/symplectic-query-tool.php';
 require get_template_directory() . '/inc/person-cpt-data-sync.php';
 require get_template_directory() . '/inc/cli/person-sync-cli.php';
 
-// Switch to simplified block template for person posts without Symplectic Elements data
+// Switch to simplified block template for person posts without Symplectic Elements data,
+// or for people in a "Staff" employee group.
 add_filter( 'get_block_templates', function ( $templates, $query, $template_type ) {
 	if ( $template_type !== 'wp_template' || ! is_singular( 'caes_hub_person' ) ) {
 		return $templates;
 	}
 	$post_id     = get_queried_object_id();
 	$has_content = get_post_meta( $post_id, 'elements_has_content', true );
-	if ( ! $has_content ) {
+
+	$is_staff = false;
+	$groups   = get_the_terms( $post_id, 'person_employee_group' );
+	if ( ! empty( $groups ) && ! is_wp_error( $groups ) ) {
+		foreach ( $groups as $group ) {
+			if ( stripos( $group->name, 'Staff' ) !== false ) {
+				$is_staff = true;
+				break;
+			}
+		}
+	}
+
+	if ( ! $has_content || $is_staff ) {
 		foreach ( $templates as &$template ) {
 			if ( $template->slug === 'single-caes_hub_person' ) {
 				$file = get_template_directory() . '/templates/single-caes_hub_person-no-symplectic.html';
