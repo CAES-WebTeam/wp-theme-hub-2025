@@ -16,15 +16,19 @@ if (! defined('ABSPATH')) {
 include_once(get_template_directory() . '/inc/acf-fields/user-field-group.php');
 
 /**
- * Append the user's email to the label shown in ACF user-picker dropdowns
- * (experts, authors, artists, etc.) so admins can disambiguate people with
- * the same display name. e.g. "Jane Doe (jane@example.com)".
+ * Customize the label shown in ACF user-picker dropdowns (experts, authors,
+ * artists, etc.) to "Display Name (email)" so admins can disambiguate people
+ * with similar names.
  */
 add_filter('acf/fields/user/result', function ($text, $user, $field, $post_id) {
-    if (!empty($user->user_email)) {
-        $text .= ' (' . $user->user_email . ')';
+    if (!($user instanceof WP_User)) {
+        return $text;
     }
-    return $text;
+    $name = $user->display_name ?: trim($user->first_name . ' ' . $user->last_name);
+    if (!$name) {
+        $name = $user->user_login;
+    }
+    return $user->user_email ? sprintf('%s (%s)', $name, $user->user_email) : $name;
 }, 10, 4);
 
 /**
