@@ -16,6 +16,18 @@ if (! defined('ABSPATH')) {
 include_once(get_template_directory() . '/inc/acf-fields/user-field-group.php');
 
 /**
+ * Append the user's email to the label shown in ACF user-picker dropdowns
+ * (experts, authors, artists, etc.) so admins can disambiguate people with
+ * the same display name. e.g. "Jane Doe (jane@example.com)".
+ */
+add_filter('acf/fields/user/result', function ($text, $user, $field, $post_id) {
+    if (!empty($user->user_email)) {
+        $text .= ' (' . $user->user_email . ')';
+    }
+    return $text;
+}, 10, 4);
+
+/**
  * ---------------------------------------------------------------------------------
  * 1b. User Profile Cleanup
  * ---------------------------------------------------------------------------------
