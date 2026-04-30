@@ -53,6 +53,10 @@
       "type": "array",
       "default": []
     },
+    "employeeGroupIds": {
+      "type": "array",
+      "default": []
+    },
     "numberOfUsers": {
       "type": "number",
       "default": 5

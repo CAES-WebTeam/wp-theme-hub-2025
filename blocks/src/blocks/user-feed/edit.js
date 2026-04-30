@@ -54,6 +54,7 @@ export default function Edit({ attributes, setAttributes }) {
         tagIds = [],
         departmentIds = [],
         expertiseIds = [],
+        employeeGroupIds = [],
         numberOfUsers = 5,
         customGapStep = 0,
         displayLayout = 'list',
@@ -74,10 +75,11 @@ export default function Edit({ attributes, setAttributes }) {
         person_tag: [],
         person_department: [],
         areas_of_expertise: [],
+        person_employee_group: [],
     });
 
     useEffect(() => {
-        const taxes = ['person_tag', 'person_department', 'areas_of_expertise'];
+        const taxes = ['person_tag', 'person_department', 'areas_of_expertise', 'person_employee_group'];
         Promise.all(
             taxes.map((tax) =>
                 apiFetch({ path: `/wp/v2/${tax}?per_page=100&_fields=id,name` })
@@ -85,7 +87,7 @@ export default function Edit({ attributes, setAttributes }) {
                     .catch(() => [tax, []])
             )
         ).then((results) => {
-            const map = { person_tag: [], person_department: [], areas_of_expertise: [] };
+            const map = { person_tag: [], person_department: [], areas_of_expertise: [], person_employee_group: [] };
             results.forEach(([tax, list]) => { map[tax] = list; });
             setTermsByTax(map);
         });
@@ -276,6 +278,7 @@ export default function Edit({ attributes, setAttributes }) {
                             { value: 'by-tag', label: __('By tag', 'user-feed') },
                             { value: 'by-department', label: __('By department', 'user-feed') },
                             { value: 'by-expertise', label: __('By area of expertise', 'user-feed') },
+                            { value: 'by-employee-group', label: __('By employee group', 'user-feed') },
                         ]}
                         onChange={(value) => setAttributes({ feedType: value })}
                     />
@@ -312,9 +315,10 @@ export default function Edit({ attributes, setAttributes }) {
 
                     {feedType !== 'hand-picked' && (() => {
                         const taxConfig = {
-                            'by-tag':        { tax: 'person_tag',         attr: 'tagIds',        ids: tagIds,        label: __('Select Tags', 'user-feed'),               help: __('People tagged with any of these tags will be shown.', 'user-feed') },
-                            'by-department': { tax: 'person_department',  attr: 'departmentIds', ids: departmentIds, label: __('Select Departments', 'user-feed'),         help: __('People in any of these departments will be shown.', 'user-feed') },
-                            'by-expertise':  { tax: 'areas_of_expertise', attr: 'expertiseIds',  ids: expertiseIds,  label: __('Select Areas of Expertise', 'user-feed'),  help: __('People with any of these areas of expertise will be shown.', 'user-feed') },
+                            'by-tag':            { tax: 'person_tag',            attr: 'tagIds',            ids: tagIds,            label: __('Select Tags', 'user-feed'),               help: __('People tagged with any of these tags will be shown.', 'user-feed') },
+                            'by-department':     { tax: 'person_department',     attr: 'departmentIds',     ids: departmentIds,     label: __('Select Departments', 'user-feed'),         help: __('People in any of these departments will be shown.', 'user-feed') },
+                            'by-expertise':      { tax: 'areas_of_expertise',    attr: 'expertiseIds',      ids: expertiseIds,      label: __('Select Areas of Expertise', 'user-feed'),  help: __('People with any of these areas of expertise will be shown.', 'user-feed') },
+                            'by-employee-group': { tax: 'person_employee_group', attr: 'employeeGroupIds',  ids: employeeGroupIds,  label: __('Select Employee Groups', 'user-feed'),     help: __('People in any of these employee groups will be shown.', 'user-feed') },
                         }[feedType];
                         if (!taxConfig) return null;
                         const allTerms = termsByTax[taxConfig.tax] || [];
@@ -432,17 +436,19 @@ export default function Edit({ attributes, setAttributes }) {
                 <div className={combinedClassName}>
                     {(() => {
                         const hasIds = {
-                            'hand-picked':   userIds && userIds.length > 0,
-                            'by-tag':        tagIds && tagIds.length > 0,
-                            'by-department': departmentIds && departmentIds.length > 0,
-                            'by-expertise':  expertiseIds && expertiseIds.length > 0,
+                            'hand-picked':       userIds && userIds.length > 0,
+                            'by-tag':            tagIds && tagIds.length > 0,
+                            'by-department':     departmentIds && departmentIds.length > 0,
+                            'by-expertise':      expertiseIds && expertiseIds.length > 0,
+                            'by-employee-group': employeeGroupIds && employeeGroupIds.length > 0,
                         }[feedType];
                         if (!hasIds) {
                             const msg = {
-                                'hand-picked':   __('Please select one or more people from the sidebar.', 'user-feed'),
-                                'by-tag':        __('Please select one or more tags from the sidebar.', 'user-feed'),
-                                'by-department': __('Please select one or more departments from the sidebar.', 'user-feed'),
-                                'by-expertise':  __('Please select one or more areas of expertise from the sidebar.', 'user-feed'),
+                                'hand-picked':       __('Please select one or more people from the sidebar.', 'user-feed'),
+                                'by-tag':            __('Please select one or more tags from the sidebar.', 'user-feed'),
+                                'by-department':     __('Please select one or more departments from the sidebar.', 'user-feed'),
+                                'by-expertise':      __('Please select one or more areas of expertise from the sidebar.', 'user-feed'),
+                                'by-employee-group': __('Please select one or more employee groups from the sidebar.', 'user-feed'),
                             }[feedType] || '';
                             return <p className="user-feed-empty">{msg}</p>;
                         }

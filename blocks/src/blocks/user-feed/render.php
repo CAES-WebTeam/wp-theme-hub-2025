@@ -17,6 +17,7 @@ $user_ids = isset($block->attributes['userIds']) ? $block->attributes['userIds']
 $tag_ids = isset($block->attributes['tagIds']) ? $block->attributes['tagIds'] : [];
 $department_ids = isset($block->attributes['departmentIds']) ? $block->attributes['departmentIds'] : [];
 $expertise_ids = isset($block->attributes['expertiseIds']) ? $block->attributes['expertiseIds'] : [];
+$employee_group_ids = isset($block->attributes['employeeGroupIds']) ? $block->attributes['employeeGroupIds'] : [];
 $feed_type = isset($block->attributes['feedType']) ? $block->attributes['feedType'] : 'hand-picked';
 $number_of_users = isset($block->attributes['numberOfUsers']) ? $block->attributes['numberOfUsers'] : 5;
 $query_id = isset($block->attributes['queryId']) ? $block->attributes['queryId'] : 100;
@@ -59,9 +60,10 @@ if ($displayLayout === 'grid' && $gridItemPosition === 'auto') {
 $wrapper_attributes = get_block_wrapper_attributes();
 
 $tax_modes = array(
-    'by-tag'        => array('taxonomy' => 'person_tag',         'ids' => $tag_ids),
-    'by-department' => array('taxonomy' => 'person_department',  'ids' => $department_ids),
-    'by-expertise'  => array('taxonomy' => 'areas_of_expertise', 'ids' => $expertise_ids),
+    'by-tag'            => array('taxonomy' => 'person_tag',            'ids' => $tag_ids),
+    'by-department'     => array('taxonomy' => 'person_department',     'ids' => $department_ids),
+    'by-expertise'      => array('taxonomy' => 'areas_of_expertise',    'ids' => $expertise_ids),
+    'by-employee-group' => array('taxonomy' => 'person_employee_group', 'ids' => $employee_group_ids),
 );
 
 if (isset($tax_modes[$feed_type])) {
