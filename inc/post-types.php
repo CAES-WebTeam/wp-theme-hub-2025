@@ -577,6 +577,35 @@ add_action('init', function () {
     ));
 });
 
+// Register 'Employee Group' taxonomy for person CPT.
+add_action('init', function () {
+    register_taxonomy('person_employee_group', array('caes_hub_person'), array(
+        'labels' => array(
+            'name'              => 'Employee Groups',
+            'singular_name'     => 'Employee Group',
+            'menu_name'         => 'Employee Groups',
+            'all_items'         => 'All Employee Groups',
+            'edit_item'         => 'Edit Employee Group',
+            'update_item'       => 'Update Employee Group',
+            'add_new_item'      => 'Add New Employee Group',
+            'new_item_name'     => 'New Employee Group Name',
+            'search_items'      => 'Search Employee Groups',
+            'not_found'         => 'No employee groups found',
+            'no_terms'          => 'No employee groups',
+            'back_to_items'     => '← Go to employee groups',
+        ),
+        'hierarchical'      => false,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_in_menu'      => true,
+        'show_in_rest'      => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array('slug' => 'people/employee-group', 'with_front' => false),
+        'meta_box_cb'       => false, // Hide from edit screen -- sourced from personnel database
+    ));
+});
+
 // Register 'Program Area' taxonomy for person CPT.
 add_action('init', function () {
     register_taxonomy('person_program_area', array('caes_hub_person'), array(

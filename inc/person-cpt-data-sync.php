@@ -100,7 +100,7 @@ function personnel_cpt_get_state() {
 // ============================================================
 
 function personnel_cpt_fetch_api_data() {
-	$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel/?returnContactInfoColumns=true';
+	$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel/?returnContactInfoColumns=true&getEmployeeGroup=true';
 	$response = wp_remote_get($url, array('timeout' => 60));
 
 	if (is_wp_error($response)) {
@@ -172,6 +172,7 @@ function personnel_cpt_sanitize_record($record) {
 		'title'           => sanitize_text_field($record['TITLE'] ?? ''),
 		'department'      => sanitize_text_field($record['DEPARTMENT'] ?? ''),
 		'program_area'    => sanitize_text_field($record['PROGRAMAREALIST'] ?? ''),
+		'employee_group'  => sanitize_text_field($record['EMPLOYEE_GROUP_LABEL'] ?? ''),
 		'phone_number'    => sanitize_text_field($record['PHONE_NUMBER'] ?? ''),
 		'cell_phone_number' => sanitize_text_field($record['CELL_PHONE_NUMBER'] ?? ''),
 		'fax_number'      => sanitize_text_field($record['FAX_NUMBER'] ?? ''),
@@ -302,6 +303,10 @@ function personnel_cpt_sync_single_record($data, $existing_post_id = null, $is_a
 	}
 	if (!empty($data['program_area'])) {
 		wp_set_object_terms($post_id, $data['program_area'], 'person_program_area');
+		$result['fields_written']++;
+	}
+	if (!empty($data['employee_group'])) {
+		wp_set_object_terms($post_id, $data['employee_group'], 'person_employee_group');
 		$result['fields_written']++;
 	}
 
@@ -534,7 +539,7 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 	}
 
 	// Try active first
-	$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true';
+	$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true&getEmployeeGroup=true';
 	$response = wp_remote_get($url, array('timeout' => 30));
 
 	if (is_wp_error($response)) {
@@ -547,7 +552,7 @@ function personnel_cpt_sync_single_by_college_id($college_id, $dry_run = false) 
 	// Try inactive if not found
 	if (!is_array($records) || empty($records)) {
 		$is_active = false;
-		$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true&isActive=false';
+		$url = 'https://secure.caes.uga.edu/rest/personnel/Personnel?collegeID=' . $college_id . '&returnContactInfoColumns=true&getEmployeeGroup=true&isActive=false';
 		$response = wp_remote_get($url, array('timeout' => 30));
 		if (is_wp_error($response)) {
 			return $response;
