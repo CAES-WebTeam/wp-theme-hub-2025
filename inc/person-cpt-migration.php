@@ -992,74 +992,106 @@ function person_migration_ajax_count_audit() {
  */
 function person_migration_ajax_flat_meta_audit() {
 	person_migration_check_ajax();
-	@set_time_limit(120);
+	@set_time_limit(180);
 
-	$content_post_types = array('post', 'publications', 'shorthand_story');
-	$flat_fields = array('all_author_ids', 'all_expert_ids');
+	global $wpdb;
+	$post_types_in = "'post','publications','shorthand_story'";
+	$max_flagged   = 500;
 
-	$content_posts = get_posts(array(
-		'post_type'      => $content_post_types,
-		'post_status'    => array('publish', 'draft', 'private', 'future'),
-		'posts_per_page' => -1,
-		'fields'         => 'ids',
-	));
+	// 1. Pull all flat meta entries in one query
+	$rows = $wpdb->get_results(
+		"SELECT pm.post_id, pm.meta_key, pm.meta_value
+		 FROM {$wpdb->postmeta} pm
+		 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+		 WHERE pm.meta_key IN ('all_author_ids', 'all_expert_ids')
+		 AND p.post_type IN ({$post_types_in})
+		 AND p.post_status IN ('publish','draft','private','future')
+		 AND pm.meta_value IS NOT NULL AND pm.meta_value != ''",
+		ARRAY_A
+	);
 
-	$posts_checked = 0;
-	$ids_checked = 0;
+	// 2. Parse all IDs and collect distinct candidates + per-row tuples
+	$candidates = array();
+	$entries    = array(); // [post_id, field, id]
+	$posts_seen = array();
+	foreach ($rows as $row) {
+		$cp_id = (int) $row['post_id'];
+		$ff    = $row['meta_key'];
+		$raw   = maybe_unserialize($row['meta_value']);
+		$ids   = is_array($raw) ? $raw : array_filter(array_map('trim', explode(',', (string) $raw)));
+		foreach ($ids as $id) {
+			$id = (int) $id;
+			if ($id <= 0) continue;
+			$candidates[$id] = true;
+			$entries[] = array($cp_id, $ff, $id);
+			$posts_seen[$cp_id] = true;
+		}
+	}
+	unset($rows);
+	$candidate_ids = array_keys($candidates);
+
+	// 3. Resolve which IDs are caes_hub_person posts vs WP users (batch)
+	$person_set = array();
+	$user_set   = array();
+	if (!empty($candidate_ids)) {
+		$placeholders = implode(',', array_map('intval', $candidate_ids));
+		$person_rows = $wpdb->get_col("SELECT ID FROM {$wpdb->posts} WHERE post_type='caes_hub_person' AND ID IN ({$placeholders})");
+		foreach ($person_rows as $pid) {
+			$person_set[(int) $pid] = true;
+		}
+		$user_rows = $wpdb->get_results(
+			"SELECT ID, display_name FROM {$wpdb->users} WHERE ID IN ({$placeholders})",
+			ARRAY_A
+		);
+		foreach ($user_rows as $u) {
+			$user_set[(int) $u['ID']] = $u['display_name'];
+		}
+	}
+
+	// 4. Pre-fetch titles only for affected content posts
+	$post_titles = array();
+	if (!empty($posts_seen)) {
+		$placeholders = implode(',', array_map('intval', array_keys($posts_seen)));
+		$title_rows = $wpdb->get_results("SELECT ID, post_title FROM {$wpdb->posts} WHERE ID IN ({$placeholders})", ARRAY_A);
+		foreach ($title_rows as $tr) {
+			$post_titles[(int) $tr['ID']] = $tr['post_title'];
+		}
+	}
+
+	// 5. Walk entries and tally
+	$posts_checked  = count($posts_seen);
+	$ids_checked    = 0;
+	$cpt_ids        = 0;
 	$user_ids_found = array();
-	$not_found_ids = array();
-	$cpt_ids = 0;
+	$not_found_ids  = array();
 
-	foreach ($content_posts as $cp_id) {
-		foreach ($flat_fields as $ff) {
-			$raw = get_post_meta($cp_id, $ff, true);
-			if (empty($raw)) continue;
-			$ids = is_array($raw) ? $raw : array_filter(array_map('trim', explode(',', $raw)));
-			foreach ($ids as $id) {
-				$id = (int) $id;
-				if ($id <= 0) continue;
-				$ids_checked++;
+	foreach ($entries as $e) {
+		list($cp_id, $ff, $id) = $e;
+		$ids_checked++;
 
-				$post_type = get_post_type($id);
-				if ($post_type === 'caes_hub_person') {
-					$cpt_ids++;
-				} elseif ($post_type === false) {
-					// Check if it's a WP user
-					$user = get_userdata($id);
-					if ($user) {
-						$user_ids_found[] = array(
-							'content_id'    => $cp_id,
-							'content_title' => get_the_title($cp_id),
-							'field'         => $ff,
-							'id'            => $id,
-							'type'          => 'user',
-							'name'          => $user->display_name,
-						);
-					} else {
-						$not_found_ids[] = array(
-							'content_id'    => $cp_id,
-							'content_title' => get_the_title($cp_id),
-							'field'         => $ff,
-							'id'            => $id,
-						);
-					}
-				} else {
-					// Some other post type
-					$user = get_userdata($id);
-					if ($user) {
-						$user_ids_found[] = array(
-							'content_id'    => $cp_id,
-							'content_title' => get_the_title($cp_id),
-							'field'         => $ff,
-							'id'            => $id,
-							'type'          => 'user (also matches post type: ' . $post_type . ')',
-							'name'          => $user->display_name,
-						);
-					}
-				}
+		if (isset($person_set[$id])) {
+			$cpt_ids++;
+		} elseif (isset($user_set[$id])) {
+			if (count($user_ids_found) < $max_flagged) {
+				$user_ids_found[] = array(
+					'content_id'    => $cp_id,
+					'content_title' => $post_titles[$cp_id] ?? '',
+					'field'         => $ff,
+					'id'            => $id,
+					'type'          => 'user',
+					'name'          => $user_set[$id],
+				);
+			}
+		} else {
+			if (count($not_found_ids) < $max_flagged) {
+				$not_found_ids[] = array(
+					'content_id'    => $cp_id,
+					'content_title' => $post_titles[$cp_id] ?? '',
+					'field'         => $ff,
+					'id'            => $id,
+				);
 			}
 		}
-		$posts_checked++;
 	}
 
 	wp_send_json_success(array(
