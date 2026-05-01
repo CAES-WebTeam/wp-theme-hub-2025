@@ -610,77 +610,165 @@ function person_migration_run_swap_batch(&$state) {
 // Verify swap: sample posts and report whether repeater IDs point to CPT posts, users, or nothing
 function person_migration_ajax_verify_swap() {
 	person_migration_check_ajax();
+	@set_time_limit(180);
 
-	$post_types = array('post', 'publications', 'shorthand_story');
-	$repeater_names = array('authors', 'experts', 'translator', 'artists');
-	// Scan all posts -- no sampling limit
+	global $wpdb;
+	$post_types_in = "'post','publications','shorthand_story'";
+	$max_flagged   = 500;
+	$max_details   = 100;
 
-	// Get posts that actually have repeater data
-	$posts = get_posts(array(
-		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private', 'future'),
-		'posts_per_page' => -1,
-		'orderby'        => 'ID',
-		'fields'         => 'ids',
-	));
+	// 1. Get all repeater "_user" entries in one SQL query (post_id, meta_key, meta_value)
+	$entries = $wpdb->get_results(
+		"SELECT pm.post_id, pm.meta_key, pm.meta_value
+		 FROM {$wpdb->postmeta} pm
+		 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+		 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
+		 AND p.post_type IN ({$post_types_in})
+		 AND p.post_status IN ('publish','draft','private','future')
+		 AND pm.meta_value IS NOT NULL AND pm.meta_value != ''",
+		ARRAY_A
+	);
 
+	// 2. Get all "_type" entries to filter out 'custom' rows
+	$type_rows = $wpdb->get_results(
+		"SELECT pm.post_id, pm.meta_key, pm.meta_value AS type_value
+		 FROM {$wpdb->postmeta} pm
+		 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+		 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_type$'
+		 AND p.post_type IN ({$post_types_in})
+		 AND p.post_status IN ('publish','draft','private','future')",
+		ARRAY_A
+	);
+	$custom_keys = array();
+	foreach ($type_rows as $tr) {
+		if (strtolower($tr['type_value']) === 'custom') {
+			$user_key = preg_replace('/_type$/', '_user', $tr['meta_key']);
+			$custom_keys[$tr['post_id'] . '|' . $user_key] = true;
+		}
+	}
+	unset($type_rows);
+
+	// 3. Collect distinct candidate IDs
+	$ids = array();
+	foreach ($entries as $row) {
+		$v = $row['meta_value'];
+		if (!is_numeric($v)) continue;
+		$ids[(int) $v] = true;
+	}
+	$ids = array_keys($ids);
+
+	// 4. Batch-resolve which IDs are caes_hub_person posts vs WP users vs unknown (one query each)
+	$person_set = array();
+	$user_set   = array();
+	if (!empty($ids)) {
+		$placeholders = implode(',', array_map('intval', $ids));
+		$person_rows = $wpdb->get_col("SELECT ID FROM {$wpdb->posts} WHERE post_type='caes_hub_person' AND ID IN ({$placeholders})");
+		foreach ($person_rows as $pid) {
+			$person_set[(int) $pid] = true;
+		}
+		$user_rows = $wpdb->get_col("SELECT ID FROM {$wpdb->users} WHERE ID IN ({$placeholders})");
+		foreach ($user_rows as $uid) {
+			$user_set[(int) $uid] = true;
+		}
+	}
+	unset($ids);
+
+	// 5. Build user lookup batch (display_name + roles) only for IDs we'll actually flag
+	$user_data_cache = array();
+	$user_ids_to_lookup = array();
+	foreach ($entries as $row) {
+		$v = (int) $row['meta_value'];
+		if (isset($user_set[$v]) && !isset($person_set[$v])) {
+			$user_ids_to_lookup[$v] = true;
+		}
+	}
+	$user_ids_to_lookup = array_keys($user_ids_to_lookup);
+	if (!empty($user_ids_to_lookup) && count($user_ids_to_lookup) <= 5000) {
+		$placeholders = implode(',', array_map('intval', $user_ids_to_lookup));
+		$user_meta = $wpdb->get_results(
+			"SELECT u.ID, u.display_name, um.meta_value AS caps
+			 FROM {$wpdb->users} u
+			 LEFT JOIN {$wpdb->usermeta} um ON um.user_id = u.ID AND um.meta_key='wp_capabilities'
+			 WHERE u.ID IN ({$placeholders})",
+			ARRAY_A
+		);
+		foreach ($user_meta as $um) {
+			$caps = maybe_unserialize($um['caps']);
+			$roles = is_array($caps) ? array_keys($caps) : array();
+			$user_data_cache[(int) $um['ID']] = array(
+				'display_name' => $um['display_name'],
+				'roles'        => implode(', ', $roles),
+			);
+		}
+		unset($user_meta);
+	}
+
+	// 6. Walk entries and tally
 	$post_ids_count = 0;
 	$user_ids_count = 0;
 	$unknown_count  = 0;
-	$custom_count   = 0;
+	$custom_count   = count($custom_keys); // approximate -- counted once per type='custom' entry
 	$details        = array();
-	$flagged        = array(); // user IDs and unknown IDs -- always captured
+	$flagged        = array();
+	$total_posts    = array();
 
-	foreach ($posts as $pid) {
-		foreach ($repeater_names as $rname) {
-			$count = (int) get_post_meta($pid, $rname, true);
-			if ($count <= 0) continue;
+	foreach ($entries as $row) {
+		$pid = (int) $row['post_id'];
+		$total_posts[$pid] = true;
 
-			for ($i = 0; $i < $count; $i++) {
-				$entry_type = get_post_meta($pid, $rname . '_' . $i . '_type', true);
-				if (strtolower($entry_type) === 'custom') {
-					$custom_count++;
-					continue;
-				}
-
-				$meta_key = $rname . '_' . $i . '_user';
-				$val = get_post_meta($pid, $meta_key, true);
-				if (empty($val) || !is_numeric($val)) continue;
-
-				$val = (int) $val;
-				if (get_post_type($val) === 'caes_hub_person') {
-					$post_ids_count++;
-					$label = 'CPT post #' . $val . ' (' . get_the_title($val) . ')';
-				} elseif (get_userdata($val)) {
-					$user_ids_count++;
-					$user = get_userdata($val);
-					$label = 'WP user #' . $val . ' (' . $user->display_name . ' -- roles: ' . implode(', ', $user->roles) . ')';
-					$flagged[] = array(
-						'text'      => 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label,
-						'post_id'   => $pid,
-						'user_id'   => $val,
-						'user_name' => $user->display_name,
-						'roles'     => implode(', ', $user->roles),
-					);
-				} else {
-					$unknown_count++;
-					$label = 'Unknown ID ' . $val;
-					$flagged[] = array(
-						'text'    => 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label,
-						'post_id' => $pid,
-					);
-				}
-
-				if (count($details) < 100) {
-					$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $i . '] = ' . $label;
-				}
-			}
+		// Skip rows whose type was 'custom'
+		if (isset($custom_keys[$pid . '|' . $row['meta_key']])) {
+			continue;
 		}
 
+		$v = $row['meta_value'];
+		if (!is_numeric($v)) continue;
+		$v = (int) $v;
+		if ($v <= 0) continue;
+
+		preg_match('/^([a-z]+)_([0-9]+)_user$/', $row['meta_key'], $m);
+		$rname = $m[1] ?? 'unknown';
+		$index = $m[2] ?? '?';
+
+		if (isset($person_set[$v])) {
+			$post_ids_count++;
+			$label = 'CPT post #' . $v;
+			if (count($details) < $max_details) {
+				$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $index . '] = ' . $label;
+			}
+		} elseif (isset($user_set[$v])) {
+			$user_ids_count++;
+			$u = $user_data_cache[$v] ?? array('display_name' => 'user #' . $v, 'roles' => '');
+			$label = 'WP user #' . $v . ' (' . $u['display_name'] . ' -- roles: ' . $u['roles'] . ')';
+			if (count($flagged) < $max_flagged) {
+				$flagged[] = array(
+					'text'      => 'Post #' . $pid . ' > ' . $rname . '[' . $index . '] = ' . $label,
+					'post_id'   => $pid,
+					'user_id'   => $v,
+					'user_name' => $u['display_name'],
+					'roles'     => $u['roles'],
+				);
+			}
+			if (count($details) < $max_details) {
+				$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $index . '] = ' . $label;
+			}
+		} else {
+			$unknown_count++;
+			$label = 'Unknown ID ' . $v;
+			if (count($flagged) < $max_flagged) {
+				$flagged[] = array(
+					'text'    => 'Post #' . $pid . ' > ' . $rname . '[' . $index . '] = ' . $label,
+					'post_id' => $pid,
+				);
+			}
+			if (count($details) < $max_details) {
+				$details[] = 'Post #' . $pid . ' > ' . $rname . '[' . $index . '] = ' . $label;
+			}
+		}
 	}
 
 	wp_send_json_success(array(
-		'total_posts' => count($posts),
+		'total_posts' => count($total_posts),
 		'post_ids'    => $post_ids_count,
 		'user_ids'    => $user_ids_count,
 		'unknown_ids' => $unknown_count,
