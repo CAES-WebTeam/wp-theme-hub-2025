@@ -895,36 +895,39 @@ function person_migration_ajax_resolve_flagged() {
 	}
 	update_option('person_cpt_migration_user_post_map', $map);
 
-	// Swap all references for these user IDs
-	$post_types = array('post', 'publications', 'shorthand_story');
-	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	// Swap all references for these user IDs (SQL-based to avoid memory blow-up)
+	@set_time_limit(180);
+	global $wpdb;
 	$user_ids_to_resolve = array_map(function($m) { return intval($m['user_id']); }, $mappings);
+	$user_id_list        = implode(',', array_map('intval', $user_ids_to_resolve));
+	$post_types_in       = "'post','publications','shorthand_story'";
+	$swapped             = 0;
 
-	$swapped = 0;
+	if (!empty($user_id_list)) {
+		// Find every postmeta row where the value is one of the user IDs we want to swap
+		$rows = $wpdb->get_results(
+			"SELECT pm.meta_id, pm.post_id, pm.meta_key, pm.meta_value
+			 FROM {$wpdb->postmeta} pm
+			 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
+			 AND p.post_type IN ({$post_types_in})
+			 AND p.post_status IN ('publish','draft','private','future')
+			 AND CAST(pm.meta_value AS UNSIGNED) IN ({$user_id_list})",
+			ARRAY_A
+		);
 
-	$posts = get_posts(array(
-		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private', 'future'),
-		'posts_per_page' => -1,
-		'fields'         => 'ids',
-	));
+		foreach ($rows as $row) {
+			$old_val = (int) $row['meta_value'];
+			if (!isset($map[$old_val])) continue;
+			$new_val = (int) $map[$old_val];
+			$post_id = (int) $row['post_id'];
+			$meta_key = $row['meta_key'];
 
-	foreach ($posts as $pid) {
-		foreach ($repeater_names as $rname) {
-			$count = (int) get_post_meta($pid, $rname, true);
-			if ($count <= 0) continue;
-
-			for ($i = 0; $i < $count; $i++) {
-				$meta_key = $rname . '_' . $i . '_user';
-				$val = (int) get_post_meta($pid, $meta_key, true);
-
-				if ($val && in_array($val, $user_ids_to_resolve) && isset($map[$val])) {
-					update_post_meta($pid, $meta_key . '_backup', $val);
-					update_post_meta($pid, $meta_key, $map[$val]);
-					$swapped++;
-				}
-			}
+			update_post_meta($post_id, $meta_key . '_backup', $old_val);
+			update_post_meta($post_id, $meta_key, $new_val);
+			$swapped++;
 		}
+		unset($rows);
 	}
 
 	wp_send_json_success(array(
