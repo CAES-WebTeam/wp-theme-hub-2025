@@ -19,6 +19,10 @@
 			"type": "boolean",
 			"default": true
 		},
+		"defaultSort": {
+			"type": "string",
+			"default": "relevance"
+		},
 		"showPostTypeFilter": {
 			"type": "boolean",
 			"default": true

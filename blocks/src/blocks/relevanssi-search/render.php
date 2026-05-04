@@ -21,6 +21,7 @@ $button_url            = $attributes['buttonUrl'] ?? '';
 $allowed_post_types    = $attributes['postTypes'] ?? array();
 $taxonomy_slug         = $attributes['taxonomySlug'] ?? 'category';
 $results_page_url      = $attributes['resultsPageUrl'] ?? '';
+$default_sort          = $attributes['defaultSort'] ?? 'relevance';
 
 // Determine if this is a search-only block (has resultsPageUrl) or a full results block
 $is_search_only_block = !empty($results_page_url);
@@ -31,6 +32,29 @@ $current_search_query = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET
 $current_search_query = caes_hub_normalize_search_query($current_search_query);
 $current_orderby      = isset($_GET['orderby']) ? sanitize_text_field(wp_unslash($_GET['orderby'])) : '';
 $current_order        = isset($_GET['order']) ? sanitize_text_field(wp_unslash($_GET['order'])) : '';
+
+// Resolve effective sort: URL params win, otherwise fall back to the block's default.
+if ($current_orderby === 'post_date' && $current_order === 'desc') {
+	$effective_sort = 'post_date_desc';
+} elseif ($current_orderby === 'post_date' && $current_order === 'asc') {
+	$effective_sort = 'post_date_asc';
+} elseif ($current_orderby === 'relevance') {
+	$effective_sort = 'relevance';
+} else {
+	$effective_sort = in_array($default_sort, array('relevance', 'post_date_desc', 'post_date_asc'), true) ? $default_sort : 'relevance';
+}
+
+// Translate effective sort into the orderby/order pair used for the initial query render.
+if ($effective_sort === 'post_date_desc') {
+	$query_orderby = 'post_date';
+	$query_order   = 'desc';
+} elseif ($effective_sort === 'post_date_asc') {
+	$query_orderby = 'post_date';
+	$query_order   = 'asc';
+} else {
+	$query_orderby = 'relevance';
+	$query_order   = '';
+}
 
 // For topics, handle multiple selections. The URL parameter will be comma-separated.
 $current_topic_terms = isset($_GET[$taxonomy_slug]) ? explode(',', sanitize_text_field(wp_unslash($_GET[$taxonomy_slug]))) : array();
@@ -177,9 +201,9 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 					<div class="filter-item date-sort-filter">
 						<label for="relevanssi-sort-by-date" class="sr-only"><?php esc_html_e('Sort by Date', 'caes-hub'); ?></label>
 						<select name="orderby" id="relevanssi-sort-by-date">
-							<option value="relevance" <?php echo ($current_orderby === 'relevance' || (empty($current_orderby) && empty($current_order))) ? 'selected' : ''; ?>><?php esc_html_e('Sort by Relevance', 'caes-hub'); ?></option>
-							<option value="post_date_desc" <?php echo ($current_orderby === 'post_date' && $current_order === 'desc') ? 'selected' : ''; ?>><?php esc_html_e('Newest First', 'caes-hub'); ?></option>
-							<option value="post_date_asc" <?php echo ($current_orderby === 'post_date' && $current_order === 'asc') ? 'selected' : ''; ?>><?php esc_html_e('Oldest First', 'caes-hub'); ?></option>
+							<option value="relevance" <?php selected($effective_sort, 'relevance'); ?>><?php esc_html_e('Sort by Relevance', 'caes-hub'); ?></option>
+							<option value="post_date_desc" <?php selected($effective_sort, 'post_date_desc'); ?>><?php esc_html_e('Newest First', 'caes-hub'); ?></option>
+							<option value="post_date_asc" <?php selected($effective_sort, 'post_date_asc'); ?>><?php esc_html_e('Oldest First', 'caes-hub'); ?></option>
 						</select>
 					</div>
 				<?php endif; ?>
@@ -465,7 +489,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 				// Render initial search results when the page loads.
 				// The function is now defined in functions.php.
 				// Author IDs are already converted from slugs above
-				echo caes_hub_render_relevanssi_search_results($current_search_query, $current_orderby, $current_order, $current_post_type, $taxonomy_slug, $current_topic_terms, 1, $allowed_post_types, $current_author_ids, $current_language_for_query);
+				echo caes_hub_render_relevanssi_search_results($current_search_query, $query_orderby, $query_order, $current_post_type, $taxonomy_slug, $current_topic_terms, 1, $allowed_post_types, $current_author_ids, $current_language_for_query);
 			}
 			?>
 		</div>

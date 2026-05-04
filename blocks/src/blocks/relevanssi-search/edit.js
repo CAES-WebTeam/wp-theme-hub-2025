@@ -26,24 +26,25 @@ import './editor.scss';
  * @return {WPElement} Element to render.
  */
 export default function Edit({ attributes, setAttributes }) {
-	const { 
-		showDateSort, 
-		showPostTypeFilter, 
-		showTopicFilter, 
-		showAuthorFilter, 
-		showLanguageFilter, 
+	const {
+		showDateSort,
+		defaultSort,
+		showPostTypeFilter,
+		showTopicFilter,
+		showAuthorFilter,
+		showLanguageFilter,
 		showHeading,
 		hideSubmitButton,
 		placeholderText,
 		showButton,
 		buttonText,
 		buttonUrl,
-		postTypes, 
-		taxonomySlug, 
-		headingColor, 
-		headingAlignment, 
-		customHeading, 
-		resultsPageUrl 
+		postTypes,
+		taxonomySlug,
+		headingColor,
+		headingAlignment,
+		customHeading,
+		resultsPageUrl
 	} = attributes;
 	const blockProps = useBlockProps();
 
@@ -203,6 +204,17 @@ export default function Edit({ attributes, setAttributes }) {
 								? __('Date sorting dropdown will be visible.', 'caes-hub')
 								: __('Date sorting dropdown will be hidden.', 'caes-hub')
 						}
+					/>
+					<SelectControl
+						label={__('Default Sort Order', 'caes-hub')}
+						value={defaultSort}
+						onChange={(value) => setAttributes({ defaultSort: value })}
+						options={[
+							{ label: __('Most Relevant', 'caes-hub'), value: 'relevance' },
+							{ label: __('Newest First', 'caes-hub'), value: 'post_date_desc' },
+							{ label: __('Oldest First', 'caes-hub'), value: 'post_date_asc' }
+						]}
+						help={__('The default sort applied when no sort is set in the URL.', 'caes-hub')}
 					/>
 					<ToggleControl
 						label={__('Show Post Type Filter', 'caes-hub')}
