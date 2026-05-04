@@ -70,7 +70,16 @@ $wrapper_attrs = [
 	'data-slide-count' => count($slides),
 ];
 if ($content_bg_color) {
-	$wrapper_attrs['style'] = '--motion-scroll-feather-color: ' . esc_attr($content_bg_color) . '; --motion-scroll-content-bg: ' . esc_attr($content_bg_color) . ';';
+	$wrapper_style = '--motion-scroll-feather-color: ' . esc_attr($content_bg_color) . '; --motion-scroll-content-bg: ' . esc_attr($content_bg_color) . ';';
+	// Anchor the feather gradient to the inside edge of the content padding
+	// (left padding when content is on the right, right padding when on the left)
+	// so the solid background always starts where text starts.
+	$feather_padding_side = $content_position === 'right' ? 'left' : 'right';
+	$feather_stop = caes_motion_scroll_get_spacing_preset_css_var($content_padding[$feather_padding_side] ?? null);
+	if ($feather_stop) {
+		$wrapper_style .= ' --motion-scroll-feather-stop: ' . esc_attr($feather_stop) . ';';
+	}
+	$wrapper_attrs['style'] = $wrapper_style;
 }
 $wrapper_attributes = get_block_wrapper_attributes($wrapper_attrs);
 

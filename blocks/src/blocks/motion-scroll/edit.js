@@ -597,9 +597,14 @@ const Edit = ({ attributes, setAttributes, clientId }) => {
 					</div>
 					<div className="motion-scroll-editor-content" style={{
 						...(isFeatherActive
-							? { background: contentPosition === 'left'
-									? `linear-gradient(to right, ${contentBackgroundColor} 65%, oklch(from ${contentBackgroundColor} l c h / 0) 100%)`
-									: `linear-gradient(to right, oklch(from ${contentBackgroundColor} l c h / 0) 0%, ${contentBackgroundColor} 35%)` }
+							? (() => {
+								const featherStop = getSpacingPresetCssVar(
+									contentPosition === 'right' ? contentPadding?.left : contentPadding?.right
+								) || '35%';
+								return { background: contentPosition === 'left'
+									? `linear-gradient(to right, ${contentBackgroundColor} calc(100% - ${featherStop}), oklch(from ${contentBackgroundColor} l c h / 0) 100%)`
+									: `linear-gradient(to right, oklch(from ${contentBackgroundColor} l c h / 0) 0%, ${contentBackgroundColor} ${featherStop})` };
+							})()
 							: { backgroundColor: contentBackgroundColor || 'transparent' }
 						),
 						color: contentTextColor || 'inherit',

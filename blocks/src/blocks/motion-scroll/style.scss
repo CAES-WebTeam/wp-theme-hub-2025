@@ -58,6 +58,12 @@
 			background-color: var(--fc) !important;
 		}
 
+		// Where the content gradient becomes fully solid. Driven by the
+		// inside-edge content padding (set in PHP) so the solid background
+		// always starts exactly where the text starts. Falls back to a
+		// percentage when no padding is set on that side.
+		--feather-stop: var(--motion-scroll-feather-stop, 35%);
+
 		&.content-left {
 			// Image extends left by ~20% to cross the column seam.
 			.motion-scroll-images {
@@ -83,7 +89,7 @@
 				z-index: 2;
 				background: linear-gradient(
 					to right,
-					var(--fc) 65%,
+					var(--fc) calc(100% - var(--feather-stop)),
 					oklch(from var(--fc) l c h / 0) 100%
 				);
 			}
@@ -112,7 +118,7 @@
 				background: linear-gradient(
 					to right,
 					oklch(from var(--fc) l c h / 0) 0%,
-					var(--fc) 35%
+					var(--fc) var(--feather-stop)
 				);
 			}
 		}
