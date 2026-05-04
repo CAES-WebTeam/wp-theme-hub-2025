@@ -320,3 +320,22 @@ ul.is-style-caes-hub-list-checkbox {
 .is-layout-constrained> :where(:not(.alignleft):not(.alignright):not(.alignfull)).is-style-caes-hub-hanging-indent {
     max-width: calc(var(--wp--style--global--content-size) - 40px) !important;
 }
+
+// IMAGES & EMBEDS
+
+.wp-block-image.is-style-caes-hub-dark-caption,
+.wp-block-embed.is-style-caes-hub-dark-caption {
+    figcaption {
+        background-color: var(--wp--preset--color--contrast);
+        color: var(--wp--preset--color--base);
+    }
+}
+
+@media print {
+
+    .wp-block-image.is-style-caes-hub-dark-caption figcaption,
+    .wp-block-embed.is-style-caes-hub-dark-caption figcaption {
+        background-color: transparent !important;
+        color: var(--wp--preset--color--contrast) !important;
+    }
+}

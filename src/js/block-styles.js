@@ -265,6 +265,18 @@ wp.blocks.registerBlockStyle('core/paragraph', {
   label: 'Hanging Indent'
 });
 
+// Image Editor Styles
+wp.blocks.registerBlockStyle('core/image', {
+  name: 'caes-hub-dark-caption',
+  label: 'Dark Caption'
+});
+
+// Embed Editor Styles
+wp.blocks.registerBlockStyle('core/embed', {
+  name: 'caes-hub-dark-caption',
+  label: 'Dark Caption'
+});
+
 // CUSTOM BLOCKS
 wp.blocks.registerBlockStyle('caes-hub/pub-details-authors', {
   name: 'caes-hub-compact',

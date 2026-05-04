@@ -678,6 +678,30 @@
                     "lineHeight": "1"
                 }
             },
+            "core/embed": {
+                "elements": {
+                    "caption": {
+                        "color": {
+                            "background": "var(--wp--preset--color--base-two)",
+                            "text": "var(--wp--preset--color--contrast)"
+                        },
+                        "spacing": {
+                            "margin": {
+                                "top": "0px"
+                            },
+                            "padding": {
+                                "bottom": "var(--wp--preset--spacing--30)",
+                                "left": "var(--wp--preset--spacing--40)",
+                                "right": "var(--wp--preset--spacing--40)",
+                                "top": "var(--wp--preset--spacing--30)"
+                            }
+                        },
+                        "typography": {
+                            "fontSize": "var(--wp--preset--font-size--small)"
+                        }
+                    }
+                }
+            },
             "core/image": {
                 "elements": {
                     "caption": {
