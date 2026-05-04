@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 2.0.1 | 2026-05-04 | Anchor Motion Scroll feather edge to content padding | Ashley |
 | 2.0.0 | 2026-04-30 | Major release! Update to personnel profiles: migrating users to People CPT and adding Elements data. | Ashley |
 | 1.3.75 | 2026-04-27 | Restore em italic styling in block editor | Ashley |
 | 1.3.7 | 2026-04-15 | Fix publication series sort so main entry precedes sub-sections | Ashley |
