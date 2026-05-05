@@ -330,12 +330,3 @@ ul.is-style-caes-hub-list-checkbox {
         color: var(--wp--preset--color--base);
     }
 }
-
-@media print {
-
-    .wp-block-image.is-style-caes-hub-dark-caption figcaption,
-    .wp-block-embed.is-style-caes-hub-dark-caption figcaption {
-        background-color: transparent !important;
-        color: var(--wp--preset--color--contrast) !important;
-    }
-}
