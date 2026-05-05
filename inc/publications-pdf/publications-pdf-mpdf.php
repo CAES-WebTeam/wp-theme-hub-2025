@@ -523,7 +523,9 @@ function generate_last_page_footer_html($post_id, $publication_number)
     $permalink_url = get_permalink($post_id);
     $permalink_text = '';
     if (!empty($permalink_url)) {
-        $permalink_text = 'The permalink for this UGA Extension publication is <a href="' . esc_url($permalink_url) . '">' . esc_html($permalink_url) . '</a>';
+        $host = parse_url($permalink_url, PHP_URL_HOST);
+        $short_permalink = $host . '/publications/' . $publication_number . '/';
+        $permalink_text = 'The permalink for this UGA Extension publication is <a href="' . esc_url($permalink_url) . '">' . esc_html($short_permalink) . '</a>';
     }
 
     $footer_paragraph = 'Published by University of Georgia Cooperative Extension. For more information or guidance, contact your local Extension office. <em>The University of Georgia College of Agricultural and Environmental Sciences (working cooperatively with Fort Valley State University, the U.S. Department of Agriculture, and the counties of Georgia) offers its educational programs, assistance, and materials to all people without regard to age, color, disability, genetic information, national origin, race, religion, sex, or veteran status, and is an Equal Opportunity Institution.</em>';
