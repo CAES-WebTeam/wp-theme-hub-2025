@@ -272,6 +272,43 @@ function convert_cover_blocks_for_pdf($content)
     return $content;
 }
 
+// Tiered cover-page sizing so all front-page elements stay on page 1 as
+// author count grows. Standard layout up to 4 authors; compress the author
+// block at 5+; also shrink the featured image strip at 7+.
+function calculate_cover_layout($author_count)
+{
+    if ($author_count >= 7) {
+        return [
+            'image_ratio'        => 0.5,
+            'author_font_size'   => 13,
+            'author_line_height' => 1.15,
+            'author_margin_v'    => 4,
+            'title_margin_v'     => 12,
+            'date_margin_v'      => 8,
+        ];
+    }
+
+    if ($author_count >= 5) {
+        return [
+            'image_ratio'        => 2 / 3,
+            'author_font_size'   => 14,
+            'author_line_height' => 1.2,
+            'author_margin_v'    => 6,
+            'title_margin_v'     => 14,
+            'date_margin_v'      => 10,
+        ];
+    }
+
+    return [
+        'image_ratio'        => 2 / 3,
+        'author_font_size'   => 16,
+        'author_line_height' => 1.3,
+        'author_margin_v'    => 10,
+        'title_margin_v'     => 20,
+        'date_margin_v'      => 15,
+    ];
+}
+
 // Calculate appropriate title font size based on length
 function calculate_title_font_size($title, $has_subtitle = false)
 {
@@ -802,14 +839,17 @@ function generate_publication_pdf_file_mpdf($post_id)
             }
         }
 
+        // Compress cover layout when many authors so everything fits on page 1.
+        $cover_layout = calculate_cover_layout(count($author_lines));
+
         // Build featured image on cover page, if it exists
         if (!empty($featured_image_url)) {
             // 1. Define Page Width (Letter is 8.5 inches)
             // We use the full width because the CSS (left: -15mm, right: -15mm) pulls it to the edges.
             $page_width_mm = 215.9; // 8.5 * 25.4
 
-            // 2. Calculate Height based on Aspect Ratio
-            $container_height_mm = $page_width_mm * (2 / 3);
+            // 2. Calculate Height based on Aspect Ratio (tighter when there are many authors)
+            $container_height_mm = $page_width_mm * $cover_layout['image_ratio'];
 
             $cover_html = '
     <div style="position: absolute; top: 0; left: -15mm; right: -15mm; height: ' . $container_height_mm . 'mm; overflow: hidden;">
@@ -828,11 +868,11 @@ function generate_publication_pdf_file_mpdf($post_id)
 
         // Title with dynamic font size
         $title_font_size = calculate_title_font_size($publication_title, $has_subtitle);
-        $cover_html .= '<h1 style="font-size: ' . $title_font_size . 'px; font-weight: bold; margin: 20px 0 20px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
+        $cover_html .= '<h1 style="font-size: ' . $title_font_size . 'px; font-weight: bold; margin: ' . $cover_layout['title_margin_v'] . 'px 0; line-height: 1.2;">' . esc_html($publication_title) . '</h1>';
 
         // Authors
         if (!empty($author_lines)) {
-            $cover_html .= '<div style="margin: 10px 0; line-height: 1.3; font-size: 16px;">' . implode('<br>', $author_lines) . '</div>';
+            $cover_html .= '<div style="margin: ' . $cover_layout['author_margin_v'] . 'px 0; line-height: ' . $cover_layout['author_line_height'] . '; font-size: ' . $cover_layout['author_font_size'] . 'px;">' . implode('<br>', $author_lines) . '</div>';
         }
 
         // Publication date and number
@@ -844,7 +884,7 @@ function generate_publication_pdf_file_mpdf($post_id)
             } else {
                 $date_text = 'Published on ' . esc_html($latest_published_date);
             }
-            $cover_html .= '<div style="margin: 15px 0; font-size: 14px;">' . $date_text . '</div>';
+            $cover_html .= '<div style="margin: ' . $cover_layout['date_margin_v'] . 'px 0; font-size: 14px;">' . $date_text . '</div>';
         }
 
         $cover_html .= '</div>';
