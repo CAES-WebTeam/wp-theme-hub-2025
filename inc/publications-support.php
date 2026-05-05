@@ -1576,22 +1576,26 @@ add_filter('render_block', function ($block_content, $block) {
                     $name = trim($first_name . ' ' . $last_name);
                 }
             } else {
-                // Handle WordPress user selection
-                $user = get_sub_field('user');
-                
-                if ($user) {
-                    if (is_numeric($user)) $user = get_userdata($user);
-                    
-                    if ($user) {
-                        // Name
-                        $name = trim($user->first_name . ' ' . $user->last_name);
-                        if (empty($name)) $name = $user->display_name;
+                // Handle Person CPT post or WordPress user selection. The "user"
+                // sub-field can hold either a person CPT post ID, a WP user ID,
+                // a user object, or a post object depending on how the row was
+                // saved. resolve_person_data() normalizes both sources.
+                $user_value = get_sub_field('user');
+                $person_id = null;
 
-                        // Title
-                        $author_title = get_field('title', 'user_' . $user->ID); 
-                        if (empty($author_title)) {
-                            $author_title = get_user_meta($user->ID, 'job_title', true); 
-                        }
+                if (is_numeric($user_value)) {
+                    $person_id = (int) $user_value;
+                } elseif (is_object($user_value) && isset($user_value->ID)) {
+                    $person_id = (int) $user_value->ID;
+                } elseif (is_array($user_value) && isset($user_value['ID'])) {
+                    $person_id = (int) $user_value['ID'];
+                }
+
+                if ($person_id && function_exists('resolve_person_data')) {
+                    $person = resolve_person_data($person_id);
+                    if ($person) {
+                        $name = $person['full_name'];
+                        $author_title = $person['title'];
                     }
                 }
             }
