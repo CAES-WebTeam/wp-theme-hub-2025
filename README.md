@@ -28,6 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
+| 2.0.4 | 2026-05-05 | Publication print and PDF output: hide "Related Content" blocks, show short permalink form in footers, fix print preview dropping person-CPT authors, and auto-compress PDF cover layout when there are many authors. | Ashley |
 | 2.0.3 | 2026-05-05 | Enqueue EITS data privacy cookie script site-wide | Ashley |
 | 2.0.2 | 2026-05-04 | Apply caption styling and Dark Caption option to core/embed | Ashley |
 | 2.0.15 | 2026-05-04 | Add default sort option to relevanssi search block | Ashley |
