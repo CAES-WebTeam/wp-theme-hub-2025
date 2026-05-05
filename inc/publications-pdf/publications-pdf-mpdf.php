@@ -183,6 +183,34 @@ function convert_beforeafter_sliders_for_pdf($content)
     return $content;
 }
 
+// Strip hand-picked-post blocks (e.g. "Related Content") plus any wrapping group + sibling heading
+function strip_hand_picked_posts_for_pdf($content)
+{
+    $recursive_div_body = '((?:[^<]++|<(?!div\b|\/div>)[^>]*+>|<div[^>]*+>(?1)<\/div>)*+)';
+
+    // 1. Remove any wp-block-group whose contents include a hand-picked-post block.
+    //    This kills the decorative wrapper + its heading + the block in one shot.
+    $content = preg_replace_callback(
+        '/<div[^>]*class="[^"]*\bwp-block-group\b[^"]*"[^>]*>' . $recursive_div_body . '<\/div>/is',
+        function ($matches) {
+            if (strpos($matches[1], 'wp-block-caes-hub-hand-picked-post') !== false) {
+                return '';
+            }
+            return $matches[0];
+        },
+        $content
+    );
+
+    // 2. Remove any remaining bare hand-picked-post blocks (no group wrapper).
+    $content = preg_replace(
+        '/<div[^>]*class="[^"]*\bwp-block-caes-hub-hand-picked-post\b[^"]*"[^>]*>' . $recursive_div_body . '<\/div>/is',
+        '',
+        $content
+    );
+
+    return $content;
+}
+
 // Convert wp-block-cover blocks to simple images for PDF
 function convert_cover_blocks_for_pdf($content)
 {
@@ -289,6 +317,9 @@ function process_content_for_mpdf($content)
 {
     // 0. SANITIZE UNICODE CHARACTERS that cause rendering boxes
     $content = sanitize_unicode_for_pdf($content);
+
+    // 0. STRIP HAND-PICKED-POST BLOCKS (e.g. "Related Content")
+    $content = strip_hand_picked_posts_for_pdf($content);
 
     // 0. CONVERT BEFORE/AFTER SLIDERS TO STATIC IMAGES (must be first)
     $content = convert_beforeafter_sliders_for_pdf($content);

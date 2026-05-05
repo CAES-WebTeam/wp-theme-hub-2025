@@ -136,6 +136,12 @@
     width: auto !important;
   }
 
+  // Hide hand-picked-post blocks (e.g. "Related Content") and any group wrapping one
+  .wp-block-group:has(.wp-block-caes-hub-hand-picked-post),
+  .wp-block-caes-hub-hand-picked-post {
+    display: none !important;
+  }
+
   .footer-spacer {
     height: 50px;
   }
