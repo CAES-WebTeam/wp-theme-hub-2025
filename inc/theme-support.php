@@ -23,7 +23,7 @@ function caes_hub_styles()
         'https://eits-eits-scripts.s3.amazonaws.com/_resources/admin/dataprivacy-cookie.js',
         array(),
         null,
-        false
+        true
     );
 }
 add_action('wp_enqueue_scripts', 'caes_hub_styles');
