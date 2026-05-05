@@ -18,13 +18,15 @@ function caes_hub_styles()
         wp_get_theme()->get('Version')
     );
     wp_enqueue_script('caes-hub-script', get_template_directory_uri() . '/assets/js/main.js', array(), '1.0.0', true);
-    wp_enqueue_script(
-        'eits-dataprivacy-cookie',
-        'https://eits-eits-scripts.s3.amazonaws.com/_resources/admin/dataprivacy-cookie.js',
-        array(),
-        null,
-        true
-    );
+    if ( ! is_user_logged_in() ) {
+        wp_enqueue_script(
+            'eits-dataprivacy-cookie',
+            'https://eits-eits-scripts.s3.amazonaws.com/_resources/admin/dataprivacy-cookie.js',
+            array(),
+            null,
+            true
+        );
+    }
 }
 add_action('wp_enqueue_scripts', 'caes_hub_styles');
 
