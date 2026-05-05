@@ -1493,9 +1493,14 @@ add_filter('the_content', function ($content) {
         $publish_date_text = $status_label . ' on ' . date('F j, Y', strtotime($latest_published_info['date']));
     }
 
+    $scheme = parse_url($permalink, PHP_URL_SCHEME) ?: 'https';
+    $host = parse_url($permalink, PHP_URL_HOST);
+    $short_href = $scheme . '://' . $host . '/publications/' . $publication_number . '/';
+    $short_display = $host . '/publications/' . $publication_number . '/';
+
     $footer_html = '
     <div class="print-last-page-footer" style="margin-block-start: 4rem !important">
-        <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($permalink) . '">' . esc_html($permalink) . '</a></p>
+        <p class="print-permalink">The permalink for this UGA Extension publication is <a href="' . esc_url($short_href) . '">' . esc_html($short_display) . '</a></p>
         <div class="print-pub-meta">
             <span class="print-pub-number">' . esc_html($formatted_pub_number) . '</span>
             <span class="print-pub-date">' . esc_html($publish_date_text) . '</span>
