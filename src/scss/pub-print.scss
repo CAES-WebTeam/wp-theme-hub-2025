@@ -136,9 +136,12 @@
     width: auto !important;
   }
 
-  // Hide hand-picked-post blocks (e.g. "Related Content") and any group wrapping one
-  .wp-block-group:has(.wp-block-caes-hub-hand-picked-post),
-  .wp-block-caes-hub-hand-picked-post {
+  // Hide hand-picked-post blocks (e.g. "Related Content") and the immediate group wrapping one.
+  // Use the child combinator inside :has() so this doesn't match every ancestor wp-block-group
+  // (the post template nests many of them).
+  .wp-block-group:has(> .wp-block-caes-hub-hand-picked-post),
+  .wp-block-caes-hub-hand-picked-post,
+  h2#related-content {
     display: none !important;
   }
 

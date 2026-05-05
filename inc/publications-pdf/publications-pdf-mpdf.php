@@ -183,17 +183,23 @@ function convert_beforeafter_sliders_for_pdf($content)
     return $content;
 }
 
-// Strip hand-picked-post blocks (e.g. "Related Content") plus any wrapping group + sibling heading
+// Strip "Related Content" hand-picked-post blocks before PDF rendering.
+// mPDF receives raw $post->post_content, in which the dynamic hand-picked-post block is just
+// HTML comments (it's only rendered through the_content filter). The wrapping wp-block-group
+// div and the <h2 id="related-content"> heading ARE saved as plain HTML, so we anchor on the
+// heading's id and strip the surrounding wrapper.
 function strip_hand_picked_posts_for_pdf($content)
 {
     $recursive_div_body = '((?:[^<]++|<(?!div\b|\/div>)[^>]*+>|<div[^>]*+>(?1)<\/div>)*+)';
 
-    // 1. Remove any wp-block-group whose contents include a hand-picked-post block.
-    //    This kills the decorative wrapper + its heading + the block in one shot.
+    // 1. Remove any wp-block-group whose contents include the related-content heading anchor.
+    //    Recursive body handles nested divs inside the wrapper.
     $content = preg_replace_callback(
         '/<div[^>]*class="[^"]*\bwp-block-group\b[^"]*"[^>]*>' . $recursive_div_body . '<\/div>/is',
         function ($matches) {
-            if (strpos($matches[1], 'wp-block-caes-hub-hand-picked-post') !== false) {
+            if (strpos($matches[1], 'id="related-content"') !== false
+                || strpos($matches[1], "id='related-content'") !== false
+                || strpos($matches[1], 'wp-block-caes-hub-hand-picked-post') !== false) {
                 return '';
             }
             return $matches[0];
@@ -201,9 +207,23 @@ function strip_hand_picked_posts_for_pdf($content)
         $content
     );
 
-    // 2. Remove any remaining bare hand-picked-post blocks (no group wrapper).
+    // 2. Strip any orphaned related-content heading not wrapped in a group.
+    $content = preg_replace(
+        '/<h2\b[^>]*\bid=["\']related-content["\'][^>]*>.*?<\/h2>/is',
+        '',
+        $content
+    );
+
+    // 3. Strip any rendered hand-picked-post block (if content ever goes through the_content first).
     $content = preg_replace(
         '/<div[^>]*class="[^"]*\bwp-block-caes-hub-hand-picked-post\b[^"]*"[^>]*>' . $recursive_div_body . '<\/div>/is',
+        '',
+        $content
+    );
+
+    // 4. Also strip the saved Gutenberg block comment markers so they don't linger as artifacts.
+    $content = preg_replace(
+        '/<!--\s*wp:caes-hub\/hand-picked-post\b.*?<!--\s*\/wp:caes-hub\/hand-picked-post\s*-->/is',
         '',
         $content
     );
