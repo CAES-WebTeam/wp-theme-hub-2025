@@ -13,6 +13,77 @@ if (!defined('ABSPATH')) {
 define('FR2025_PDF_DEBUG_MODE', false);
 
 /**
+ * Delete the auto-generated PDF file for a publication, if one exists on disk.
+ * Logs the outcome via error_log() so admins can audit cleanup events.
+ *
+ * @param int    $post_id            Publication post ID (for log context).
+ * @param string $publication_number Publication number used to build the filename.
+ * @param string $reason             Short reason logged alongside the deletion.
+ * @return bool  True if a file was deleted, false otherwise.
+ */
+function delete_generated_publication_pdf($post_id, $publication_number, $reason = '')
+{
+    if (empty($publication_number)) {
+        return false;
+    }
+
+    $upload_dir = wp_upload_dir();
+    $filename = sanitize_file_name($publication_number . '.pdf');
+    $file_path = $upload_dir['basedir'] . '/generated-pub-pdfs/' . $filename;
+
+    if (!file_exists($file_path)) {
+        return false;
+    }
+
+    $deleted = @unlink($file_path);
+    if ($deleted) {
+        // Clear the stored URL so the front-end stops linking to a missing file.
+        update_field('pdf_download_url', '', $post_id);
+        error_log(sprintf(
+            'Generated publication PDF deleted: post_id=%d, file=%s, reason=%s',
+            $post_id,
+            $file_path,
+            $reason ?: 'unspecified'
+        ));
+    } else {
+        error_log(sprintf(
+            'Failed to delete generated publication PDF: post_id=%d, file=%s, reason=%s',
+            $post_id,
+            $file_path,
+            $reason ?: 'unspecified'
+        ));
+    }
+
+    return $deleted;
+}
+
+/**
+ * Find another publication that already uses the given publication_number.
+ * Excludes the current post and trashed/auto-draft posts. Used to detect
+ * duplicates created by the duplicate-post plugin so we don't overwrite the
+ * original's generated PDF (filenames are derived from publication_number).
+ *
+ * @param int    $post_id            The post being saved.
+ * @param string $publication_number The number to look up.
+ * @return int|null  The conflicting post ID, or null if none.
+ */
+function find_publication_with_duplicate_number($post_id, $publication_number)
+{
+    $query = new WP_Query(array(
+        'post_type'      => 'publications',
+        'post_status'    => array('publish', 'draft', 'pending', 'private', 'future'),
+        'post__not_in'   => array((int) $post_id),
+        'meta_key'       => 'publication_number',
+        'meta_value'     => $publication_number,
+        'posts_per_page' => 1,
+        'fields'         => 'ids',
+        'no_found_rows'  => true,
+    ));
+
+    return !empty($query->posts) ? (int) $query->posts[0] : null;
+}
+
+/**
  * Queues PDF generation when a 'publications' post is saved or updated.
  *
  * @param int     $post_id The post ID.
@@ -22,15 +93,6 @@ function queue_pdf_generation_on_save($post_id, $post)
 {
     // Check if it's a 'publications' post type and not an autosave, revision, or auto-draft.
     if ($post->post_type !== 'publications' || wp_is_post_revision($post_id) || wp_is_post_autosave($post_id) || $post->post_status == 'auto-draft') {
-        return;
-    }
-
-    // NEW CONDITION 1: Only generate if the post is published
-    if ($post->post_status !== 'publish') {
-        set_transient('pdf_generation_notice_' . $post_id, array(
-            'type' => 'info',
-            'message' => sprintf('PDF generation for "%s" was not queued because the post is not yet published.', get_the_title($post_id))
-        ), 60);
         return;
     }
 
@@ -46,6 +108,26 @@ function queue_pdf_generation_on_save($post_id, $post)
         return; // Stop execution here, do not proceed to queue
     }
 
+    // Skip if another publication already owns this publication_number. The
+    // duplicate-post plugin copies the field verbatim, so without this check
+    // the duplicate's content would overwrite the original's cached PDF
+    // (filename = publication_number).
+    $conflicting_post_id = find_publication_with_duplicate_number($post_id, $publication_number);
+    if ($conflicting_post_id) {
+        $other_title = get_the_title($conflicting_post_id);
+        set_transient('pdf_generation_notice_' . $post_id, array(
+            'type' => 'error',
+            'message' => sprintf(
+                'PDF generation for "%s" was *not* queued because publication number %s is already used by another publication ("%s", post #%d). Assign a unique number to enable PDF generation.',
+                get_the_title($post_id),
+                esc_html($publication_number),
+                esc_html($other_title),
+                $conflicting_post_id
+            )
+        ), 60);
+        return;
+    }
+
     // NEW CONDITION 2: Only generate if a manual PDF does NOT exist
     $manual_pdf_attachment = get_field('pdf', $post_id);
     $manual_pdf_exists = false;
@@ -56,9 +138,22 @@ function queue_pdf_generation_on_save($post_id, $post)
     }
 
     if ($manual_pdf_exists) {
+        // A manual PDF is in place; remove any previously auto-generated PDF so it
+        // can't be served from the cached path alongside the manual one.
+        $deleted_generated_pdf = delete_generated_publication_pdf($post_id, $publication_number, 'manual PDF attached');
+
+        // Drop any pending queue item for this post so the cron doesn't re-create it.
+        if (function_exists('remove_from_pdf_queue')) {
+            remove_from_pdf_queue($post_id);
+        }
+
+        $notice_message = sprintf('PDF generation for "%s" was *not* queued because a manual PDF already exists.', get_the_title($post_id));
+        if ($deleted_generated_pdf) {
+            $notice_message .= ' The previously auto-generated PDF was removed.';
+        }
         set_transient('pdf_generation_notice_' . $post_id, array(
             'type' => 'info',
-            'message' => sprintf('PDF generation for "%s" was *not* queued because a manual PDF already exists.', get_the_title($post_id))
+            'message' => $notice_message
         ), 60);
         return; // Stop execution, a manual PDF is present
     }
