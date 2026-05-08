@@ -4,7 +4,7 @@
     }
 
     const { subscribe, select, dispatch } = wp.data;
-    const META_KEY = '_pdf_generation_notice';
+    const FIELD = 'pdf_generation_notice';
     const VALID_TYPES = ['error', 'warning', 'success', 'info'];
 
     let lastSeenTimestamp = null;
@@ -18,8 +18,7 @@
         const postId = editor.getCurrentPostId();
         if (!postId) return;
 
-        const meta = editor.getEditedPostAttribute('meta') || {};
-        const notice = meta[META_KEY];
+        const notice = editor.getEditedPostAttribute(FIELD);
         if (!notice || typeof notice !== 'object' || !notice.message) return;
 
         const ts = notice.time || 0;
@@ -34,7 +33,7 @@
         wp.apiFetch({
             path: '/wp/v2/publications/' + postId,
             method: 'POST',
-            data: { meta: { [META_KEY]: '' } },
+            data: { [FIELD]: null },
         }).catch(function () { /* non-fatal */ });
     }
 

@@ -18,28 +18,33 @@ define('FR2025_PDF_DEBUG_MODE', false);
 const PDF_GENERATION_NOTICE_META_KEY = '_pdf_generation_notice';
 
 /**
- * Register the notice meta so it's exposed via the REST API and visible to the
- * editor data store. Underscore-prefixed meta is protected by default; the
- * auth_callback gates read/write to users who can edit the post.
+ * Expose the notice as a top-level REST field on publications. We tried using
+ * register_post_meta with show_in_rest first, but the publications REST
+ * response doesn't include the `meta` envelope, so the editor never saw it.
+ * A custom field is reliable and gives us explicit read/write control.
  */
-add_action('init', function () {
-    register_post_meta('publications', PDF_GENERATION_NOTICE_META_KEY, array(
-        'type'          => 'object',
-        'single'        => true,
-        'show_in_rest'  => array(
-            'schema' => array(
-                'type'                 => 'object',
-                'properties'           => array(
-                    'type'    => array('type' => 'string'),
-                    'message' => array('type' => 'string'),
-                    'time'    => array('type' => 'integer'),
-                ),
-                'additionalProperties' => true,
-            ),
-        ),
-        'auth_callback' => function ($allowed, $meta_key, $post_id) {
-            return current_user_can('edit_post', $post_id);
+add_action('rest_api_init', function () {
+    register_rest_field('publications', 'pdf_generation_notice', array(
+        'get_callback'    => function ($post_arr) {
+            $value = get_post_meta($post_arr['id'], PDF_GENERATION_NOTICE_META_KEY, true);
+            return is_array($value) ? $value : null;
         },
+        'update_callback' => function ($value, $post) {
+            if (!current_user_can('edit_post', $post->ID)) {
+                return new WP_Error('rest_forbidden', 'Cannot edit this post.', array('status' => 403));
+            }
+            if (empty($value)) {
+                delete_post_meta($post->ID, PDF_GENERATION_NOTICE_META_KEY);
+            } else {
+                update_post_meta($post->ID, PDF_GENERATION_NOTICE_META_KEY, $value);
+            }
+            return true;
+        },
+        'schema'          => array(
+            'description' => 'Pending PDF generation notice for the publications editor.',
+            'type'        => array('object', 'null'),
+            'context'     => array('view', 'edit'),
+        ),
     ));
 });
 
@@ -76,7 +81,7 @@ add_action('enqueue_block_editor_assets', function () {
     wp_enqueue_script(
         'pdf-generation-notice',
         get_stylesheet_directory_uri() . '/src/js/pdf-generation-notice.js',
-        array('wp-data', 'wp-notices', 'wp-api-fetch'),
+        array('wp-edit-post'),
         filemtime(get_stylesheet_directory() . '/src/js/pdf-generation-notice.js'),
         true
     );
