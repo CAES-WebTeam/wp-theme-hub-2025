@@ -55,6 +55,7 @@
         if (!editor || !editor.getCurrentPostId()) return;
 
         const isSaving = editor.isSavingPost() && !editor.isAutosavingPost();
+        const justStartedSaving = !wasSaving && isSaving;
         const justFinishedSaving = wasSaving && !isSaving;
         wasSaving = isSaving;
 
@@ -62,6 +63,14 @@
             initialChecked = true;
             syncNotice();
             return;
+        }
+
+        if (justStartedSaving) {
+            // Clear immediately on save click so the user gets visual feedback
+            // that something is happening; syncNotice will re-show on completion
+            // if PHP wrote a fresh error.
+            dispatch('core/notices').removeNotice(NOTICE_ID);
+            lastSeenTimestamp = null;
         }
 
         if (justFinishedSaving) {
