@@ -28,6 +28,7 @@
         const type = VALID_TYPES.indexOf(notice.type) !== -1 ? notice.type : 'info';
         dispatch('core/notices').createNotice(type, notice.message, {
             isDismissible: true,
+            id: 'pdf-generation-notice',
         });
 
         wp.apiFetch({
