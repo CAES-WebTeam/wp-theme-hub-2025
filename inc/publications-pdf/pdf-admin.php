@@ -183,6 +183,8 @@ function display_pdf_generation_admin_notices()
 {
     global $pagenow;
 
+    error_log(sprintf('[pdf-notice] called: pagenow=%s, GET[post]=%s, REQUEST_URI=%s', $pagenow ?? 'null', $_GET['post'] ?? 'null', $_SERVER['REQUEST_URI'] ?? 'null'));
+
     // Only show notices on relevant admin pages
     if ($pagenow === 'post.php' || $pagenow === 'edit.php') {
         $post_id = isset($_GET['post']) ? intval($_GET['post']) : (isset($_POST['post_ID']) ? intval($_POST['post_ID']) : 0);
