@@ -12,6 +12,73 @@ if (!defined('ABSPATH')) {
 // Set to true to show Debug HTML buttons
 define('FR2025_PDF_DEBUG_MODE', false);
 
+// Post meta key used to surface PDF generation notices in the block editor.
+// JS on the publications editor (src/js/pdf-generation-notice.js) reads this
+// after each save and dispatches a Gutenberg notice, then clears it.
+const PDF_GENERATION_NOTICE_META_KEY = '_pdf_generation_notice';
+
+/**
+ * Register the notice meta so it's exposed via the REST API and visible to the
+ * editor data store. Underscore-prefixed meta is protected by default; the
+ * auth_callback gates read/write to users who can edit the post.
+ */
+add_action('init', function () {
+    register_post_meta('publications', PDF_GENERATION_NOTICE_META_KEY, array(
+        'type'          => 'object',
+        'single'        => true,
+        'show_in_rest'  => array(
+            'schema' => array(
+                'type'                 => 'object',
+                'properties'           => array(
+                    'type'    => array('type' => 'string'),
+                    'message' => array('type' => 'string'),
+                    'time'    => array('type' => 'integer'),
+                ),
+                'additionalProperties' => true,
+            ),
+        ),
+        'auth_callback' => function ($allowed, $meta_key, $post_id) {
+            return current_user_can('edit_post', $post_id);
+        },
+    ));
+});
+
+/**
+ * Store a PDF generation notice on the post so the editor can display it.
+ * Replaces the prior transient-based approach, which was swallowed by Gutenberg.
+ *
+ * @param int    $post_id Publication post ID.
+ * @param string $type    Notice type: 'error', 'warning', 'success', 'info'.
+ * @param string $message Notice text (will be escaped client-side).
+ */
+function set_pdf_generation_notice($post_id, $type, $message)
+{
+    update_post_meta($post_id, PDF_GENERATION_NOTICE_META_KEY, array(
+        'type'    => $type,
+        'message' => $message,
+        'time'    => time(),
+    ));
+}
+
+/**
+ * Enqueue the editor script that reads the notice meta and displays it via the
+ * Gutenberg notice store. Only loads on the publications block editor.
+ */
+add_action('enqueue_block_editor_assets', function () {
+    global $post;
+    if (!isset($post->post_type) || $post->post_type !== 'publications') {
+        return;
+    }
+
+    wp_enqueue_script(
+        'pdf-generation-notice',
+        get_stylesheet_directory_uri() . '/src/js/pdf-generation-notice.js',
+        array('wp-data', 'wp-notices', 'wp-api-fetch'),
+        filemtime(get_stylesheet_directory() . '/src/js/pdf-generation-notice.js'),
+        true
+    );
+});
+
 /**
  * Delete the auto-generated PDF file for a publication, if one exists on disk.
  * Logs the outcome via error_log() so admins can audit cleanup events.
@@ -100,11 +167,11 @@ function queue_pdf_generation_on_save($post_id, $post)
     $publication_number = get_field('publication_number', $post_id);
 
     if (empty($publication_number)) {
-        // If no publication number, do NOT queue and show an immediate error notification.
-        set_transient('pdf_generation_notice_' . $post_id, array(
-            'type' => 'error',
-            'message' => sprintf('PDF generation for "%s" was *not* queued because the Publication Number is missing. Please add a Publication Number and save again.', get_the_title($post_id))
-        ), 60); // Show for 60 seconds
+        set_pdf_generation_notice(
+            $post_id,
+            'error',
+            sprintf('PDF generation for "%s" was not queued because the Publication Number is missing. Please add a Publication Number and save again.', get_the_title($post_id))
+        );
         return; // Stop execution here, do not proceed to queue
     }
 
@@ -115,16 +182,17 @@ function queue_pdf_generation_on_save($post_id, $post)
     $conflicting_post_id = find_publication_with_duplicate_number($post_id, $publication_number);
     if ($conflicting_post_id) {
         $other_title = get_the_title($conflicting_post_id);
-        set_transient('pdf_generation_notice_' . $post_id, array(
-            'type' => 'error',
-            'message' => sprintf(
-                'PDF generation for "%s" was *not* queued because publication number %s is already used by another publication ("%s", post #%d). Assign a unique number to enable PDF generation.',
+        set_pdf_generation_notice(
+            $post_id,
+            'error',
+            sprintf(
+                'PDF generation for "%s" was not queued because publication number %s is already used by another publication ("%s", post #%d). Assign a unique number to enable PDF generation.',
                 get_the_title($post_id),
-                esc_html($publication_number),
-                esc_html($other_title),
+                $publication_number,
+                $other_title,
                 $conflicting_post_id
             )
-        ), 60);
+        );
         return;
     }
 
@@ -147,25 +215,27 @@ function queue_pdf_generation_on_save($post_id, $post)
             remove_from_pdf_queue($post_id);
         }
 
-        $notice_message = sprintf('PDF generation for "%s" was *not* queued because a manual PDF already exists.', get_the_title($post_id));
+        $notice_message = sprintf('PDF generation for "%s" was not queued because a manual PDF already exists.', get_the_title($post_id));
         if ($deleted_generated_pdf) {
             $notice_message .= ' The previously auto-generated PDF was removed.';
         }
-        set_transient('pdf_generation_notice_' . $post_id, array(
-            'type' => 'info',
-            'message' => $notice_message
-        ), 60);
+        set_pdf_generation_notice($post_id, 'info', $notice_message);
         return; // Stop execution, a manual PDF is present
     }
 
     // Queue the PDF generation task
-    // This function is in inc/publications-pdf/pdf-queue.php
     if (insert_or_update_pdf_queue($post_id, 'pending')) {
-        // You might set a temporary transient here to indicate it's queued.
-        // The actual success/failure notification will come from the cron job.
-        set_transient('pdf_generation_notice_' . $post_id, array('type' => 'info', 'message' => sprintf('PDF generation for "%s" has been queued. It will be generated in the background.', get_the_title($post_id))), 60); // Show for 60 seconds
+        set_pdf_generation_notice(
+            $post_id,
+            'info',
+            sprintf('PDF generation for "%s" has been queued. It will be generated in the background.', get_the_title($post_id))
+        );
     } else {
-        set_transient('pdf_generation_notice_' . $post_id, array('type' => 'error', 'message' => sprintf('Failed to queue PDF generation for "%s". Please try again.', get_the_title($post_id))), 60);
+        set_pdf_generation_notice(
+            $post_id,
+            'error',
+            sprintf('Failed to queue PDF generation for "%s". Please try again.', get_the_title($post_id))
+        );
     }
 
     // Ensure the cron job is scheduled to run soon if it's not already
@@ -176,39 +246,9 @@ function queue_pdf_generation_on_save($post_id, $post)
 }
 add_action('save_post_publications', 'queue_pdf_generation_on_save', 10, 2);
 
-/**
- * Displays admin notices for PDF generation status.
- */
-function display_pdf_generation_admin_notices()
-{
-    global $pagenow;
-
-    error_log(sprintf('[pdf-notice] called: pagenow=%s, GET[post]=%s, REQUEST_URI=%s', $pagenow ?? 'null', $_GET['post'] ?? 'null', $_SERVER['REQUEST_URI'] ?? 'null'));
-
-    // Only show notices on relevant admin pages
-    if ($pagenow === 'post.php' || $pagenow === 'edit.php') {
-        $post_id = isset($_GET['post']) ? intval($_GET['post']) : (isset($_POST['post_ID']) ? intval($_POST['post_ID']) : 0);
-        if (!$post_id && $pagenow === 'edit.php') {
-            // For the list table, check all recent queue items (or rely on a more global notice if needed)
-            // For simplicity, we'll focus on single post edit screen for specific notices.
-            return;
-        }
-
-        $notice_key = 'pdf_generation_notice_' . $post_id;
-        $notice_data = get_transient($notice_key);
-
-        error_log(sprintf('[pdf-notice] post_id=%d, transient_key=%s, transient_value=%s', $post_id, $notice_key, var_export($notice_data, true)));
-
-        if ($notice_data && is_array($notice_data)) {
-            $class = 'notice notice-' . esc_attr($notice_data['type']);
-            $message = esc_html($notice_data['message']);
-            error_log('[pdf-notice] printing notice html');
-            printf('<div class="%1$s"><p>%2$s</p></div>', $class, $message);
-            delete_transient($notice_key); // Display once and delete
-        }
-    }
-}
-add_action('admin_notices', 'display_pdf_generation_admin_notices');
+// Notice display is handled by src/js/pdf-generation-notice.js, which reads
+// the post meta after each save and dispatches a Gutenberg notice. The prior
+// admin_notices/transient approach was suppressed by the block editor.
 
 /**
  * Adds custom columns to the publications list table.

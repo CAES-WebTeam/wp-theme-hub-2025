@@ -75,12 +75,12 @@ function process_pdf_generation_queue() {
             update_field('pdf_download_url', $pdf_url, $post_id);
             // Update queue status to 'completed'
             update_pdf_queue_status($queue_item_id, 'completed', 'PDF generated successfully. URL: ' . $pdf_url);
-            // Set notification for admin
-            set_transient('pdf_generation_notice_' . $post_id, array('type' => 'success', 'message' => sprintf('PDF for "%s" generated successfully!', $post_title)), 60 * 60 * 24); // 24 hours
+            // Surface success in the editor on the user's next visit/save
+            set_pdf_generation_notice($post_id, 'success', sprintf('PDF for "%s" generated successfully!', $post_title));
         } else {
             // PDF generation failed
             update_pdf_queue_status($queue_item_id, 'failed', 'PDF generation failed. Check error logs.');
-            set_transient('pdf_generation_notice_' . $post_id, array('type' => 'error', 'message' => sprintf('PDF generation for "%s" failed. Please check logs.', $post_title)), 60 * 60 * 24);
+            set_pdf_generation_notice($post_id, 'error', sprintf('PDF generation for "%s" failed. Please check logs.', $post_title));
         }
     }
 
