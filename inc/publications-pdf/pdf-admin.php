@@ -197,9 +197,12 @@ function display_pdf_generation_admin_notices()
         $notice_key = 'pdf_generation_notice_' . $post_id;
         $notice_data = get_transient($notice_key);
 
+        error_log(sprintf('[pdf-notice] post_id=%d, transient_key=%s, transient_value=%s', $post_id, $notice_key, var_export($notice_data, true)));
+
         if ($notice_data && is_array($notice_data)) {
             $class = 'notice notice-' . esc_attr($notice_data['type']);
             $message = esc_html($notice_data['message']);
+            error_log('[pdf-notice] printing notice html');
             printf('<div class="%1$s"><p>%2$s</p></div>', $class, $message);
             delete_transient($notice_key); // Display once and delete
         }
