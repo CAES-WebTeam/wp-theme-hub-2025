@@ -216,28 +216,22 @@ function queue_pdf_generation_on_save($post_id, $post)
     if ($manual_pdf_exists) {
         // A manual PDF is in place; remove any previously auto-generated PDF so it
         // can't be served from the cached path alongside the manual one.
-        $deleted_generated_pdf = delete_generated_publication_pdf($post_id, $publication_number, 'manual PDF attached');
+        delete_generated_publication_pdf($post_id, $publication_number, 'manual PDF attached');
 
         // Drop any pending queue item for this post so the cron doesn't re-create it.
         if (function_exists('remove_from_pdf_queue')) {
             remove_from_pdf_queue($post_id);
         }
 
-        $notice_message = sprintf('PDF generation for "%s" was not queued because a manual PDF already exists.', get_the_title($post_id));
-        if ($deleted_generated_pdf) {
-            $notice_message .= ' The previously auto-generated PDF was removed.';
-        }
-        set_pdf_generation_notice($post_id, 'info', $notice_message);
+        // Nothing went wrong; clear any prior notice so it doesn't linger in the editor.
+        delete_post_meta($post_id, PDF_GENERATION_NOTICE_META_KEY);
         return; // Stop execution, a manual PDF is present
     }
 
     // Queue the PDF generation task
     if (insert_or_update_pdf_queue($post_id, 'pending')) {
-        set_pdf_generation_notice(
-            $post_id,
-            'info',
-            sprintf('PDF generation for "%s" has been queued. It will be generated in the background.', get_the_title($post_id))
-        );
+        // Successful queue; clear any prior notice so it doesn't linger in the editor.
+        delete_post_meta($post_id, PDF_GENERATION_NOTICE_META_KEY);
     } else {
         set_pdf_generation_notice(
             $post_id,

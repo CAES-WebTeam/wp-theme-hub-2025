@@ -5,13 +5,15 @@
 
     const { subscribe, select, dispatch } = wp.data;
     const FIELD = 'pdf_generation_notice';
-    const VALID_TYPES = ['error', 'warning', 'success', 'info'];
+    const NOTICE_ID = 'pdf-generation-notice';
+    // We only surface errors; success/info states clear the notice instead.
+    const SHOWN_TYPES = ['error', 'warning'];
 
     let lastSeenTimestamp = null;
     let wasSaving = false;
     let initialChecked = false;
 
-    function showAndClearNotice() {
+    function syncNotice() {
         const editor = select('core/editor');
         if (!editor) return;
 
@@ -19,16 +21,26 @@
         if (!postId) return;
 
         const notice = editor.getEditedPostAttribute(FIELD);
-        if (!notice || typeof notice !== 'object' || !notice.message) return;
+        const hasNotice = notice && typeof notice === 'object' && notice.message
+            && SHOWN_TYPES.indexOf(notice.type) !== -1;
+
+        if (!hasNotice) {
+            // No active notice -> make sure none is shown.
+            dispatch('core/notices').removeNotice(NOTICE_ID);
+            lastSeenTimestamp = null;
+            return;
+        }
 
         const ts = notice.time || 0;
         if (ts === lastSeenTimestamp) return;
         lastSeenTimestamp = ts;
 
-        const type = VALID_TYPES.indexOf(notice.type) !== -1 ? notice.type : 'info';
-        dispatch('core/notices').createNotice(type, notice.message, {
+        // Remove first to guarantee a single on-screen notice (createNotice
+        // with an existing id is idempotent in some WP versions, not all).
+        dispatch('core/notices').removeNotice(NOTICE_ID);
+        dispatch('core/notices').createNotice(notice.type, notice.message, {
             isDismissible: true,
-            id: 'pdf-generation-notice',
+            id: NOTICE_ID,
         });
 
         wp.apiFetch({
@@ -48,12 +60,12 @@
 
         if (!initialChecked) {
             initialChecked = true;
-            showAndClearNotice();
+            syncNotice();
             return;
         }
 
         if (justFinishedSaving) {
-            showAndClearNotice();
+            syncNotice();
         }
     });
 })();
