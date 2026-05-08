@@ -66,10 +66,13 @@ function set_pdf_generation_notice($post_id, $type, $message)
  */
 add_action('enqueue_block_editor_assets', function () {
     global $post;
+    error_log('[pdf-notice-enq] hook fired; post_type=' . ($post->post_type ?? 'NULL') . ', post_id=' . ($post->ID ?? 'NULL'));
+
     if (!isset($post->post_type) || $post->post_type !== 'publications') {
         return;
     }
 
+    error_log('[pdf-notice-enq] enqueuing pdf-generation-notice.js');
     wp_enqueue_script(
         'pdf-generation-notice',
         get_stylesheet_directory_uri() . '/src/js/pdf-generation-notice.js',
