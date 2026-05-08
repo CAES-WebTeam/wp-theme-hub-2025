@@ -816,7 +816,7 @@ function fr2025_ajax_get_publications_table()
     global $wpdb;
     $table_name = $wpdb->prefix . 'pdf_generation_queue';
 
-    $where_clause = "p.post_type = 'publications' AND p.post_status = 'publish'";
+    $where_clause = "p.post_type = 'publications' AND p.post_status IN ('publish', 'draft', 'pending', 'private', 'future')";
 
     if ($filter_no_manual) {
         $manual_pdf_post_ids = $wpdb->get_col(
