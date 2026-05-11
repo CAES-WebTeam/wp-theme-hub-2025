@@ -75,12 +75,9 @@ function process_pdf_generation_queue() {
             update_field('pdf_download_url', $pdf_url, $post_id);
             // Update queue status to 'completed'
             update_pdf_queue_status($queue_item_id, 'completed', 'PDF generated successfully. URL: ' . $pdf_url);
-            // Clear any prior notice so the editor doesn't show stale errors.
-            delete_post_meta($post_id, PDF_GENERATION_NOTICE_META_KEY);
         } else {
             // PDF generation failed
             update_pdf_queue_status($queue_item_id, 'failed', 'PDF generation failed. Check error logs.');
-            set_pdf_generation_notice($post_id, 'error', sprintf('PDF generation for "%s" failed. Please check logs.', $post_title));
         }
     }
 
