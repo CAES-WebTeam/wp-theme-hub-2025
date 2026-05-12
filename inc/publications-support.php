@@ -1661,18 +1661,32 @@ add_filter('render_block', function ($block_content, $block) {
 add_action('save_post_publications', function ($post_id, $post, $update) {
     if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
 
-    $authors = get_post_meta($post_id, 'authors', true);
-    $author_users = [];
-    for ($i = 0; $i < (int) $authors; $i++) {
-        $author_users[] = get_post_meta($post_id, "authors_{$i}_user", true);
+    $authors_n = (int) get_post_meta($post_id, 'authors', true);
+    $authors = [];
+    for ($i = 0; $i < $authors_n; $i++) {
+        $authors[$i] = [
+            'type'       => get_post_meta($post_id, "authors_{$i}_type", true),
+            'user'       => get_post_meta($post_id, "authors_{$i}_user", true),
+            'lead'       => get_post_meta($post_id, "authors_{$i}_lead_author", true),
+            'co'         => get_post_meta($post_id, "authors_{$i}_co_author", true),
+            'first_name' => get_post_meta($post_id, "authors_{$i}_custom_user_first_name", true),
+            'last_name'  => get_post_meta($post_id, "authors_{$i}_custom_user_last_name", true),
+        ];
     }
 
     error_log('PUB_SAVE ' . wp_json_encode([
         't'         => current_time('mysql'),
         'pub'       => $post_id,
         'user'      => get_current_user_id(),
-        'authors_n' => $authors,
-        'users'     => $author_users,
+        'authors_n' => $authors_n,
+        'authors'   => $authors,
+        'counts'    => [
+            'experts'   => (int) get_post_meta($post_id, 'experts', true),
+            'history'   => (int) get_post_meta($post_id, 'history', true),
+            'resources' => (int) get_post_meta($post_id, 'resources', true),
+            'translator'=> (int) get_post_meta($post_id, 'translator', true),
+            'artists'   => (int) get_post_meta($post_id, 'artists', true),
+        ],
         'uri'       => $_SERVER['REQUEST_URI'] ?? '',
         'action'    => $_REQUEST['action'] ?? '',
         'is_ajax'   => wp_doing_ajax(),
