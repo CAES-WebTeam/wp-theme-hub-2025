@@ -121,9 +121,10 @@ function queue_pdf_generation_on_save($post_id, $post)
     }
 
     if ($manual_pdf_exists) {
-        // A manual PDF is in place; remove any previously auto-generated PDF so it
-        // can't be served from the cached path alongside the manual one.
-        delete_generated_publication_pdf($post_id, $publication_number, 'manual PDF attached');
+        // Auto-deletion of the previously generated PDF when a manual PDF is
+        // attached is disabled — not working reliably. See notes/NOTES.md
+        // ("Publications: auto-delete of generated PDF when manual PDF attached").
+        // delete_generated_publication_pdf($post_id, $publication_number, 'manual PDF attached');
 
         // Drop any pending queue item for this post so the cron doesn't re-create it.
         if (function_exists('remove_from_pdf_queue')) {
