@@ -1715,3 +1715,75 @@ add_action('updated_post_meta', function ($meta_id, $post_id, $meta_key, $meta_v
         'backtrace' => wp_debug_backtrace_summary(null, 0, false),
     ]));
 }, 9999, 4);
+
+// Revisions don't capture changes to the `pdf` ACF field on publications -- by default
+// wp_save_post_revision only fires when post_title/post_content/post_excerpt change, so
+// ACF-only saves never produce a revision. Log add/update/delete on this single meta key
+// directly so PDF detach/reattach history is reconstructable.
+add_filter('update_post_metadata', function ($check, $post_id, $meta_key, $meta_value, $prev_value) {
+    if ($meta_key !== 'pdf') return $check;
+    if (get_post_type($post_id) !== 'publications') return $check;
+    // Stash the pre-update value while the meta cache is still warm with the old data.
+    $GLOBALS['__pub_pdf_prev'][$post_id] = get_post_meta($post_id, 'pdf', true);
+    return $check;
+}, 10, 5);
+
+add_action('updated_post_meta', function ($meta_id, $post_id, $meta_key, $meta_value) {
+    if ($meta_key !== 'pdf') return;
+    if (get_post_type($post_id) !== 'publications') return;
+
+    $old = $GLOBALS['__pub_pdf_prev'][$post_id] ?? null;
+    unset($GLOBALS['__pub_pdf_prev'][$post_id]);
+
+    error_log('PUB_PDF ' . wp_json_encode([
+        't'         => current_time('mysql'),
+        'event'     => 'update',
+        'pub'       => $post_id,
+        'user'      => get_current_user_id(),
+        'old'       => is_scalar($old) ? (string) $old : wp_json_encode($old),
+        'new'       => is_scalar($meta_value) ? (string) $meta_value : wp_json_encode($meta_value),
+        'uri'       => $_SERVER['REQUEST_URI'] ?? '',
+        'is_ajax'   => wp_doing_ajax(),
+        'is_rest'   => defined('REST_REQUEST') && REST_REQUEST,
+        'is_cron'   => wp_doing_cron(),
+        'backtrace' => wp_debug_backtrace_summary(null, 0, false),
+    ]));
+}, 9999, 4);
+
+add_action('added_post_meta', function ($meta_id, $post_id, $meta_key, $meta_value) {
+    if ($meta_key !== 'pdf') return;
+    if (get_post_type($post_id) !== 'publications') return;
+
+    error_log('PUB_PDF ' . wp_json_encode([
+        't'         => current_time('mysql'),
+        'event'     => 'add',
+        'pub'       => $post_id,
+        'user'      => get_current_user_id(),
+        'old'       => null,
+        'new'       => is_scalar($meta_value) ? (string) $meta_value : wp_json_encode($meta_value),
+        'uri'       => $_SERVER['REQUEST_URI'] ?? '',
+        'is_ajax'   => wp_doing_ajax(),
+        'is_rest'   => defined('REST_REQUEST') && REST_REQUEST,
+        'is_cron'   => wp_doing_cron(),
+        'backtrace' => wp_debug_backtrace_summary(null, 0, false),
+    ]));
+}, 9999, 4);
+
+add_action('deleted_post_meta', function ($meta_ids, $post_id, $meta_key, $meta_value) {
+    if ($meta_key !== 'pdf') return;
+    if (get_post_type($post_id) !== 'publications') return;
+
+    error_log('PUB_PDF ' . wp_json_encode([
+        't'         => current_time('mysql'),
+        'event'     => 'delete',
+        'pub'       => $post_id,
+        'user'      => get_current_user_id(),
+        'old'       => is_scalar($meta_value) ? (string) $meta_value : wp_json_encode($meta_value),
+        'new'       => null,
+        'uri'       => $_SERVER['REQUEST_URI'] ?? '',
+        'is_ajax'   => wp_doing_ajax(),
+        'is_rest'   => defined('REST_REQUEST') && REST_REQUEST,
+        'is_cron'   => wp_doing_cron(),
+        'backtrace' => wp_debug_backtrace_summary(null, 0, false),
+    ]));
+}, 9999, 4);
