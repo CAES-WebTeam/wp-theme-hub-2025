@@ -1697,3 +1697,21 @@ add_action('save_post_publications', function ($post_id, $post, $update) {
         'backtrace' => wp_debug_backtrace_summary(null, 0, false),
     ]));
 }, 9999, 3);
+
+add_action('updated_post_meta', function ($meta_id, $post_id, $meta_key, $meta_value) {
+    if (get_post_type($post_id) !== 'publications') return;
+    if (!preg_match('/^(authors$|authors_\d+_)/', $meta_key)) return;
+
+    error_log('PUB_META ' . wp_json_encode([
+        't'         => current_time('mysql'),
+        'pub'       => $post_id,
+        'user'      => get_current_user_id(),
+        'key'       => $meta_key,
+        'value'     => is_scalar($meta_value) ? (string) $meta_value : wp_json_encode($meta_value),
+        'uri'       => $_SERVER['REQUEST_URI'] ?? '',
+        'is_ajax'   => wp_doing_ajax(),
+        'is_rest'   => defined('REST_REQUEST') && REST_REQUEST,
+        'is_cron'   => wp_doing_cron(),
+        'backtrace' => wp_debug_backtrace_summary(null, 0, false),
+    ]));
+}, 9999, 4);

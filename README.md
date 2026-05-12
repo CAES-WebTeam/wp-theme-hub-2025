@@ -28,7 +28,7 @@ Builds to `/assets` folder.
 
 | Version | Date | Changes | Contributor |
 |---------|------|---------|-------------|
-| 2.0.5 | 2026-05-12 | Added check for generating PDF on pubs to verify ID number does not match; now generates for drafts. Added logging to diagnose issue with ACF fields going away. | Ashley |
+| 2.0.5 | 2026-05-12 | Added check for generating PDF on pubs to verify ID number does not match; now generates for drafts. Added logging to diagnose issue with ACF fields going away. Disable broken auto-delete of generated PDF when manual PDF attached. | Ashley |
 | 2.0.4 | 2026-05-05 | Publication print and PDF output: hide "Related Content" blocks, show short permalink form in footers, fix print preview dropping person-CPT authors, and auto-compress PDF cover layout when there are many authors. | Ashley |
 | 2.0.3 | 2026-05-05 | Enqueue EITS data privacy cookie script site-wide | Ashley |
 | 2.0.2 | 2026-05-04 | Apply caption styling and Dark Caption option to core/embed | Ashley |
