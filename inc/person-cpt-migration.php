@@ -644,6 +644,102 @@ function person_migration_run_swap_batch(&$state) {
 	}
 }
 
+/**
+ * Run the swap on a single post and all of its revisions.
+ *
+ * Useful for fixing a specific publication that was missed by, or reverted
+ * after, the full migration run. Idempotent: rows whose values aren't in the
+ * map (already swapped, or never had a wp_user → person mapping) are skipped.
+ *
+ * @param int  $post_id Post ID to swap. Its revisions are swapped automatically.
+ * @param bool $dry_run If true, report what would change without writing.
+ * @return array Result summary with per-row detail.
+ */
+function person_migration_swap_one_post($post_id, $dry_run = false) {
+	$post_id = (int) $post_id;
+	$post    = get_post($post_id);
+
+	if (!$post) {
+		return array('error' => "Post $post_id not found.");
+	}
+
+	$allowed_parent_types = array('post', 'publications', 'shorthand_story');
+	if (!in_array($post->post_type, $allowed_parent_types, true)) {
+		return array('error' => "Post $post_id is type '{$post->post_type}', not in scope.");
+	}
+
+	$map = person_migration_get_map();
+	if (empty($map)) {
+		return array('error' => 'Migration map is empty. Has it been built?');
+	}
+
+	$repeater_names = array('authors', 'experts', 'translator', 'artists');
+	$sub_candidates = array('user', 'author', 'expert');
+
+	// Build the list of post IDs to process: the post itself + all its revisions.
+	$ids = array($post_id);
+	$revisions = get_posts(array(
+		'post_type'      => 'revision',
+		'post_status'    => 'inherit',
+		'post_parent'    => $post_id,
+		'posts_per_page' => -1,
+		'fields'         => 'ids',
+		'orderby'        => 'date',
+		'order'          => 'DESC',
+	));
+	$ids = array_merge($ids, $revisions);
+
+	$result = array(
+		'dry_run'      => (bool) $dry_run,
+		'post_id'      => $post_id,
+		'revisions'    => count($revisions),
+		'swaps'        => array(),
+		'skipped'      => array(),
+		'total_swaps'  => 0,
+		'rows_touched' => 0,
+	);
+
+	foreach ($ids as $id) {
+		$id            = (int) $id;
+		$id_swaps_made = 0;
+
+		foreach ($repeater_names as $rname) {
+			$count = (int) get_post_meta($id, $rname, true);
+			if ($count <= 0) continue;
+
+			for ($i = 0; $i < $count; $i++) {
+				foreach ($sub_candidates as $sub) {
+					$meta_key = $rname . '_' . $i . '_' . $sub;
+					$old_val  = get_post_meta($id, $meta_key, true);
+					if ($old_val === '' || $old_val === null) continue;
+
+					if (isset($map[$old_val])) {
+						$new_val = $map[$old_val];
+						if (!$dry_run) {
+							update_post_meta($id, $meta_key . '_backup', $old_val);
+							update_post_meta($id, $meta_key, $new_val);
+						}
+						$result['swaps'][] = array(
+							'post_id'  => $id,
+							'meta_key' => $meta_key,
+							'from'     => $old_val,
+							'to'       => $new_val,
+						);
+						$result['total_swaps']++;
+						$id_swaps_made++;
+					}
+				}
+			}
+		}
+
+		if ($id_swaps_made > 0) {
+			$result['rows_touched']++;
+		}
+	}
+
+	return $result;
+}
+
 // Verify swap: sample posts and report whether repeater IDs point to CPT posts, users, or nothing
 function person_migration_ajax_verify_swap() {
 	person_migration_check_ajax();
@@ -820,6 +916,32 @@ function person_migration_ajax_verify_swap() {
 		'flagged'     => $flagged,
 		'details'     => $details,
 	));
+}
+
+// Swap a single post + its revisions. Useful for targeted fixes when the
+// full migration missed a post or a restore reverted it back to wp_user IDs.
+function person_migration_ajax_swap_one_post() {
+	person_migration_check_ajax();
+
+	$post_id = isset($_POST['post_id']) ? intval($_POST['post_id']) : 0;
+	if ($post_id <= 0) {
+		wp_send_json_error(array('error_message' => 'Valid post ID is required.'));
+	}
+
+	$dry_run = !empty($_POST['dry_run']);
+
+	@set_time_limit(120);
+	$result = person_migration_swap_one_post($post_id, $dry_run);
+
+	if (!empty($result['error'])) {
+		wp_send_json_error(array('error_message' => $result['error']));
+	}
+
+	$post = get_post($post_id);
+	$result['post_title'] = $post ? $post->post_title : '';
+	$result['post_type']  = $post ? $post->post_type : '';
+
+	wp_send_json_success($result);
 }
 
 // Revert swap: restore original user IDs from _backup meta keys
@@ -2003,6 +2125,79 @@ function person_migration_enqueue_scripts($hook) {
 				});
 			});
 
+			// Swap a single post (+ its revisions)
+			function pmigSwapOnePost(dryRun) {
+				var $input = $("#pmig-swap-one-id");
+				var postId = parseInt($input.val(), 10);
+				if (!postId || postId <= 0) {
+					alert("Enter a valid post ID.");
+					return;
+				}
+
+				var $dry = $("#pmig-swap-one-dryrun-btn");
+				var $run = $("#pmig-swap-one-run-btn");
+				var $busy = dryRun ? $dry : $run;
+				var origVal = $busy.val();
+				$dry.prop("disabled", true);
+				$run.prop("disabled", true);
+				$busy.val(dryRun ? "Running dry run..." : "Running swap...");
+
+				$.ajax({
+					url: ajaxurl,
+					method: "POST",
+					data: {
+						action:  "person_migration_swap_one_post",
+						nonce:   nonce,
+						post_id: postId,
+						dry_run: dryRun ? 1 : 0
+					},
+					success: function(response) {
+						$dry.prop("disabled", false).val("Dry Run");
+						$run.prop("disabled", false).val("Run Swap");
+						$busy.val(origVal);
+
+						if (!response.success) {
+							alert("Error: " + ((response.data && response.data.error_message) || "Unknown"));
+							return;
+						}
+
+						var d = response.data;
+						var html = "<div class=\"pmig-step-result\" style=\"margin-top:10px;padding:10px;background:#f5f5f5;border-radius:4px;font-size:13px\">";
+						html += "<strong>" + (d.dry_run ? "[DRY RUN] " : "") + esc(d.post_title || "Post") + " (#" + d.post_id + ", " + esc(d.post_type) + ")</strong><br>";
+						html += "Revisions scanned: " + d.revisions + " | Rows that " + (d.dry_run ? "would be" : "were") + " swapped: <strong>" + d.total_swaps + "</strong> on " + d.rows_touched + " post/revision row(s).";
+
+						if (d.swaps && d.swaps.length) {
+							html += "<details style=\"margin-top:8px\"><summary style=\"cursor:pointer\">Swap detail (" + d.swaps.length + ")</summary>";
+							html += "<div style=\"max-height:300px;overflow-y:auto;margin-top:6px;font-size:12px;font-family:monospace;background:#fff;border:1px solid #ddd;padding:8px\">";
+							d.swaps.forEach(function(s) {
+								html += "Post #" + s.post_id + " &middot; " + esc(s.meta_key) + ": " + esc(s.from) + " &rarr; " + esc(s.to) + "<br>";
+							});
+							html += "</div></details>";
+						} else {
+							html += "<div style=\"margin-top:6px;color:#666\">No swappable rows found on this post or its revisions.</div>";
+						}
+						html += "</div>";
+
+						var $step = $run.closest(".pmig-step");
+						$step.find(".pmig-step-result").remove();
+						$step.append(html);
+					},
+					error: function() {
+						$dry.prop("disabled", false).val("Dry Run");
+						$run.prop("disabled", false).val("Run Swap");
+						alert("AJAX error.");
+					}
+				});
+			}
+
+			$("#pmig-swap-one-dryrun-btn").on("click", function() { pmigSwapOnePost(true); });
+			$("#pmig-swap-one-run-btn").on("click", function() {
+				var postId = parseInt($("#pmig-swap-one-id").val(), 10);
+				if (!postId || postId <= 0) { alert("Enter a valid post ID."); return; }
+				if (!confirm("Run the swap on post #" + postId + " and all of its revisions? This writes to the database. (Idempotent; safe to re-run.)")) return;
+				pmigSwapOnePost(false);
+			});
+
 			// Revert swap
 			$("#pmig-swap-revert-btn").on("click", function() {
 				if (!confirm("This will revert ACF field types back to User AND restore all original user IDs from backup. Continue?")) return;
@@ -2719,6 +2914,25 @@ function person_migration_render_page() {
 					</div>
 				</div>
 
+				<!-- Step 7 sub: Swap a single post (+ its revisions) -->
+				<div class="pmig-step pmig-verify-step" style="margin-bottom:20px;margin-left:24px;padding:10px 12px;border:1px solid #e5e5e5;border-radius:4px;border-left:4px solid #f0b849;background:#fffdf5">
+					<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+						<div style="flex:1;min-width:240px">
+							<strong>Swap a single post</strong>
+							<p class="description" style="margin:4px 0 0">
+								Targeted swap on one post and all of its revisions. Use when a publication was
+								missed by the full migration, or a revision restore reverted it back to wp_user IDs.
+								Idempotent &mdash; safe to re-run.
+							</p>
+						</div>
+						<div class="pmig-btn-group" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+							<input type="number" id="pmig-swap-one-id" class="regular-text" placeholder="Post ID" style="width:120px" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-swap-one-dryrun-btn" class="button" value="Dry Run" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+							<input type="button" id="pmig-swap-one-run-btn" class="button button-primary" value="Run Swap" <?php echo !$step5_done ? 'disabled' : ''; ?>>
+						</div>
+					</div>
+				</div>
+
 				<!-- Step 7b: Update ACF Field Types -->
 				<?php $step7b_done = !empty($checklist['step7b']); ?>
 				<div class="pmig-step" style="margin-bottom:20px;padding:12px;border:1px solid #e5e5e5;border-radius:4px;<?php echo $step7b_done ? 'border-left:4px solid #46b450;' : 'border-left:4px solid #ccc;'; ?>">
@@ -3026,6 +3240,7 @@ add_action('wp_ajax_person_migration_swap',              'person_migration_ajax_
 add_action('wp_ajax_person_migration_flat_meta',         'person_migration_ajax_flat_meta');
 add_action('wp_ajax_person_migration_revert_flat_meta',  'person_migration_ajax_revert_flat_meta');
 add_action('wp_ajax_person_migration_verify_swap',           'person_migration_ajax_verify_swap');
+add_action('wp_ajax_person_migration_swap_one_post',         'person_migration_ajax_swap_one_post');
 add_action('wp_ajax_person_migration_revert_swap',           'person_migration_ajax_revert_swap');
 add_action('wp_ajax_person_migration_update_field_types',    'person_migration_ajax_update_field_types');
 add_action('wp_ajax_person_migration_user_feed_swap',   'person_migration_ajax_user_feed_swap');
