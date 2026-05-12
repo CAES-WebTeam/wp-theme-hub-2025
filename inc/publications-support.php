@@ -1657,3 +1657,29 @@ add_filter('render_block', function ($block_content, $block) {
 }, 10, 2);
 
 /* End print-only LAST PAGE footer to publications */
+
+add_action('save_post_publications', function ($post_id, $post, $update) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) return;
+
+    $authors = get_post_meta($post_id, 'authors', true);
+    $author_users = [];
+    for ($i = 0; $i < (int) $authors; $i++) {
+        $author_users[] = get_post_meta($post_id, "authors_{$i}_user", true);
+    }
+
+    error_log('PUB_SAVE ' . wp_json_encode([
+        't'         => current_time('mysql'),
+        'pub'       => $post_id,
+        'user'      => get_current_user_id(),
+        'authors_n' => $authors,
+        'users'     => $author_users,
+        'uri'       => $_SERVER['REQUEST_URI'] ?? '',
+        'action'    => $_REQUEST['action'] ?? '',
+        'is_ajax'   => wp_doing_ajax(),
+        'is_rest'   => defined('REST_REQUEST') && REST_REQUEST,
+        'is_cron'   => wp_doing_cron(),
+        'has_acf'   => !empty($_POST['acf']),
+        'mbloader'  => !empty($_GET['meta-box-loader']),
+        'backtrace' => wp_debug_backtrace_summary(null, 0, false),
+    ]));
+}, 9999, 3);
