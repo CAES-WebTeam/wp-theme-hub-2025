@@ -601,9 +601,11 @@ function person_migration_run_swap_batch(&$state) {
 								$state['errors'][] = '[DRY RUN] Post ' . $post->ID . ': ' . $meta_key . ' would change from user ' . $old_val . ' to post ' . $map[$old_val];
 							}
 						} else {
-							// Back up original user ID before overwriting
-							update_post_meta($post->ID, $meta_key . '_backup', $old_val);
-							update_post_meta($post->ID, $meta_key, $map[$old_val]);
+							// Back up original user ID before overwriting. Use update_metadata()
+							// directly because update_post_meta() silently redirects revision IDs
+							// to the parent post, which would skip every revision row.
+							update_metadata('post', $post->ID, $meta_key . '_backup', $old_val);
+							update_metadata('post', $post->ID, $meta_key, $map[$old_val]);
 							if (count($state['errors']) < PERSON_MIGRATION_MAX_ERRORS) {
 								$state['errors'][] = 'Post ' . $post->ID . ': ' . $meta_key . ' changed from user ' . $old_val . ' to post ' . $map[$old_val];
 							}
@@ -716,8 +718,11 @@ function person_migration_swap_one_post($post_id, $dry_run = false) {
 					if (isset($map[$old_val])) {
 						$new_val = $map[$old_val];
 						if (!$dry_run) {
-							update_post_meta($id, $meta_key . '_backup', $old_val);
-							update_post_meta($id, $meta_key, $new_val);
+							// Use update_metadata() directly. update_post_meta() silently
+							// redirects revision IDs to the parent post (WP core behavior),
+							// which would skip every revision and double-write the live post.
+							update_metadata('post', $id, $meta_key . '_backup', $old_val);
+							update_metadata('post', $id, $meta_key, $new_val);
 						}
 						$result['swaps'][] = array(
 							'post_id'  => $id,
