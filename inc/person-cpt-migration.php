@@ -1075,15 +1075,24 @@ function person_migration_ajax_resolve_flagged() {
 	$swapped             = 0;
 
 	if (!empty($user_id_list)) {
-		// Find every postmeta row where the value is one of the user IDs we want to swap
+		// Find every postmeta row where the value is one of the user IDs we want
+		// to swap. Includes revisions (post_status=inherit) whose parent is one
+		// of the relevant post types, so revision references get fixed too.
 		$rows = $wpdb->get_results(
 			"SELECT pm.meta_id, pm.post_id, pm.meta_key, pm.meta_value
 			 FROM {$wpdb->postmeta} pm
 			 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+			 LEFT JOIN {$wpdb->posts} parent ON parent.ID = p.post_parent
 			 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
-			 AND p.post_type IN ({$post_types_in})
-			 AND p.post_status IN ('publish','draft','private','future')
-			 AND CAST(pm.meta_value AS UNSIGNED) IN ({$user_id_list})",
+			 AND CAST(pm.meta_value AS UNSIGNED) IN ({$user_id_list})
+			 AND (
+			   (p.post_type IN ({$post_types_in})
+			    AND p.post_status IN ('publish','draft','private','future'))
+			   OR
+			   (p.post_type = 'revision'
+			    AND p.post_status = 'inherit'
+			    AND parent.post_type IN ({$post_types_in}))
+			 )",
 			ARRAY_A
 		);
 
@@ -1094,8 +1103,10 @@ function person_migration_ajax_resolve_flagged() {
 			$post_id = (int) $row['post_id'];
 			$meta_key = $row['meta_key'];
 
-			update_post_meta($post_id, $meta_key . '_backup', $old_val);
-			update_post_meta($post_id, $meta_key, $new_val);
+			// update_metadata() bypasses WP core's redirect of revision IDs to
+			// their parent post, so revision rows actually get written.
+			update_metadata('post', $post_id, $meta_key . '_backup', $old_val);
+			update_metadata('post', $post_id, $meta_key, $new_val);
 			$swapped++;
 		}
 		unset($rows);
