@@ -494,7 +494,10 @@ function person_migration_start_swap_job($dry_run = false) {
 		return false;
 	}
 
-	// Count posts that have repeater fields to swap
+	// Count posts that have repeater fields to swap. Includes revisions of the
+	// three relevant post types so pre-migration revisions also get their user
+	// IDs swapped to person CPT IDs (otherwise restoring an old revision
+	// reverts the live post to old wp_user IDs).
 	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_meta_keys = array('authors', 'experts', 'translator', 'artists');
 
@@ -508,6 +511,19 @@ function person_migration_start_swap_job($dry_run = false) {
 		$type_counts[$pt] = $pt_total;
 		$total += $pt_total;
 	}
+
+	// Add revisions whose parent is one of the relevant post types.
+	global $wpdb;
+	$rev_count = (int) $wpdb->get_var(
+		"SELECT COUNT(r.ID)
+		 FROM {$wpdb->posts} r
+		 INNER JOIN {$wpdb->posts} parent ON parent.ID = r.post_parent
+		 WHERE r.post_type = 'revision'
+		   AND r.post_status = 'inherit'
+		   AND parent.post_type IN ('post','publications','shorthand_story')"
+	);
+	$type_counts['revision'] = $rev_count;
+	$total += $rev_count;
 
 	if ($total === 0) return false;
 
@@ -528,17 +544,38 @@ function person_migration_start_swap_job($dry_run = false) {
 
 function person_migration_run_swap_batch(&$state) {
 	$map = person_migration_get_map();
-	$post_types = array('post', 'publications', 'shorthand_story');
 	$repeater_names = array('authors', 'experts', 'translator', 'artists');
 
-	$posts = get_posts(array(
-		'post_type'      => $post_types,
-		'post_status'    => array('publish', 'draft', 'private', 'future'),
-		'posts_per_page' => PERSON_MIGRATION_BATCH_SIZE,
-		'offset'         => $state['processed_users'],
-		'orderby'        => 'ID',
-		'order'          => 'ASC',
+	// Fetch a batch that includes both regular posts and revisions whose
+	// parent is one of the relevant post types. Custom SQL is used because
+	// WP_Query can't filter revisions by their parent's post_type.
+	global $wpdb;
+	$batch_size = (int) PERSON_MIGRATION_BATCH_SIZE;
+	$offset     = (int) $state['processed_users'];
+
+	$post_ids = $wpdb->get_col($wpdb->prepare(
+		"SELECT p.ID
+		 FROM {$wpdb->posts} p
+		 LEFT JOIN {$wpdb->posts} parent ON parent.ID = p.post_parent
+		 WHERE (
+			(p.post_type IN ('post','publications','shorthand_story')
+			 AND p.post_status IN ('publish','draft','private','future'))
+			OR
+			(p.post_type = 'revision'
+			 AND p.post_status = 'inherit'
+			 AND parent.post_type IN ('post','publications','shorthand_story'))
+		 )
+		 ORDER BY p.ID ASC
+		 LIMIT %d OFFSET %d",
+		$batch_size,
+		$offset
 	));
+
+	$posts = array();
+	foreach ($post_ids as $pid) {
+		$p = get_post($pid);
+		if ($p) $posts[] = $p;
+	}
 
 	foreach ($posts as $post) {
 		$check = person_migration_get_state();
@@ -617,14 +654,23 @@ function person_migration_ajax_verify_swap() {
 	$max_flagged   = 500;
 	$max_details   = 100;
 
+	// Match rows on either the live post types or revisions whose parent is
+	// one of those post types. Revisions are joined via parent.ID = p.post_parent.
+	$scope_join_where =
+		"INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
+		 LEFT JOIN {$wpdb->posts} parent ON parent.ID = p.post_parent
+		 WHERE (
+		    (p.post_type IN ({$post_types_in}) AND p.post_status IN ('publish','draft','private','future'))
+		    OR
+		    (p.post_type = 'revision' AND p.post_status = 'inherit' AND parent.post_type IN ({$post_types_in}))
+		 )";
+
 	// 1. Get all repeater "_user" entries in one SQL query (post_id, meta_key, meta_value)
 	$entries = $wpdb->get_results(
 		"SELECT pm.post_id, pm.meta_key, pm.meta_value
 		 FROM {$wpdb->postmeta} pm
-		 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-		 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
-		 AND p.post_type IN ({$post_types_in})
-		 AND p.post_status IN ('publish','draft','private','future')
+		 {$scope_join_where}
+		 AND pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_user$'
 		 AND pm.meta_value IS NOT NULL AND pm.meta_value != ''",
 		ARRAY_A
 	);
@@ -633,10 +679,8 @@ function person_migration_ajax_verify_swap() {
 	$type_rows = $wpdb->get_results(
 		"SELECT pm.post_id, pm.meta_key, pm.meta_value AS type_value
 		 FROM {$wpdb->postmeta} pm
-		 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
-		 WHERE pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_type$'
-		 AND p.post_type IN ({$post_types_in})
-		 AND p.post_status IN ('publish','draft','private','future')",
+		 {$scope_join_where}
+		 AND pm.meta_key REGEXP '^(authors|experts|translator|artists)_[0-9]+_type$'",
 		ARRAY_A
 	);
 	$custom_keys = array();
