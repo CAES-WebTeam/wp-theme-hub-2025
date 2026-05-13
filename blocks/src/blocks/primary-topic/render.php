@@ -4,8 +4,8 @@
 // It will now fetch the 'primary_topics' ACF field and display the terms.
 
 // Get block attributes
-$show_category_icon = $block['showCategoryIcon'] ?? false;
-$enable_links = $block['enableLinks'] ?? true;
+$show_category_icon = $attributes['showCategoryIcon'] ?? false;
+$enable_links = $attributes['enableLinks'] ?? true;
 
 // Get the current post ID
 $post_id = get_the_ID();

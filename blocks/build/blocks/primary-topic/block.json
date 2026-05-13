@@ -8,11 +8,7 @@
   "category": "theme",
   "icon": "star-filled",
   "description": "Displays the primary topic(s), with additional options.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php",
-    "blockVersion": 3
-  },
+  "render": "file:./render.php",
   "supports": {
     "color": {
       "background": true,
