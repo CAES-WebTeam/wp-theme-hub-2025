@@ -7,11 +7,7 @@
   "category": "theme",
   "icon": "block-default",
   "description": "Publication Type for the CAES Field Report 2025 theme.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php",
-    "blockVersion": 3
-  },
+  "render": "file:./render.php",
   "supports": {
     "anchor": true,
     "color": {

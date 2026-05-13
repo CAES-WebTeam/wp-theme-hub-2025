@@ -10,8 +10,8 @@ if ($person_post_id && function_exists('is_person_active') && !is_person_active(
 }
 
 // Get the display option and fallback setting from block attributes
-$display_option = isset($block['displayOption']) ? $block['displayOption'] : 'bio';
-$enable_fallback = isset($block['enableFallback']) ? $block['enableFallback'] : false;
+$display_option = isset($attributes['displayOption']) ? $attributes['displayOption'] : 'bio';
+$enable_fallback = isset($attributes['enableFallback']) ? $attributes['enableFallback'] : false;
 
 // Get the appropriate content based on display option
 if ($display_option === 'tagline') {
@@ -27,7 +27,7 @@ if ($display_option === 'tagline') {
 }
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Only display if content exists and is not empty
 if (!empty($content)) {

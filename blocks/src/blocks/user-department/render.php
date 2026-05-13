@@ -34,7 +34,7 @@ if (empty($departments)) {
     return;
 }
 
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 $render_dept = function($d) {
     $name = esc_html($d['name']);
