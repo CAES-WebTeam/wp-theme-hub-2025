@@ -7,11 +7,7 @@
   "category": "theme",
   "icon": "text-page",
   "description": "Displays the publication summary.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php",
-    "blockVersion": 3
-  },
+  "render": "file:./render.php",
   "supports": {
     "anchor": true,
     "align": true,

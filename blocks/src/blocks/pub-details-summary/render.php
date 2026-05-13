@@ -1,8 +1,8 @@
 <?php
 // Get block attributes
-$word_limit = isset($block['wordLimit']) ? (int) $block['wordLimit'] : 0;
-$show_featured_image = isset($block['showFeaturedImage']) ? $block['showFeaturedImage'] : false;
-$conditional_display = isset($block['conditionalDisplay']) ? $block['conditionalDisplay'] : false;
+$word_limit = isset($attributes['wordLimit']) ? (int) $attributes['wordLimit'] : 0;
+$show_featured_image = isset($attributes['showFeaturedImage']) ? $attributes['showFeaturedImage'] : false;
+$conditional_display = isset($attributes['conditionalDisplay']) ? $attributes['conditionalDisplay'] : false;
 
 // Get the current post ID
 $post_id = get_the_ID();

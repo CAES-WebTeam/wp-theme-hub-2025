@@ -1,7 +1,7 @@
 <?php
 
 // Ensure attributes are available
-$showAsButton = isset($block['showAsButton']) ? $block['showAsButton'] : false;
+$showAsButton = isset($attributes['showAsButton']) ? $attributes['showAsButton'] : false;
 
 // Get the current post ID
 $post_id = get_the_ID();
