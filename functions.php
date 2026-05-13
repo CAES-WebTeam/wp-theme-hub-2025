@@ -27,6 +27,7 @@ require get_template_directory() . '/inc/rss-support.php';
 require get_template_directory() . '/inc/symplectic-query-tool.php';
 require get_template_directory() . '/inc/person-cpt-data-sync.php';
 require get_template_directory() . '/inc/cli/person-sync-cli.php';
+require get_template_directory() . '/inc/cli/person-migration-cli.php';
 
 // Switch to simplified block template for person posts without Symplectic Elements data,
 // or for people in a "Staff" or "Administrative Assistant" employee group.
