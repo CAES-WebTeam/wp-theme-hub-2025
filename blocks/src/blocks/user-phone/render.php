@@ -40,7 +40,7 @@ if ($person_post_id && function_exists('is_person_active') && !is_person_active(
 $phone_number = $person_post_id ? get_post_meta($person_post_id, 'phone_number', true) : get_user_meta($author_id, 'phone_number', true);
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Format and echo the phone number
 if ($phone_number) {

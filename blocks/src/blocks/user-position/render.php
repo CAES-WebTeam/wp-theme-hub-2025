@@ -12,7 +12,7 @@ if ($person_post_id && function_exists('is_person_active') && !is_person_active(
 $title = $person_post_id ? get_post_meta($person_post_id, 'title', true) : get_user_meta($author_id, 'title', true);
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 echo '<p ' . $attrs . ' >' . esc_html($title) . '</p>';
 ?>

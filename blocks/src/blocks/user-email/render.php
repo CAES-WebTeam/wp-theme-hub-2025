@@ -20,7 +20,7 @@ if ($person_post_id) {
 }
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Check if email is valid and doesn't contain problematic strings
 if ($email && !strpos($email, 'placeholder')) {

@@ -11,11 +11,11 @@ if ($person_post_id && function_exists('is_person_active') && !is_person_active(
 }
 
 // Get block attributes
-$mobile = $block['mobileVersion'] ?? false;
-$aspect_ratio = $block['aspectRatio'] ?? 'auto';
-$width = $block['width'] ?? 100;
-$width_unit = $block['widthUnit'] ?? '%';
-$full_height = $block['fullHeight'] ?? false;
+$mobile = $attributes['mobileVersion'] ?? false;
+$aspect_ratio = $attributes['aspectRatio'] ?? 'auto';
+$width = $attributes['width'] ?? 100;
+$width_unit = $attributes['widthUnit'] ?? '%';
+$full_height = $attributes['fullHeight'] ?? false;
 
 // Get first and last name
 if ($person_post_id) {

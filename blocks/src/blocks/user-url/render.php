@@ -20,7 +20,7 @@ if (empty($websites) || !is_array($websites)) {
     return;
 }
 
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 echo '<ul ' . $attrs . '>';
 foreach ($websites as $site) {

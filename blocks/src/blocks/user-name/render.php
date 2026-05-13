@@ -1,9 +1,9 @@
 <?php
 // Grab attributes
-$element = $block['element'] ?? 'h1';
+$element = $attributes['element'] ?? 'h1';
 
 // Try both camelCase and snake_case for the linkToProfile attribute
-$link_to_profile = $block['linkToProfile'] ?? $block['link_to_profile'] ?? false;
+$link_to_profile = $attributes['linkToProfile'] ?? $attributes['link_to_profile'] ?? false;
 
 // Get user ID - check global first, then fall back to archive page
 $author_id = isset($GLOBALS['caes_current_user_id']) ? $GLOBALS['caes_current_user_id'] : get_queried_object_id();
@@ -24,7 +24,7 @@ if ($person_post_id) {
 }
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Build the content
 $content = '';
