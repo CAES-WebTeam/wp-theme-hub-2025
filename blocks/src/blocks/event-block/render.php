@@ -4,19 +4,19 @@
 $today = date('Ymd');
 
 // Get event range
-$event_range = get_field('event_range');
+$event_range = $attributes['eventRange'] ?? '';
 
 // Get series field from block
-$selected_series = get_field('series');
+$selected_series = !empty($attributes['series']) ? array($attributes['series']) : null;
 
 // Get number of posts from block; if empty set to default
-$number_of_posts = get_field('number_of_posts') ?? 4;
+$number_of_posts = $attributes['numberOfPosts'] ?? 4;
 
 // Get the current post ID if we're on a single event post
 $current_post_id = is_singular('events') ? get_the_ID() : null;
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 
 // Initialize the base query arguments
@@ -85,8 +85,8 @@ endif;
 $events = get_posts($args);
 
 // If restricted, override $events
-if ( $event_range == 'specific' && get_field('events') ):
-    $events = get_field('events');
+if ( $event_range == 'specific' && !empty($attributes['events']) ):
+    $events = $attributes['events'];
 
     // Initialize an empty array to store the valid events.
     $filtered_events = array();

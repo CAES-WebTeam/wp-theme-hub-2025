@@ -7,11 +7,7 @@
   "category": "theme",
   "icon": "calendar-alt",
   "description": "Event block for the CAES Field Report 2025 theme.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php",
-    "blockVersion": 3
-  },
+  "render": "file:./render.php",
   "supports": {
     "anchor": true,
     "color": {
@@ -20,6 +16,24 @@
     },
     "spacing": {
       "padding": true
+    }
+  },
+  "attributes": {
+    "eventRange": {
+      "type": "string",
+      "default": ""
+    },
+    "series": {
+      "type": "number",
+      "default": 0
+    },
+    "events": {
+      "type": "array",
+      "default": []
+    },
+    "numberOfPosts": {
+      "type": "number",
+      "default": 4
     }
   },
   "editorScript": "file:./index.js",

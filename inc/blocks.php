@@ -63,7 +63,7 @@ function caes_hub_block_init()
 
 	// Register Event Blocks
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-form');
-	register_block_type(get_template_directory() . '/blocks/build/blocks/event-block');
+	// register_block_type(get_template_directory() . '/blocks/build/blocks/event-block'); // Dormant — not currently used. Source migrated to WP native render; re-enable when needed.
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-description');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-register');
 	register_block_type(get_template_directory() . '/blocks/build/blocks/event-details-date-time');
