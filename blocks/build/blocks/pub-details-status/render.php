@@ -55,7 +55,7 @@ if ($history) {
         }
 
         // Append class to wrapper attributes
-        $attrs = $is_preview ? ' ' : get_block_wrapper_attributes(['class' => $status_class]);
+        $attrs = get_block_wrapper_attributes(['class' => $status_class]);
 
         echo '<div ' . $attrs . '>';
         echo $message;

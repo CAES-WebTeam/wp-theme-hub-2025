@@ -7,11 +7,7 @@
   "category": "theme",
   "icon": "text-page",
   "description": "Displays a status badge if publication has been recently published, renewed, or revised.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php",
-    "blockVersion": 3
-  },
+  "render": "file:./render.php",
   "supports": {
     "anchor": true,
     "color": {

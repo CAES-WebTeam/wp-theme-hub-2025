@@ -4,7 +4,7 @@
 $post_id = get_the_ID();
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Get the resources ACF fields
 $resources = get_field('resources', $post_id);
