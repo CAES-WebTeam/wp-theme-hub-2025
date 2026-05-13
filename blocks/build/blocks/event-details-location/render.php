@@ -28,11 +28,11 @@ if ( ! function_exists( 'normalize_address' ) ) {
 $post_id = get_the_ID();
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
-$displayMode = $block['displayMode'] ?? 'auto';
-$asSnippet = $block['asSnippet'] ?? false;
-$fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
-$fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
+$attrs = get_block_wrapper_attributes();
+$displayMode = $attributes['displayMode'] ?? 'auto';
+$asSnippet = $attributes['asSnippet'] ?? false;
+$fontSize = isset($attributes['headingFontSize']) && !empty($attributes['headingFontSize']) ? esc_attr($attributes['headingFontSize']) : '';
+$fontUnit = isset($attributes['headingFontUnit']) ? esc_attr($attributes['headingFontUnit']) : 'px';
 
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';

@@ -3,7 +3,7 @@
 // Get the current post ID
 $post_id = get_the_ID();
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Get the current date in 'd/m/Y' format
 $today = date('d/m/Y');

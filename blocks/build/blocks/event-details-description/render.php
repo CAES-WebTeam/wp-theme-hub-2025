@@ -3,7 +3,7 @@
 $post_id = get_the_ID();
 
 // Attributes for wrapper
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 if( !empty(get_field('description', $post_id)) ):
 	$description = get_field('description', $post_id);

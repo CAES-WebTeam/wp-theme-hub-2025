@@ -1,6 +1,6 @@
 <?php
 $post_id = get_the_ID();
-$attrs = $is_preview ? ' ' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 $featured_image = get_field('featured_image', $post_id);
 
 // Use placeholder if no featured image

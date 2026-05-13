@@ -1,8 +1,8 @@
 <?php
 // Get the current post ID
 $post_id = get_the_ID();
-$fontSize = isset($block['headingFontSize']) && !empty($block['headingFontSize']) ? esc_attr($block['headingFontSize']) : '';
-$fontUnit = isset($block['headingFontUnit']) ? esc_attr($block['headingFontUnit']) : 'px';
+$fontSize = isset($attributes['headingFontSize']) && !empty($attributes['headingFontSize']) ? esc_attr($attributes['headingFontSize']) : '';
+$fontUnit = isset($attributes['headingFontUnit']) ? esc_attr($attributes['headingFontUnit']) : 'px';
 
 // Generate inline style if font size is set
 $style = $fontSize ? ' style="font-size: ' . $fontSize . $fontUnit . ';"' : '';
