@@ -1,8 +1,12 @@
 <?php
 /**
- * A helper class for rendering Flexible Content fields.
- *
  * @package ACF
+ * @author  WP Engine
+ *
+ * © 2026 Advanced Custom Fields (ACF®). All rights reserved.
+ * "ACF" is a trademark of WP Engine.
+ * Licensed under the GNU General Public License v2 or later.
+ * https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 namespace ACF\Pro\Fields\FlexibleContent;
@@ -80,6 +84,7 @@ class Render {
 			'data-min'          => $this->field['min'],
 			'data-max'          => $this->field['max'],
 			'data-button-label' => $this->field['button_label'],
+			'data-nonce'        => wp_create_nonce( 'acf_field_' . $this->field['type'] . '_' . $this->field['key'] ),
 		);
 
 		if ( empty( $this->field['value'] ) ) {
