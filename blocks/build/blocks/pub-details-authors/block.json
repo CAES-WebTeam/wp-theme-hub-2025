@@ -7,11 +7,7 @@
   "category": "theme",
   "icon": "businesswoman",
   "description": "Displays a story or publication's authors.",
-  "acf": {
-    "mode": "preview",
-    "renderTemplate": "./render.php",
-    "blockVersion": 3
-  },
+  "render": "file:./render.php",
   "supports": {
     "color": {
       "background": true,

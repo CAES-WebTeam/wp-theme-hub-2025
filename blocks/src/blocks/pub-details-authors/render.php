@@ -8,10 +8,10 @@ if (!defined('ABSPATH')) {
 $post_id = get_the_ID();
 
 // Attributes for wrapper
-$attrs = $is_preview ? '' : get_block_wrapper_attributes();
+$attrs = get_block_wrapper_attributes();
 
 // Look up classes from attributes
-$classnames = $block['className'] ?? '';
+$classnames = $attributes['className'] ?? '';
 // Check if 'is-style-caes-hub-compact' is applied
 $is_compact = strpos($classnames, 'is-style-caes-hub-compact') !== false;
 // If we do use compact style, adjust heading 2 styles
@@ -22,13 +22,13 @@ if (! $is_compact) {
 }
 
 // Get the block attributes
-$displayVersion = $block['displayVersion'] ?? 'names-only';
-$showHeading = $block['showHeading'] ?? false;
-$customHeading = $block['customHeading'] ?? '';
-$type = $block['type'] ?? 'authors';
-$snippetPrefix = $block['snippetPrefix'] ?? '';
-$snippetPrefixPosition = $block['snippetPrefixPosition'] ?? 'above';
-$grid = $block['grid'] ?? false;
+$displayVersion = $attributes['displayVersion'] ?? 'names-only';
+$showHeading = $attributes['showHeading'] ?? false;
+$customHeading = $attributes['customHeading'] ?? '';
+$type = $attributes['type'] ?? 'authors';
+$snippetPrefix = $attributes['snippetPrefix'] ?? '';
+$snippetPrefixPosition = $attributes['snippetPrefixPosition'] ?? 'above';
+$grid = $attributes['grid'] ?? false;
 
 // Adjust logic flags
 $authorNamesOnly = $displayVersion === 'names-only';
