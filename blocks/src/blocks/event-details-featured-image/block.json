@@ -9,13 +9,16 @@
   "description": "Event Featured Image for the CAES Field Report 2025 theme.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "anchor": true,
-    "align": ["full"]
+    "align": [
+      "full"
+    ]
   },
   "editorScript": "file:./index.js",
-	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css"
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
 }

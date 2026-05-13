@@ -6,7 +6,8 @@
       "Bash(npm run *)",
       "Bash(php -l /Users/aaw97657/Documents/_CODE/github/wp-theme-hub-2025/blocks/src/blocks/relevanssi-search/render.php)",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(jq --version)"
     ]
   }
 }

@@ -9,7 +9,8 @@
   "description": "Event Location for physical, online, or hybrid events in the CAES Field Report 2025 theme.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "anchor": true,

@@ -9,7 +9,8 @@
   "description": "Displays the user's name.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "anchor": true,
@@ -28,10 +29,10 @@
     }
   },
   "attributes": {
-        "anchor": {
-            "type": "string",
-            "default": ""
-        },
+    "anchor": {
+      "type": "string",
+      "default": ""
+    },
     "element": {
       "type": "string",
       "default": "h1"
@@ -41,8 +42,11 @@
       "default": false
     }
   },
-  "usesContext": ["userId", "user"],
+  "usesContext": [
+    "userId",
+    "user"
+  ],
   "editorScript": "file:./index.js",
-    "editorStyle": "file:./index.css",
-    "style": "file:./style-index.css"
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
 }

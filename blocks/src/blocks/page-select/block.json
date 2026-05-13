@@ -9,7 +9,8 @@
   "description": "Displays a dropwdown to select and navigate to different pages if using the page break block in content. Will display nothing otherwise.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "anchor": true,
@@ -17,9 +18,15 @@
       "padding": true,
       "margin": true
     },
-    "align": ["wide", "full", "center", "left", "right"]
+    "align": [
+      "wide",
+      "full",
+      "center",
+      "left",
+      "right"
+    ]
   },
   "editorScript": "file:./index.js",
-	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css"
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
 }

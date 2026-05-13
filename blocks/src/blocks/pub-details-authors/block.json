@@ -9,7 +9,8 @@
   "description": "Displays a story or publication's authors.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "color": {
@@ -71,6 +72,6 @@
     }
   },
   "editorScript": "file:./index.js",
-	"editorStyle": "file:./index.css",
-	"style": "file:./style-index.css"
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
 }

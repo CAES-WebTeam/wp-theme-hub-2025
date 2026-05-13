@@ -10,7 +10,8 @@
   "description": "Displays the primary topic(s), with additional options.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "color": {

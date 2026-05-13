@@ -9,7 +9,8 @@
   "description": "Displays the user's email.",
   "acf": {
     "mode": "preview",
-    "renderTemplate": "./render.php"
+    "renderTemplate": "./render.php",
+    "blockVersion": 3
   },
   "supports": {
     "anchor": true,
