@@ -37,7 +37,11 @@ function publication_default_content($content, $post)
 // collapsing the row layout in ACF's table view. Without this, Lead/Co Author
 // toggles shift one column to the left under the wrong header — editors
 // clicking what they think is "Co Author" would actually toggle "Lead Author".
-add_action('acf/input/admin_head', function () {
+add_action('admin_head', function () {
+    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+    if (!$screen || $screen->base !== 'post' || $screen->post_type !== 'publications') {
+        return;
+    }
     ?>
     <style>
     .acf-field-673f530ce6a98 .acf-table > tbody > tr.acf-row > td.acf-field.acf-hidden {
