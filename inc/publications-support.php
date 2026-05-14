@@ -33,16 +33,16 @@ function publication_default_content($content, $post)
 // Load ACF Field Groups
 //include_once( get_template_directory() . '/inc/acf-fields/publications-field-group.php' );
 
-// Authors repeater: prevent the hidden 'user' cell (when type=Custom) from
-// collapsing the row layout in ACF's table view. Without this, Lead/Co Author
-// toggles shift one column to the left under the wrong header — editors
-// clicking what they think is "Co Author" would actually toggle "Lead Author".
+// Authors repeater: hide the redundant "Custom User" column header so the
+// User and Custom User cells share the same visual column. Each row shows
+// either the user picker (type=User) or the custom-user group (type=Custom)
+// under a single "User" header, and Lead/Co Author toggles always align
+// with their correct column headers regardless of row type.
 add_action('admin_head', function () {
     ?>
     <style>
-    .acf-field-673f530ce6a98.acf-field-673f530ce6a98 .acf-table > tbody > tr.acf-row > td.acf-field.acf-hidden {
-        display: table-cell !important;
-        visibility: hidden !important;
+    .acf-field-673f530ce6a98 .acf-table > thead .acf-th[data-key="field_6759b7a8cd73a"] {
+        display: none !important;
     }
     </style>
     <?php
