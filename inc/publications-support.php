@@ -33,27 +33,6 @@ function publication_default_content($content, $post)
 // Load ACF Field Groups
 //include_once( get_template_directory() . '/inc/acf-fields/publications-field-group.php' );
 
-// Authors / Translator / Artists repeaters: hide the redundant "Custom User"
-// column header in each so the User and Custom User cells share the same
-// visual column. Each row shows either the user picker (type=User) or the
-// custom-user group (type=Custom) under a single "User" header, and any
-// trailing columns (Lead/Co Author for authors, delete handle) always align
-// with their correct headers regardless of row type.
-//
-// Only affects these repeaters when they use table layout — selector targets
-// the repeater's wrapper class, and table layout is the only layout that
-// renders <thead>/.acf-th, so row/block layouts are unaffected.
-add_action('admin_head', function () {
-    ?>
-    <style>
-    .acf-field-673f530ce6a98 .acf-table > thead .acf-th[data-key="field_6759b7a8cd73a"],
-    .acf-field-67d3022f7f09c .acf-table > thead .acf-th[data-key="field_67d302307f0a1"],
-    .acf-field-68bb354a32e8a .acf-table > thead .acf-th[data-key="field_68bb354a32e8f"] {
-        display: none !important;
-    }
-    </style>
-    <?php
-});
 
 // Set ACF field 'state_issue' with options from json
 function populate_acf_state_issue_field($field)
