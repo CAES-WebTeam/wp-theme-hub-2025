@@ -40,7 +40,7 @@ function publication_default_content($content, $post)
 add_action('admin_head', function () {
     ?>
     <style>
-    .acf-field-673f530ce6a98 .acf-table td.acf-field.acf-hidden {
+    .acf-field-673f530ce6a98.acf-field-673f530ce6a98 .acf-table > tbody > tr.acf-row > td.acf-field.acf-hidden {
         display: table-cell !important;
         visibility: hidden !important;
     }
