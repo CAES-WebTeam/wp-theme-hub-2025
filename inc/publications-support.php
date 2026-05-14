@@ -33,6 +33,21 @@ function publication_default_content($content, $post)
 // Load ACF Field Groups
 //include_once( get_template_directory() . '/inc/acf-fields/publications-field-group.php' );
 
+// Authors repeater: prevent the hidden 'user' cell (when type=Custom) from
+// collapsing the row layout in ACF's table view. Without this, Lead/Co Author
+// toggles shift one column to the left under the wrong header — editors
+// clicking what they think is "Co Author" would actually toggle "Lead Author".
+add_action('acf/input/admin_head', function () {
+    ?>
+    <style>
+    .acf-field-673f530ce6a98 .acf-table > tbody > tr.acf-row > td.acf-field.acf-hidden {
+        display: table-cell !important;
+        visibility: hidden;
+    }
+    </style>
+    <?php
+});
+
 // Set ACF field 'state_issue' with options from json
 function populate_acf_state_issue_field($field)
 {
