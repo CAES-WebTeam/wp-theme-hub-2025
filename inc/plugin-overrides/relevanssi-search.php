@@ -20,9 +20,13 @@ function caes_hub_normalize_search_query($query) {
         return $normalizations[$query_lower];
     }
 
-    // Pub numbers (e.g. "B 1400", "AP 114-04") are stored with a space between
-    // the letter prefix and digits, so "B1400" finds nothing. Insert the space.
-    $query = preg_replace('/\b([A-Za-z]{1,4})(\d)/', '$1 $2', $query);
+    // Pub numbers (e.g. "B 1413", "SB 28", "AP 114-04") are stored with a
+    // space between the letter prefix and digits, but short tokens like
+    // "SB" and "28" get dropped by Relevanssi's min_word_length filter.
+    // We index a concatenated no-space form (see the relevanssi_content_to_index
+    // filter below) and strip the space from the query so it matches as a
+    // single token regardless of which form the user typed.
+    $query = preg_replace('/\b([A-Za-z]{1,4})\s+(\d)/', '$1$2', $query);
 
     return $query;
 }
@@ -503,6 +507,37 @@ function caes_hub_add_authors_to_relevanssi_index($content, $post)
     if (!empty($author_names)) {
         $author_names = array_filter(array_unique($author_names));
         $content .= ' ' . implode(' ', $author_names);
+    }
+
+    return $content;
+}
+
+/**
+ * Add a concatenated no-space form of the publication_number to the
+ * Relevanssi index. The stored form (e.g. "SB 28") tokenizes to "SB" + "28",
+ * both of which are dropped by min_word_length, leaving the pub number
+ * effectively unsearchable. Indexing "SB28" as a single 4-char token makes
+ * it findable; the normalize function above strips spaces from queries so
+ * both "SB 28" and "SB28" hit the same indexed token.
+ *
+ * Requires a Relevanssi reindex (Settings > Relevanssi > Build Index) after
+ * deploy for existing publications to pick up the new indexed form.
+ */
+add_filter('relevanssi_content_to_index', 'caes_hub_add_publication_number_to_relevanssi_index', 10, 2);
+function caes_hub_add_publication_number_to_relevanssi_index($content, $post)
+{
+    if ($post->post_type !== 'publications') {
+        return $content;
+    }
+
+    $pub_number = get_post_meta($post->ID, 'publication_number', true);
+    if (empty($pub_number)) {
+        return $content;
+    }
+
+    $no_space = preg_replace('/\s+/', '', $pub_number);
+    if ($no_space !== $pub_number) {
+        $content .= ' ' . $no_space;
     }
 
     return $content;
