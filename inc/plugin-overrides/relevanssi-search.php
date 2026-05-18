@@ -19,7 +19,11 @@ function caes_hub_normalize_search_query($query) {
     if (isset($normalizations[$query_lower])) {
         return $normalizations[$query_lower];
     }
-    
+
+    // Pub numbers (e.g. "B 1400", "AP 114-04") are stored with a space between
+    // the letter prefix and digits, so "B1400" finds nothing. Insert the space.
+    $query = preg_replace('/\b([A-Za-z]{1,4})(\d)/', '$1 $2', $query);
+
     return $query;
 }
 

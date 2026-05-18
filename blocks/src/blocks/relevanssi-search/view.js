@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!countElement) {
                 countElement = document.createElement('div');
                 countElement.className = 'search-results-count';
+                // role=status (with implicit aria-live=polite) announces the
+                // count to screen readers when AJAX swaps in new results.
+                countElement.setAttribute('role', 'status');
 
                 // Insert AFTER the results heading (H2) if it exists
                 if (resultsHeading) {
@@ -142,21 +145,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (count !== undefined && count !== null && count > 0) {
-                if (count === 1) {
-                    countElement.textContent = '1 result found';
-                } else {
-                    countElement.textContent = `${count} results found`;
-                }
+            if (count === null || count === undefined) {
+                countElement.style.display = 'none';
+            } else if (count === 0) {
+                countElement.textContent = 'No results found';
+                countElement.style.display = 'block';
+            } else if (count === 1) {
+                countElement.textContent = '1 result found';
                 countElement.style.display = 'block';
             } else {
-                countElement.style.display = 'none';
+                countElement.textContent = `${count} results found`;
+                countElement.style.display = 'block';
             }
         };
 
         // Function to fetch and display search results
         const fetchAndDisplaySearchResults = (page = 1) => {
             if (!resultsContainer) return;
+
+            // Signal to assistive tech that the region is loading.
+            resultsContainer.setAttribute('aria-busy', 'true');
 
             // Use the EXACT same beautiful plant animation structure from the original!
             resultsContainer.innerHTML = `
@@ -304,6 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         block.scrollIntoView();
 
                         resultsContainer.innerHTML = html;
+                        resultsContainer.setAttribute('aria-busy', 'false');
 
                         // Update the H2 results heading AFTER DOM is updated
                         updateResultsHeading(searchTerm);
@@ -362,7 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const remainingTime = Math.max(0, minimumDisplayTime - elapsedTime);
 
                     setTimeout(() => {
-                        resultsContainer.innerHTML = '<p class="error-message">Error loading results. Please try again.</p>';
+                        resultsContainer.innerHTML = '<p class="error-message" role="alert">Error loading results. Please try again.</p>';
+                        resultsContainer.setAttribute('aria-busy', 'false');
                         updateResultsCount(null); // Hide count on error
                     }, remainingTime);
                 });

@@ -482,7 +482,7 @@ if ($is_ajax_request && isset($_POST['action']) && $_POST['action'] === 'caes_hu
 
 		<?php // This is where the initial search results will load and where AJAX will inject new results.
 		?>
-		<div class="relevanssi-ajax-search-results-container">
+		<div class="relevanssi-ajax-search-results-container" aria-busy="false">
 			<?php
 			// Only render initial search results if we should show results
 			if ($should_show_results) {
