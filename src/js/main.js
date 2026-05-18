@@ -78,28 +78,30 @@ function handleOverflowScroll() {
 
 document.addEventListener('DOMContentLoaded', function () {
 
-  /*** SHORTHAND: ADD TITLE TO GOOGLE MAPS IFRAMES (a11y) */
+  /*** SHORTHAND: ADD TITLE TO EMBED IFRAMES (a11y) */
   if (document.body.classList.contains('single-shorthand_story')) {
-    const addMapTitle = (iframe) => {
-      if (!iframe.src || !iframe.src.includes('google.com/maps/embed')) return;
+    const addEmbedTitle = (iframe) => {
+      if (!iframe.src || !iframe.src.includes('iframely.shorthand.com')) return;
       const existing = iframe.getAttribute('title');
       if (existing && existing.trim() !== '') return;
-      iframe.setAttribute('title', 'Google Map');
+      const figure = iframe.closest('figure');
+      const caption = figure?.querySelector('figcaption')?.textContent.trim();
+      iframe.setAttribute('title', caption || 'Embedded content');
     };
 
-    document.querySelectorAll('iframe').forEach(addMapTitle);
+    document.querySelectorAll('iframe').forEach(addEmbedTitle);
 
     new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType !== 1) return;
-          if (node.tagName === 'IFRAME') addMapTitle(node);
-          node.querySelectorAll?.('iframe').forEach(addMapTitle);
+          if (node.tagName === 'IFRAME') addEmbedTitle(node);
+          node.querySelectorAll?.('iframe').forEach(addEmbedTitle);
         });
       });
     }).observe(document.body, { childList: true, subtree: true });
   }
-  /*** END SHORTHAND MAPS TITLE FIX */
+  /*** END SHORTHAND EMBED TITLE FIX */
 
   /*** START TO TOP BUTTON */
   const toTopButton = document.createElement('a');
