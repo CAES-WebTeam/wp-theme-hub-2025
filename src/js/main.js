@@ -93,13 +93,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.target.tagName === 'IFRAME') {
+          addEmbedTitle(mutation.target);
+          return;
+        }
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType !== 1) return;
           if (node.tagName === 'IFRAME') addEmbedTitle(node);
           node.querySelectorAll?.('iframe').forEach(addEmbedTitle);
         });
       });
-    }).observe(document.body, { childList: true, subtree: true });
+    }).observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['src'],
+    });
   }
   /*** END SHORTHAND EMBED TITLE FIX */
 
