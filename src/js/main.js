@@ -78,6 +78,29 @@ function handleOverflowScroll() {
 
 document.addEventListener('DOMContentLoaded', function () {
 
+  /*** SHORTHAND: ADD TITLE TO GOOGLE MAPS IFRAMES (a11y) */
+  if (document.body.classList.contains('single-shorthand_story')) {
+    const addMapTitle = (iframe) => {
+      if (!iframe.src || !iframe.src.includes('google.com/maps/embed')) return;
+      const existing = iframe.getAttribute('title');
+      if (existing && existing.trim() !== '') return;
+      iframe.setAttribute('title', 'Google Map');
+    };
+
+    document.querySelectorAll('iframe').forEach(addMapTitle);
+
+    new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+          if (node.tagName === 'IFRAME') addMapTitle(node);
+          node.querySelectorAll?.('iframe').forEach(addMapTitle);
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  /*** END SHORTHAND MAPS TITLE FIX */
+
   /*** START TO TOP BUTTON */
   const toTopButton = document.createElement('a');
   toTopButton.classList.add('caes-hub-to-top');
